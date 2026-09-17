@@ -94,14 +94,15 @@ final class GymLiftHistoryCardUITests: XCTestCase {
                        "미기록 날인데 시트가 열렸다")
     }
 
-    // 유산소 종목에는 카드가 뜨지 않는다 — 유산소 패널이 자기 주간 모듈을 이미 갖고 있어
-    // 둘이 겹치면 한 화면에 주간 캘린더가 두 개가 된다.
-    func testCardioHasNoHistoryCard() {
+    // 유산소도 같은 2주 카드를 쓴다 (사용자 2026-09-17). 색만 teal 계열이고, 유산소의 옛
+    // 1주 원 줄은 카드가 대신한다 — 한 화면에 주간 캘린더가 두 개가 되지 않도록 교체다.
+    func testCardioUsesTheSameTwoWeekCard() {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--fake-signin", "--demo-cardio"]
         app.launch()
         XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
-        XCTAssertFalse(app.descendants(matching: .any)["lift-card-title"].exists,
-                       "유산소 화면에 근력 히스토리 카드가 함께 떴다")
+        XCTAssertTrue(app.descendants(matching: .any)["lift-card-title"].waitForExistence(timeout: 5),
+                      "유산소 화면에 2주 카드가 없다")
+        XCTAssertTrue(app.otherElements["cardio-card"].exists, "유산소 패널이 없다")
     }
 }

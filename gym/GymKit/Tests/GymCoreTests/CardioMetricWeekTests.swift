@@ -32,6 +32,29 @@ import Testing
                                          exerciseId: "treadmill", metric: m, now: today)
     }
 
+    // MARK: - 지난주 행 (2주 카드)
+
+    // 유산소에도 근력과 같은 2주 카드를 쓰려면 지난주 요일별 기록 유무가 필요하다.
+    // 이미 구한 lastWeek 딕셔너리를 요일로 펴는 것이라 새 조회는 없다.
+    // 위 history 의 지난주 기록은 08-15(토) 하나뿐이다.
+    @Test func prevWeekRanMarksLastWeekDays() {
+        let w = week(.distance)
+        #expect(w.prevWeekRan == [false, false, false, false, false, true, false])   // 토
+    }
+
+    // 지표와 무관하다 — 그날 done 세트가 있었나만 본다 (값 없는 지표도 뛴 날이다).
+    @Test func prevWeekRanIsIndependentOfMetric() {
+        let byTime = week(.duration).prevWeekRan
+        #expect(week(.distance).prevWeekRan == byTime && week(.calories).prevWeekRan == byTime)
+    }
+
+    // 다른 종목 기록은 섞이지 않는다.
+    @Test func prevWeekRanIgnoresOtherExercises() {
+        var hist = history
+        hist.append(run("2026-08-12", "cycle", min: 30, km: 8))   // 지난주 수 · 다른 종목
+        #expect(week(.distance, hist: hist).prevWeekRan[2] == false)
+    }
+
     @Test func timeMetricMatchesMock() {
         let w = week(.duration)
         #expect(w.days.map(\.text) == ["15", nil, "20", "15", "32", "20", nil])

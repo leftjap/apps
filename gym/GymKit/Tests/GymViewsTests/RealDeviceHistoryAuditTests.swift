@@ -106,9 +106,9 @@ import GymCore
     /// 월요일 기준 인덱스 (0=월) — GymHomeLogic.mondayIndex 와 같은 식.
     static func mondayIdx(_ d: Date) -> Int { (GymAppModel.kst.component(.weekday, from: d) + 5) % 7 }
 
-    // 유산소 종목은 히스토리 카드가 뜨지 않는다(kind == .cardio 에서 블록 자체가 없다).
-    // 대신 유산소 패널이 자기 주간 모듈을 갖는다 — 그쪽이 실기록과 맞는지 같은 방식으로 본다.
-    @Test func cardioExercisesHaveNoLiftCardAndTheirOwnWeekMatchesRecords() throws {
+    // 유산소도 같은 2주 카드를 쓴다 (사용자 2026-09-17). 색만 teal 이고 판정 규칙은 같다 —
+    // 집계 원천만 `cardioMetricWeek` 이다. 근력과 같은 방식으로 모든 날짜를 대조한다.
+    @Test func cardioExercisesUseTheSameCardAndMatchRecords() throws {
         guard let env = Self.load() else {
             print("GYM_REAL_SESSIONS 미지정 — 건너뜀"); return
         }
@@ -124,8 +124,11 @@ import GymCore
               let last = GymAppModel.dayFmt.date(from: dates.last!) else { return }
 
         var checked = 0, filledSeen = 0
+        let m = GymAppModel(snapshotSession: GymSession(id: "audit", date: dates.last!))
+        m.custom = env.custom
+        m.history = env.sessions
+
         for ex in cardioIds {
-            // ① 카드가 뜨지 않는 근거 — 세션 화면은 kind != .cardio 에서만 카드를 그린다.
             let kind = GymCardKind.from(equipment: GymExercises.def(ex, custom: env.custom)?.equipment ?? "barbell")
             #expect(kind == .cardio, "\(ex) 가 유산소로 안 잡힌다")
 
@@ -148,6 +151,19 @@ import GymCore
                             "\(ex) 기준일 \(refStr) \(iso(i)): 패널 \(w.days[i].style) / 기록 \(ran)")
                     checked += 1
                     if w.days[i].style == .filled { filledSeen += 1 }
+                }
+                // ② 카드 14칸 — 근력과 같은 판정. 원 안 숫자가 그 칸 날짜와 같은지도 본다.
+                m.referenceToday = ref
+                let card = SessionLiftHistoryCard.days(
+                    cardioWeek: w, thisCells: m.weekCells(around: ref),
+                    prevCells: m.weekCells(around: ref, weekOffset: -1), refToday: ref)
+                #expect(card.count == 14)
+                for d in card {
+                    #expect(d.num == Int(d.iso.split(separator: "-")[2])!, "\(ex) \(d.iso) 숫자")
+                    let want = d.isFuture ? false : (truth[ex]?.contains(d.iso) ?? false)
+                    #expect(d.mark.ran == want, "\(ex) 카드 \(d.iso): \(d.mark.ran) / 기록 \(want)")
+                    checked += 1
+                    if d.mark.ran { filledSeen += 1 }
                 }
                 ref = cal.date(byAdding: .day, value: 1, to: ref)!
             }

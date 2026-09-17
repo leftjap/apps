@@ -398,19 +398,33 @@ public struct SessionScreenView: View {
             // 이 종목 히스토리 카드 (작업지시서 2026-09-17). 카드가 자기 표면을 가지므로
             // 세트바와 사이에 구분선을 두지 않는다. 수평 24 는 홈 카드·세트바와 같은 인셋.
             // SE(375×667)는 812 보다 145pt 짧아 카드를 넣으면 히어로가 겹친다 — 숨긴다 (§9).
-            if kind != .cardio && showHistoryCard && !Self.isCompactScreen {
-                let week = GymSessionLogic.liftMetricWeek(
-                    history: model.history, todaySets: sets, exerciseId: exId,
-                    kind: kind, now: model.referenceToday)
+            if showHistoryCard && !Self.isCompactScreen {
+                let thisCells = model.weekCells(around: model.referenceToday)
+                let prevCells = model.weekCells(around: model.referenceToday, weekOffset: -1)
+                // 유산소도 같은 카드를 쓴다 (사용자 2026-09-17). 색만 teal 계열이고, 원 안은
+                // 두 경우 모두 날짜다. 유산소 원의 채움은 지표와 무관하게 '그날 뛰었나' 이므로
+                // 지표는 실앱 기본값(.distance)으로 고정해 읽는다.
+                let cardio = kind == .cardio
+                    ? GymSessionLogic.cardioMetricWeek(history: model.history, todaySets: sets,
+                                                       exerciseId: exId, metric: .distance,
+                                                       now: model.referenceToday)
+                    : nil
+                let lift = kind == .cardio ? nil
+                    : GymSessionLogic.liftMetricWeek(history: model.history, todaySets: sets,
+                                                     exerciseId: exId, kind: kind,
+                                                     now: model.referenceToday)
                 SessionLiftHistoryCard(
-                    days: SessionLiftHistoryCard.days(
-                        week: week,
-                        thisCells: model.weekCells(around: model.referenceToday),
-                        prevCells: model.weekCells(around: model.referenceToday, weekOffset: -1),
-                        refToday: model.referenceToday),
-                    weekdayLabels: week.days.map(\.label),
-                    todayIndex: week.days.firstIndex(where: \.isToday),
-                    prevDayCount: week.prevDayCount, thisDayCount: week.dayCount,
+                    palette: cardio != nil ? .cardio : .lift,
+                    days: cardio.map {
+                        SessionLiftHistoryCard.days(cardioWeek: $0, thisCells: thisCells,
+                                                    prevCells: prevCells, refToday: model.referenceToday)
+                    } ?? SessionLiftHistoryCard.days(week: lift!, thisCells: thisCells,
+                                                     prevCells: prevCells, refToday: model.referenceToday),
+                    weekdayLabels: cardio?.days.map(\.label) ?? lift!.days.map(\.label),
+                    todayIndex: cardio?.days.firstIndex(where: \.isToday)
+                        ?? lift!.days.firstIndex(where: \.isToday),
+                    prevDayCount: cardio.map { $0.prevWeekRan.filter { $0 }.count } ?? lift!.prevDayCount,
+                    thisDayCount: cardio?.dayCount ?? lift!.dayCount,
                     exName: model.currentExerciseName,
                     onTapDay: { detailISO = $0 })
                     .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 8)

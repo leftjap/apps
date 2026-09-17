@@ -96,10 +96,9 @@ final class GymCalendarAuditUITests: XCTestCase {
 
     // MARK: - 유산소
 
-    // 트레드밀에는 카드가 없고(유산소 패널이 자기 주간 모듈을 갖는다), 유산소를 기록해도
-    // 근력 종목 카드가 차면 안 된다. 홈 캘린더는 유산소를 teal 링으로 따로 표시하지만
-    // 이 카드는 이 종목 하나만 말한다 (작업지시서 §4).
-    func testTreadmillHasNoCardAndDoesNotFillLiftCards() {
+    // 트레드밀도 같은 2주 카드를 쓴다(색만 teal). 카드는 **그 종목 기록만** 말하므로
+    // 유산소를 넣어도 근력 종목 카드는 그대로여야 한다.
+    func testTreadmillHasItsOwnCardAndDoesNotFillLiftCards() {
         let app = launchSession()
         app.buttons["rail-add"].tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'addex-'"))
@@ -111,10 +110,11 @@ final class GymCalendarAuditUITests: XCTestCase {
 
         chip(app, "트레드밀").tap()
         XCTAssertEqual(app.staticTexts["session-exname"].label, "트레드밀")
-        XCTAssertFalse(app.descendants(matching: .any)["lift-card-title"].exists,
-                       "유산소 화면에 근력 히스토리 카드가 떴다")
-        XCTAssertTrue(app.otherElements["cardio-card"].waitForExistence(timeout: 5),
-                      "유산소 주간 모듈이 없다")
+        XCTAssertTrue(app.descendants(matching: .any)["lift-card-title"].waitForExistence(timeout: 5),
+                      "유산소 화면에 2주 카드가 없다")
+        XCTAssertTrue(app.otherElements["cardio-card"].exists, "유산소 패널이 없다")
+        // 아직 안 뛰었으므로 오늘 칸은 비어 있다.
+        expectEmpty(app, "트레드밀")
 
         // 근력 종목으로 돌아와도 유산소가 카드를 채우지 않는다.
         chip(app, "케이블 크로스오버").tap()
@@ -191,8 +191,8 @@ final class GymCalendarAuditUITests: XCTestCase {
         app.buttons["addex-treadmill"].tap()
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
         XCTAssertTrue(app.otherElements["cardio-card"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.descendants(matching: .any)["lift-card-title"].exists,
-                       "트레드밀 화면에 근력 카드가 떴다")
+        XCTAssertTrue(app.descendants(matching: .any)["lift-card-title"].waitForExistence(timeout: 5),
+                      "트레드밀 화면에 2주 카드가 없다")
 
         // 히어로(거리) 탭 → 키패드 5 → 확인
         var hero = (label: "(none)", frame: CGRect.zero)
@@ -206,18 +206,13 @@ final class GymCalendarAuditUITests: XCTestCase {
         app.buttons["keypad-key-5"].tap()
         app.buttons["keypad-done"].tap()
 
-        // 유산소 카드는 컨테이너 식별자 `cardio-card` 가 자식 식별자를 전부 덮는다
-        // (lessons/swiftui-accessibility-identifier-container.md · 이 카드의 기존 문제).
-        // 그래서 요일 칸도 라벨로 찾는다 — children: .combine 이라 "요일 + 값" 한 덩어리다.
-        let wd = ["월", "화", "수", "목", "금", "토", "일"][todayIdx]
-        var dayLabels: [String] = []
-        for e in app.descendants(matching: .any).allElementsBoundByIndex
-        where e.identifier == "cardio-card" && e.label.contains(wd) && e.frame.height < 60 {
-            dayLabels.append(e.label)
-        }
-        print("PROBE 유산소 오늘 칸(\(wd)) 후보: \(dayLabels)")
-        XCTAssertTrue(dayLabels.contains { $0.contains("5") },
-                      "트레드밀 5km 를 넣었는데 유산소 주간 칸에 안 보인다 (실측 \(dayLabels))")
+        // 거리를 넣으면 오늘이 기록된 날이 되어 카드의 오늘 칸이 찬다.
+        let want = "\(dayLabel(iso(todayIdx))), 트레드밀 기록"
+        expectation(for: NSPredicate(format: "label == %@", want),
+                    evaluatedWith: cell(app, iso(todayIdx)))
+        waitForExpectations(timeout: 8)
+        XCTAssertEqual(app.descendants(matching: .any)["lift-card-title"].label,
+                       "최근 2주, 지난주 0일, 이번 주 1일")
 
         // 같은 날 근력 종목을 추가하면 그 카드는 비어 있어야 한다 — 유산소가 새면 안 된다.
         app.buttons["rail-add"].tap()
@@ -374,8 +369,8 @@ final class GymCalendarAuditUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
         XCTAssertTrue(app.otherElements["cardio-card"].waitForExistence(timeout: 5), "유산소 패널이 없다")
-        XCTAssertFalse(app.descendants(matching: .any)["lift-card-title"].exists,
-                       "유산소 화면에 근력 히스토리 카드가 떴다")
+        XCTAssertTrue(app.descendants(matching: .any)["lift-card-title"].waitForExistence(timeout: 5),
+                      "유산소 화면에 2주 카드가 없다")
         shot(app, "05-cardio-panel")
 
         // 근력 종목을 같은 세션에 넣고 전환해 두 화면을 나란히 남긴다.

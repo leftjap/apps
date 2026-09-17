@@ -52,59 +52,14 @@ struct CardioPanel: View {
     private func weekModule(_ L: GymCardioLayout) -> some View {
         let wk = GymSessionLogic.cardioMetricWeek(history: history, todaySets: todaySets,
                                                   exerciseId: exerciseId, metric: metric, now: now)
-        let dia = L.circleDiameter
-        return VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(Array(wk.days.enumerated()), id: \.offset) { i, d in
-                    if i > 0 { Spacer(minLength: 0) }
-                    dayCircle(d, dia: dia)
-                }
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Spacer(minLength: 0)
-                sumPair(wk.total, wk.unit)
-                sumPair("\(wk.dayCount)", "일")
-            }
-            .padding(.top, 10)
+        // 2주 카드는 SessionScreen 이 근력과 공통으로 그린다 — 이 패널 컨테이너에 걸린
+        // `cardio-card` 식별자가 카드의 자식 식별자를 덮어 XCUITest 가 못 찾기 때문이다
+        // (lessons/swiftui-accessibility-identifier-container.md, 2026-09-17 실측).
+        // 여기 남는 것은 이 종목 합계 줄뿐이다. 일수는 카드 라벨 열이 말한다.
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Spacer(minLength: 0)
+            sumPair(wk.total, wk.unit)
         }
-    }
-
-    private func dayCircle(_ d: GymSessionLogic.CardioDay, dia: CGFloat) -> some View {
-        VStack(spacing: 7) {
-            ZStack {
-                switch d.style {
-                case .filled:    Circle().fill(GY.cardioTeal)
-                case .todayRef:  Circle().strokeBorder(GY.cardioTealSoft, lineWidth: 2.4)
-                case .ring:      Circle().strokeBorder(GY.line, lineWidth: 1.5)
-                case .ringFaint: Circle().strokeBorder(GY.lineSoft, lineWidth: 1.5)
-                }
-                if let t = d.text {
-                    Text(t).font(.mono(13.5, 600)).tracking(-0.405)   // -0.03em @13.5, 3자리 대응
-                        .foregroundStyle(numberColor(d))
-                }
-            }
-            .frame(width: dia, height: dia)
-            Text(d.label)
-                .font(.sans(11.5, d.isToday ? 700 : (d.style == .filled ? 600 : 500)))
-                .foregroundStyle(labelColor(d))
-        }
-        .frame(width: dia)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("cardio-day-\(d.label)")
-    }
-
-    private func numberColor(_ d: GymSessionLogic.CardioDay) -> Color {
-        switch d.style {
-        case .filled:    .white
-        case .todayRef:  GY.cardioTealSoft
-        case .ring:      GY.ink4
-        case .ringFaint: .clear
-        }
-    }
-    private func labelColor(_ d: GymSessionLogic.CardioDay) -> Color {
-        if d.isToday { return GY.cardioTeal }
-        if d.style == .filled { return GY.ink3 }
-        return Color(oklch: d.style == .ringFaint ? 0.82 : 0.78, 0.006, 60)
     }
 
     private func sumPair(_ v: String, _ unit: String) -> some View {

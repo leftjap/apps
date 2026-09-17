@@ -8,6 +8,16 @@ import GymCore
 // 색은 홈 캘린더의 규율을 따른다 — crail 은 날짜·기록 행위를 뜻한다. 훈련량 계열(teal/pine)과
 // 유산소 teal 링(홈 재설계 §5 의 두 번째 신호)은 넣지 않는다. 이 카드는 이 종목 하나만 말한다.
 struct SessionLiftHistoryCard: View {
+    /// 색 계열. 근력은 crail(날짜·기록 행위), 유산소는 teal — 홈 캘린더가 두 종류를 그렇게
+    /// 구분하므로 카드도 같은 규율을 따른다 (홈 재설계 §1·§5).
+    struct Palette {
+        let tint: Color   // 과거 기록 — 옅은 채움
+        let base: Color   // 오늘 기록 — 진한 채움 + 흰 숫자
+        let deep: Color   // 과거 기록 숫자 · 오늘 요일 라벨
+        static let lift = Palette(tint: GY.crailTint, base: GY.crailBase, deep: GY.crailDeep)
+        static let cardio = Palette(tint: GY.ghostTint, base: GY.cardioTeal, deep: GY.pine)
+    }
+    var palette: Palette = .lift
     let days: [LiftHistoryDay]        // 14칸 — 앞 7 = 지난주, 뒤 7 = 이번 주
     let weekdayLabels: [String]       // 월…일
     let todayIndex: Int?              // 요일 헤더에서 오늘만 crail-deep
@@ -81,7 +91,7 @@ struct SessionLiftHistoryCard: View {
             HStack(spacing: 0) {   // 요일 헤더 — 두 행이 공유 (홈 weekCalendar 와 같은 값)
                 ForEach(Array(weekdayLabels.enumerated()), id: \.offset) { i, wd in
                     Text(wd).font(.sans(11, 600)).tracking(0.44)
-                        .foregroundStyle(i == todayIndex ? GY.crailDeep : GY.ink4)
+                        .foregroundStyle(i == todayIndex ? palette.deep : GY.ink4)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -102,11 +112,11 @@ struct SessionLiftHistoryCard: View {
     @ViewBuilder
     private func cell(_ d: LiftHistoryDay, dia: CGFloat, numSize: CGFloat) -> some View {
         let base = ZStack {
-            Circle().fill(d.mark.fill).frame(width: dia, height: dia)
+            Circle().fill(d.mark.fill(palette)).frame(width: dia, height: dia)
             Circle().strokeBorder(d.mark.ringColor, lineWidth: d.mark.ringWidth)
                 .frame(width: dia, height: dia)
             Text("\(d.num)").font(.mono(numSize, d.mark.ran ? 600 : 500))
-                .foregroundStyle(d.mark.numberColor)
+                .foregroundStyle(d.mark.numberColor(palette))
         }
         // 첫 세트 커밋 — 오늘 원이 링에서 채움으로. 헤더 GymRing 이 같은 커밋에 거는 커브와 맞춘다.
         .animation(reduceMotion ? nil : .linear(duration: 0.2), value: d.mark)
@@ -142,14 +152,15 @@ struct LiftHistoryDay: Equatable {
         case empty        // 미기록 · 미래
 
         var ran: Bool { self == .ranPast || self == .ranToday }
-        var fill: Color {
-            switch self { case .ranPast: GY.crailTint; case .ranToday: GY.crailBase; default: .clear }
+        func fill(_ p: SessionLiftHistoryCard.Palette) -> Color {
+            switch self { case .ranPast: p.tint; case .ranToday: p.base; default: .clear }
         }
+        // 오늘 미기록은 종목 종류와 무관한 중립 상태라 두 계열이 같다 (홈 `weekRow` 와 같은 처리).
         var ringColor: Color { self == .todayEmpty ? GY.ink4 : .clear }
         var ringWidth: CGFloat { self == .todayEmpty ? 1.5 : 0 }
-        var numberColor: Color {
+        func numberColor(_ p: SessionLiftHistoryCard.Palette) -> Color {
             switch self {
-            case .ranPast:    GY.crailDeep
+            case .ranPast:    p.deep
             case .ranToday:   .white
             case .todayEmpty: GY.ink1
             case .empty:      GY.ink4
@@ -173,9 +184,26 @@ extension SessionLiftHistoryCard {
                      thisCells: [GymAppModel.HomeWeekCell],
                      prevCells: [GymAppModel.HomeWeekCell],
                      refToday: Date) -> [LiftHistoryDay] {
+        days(thisFilled: week.days.map { $0.style == .filled }, prevRan: week.prevWeekRan,
+             thisCells: thisCells, prevCells: prevCells, refToday: refToday)
+    }
+
+    /// 유산소 — `CardioDay.Style` 은 `LiftDay.Style` 과 같은 네 케이스라 판정이 같다.
+    static func days(cardioWeek: GymSessionLogic.CardioMetricWeek,
+                     thisCells: [GymAppModel.HomeWeekCell],
+                     prevCells: [GymAppModel.HomeWeekCell],
+                     refToday: Date) -> [LiftHistoryDay] {
+        days(thisFilled: cardioWeek.days.map { $0.style == .filled }, prevRan: cardioWeek.prevWeekRan,
+             thisCells: thisCells, prevCells: prevCells, refToday: refToday)
+    }
+
+    private static func days(thisFilled: [Bool], prevRan: [Bool],
+                             thisCells: [GymAppModel.HomeWeekCell],
+                             prevCells: [GymAppModel.HomeWeekCell],
+                             refToday: Date) -> [LiftHistoryDay] {
         let cal = GymAppModel.kst
-        guard thisCells.count == 7, prevCells.count == 7, week.days.count == 7,
-              week.prevWeekRan.count == 7,
+        guard thisCells.count == 7, prevCells.count == 7,
+              thisFilled.count == 7, prevRan.count == 7,
               let monday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear],
                                                              from: refToday))
         else { return [] }
@@ -185,12 +213,12 @@ extension SessionLiftHistoryCard {
         let todayIdx = thisCells.firstIndex(where: \.isToday) ?? 6
         var out: [LiftHistoryDay] = []
         for i in 0..<7 {   // 지난주 — 전부 과거라 미래 칸이 없다
-            let ran = week.prevWeekRan[i]
+            let ran = prevRan[i]
             out.append(LiftHistoryDay(iso: iso(i - 7), num: prevCells[i].num,
                                       mark: ran ? .ranPast : .empty, tappable: ran, isFuture: false))
         }
         for i in 0..<7 {
-            let filled = week.days[i].style == .filled
+            let filled = thisFilled[i]
             let mark: LiftHistoryDay.Mark = i > todayIdx ? .empty
                 : (i == todayIdx ? (filled ? .ranToday : .todayEmpty) : (filled ? .ranPast : .empty))
             out.append(LiftHistoryDay(iso: iso(i), num: thisCells[i].num, mark: mark,
