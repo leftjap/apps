@@ -126,8 +126,14 @@ public enum GymHomeLogic {
     /// 월~일 7칸 × (이번 주 / 지난주). nil = 그날 유산소 없음(빈 원).
     /// 값은 km — 0 은 "뛰었지만 거리를 안 적은 날"이고 nil 과 구별된다 (§14).
     public struct CardioWeek: Equatable, Sendable {
-        public let thisKm: [Double?]    // 7칸, 월→일
+        public let thisKm: [Double?]    // 7칸, 월→일 — 이번 주 실기록 (합계·일수의 출처)
         public let prevKm: [Double?]    // 지난주 같은 요일
+        /// 화면에 실제로 그릴 값과, 그것이 참조인지 여부. 세션 트레드밀 카드(§5 시안 7a)와
+        /// 같은 규칙이다 — 과거는 이번 주 기록만, 오늘은 없으면 직전 기록, 미래는 지난주 같은 요일.
+        /// 홈이 과거 요일에도 지난주 값을 얹던 탓에 "이번 주 1일" 인데 원 네 개에 숫자가 뜨고,
+        /// 오늘 칸 참조도 두 화면이 서로 달랐다 (실기기 화면 대조 2026-09-17).
+        public let cellKm: [Double?]
+        public let cellIsRef: [Bool]
         public let thisTotalKm: Double
         public let thisDays: Int
         public let prevTotalKm: Double
@@ -164,7 +170,18 @@ public enum GymHomeLogic {
         func sum(_ xs: [Double?]) -> Double {
             (xs.compactMap { $0 }.reduce(0, +) * 10).rounded() / 10   // 부동소수 누적 오차 제거
         }
-        return CardioWeek(thisKm: this, prevKm: prev,
+        // 오늘 칸 참조값 — 가장 최근에 유산소를 한 날의 km (오늘 이전). 세션 카드의 직전 기록과 같다.
+        let todayISO = fmt.string(from: cal.date(byAdding: .day, value: todayIdx, to: monday) ?? now)
+        let prevRunKm = byDay.filter { $0.key < todayISO }.max { $0.key < $1.key }?.value.km
+        var cells: [Double?] = [], isRef: [Bool] = []
+        for i in 0..<7 {
+            if i < todayIdx { cells.append(this[i]); isRef.append(false) }          // 과거 — 이번 주만
+            else if i == todayIdx {
+                if let v = this[i] { cells.append(v); isRef.append(false) }         // 오늘 기록 있음
+                else { cells.append(prevRunKm); isRef.append(prevRunKm != nil) }    // 없으면 직전 기록
+            } else { cells.append(prev[i]); isRef.append(prev[i] != nil) }          // 미래 — 지난주 같은 요일
+        }
+        return CardioWeek(thisKm: this, prevKm: prev, cellKm: cells, cellIsRef: isRef,
                           thisTotalKm: sum(this),
                           thisDays: this.compactMap { $0 }.count,
                           prevTotalKm: sum(prev),

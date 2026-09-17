@@ -98,4 +98,41 @@ import Testing
                                                  exerciseId: "treadmill", metric: .distance, now: now)
         #expect(w.days[2].text == "1.5")
     }
+
+    // MARK: - 홈·세션 주간 원 규칙 통일 (실기기 화면 대조 2026-09-17)
+
+    // 같은 데이터를 두 화면이 다르게 그렸다. 홈은 **과거 요일에도 지난주 값**을 회색으로 얹어
+    // "이번 주 1일" 이라면서 원 네 개에 숫자가 떴고, 오늘 칸 참조도 홈은 지난주 같은 요일 ·
+    // 세션은 직전 기록으로 서로 달랐다. 세션(§5 시안 7a) 규칙으로 맞춘다:
+    //   과거 = 이번 주 기록만 · 오늘 = 없으면 직전 기록 참조 · 미래 = 지난주 같은 요일.
+    @Test func homeWeekMatchesSessionCardRule() {
+        // 오늘 2026-09-17(목). 이번 주 월 1.6 / 지난주 화 1.5 · 목 1.6 · 금 거리0
+        let now = GymWeightLogic.isoFmt.date(from: "2026-09-17")!
+        let w = GymHomeLogic.cardioWeek(
+            sessions: [run("2026-09-14", min: 15, km: 1.6),
+                       run("2026-09-08", min: 15, km: 1.5), run("2026-09-10", min: 16, km: 1.6),
+                       run("2026-09-11", min: 14, km: nil)],
+            custom: [], now: now)
+        // 월 = 이번 주 기록 / 화 = 지난주에 뛰었어도 **이번 주엔 안 뛴 과거 요일이라 빈 칸**
+        #expect(w.cellKm[0] == 1.6)
+        #expect(w.cellKm[1] == nil, "과거 요일에 지난주 값을 얹지 않는다")
+        #expect(w.cellKm[2] == nil)
+        // 목(오늘) = 기록 없음 → 직전 기록(월 1.6) 참조
+        #expect(w.cellKm[3] == 1.6 && w.cellIsRef[3], "오늘은 직전 기록을 참조로")
+        // 금(미래) = 지난주 금 참조. 거리 미기록이라 0
+        #expect(w.cellKm[4] == 0 && w.cellIsRef[4])
+        #expect(w.cellKm[5] == nil && w.cellKm[6] == nil)
+        // 합계·일수는 이번 주 실기록만 — 참조는 세지 않는다
+        #expect(w.thisTotalKm == 1.6 && w.thisDays == 1)
+    }
+
+    // 오늘 기록이 있으면 참조가 아니라 실값이다.
+    @Test func homeTodayWithRecordIsNotReference() {
+        let now = GymWeightLogic.isoFmt.date(from: "2026-09-17")!
+        let w = GymHomeLogic.cardioWeek(
+            sessions: [run("2026-09-17", min: 12, km: 1.2), run("2026-09-14", min: 15, km: 1.6)],
+            custom: [], now: now)
+        #expect(w.cellKm[3] == 1.2 && !w.cellIsRef[3])
+        #expect(w.thisDays == 2 && w.thisTotalKm == 2.8)
+    }
 }

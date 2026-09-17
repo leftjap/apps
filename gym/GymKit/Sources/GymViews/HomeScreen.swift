@@ -494,7 +494,7 @@ public struct HomeScreenView: View {
             HStack(spacing: 0) {
                 ForEach(0..<7, id: \.self) { i in
                     if i > 0 { Spacer(minLength: 0) }
-                    cardioDay(label: labels[i], this: cw.thisKm[i], prev: cw.prevKm[i],
+                    cardioDay(label: labels[i], km: cw.cellKm[i], isRef: cw.cellIsRef[i],
                               isToday: i == cw.todayIndex)
                 }
             }
@@ -533,9 +533,10 @@ public struct HomeScreenView: View {
 
     // 네 케이스 모두 원 30×30 · 숫자 13 고정. 크기로 구분하지 않는다 (§8).
     /// 원 안 숫자는 km (사용자 2026-09-17). 0 은 "뛰었지만 거리를 안 적은 날"이고 nil(안 뛴 날)과
-    /// 구별된다 — 분에서 쓰던 규칙 그대로 값 0 을 그대로 보여준다 (사용자 확정 2026-08-17).
-    func cardioDay(label: String, this: Double?, prev: Double?, isToday: Bool) -> some View {
-        let ran = this != nil
+    /// 구별돼 "—" 로 뜬다. `isRef` 는 이번 주 실기록이 아니라 참조(오늘=직전 기록, 미래=지난주
+    /// 같은 요일)라는 뜻 — 채우지 않고 회색 숫자만 둔다. 세션 트레드밀 카드와 같은 규칙이다.
+    func cardioDay(label: String, km: Double?, isRef: Bool, isToday: Bool) -> some View {
+        let ran = km != nil && !isRef
         return VStack(spacing: 5) {
             ZStack {
                 if ran {
@@ -543,10 +544,9 @@ public struct HomeScreenView: View {
                 } else {
                     Circle().strokeBorder(GY.ring, lineWidth: 1.5).frame(width: 30, height: 30)
                 }
-                if let t = GymHomeLogic.cardioCellText(this) {
-                    Text(t).font(.mono(13, isToday ? 700 : 600)).foregroundStyle(.white)
-                } else if let t = GymHomeLogic.cardioCellText(prev) {
-                    Text(t).font(.mono(13, 600)).foregroundStyle(GY.ink3)
+                if let t = GymHomeLogic.cardioCellText(km) {
+                    Text(t).font(.mono(13, isToday ? 700 : 600))
+                        .foregroundStyle(isRef ? GY.ink3 : .white)
                 }
             }
             .frame(width: 30, height: 30)
