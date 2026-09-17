@@ -37,6 +37,7 @@ extension GymSessionLogic {
         public let unit: String      // kg / 회
         public let dayCount: Int     // 이번 주 오늘까지 이 종목을 한 날 수
         public let prevDayCount: Int // 지난주 같은 종목을 한 날 수 (한 주 전체)
+        public let prevWeekRan: [Bool]   // 지난주 월~일, 이 종목 기록 유무 (7)
     }
 
     static let liftTotalFmt: NumberFormatter = {
@@ -145,9 +146,11 @@ extension GymSessionLogic {
             guard let v else { continue }
             sum += v; count += 1
         }
+        // 지난주 행(히스토리 카드) — 이미 구한 lastWeek 을 요일로 편다. 새 조회는 하지 않는다.
+        let prevRan = (0..<7).map { lastWeek[iso($0 - 7)] != nil }
         return LiftMetricWeek(days: days,
                               total: liftTotalFmt.string(from: NSNumber(value: sum)) ?? "0",
                               unit: isReps ? "회" : "kg", dayCount: count,
-                              prevDayCount: lastWeek.count)
+                              prevDayCount: lastWeek.count, prevWeekRan: prevRan)
     }
 }

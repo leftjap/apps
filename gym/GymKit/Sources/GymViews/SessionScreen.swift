@@ -190,6 +190,7 @@ public struct SessionScreenView: View {
     // 히어로 수평 스왑 (§5.3) — 커밋 시 옛 값 고스트 OUT + 새 값 IN + 스와이프 큐
     @State private var heroSwapMoment = 0
     @State private var exSwapMoment = 0        // 종목 전환 1회성 — 이름 스왑 + 컨텍스트 딥 (2026-07-23)
+    @State private var detailISO: String? = nil   // 히스토리 카드 날짜 탭 → 상세 바텀시트 (홈 §5-2 와 같은 시트)
     @State private var heroGhost: (top: String, bottom: String, kind: GymCardKind, fromDrag: Bool)? = nil
     @State private var heroGhostDragX: CGFloat = 0   // 드래그 커밋 시 고스트 시작 위치
     @State private var cueVisible = false
@@ -203,16 +204,23 @@ public struct SessionScreenView: View {
         case end             // 종료 버튼
     }
 
+    /// 작은 화면(SE 375×667)에서는 히스토리 카드를 숨긴다 — 홈 §12 와 같은 임계를 쓴다.
+    /// 홈처럼 ScrollView 로 감싸는 길은 막혀 있다: 세션은 스크롤이 히어로 드래그 제스처와 경쟁한다.
+    /// gymshot(macOS)은 `screenHeight` 가 812 고정이라 이 게이트가 걸리지 않는다 — 스냅샷은
+    /// `showHistoryCard: false` 를 직접 넘겨 그림만 대조하고, 발동 자체는 시뮬 실앱에서 본다.
+    static var isCompactScreen: Bool {
+        HomeScreenView.screenHeight < HomeScreenView.compactScreenHeight
+    }
     let initialCardioMetric: GymCardioMetric   // 스냅샷 검증 훅 (실앱은 항상 .distance)
-    let weekVariant: ExerciseWeekStrip.Variant  // 주간 스트립 규격 — 시안 비교용 렌더 훅
+    let showHistoryCard: Bool   // 히스토리 카드 노출 — 시안 대조용 렌더 훅 (실앱은 항상 true)
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
                 initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .distance,
-                weekVariant: ExerciseWeekStrip.Variant = .compact) {
+                showHistoryCard: Bool = true) {
         self.model = model; self.onHome = onHome
         self.initialCardioMetric = initialCardioMetric
-        self.weekVariant = weekVariant
+        self.showHistoryCard = showHistoryCard
         _prPopVisible = State(initialValue: initialPRPop)
         _addexOpen = State(initialValue: initialAddex)
         _heroDragX = State(initialValue: initialDragX)
@@ -240,12 +248,12 @@ public struct SessionScreenView: View {
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
                 initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .distance,
-                weekVariant: ExerciseWeekStrip.Variant = .compact) {
+                showHistoryCard: Bool = true) {
         self.init(model: GymAppModel(), onHome: onHome,
                   initialKeypadField: initialKeypadField, initialPRPop: initialPRPop,
                   initialAddex: initialAddex, initialAction: initialAction,
                   initialDragX: initialDragX, initialCardioMetric: initialCardioMetric,
-                  weekVariant: weekVariant)
+                  showHistoryCard: showHistoryCard)
     }
 
     static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
@@ -299,7 +307,9 @@ public struct SessionScreenView: View {
         }
         // 세션 화면을 벗어나면 예약된 안착 진동을 버린다 — 홈에서 울리는 유령 진동 차단 (감사 #10)
         .onDisappear { model.cancelPendingSwitchHaptics() }
-        // 오버레이 z 순서 — 운동추가(69) < 키패드(79) < 액션시트(90), mock z-index 정합.
+        // 오버레이 z 순서 — 날짜상세 < 운동추가(69) < 키패드(79) < 액션시트(90), mock z-index 정합.
+        // 나중에 붙인 overlay 가 위로 쌓이므로 날짜 상세를 맨 먼저 건다.
+        .overlay { dayDetailOverlay }
         .overlay { addexOverlay }
         .overlay { keypadOverlay }
         .overlay { actionOverlay }
@@ -385,26 +395,32 @@ public struct SessionScreenView: View {
                           recordAmt: Int((model.sessionDoneVolume - prevTotal).rounded()),
                           pulseMoment: headerPulseMoment, exSwapMoment: exSwapMoment)
             let revealP = GymSwipeMath.revealProgress(Double(heroDragX))
-            if kind != .cardio && weekVariant != .hidden {
-                // 이 종목 주간 스트립 (시안 2026-09-17) — 유산소 카드의 주간 모듈과 같은 자리·형태.
-                ExerciseWeekStrip(
-                    week: GymSessionLogic.liftMetricWeek(
-                        history: model.history, todaySets: sets, exerciseId: exId,
-                        kind: kind, now: model.referenceToday),
-                    variant: weekVariant, barLegend: kind == .weight)
-                    .padding(.horizontal, 22).padding(.top, 10).padding(.bottom, 6)
+            // 이 종목 히스토리 카드 (작업지시서 2026-09-17). 카드가 자기 표면을 가지므로
+            // 세트바와 사이에 구분선을 두지 않는다. 수평 24 는 홈 카드·세트바와 같은 인셋.
+            // SE(375×667)는 812 보다 145pt 짧아 카드를 넣으면 히어로가 겹친다 — 숨긴다 (§9).
+            if kind != .cardio && showHistoryCard && !Self.isCompactScreen {
+                let week = GymSessionLogic.liftMetricWeek(
+                    history: model.history, todaySets: sets, exerciseId: exId,
+                    kind: kind, now: model.referenceToday)
+                SessionLiftHistoryCard(
+                    days: SessionLiftHistoryCard.days(
+                        week: week,
+                        thisCells: model.weekCells(around: model.referenceToday),
+                        prevCells: model.weekCells(around: model.referenceToday, weekOffset: -1),
+                        refToday: model.referenceToday),
+                    weekdayLabels: week.days.map(\.label),
+                    todayIndex: week.days.firstIndex(where: \.isToday),
+                    prevDayCount: week.prevDayCount, thisDayCount: week.dayCount,
+                    exName: model.currentExerciseName,
+                    onTapDay: { detailISO = $0 })
+                    .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 8)
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
-                // 원(요일 7개)과 세트 막대가 맞붙으면 세로로 대응하는 표처럼 읽힌다 — 둘은 무관하므로
-                // 1pt 선으로만 끊는다 (여백으로 끊으면 세로 예산이 다시 모자란다).
-                if !slots.isEmpty {
-                    Rectangle().fill(GY.lineSoft).frame(height: 1).padding(.horizontal, 24)
-                }
             }
             if !slots.isEmpty && kind != .cardio {
                 PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight,
                                dragP: CGFloat(revealP),
                                onLongPressSlot: { i in actionTarget = .setRow(i) },
-                               showHeader: weekVariant == .hidden)
+                               showHeader: false)
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             if kind != .cardio { Spacer() }
@@ -712,6 +728,23 @@ public struct SessionScreenView: View {
     }
 
     // MARK: - 운동 추가 시트 (§6-2)
+
+    // 히스토리 카드 날짜 탭 → 그 날 전체 요약. 홈·통계와 같은 시트를 쓰므로 이 종목만 거르지 않는다
+    // (종목별 필터 시트를 따로 만들지 않는다 — 작업지시서 §6 의 의도된 선택).
+    var dayDetailOverlay: some View {
+        ZStack(alignment: .bottom) {
+            if let iso = detailISO {
+                Color(oklch: 0.22, 0.008, 60).opacity(0.42)
+                    .contentShape(Rectangle())
+                    .onTapGesture { detailISO = nil }
+                    .transition(.opacity)
+                DayDetailSheet(iso: iso, entry: model.dayEntry(iso),
+                               onDelete: { detailISO = nil }, onCancel: { detailISO = nil })
+                    .transition(.move(edge: .bottom))
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: detailISO != nil)
+    }
 
     var addexOverlay: some View {
         ZStack(alignment: .bottom) {

@@ -380,20 +380,20 @@ public enum GymScreens {
         case "cardio-7a-max": return AnyView(SessionScreenView(model: demoCardio7aModel()).frame(width: 430, height: 932))
         case "cardio-7a-kcal": return AnyView(SessionScreenView(model: demoCardio7aModel(), initialCardioMetric: .calories).frame(width: 375, height: 812))
         case "session-bodyweight": return AnyView(SessionScreenView(model: demoBodyweightModel()).frame(width: 390, height: 844))
-        // 근력 주간 스트립 시안 3규격 (2026-09-17) — 375×812(11 Pro) 기준으로 비교한다.
-        case "week-full":    return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .full).frame(width: 375, height: 812))
-        case "week-compact": return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .compact).frame(width: 375, height: 812))
-        case "week-tight":   return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .tight).frame(width: 375, height: 812))
-        case "week-body":    return AnyView(SessionScreenView(model: demoLiftWeekBodyModel(), weekVariant: .compact).frame(width: 375, height: 812))
-        case "week-none":    return AnyView(SessionScreenView(model: demoLiftWeekModel()).frame(width: 375, height: 812))
-        case "week-sparse":  return AnyView(SessionScreenView(model: demoLiftWeekSparseModel(), weekVariant: .compact).frame(width: 375, height: 812))
-        case "week-se":      return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .compact).frame(width: 375, height: 667))
-        case "week-se-base": return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .hidden).frame(width: 375, height: 667))
-        case "week-base":    return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .hidden).frame(width: 375, height: 812))
-        case "week-max":     return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .compact).frame(width: 430, height: 932))
-        case "week-8sets":   return AnyView(SessionScreenView(model: demoRecordModel(), weekVariant: .compact).frame(width: 375, height: 812))
-        case "week-8sets-base": return AnyView(SessionScreenView(model: demoRecordModel(), weekVariant: .hidden).frame(width: 375, height: 812))
-        case "week-cardio":  return AnyView(SessionScreenView(model: demoCardio7aModel(), weekVariant: .compact).frame(width: 375, height: 812))
+        // 근력 히스토리 카드 (작업지시서 2026-09-17) — 375×812(11 Pro) 기준으로 비교한다.
+        // `-base` 는 카드만 뺀 대조군이다. gymshot 은 safe area 가 없어 히어로 여백이 실기기보다
+        // 위아래 각 28pt 쯤 후하게 나온다 — 절대값은 시뮬 실앱으로 재고 여기선 상대 비교만 한다.
+        case "week-compact": return AnyView(SessionScreenView(model: demoLiftWeekModel(), showHistoryCard: true).frame(width: 375, height: 812))
+        case "week-base":    return AnyView(SessionScreenView(model: demoLiftWeekModel(), showHistoryCard: false).frame(width: 375, height: 812))
+        case "week-body":    return AnyView(SessionScreenView(model: demoLiftWeekBodyModel(), showHistoryCard: true).frame(width: 375, height: 812))
+        case "week-sparse":  return AnyView(SessionScreenView(model: demoLiftWeekSparseModel(), showHistoryCard: true).frame(width: 375, height: 812))
+        case "week-max":     return AnyView(SessionScreenView(model: demoLiftWeekModel(), showHistoryCard: true).frame(width: 430, height: 932))
+        case "week-8sets":   return AnyView(SessionScreenView(model: demoRecordModel(), showHistoryCard: true).frame(width: 375, height: 812))
+        case "week-8sets-base": return AnyView(SessionScreenView(model: demoRecordModel(), showHistoryCard: false).frame(width: 375, height: 812))
+        // SE(375×667) — 게이트가 걸린 그림. macOS 렌더러에서는 `isCompactScreen` 이 항상 false 라
+        // 게이트를 태울 수 없어 false 를 직접 넘긴다 (홈 `home-se` 가 compact 를 직접 넘기는 것과 같다).
+        case "week-se":      return AnyView(SessionScreenView(model: demoLiftWeekModel(), showHistoryCard: false).frame(width: 375, height: 667))
+        case "week-cardio":  return AnyView(SessionScreenView(model: demoCardio7aModel()).frame(width: 375, height: 812))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
         // 유산소 행 표기 대조 — 볼륨 열이 "1.5km · 15분" (거리 먼저, 2026-09-17).
         case "summary-cardio": return AnyView(SummaryScreenView(session: demoCompletedCardioSession(), sessionNo: 43, totalCount: 43).frame(width: 390, height: 844))

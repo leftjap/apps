@@ -149,4 +149,22 @@ import Testing
         let w = week(hist: hist)
         #expect(w.prevDayCount == 3)
     }
+
+    // MARK: - 지난주 행 (히스토리 카드 2026-09-17)
+
+    // 카드는 지난주를 한 행으로 그린다. 요일별 기록 유무가 필요한데 `prevDayCount` 는 수뿐이라
+    // 어느 요일인지 모른다. 같은 `lastWeek` 딕셔너리에서 뽑으므로 둘이 어긋날 수 없다.
+    @Test func prevWeekRanMarksSameDaysAsPrevDayCount() {
+        let w = week()
+        #expect(w.prevWeekRan == [false, true, false, false, true, false, false])   // 화·금
+        #expect(w.prevWeekRan.filter { $0 }.count == w.prevDayCount)
+    }
+
+    // 다른 종목 기록은 지난주 행에도 섞이지 않는다.
+    @Test func prevWeekRanIgnoresOtherExercises() {
+        var hist = history
+        hist.append(lift("2026-09-09", "bench_press", [(60, 10)]))   // 지난주 수 · 다른 종목
+        let w = week(hist: hist)
+        #expect(w.prevWeekRan[2] == false)
+    }
 }

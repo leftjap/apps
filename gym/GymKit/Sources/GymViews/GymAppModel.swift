@@ -550,9 +550,11 @@ public final class GymAppModel: ObservableObject {
         #endif
     }
 
-    // 검증 훅(시뮬 전용) — 근력 주간 스트립 시안 검증 (2026-09-17).
-    // demo-session 은 history 가 비어 스트립이 오늘 한 칸만 차서 규격을 못 본다. 이번 주·지난주
+    // 검증 훅(시뮬 전용) — 근력 히스토리 카드 검증 (2026-09-17).
+    // demo-session 은 history 가 비어 카드가 오늘 한 칸만 차서 규격을 못 본다. 이번 주·지난주
     // 기록을 함께 심어 실제 밀도(실기기 실측 주 2~3회)로 띄운다.
+    // 오늘 세트는 전부 미완료로 둔다 — 오늘 원이 링(.todayEmpty)에서 시작해야 첫 커밋의
+    // 링→채움 전환(§7)과 "이번 주 1일→2일" 갱신을 한 번의 좌스와이프로 확인할 수 있다.
     public func loadWeekStripDemoForVerification() {
         #if targetEnvironment(simulator)
         let cal = GymAppModel.kst
@@ -577,8 +579,8 @@ public final class GymAppModel: ObservableObject {
         session = GymSession(id: "wk-today", date: Self.dayFmt.string(from: now),
                              startTime: Int64(now.timeIntervalSince1970 * 1000) - 22 * 60 * 1000,
                              blocks: [GymBlock(exerciseId: "lat_pulldown", sets: [
-                                 GymSet(weight: 45, reps: 11, done: true),
-                                 GymSet(weight: 45, reps: 10, done: true),
+                                 GymSet(weight: 45, reps: 11, preset: true),
+                                 GymSet(weight: 45, reps: 10, preset: true),
                                  GymSet(weight: 45, reps: 10, preset: true),
                                  GymSet(weight: 45, reps: 9, preset: true),
                                  GymSet(weight: 40, reps: 12, preset: true)])],
