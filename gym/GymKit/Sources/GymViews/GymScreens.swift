@@ -27,6 +27,19 @@ public enum GymScreens {
         return s
     }
 
+    // 유산소를 포함한 완료 세션 — 요약 화면의 유산소 행 표기를 대조한다.
+    static func demoCompletedCardioSession() -> GymSession {
+        var s = GymSession(id: "sum-cardio", date: "2026-09-16",
+            startTime: 1_758_000_000_000, endTime: 1_758_000_000_000 + 38 * 60000, blocks: [
+                GymBlock(exerciseId: "bench_press", sets: [
+                    GymSet(weight: 60, reps: 10, done: true), GymSet(weight: 65, reps: 10, done: true)]),
+                GymBlock(exerciseId: "treadmill", sets: [
+                    GymSet(done: true, duration: 900, distance: 1.5, calories: 73)]),
+            ], tags: ["chest", "cardio"], status: .completed)
+        s.durationMin = 38; s.totalCalories = 210
+        return s
+    }
+
     // 데모 모델 — 기준일을 시드 주(2026-05-06)로 고정해 홈/통계가 채워지게.
     @MainActor static func demoModel() -> GymAppModel {
         let m = GymAppModel()
@@ -350,6 +363,8 @@ public enum GymScreens {
         case "week-8sets-base": return AnyView(SessionScreenView(model: demoRecordModel(), weekVariant: .hidden).frame(width: 375, height: 812))
         case "week-cardio":  return AnyView(SessionScreenView(model: demoCardio7aModel(), weekVariant: .compact).frame(width: 375, height: 812))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
+        // 유산소 행 표기 대조 — 볼륨 열이 "1.5km · 15분" (거리 먼저, 2026-09-17).
+        case "summary-cardio": return AnyView(SummaryScreenView(session: demoCompletedCardioSession(), sessionNo: 43, totalCount: 43).frame(width: 390, height: 844))
         case "stats":        return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false).frame(width: 390, height: 844))
         case "stats-day":    return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false, initialDetailISO: "2026-05-05").frame(width: 390, height: 844))
         case "stats-day-confirm": return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false, initialDetailISO: "2026-05-05", initialDetailConfirm: true).frame(width: 390, height: 844))
