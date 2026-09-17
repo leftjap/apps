@@ -465,22 +465,26 @@ public struct HomeScreenView: View {
             .accessibilityIdentifier("home-balance-delta")
     }
 
+    /// km 표기 — 세션 유산소 카드(`GymCardioMetric.format`)와 같은 소수 1자리로 맞춘다.
+    /// 두 화면이 같은 값을 다르게 쓰면 어느 쪽이 맞는지 알 수 없다.
+    static func km(_ v: Double) -> String { String(format: "%.1f", v) }
+
     // MARK: - §8 유산소 카드 (이번 변경의 핵심)
 
     // 채움 = 이번 주, 테두리 + 회색 숫자 = 지난주 같은 요일. 별도 설명 텍스트 없음 (§8·§13).
     // 원 크기는 30 고정 — 시간에 비례해 바꾸지 않는다. 아이콘도 넣지 않는다 (§13).
     func cardioCard(_ cw: GymHomeLogic.CardioWeek) -> some View {
         let labels = ["월", "화", "수", "목", "금", "토", "일"]
-        let chip = GymHomeLogic.cardioRenewChip(thisTotal: cw.thisTotal, prevTotal: cw.prevTotal)
+        let chip = GymHomeLogic.cardioRenewChip(thisTotal: cw.thisTotalKm, prevTotal: cw.prevTotalKm)
         return VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text("유산소").font(.sans(13.5, 600)).foregroundStyle(GY.ink1)
                 Text("이번 주").font(.sans(11.5, 500)).foregroundStyle(GY.ink4).padding(.leading, 7)
                 Spacer(minLength: 7)
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text("\(cw.thisTotal)").font(.mono(26, 700)).tracking(-0.78)
+                    Text(Self.km(cw.thisTotalKm)).font(.mono(26, 700)).tracking(-0.78)
                         .foregroundStyle(GY.ink1)
-                    Text("분").font(.sans(12, 500)).foregroundStyle(GY.ink4)
+                    Text("km").font(.sans(12, 500)).foregroundStyle(GY.ink4)
                     Rectangle().fill(GY.line).frame(width: 1, height: 12).padding(.horizontal, 7)
                     Text("\(cw.thisDays)").font(.mono(16, 700)).foregroundStyle(GY.ink2)
                     Text("일").font(.sans(12, 500)).foregroundStyle(GY.ink4)
@@ -490,13 +494,13 @@ public struct HomeScreenView: View {
             HStack(spacing: 0) {
                 ForEach(0..<7, id: \.self) { i in
                     if i > 0 { Spacer(minLength: 0) }
-                    cardioDay(label: labels[i], this: cw.thisMin[i], prev: cw.prevMin[i],
+                    cardioDay(label: labels[i], this: cw.thisKm[i], prev: cw.prevKm[i],
                               isToday: i == cw.todayIndex)
                 }
             }
             .padding(.top, 9)
             HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text("지난주 \(cw.prevTotal)분 · \(cw.prevDays)일")
+                Text("지난주 \(Self.km(cw.prevTotalKm))km · \(cw.prevDays)일")
                     .font(.sans(11.5, 500)).foregroundStyle(GY.ink3)
                 Spacer(minLength: 8)
                 if let chip {
@@ -528,7 +532,9 @@ public struct HomeScreenView: View {
     }
 
     // 네 케이스 모두 원 30×30 · 숫자 13 고정. 크기로 구분하지 않는다 (§8).
-    func cardioDay(label: String, this: Int?, prev: Int?, isToday: Bool) -> some View {
+    /// 원 안 숫자는 km (사용자 2026-09-17). 0 은 "뛰었지만 거리를 안 적은 날"이고 nil(안 뛴 날)과
+    /// 구별된다 — 분에서 쓰던 규칙 그대로 값 0 을 그대로 보여준다 (사용자 확정 2026-08-17).
+    func cardioDay(label: String, this: Double?, prev: Double?, isToday: Bool) -> some View {
         let ran = this != nil
         return VStack(spacing: 5) {
             ZStack {
@@ -537,10 +543,10 @@ public struct HomeScreenView: View {
                 } else {
                     Circle().strokeBorder(GY.ring, lineWidth: 1.5).frame(width: 30, height: 30)
                 }
-                if let v = this {
-                    Text("\(v)").font(.mono(13, isToday ? 700 : 600)).foregroundStyle(.white)
-                } else if let p = prev {
-                    Text("\(p)").font(.mono(13, 600)).foregroundStyle(GY.ink3)
+                if let t = GymHomeLogic.cardioCellText(this) {
+                    Text(t).font(.mono(13, isToday ? 700 : 600)).foregroundStyle(.white)
+                } else if let t = GymHomeLogic.cardioCellText(prev) {
+                    Text(t).font(.mono(13, 600)).foregroundStyle(GY.ink3)
                 }
             }
             .frame(width: 30, height: 30)

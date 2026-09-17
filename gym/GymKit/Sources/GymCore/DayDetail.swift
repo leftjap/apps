@@ -42,9 +42,11 @@ public enum GymDayDetailLogic {
             let name = GymExercises.resolveName(b.exerciseId, custom: custom)
             let first = doneSets[0]
             if let dur = first.duration {
+                // 거리 먼저 (사용자 2026-09-17). 거리를 안 적은 날은 시간만 — km 0 을 지어내지 않는다.
                 let distKm = first.distance ?? 0
-                let km = distKm > 0 ? " · \(num(distKm))km" : ""
-                ex.append(GymDayEntryEx(n: name, s: "\(Int((dur / 60).rounded()))분\(km)",
+                let mins = "\(Int((dur / 60).rounded()))분"
+                let label = distKm > 0 ? "\(num(distKm))km · \(mins)" : mins
+                ex.append(GymDayEntryEx(n: name, s: label,
                                         key: b.exerciseId, kind: "cardio", setCount: doneSets.count,
                                         vol: 0, durSec: dur, distKm: distKm))
                 continue

@@ -10,8 +10,13 @@ import GymCore
 public struct ExerciseWeekStrip: View {
     let week: GymSessionLogic.LiftMetricWeek
     var variant: Variant = .full
-    init(week: GymSessionLogic.LiftMetricWeek, variant: Variant = .full) {
-        self.week = week; self.variant = variant
+    /// 아래 세트바의 막대 높이 범례를 이 블록이 겸한다 — 세트바 헤더 줄을 스트립이 대신했기 때문.
+    /// 세트바 쪽에 오버레이로 띄웠더니 '▲최고' 슬롯이 없는 종목(PR 미기록)에서 막대가 블록
+    /// 최상단까지 올라와 글자와 겹쳤다 (시뮬 실앱 2026-09-17. gymshot 데모는 PR 이 있어 안 보였다).
+    var barLegend: Bool = false
+
+    init(week: GymSessionLogic.LiftMetricWeek, variant: Variant = .full, barLegend: Bool = false) {
+        self.week = week; self.variant = variant; self.barLegend = barLegend
     }
 
     // 세로 예산이 화면마다 달라 세 규격을 두고 렌더로 고른다.
@@ -116,6 +121,10 @@ public struct ExerciseWeekStrip: View {
             }
             Text("지난주 \(week.prevDayCount)")
                 .font(.sans(variant == .full ? 10.5 : 9.5, 500)).foregroundStyle(GY.ink4)
+            if barLegend {
+                Text("높이 = 볼륨").font(.sans(9, 500)).tracking(0.18).foregroundStyle(GY.ink4)
+                    .padding(.top, 1)
+            }
         }
         .fixedSize()
     }

@@ -82,21 +82,29 @@ public enum GymHomeLogic {
 
     // MARK: - 유산소 카드 (홈 재설계 2026-08-17 §8·§11 — 밸런스 차트의 유산소 행을 대체)
 
-    /// 날짜(ISO) → 그날 완료 유산소 총 분(날짜별 반올림). **"뛴 날" 의 단일 정의.**
+    /// 날짜(ISO) → 그날 완료 유산소 총 거리(km)와 총 분. **"뛴 날" 의 단일 정의.**
     /// 캘린더의 유산소 링과 카드의 채운 원이 반드시 같은 날짜 집합이어야 해서(§14) 둘 다 여기서 나온다.
-    /// duration 미입력(구버그 데이터)도 done 세트면 날짜 키가 남고 값 0 — 크기는 술어 하나로 통일한다.
-    public static func cardioDayMinutes(sessions: [GymSession],
-                                        custom: [GymCustomExercise]) -> [String: Int] {
-        var sec: [String: Double] = [:]
+    /// 값이 없어도(거리·시간 미입력) done 세트면 날짜 키가 남고 값 0 — 크기는 술어 하나로 통일한다
+    /// (사용자 확정 2026-08-17 "0 그대로 표시").
+    ///
+    /// 카드가 보여주는 값은 km 다 (사용자 2026-09-17 — 주 지표를 시간에서 거리로). 분도 함께
+    /// 돌려주는 이유는 요약·상세·칼로리 추정이 계속 시간을 쓰기 때문이고, 무엇보다 날짜 집합이
+    /// 두 곳에서 따로 계산되면 §14 가 깨지기 때문이다.
+    public static func cardioDays(sessions: [GymSession],
+                                  custom: [GymCustomExercise]) -> [String: (km: Double, min: Int)] {
+        var acc: [String: (km: Double, sec: Double)] = [:]
         for s in sessions {
             for b in s.blocks where b.type == "single" {
                 guard categorize(b.exerciseId, custom: custom) == "cardio" else { continue }
                 let done = b.sets.filter(\.done)
                 guard !done.isEmpty else { continue }
-                sec[s.date, default: 0] += done.reduce(0) { $0 + ($1.duration ?? 0) }
+                let cur = acc[s.date] ?? (0, 0)
+                acc[s.date] = (cur.km + done.reduce(0) { $0 + ($1.distance ?? 0) },
+                               cur.sec + done.reduce(0) { $0 + ($1.duration ?? 0) })
             }
         }
-        return sec.mapValues { Int(($0 / 60).rounded()) }
+        // km 는 소수 1자리로 맞춘다 — 카드 총합이 원 안 숫자의 합과 어긋나지 않게 (분에서 쓰던 규칙).
+        return acc.mapValues { (km: ($0.km * 10).rounded() / 10, min: Int(($0.sec / 60).rounded())) }
     }
 
     /// 근력(비유산소) 완료 세트가 있는 날 (§11 liftDays). 유산소만 한 날은 들어가지 않는다 —
@@ -116,14 +124,24 @@ public enum GymHomeLogic {
     }
 
     /// 월~일 7칸 × (이번 주 / 지난주). nil = 그날 유산소 없음(빈 원).
+    /// 값은 km — 0 은 "뛰었지만 거리를 안 적은 날"이고 nil 과 구별된다 (§14).
     public struct CardioWeek: Equatable, Sendable {
-        public let thisMin: [Int?]      // 7칸, 월→일
-        public let prevMin: [Int?]      // 지난주 같은 요일
-        public let thisTotal: Int
+        public let thisKm: [Double?]    // 7칸, 월→일
+        public let prevKm: [Double?]    // 지난주 같은 요일
+        public let thisTotalKm: Double
         public let thisDays: Int
-        public let prevTotal: Int
+        public let prevTotalKm: Double
         public let prevDays: Int
         public let todayIndex: Int      // 0=월 … 6=일
+    }
+
+    /// 카드 원 안 숫자. 뛰었는데 거리가 0km 일 수는 없으므로 **0 은 "거리를 안 적은 날"** 이고
+    /// "—" 로 쓴다 — 세션 트레드밀 카드가 같은 상황에 쓰는 표기와 맞춘다 (§5).
+    /// 날짜 자체는 여전히 '뛴 날' 이라 일수·링에는 그대로 들어간다 (§14).
+    /// nil = 그날 유산소 없음(빈 원).
+    public static func cardioCellText(_ km: Double?) -> String? {
+        guard let km else { return nil }
+        return km > 0 ? String(format: "%.1f", km) : "—"
     }
 
     /// 주 시작 = 월요일 고정 (§11). GymWeightLogic.kst 는 firstWeekday 미설정(일요일 시작)이라
@@ -134,18 +152,22 @@ public enum GymHomeLogic {
                                   now: Date) -> CardioWeek {
         let cal = GymWeightLogic.kst
         let fmt = GymWeightLogic.isoFmt
-        let byDay = cardioDayMinutes(sessions: sessions, custom: custom)
+        let byDay = cardioDays(sessions: sessions, custom: custom)
         let todayIdx = mondayIndex(cal.component(.weekday, from: now))
         let monday = cal.date(byAdding: .day, value: -todayIdx, to: now) ?? now
-        func slot(_ offset: Int) -> Int? {
-            cal.date(byAdding: .day, value: offset, to: monday).flatMap { byDay[fmt.string(from: $0)] }
+        func slot(_ offset: Int) -> Double? {
+            cal.date(byAdding: .day, value: offset, to: monday)
+                .flatMap { byDay[fmt.string(from: $0)]?.km }
         }
         let this = (0..<7).map { slot($0) }
         let prev = (0..<7).map { slot($0 - 7) }
-        return CardioWeek(thisMin: this, prevMin: prev,
-                          thisTotal: this.compactMap { $0 }.reduce(0, +),
+        func sum(_ xs: [Double?]) -> Double {
+            (xs.compactMap { $0 }.reduce(0, +) * 10).rounded() / 10   // 부동소수 누적 오차 제거
+        }
+        return CardioWeek(thisKm: this, prevKm: prev,
+                          thisTotalKm: sum(this),
                           thisDays: this.compactMap { $0 }.count,
-                          prevTotal: prev.compactMap { $0 }.reduce(0, +),
+                          prevTotalKm: sum(prev),
                           prevDays: prev.compactMap { $0 }.count,
                           todayIndex: todayIdx)
     }
@@ -153,16 +175,18 @@ public enum GymHomeLogic {
     /// 하단 갱신 칩 3갈래 (사용자 2026-08-17 — 동률은 갱신이 아니다).
     /// 부족 = warn(주황), 동률·초과 = pine. 유산소를 한 번도 안 했으면 nil(칩 숨김, §14).
     public struct CardioRenewChip: Equatable, Sendable {
-        public let value: String?    // "18분" / "+12분". 동률이면 없음
+        public let value: String?    // "1.8km" / "+0.8km". 동률이면 없음
         public let label: String
         public let isWarn: Bool
     }
-    public static func cardioRenewChip(thisTotal: Int, prevTotal: Int) -> CardioRenewChip? {
+    /// 거리는 소수라 비교도 소수 1자리로 맞춰서 한다 — 5.70000001 같은 잔차가 "동률"을 깨뜨리지 않게.
+    public static func cardioRenewChip(thisTotal: Double, prevTotal: Double) -> CardioRenewChip? {
         guard thisTotal > 0 || prevTotal > 0 else { return nil }
-        let short = prevTotal - thisTotal
-        if short > 0 { return CardioRenewChip(value: "\(short)분", label: "더 하면 갱신", isWarn: true) }
+        let short = ((prevTotal - thisTotal) * 10).rounded() / 10
+        func km(_ v: Double) -> String { String(format: "%.1fkm", v) }
+        if short > 0 { return CardioRenewChip(value: km(short), label: "더 하면 갱신", isWarn: true) }
         if short == 0 { return CardioRenewChip(value: nil, label: "지난주와 동률", isWarn: false) }
-        return CardioRenewChip(value: "+\(-short)분", label: "갱신", isWarn: false)
+        return CardioRenewChip(value: "+" + km(-short), label: "갱신", isWarn: false)
     }
 
     // MARK: - HomeC "다음" 미리보기 (home.js summarizeNextBlocks + formatBlockPreview 정합)
@@ -181,10 +205,11 @@ public enum GymHomeLogic {
         func g(_ v: Double) -> String { String(format: "%g", v) }
         switch equipment {
         case "cardio":
+            // 거리 먼저 (사용자 2026-09-17). 거리를 안 적었으면 시간만 — km 0 을 지어내지 않는다.
             let mins = Int(((first?.duration ?? 0) / 60).rounded())
             let dist = first?.distance ?? 0
             return GymNextBlockPreview(name: name,
-                                       summary: dist > 0 ? "\(mins)분 · \(g(dist))km" : "\(mins)분")
+                                       summary: dist > 0 ? "\(g(dist))km · \(mins)분" : "\(mins)분")
         case "bodyweight":
             return GymNextBlockPreview(name: name,
                                        summary: "맨몸 \(first?.reps ?? 0)회 · \(b.sets.count)세트")

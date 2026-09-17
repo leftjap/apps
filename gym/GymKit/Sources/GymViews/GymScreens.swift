@@ -241,7 +241,8 @@ public enum GymScreens {
     // 오늘 = 2026-08-11(화). 그 주 월요일이 10일이라 캘린더가 시안(1주차 3~9 / 2주차 10~16)과 일치.
     //   근력 3·5·7·8·10·11, 유산소 5·7·8·10·11 (§5 샘플)
     //   밸런스 이번주 하체8 어깨5 등6 가슴7 팔4 코어2 = 32, 지난주 6·4·5·5·3·4 = 27 → +5 (§7 표)
-    //   유산소 이번주 월30 화27 = 57분 2일, 지난주 수25 금28 토22 = 75분 3일 → "18분 더 하면 갱신" (§8)
+    //   유산소 이번주 월3.0 화2.7 = 5.7km 2일, 지난주 수2.5 금2.8 토2.2 = 7.5km 3일
+    //        → "1.8km 더 하면 갱신" (§8. 2026-09-17 주 지표가 분에서 km 로 바뀌었다 — 분은 그 10배)
     //   체중 72.4 (직전 72.6 → −0.2), 목표 69 → 3.4kg 남음 (§9)
     @MainActor static func demo20aModel(session: GymSession? = nil) -> GymAppModel {
         func done(_ w: Double, _ r: Int) -> GymSet { GymSet(weight: w, reps: r, done: true) }
@@ -252,10 +253,12 @@ public enum GymScreens {
                            GymBlock(exerciseId: ex, sets: (0..<n).map { _ in done(50, 10) })
                        }, tags: tags, status: .completed)
         }
+        // 거리는 분의 1/10 (30분 → 3.0km) — 홈 카드가 km 를 세므로 함께 넣는다 (2026-09-17).
         func run(_ id: String, _ date: String, _ min: Double) -> GymSession {
             GymSession(id: id, date: date,
                        blocks: [GymBlock(exerciseId: "treadmill",
-                                         sets: [GymSet(done: true, duration: min * 60)])],
+                                         sets: [GymSet(done: true, duration: min * 60,
+                                                       distance: (min * 10).rounded() / 100)])],
                        status: .completed)
         }
         let m = session.map { GymAppModel(snapshotSession: $0) } ?? demoEmptyModel()

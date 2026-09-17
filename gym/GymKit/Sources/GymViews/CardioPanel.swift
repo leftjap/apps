@@ -3,7 +3,8 @@ import GymCore
 
 // 유산소 카드 — 확정 시안 7a / 작업지시서 2026-08-18 (`specs/2026-08-18-cardio-input-design.md`).
 //
-// 스와이프는 **완료가 아니라 지표 로테이션**이다: 시간 → 거리 → 칼로리. 히어로 값·주간 캘린더
+// 스와이프는 **완료가 아니라 지표 로테이션**이다: 거리 → 시간 → 칼로리 (거리 우선, 2026-09-17).
+// 히어로 값·주간 캘린더
 // 숫자·주간 합계·단위가 모두 함께 전환된다. 완료/저장 버튼·스와이프 완료·롱프레스 확정은 없다 —
 // 보존은 cardioEntered 술어 + 종료/마감이 보장한다 (§7).
 //
@@ -16,11 +17,11 @@ struct CardioPanel: View {
     let exerciseId: String
     let now: Date
     let locked: Bool
-    var initialMetric: GymCardioMetric = .duration     // 스냅샷 검증 훅 (실앱은 항상 .duration)
+    var initialMetric: GymCardioMetric = .distance     // 스냅샷 검증 훅 (실앱은 항상 .distance)
     var onKeypad: ((GymCardioMetric) -> Void)? = nil
     var onSetValue: ((GymCardioMetric, Double) -> Void)? = nil
 
-    // 지표 선택은 카드 로컬 상태 — 저장하지 않는다. 진입 시 항상 시간 (§9).
+    // 지표 선택은 카드 로컬 상태 — 저장하지 않는다. 진입 시 항상 거리 (§9, 사용자 2026-09-17).
     @State private var picked: GymCardioMetric? = nil
     private var metric: GymCardioMetric { picked ?? initialMetric }
     @State private var dragDX: CGFloat = 0
@@ -261,13 +262,18 @@ struct CardioPanel: View {
     // MARK: - 표시값
 
     private func currentValue(_ m: GymCardioMetric) -> Double? { set.flatMap { m.value(in: $0) } }
+    /// 직전 러닝의 그 지표 값. 0 은 "안 적은 것" 으로 보고 고스트를 내밀지 않는다 —
+    /// durationSec 이 비옵셔널이라 미입력이 0 으로 들어오기 때문 (주간 원의 prevValue 와 같은 규칙).
     private func refValue(_ m: GymCardioMetric) -> Double? {
         guard let p = prevRun else { return nil }
+        let v: Double?
         switch m {
-        case .duration: return (p.durationSec / 60).rounded()
-        case .distance: return p.distanceKm
-        case .calories: return p.kcal
+        case .duration: v = (p.durationSec / 60).rounded()
+        case .distance: v = p.distanceKm
+        case .calories: v = p.kcal
         }
+        guard let v, v > 0 else { return nil }
+        return v
     }
     /// 히어로 숫자의 출처 — 라벨이 이걸 밝혀 고스트를 이번 기록으로 오인하는 것을 막는다.
     enum HeroSource { case entered, ghost, empty }

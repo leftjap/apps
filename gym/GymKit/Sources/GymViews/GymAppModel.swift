@@ -155,7 +155,7 @@ public final class GymAppModel: ObservableObject {
         public let label: String; public let num: Int
         public let worked: Bool; public let partName: String?
         public let isToday: Bool
-        // 유산소 링 (홈 재설계 2026-08-17 §5). GymHomeLogic.cardioDayMinutes 를 그대로 쓴다 —
+        // 유산소 링 (홈 재설계 2026-08-17 §5). GymHomeLogic.cardioDays 를 그대로 쓴다 —
         // 유산소 카드의 채운 원과 같은 날짜 집합이어야 한다(§14).
         public let cardio: Bool
     }
@@ -171,7 +171,7 @@ public final class GymAppModel: ObservableObject {
         let sessions = allWorkedSessions()
         // worked = 근력일. 유산소만 한 날은 crail 채움이 아니라 teal 링만 받는다 (§5 상태표).
         let worked = GymHomeLogic.liftDays(sessions: sessions, custom: custom)
-        let cardio = GymHomeLogic.cardioDayMinutes(sessions: sessions, custom: custom)
+        let cardio = GymHomeLogic.cardioDays(sessions: sessions, custom: custom)   // 링은 날짜 집합만 쓴다
         return (0..<7).compactMap { i in
             guard let d = cal.date(byAdding: .day, value: i, to: monday) else { return nil }
             let ds = Self.dayFmt.string(from: d)

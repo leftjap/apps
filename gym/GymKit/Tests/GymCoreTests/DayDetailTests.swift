@@ -36,7 +36,7 @@ import Testing
                 GymSet(done: true, duration: 1800, distance: 3.2)]),
         ], tags: ["cardio"], status: .completed)
         let e = GymDayDetailLogic.entry(for: s, custom: [])
-        #expect(e.ex[0].s == "30분 · 3.2km")
+        #expect(e.ex[0].s == "3.2km · 30분")
         // duration 미입력 cardio(구버그 데이터) → "—"
         let s2 = GymSession(id: "c2", date: "2026-05-06", blocks: [
             GymBlock(exerciseId: "treadmill", sets: [GymSet(done: true)]),

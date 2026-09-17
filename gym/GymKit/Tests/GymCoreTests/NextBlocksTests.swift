@@ -46,7 +46,7 @@ import Testing
             GymBlock(exerciseId: "pull_up", sets: [GymSet(reps: 8), GymSet(reps: 8), GymSet(reps: 8)]),
         ])
         let out = GymHomeLogic.nextBlockPreviews(session: s, custom: [], limit: 3)
-        #expect(out[0] == GymNextBlockPreview(name: "트레드밀", summary: "25분 · 3km"))
+        #expect(out[0] == GymNextBlockPreview(name: "트레드밀", summary: "3km · 25분"))
         #expect(out[1] == GymNextBlockPreview(name: "풀업", summary: "맨몸 8회 · 3세트"))
         // 거리 없는 유산소 → "N분"
         let s2 = session([

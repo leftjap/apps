@@ -8,24 +8,27 @@ import Foundation
 // 같은 주 경계(월~일 KST)를 쓰지만 집계 범위가 달라 수치가 서로 다를 수 있다 — 의도된 것이다(§5).
 
 /// 카드가 보여주는 세 지표. 스와이프로 이 순서를 돈다 (순환 없음).
+/// **거리가 첫 지표 = 카드 진입 화면** (사용자 2026-09-17 — 트레드밀의 주 지표를 시간에서 거리로).
+/// 시간은 두 번째로 내려갔을 뿐 없어지지 않는다: 스와이프 한 번이면 보이고, 칼로리 추정
+/// (MET × 시간)의 입력으로도 계속 쓰인다.
 public enum GymCardioMetric: String, CaseIterable, Sendable {
-    case duration, distance, calories
+    case distance, duration, calories
 
     public var label: String {
-        switch self { case .duration: "시간"; case .distance: "거리"; case .calories: "칼로리" }
+        switch self { case .distance: "거리"; case .duration: "시간"; case .calories: "칼로리" }
     }
     public var unit: String {
-        switch self { case .duration: "분"; case .distance: "km"; case .calories: "kcal" }
+        switch self { case .distance: "km"; case .duration: "분"; case .calories: "kcal" }
     }
     /// 빈 공간 탭 증분 (§4).
     /// 칼로리는 10 → **1** (사용자 2026-08-28): 트레드밀 콘솔이 46·88 처럼 1 단위로 표시해
     /// 10 단위로는 실제 값에 맞출 수가 없었다. 큰 폭 조정은 키패드가 담당한다.
     public var step: Double {
-        switch self { case .duration: 1; case .distance: 0.1; case .calories: 1 }
+        switch self { case .distance: 0.1; case .duration: 1; case .calories: 1 }
     }
     /// 키패드·저장 경로는 기존 필드를 그대로 쓴다 (§5-1 applyCardio 경유).
     public var field: GymSessionLogic.GymCardioField {
-        switch self { case .duration: .duration; case .distance: .distance; case .calories: .calories }
+        switch self { case .distance: .distance; case .duration: .duration; case .calories: .calories }
     }
     public var next: GymCardioMetric? {
         let a = Self.allCases
@@ -92,7 +95,7 @@ extension GymSessionLogic {
                 for set in b.sets where set.done {
                     // done 세트가 있으면 지표 값이 하나도 없어도 **날짜 키는 남긴다** — 그날이
                     // "뛴 날"이라는 사실 자체가 원의 채움을 정하고, 값 없는 지표만 "—" 가 된다.
-                    // 홈(cardioDayMinutes)이 duration nil 을 0 으로 세는 것과 일수를 맞추기 위함
+                    // 홈(cardioDays)이 값 nil 을 0 으로 세는 것과 일수를 맞추기 위함
                     // (실기기 2026-08-19: 홈 6일 vs 카드 4일).
                     if out[s.date] == nil { out[s.date] = [:] }
                     for m in GymCardioMetric.allCases {
@@ -128,13 +131,19 @@ extension GymSessionLogic {
                                        from: iso(-7), to: iso(-1))
         // 오늘 미입력 시 참조로 쓸 직전 러닝 — 히어로 고스트와 같은 원천이어야 한다 (§5·§8-2).
         let prevRun = recentCardioRuns(history: history, exerciseId: exerciseId, limit: 1).last
+        // 값이 0 인 지표는 "직전 기록 없음" 으로 본다. GymCardioRun.durationSec 은 비옵셔널이라
+        // 시간 미입력이 0 으로 들어오는데(distanceKm·kcal 은 nil), 그대로 쓰면 "직전 기록 0분" 이
+        // 떠서 설계가 막으려던 오인이 재현된다 (2026-09-10 §8-2, 거리 우선 전환 때 드러남).
         func prevValue(_ m: GymCardioMetric) -> Double? {
             guard let p = prevRun else { return nil }
+            let v: Double?
             switch m {
-            case .duration: return (p.durationSec / 60).rounded()
-            case .distance: return p.distanceKm
-            case .calories: return p.kcal
+            case .duration: v = (p.durationSec / 60).rounded()
+            case .distance: v = p.distanceKm
+            case .calories: v = p.kcal
             }
+            guard let v, v > 0 else { return nil }
+            return v
         }
         // 오늘 값 = **오늘 이미 완료된 기록 + 진행 중 세트**. 진행 중 세트만 보면 오늘 한 번 마치고
         // 새 세션을 켰을 때 오늘이 "미입력" 으로 떨어진다 (실기기 2026-08-19).

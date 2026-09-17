@@ -104,20 +104,21 @@ import Testing
     }
 }
 
-// 지표 메타 — 라벨·단위·증분 (§4 증분 시간 1분 / 거리 0.1km / 칼로리 1kcal).
+// 지표 메타 — 라벨·단위·증분 (§4 증분 거리 0.1km / 시간 1분 / 칼로리 1kcal).
 // 칼로리는 10 → 1 (사용자 2026-08-28 — 콘솔 값이 46·88 처럼 1 단위라 10 단위로는 맞출 수 없다).
+// 순서는 거리가 먼저다 (사용자 2026-09-17 — 트레드밀 주 지표를 시간에서 거리로).
 @Suite struct CardioMetricTests {
     @Test func labelsUnitsSteps() {
-        #expect(GymCardioMetric.allCases.map(\.label) == ["시간", "거리", "칼로리"])
-        #expect(GymCardioMetric.allCases.map(\.unit) == ["분", "km", "kcal"])
-        #expect(GymCardioMetric.allCases.map(\.step) == [1, 0.1, 1])
+        #expect(GymCardioMetric.allCases.map(\.label) == ["거리", "시간", "칼로리"])
+        #expect(GymCardioMetric.allCases.map(\.unit) == ["km", "분", "kcal"])
+        #expect(GymCardioMetric.allCases.map(\.step) == [0.1, 1, 1])
     }
     // 로테이션 — 순환 없음 (§4 끝단에서 더 못 간다).
     @Test func rotationDoesNotWrap() {
-        #expect(GymCardioMetric.duration.next == .distance)
+        #expect(GymCardioMetric.distance.next == .duration)
         #expect(GymCardioMetric.calories.next == nil)
-        #expect(GymCardioMetric.duration.prev == nil)
-        #expect(GymCardioMetric.calories.prev == .distance)
+        #expect(GymCardioMetric.distance.prev == nil)
+        #expect(GymCardioMetric.calories.prev == .duration)
     }
     // 빈 공간 탭 증감 — 현재값(없으면 직전값) ± step, 하한 0 (§5-1).
     @Test func stepValueClampsAtZero() {
@@ -132,21 +133,21 @@ import Testing
 // 제스처 — 끝단 저항 0.28 · 순환 없음 · 임계 커밋 (§4).
 @Suite struct CardioGestureTests {
     @Test func edgeResistanceOnlyAtEnds() {
-        #expect(abs(GymCardioGesture.translate(100, from: .duration) - 28) < 1e-9)   // 첫 지표에서 오른쪽
-        #expect(GymCardioGesture.translate(-100, from: .duration) == -100)  // 안쪽은 그대로
+        #expect(abs(GymCardioGesture.translate(100, from: .distance) - 28) < 1e-9)   // 첫 지표에서 오른쪽
+        #expect(GymCardioGesture.translate(-100, from: .distance) == -100)  // 안쪽은 그대로
         #expect(abs(GymCardioGesture.translate(-100, from: .calories) + 28) < 1e-9)  // 마지막에서 왼쪽
         #expect(GymCardioGesture.translate(100, from: .calories) == 100)
-        #expect(GymCardioGesture.translate(100, from: .distance) == 100)    // 가운데는 양쪽 다 자유
-        #expect(GymCardioGesture.translate(-100, from: .distance) == -100)
+        #expect(GymCardioGesture.translate(100, from: .duration) == 100)    // 가운데는 양쪽 다 자유
+        #expect(GymCardioGesture.translate(-100, from: .duration) == -100)
     }
     @Test func commitCrossesThresholdOnly() {
-        #expect(GymCardioGesture.commit(-56, from: .duration, threshold: 56) == .distance)
-        #expect(GymCardioGesture.commit(-55, from: .duration, threshold: 56) == .duration)
-        #expect(GymCardioGesture.commit(56, from: .distance, threshold: 56) == .duration)
-        #expect(GymCardioGesture.commit(55, from: .distance, threshold: 56) == .distance)
+        #expect(GymCardioGesture.commit(-56, from: .distance, threshold: 56) == .duration)
+        #expect(GymCardioGesture.commit(-55, from: .distance, threshold: 56) == .distance)
+        #expect(GymCardioGesture.commit(56, from: .duration, threshold: 56) == .distance)
+        #expect(GymCardioGesture.commit(55, from: .duration, threshold: 56) == .duration)
     }
     @Test func commitNeverWraps() {
-        #expect(GymCardioGesture.commit(999, from: .duration, threshold: 56) == .duration)
+        #expect(GymCardioGesture.commit(999, from: .distance, threshold: 56) == .distance)
         #expect(GymCardioGesture.commit(-999, from: .calories, threshold: 56) == .calories)
     }
 }
@@ -185,10 +186,12 @@ import Testing
 @Suite struct CardioWeekHomeParityTests {
     let today = GymWeightLogic.isoFmt.date(from: "2026-08-19")!   // 수요일
 
+    /// 거리는 분의 1/10 (8분 → 0.8km) — 홈·카드 정합 비교에 쓰려고 함께 넣는다.
     func run(_ date: String, min: Double?, ex: String = "treadmill") -> GymSession {
         GymSession(id: "r-\(date)-\(ex)", date: date,
                    blocks: [GymBlock(exerciseId: ex, sets: [
-                       GymSet(done: true, duration: min.map { $0 * 60 })])],
+                       GymSet(done: true, duration: min.map { $0 * 60 },
+                              distance: min.map { ($0 * 10).rounded() / 100 })])],
                    status: .completed)
     }
 
@@ -243,8 +246,9 @@ import Testing
         let home = GymHomeLogic.cardioWeek(sessions: sessions, custom: [], now: sunday)
         let card = GymSessionLogic.cardioMetricWeek(history: sessions, todaySets: [],
                                                     exerciseId: "treadmill",
-                                                    metric: .duration, now: sunday)
+                                                    metric: .distance, now: sunday)
         #expect(home.thisDays == card.dayCount, "홈 \(home.thisDays)일 vs 카드 \(card.dayCount)일")
-        #expect(String(home.thisTotal) == card.total, "홈 \(home.thisTotal)분 vs 카드 \(card.total)분")
+        #expect(String(format: "%.1f", home.thisTotalKm) == card.total,
+                "홈 \(home.thisTotalKm)km vs 카드 \(card.total)km")
     }
 }

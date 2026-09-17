@@ -64,11 +64,11 @@ public struct SummaryScreenView: View {
             let done = b.sets.filter(\.done)
             guard !done.isEmpty else { return nil }   // 완료 세트 없으면 표시 제외 (session-summary.js)
             let name = GymExercises.resolveName(b.exerciseId, custom: custom)
-            // 시간 기반(유산소) — 볼륨 열에 "25분 · 3km" (formatTimeBased 정합)
+            // 유산소 — 볼륨 열에 "3km · 25분" (거리 먼저, 사용자 2026-09-17)
             if let dur = done[0].duration {
-                let km = done[0].distance.map { " · \(String(format: "%g", $0))km" } ?? ""
-                return ExRow(name: name, sets: done.count,
-                             vol: "\(Int((dur / 60).rounded()))분\(km)",
+                let mins = "\(Int((dur / 60).rounded()))분"
+                let km = done[0].distance.map { "\(String(format: "%g", $0))km · " } ?? ""
+                return ExRow(name: name, sets: done.count, vol: km + mins,
                              pr: b.sets.contains { $0.pr })
             }
             let total = done.reduce(0.0) { $0 + $1.volume }

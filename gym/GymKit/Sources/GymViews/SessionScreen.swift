@@ -203,12 +203,12 @@ public struct SessionScreenView: View {
         case end             // 종료 버튼
     }
 
-    let initialCardioMetric: GymCardioMetric   // 스냅샷 검증 훅 (실앱은 항상 .duration)
+    let initialCardioMetric: GymCardioMetric   // 스냅샷 검증 훅 (실앱은 항상 .distance)
     let weekVariant: ExerciseWeekStrip.Variant  // 주간 스트립 규격 — 시안 비교용 렌더 훅
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration,
+                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .distance,
                 weekVariant: ExerciseWeekStrip.Variant = .compact) {
         self.model = model; self.onHome = onHome
         self.initialCardioMetric = initialCardioMetric
@@ -239,7 +239,7 @@ public struct SessionScreenView: View {
     public init(onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration,
+                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .distance,
                 weekVariant: ExerciseWeekStrip.Variant = .compact) {
         self.init(model: GymAppModel(), onHome: onHome,
                   initialKeypadField: initialKeypadField, initialPRPop: initialPRPop,
@@ -391,7 +391,7 @@ public struct SessionScreenView: View {
                     week: GymSessionLogic.liftMetricWeek(
                         history: model.history, todaySets: sets, exerciseId: exId,
                         kind: kind, now: model.referenceToday),
-                    variant: weekVariant)
+                    variant: weekVariant, barLegend: kind == .weight)
                     .padding(.horizontal, 22).padding(.top, 10).padding(.bottom, 6)
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
                 // 원(요일 7개)과 세트 막대가 맞붙으면 세로로 대응하는 표처럼 읽힌다 — 둘은 무관하므로
