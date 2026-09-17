@@ -362,4 +362,32 @@ final class GymCalendarAuditUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 1.0)
         shot("t99-settled")
     }
+
+    // 유산소 화면 — 근력 카드가 없고 유산소 패널만 있는 그림. 거리를 넣기 전/후를 함께 남긴다.
+    func testCaptureCardioScreens() {
+        func shot(_ app: XCUIApplication, _ name: String) {
+            let a = XCTAttachment(screenshot: app.screenshot())
+            a.name = name; a.lifetime = .keepAlways; add(a)
+        }
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--fake-signin", "--demo-cardio"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.otherElements["cardio-card"].waitForExistence(timeout: 5), "유산소 패널이 없다")
+        XCTAssertFalse(app.descendants(matching: .any)["lift-card-title"].exists,
+                       "유산소 화면에 근력 히스토리 카드가 떴다")
+        shot(app, "05-cardio-panel")
+
+        // 근력 종목을 같은 세션에 넣고 전환해 두 화면을 나란히 남긴다.
+        app.buttons["rail-add"].tap()
+        XCTAssertTrue(app.buttons["등"].waitForExistence(timeout: 5))
+        app.buttons["등"].tap()
+        XCTAssertTrue(app.buttons["addex-lat_pulldown"].waitForExistence(timeout: 5))
+        app.buttons["addex-lat_pulldown"].tap()
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        chip(app, "랫 풀다운").tap()
+        XCTAssertEqual(app.staticTexts["session-exname"].label, "랫 풀다운")
+        XCTAssertTrue(app.descendants(matching: .any)["lift-card-title"].waitForExistence(timeout: 5))
+        shot(app, "06-lift-card-same-session")
+    }
 }
