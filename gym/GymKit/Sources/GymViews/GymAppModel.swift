@@ -213,6 +213,30 @@ public final class GymAppModel: ObservableObject {
     public static func sessionIdsToDelete(_ sessions: [GymSession], on iso: String) -> [String] {
         sessions.filter { $0.date == iso }.map(\.id)
     }
+    /// 그 날짜의 **done 세트가 하나도 없는 완료 세션** id — 기록이 아닌데 통계 볼륨 히트맵에는
+    /// 그날을 운동일로 찍는다 (`CalendarHeat.dayVolumes` 는 완료 세션이면 볼륨 0 이라도 키를 남긴다).
+    /// 실기기에서 실제로 하나 생겨 정리 경로를 둔다 (2026-09-17).
+    public static func emptyCompletedSessionIds(_ sessions: [GymSession], on iso: String) -> [String] {
+        sessions.filter { s in
+            s.date == iso && s.status == .completed
+                && !s.blocks.contains { $0.sets.contains(where: \.done) }
+        }.map(\.id)
+    }
+
+    /// 위 조건에 맞는 세션만 지운다 — 기록이 하나라도 있으면 그 세션은 건드리지 않는다.
+    /// 서버에서도 지운다(안 하면 다음 sync 에 부활, `deleteSessions` 와 같은 이유).
+    public func purgeEmptyCompletedSessions(on iso: String) {
+        let all = LocalStore.loadSessions()
+        let ids = Set(Self.emptyCompletedSessionIds(all, on: iso))
+        guard !ids.isEmpty else { return }
+        LocalStore.saveSessions(all.filter { !ids.contains($0.id) })
+        history = LocalStore.loadSessions()
+        Task {
+            do { try await cloud.deleteSessions(ids: Array(ids)) }
+            catch { syncState.lastError = "빈 세션 삭제 동기화 실패: \(String(describing: error))" }
+        }
+    }
+
     public func deleteSessions(on iso: String) {
         let ids = Self.sessionIdsToDelete(LocalStore.loadSessions(), on: iso)
         LocalStore.saveSessions(LocalStore.loadSessions().filter { $0.date != iso })
