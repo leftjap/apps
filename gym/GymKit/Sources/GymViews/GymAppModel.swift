@@ -588,6 +588,36 @@ public final class GymAppModel: ObservableObject {
         #endif
     }
 
+    // 검증 훅(시뮬 전용) — 유산소 카드를 실앱에서 눈으로 보기 위한 트레드밀 세션 (2026-09-17).
+    // demoSession 은 근력 4종목뿐이라 유산소 화면이 뜨지 않는다. 거리 우선 전환을 실앱 화면으로
+    // 확인하려고 둔다 (gymshot 은 ImageRenderer 라 실앱과 레이아웃이 다를 수 있다).
+    public func loadCardioDemoForVerification() {
+        #if targetEnvironment(simulator)
+        let cal = GymAppModel.kst
+        let now = Date()
+        func iso(_ off: Int) -> String {
+            Self.dayFmt.string(from: cal.date(byAdding: .day, value: off, to: now) ?? now)
+        }
+        func run(_ off: Int, _ min: Double, _ km: Double, _ kcal: Double) -> GymSession {
+            GymSession(id: "cd\(off)", date: iso(off),
+                       startTime: Int64(now.timeIntervalSince1970 * 1000) + Int64(off) * 86_400_000,
+                       blocks: [GymBlock(exerciseId: "treadmill", sets: [
+                           GymSet(done: true, duration: min * 60, distance: km, calories: kcal)])],
+                       tags: ["cardio"], status: .completed)
+        }
+        let weekday = (cal.component(.weekday, from: now) + 5) % 7   // 월=0
+        history = [run(-weekday, 15, 1.5, 73), run(-weekday - 2, 20, 2.0, 96),
+                   run(-weekday - 5, 15, 1.4, 71)]
+        session = GymSession(id: "cardio-demo-live", date: Self.dayFmt.string(from: now),
+                             startTime: Int64(now.timeIntervalSince1970 * 1000) - 18 * 60 * 1000,
+                             blocks: [GymBlock(exerciseId: "treadmill",
+                                               sets: [GymSet(duration: 1080, distance: 1.8)])],
+                             tags: ["cardio"], status: .active)
+        selectedBlockIdx = nil
+        route = .session
+        #endif
+    }
+
     // 검증 훅(시뮬 전용) — 빈 활성 세션으로 세션 화면 시작 (§6-1 인라인 운동추가 시트 검증용).
     public func loadEmptySessionForVerification() {
         #if targetEnvironment(simulator)
