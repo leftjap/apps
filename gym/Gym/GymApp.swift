@@ -36,7 +36,6 @@ struct GymApp: App {
         if let i = args.firstIndex(of: "--auth-tokens"), args.count > i + 2 {
             model.pendingAuthTokens = (args[i + 1], args[i + 2])
         }
-        // 검증 훅(시뮬 전용) — 실 OAuth 없이 로그인 상태 UI 구동 (로그아웃 플로우 테스트).
         // 빈 완료 세션 정리 (2026-09-17). **시뮬 전용 블록 밖**이라 실기기에서도 돈다 —
         // done 세트가 하나라도 있는 세션은 건드리지 않으므로 `--reset` 과 달리 실데이터
         // 소실 위험이 없다. 인자를 주지 않으면 아무 일도 하지 않는다.
@@ -44,6 +43,7 @@ struct GymApp: App {
             model.purgeEmptyCompletedSessions(on: args[i + 1])
         }
         #if targetEnvironment(simulator)
+        // 검증 훅(시뮬 전용) — 실 OAuth 없이 로그인 상태 UI 구동 (로그아웃 플로우 테스트).
         if args.contains("--fake-signin") {
             model.debugForceSignedIn = true   // restoreCloud 가 syncState 를 덮어쓰지 않게
             model.syncState = GymSyncState(signedIn: true, userEmail: "leftjap@gmail.com",
