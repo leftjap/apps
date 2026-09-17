@@ -304,4 +304,62 @@ final class GymCalendarAuditUITests: XCTestCase {
             probe("커밋 \(i)회")
         }
     }
+
+    // MARK: - 화면 캡처 (눈으로 보는 검증)
+
+    // 카드가 실제로 어떻게 그려지는지 회수한다. 단언이 아니라 그림을 남기는 것이 목적이다.
+    //   xcodebuild test -only-testing:GymUITests/GymCalendarAuditUITests/testCaptureCardScreens \
+    //     -destination 'id=<sim>' -resultBundlePath <out.xcresult>
+    //   xcrun xcresulttool export attachments --path <out.xcresult> --output-path <dir>
+    func testCaptureCardScreens() {
+        func shot(_ app: XCUIApplication, _ name: String) {
+            let a = XCTAttachment(screenshot: app.screenshot())
+            a.name = name; a.lifetime = .keepAlways; add(a)
+        }
+        let app = launchSession(["--reset", "--fake-signin", "--demo-week"])
+        XCTAssertTrue(app.descendants(matching: .any)["lift-card-title"].waitForExistence(timeout: 5))
+        shot(app, "01-session-card-today-empty")
+
+        // 기록 있는 날(지난주 화) 탭 → 날짜 상세 시트
+        cell(app, iso(-6)).tap()
+        XCTAssertTrue(app.staticTexts["daydetail-date"].waitForExistence(timeout: 3))
+        shot(app, "02-day-detail-sheet")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        XCTAssertTrue(app.staticTexts["daydetail-date"].waitForNonExistence(timeout: 3))
+
+        // 세트 커밋 → 오늘 칸이 채워진 그림
+        commitSet(app)
+        Thread.sleep(forTimeInterval: 1.0)
+        shot(app, "03-session-card-today-filled")
+
+        // 홈 — 카드와 같은 원천(weekCells)을 쓰는 화면이 멀쩡한지
+        app.buttons["session-home"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["home-cta"].waitForExistence(timeout: 8)
+                      || app.staticTexts["Gym"].waitForExistence(timeout: 8))
+        shot(app, "04-home")
+    }
+
+    // 커밋 직후 오늘 원의 색이 링 → 채움으로 **점진적으로** 바뀌는지 (§7 200ms linear).
+    // 연속 스크린샷을 붙여 회수한 뒤 오늘 칸 가운데 픽셀 색을 본다.
+    //
+    // 2026-09-17 실측 (iPhone 11 Pro 시뮬 · 오늘 칸 (243.5, 232.2)pt):
+    //   reduce-motion OFF  t00 (165,162,159) → t01 **(211,140,101)** → t02~ (206,126,78)
+    //   reduce-motion ON   t00 (166,163,160) → t01 (207,126,78) 즉시
+    // 끈 쪽에서만 중간색이 잡힌다 = 애니메이션이 돌고, 켜면 즉시 반영된다.
+    //
+    // reduce-motion 토글: xcrun simctl spawn <DEV> defaults write com.apple.Accessibility \
+    //   ReduceMotionEnabled -bool true   (simctl ui 로는 안 되지만 defaults 로는 된다)
+    func testCaptureCommitTransitionFrames() {
+        let app = launchSession(["--reset", "--fake-signin", "--demo-week"])
+        XCTAssertTrue(app.descendants(matching: .any)["lift-card-title"].waitForExistence(timeout: 5))
+        func shot(_ name: String) {
+            let a = XCTAttachment(screenshot: app.screenshot())
+            a.name = name; a.lifetime = .keepAlways; add(a)
+        }
+        shot("t00-before")
+        commitSet(app)
+        for i in 1...8 { shot(String(format: "t%02d-after", i)) }   // 캡처 간격만큼 촘촘히
+        Thread.sleep(forTimeInterval: 1.0)
+        shot("t99-settled")
+    }
 }

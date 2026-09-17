@@ -38,7 +38,13 @@
   를 앞에 붙이면 `xcodebuild`·`xcrun simctl`·`xcrun devicectl` 전부 동작 (2026-07-18 "Xcode 없음" 오단정 재발 방지).
 - 시뮬레이터: `xcrun simctl` 로 install/launch/screenshot. 로그인 게이트 우회는 앱 런치 인자
   `--fake-signin`(시뮬 전용), 레일 등 세션 화면 데모 데이터는 `--demo-session`.
-  reduce-motion 은 `simctl ui` 미지원(appearance/contrast/content_size 만).
+  reduce-motion 은 `simctl ui` 로는 못 켜지만(appearance/contrast/content_size 만) **defaults 로는 켜진다**:
+  `xcrun simctl spawn <DEV> defaults write com.apple.Accessibility ReduceMotionEnabled -bool true`.
+  2026-09-17 실측 — 히스토리 카드 커밋 전환을 연속 스크린샷으로 찍어 비교하니 끄면 중간색
+  `(211,140,101)`, 켜면 곧바로 최종색 `(207,126,78)` 이었다.
+- UI 테스트 스크린샷 회수: `-resultBundlePath <out.xcresult>` 로 돌린 뒤
+  `xcrun xcresulttool export attachments --path <out.xcresult> --output-path <dir>`.
+  `manifest.json` 의 `suggestedHumanReadableName` 이 `XCTAttachment.name` 이다.
 
 ## 실기기 배포 (온라인 무선, 사용자 위임 금지)
 
