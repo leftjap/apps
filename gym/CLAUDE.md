@@ -62,6 +62,23 @@ xcrun devicectl device install app --device $DEV <DD>/Build/Products/Debug-iphon
 
 폰이 목록에 없거나 페어링 안 됐으면 그때만 사용자 안내. destructive 아님(설치는 데이터 무영향).
 
+**페어링된 기기가 둘 이상이다** (2026-09-17 기준 iPhone 11 Pro + iPhone XR). `list devices` 출력을
+`tail` 로 자르면 엉뚱한 기기에 설치한다 — 실제로 그렇게 XR 에 설치한 사고가 있었다. 전체를 보고
+`Marketing Name` 으로 고를 것. 사용자 기기는 **iPhone 11 Pro** (`00008030-…`, 375×812).
+
+**실기록 회수** — 실데이터로 검증하려면 폰에서 앱 데이터를 통째로 꺼낸다. 개인 기록이므로
+저장소(PUBLIC)에 넣지 말 것.
+```bash
+xcrun devicectl device copy from --device $DEV --domain-type appDataContainer \
+  --domain-identifier com.leftjap.gym --source Library --destination <dir>
+# <dir>/Preferences/com.leftjap.gym.plist 의 gym.sessions.v1 등이 JSON(Data)
+```
+`GymViewsTests/RealDeviceHistoryAuditTests` 가 이 JSON 을 환경변수로 받아 전수 조사한다.
+
+**화면 캡처**: `xcrun devicectl device capture screenshot --device $DEV --destination <png>`.
+백라이트가 꺼져 있으면 검정 이미지가 나온다 — `devicectl device info lockState` /
+`info displays`(backlight state)로 판정하고, 켜는 명령은 devicectl 에 없으므로 사용자에게 요청한다.
+
 ## 관련 스킬 (자동 활성화)
 
 `supabase-pattern`: `src/db/sync.js`·`schema.js`·`src/services/auth.js` 수정·RLS·OAuth·Auth 작업 시.
