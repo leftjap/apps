@@ -147,6 +147,27 @@ struct SessionHero: View {
         GymMonoFont.width(v, size: 50, weight: 500) - 1.0 * CGFloat(max(0, v.count - 1))
     }
 
+    // 히어로 큰 숫자의 줄 상자 보정 (2026-09-17 — 히스토리 카드 세로 예산).
+    //
+    // SwiftUI `Text` 는 폰트 자연 줄높이를 레이아웃 높이로 잡는다. mono 122 에서 **156.0pt**
+    // (XCUITest `app.staticTexts["hero-weight"].frame` 실측). 시안은 같은 자리를
+    // `line-height: 0.8` = 122 × 0.8 = **97.6pt** 로 그린다. 차이 58.4pt 는 전부 빈 여백인데
+    // 레이아웃 높이에는 그대로 들어가, 세션 화면이 세이프에어리어를 27.7pt 넘기게 만들었다
+    // (iPhone 11 Pro 시뮬 실측: 변경 전 앱 잉크 60.0~779.3 → 카드 추가 후 46.3~793.3).
+    //
+    // 음수 세로 패딩은 레이아웃 프레임만 줄이고 `.clipped()` 없이는 글리프를 자르지 않는다.
+    // 숫자 잉크는 87.7pt 이고 줄 상자 안에서 위 34.3 / 아래 34.0 으로 거의 가운데 있으므로,
+    // 97.6pt 로 줄여도 위아래 약 5pt 씩 남기고 프레임 안에 그대로 들어간다 — 잉크는 넘치지 않는다.
+    //
+    // 폰트 크기·굵기·자간(-6.7)·색·스왑 모션·탭 존 좌우 비율은 건드리지 않는다.
+    // 이 행에 붙는 `zones` 오버레이는 같은 만큼 낮아진다 (180 → 121.6pt). §6-3 은 좌우 비율
+    // 규격이고 세로는 최소 탭 크기(44pt)의 2.7배가 남는다.
+    // `repsRow`(mono 50)와 잠금 ✓(mono 92)는 대조 기준이 없어 손대지 않는다.
+    static let bigLineBoxMeasured: CGFloat = 156.0        // mono 122 자연 줄높이 (실측)
+    static let bigLineBoxTarget: CGFloat = 122 * 0.8      // 시안 line-height 0.8
+    /// 위·아래로 각각 뺄 양. (156.0 − 97.6) / 2 = 29.2
+    static let bigLineInset: CGFloat = (bigLineBoxMeasured - bigLineBoxTarget) / 2
+
     // 히어로 큰 숫자 굵기 — 시안·PWA 고정. 프리셋이라고 얇게 그리지 않는다(증량 시 굵기 튐 방지).
     static func weightMonoWeight(preset: Bool) -> Int { 600 }   // .hero-weight 600 고정
     static func repsMonoWeight(preset: Bool) -> Int { 400 }     // .hero-reps 400 고정
@@ -159,6 +180,7 @@ struct SessionHero: View {
                        id: id, spec: .weight,
                        base: locked ? GY.ink4 : GY.ink1)
                 .lineSpacing(0)
+                .padding(.vertical, -Self.bigLineInset)   // 줄 상자 → 시안 0.8 (위 주석)
                 .opacity(flash ? 0.45 : 1)
                 .animation(.easeOut(duration: 0.075), value: flash)
             Text(unit)
