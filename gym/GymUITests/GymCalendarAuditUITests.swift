@@ -52,8 +52,9 @@ final class GymCalendarAuditUITests: XCTestCase {
     }
 
     private func commitSet(_ app: XCUIApplication) {
-        let area = app.otherElements["cardSwipeArea"].exists
-            ? app.otherElements["cardSwipeArea"] : app.staticTexts["hero-weight"]
+        // 커밋이 쌓이면 같은 식별자가 여러 개 잡힐 수 있어 firstMatch 로 고정한다.
+        let area = app.otherElements["cardSwipeArea"].firstMatch.exists
+            ? app.otherElements["cardSwipeArea"].firstMatch : app.staticTexts["hero-weight"].firstMatch
         area.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5))
             .press(forDuration: 0.02,
                    thenDragTo: area.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.5)))
@@ -228,5 +229,79 @@ final class GymCalendarAuditUITests: XCTestCase {
         chip(app, "랫 풀다운").tap()
         XCTAssertEqual(app.staticTexts["session-exname"].label, "랫 풀다운")
         expectEmpty(app, "랫 풀다운")
+    }
+
+    // MARK: - 세트가 많아져도 화면이 세이프에어리어 안에 있는가
+
+    // 카드가 들어간 뒤 세로 예산이 빠듯해졌다. 세트를 커밋할 때마다 다음 세트가 붙으므로
+    // 세트바가 길어지는데, 그래도 툴바가 노치를, 레일이 홈 인디케이터를 침범하면 안 된다.
+    // 기준 기기 iPhone 11 Pro (375×812 · 세이프에어리어 44 ~ 778).
+    func testDenseSessionStaysInsideSafeArea() {
+        let app = launchSession()
+        let win = app.windows.firstMatch.frame
+        guard win.width == 375, win.height == 812 else {
+            print("PROBE 기준 기기가 아님 \(win) — 건너뜀"); return
+        }
+        func bounds(_ tag: String) -> (top: CGFloat, bottom: CGFloat) {
+            let top = app.staticTexts["session-end"].firstMatch.frame.minY
+            let bottom = app.buttons["rail-add"].firstMatch.frame.maxY
+            print("PROBE \(tag): 툴바 top=\(top) 레일 bottom=\(bottom)")
+            return (top, bottom)
+        }
+        var b = bounds("세트 5")
+        XCTAssertGreaterThanOrEqual(b.top, 44, "툴바가 노치를 침범한다")
+        XCTAssertLessThanOrEqual(b.bottom, 778, "레일이 홈 인디케이터를 침범한다")
+
+        for i in 1...5 {              // 커밋할 때마다 세트가 하나씩 붙는다
+            commitSet(app)
+            Thread.sleep(forTimeInterval: 0.6)
+            b = bounds("커밋 \(i)회")
+            XCTAssertGreaterThanOrEqual(b.top, 44, "커밋 \(i)회에서 툴바가 노치를 침범한다")
+            XCTAssertLessThanOrEqual(b.bottom, 778, "커밋 \(i)회에서 레일이 홈 인디케이터를 침범한다")
+        }
+    }
+
+    // 세트 수는 세로에 영향이 없다 — 세트바는 칸이 좁아질 뿐 높아지지 않는다.
+    // 화면이 가장 빡빡해지는 건 **신기록 상태**다: 헤더에 신기록 줄이 붙고 히어로 아래에
+    // PR 칩이 생긴다 (gymshot week-8sets 가 그 상태다). --demo-week 의 PR 은 50kg 이므로
+    // 60kg 를 커밋하면 종목 PR + 세션 신기록이 함께 뜬다.
+    func testRecordStateStaysInsideSafeArea() {
+        let app = launchSession(["--reset", "--fake-signin", "--demo-week"])
+        let win = app.windows.firstMatch.frame
+        guard win.width == 375, win.height == 812 else {
+            print("PROBE 기준 기기가 아님 \(win) — 건너뜀"); return
+        }
+        @discardableResult func probe(_ tag: String) -> (top: CGFloat, bottom: CGFloat) {
+            let top = app.staticTexts["session-end"].firstMatch.frame.minY
+            let bottom = app.buttons["rail-add"].firstMatch.frame.maxY
+            let pr = app.staticTexts["hero-prchip"].firstMatch.exists
+            let rec = app.staticTexts.allElementsBoundByIndex.contains { $0.label.contains("신기록") }
+            print("PROBE \(tag): 툴바 top=\(top) 레일 bottom=\(bottom) PR칩=\(pr) 신기록=\(rec)")
+            return (top, bottom)
+        }
+        let base = probe("기본")
+        #if DEBUG
+        #endif
+        XCTAssertGreaterThanOrEqual(base.top, 44, "기본 상태에서 툴바가 노치를 침범한다")
+        XCTAssertLessThanOrEqual(base.bottom, 778, "기본 상태에서 레일이 홈 인디케이터를 침범한다")
+        // 중앙 존 → 키패드 → 60kg
+        app.otherElements["zone-center"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["keypad-value"].waitForExistence(timeout: 5))
+        for d in "60" { app.buttons["keypad-key-\(d)"].tap() }
+        app.buttons["keypad-done"].tap()
+        Thread.sleep(forTimeInterval: 0.6)
+        // PR 칩이 붙는 순간이 가장 빡빡하다. 칩 블록(상단 패딩 18 + 칩)이 히어로 아래 여유를
+        // 다 먹고 남는 만큼 위아래로 밀려난다. 실측 기준선 (iPhone 11 Pro 시뮬):
+        //   변경 전(894d14b) 툴바 top 35.0 · 레일 bottom 776.7  ← 세이프에어리어 9pt 초과
+        //   현재          툴바 top 43.7 · 레일 bottom 768.0  ← 0.33pt (프레임 반올림 폭 안)
+        // 카드(+41.6pt)보다 히어로 줄 상자 회수(−58.4pt)가 커서 순증이 음수라 오히려 나아졌다.
+        let pr = probe("60kg 입력 · PR 칩")
+        XCTAssertGreaterThanOrEqual(pr.top, 43, "PR 칩 상태가 기준선(43.7)보다 나빠졌다")
+        XCTAssertLessThanOrEqual(pr.bottom, 778, "PR 칩 상태에서 레일이 홈 인디케이터를 침범한다")
+        for i in 1...4 {   // 커밋을 쌓아 세션 신기록 줄까지 띄운다
+            commitSet(app)
+            Thread.sleep(forTimeInterval: 1.2)
+            probe("커밋 \(i)회")
+        }
     }
 }
