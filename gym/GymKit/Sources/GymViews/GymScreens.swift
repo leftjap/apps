@@ -250,6 +250,24 @@ public enum GymScreens {
         healthySync(m); return m
     }
 
+    // 거리를 안 적은 유산소 날이 섞인 홈 — 원 안이 "—" 로 뜨는지 본다 (2026-09-17).
+    // 실기기 실측에서 최근 6주 중 3주에 거리 0 인 날이 한 건씩 있었다(24건 중 3건).
+    // 오늘 = 2026-09-17(목). 이번 주 월 1.6km, 지난주 화 1.5 · 목 1.6 · 금 거리미기록.
+    @MainActor static func demoCardioDashModel() -> GymAppModel {
+        func run(_ date: String, _ min: Double, _ km: Double?) -> GymSession {
+            GymSession(id: "cd-\(date)", date: date, startTime: 1_758_000_000_000,
+                       blocks: [GymBlock(exerciseId: "treadmill", sets: [
+                           GymSet(done: true, duration: min * 60, distance: km)])],
+                       tags: ["cardio"], status: .completed)
+        }
+        let m = GymAppModel(snapshotSession: GymSession(id: "dash", date: "2026-09-17", status: .active))
+        if let d = GymAppModel.dayFmt.date(from: "2026-09-17") { m.referenceToday = d }
+        m.history = [run("2026-09-14", 15, 1.6),
+                     run("2026-09-08", 15, 1.5), run("2026-09-10", 16, 1.6),
+                     run("2026-09-11", 14, nil)]     // 거리만 안 적은 날 → "—"
+        healthySync(m); return m
+    }
+
     // 시안 20a 픽셀 대조용 홈 — `specs/2026-08-17-home-redesign-20a.md` 의 예시 데이터를 그대로 재현한다.
     // 오늘 = 2026-08-11(화). 그 주 월요일이 10일이라 캘린더가 시안(1주차 3~9 / 2주차 10~16)과 일치.
     //   근력 3·5·7·8·10·11, 유산소 5·7·8·10·11 (§5 샘플)
@@ -374,6 +392,7 @@ public enum GymScreens {
         case "home":         return AnyView(HomeScreenView(model: demoIdleModel()).frame(width: 390, height: 844))
         // 시안 20a 정본 대조 — 기준 기기 375×812 (11 Pro). 세로 여유 0 이라 폭·높이를 시안에 맞춘다.
         case "home-20a":     return AnyView(HomeScreenView(model: demo20aModel()).frame(width: 375, height: 812))
+        case "home-cardio-dash": return AnyView(HomeScreenView(model: demoCardioDashModel()).frame(width: 375, height: 812))
         case "home-nocardio": return AnyView(HomeScreenView(model: demoNoCardioModel()).frame(width: 375, height: 812))
         case "home-resume":  return AnyView(HomeScreenView(model: demoResumeModel()).frame(width: 375, height: 812))
         // §12 작은 화면(SE 375×667) 컴팩트 레이아웃 — 스크롤 콘텐츠의 자연 높이를 그대로 렌더한다
