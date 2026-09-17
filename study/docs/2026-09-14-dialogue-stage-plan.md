@@ -1658,10 +1658,14 @@ git commit -m "test(study): 대화 스테이지 구조로 기존 테스트 이�
 `bot-e2e-…-01-on-my-way#mini#We landed early. It's 4:20.` 한 형태로만 쌓였다(94·95). 수정 전이라면
 카드마다 다른 `sentence_id` 로 갈렸을 자리다.
 
-### 2) 폰 레이아웃 실측 (WebKit 26.4 = iOS 26 Safari 엔진, iPhone 11 Pro 375×812)
+### 2) 폰 레이아웃 실측 (Playwright WebKit 26.4, 뷰포트 375×635)
 
-`xcrun simctl` 은 터치를 넣을 수단이 없고 화면 제어는 쓰지 않기로 해서, Playwright 의 WebKit 으로
-같은 dev 서버를 열어 `getBoundingClientRect` 로 쟀다.
+`xcrun simctl` 에는 터치를 넣는 명령이 없고 `idb` 도 안 깔려 있었다. 화면 제어는 쓰지 않기로 해서,
+Playwright 의 WebKit 으로 같은 dev 서버를 열어 `getBoundingClientRect` 로 쟀다.
+이 WebKit 은 Apple 이 배포하는 Safari 빌드 자체가 아니라 같은 시기 WebKit 소스로 만든 빌드다
+(`browser.version()` = 26.4). 레이아웃·`position:sticky` 처럼 엔진 공통 동작을 재는 데는 쓸 수 있지만,
+Apple 빌드에만 있는 차이까지 대신 확인해 주지는 않는다.
+`devices['iPhone 11 Pro']` 의 뷰포트는 812 가 아니라 635 다 — 기기 높이에서 Safari 의 위아래 막대를 뺀 값이다.
 
 상단 바 `.m-topb`(`position:sticky;top:0`) 와 하단 CTA `.m-cta-fixed`(`position:sticky;bottom:0`):
 
@@ -1672,9 +1676,15 @@ git commit -m "test(study): 대화 스테이지 구조로 기존 테스트 이�
 | 1514 (끝) | 0 / 53 | 558 / 635 | 635 |
 
 대화를 접은 상태(스크롤 범위 885)에서도 세 지점 모두 같은 값이었다. 즉 스크롤 전 구간에서 두 막대가 붙어 있다.
-실제 iOS 26.5 시뮬레이터(iPhone 11 Pro) Safari 스크린샷으로 첫 화면의 고정·발음 표기 가독성도 함께 확인했다.
+실제 iOS 26.5 시뮬레이터(iPhone 11 Pro) Safari 에서는 첫 화면(스크롤 0)만 스크린샷으로 봤다 — 터치를 넣을 수
+없어 스크롤한 모습은 못 찍었다. 고정·발음 표기 가독성은 그 첫 화면까지 확인한 것이다.
 
-### 3) 폰 버튼 전수 (같은 WebKit 세션, 소리는 음소거)
+막대 뒤로 본문 글자가 옅게 비치는 것은 설계값 그대로다. `.m-topb` 배경이 `oklch(97.5% .009 95/.92)` 로
+92% 불투명이고 `backdrop-filter:blur(8px)` 가 걸려 있다. 헤드리스 WebKit 이 blur 를 안 그려서 그렇다고
+적었다가 따로 재 보니 틀린 설명이었다 — `CSS.supports` 도 true, `getComputedStyle` 도 `blur(8px)` 이고,
+검은 글자 위에 같은 막대를 올린 확인 페이지에서 막대 안쪽 글자만 흐려졌다.
+
+### 3) 폰 버튼 전수 (같은 WebKit·같은 폰 크기, 두 번에 나눠 실행, 소리는 음소거)
 
 | 버튼 | 결과 |
 |---|---|
@@ -1689,7 +1699,8 @@ git commit -m "test(study): 대화 스테이지 구조로 기존 테스트 이�
 | 홈으로 | `#/home`, 세션 화면 해제 |
 
 카드를 옮긴 뒤에도 `We landed early. It's 4:20.` 줄은 `[94,95]` 를 유지했고, 1번 카드 줄에는 본 점수 `[99]` 가
-그 카드 줄의 흔적으로 남았다.
+그 카드 줄의 흔적으로 남았다. 이 94·95·99 는 §1 의 크롬 가짜 마이크 녹음으로 만들어진 서버 기록이고,
+여기서는 그 기록을 읽어 카드를 옮겨도 같은 줄에 남는지를 본 것이다 — WebKit 안에서 새로 녹음하지는 않았다.
 
 전체 테스트 83파일 **1761개** 통과.
 
