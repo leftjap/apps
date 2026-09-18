@@ -5,7 +5,7 @@
  *   - computeWindow: rolling 4주 창 (마지막 행 = 오늘 포함 주, 월요일 시작, 28칸 고정)
  *   - alphaOf: 농도 수식 α = min(0.72, 0.14 + 0.58 × chars / FULL_CHARS) — §11 검증값
  *   - aggregateEntriesByDay: created_at 로컬 날짜 귀속 + 하루 여러 편 합산 + 파트너 제외 (§10-3)
- *   - computeSummary: 총 매수(글자수 합산 후 나눔) + 하루 평균(현재 창 경과일 / 과거 창 28)
+ *   - computeSummary: 총 매수(글자수 합산 후 나눔) + 평균(분모 = 창 안에서 쓴 날 수)
  *   - buildCellModel: 셀 상태 판정 순서 ①~⑤ + 월 1일 `M/1` 표기 + 툴팁 문구
  *   - buildPagingModel: 범위 라벨 · ‹ title · › 비활성
  */
@@ -123,38 +123,45 @@ describe('aggregateEntriesByDay — 일 단위 귀속 (§7)', () => {
 });
 
 describe('computeSummary — 합계 행 (§6·§11)', () => {
-  it('시안 픽스처: 총 7,800자 → "39" (정수는 소수점 생략), 분모 25일 → 평균 "1.6"', () => {
+  it('시안 픽스처: 총 7,800자 → "39" (정수는 소수점 생략), 쓴 날 17일 → 평균 "2.3"', () => {
     const { days } = computeWindow(SIAN_TODAY, 0);
-    const { totalText, avgText } = computeSummary(sianAggMap(), days, SIAN_TODAY);
+    const { totalText, avgText } = computeSummary(sianAggMap(), days);
     expect(totalText).toBe('39');
-    expect(avgText).toBe('1.6');
+    expect(avgText).toBe('2.3'); // 39/17 = 2.294… → 2.3
   });
 
   it('글자수를 합산한 뒤 나눈다 — 일별 반올림 합산 아님 (§11)', () => {
     // 두 날 각 110자 → 일별 round1(0.6)+round1(0.6)=1.2 (오답) / 합산 220/200 = 1.1 (정답)
-    const today = SIAN_TODAY;
-    const { days } = computeWindow(today, 0);
+    const { days } = computeWindow(SIAN_TODAY, 0);
     const agg = new Map([
       [localDayKey(new Date(2026, 3, 20)), { chars: 110, rows: [] }],
       [localDayKey(new Date(2026, 3, 21)), { chars: 110, rows: [] }],
     ]);
-    const { totalText } = computeSummary(agg, days, today);
+    const { totalText } = computeSummary(agg, days);
     expect(totalText).toBe('1.1');
   });
 
-  it('과거 창은 분모 28 고정 (§6)', () => {
+  it('안 쓴 날은 분모에서 제외한다 — 쓴 날이 하루뿐이면 그날 매수가 그대로 평균', () => {
     const { days } = computeWindow(SIAN_TODAY, -1); // 3.2~3.29 — 오늘 미포함
     const agg = new Map([[localDayKey(new Date(2026, 2, 10)), { chars: 7800, rows: [] }]]);
-    const { totalText, avgText } = computeSummary(agg, days, SIAN_TODAY);
+    const { totalText, avgText } = computeSummary(agg, days);
     expect(totalText).toBe('39');
-    expect(avgText).toBe('1.4'); // 39/28 = 1.392… → 1.4
+    expect(avgText).toBe('39.0'); // 창 28일을 분모로 삼았다면 1.4
   });
 
-  it('창 밖 날짜의 글자수는 합계에 포함하지 않는다', () => {
+  it('창 안에 쓴 날이 하나도 없으면 0 으로 나누지 않고 평균 "0.0"', () => {
+    const { days } = computeWindow(SIAN_TODAY, 0);
+    const { totalText, avgText } = computeSummary(new Map(), days);
+    expect(totalText).toBe('0');
+    expect(avgText).toBe('0.0');
+  });
+
+  it('창 밖 날짜의 글자수는 합계에도 분모에도 넣지 않는다', () => {
     const { days } = computeWindow(SIAN_TODAY, 0);
     const agg = new Map([[localDayKey(new Date(2026, 2, 1)), { chars: 9999, rows: [] }]]);
-    const { totalText } = computeSummary(agg, days, SIAN_TODAY);
+    const { totalText, avgText } = computeSummary(agg, days);
     expect(totalText).toBe('0');
+    expect(avgText).toBe('0.0');
   });
 });
 

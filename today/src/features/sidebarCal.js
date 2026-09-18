@@ -19,7 +19,6 @@ import { CAL_KINDS, charCount, sheetCount, openEntryByRow, escapeHtml } from './
 export const FULL_CHARS = 800;
 
 const WINDOW_DAYS = 28;
-const MS_DAY = 86400000;
 const DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
 const KIND_LABEL = Object.freeze({
   navi: '오늘의 네비', fiction: '단편', blog: '블로그', memo: '메모',
@@ -126,20 +125,23 @@ export function buildCellModel(day, today, agg) {
 /**
  * 합계 행 (§6): 총 매수 = round1(Σ창 내 charCount / 200) — 글자수 합산 후 나눔
  * (일별 반올림 누적 오차 방지). 정수면 소수점 생략, 아니면 소수 1자리.
- * 하루 평균 = 총 매수 / 분모 (항상 소수 1자리) — 현재 창: 창 시작~오늘 경과 일수(오늘 포함),
- * 과거 창: 28.
+ * 쓴 날 평균 = 총 매수 / 창 안에서 글을 쓴 날 수 (항상 소수 1자리). 안 쓴 날은 분모에서
+ * 빼며(2026-09-18 사용자 지시 — 경과 일수 분모는 안 쓴 날까지 세어 평균을 낮췄다),
+ * 쓴 날이 하나도 없으면 0 으로 나누지 않고 "0.0" 을 낸다.
  */
-export function computeSummary(agg, days, today) {
+export function computeSummary(agg, days) {
   let totalChars = 0;
-  for (const d of days) totalChars += agg.get(localDayKey(d))?.chars || 0;
+  let writtenDays = 0;
+  for (const d of days) {
+    const chars = agg.get(localDayKey(d))?.chars || 0;
+    if (chars <= 0) continue;
+    totalChars += chars;
+    writtenDays += 1;
+  }
   const sheets = Math.round((totalChars / 200) * 10) / 10;
   const totalText = Number.isInteger(sheets) ? String(sheets) : sheets.toFixed(1);
-  const t0 = atMidnight(today);
-  const start = days[0];
-  const inWindow = t0.getTime() >= start.getTime() && t0.getTime() <= days[days.length - 1].getTime();
-  const denom = inWindow ? Math.round((t0.getTime() - start.getTime()) / MS_DAY) + 1 : WINDOW_DAYS;
-  const avgText = (Math.round((sheets / denom) * 10) / 10).toFixed(1);
-  return { totalText, avgText };
+  const avg = writtenDays > 0 ? Math.round((sheets / writtenDays) * 10) / 10 : 0;
+  return { totalText, avgText: avg.toFixed(1) };
 }
 
 /** 헤더 페이징 모델 (§3): 범위 라벨 + ‹ title(대상 창 범위) + › 활성 여부. */
@@ -197,7 +199,7 @@ function render(doc = (typeof document !== 'undefined' ? document : null)) {
     grid.appendChild(el);
   }
 
-  const { totalText, avgText } = computeSummary(_agg, days, today);
+  const { totalText, avgText } = computeSummary(_agg, days);
   const totalEl = doc.getElementById('sbCalSumTotal');
   if (totalEl) totalEl.textContent = totalText;
   const avgEl = doc.getElementById('sbCalSumAvg');
