@@ -292,7 +292,6 @@ public struct HomeScreenView: View {
                 weekRow(prev, weekOffset: -1, tappable: tappable, dim: true)
             }
             weekRow(week, weekOffset: 0, tappable: tappable, dim: false)
-            calendarLegend
         }
         .padding(.horizontal, 18).padding(.top, 8)
     }
@@ -343,21 +342,6 @@ public struct HomeScreenView: View {
         }
     }
 
-    // 범례 — 채움 = 근력, 테두리 = 유산소. padding 0 12px, margin-top 2px.
-    var calendarLegend: some View {
-        HStack(spacing: 6) {
-            Circle().fill(GY.crailTint)
-                .overlay(Circle().strokeBorder(GY.crailDeep, lineWidth: 1.5))
-                .frame(width: 10, height: 10)
-            Text("근력").font(.sans(10.5, 500)).foregroundStyle(GY.ink4)
-            Circle().strokeBorder(GY.teal, lineWidth: 1.5).frame(width: 10, height: 10)
-                .padding(.leading, 5)
-            Text("유산소").font(.sans(10.5, 500)).foregroundStyle(GY.ink4)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 12).padding(.top, 2)
-    }
-
     // MARK: - §6 직전 운동
 
     // 부위(맨몸 제외) + 경과. 요일과 "오늘" 을 함께 쓰지 않는다 — 중복 (§6).
@@ -380,7 +364,7 @@ public struct HomeScreenView: View {
             Spacer()
             Text(ago).font(.sans(12.5, 500)).foregroundStyle(GY.ink4)
         }
-        .padding(.horizontal, 24).padding(.top, 11)
+        .padding(.horizontal, 24).padding(.top, 18)
     }
 
     // MARK: - §7 부위 밸런스 (페어 컬럼 차트)
@@ -408,14 +392,6 @@ public struct HomeScreenView: View {
                 Text("세트").font(.sans(11.5, 500)).foregroundStyle(GY.ink4)
                 deltaChip(delta)
             }
-            HStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 2.5).fill(GY.ghost).frame(width: 9, height: 9)
-                Text("지난주").font(.sans(11, 500)).foregroundStyle(GY.ink4)
-                RoundedRectangle(cornerRadius: 2.5).fill(GY.teal).frame(width: 9, height: 9)
-                    .padding(.leading, 6)
-                Text("이번 주").font(.sans(11, 500)).foregroundStyle(GY.ink4)
-            }
-            .padding(.top, 7)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 0) {
                     ForEach(Array(parts.enumerated()), id: \.element.key) { i, p in
@@ -449,9 +425,9 @@ public struct HomeScreenView: View {
                 .padding(.top, 7)
                 .overlay(alignment: .top) { Rectangle().fill(GY.axis).frame(height: 1.5) }
             }
-            .padding(.top, 8)
+            .padding(.top, 16)
         }
-        .padding(.horizontal, 24).padding(.top, 9)
+        .padding(.horizontal, 24).padding(.top, 15)
     }
 
     // 델타 칩 — 증가/동률은 ghost-tint + pine, 감소는 warn-tint + warn-deep `−N` (§7).

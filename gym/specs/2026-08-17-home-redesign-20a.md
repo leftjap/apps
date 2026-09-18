@@ -5,6 +5,10 @@
 기준 기기: iPhone 375×812 (11 Pro). 세로 여유 0px — 아래 수치를 임의로 키우면 CTA가 잘립니다.
 화면 배경: `#fdfdfd` (카드만 `#fff`. 둘은 다른 값이며 카드가 배경 위에 살짝 떠 보이도록 의도된 차이입니다)
 
+> **이후 변경 (2026-09-18, 사용자 지시)** — 캘린더 범례(§5)와 부위 밸런스 범례(§7)를 삭제하고,
+> 그렇게 비는 세로를 위쪽 간격으로 돌렸습니다. 직전 운동 `padding-top 11 → 18`,
+> 부위 밸런스 `padding-top 9 → 15`, 차트 `margin-top 8 → 16`. 아래 본문의 해당 항목에도 표시해 두었습니다.
+
 ---
 
 ## 0. 이번 변경의 요지
@@ -110,13 +114,12 @@
 샘플 데이터: 근력 = 3·5·7·8·10·11, 유산소 = 5·7·8·10·11, 오늘 = 11.
 표의 `유산소만` 행은 샘플에는 없지만 실제로 발생하므로 반드시 구현하세요(유산소만 한 날 = 배경 없이 teal 링, 숫자 ink-2).
 
-**범례** — 캘린더 아래 `padding: 0 12px`, `margin-top 2px`, gap 6px
-- 10px 원 / crail-tint 채움 + `inset 1.5px crail-deep` → `근력` (10.5px / 500 / ink-4)
-- 10px 원 / 테두리만 `inset 1.5px teal` (좌 margin 5px) → `유산소`
+**범례** — ~~캘린더 아래 `padding: 0 12px`, `margin-top 2px`, gap 6px / `근력`·`유산소`~~
+**2026-09-18 삭제.** 채움과 링의 뜻은 캘린더 원 자체로 읽히므로 설명 줄을 두지 않습니다.
 
 ## 6. 직전 운동
 
-`padding: 11px 24px 0`, gap 10px, 한 줄:
+`padding: 18px 24px 0` (2026-09-18 11 → 18), gap 10px, 한 줄:
 - 30×30 배지 `radius 9px` / `sunken` 배경 / 안에 17×17 덤벨 SVG (`stroke ink-3`, `width 1.6`, `linecap round`)
   `path`: `M4 8v4  M6.5 6.2v7.6  M13.5 6.2v7.6  M16 8v4  M6.5 10h7` (viewBox `0 0 20 20`)
 - `직전 운동` 12px / 600 / `.02em` / ink-4
@@ -126,7 +129,7 @@
 
 ## 7. 부위 밸런스 (페어 컬럼 차트)
 
-컨테이너 `padding: 9px 24px 0`.
+컨테이너 `padding: 15px 24px 0` (2026-09-18 9 → 15).
 
 **제목 행** (baseline 정렬, gap 7px)
 - `부위 밸런스` 13.5px / 700 / `-0.01em` / ink-1
@@ -135,11 +138,10 @@
 - 델타 칩 `+5` — `padding 4px 10px` / `radius 999px` / bg ghost-tint / 12px / 700 / pine
   (음수면 bg warn-tint, 텍스트 warn-deep, `−N`)
 
-**범례 행** `margin-top 7px`, gap 6px
-- 9×9 `radius 2.5px` ghost → `지난주` (11px / 500 / ink-4)
-- 9×9 `radius 2.5px` teal (좌 margin 6px) → `이번 주`
+**범례 행** — ~~`margin-top 7px` / `지난주`·`이번 주`~~
+**2026-09-18 삭제.** 고스트와 잉크의 대비는 막대 두 개로 읽힙니다.
 
-**차트** `margin-top 8px`, 6열 균등(`flex:1`), 각 열 세로 정렬 `gap: 0`
+**차트** `margin-top 16px` (2026-09-18 8 → 16), 6열 균등(`flex:1`), 각 열 세로 정렬 `gap: 0`
 
 열 구성 (위→아래):
 1. **이번 주 값** — 14.5px / 700 / ink-1 / `line-height 1` / `margin-left 16px` / `margin-bottom 6px`
