@@ -153,5 +153,9 @@ PWA(`gym/mocks/*.html`)는 시안을 직접 소비하지만, 네이티브는 값
   값은 `plistlib` 로 `bytes`(= UserDefaults 의 Data) 로 넣는다 — 앱이 JSONDecoder 로 읽는 형식 그대로.
 - **부팅 중이면 cfprefsd 가 되덮는다**: 시뮬이 켜진 채로 쓰면 앱 실행 시 전부 빈 값이 된다
   (`killall cfprefsd` 로도 부족했다). **`simctl shutdown` → plist 쓰기 → `boot`** 순서가 유일하게 확실했다.
+  - 2026-09-18(gym 체중 탭) 추가: 시뮬을 켠 채로도 **앱 종료 → 2초 대기 → plist 쓰기 →
+    `simctl spawn <UD> launchctl kickstart -k system/com.apple.cfprefsd.xpc.daemon` → 1초 대기 → launch**
+    순서면 반영됐다. 재부팅보다 훨씬 빠르지만 **종료 직후 바로 쓰면 실패**한다(앱이 종료하며 flush 하는
+    값에 덮인다). 한 번에 안 되면 재시도하고, 그래도 안 되면 위의 shutdown/boot 로 간다.
 - 진행 세션(`gym.session.v1`)까지 넣으면 `--route session` 으로 특정 화면을 탭 없이 띄울 수 있다.
 
