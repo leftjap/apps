@@ -40,7 +40,12 @@ public struct AdminScreenView: View {
         VStack(spacing: 0) {
             header
             tabBar
-            if embedScroll { ScrollView { paneContent } } else { paneContent }
+            Group {
+                if embedScroll { ScrollView { paneContent } } else { paneContent }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if tab == .weight { weightInputButton }
+            }
         }
         .frame(maxWidth: .infinity).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
         // 꾹누르기 삭제 확인 (§10-1 — 커스텀 행 삭제 / 빌트인 영구 제거)
@@ -324,11 +329,13 @@ public struct AdminScreenView: View {
             HStack {
                 Text("입력 기록").font(.sans(12, 600)).tracking(0.24).foregroundStyle(GY.ink2)
                 Spacer()
-                Text("최근 14일").font(.sans(12, 500)).foregroundStyle(GY.ink4)
+                Text(entries.isEmpty ? "" : "전체 \(entries.count)건")
+                    .font(.sans(12, 500)).foregroundStyle(GY.ink4)
             }
             .padding(.horizontal, 26).padding(.top, 22).padding(.bottom, 4)
-            // 리스트 — 오늘 미입력 행 + 최근 10건 (최저 마크 + 증감 ▼crail/▲뉴트럴)
-            VStack(spacing: 0) {
+            // 리스트 — 오늘 미입력 행 + 전체 이력 (최저 마크 + 증감 ▼crail/▲뉴트럴).
+            // 10건에서 끊겨 과거를 못 봤다 (사용자 2026-09-18). 건수가 늘어나므로 Lazy 로.
+            LazyVStack(spacing: 0) {
                 if entries.isEmpty {
                     Text("아직 기록이 없습니다. 아래 버튼으로 입력하세요.")
                         .font(.sans(13, 400)).foregroundStyle(GY.ink4).padding(.vertical, 24)
@@ -337,7 +344,7 @@ public struct AdminScreenView: View {
                     weightRowView(label: mdLabel(todayStr), today: true, valText: nil,
                                   isMin: false, delta: nil)
                 }
-                ForEach(Array(entries.prefix(10).enumerated()), id: \.offset) { _, e in
+                ForEach(entries, id: \.w.date) { e in
                     weightRowView(label: mdLabel(e.w.date), today: false,
                                   valText: fmtKg(e.w.kg),
                                   isMin: entries.count > 1 && e.w.kg == minKg,
@@ -358,23 +365,30 @@ public struct AdminScreenView: View {
                 .overlay(alignment: .top) {
                     Rectangle().fill(GY.lineSoft).frame(height: 1).padding(.horizontal, 26)
                 }
-                .padding(.top, 12)
+                .padding(.top, 12).padding(.bottom, 20)
             }
-            // 오늘 체중 입력 (mock weight-input-trigger)
-            Button {
-                let pre = latest?.kg
-                weightKeypad = KeypadContext(field: .weight,
-                                             buffer: pre.map { fmtKg($0) } ?? "",
-                                             fresh: pre != nil, pairHidesWeight: false)
-            } label: {
-                Text("오늘 체중 입력").font(.sans(15, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
-                    .frame(maxWidth: .infinity).frame(height: 52)
-                    .background(GY.ink1, in: RoundedRectangle(cornerRadius: GY.rMd))
-                    .shadow(color: Color(hex: 0x14120E).opacity(0.5), radius: 10, y: 4)
-            }
-            .buttonStyle(.plain).accessibilityIdentifier("weight-input")
-            .padding(.init(top: 14, leading: 26, bottom: 26, trailing: 26))
         }.padding(.top, 8)
+    }
+
+    // 오늘 체중 입력 (mock weight-input-trigger) — 탭 하단 고정. 입력 기록이 전체 이력이라
+    // 스크롤 끝에 두면 기록이 쌓일수록 버튼이 멀어진다 (사용자 2026-09-18).
+    var weightInputButton: some View {
+        Button {
+            let pre = model.weights.first?.kg
+            weightKeypad = KeypadContext(field: .weight,
+                                         buffer: pre.map { fmtKg($0) } ?? "",
+                                         fresh: pre != nil, pairHidesWeight: false)
+        } label: {
+            Text("오늘 체중 입력").font(.sans(15, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
+                .frame(maxWidth: .infinity).frame(height: 52)
+                .background(GY.ink1, in: RoundedRectangle(cornerRadius: GY.rMd))
+                .shadow(color: Color(hex: 0x14120E).opacity(0.5), radius: 10, y: 4)
+        }
+        .buttonStyle(.plain).accessibilityIdentifier("weight-input")
+        // 아래 24 — 루트가 하단 세이프에어리어를 22pt 당겨 쓰므로(GymApp), 그만큼 돌려주지 않으면
+        // 세이프에어리어가 0 인 SE(667) 에서 버튼 아랫부분이 화면 밖으로 잘린다 (2026-09-18 실측).
+        .padding(.init(top: 12, leading: 26, bottom: 24, trailing: 26))
+        .background(GY.shell)
     }
 
     func weightRowView(label: String, today: Bool, valText: String?, isMin: Bool, delta: Double?) -> some View {

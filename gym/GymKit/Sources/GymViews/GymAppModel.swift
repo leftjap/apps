@@ -644,6 +644,23 @@ public final class GymAppModel: ObservableObject {
         #endif
     }
 
+    // 검증 훅(시뮬 전용) — 체중 입력 기록 스크롤 (2026-09-18). 한 화면에 안 들어가는 분량이라야
+    // "10건에서 끊김" 회귀를 잡는다. `--reset` 이 체중까지 비우므로 테스트가 직접 심어야 한다.
+    public func loadWeightsDemoForVerification() {
+        #if targetEnvironment(simulator)
+        let cal = GymAppModel.kst
+        let now = referenceToday
+        let xs: [GymWeight] = (1...40).compactMap { i in
+            cal.date(byAdding: .day, value: -i, to: now).map {
+                GymWeight(date: Self.dayFmt.string(from: $0),
+                          kg: 73.0 + Double((i * 7) % 23) / 10, height: 176)
+            }
+        }
+        LocalStore.saveWeights(xs)
+        weights = xs
+        #endif
+    }
+
     // 검증 훅(시뮬 전용) — 빈 활성 세션으로 세션 화면 시작 (§6-1 인라인 운동추가 시트 검증용).
     public func loadEmptySessionForVerification() {
         #if targetEnvironment(simulator)

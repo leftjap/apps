@@ -55,6 +55,7 @@ struct GymApp: App {
         if args.contains("--demo-session") { model.loadDemoSessionForVerification() }
         if args.contains("--demo-week") { model.loadWeekStripDemoForVerification() }
         if args.contains("--demo-cardio") { model.loadCardioDemoForVerification() }
+        if args.contains("--demo-weights") { model.loadWeightsDemoForVerification() }
         // 검증 훅(시뮬 전용) — 빈 세션에서 시작 (운동추가 시트 다중선택 검증)
         if args.contains("--empty-session") { model.loadEmptySessionForVerification() }
         #endif
