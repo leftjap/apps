@@ -1,9 +1,11 @@
 import XCTest
 
 // 관리 > 체중 탭 입력 기록 — 과거 기록이 10건에서 끊겨 더 볼 수 없었다 (사용자 2026-09-18).
-// 헤더가 밝힌 "전체 N건" 이 실제로 스크롤해서 전부 닿는 수인지, 그리고 입력 버튼이 스크롤과
-// 무관하게 하단에 남는지 확인한다. 기록은 `--demo-weights` 가 심는다 — 다른 테스트의 `--reset`
-// 이 체중까지 비워서, 실데이터에 기대면 전체 실행에서 조용히 skip 된다.
+// 세 가지를 본다: 헤더가 밝힌 "전체 N건" 이 스크롤로 전부 닿는지, 히어로(현재 체중 + 추이 차트)가
+// 상단에 고정돼 있는지, 입력 버튼이 하단에 고정돼 있는지. 고정은 frame 이 그대로인지로 판정한다
+// — exists 는 스크롤 밖으로 밀려나도 true 라 고정을 증명하지 못한다.
+// 기록은 `--demo-weights` 가 심는다 — 다른 테스트의 `--reset` 이 체중까지 비워서, 실데이터에
+// 기대면 전체 실행에서 조용히 skip 된다.
 final class GymWeightHistoryUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
@@ -30,6 +32,12 @@ final class GymWeightHistoryUITests: XCTestCase {
         }
         XCTAssertGreaterThan(total, 10, "10건 이하라 '10건에서 끊김' 회귀를 잡을 수 없다")
 
+        // 고정 영역의 기준 위치 — 스크롤 뒤에도 이 값이 유지돼야 한다.
+        let heroFrame = app.staticTexts["weight-hero-num"].frame
+        let buttonFrame = app.buttons["weight-input"].frame
+        XCTAssertFalse(heroFrame.isEmpty, "히어로 숫자를 못 찾았다")
+        XCTAssertFalse(buttonFrame.isEmpty, "입력 버튼을 못 찾았다")
+
         // "M월 d일" 행을 스크롤하며 모은다. 한 화면에 10건 남짓이라 여유 있게 반복한다.
         let dayRow = NSPredicate(format: "label MATCHES %@", "^[0-9]+월 [0-9]+일.*")
         var seen = Set<String>()
@@ -38,8 +46,12 @@ final class GymWeightHistoryUITests: XCTestCase {
             for e in app.staticTexts.matching(dayRow).allElementsBoundByIndex where e.exists {
                 seen.insert(e.label.replacingOccurrences(of: "  오늘", with: ""))
             }
-            // 입력 버튼은 스크롤 위치와 무관하게 늘 잡혀야 한다 (하단 고정).
-            XCTAssertTrue(app.buttons["weight-input"].exists, "입력 버튼이 스크롤 중 사라졌다")
+            // 히어로와 입력 버튼은 스크롤과 무관하게 **같은 자리**에 있어야 한다 (상·하단 고정).
+            // exists 만으로는 부족하다 — 스크롤 밖으로 밀려나도 exists 는 true 다.
+            XCTAssertEqual(app.staticTexts["weight-hero-num"].frame, heroFrame,
+                           "히어로가 스크롤을 따라 움직였다")
+            XCTAssertEqual(app.buttons["weight-input"].frame, buttonFrame,
+                           "입력 버튼이 스크롤을 따라 움직였다")
             if seen.count == lastSeenCount { break }      // 더 내려갈 곳이 없다
             lastSeenCount = seen.count
             app.scrollViews.firstMatch.swipeUp()

@@ -650,10 +650,14 @@ public final class GymAppModel: ObservableObject {
         #if targetEnvironment(simulator)
         let cal = GymAppModel.kst
         let now = referenceToday
+        // 값은 실제 체중처럼 완만해야 추이 차트 모양까지 눈으로 볼 수 있다 — 톱니면 차트가 못 읽힌다.
+        // 오래된 쪽(i 큼)이 무겁고, 하루 ±0.2 안쪽으로 흔들리며 내려온다.
         let xs: [GymWeight] = (1...40).compactMap { i in
             cal.date(byAdding: .day, value: -i, to: now).map {
-                GymWeight(date: Self.dayFmt.string(from: $0),
-                          kg: 73.0 + Double((i * 7) % 23) / 10, height: 176)
+                let trend = 73.0 + Double(i) * 0.05
+                let wobble = [0.0, 0.2, -0.1, 0.1, -0.2][i % 5]
+                return GymWeight(date: Self.dayFmt.string(from: $0),
+                                 kg: ((trend + wobble) * 10).rounded() / 10, height: 176)
             }
         }
         LocalStore.saveWeights(xs)
