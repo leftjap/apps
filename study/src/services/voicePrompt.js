@@ -8,11 +8,15 @@
  * · 단계 대본과 대사 목록을 주면 교사가 목록 밖 표현을 지어내고 학습자는 빈칸만 채운다
  *   (2026-09-10 v4 실측 `~/apps/tmp/voice-teacher/runs-analysis-v4.md`). 길이가 아니라 대본이 문제였다.
  *   그래서 목적·재료·규칙 여덟 줄만 주고 진행은 교사에게 맡긴다.
- * · 재료는 목표 문장이 아니라 기본 문장 — 구문을 포함하는 드릴 중 가장 짧은 것. 세션 시안의 ② 단계와
- *   같은 뜻이지만 그 시안은 아직 앱에 없고, 여기서는 단어 경계까지 본다.
- * · 실제 ChatGPT 다섯 번 검증(2026-09-19): 규칙 줄을 늘리지 말고 기존 줄을 정확하게 만들어야 지켜진다.
- *   "안 바꾸면 무엇을 바꿀지 말하라", "맞게 말한 것만 센다", "네 번째 답마다 되묻게 하라" 로 조건과
- *   시점을 박은 뒤에야 변형 강제·3회 세기·되묻기가 안정됐다.
+ * · 음성 대화는 학습 세션에서 배운 것을 숙달하는 자리다(2026-09-19 사용자 정리). 문항 유형이 하나뿐이면
+ *   단조로워 숙달이 안 되므로, 패턴마다 여섯 단계를 올라간다. 따라 말하기 → 뜻 말하기 → 한국어에서 영어 →
+ *   슬롯 한 개씩 바꾸기 → 응용 질문에 답하기 → 답을 받아 질문 만들기.
+ * · 끝내는 조건은 횟수가 아니라 통과다. 힌트 없이 연속 두 번 맞으면 그 단계를 통과하고, D·E·F 를 통과하면
+ *   그 패턴은 오늘 끝. 같은 단계에서 세 번 막히면 접고 다음 패턴으로 간다(끝나지 않는 세션 방지).
+ * · 재료는 짧은 형태(구문을 포함하는 드릴 중 최단, 단어 경계까지 본다)와 목표 문장과 나머지 드릴 전부다.
+ *   슬롯 바꾸기와 응용 질문에 쓸 재료가 필요하다. 미니대화는 넣지 않는다.
+ * · 규칙 줄을 늘리지 말고 기존 줄을 정확하게 만들어야 지켜진다(2026-09-19 실측 5회).
+ *   횟수로 적은 규칙은 세션이 짧은 날 안 지켜졌고, 조건과 시점을 박은 뒤에야 안정됐다.
  * · 미니대화는 이 프롬프트에서 쓰지 않는다. 대본 대화를 태우면 구간 전체가 따라 말하기로 무너졌다(2026-09-14 실기).
  */
 export const VOICE_PROMPT_INTRO = '[아래를 ChatGPT 새 대화에 붙여 넣고, 텍스트 답장이 온 뒤에 같은 대화에서 음성 모드를 켜세요]';
@@ -59,14 +63,17 @@ function baseOf(it) {
   return pool.reduce((a, b) => (wordCount(b.en) < wordCount(a.en) ? b : a));
 }
 
-/* 오늘 문장 한 줄 — 기본 문장·뜻·구문.
- * 구문은 그 문장 안에 실제로 있을 때만 붙인다. 구문을 포함하는 드릴이 없어 최단 드릴로 떨어지면
- * (시드 313장 중 52장) 문장에 없는 구문이 찍혀, 교사가 그 구문의 문장을 요구하게 된다. */
-function baseLine(it, n) {
+/* 패턴 한 덩이 — 짧은 형태·목표 문장·이미 연습한 드릴.
+ * 구문은 짧은 형태에도 목표 문장에도 없을 때만 괄호로 따로 적는다(시드 88%가 문장형 키라 대개 목표 문장과 같다). */
+function patternBlock(it, n) {
   const b = baseOf(it);
-  const head = headOf(it.expr);
-  const shows = head && it.expr !== b.en && headMatcher(head).test(b.en);
-  return `B${n} "${b.en}"${b.ko ? ` = ${b.ko}` : ''}${shows ? `  (${it.expr})` : ''}`;
+  const goal = sentenceOf(it);
+  const named = it.expr && it.expr !== b.en && it.expr !== goal && it.expr !== goal.replace(/[.?!]$/, '');
+  const shortPart = `short "${b.en}"${b.ko ? ` = ${b.ko}` : ''}`;
+  const goalPart = goal && goal !== b.en ? `  ·  goal "${goal}"${it.ko ? ` = ${it.ko}` : ''}` : '';
+  const rest = it.drills.filter((d) => d.en !== b.en).map((d) => `"${d.en}"`);
+  const practiced = rest.length ? `\n   practiced: ${rest.join(' · ')}` : '';
+  return `P${n}${named ? ` (${it.expr})` : ''}  ${shortPart}${goalPart}${practiced}`;
 }
 
 /** 교사가 질문을 만들 소재 — 카드마다 적힌 상황을 중복 없이 한 줄로. */
@@ -82,30 +89,41 @@ function background(list) {
 export function buildVoicePrompt(items) {
   const list = normalizeVoiceItems(items);
   const header = list.length
-    ? list.map((it, i) => baseLine(it, i + 1)).join('\n')
-    : 'B1 (use a few simple everyday sentences)';
-  const span = list.length > 1 ? `B1 to B${list.length}` : 'B1';
+    ? list.map((it, i) => patternBlock(it, i + 1)).join('\n')
+    : 'P1  short "(use a few simple everyday sentences)"';
   const bg = background(list);
 
   return `${VOICE_PROMPT_INTRO}
 
-You are my English speaking partner. I learned the sentences below in my app, so do not teach or explain them. Your job is to make me say each of them out loud many times by asking me questions and by answering mine, and to make me change a word or two for a new situation. I want them to stick without memorizing them.
+You are my English speaking partner. I already learned today's patterns in my app, so do not teach or explain them. Your job is to drill each pattern with me in several different ways until I can use it without help.
 
 About me: Korean adult. I read English well, but when I speak, only fragments come out. I repeat well after hearing. I want to say these from meaning, without looking at them.${bg ? `\nMy day, so your questions make sense: ${bg}` : ''}
 
-Today's session, the sentences I practiced:
+Today's patterns, from my app. Take them in order, one pattern at a time:
 ${header}
 
-How to run it:
-- Make me say each of ${span} three times, spread out. A time counts only when I say the whole sentence correctly in answer to your question; a wrong or off-target answer does not count. For one of those three, ask in a way that forces me to change a person, a time, or a thing, and do not wait for me to change it on my own. If my answer comes back without that change, say in Korean what to change in three words or fewer, then wait.
-- Ask me things that make ${span} the natural answer. Never tell me which sentence or which pattern to use. Ask a different question every time: never reuse a question you have already asked.
-- After every fourth answer of mine, say "이번엔 저한테 물어보세요", then answer my question in one line and go on.
-- One question per turn. Then stop and wait at least five seconds. Your turn is one line, under twelve words. I must talk more than you.
-- Never say my sentence for me. When I am stuck or wrong, give one hint: the first two words, or in Korean what to fix in three words or fewer ("주어부터", "과거로요"). Then wait again.
-- If the hint does not work, say the whole sentence once, say "따라 하세요.", and ask for that sentence again two or three turns later.
+For each pattern, go up these steps:
+A. Say the short form. I repeat it once.
+B. Say it in English. I tell you the Korean meaning. Only the first time a sentence is new to me.
+C. Say a Korean meaning. I say the English.
+D. You change one word and say it; I repeat it once. Do it three times, a different word each time: first the word that says what it is about, then the subject, then the time. One change per turn, never two.
+E. Ask me a question in this pattern that needs a changed answer. I answer in English with the change.
+F. Give me an answer. I build the question in this pattern.
+
+Moving on:
+- A step passes when I get it right twice in a row with no hint and no correction. Then go up one step.
+- When D, E and F have passed, this pattern is done for today. Say in Korean "다음으로 갑니다" and start the next pattern at step A.
+- If I miss the same step three times, leave this pattern for today and start the next one.
+- After the last pattern, use the ones that passed in a short real conversation about my day: you start, I answer, no script.
+
+Rules:
+- One thing per turn. Then stop and wait at least five seconds. Your turn is one line, under twelve words. I must talk more than you.
+- Never say my line for me. When I am stuck or wrong, give one hint: the first two words, or in Korean what to fix in three words or fewer ("주어부터", "과거로요"). Then wait again.
+- If the hint does not work, say the whole line once, say "따라 하세요.", and come back to it two or three turns later.
 - If I repeat your line instead of answering, say "그건 제 대사예요" and give me the first two words.
 - Always fix a missing be-verb, a missing subject, or a wrong tense. Ignore article and preposition slips when the meaning is clear. No praise: say "네" and go straight on.
-- When each of ${span} has come out three times, stop. Give one word per sentence: 혼자 / 힌트 / 모델. Then one sentence on what to practice tomorrow.
+- Never say the step letters, the pattern numbers, or the text in ( ). Never tell me which pattern to use; make me hear it in your question.
+- At the end, for each pattern say its short form and one word: 통과 / 힌트 / 못함. Then one sentence on what to drill tomorrow.
 
-Start now: one line in Korean to tell me we are starting, then your first question.`;
+Start now: one line in Korean to tell me we are starting, then step A of the first pattern.`;
 }
