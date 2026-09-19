@@ -324,6 +324,10 @@ public struct AdminScreenView: View {
         }.padding(.top, 8)
     }
 
+    static let chartH: CGFloat = 104      // 추이 차트 높이
+    static let axisW: CGFloat = 26        // 세로 축 라벨 폭 ("105.2" 까지 들어간다)
+    static let axisGap: CGFloat = 6
+
     // 히어로 — 현재 체중 + 시작 대비 증감 + 목표 메타 + 추이 차트 (mock weight-hero).
     // 탭 상단 고정: 입력 기록이 전체 이력이라 스크롤이 길어졌는데, 목록 어디를 보고 있든
     // 현재 체중과 추이를 함께 읽어야 한다 (사용자 2026-09-19).
@@ -371,10 +375,25 @@ public struct AdminScreenView: View {
             // 2건 미만이면 선이 안 그려지므로 축 라벨도 함께 숨긴다 — 고정 영역이라 빈 껍데기가
             // 늘 보이면 목표 줄과 겹쳐 읽힌다 (2026-09-19 빈 상태 실측).
             if ws.count >= 2 {
-                weightChart(entries: ws.reversed(), goal: goal)
-                    .frame(height: 104)
-                    .padding(.top, 12)
-                // 축 라벨은 실제로 그린 구간의 양 끝 날짜다. 예전 "14일 전"은 30건을 그리면서
+                let range = GymWeightLogic.chartRange(weights: shown.map(\.kg).reversed())
+                HStack(alignment: .top, spacing: Self.axisGap) {
+                    weightChart(entries: ws.reversed(), goal: goal)
+                        .frame(height: Self.chartH)
+                    // 세로 축 — 선이 닿는 위아래 끝 kg. 격자를 긋지 않아 몇 kg 대인지 알 수 없었다
+                    // (사용자 2026-09-19). 점이 상하 10pt 안쪽에 놓이므로 라벨도 그 높이에 맞춘다.
+                    VStack(alignment: .leading, spacing: 0) {
+                        if range.max > range.min { Text(fmtKg(range.max)) }
+                        Spacer(minLength: 0)
+                        // 값이 전부 같으면 선이 바닥에 그려지므로(span 0 방어) 이 라벨만 남기고
+                        // 아래에 붙인다 — 위에 두면 라벨과 선의 높이가 어긋난다.
+                        Text(fmtKg(range.min))
+                    }
+                    .font(.mono(9, 500)).foregroundStyle(GY.ink4)
+                    .frame(width: Self.axisW, height: Self.chartH - 9, alignment: .leading)
+                    .padding(.vertical, 4.5)
+                }
+                .padding(.top, 12)
+                // 가로 축 라벨은 실제로 그린 구간의 양 끝 날짜다. 예전 "14일 전"은 30건을 그리면서
                 // 14일이라 적어 늘 틀렸고, "오늘"도 오늘 미입력이면 사실이 아니었다.
                 HStack {
                     Text(shown.last.map { mdLabel($0.date) } ?? "")
@@ -383,6 +402,7 @@ public struct AdminScreenView: View {
                     Text(shown.first.map { mdLabel($0.date) } ?? "")
                         .font(.mono(9, 500)).foregroundStyle(GY.ink4)
                 }
+                .padding(.trailing, Self.axisW + Self.axisGap)   // 세로 축 폭만큼 빼야 차트 끝과 맞는다
                 .padding(.top, 4)
             }
         }

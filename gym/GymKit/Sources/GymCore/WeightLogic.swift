@@ -112,18 +112,26 @@ public enum GymWeightLogic {
         /// 목표선의 y. 목표가 기록 범위 밖이면 nil — 그리지 않는다.
         public let goalY: CGFloat?
     }
+    /// 차트 세로 범위. 스케일과 우측 축 라벨이 **같은 값**을 쓰도록 여기 한 곳에서 낸다.
+    public static func chartRange(weights: [Double]) -> (min: Double, max: Double) {
+        let all = weights + sma(weights)
+        return (all.min() ?? 0, all.max() ?? 1)
+    }
+    /// 각 인덱스까지의 7일(=7개) 이동평균.
+    private static func sma(_ weights: [Double]) -> [Double] {
+        weights.indices.map { i in
+            let s = max(0, i - 6)
+            return weights[s...i].reduce(0, +) / Double(i - s + 1)
+        }
+    }
     /// 세로 스케일은 **기록된 체중만**으로 잡는다. 목표를 범위에 넣으면 목표가 멀수록 실제 변동이
     /// 눌려 추이가 평평해진다 (2026-09-19: 목표 69 에 기록 73~75 면 높이의 1/3 만 썼다).
     /// 목표선은 범위 안에 들어올 때만 그리고, 남은 양은 히어로 메타가 숫자로 말한다.
     public static func chartPoints(weights: [Double], goal: Double,
                                    width: CGFloat, height: CGFloat) -> ChartProjection {
         let top: CGFloat = 10, bottom = height - 10
-        let smas = weights.indices.map { i -> Double in
-            let s = max(0, i - 6)
-            return weights[s...i].reduce(0, +) / Double(i - s + 1)
-        }
-        let all = weights + smas
-        let mn = all.min() ?? 0, mx = all.max() ?? 1
+        let smas = sma(weights)
+        let (mn, mx) = chartRange(weights: weights)
         let span = (mx - mn) == 0 ? 1 : (mx - mn)
         func yOf(_ v: Double) -> CGFloat { bottom - CGFloat((v - mn) / span) * (bottom - top) }
         func xOf(_ i: Int, _ n: Int) -> CGFloat { n <= 1 ? 0 : CGFloat(i) / CGFloat(n - 1) * width }

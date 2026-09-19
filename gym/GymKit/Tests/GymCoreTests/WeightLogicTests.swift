@@ -142,6 +142,25 @@ private typealias WeightSparkSample = GymWeightLogic.WeightSparkSample
         #expect(p.weightPts[0].x == 0 && p.weightPts[1].x == 300)
     }
 
+    // 축 라벨이 쓸 세로 범위는 스케일과 **같은 곳**에서 나와야 한다. 둘이 따로 계산하면
+    // 라벨이 가리키는 kg 와 선의 높이가 어긋난다 (사용자 2026-09-19 우측 지표 요청).
+    @Test func chartRangeMatchesPointScale() {
+        let rows: [Double] = [74.2, 73.7, 75.1, 74.0]
+        let r = GymWeightLogic.chartRange(weights: rows)
+        #expect(r.min == 73.7 && r.max == 75.1)
+        let p = GymWeightLogic.chartPoints(weights: rows, goal: 69, width: 300, height: 120)
+        // 최댓값 점이 top(10), 최솟값 점이 bottom(110) 에 놓인다 = 라벨 두 개가 그 자리를 가리킨다
+        #expect(abs(p.weightPts[2].y - 10) < 0.01)
+        #expect(abs(p.weightPts[1].y - 110) < 0.01)
+    }
+
+    // 값이 하나로 같으면 선은 바닥에 그려진다(span 0 방어). 위아래 라벨을 둘 다 붙이면
+    // 위쪽 라벨이 가리킬 점이 없으므로 뷰가 하나만 쓰도록 min == max 를 알려야 한다.
+    @Test func chartRangeIsFlatWhenAllSame() {
+        let r = GymWeightLogic.chartRange(weights: [73.0, 73.0, 73.0])
+        #expect(r.min == r.max)
+    }
+
     // 목표가 기록 범위 안이면 그 자리에 그린다.
     @Test func chartPointsKeepGoalLineWhenInRange() {
         let p = GymWeightLogic.chartPoints(weights: [72, 68], goal: 70, width: 300, height: 120)
