@@ -64,6 +64,14 @@ error: external macro implementation type 'TestingMacros.SuiteDeclarationMacro' 
 
 로직 검증과 픽셀 렌더까지는 이걸로 끝낼 수 있다. **실기기에 넣는 일만 라이선스 동의가 필요하다.**
 
+## 해제됨 (2026-09-19 실측)
+
+라이선스 차단이 풀렸다. `xcodebuild -version` → Xcode 27.0(27A266a), `xcodebuild -list`·
+`xcodebuild build -destination 'id=<시뮬 UDID>'`·`xcodebuild test -only-testing:ReadingTimeUITests`
+가 모두 통과했다(리딩타임 앱 설치·실행·XCUITest 35건 실행까지). 위 표의 '불가' 열은
+**이 시점 기준으로는 전부 가능**하다. 다음에 Xcode 가 올라가면 다시 막힐 수 있으니
+표와 우회로는 남겨 둔다 — 막혔는지 여부는 `xcodebuild -list` 로 먼저 확인할 것.
+
 ## 관련
 
 - `swiftui-confirmation-dialog-scaled-shell.md` — 같은 앱의 XCUITest 로 잡은 결함(그쪽은 라이선스가 필요하다)
