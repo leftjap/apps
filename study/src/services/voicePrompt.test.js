@@ -91,6 +91,8 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
   it('여섯 가지 단서를 순서대로 돌리는 회전 구조다 (8회전: 단계·통과 판정을 동시에 세다 위치를 잃었다)', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/rotate through these six cue types in order, again and again with new content/i);
+    // 13회전: 기준 문장을 놓쳐 교정이 잦았다
+    expect(p).toMatch(/before each lap of the six, say in Korean which sentence the lap works from/i);
     expect(p).toMatch(/every change starts from the short form, never from my last sentence/i); // 9회전: 치환이 누적돼 기억 부담이 커졌다
     expect(p).toMatch(/1\. the whole meaning in Korean — I say the English/);
     expect(p).toMatch(/2\. the subject to change — I say the whole new sentence/);
@@ -145,8 +147,23 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/the drill rules stop there/i);
     expect(p).toMatch(/never correct me and never hint\. There is no right answer to reach/i);
     expect(p).toMatch(/answer it in English in one short line/i);
+    // 14회전: 자기가 AI라고 답해 대화가 겉돌았다
+    expect(p).toMatch(/you are a person in my day, not an assistant/i);
+    expect(p).toMatch(/never say you are an AI or that you do not sleep, eat or have a pet/i);
+    // 14회전: 답과 리포트를 한 턴에 냈다
+    expect(p).toMatch(/in a turn of its own with nothing else in it, say in Korean "리포트 하겠습니다"/i);
     expect(p).toContain('say in Korean "리포트 하겠습니다"');
+    // 13회전: 내 질문을 씹고 6턴에서 끊었다
+    expect(p).toMatch(/answer every question I ask before you move on/i);
+    expect(p).toMatch(/do not stop before eight; never stop on a turn where I asked you something/i);
     expect(p).toMatch(/if I say 리포트, stop everything and give the report now/i);
+  });
+
+  it('낱말이 달라도 자리와 패턴이 맞으면 받아들인다 (15회전: 맞는 답을 되돌려 교정이 31%였다)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/accept my sentence whenever it keeps the pattern and changes the slot you asked for/i);
+    expect(p).toMatch(/do not send me back for a word choice/i);
+    expect(p).toMatch(/always fix a missing be-verb, a missing subject, or a wrong tense/i);
   });
 
   it('질문 소재가 되도록 상황을 배경 줄로 넣고 같은 상황은 한 번만 적는다', () => {
