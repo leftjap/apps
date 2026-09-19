@@ -93,7 +93,7 @@ export function mountSpeak(host) {
       h('span', { class: 'sp-sub' }, '영어'))),
     h('div', { class: 'sp-wrap' },
       h('h1', { class: 'sp-h1' }, '말하기 연습'),
-      h('div', { class: 'sp-sub' }, `배운 표현 최대 ${SPEAK_MAX}개로 ChatGPT 음성 대화 프롬프트를 만듭니다. 상대가 표현을 먼저 말하지 않고, 비슷하지만 다른 상황을 만들어 그 표현이 필요해지게 이끕니다.`),
+      h('div', { class: 'sp-sub' }, `배운 표현 최대 ${SPEAK_MAX}개로 ChatGPT 음성 연습 프롬프트를 만듭니다. 상대가 질문을 던지면 그 답으로 오늘 문장을 꺼내 말하고, 한 번은 사람·시간·사물을 바꿔 말하게 됩니다.`),
       h('div', { class: 'sp-scopes' }, scopeBtns),
       listEl,
       h('div', { class: 'sp-steps' }, '1 복사 → 2 ChatGPT 새 대화에 붙여 넣어 보내기 → 3 같은 대화에서 음성 모드 시작 → 4 약 10분 대화 → 5 끝나면 못 한 표현을 문장 모아보기에서 확인'),

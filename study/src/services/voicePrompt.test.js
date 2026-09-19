@@ -73,11 +73,12 @@ describe('buildVoicePrompt — 기본 문장 + 규칙 여덟 줄 (2026-09-19 재
     expect(p).toContain('B1 "How about tomorrow?" = 내일 어때?  (How about ~?)');
   });
 
-  it('구문을 포함하는 드릴이 없으면 가장 짧은 드릴을 쓴다', () => {
+  it('구문을 포함하는 드릴이 없으면 가장 짧은 드릴을 쓰고, 그 문장에 없는 구문은 적지 않는다', () => {
     const p = buildVoicePrompt([
       { expr: 'zzz', sentence: 'Target.', ko: '뜻.', drills: [{ en: 'A b c d.', ko: '가' }, { en: 'A b.', ko: '나' }] },
     ]);
     expect(p).toContain('B1 "A b." = 나');
+    expect(p).not.toContain('(zzz)'); // 문장에 없는 구문을 적으면 교사가 그 구문의 문장을 요구한다
   });
 
   it('드릴이 없으면 목표 문장을 그대로 쓴다', () => {

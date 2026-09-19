@@ -59,11 +59,14 @@ function baseOf(it) {
   return pool.reduce((a, b) => (wordCount(b.en) < wordCount(a.en) ? b : a));
 }
 
-/** 오늘 문장 한 줄 — 기본 문장·뜻·구문. 구문이 문장과 같으면 따로 붙이지 않는다. */
+/* 오늘 문장 한 줄 — 기본 문장·뜻·구문.
+ * 구문은 그 문장 안에 실제로 있을 때만 붙인다. 구문을 포함하는 드릴이 없어 최단 드릴로 떨어지면
+ * (시드 313장 중 52장) 문장에 없는 구문이 찍혀, 교사가 그 구문의 문장을 요구하게 된다. */
 function baseLine(it, n) {
   const b = baseOf(it);
-  const pattern = it.expr && it.expr !== b.en ? `  (${it.expr})` : '';
-  return `B${n} "${b.en}"${b.ko ? ` = ${b.ko}` : ''}${pattern}`;
+  const head = headOf(it.expr);
+  const shows = head && it.expr !== b.en && headMatcher(head).test(b.en);
+  return `B${n} "${b.en}"${b.ko ? ` = ${b.ko}` : ''}${shows ? `  (${it.expr})` : ''}`;
 }
 
 /** 교사가 질문을 만들 소재 — 카드마다 적힌 상황을 중복 없이 한 줄로. */
