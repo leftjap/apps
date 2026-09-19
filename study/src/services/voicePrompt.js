@@ -1,29 +1,22 @@
 /**
- * voicePrompt.js — 세션에서 배운 문장을 ChatGPT 음성 모드로 연습하는 붙여넣기용 프롬프트 빌더.
+ * voicePrompt.js — 세션에서 배운 기본 문장을 ChatGPT 음성 모드로 연습하는 붙여넣기용 프롬프트 빌더.
  *
  * 세션 요약(summaryV2)과 말하기 연습 화면(#/speak)이 같이 쓴다. 표현은 문자열 또는
  * { expr, sentence, ko, situation, miniDialogue, drills } (speakPicks.toSpeakItem 모양).
  *
- * 2026-09-11 재설계 근거 — 실제 ChatGPT 음성 여섯 번:
- * · 타깃을 숨기고 상황으로 유도하는 옛 방식은 초급(단어 하나만 나옴)에게 시험이 된다. 문장을 먼저 들려주고 쓰게 한다.
- * · 막혔을 때 정답을 통째로 주면 따라 말하기만 남는다. 첫 두 단어만 준다 (자가수정 유도 우선 — Ammar & Spada 2006).
- * · 붙여 넣은 직후 음성을 켜면 지시가 반영되지 않았다. 텍스트 답장을 받은 뒤 음성으로.
- *
- * 2026-09-15 재설계 근거 — 2026-09-14 실기 세션(사용자 기록) + 같은 프롬프트 재현(ChatGPT 웹):
- * · 산문 절차("Do the dialogue with me. You say A's lines…")는 모델에게만 하는 말이라, 학습자는 직전 지시인
- *   "따라 해 보세요" 를 계속 따랐고 대화가 통째로 따라 말하기가 됐다. 역할 전환을 교사 대사로 직접 말하게 한다.
- * · 학습자가 상대 대사를 따라 말해도 모델이 발음 교정으로 처리했다. 역할 이탈 교정 규칙을 따로 적는다.
- * · 카드 4장이 같은 미니대화를 공유하는데(seeds/en-personal-2026-09-13.json) 카드마다 실려 같은 대화가 4번
- *   찍혔고 "Do it twice" 까지 붙어 8회전이 됐다. 대화는 중복을 걷어 한 번만, 두 회전으로.
- * · 재현에서 모델이 A 첫 대사를 건너뛰고, "계속하자" 에 "좋아요, 바로 이어갈게요." 로 빈 턴을 썼다.
- *   절차를 단계 번호로 적고(작업지시서 2026-09-10 §4 교훈), 한 턴 한 단계·빈 대답 금지를 규칙으로 못박는다.
+ * 2026-09-19 재설계 — 정본은 specs/study-app-spec.md §9-9 "프롬프트". 근거:
+ * · 단계 대본과 대사 목록을 주면 교사가 목록 밖 표현을 지어내고 학습자는 빈칸만 채운다
+ *   (2026-09-10 v4 실측 `~/apps/tmp/voice-teacher/runs-analysis-v4.md`). 길이가 아니라 대본이 문제였다.
+ *   그래서 목적·재료·규칙 여덟 줄만 주고 진행은 교사에게 맡긴다.
+ * · 재료는 목표 문장이 아니라 기본 문장 — 구문마다 가장 짧은 문장. 앱 세션 ② 단계와 같은 규칙이다.
+ * · 실제 ChatGPT 두 번 검증(2026-09-19): 변형 강제·질문 중복 금지·되묻기 횟수를 숫자로 박아야 지켜졌다.
+ *   규칙 줄을 더 늘리면 지시 준수가 떨어지므로(2026-09-15 기록) 3회 세기가 한 번 어긋나는 것은 그대로 둔다.
+ * · 미니대화는 이 프롬프트에서 쓰지 않는다. 대본 대화를 태우면 구간 전체가 따라 말하기로 무너졌다(2026-09-14 실기).
  */
 export const VOICE_PROMPT_INTRO = '[아래를 ChatGPT 새 대화에 붙여 넣고, 텍스트 답장이 온 뒤에 같은 대화에서 음성 모드를 켜세요]';
 
-const DRILL_MAX = 3;
 const str = (v) => String(v ?? '').trim();
 const linesOf = (arr) => (Array.isArray(arr) ? arr : []).filter((x) => x && str(x.en));
-const isB = (l) => str(l.speaker).toUpperCase() === 'B';
 
 /** 문자열·객체 혼합 배열 → 정규화 배열. expr 이 비면 뺀다. 미니대화·드릴은 en 이 있는 항목만 남긴다. */
 export function normalizeVoiceItems(items) {
@@ -41,120 +34,66 @@ export function normalizeVoiceItems(items) {
 }
 
 const sentenceOf = (it) => it.sentence || it.expr;
+const wordCount = (s) => str(s).split(/\s+/).filter(Boolean).length;
 
-/** 오늘 문장 목록 한 줄 — 뜻·핵심 표현·상황은 소리 내지 않는 참고란이다. */
-function headerLine(it, n) {
-  const key = it.sentence && it.expr && it.expr !== it.sentence ? `  (key: ${it.expr})` : '';
-  const sit = it.situation && !it.miniDialogue.length ? `  (${it.situation})` : ''; // 대화가 있으면 상황은 대화가 대신한다
-  return `S${n} "${sentenceOf(it)}"${it.ko ? ` = ${it.ko}` : ''}${key}${sit}`;
+/* 구문의 앞머리 — "Do you want to ~" 는 물론 "How about ~?", "pick ~ up" 처럼 ~ 가 중간에 있는 키도
+ * 앞부분으로 맞춘다(실제 시드 313개 중 8개). 맞춤은 단어 경계를 보지 않는 부분 문자열이라
+ * "I keep" 이 "Nani keeps" 에 걸리는 자리가 있는데, 세션 시안의 기본 문장 규칙과 같게 두려고 그대로 둔다. */
+const headOf = (expr) => (expr.split('~')[0].trim() || expr.replace(/~/g, ' ').trim()).toLowerCase();
+
+/** 기본 문장 — 구문을 포함하는 드릴 중 가장 짧은 것. 없으면 가장 짧은 드릴, 드릴도 없으면 목표 문장. */
+function baseOf(it) {
+  const head = headOf(it.expr);
+  const withHead = head ? it.drills.filter((d) => d.en.toLowerCase().includes(head)) : [];
+  const pool = withHead.length ? withHead : it.drills;
+  if (!pool.length) return { en: sentenceOf(it), ko: it.ko };
+  return pool.reduce((a, b) => (wordCount(b.en) < wordCount(a.en) ? b : a));
 }
 
-/* 안내를 한 단계로 따로 두면 학습자가 답할 것이 없는데도 모델이 기다려 턴이 빈다.
- * 안내는 그 회전의 첫 단계 앞에 붙여, 말할 차례가 있는 단계에만 실린다. */
-function withGuide(steps, guide) {
-  const head = steps[0];
-  if (!head) return steps;
-  const merged = head.startsWith('In Korean: ')
-    ? `In Korean: ${guide} ${head.slice('In Korean: '.length)}`
-    : `In Korean: ${guide} Then ${head[0].toLowerCase()}${head.slice(1)}`;
-  return [merged, ...steps.slice(1)];
+/** 오늘 문장 한 줄 — 기본 문장·뜻·구문. 구문이 문장과 같으면 따로 붙이지 않는다. */
+function baseLine(it, n) {
+  const b = baseOf(it);
+  const pattern = it.expr && it.expr !== b.en ? `  (${it.expr})` : '';
+  return `B${n} "${b.en}"${b.ko ? ` = ${b.ko}` : ''}${pattern}`;
 }
 
-/** 미니대화 한 회전 → 단계 문자열 배열. A 대사마다 바로 뒤 B 대사를 기대 답으로 단다. */
-function dialogueRound(lines, round) {
-  const firstB = lines.find(isB);
-  const guide =
-    round === 1
-      ? `이제 대화 연습입니다. 따라 말하지 말고 제 말에 영어로 답하세요.${firstB ? ` 첫 대사는 "${firstB.en}" 입니다.` : ''}`
-      : '같은 대화를 한 번 더 합니다. 이번에도 제 말에 답하세요.';
-  const out = [];
-  for (let i = 0; i < lines.length; i += 1) {
-    if (isB(lines[i])) {
-      out.push(`In Korean: 먼저 말하세요.  (I answer: ${lines[i].en})`);
-      continue;
-    }
-    const next = lines[i + 1];
-    if (next && isB(next)) {
-      out.push(`Say "${lines[i].en}"  (I answer: ${next.en})`);
-      i += 1;
-    } else {
-      out.push(`Say "${lines[i].en}"`);
-    }
-  }
-  return withGuide(out, guide);
-}
-
-/** 같은 미니대화를 쓰는 카드가 여럿이어도 대화는 한 번만 태운다 (첫 등장 순서 유지). */
-function distinctDialogues(list) {
+/** 교사가 질문을 만들 소재 — 카드마다 적힌 상황을 중복 없이 한 줄로. */
+function background(list) {
   const seen = new Set();
-  const out = [];
-  list.forEach((it) => {
-    if (!it.miniDialogue.length) return;
-    const k = it.miniDialogue.map((l) => `${l.speaker}|${l.en}`).join('\n');
-    if (seen.has(k)) return;
-    seen.add(k);
-    out.push(it.miniDialogue);
-  });
-  return out;
-}
-
-function buildSteps(list) {
-  const steps = [];
-  if (!list.length) {
-    steps.push('Ask me to say a few simple everyday sentences, one at a time.');
-  }
-  list.forEach((it) => {
-    const q = `"${sentenceOf(it)}"`;
-    steps.push(`Say ${q} In Korean, point out one stress or linked sound, then the meaning: ${it.ko ? `${it.ko} ` : ''}Then say ${q} again and in Korean: 따라 해 보세요.`);
-  });
-  distinctDialogues(list).forEach((lines) => {
-    steps.push(...dialogueRound(lines, 1), ...dialogueRound(lines, 2));
-  });
-  const drillSteps = list.flatMap((it) =>
-    it.drills.slice(0, DRILL_MAX).map((d) => (d.ko ? `Say in Korean: ${d.ko}  (I answer: ${d.en})` : `Ask me to say "${d.en}"`)),
-  );
-  steps.push(...withGuide(drillSteps, '이제 한국어를 듣고 영어로 말하세요.'));
-  list.forEach((it) => {
-    steps.push(`Ask me in English one simple question that I would answer with "${sentenceOf(it)}" Then wait.`);
-  });
-  const span = list.length > 1 ? `S1 to S${list.length}` : 'S1';
-  steps.push(`In Korean, go through ${span} one by one and say for each: 혼자 말함, 도움 받음, or 안 나옴. Count 혼자 말함 only if I said that sentence in full at least once in a dialogue step or a Korean-to-English step, with no hint and no correction from you; 따라 해 보세요 repeats do not count, and a Korean 안내 that names my first line is not a hint. Then stop.`);
-  return steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  return list
+    .map((it) => it.situation)
+    .filter((s) => s && !seen.has(s) && seen.add(s))
+    .join(' ');
 }
 
 /** items → ChatGPT 붙여넣기용 프롬프트 문자열. */
 export function buildVoicePrompt(items) {
   const list = normalizeVoiceItems(items);
   const header = list.length
-    ? list.map((it, i) => headerLine(it, i + 1)).join('\n')
-    : 'S1 (use a few simple everyday sentences)';
+    ? list.map((it, i) => baseLine(it, i + 1)).join('\n')
+    : 'B1 (use a few simple everyday sentences)';
+  const span = list.length > 1 ? `B1 to B${list.length}` : 'B1';
+  const bg = background(list);
 
   return `${VOICE_PROMPT_INTRO}
 
-You are my English speaking tutor. We practice by voice. Take as long as each step needs; we will not always reach the last step, and that is fine.
+You are my English speaking partner. I learned the sentences below in my app, so do not teach or explain them. Your job is to make me say each of them out loud many times by asking me questions and by answering mine, and to make me change a word or two for a new situation. I want them to stick without memorizing them.
 
-About me: Korean adult, beginner. I can read simple English, but when I speak, usually only one word comes out and I can't build the sentence. I repeat well after hearing it.
+About me: Korean adult. I read English well, but when I speak, only fragments come out. I repeat well after hearing. I want to say these from meaning, without looking at them.${bg ? `\nMy day, so your questions make sense: ${bg}` : ''}
 
-Today's sentences, from my app:
+Today's session, the sentences I practiced:
 ${header}
 
-How to run this lesson:
-- Do ONE numbered step per turn, in order, then stop and wait for me. A step can have several parts: do all of its parts in that one turn. Never merge two steps into one turn, and never skip a step.
-- A hint or a correction is not a step. Stay on the same step until I have said my line, then go on.
-- Say only what the step tells you to say, in the language it names. Use only the sentences written in this message: no new practice sentences, no new grammar. (The questions in the last steps are yours to write.)
-- Text in ( ) is a note for you. Never say it out loud, and never say the step numbers or the headings. (I answer: …) is the line I should say in that step, even when it is not one of the sentences above.
-- In a step that ends with 따라 해 보세요, repeating your English line is exactly what I should do. Say nothing about it and go on.
-- In the dialogue steps I must answer, not repeat. If I say your line back there, say in Korean "그건 제 대사예요", then give me the first two words of my line and wait.
-- In any step, if I answer in Korean or with a different sentence than the step expects, say in Korean which sentence I need now, then give me its first two words and wait.
-- If I stop partway, say only one word, or can't start at all, give me the next one or two words from where I stopped, and wait. Never say my whole line for me when it is my turn to speak. (Naming my first line in a Korean 안내 is not that.) If I still can't finish after you have helped me twice in this step, or if only one word is left, say the whole line once, have me repeat it, and go on: that is the one time you say my line for me.
-- If I ask you to go on, move to the next step and do it, even if this step is unfinished. Never reply with only "좋아요" or "네", and never say several steps at once.
-- Fix one mistake at a time, briefly, in Korean, then have me say it again. When I get it right, say nothing about it and do the next step. No praise.
-- Do not ask me whether I am ready or whether I want to continue. Just do the next step.
-- Speak clearly. If I don't understand, say the English again slower, then a short Korean hint, and stay on this step.
-- My control words: 다시 = say this whole step again. 천천히 = say the English of this step again, slowly. 뜻 = give the Korean meaning of the English you just said. 다음 = leave this step and do the next one. 그만 = skip to the last step. After 다시, 천천히 or 뜻, end your turn with the English I need to answer.
+How to run it:
+- Make me say each of ${span} three times, spread out. For one of those three, ask in a way that forces me to change a person, a time, or a thing. Do not wait for me to change it on my own.
+- Ask me things that make ${span} the natural answer. Never tell me which sentence or which pattern to use. Ask a different question every time: never reuse a question you have already asked.
+- Three or more times in this session, say "이번엔 저한테 물어보세요", then answer my question in one line and go on.
+- One question per turn. Then stop and wait at least five seconds. Your turn is one line, under twelve words. I must talk more than you.
+- Never say my sentence for me. When I am stuck or wrong, give one hint: the first two words, or in Korean what to fix in three words or fewer ("주어부터", "과거로요"). Then wait again.
+- If the hint does not work, say the whole sentence once, say "따라 하세요.", and ask for that sentence again two or three turns later.
+- If I repeat your line instead of answering, say "그건 제 대사예요" and give me the first two words.
+- Always fix a missing be-verb, a missing subject, or a wrong tense. Ignore article and preposition slips when the meaning is clear. No praise: say "네" and go straight on.
+- When each of ${span} has come out three times, stop. Give one word per sentence: 혼자 / 힌트 / 모델. Then one sentence on what to practice tomorrow.
 
-Steps:
-${buildSteps(list)}
-
-Start now. Say only step 1, then wait.`;
+Start now: one line in Korean to tell me we are starting, then your first question.`;
 }
