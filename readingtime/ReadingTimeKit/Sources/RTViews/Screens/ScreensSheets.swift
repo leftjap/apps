@@ -155,13 +155,43 @@ public struct Sheet07AddTime: View {
 }
 
 // ── 09 완독 · 별점 ──
+// userData 주입 시 selectedBook 실데이터 (08 상세와 같은 init 스냅샷 문법).
+// 실기기 보고 2026-09-19: 여기가 시안 문자열(몰입 · 4:12 · 8회 · 18일)을 그대로 들고 있어
+// 어떤 책을 완독해도 시안 책이 떴다. 저장(saveFinished)은 selectedBook 기준이라 옳았다.
 public struct Sheet09Finish: View {
+    struct Live {
+        let subtitle: String     // "제목 · 저자 · N일 동안"
+        let coverUrl: String
+        let total: String        // "0:46"
+        let count: Int
+        let countUnit: String    // 종이 "회" / 밀리 "일"
+        let countLabel: String   // 종이 "세션" / 밀리 "읽은 날"
+        let days: Int
+    }
+
     var model: RTAppModel?
+    let live: Live?
     private let rating: Int
 
     public init(model: RTAppModel? = nil) {
         self.model = model
         self.rating = model?.rating ?? 4
+        if let m = model, let data = m.userData, let book = m.selectedBook {
+            let days = m.daysSinceAdded(book)
+            let totals = m.bookTotals(book, in: data)
+            let millie = book.millieBookId != nil
+            self.live = Live(
+                subtitle: [book.title, book.author, "\(days)일 동안"]
+                    .filter { !$0.isEmpty }.joined(separator: " · "),
+                coverUrl: book.coverUrl,
+                total: RTAppModel.hmString(totals.seconds),
+                count: totals.count,
+                countUnit: millie ? "일" : "회",
+                countLabel: millie ? "읽은 날" : "세션",
+                days: days)
+        } else {
+            self.live = nil   // 데모(rtshot 픽셀 오라클) — 시안 고정값 유지
+        }
     }
 
     public var body: some View {
@@ -170,8 +200,9 @@ public struct Sheet09Finish: View {
                 coverStage
                 Text("다 읽었어요").font(.sans(24, 900)).tracking(24 * -0.03)
                     .foregroundColor(RT.ink).padding(.top, 18)
-                Text("몰입 · 미하이 칙센트미하이 · 18일 동안").font(.sans(12.5, 500))
+                Text(live?.subtitle ?? "몰입 · 미하이 칙센트미하이 · 18일 동안").font(.sans(12.5, 500))
                     .foregroundColor(RT.muted).padding(.top, 6)
+                    .lineLimit(1)
                 Text("이 책, 어떠셨나요?").font(.sans(12.5, 700))
                     .foregroundColor(Color(hex: 0x4A5A44)).padding(.top, 22)
                 stars.padding(.top, 13)
@@ -191,12 +222,18 @@ public struct Sheet09Finish: View {
             Ellipse().stroke(Color(hex: 0x3A5C4B, alpha: 0.35), lineWidth: 1.5)
                 .frame(width: 110, height: 146) // inset -16, border-radius 50% = 타원
                 .rtRippleLoop(duration: 3, delay: 0.4)
-            FlowCover(.init(width: 78, height: 114, frameInset: 6,
-                            padTop: 0, padBottom: 0, authorEN: nil,
-                            titleSize: 21, titleTop: 0, flowSize: 5.5, flowTop: 5,
-                            ruleWidth: nil, authorKR: nil, centered: true))
-                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 13, x: 0, y: 16)
-                .rtPop(duration: 0.5)
+            Group {
+                if let live {
+                    RTRemoteCover(url: live.coverUrl, size: .init(width: 78, height: 114), radius: 5)
+                } else {
+                    FlowCover(.init(width: 78, height: 114, frameInset: 6,
+                                    padTop: 0, padBottom: 0, authorEN: nil,
+                                    titleSize: 21, titleTop: 0, flowSize: 5.5, flowTop: 5,
+                                    ruleWidth: nil, authorKR: nil, centered: true))
+                }
+            }
+            .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 13, x: 0, y: 16)
+            .rtPop(duration: 0.5)
             Circle().fill(RT.ctaGrad(CGSize(width: 30, height: 30)))
                 .frame(width: 30, height: 30)
                 .overlay(RTIcon(RTIconPath.check, size: 14, stroke: RT.ctaText, lineWidth: 3))
@@ -230,9 +267,10 @@ public struct Sheet09Finish: View {
 
     var tiles: some View {
         HStack(spacing: 9) {
-            tile(value: "4:12", unit: nil, label: "총 시간")
-            tile(value: "8", unit: "회", label: "세션")
-            tile(value: "18", unit: "일", label: "함께한 기간")
+            tile(value: live?.total ?? "4:12", unit: nil, label: "총 시간")
+            tile(value: live.map { "\($0.count)" } ?? "8", unit: live?.countUnit ?? "회",
+                 label: live?.countLabel ?? "세션")
+            tile(value: live.map { "\($0.days)" } ?? "18", unit: "일", label: "함께한 기간")
         }
     }
 

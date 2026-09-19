@@ -12,7 +12,7 @@ public struct Screen08Detail: View {
     }
 
     var model: RTAppModel?
-    private let live: Live?
+    let live: Live?          // 테스트 핀(누적·기록 수) — 09 완독 시트와 같은 수를 내야 한다
     private let readOnly: Bool   // 파트너 책 상세 = 읽기전용(CTA·책메뉴 숨김)
 
     public init(model: RTAppModel? = nil) {
@@ -27,22 +27,17 @@ public struct Screen08Detail: View {
             let f = DateFormatter()
             f.locale = Locale(identifier: "en_US_POSIX")
             f.dateFormat = "HH:mm"
-            let days = (cal.dateComponents([.day], from: cal.startOfDay(for: book.addedAt),
-                                           to: cal.startOfDay(for: m.now())).day ?? 0) + 1
+            let days = m.daysSinceAdded(book)
+            // 누적·기록 수는 모델 정본(bookTotals) — 09 완독 시트가 같은 수를 써야 한다.
+            let totals = m.bookTotals(book, in: data, ebooks: !partner)
             if book.millieBookId != nil {
                 // 밀리 편입 책 — 세션이 없다. 기록은 일별(밀리 히스토리), 시간은 그 책이 그날
                 // 유일할 때만 귀속(ebookBreakdown 규칙 — 다권 날 추측 금지). 누적도 그 합.
-                let df = DateFormatter()
-                df.locale = Locale(identifier: "en_US_POSIX")
-                df.dateFormat = "yyyy-MM-dd"
                 // 1분 미만 날(ebookMinSeconds 미달)은 홈 캘린더처럼 미기록 취급해 행을 만들지
                 // 않는다 — 남기면 혼자 읽은 날이 '다른 책과 함께'로 오표기된다(1권인데 시간만 미달).
                 // 파트너의 밀리 책은 히스토리를 받지 않는다(스냅샷은 책 목록뿐) — 내 기록을 붙이면 안 됨
-                let myDays = partner ? [] : m.ebookBooks.filter { $0.value.contains(book.title) }.keys.sorted(by: >)
-                    .filter { ds in df.date(from: ds).map { m.ebookSeconds(on: $0) > 0 } ?? false }
-                var totalSec = 0
-                let rows = myDays.prefix(5).compactMap { ds -> (Tile, String, String, Right)? in
-                    guard let d = df.date(from: ds) else { return nil }
+                let myDays = partner ? [] : m.ebookReadDays(title: book.title)
+                let rows = myDays.prefix(5).map { d -> (Tile, String, String, Right) in
                     let mine = m.ebookBreakdown(on: d).first { $0.title == book.title }
                     let right: Right = cal.isDate(d, inSameDayAs: m.now())
                         ? .today
@@ -52,18 +47,12 @@ public struct Screen08Detail: View {
                     }
                     return (.millie, "—", "밀리 · 다른 책과 함께", right)
                 }
-                for ds in myDays {
-                    if let d = df.date(from: ds),
-                       let mine = m.ebookBreakdown(on: d).first(where: { $0.title == book.title }) {
-                        totalSec += mine.seconds
-                    }
-                }
                 self.live = Live(book: book,
-                                 total: RTAppModel.hmString(totalSec),
-                                 count: myDays.count,
+                                 total: RTAppModel.hmString(totals.seconds),
+                                 count: totals.count,
                                  days: days,
                                  isMillie: true,
-                                 rows: rows)
+                                 rows: Array(rows))
             } else {
                 let modeLabel = ["flip": "엎기", "tap": "탭"]
                 let rows = data.sessions
@@ -78,10 +67,9 @@ public struct Screen08Detail: View {
                             : .date("\(cal.component(.month, from: r.endedAt)).\(cal.component(.day, from: r.endedAt))")
                         return (tile, "\(max(1, r.seconds / 60))분", label, right)
                     }
-                let forBook = data.sessions.filter { $0.isbn == book.isbn }
                 self.live = Live(book: book,
-                                 total: RTAppModel.hmString(forBook.reduce(0) { $0 + $1.seconds }),
-                                 count: forBook.count,
+                                 total: RTAppModel.hmString(totals.seconds),
+                                 count: totals.count,
                                  days: days,
                                  isMillie: false,
                                  rows: rows)

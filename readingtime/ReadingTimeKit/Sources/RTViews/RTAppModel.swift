@@ -750,6 +750,31 @@ public final class RTAppModel: ObservableObject {
         userData?.sessions.filter { $0.isbn == isbn }.count ?? 0
     }
 
+    /// 밀리 책이 기록된 날 (최신순) — 1분 미만 날은 제외(ebookSeconds 규칙).
+    /// 08 상세의 기록 행과 09 완독 시트의 누적이 같은 날 목록을 써야 한다.
+    public func ebookReadDays(title: String) -> [Date] {
+        let f = dayFormatter
+        return ebookBooks.filter { $0.value.contains(title) }.keys.sorted(by: >)
+            .compactMap { f.date(from: $0) }
+            .filter { ebookSeconds(on: $0) > 0 }
+    }
+
+    /// 한 책의 누적 — (초, 기록 수). 종이는 세션 합·세션 수, 밀리는 귀속된 날 합·읽은 날 수.
+    /// 밀리 시간은 그날 책이 1권일 때만 붙는다(ebookBreakdown 규칙 — 다권 날 추측 금지).
+    /// 파트너 스냅샷엔 밀리 히스토리가 없으므로 ebooks: false 로 0 을 낸다 (내 기록 오염 방지).
+    /// 08 상세 히어로와 09 완독 시트가 같은 수를 내야 하는 정본.
+    public func bookTotals(_ book: RTBook, in data: RTUserData,
+                           ebooks: Bool = true) -> (seconds: Int, count: Int) {
+        if book.millieBookId != nil {
+            guard ebooks else { return (0, 0) }
+            let days = ebookReadDays(title: book.title)
+            let sec = days.reduce(0) { $0 + (ebookBreakdown(on: $1).first { $0.title == book.title }?.seconds ?? 0) }
+            return (sec, days.count)
+        }
+        let forBook = data.sessions.filter { $0.isbn == book.isbn }
+        return (forBook.reduce(0) { $0 + $1.seconds }, forBook.count)
+    }
+
     /// 최신순 세션 기록
     public func recentRecords(_ limit: Int) -> [RTSessionRecord] {
         Array((userData?.sessions ?? []).sorted { $0.endedAt > $1.endedAt }.prefix(limit))
@@ -1055,8 +1080,9 @@ public final class RTAppModel: ObservableObject {
     }
 
     public func openSheet(_ s: RTSheet) {
-        // 재완독: 기존 별점을 프리셋 (직전 다른 책 평가 잔존값 방지 겸)
-        if s == .finish, let r = selectedBook?.rating { rating = r }
+        // 재완독은 그 책 별점을 프리셋, 평가 없는 책은 기본 4★ 로 되돌린다.
+        // ?? 를 안 두면 직전에 평가한 다른 책의 별점이 남아 그대로 저장된다.
+        if s == .finish { rating = selectedBook?.rating ?? 4 }
         // 책 추가: 검색창은 열 때마다 공란. 결과(searchResults)는 유지 = "공란이면 최신 검색 표시".
         // 실패 안내는 결과가 아니므로 지운다 (다시 열면 최신 결과부터).
         if s == .addbook { searchQuery = ""; searchError = nil }
