@@ -343,12 +343,9 @@ public struct AdminScreenView: View {
 
     // MARK: - 히어로 + 추이 차트 (작업지시서 2026-09-19 §3-1·3-2)
 
-    /// 추이 차트 높이. 812급은 222(시안 F), 작은 화면(SE 667)은 178 — 222 로 두면 목록이
-    /// 2행밖에 안 남았다 (2026-09-19 시뮬 실측). 44pt 를 돌려주면 3행 + 다음 행 머리가 보인다.
-    /// gymshot(macOS)은 screenHeight 가 812 고정이라 스냅샷은 늘 222 다.
-    static var chartH: CGFloat {
-        HomeScreenView.screenHeight < HomeScreenView.compactScreenHeight ? 178 : 222
-    }
+    /// 추이 차트 높이 — 기기와 무관하게 시안 F 값 222. 히어로 줄 상자를 시안대로 죈 뒤로는
+    /// SE(667)에서도 목록이 3행 남는다 (2026-09-19 시뮬 실측: 11 Pro 5.05행 · SE 3.07행).
+    static let chartH: CGFloat = 222
     static let chartLeft: CGFloat = 20       // 플롯 좌 여백
     static let chartRight: CGFloat = 40      // 세로 축 라벨이 쓰는 폭
     static let chartGridExtra: CGFloat = 13  // 격자는 플롯보다 이만큼 더 나간다(축 라벨 6pt 앞에서 끊김)
@@ -375,6 +372,7 @@ public struct AdminScreenView: View {
                     Text("이번 주")
                 }
                 .font(.sans(10, 500)).foregroundStyle(GY.ink3)
+                .frame(height: 17)                    // 시안 줄 상자 (10 × 1.7)
                 .padding(.init(top: 9, leading: Self.chartLeft, bottom: 14,
                                trailing: Self.chartRight))
             }
@@ -405,10 +403,15 @@ public struct AdminScreenView: View {
                         .padding(.leading, 5)
                 }
             }
+            // 줄 상자를 시안 값으로 고정한다 (2026-09-19 시안 HTML 실측: 숫자 줄 52.0, 메타 줄 20.4).
+            // SwiftUI Text 는 서체의 자연 행 높이(52pt 숫자 = 약 65)를 쓰는데 시안은 CSS
+            // line-height 로 눌렀다 — 그대로 두면 히어로가 10.4pt 높아 목록 한 행을 먹는다.
+            .frame(height: 52)
             // 메타 — 건수와 목표. 시작값은 위 증감 줄이 말하므로 여기서 뺐다.
             weightHeroMeta(latest: latest, goal: goal, count: count)
                 .foregroundStyle(GY.ink2)
                 .accessibilityIdentifier("weight-hero-meta")   // 식별자는 말단 Text 에만
+                .frame(height: 20.4, alignment: .leading)
                 .padding(.top, 9)
         }
         .padding(.init(top: 16, leading: 24, bottom: 0, trailing: 20))
@@ -446,7 +449,7 @@ public struct AdminScreenView: View {
         .buttonStyle(.plain).accessibilityIdentifier("weight-input")
         // 아래 24 — 루트가 하단 세이프에어리어를 22pt 당겨 쓰므로(GymApp), 그만큼 돌려주지 않으면
         // 세이프에어리어가 0 인 SE(667) 에서 버튼 아랫부분이 화면 밖으로 잘린다 (2026-09-18 실측).
-        .padding(.init(top: 12, leading: 26, bottom: 24, trailing: 26))
+        .padding(.init(top: 12, leading: 24, bottom: 24, trailing: 24))
         .background(GY.shell)
     }
 
