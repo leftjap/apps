@@ -94,9 +94,13 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/rotate through these six cue types in order, again and again with new content/i);
     expect(p).toMatch(/every change starts from the short form, never from my last sentence/i); // 9회전: 치환이 누적돼 기억 부담이 커졌다
     expect(p).toMatch(/1\. the whole meaning in Korean — I say the English/);
-    expect(p).toMatch(/2\. only the subject to change, in Korean/);
-    expect(p).toMatch(/3\. only the thing or activity to change/);
-    expect(p).toMatch(/4\. only the time or place to change/);
+    expect(p).toMatch(/2\. the subject to change — I say the whole new sentence/);
+    expect(p).toMatch(/3\. the thing or activity to change/);
+    expect(p).toMatch(/4\. the time or place to change/);
+    // 11회전: "4시로요" 처럼 자리를 빼면 어느 자리를 바꾸는지 몰라 계속 틀렸다
+    expect(p).toMatch(/a change cue is two Korean words: the slot, then the new word/i);
+    expect(p).toContain('"주어를 소연으로", "동작을 운동으로", "시간을 이번 주로"');
+    expect(p).toMatch(/never describe it and never leave the slot out/i);
     expect(p).toMatch(/5\. a question from you in English — I answer in English, changing something myself/);
     expect(p).toContain('이번엔 질문을 만드세요');
   });
@@ -126,7 +130,9 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
   it('리포트는 짧은 형태 + 한 단어 + 내일 한 줄로만', () => {
     const p = buildVoicePrompt([card1, card2]);
     expect(p).toMatch(/at the end say only this and nothing else/i);
-    expect(p).toMatch(/혼자 if I needed no help, 힌트 if I needed hints, 못함 if it fell apart/i);
+    expect(p).toMatch(/one word, and only one of these three/i); // 11회전: 규정 외 단어 '미진행' 이 나왔다
+    expect(p).toMatch(/못함 if you had to say my sentence or we never got there/i)
+    expect(p).toMatch(/give the report once; if I ask again, say only "끝났습니다"/i);
     expect(p).toMatch(/then one line starting 내일은/i);
   });
 
@@ -134,6 +140,7 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toContain('say in Korean "이제 대화합니다"');
     expect(p).toMatch(/no script/i);
+    expect(p).toMatch(/after every two of your questions, say in Korean "이번엔 저한테 물어보세요"/i); // 10회전: 대화가 인터뷰였다
     expect(p).toMatch(/if I say 리포트, stop everything and give the report now/i);
   });
 
