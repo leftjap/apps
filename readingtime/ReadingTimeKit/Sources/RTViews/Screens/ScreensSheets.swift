@@ -204,9 +204,12 @@ public struct Sheet09Finish: View {
                 coverStage
                 Text("다 읽었어요").font(.sans(24, 900)).tracking(24 * -0.03)
                     .foregroundColor(RT.ink).padding(.top, 18)
+                // 긴 제목은 한 줄에 안 들어간다. 1줄로 자르면 저자와 'N일 동안'이 통째로 잘려
+                // 나간다(실측: 김초엽 장편 제목). 2줄까지 흘리고 가운데 정렬한다.
                 Text(live?.subtitle ?? "몰입 · 미하이 칙센트미하이 · 18일 동안").font(.sans(12.5, 500))
                     .foregroundColor(RT.muted).padding(.top, 6)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
                 Text("이 책, 어떠셨나요?").font(.sans(12.5, 700))
                     .foregroundColor(Color(hex: 0x4A5A44)).padding(.top, 22)
                 stars.padding(.top, 13)
