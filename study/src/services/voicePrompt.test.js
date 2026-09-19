@@ -78,13 +78,27 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/what I cannot do is build a sentence myself/i);
   });
 
+  it('네 단계를 건너뛰지 말라고 못박는다 (4회전에서 D 를 건너뛰었다)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/do all four of these in order and skip none/i);
+  });
+
+  it('리포트는 짧은 형태 + 한 단어 + 내일 한 줄로만 (4회전에서 설명 문단이 붙었다)', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toMatch(/at the end say only this and nothing else/i);
+    expect(p).toMatch(/통과 if B, C and D all passed, 힌트 if it passed with hints, 못함 if it was left unfinished/i);
+    expect(p).toMatch(/then one line starting 내일은/i);
+  });
+
   it('네 단계 모두 학습자가 문장을 만드는 쪽이다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/A\. Say a Korean meaning\. I say the English/i);
     expect(p).toMatch(/B\. Say in Korean only what to change, three words or fewer/i);
     expect(p).toMatch(/I say the whole new sentence\. A different change every turn/i);
     expect(p).toMatch(/C\. Ask me a question in English in this pattern\. I answer in English with a change of my own/i);
-    expect(p).toMatch(/D\. Say an answer in Korean\. I build the English question that gets that answer/i);
+    expect(p).toContain('D. Say in Korean "이번엔 질문을 만드세요"');
+    expect(p).toMatch(/I build the English question that gets that answer/i);
+    expect(p).toMatch(/you must reach this step before the pattern is done/i);
     expect(p).not.toMatch(/I repeat it once/i);
     expect(p).not.toMatch(/I tell you the Korean meaning/i);
   });
@@ -108,15 +122,53 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/that is the only time you say my sentence/i);
   });
 
-  it('같은 단계에서 세 번 막히면 접고 다음 패턴으로 간다', () => {
+  it('한 단계에서 네 번 틀리면 접고 다음 패턴으로 간다 (1회전에서 다섯 번 틀려도 안 넘어갔다)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/if I miss the same step three times, leave this pattern for today and start the next one/i);
+    expect(p).toMatch(/count my wrong answers inside a step\. At four wrong in one step, leave this pattern for today/i);
   });
 
-  it('마지막은 통과한 패턴을 섞은 대본 없는 대화다', () => {
+  it('마지막 전환을 소리 내어 말하게 하고 대화 뒤 리포트로 끝낸다 (3회전에서 드릴만 계속 돌았다)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/mix all the passed patterns in a short real conversation/i);
+    expect(p).toContain('say in Korean "이제 대화합니다"');
+    expect(p).toMatch(/mix the passed patterns in a real conversation about my day/i);
     expect(p).toMatch(/no script/i);
+    expect(p).toMatch(/after about six of my turns, give the report/i);
+  });
+
+  it('리포트 통제어로 언제든 끝낼 수 있다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/if I say 리포트, stop everything and give the report now/i);
+  });
+
+  it('힌트·역할 이탈·교정 범위·칭찬 금지 규칙은 그대로 둔다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/the first two words, or in Korean what to fix in three words or fewer/i);
+    expect(p).toContain('그건 제 대사예요');
+    expect(p).toMatch(/always fix a missing be-verb, a missing subject, or a wrong tense/i);
+    expect(p).toMatch(/ignore article and preposition slips/i);
+    expect(p).toMatch(/no praise/i);
+  });
+
+  it('맞았을 때만 네 로 시작하게 해서 새 문항과 교정을 구분한다 (6회전에서 단서가 교정으로 읽혔다)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/start your turn with "네" only when my answer was right, never when it was wrong/i);
+    expect(p).toMatch(/so I can tell a new item from a correction/i);
+  });
+
+  it('한 턴 하나·5초 대기·열두 단어 제한은 그대로 둔다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/one thing per turn/i);
+    expect(p).toMatch(/wait at least five seconds/i);
+    expect(p).toMatch(/under twelve words/i);
+    expect(p).toMatch(/I must talk more than you/i);
+  });
+
+  it('단계 문자와 패턴 번호는 소리 내지 않고 대본 대화도 넣지 않는다', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toMatch(/never say the step letters, the pattern numbers, or the text in \( \)/i);
+    expect(p).not.toContain('We landed early.');
+    expect(p).not.toContain('(I answer:');
+    expect(p.split('\n').filter((l) => /^\d+\. /.test(l))).toHaveLength(0);
   });
 
   it('질문 소재가 되도록 상황을 배경 줄로 넣고 같은 상황은 한 번만 적는다', () => {
