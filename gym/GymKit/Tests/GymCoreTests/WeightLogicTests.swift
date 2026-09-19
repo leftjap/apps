@@ -129,13 +129,23 @@ private typealias WeightSparkSample = GymWeightLogic.WeightSparkSample
                                                width: 132, height: 38, pad: 3).isEmpty)
     }
 
-    @Test func chartPointsNormalized() {
+    // 스케일은 **체중만**으로 잡는다. 목표를 범위에 넣으면 목표가 멀수록 실제 변동이 눌려
+    // 추이가 평평한 선으로 보인다 (사용자 2026-09-19 — 69 목표에 73~75 기록이면 높이의 1/3만 씀).
+    @Test func chartPointsUseWeightRangeNotGoal() {
         let rows: [Double] = [72, 70]
         let p = GymWeightLogic.chartPoints(weights: rows, goal: 69, width: 300, height: 120)
         #expect(p.weightPts.count == 2)
-        // min=69(goal), max=72 → 72 는 top(10), 69 는 bottom(110)
+        // min=70, max=72 → 72 는 top(10), 70 은 bottom(110). 목표 69 는 범위 밖이라 선을 안 그린다.
         #expect(abs(p.weightPts[0].y - 10) < 0.01)
-        #expect(abs(p.goalY - 110) < 0.01)
+        #expect(abs(p.weightPts[1].y - 110) < 0.01)
+        #expect(p.goalY == nil)
         #expect(p.weightPts[0].x == 0 && p.weightPts[1].x == 300)
+    }
+
+    // 목표가 기록 범위 안이면 그 자리에 그린다.
+    @Test func chartPointsKeepGoalLineWhenInRange() {
+        let p = GymWeightLogic.chartPoints(weights: [72, 68], goal: 70, width: 300, height: 120)
+        // min=68, max=72 → 70 은 한가운데(60)
+        #expect(p.goalY.map { abs($0 - 60) < 0.01 } == true)
     }
 }

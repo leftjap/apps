@@ -332,20 +332,22 @@ public struct AdminScreenView: View {
         let latest = ws.first
         let start = ws.last
         let goal = model.settings.goalWeight
-        return HStack(alignment: .bottom, spacing: 14) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("현재 체중").font(.sans(12, 500)).foregroundStyle(GY.ink3)
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text(latest.map { fmtKg($0.kg) } ?? "—")
-                        .font(.mono(58, 500)).tracking(-2.3).foregroundStyle(GY.ink1)
-                        .accessibilityIdentifier("weight-hero-num")
-                    Text("kg").font(.mono(16, 500)).foregroundStyle(GY.ink4)
-                    if let latest, let start, latest.kg != start.kg {
-                        let d = ((latest.kg - start.kg) * 10).rounded() / 10
-                        Text("\(d < 0 ? "↓" : "↑") \(fmtKg(d))")
-                            .font(.mono(13, 600)).foregroundStyle(d < 0 ? GY.crailDeep : GY.ink4)
-                    }
-                }.padding(.top, 6)
+        let shown = Array(ws.prefix(30))             // 차트가 그리는 구간 (weightChart 의 suffix(30) 과 같다)
+        return VStack(alignment: .leading, spacing: 0) {
+            // 현재 값은 한 줄로 작게. 큰 숫자가 쓰던 자리는 추이 차트에 넘겼다 — 최신 값은 바로
+            // 아래 입력 기록 첫 줄에도 있고, 여기서 보고 싶은 것은 그간의 흐름이다 (사용자 2026-09-19).
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text("현재").font(.sans(12, 500)).foregroundStyle(GY.ink3)
+                Text(latest.map { fmtKg($0.kg) } ?? "—")
+                    .font(.mono(22, 600)).tracking(-0.44).foregroundStyle(GY.ink1)
+                    .accessibilityIdentifier("weight-hero-num")
+                Text("kg").font(.mono(12, 500)).foregroundStyle(GY.ink4)
+                if let latest, let start, latest.kg != start.kg {
+                    let d = ((latest.kg - start.kg) * 10).rounded() / 10
+                    Text("\(d < 0 ? "↓" : "↑") \(fmtKg(d))")
+                        .font(.mono(12, 600)).foregroundStyle(d < 0 ? GY.crailDeep : GY.ink4)
+                }
+                Spacer(minLength: 8)
                 // 목표 메타 — "목표 69 · −3.4kg 남음 · 약 N주" (weights.js hero meta)
                 Group {
                     if let latest {
@@ -362,25 +364,26 @@ public struct AdminScreenView: View {
                         Text("목표 \(fmtKg(goal))kg · 첫 입력을 기다립니다")
                             .font(.sans(12, 500)).foregroundStyle(GY.ink4)
                     }
-                }.padding(.top, 9)
+                }
+                .lineLimit(1).minimumScaleFactor(0.85)
             }
-            .fixedSize()
             // 추이 차트 — 체중 라인(crail) + 목표선(점선), 최근 30건 (weights.js projectChart).
             // 2건 미만이면 선이 안 그려지므로 축 라벨도 함께 숨긴다 — 고정 영역이라 빈 껍데기가
             // 늘 보이면 목표 줄과 겹쳐 읽힌다 (2026-09-19 빈 상태 실측).
             if ws.count >= 2 {
-                VStack(spacing: 4) {
-                    weightChart(entries: ws.reversed(), goal: goal)
-                        .frame(height: 76)
-                    HStack {
-                        Text("14일 전").font(.mono(9, 500)).foregroundStyle(GY.ink4)
-                        Spacer()
-                        Text("오늘").font(.mono(9, 500)).foregroundStyle(GY.ink4)
-                    }
+                weightChart(entries: ws.reversed(), goal: goal)
+                    .frame(height: 104)
+                    .padding(.top, 12)
+                // 축 라벨은 실제로 그린 구간의 양 끝 날짜다. 예전 "14일 전"은 30건을 그리면서
+                // 14일이라 적어 늘 틀렸고, "오늘"도 오늘 미입력이면 사실이 아니었다.
+                HStack {
+                    Text(shown.last.map { mdLabel($0.date) } ?? "")
+                        .font(.mono(9, 500)).foregroundStyle(GY.ink4)
+                    Spacer()
+                    Text(shown.first.map { mdLabel($0.date) } ?? "")
+                        .font(.mono(9, 500)).foregroundStyle(GY.ink4)
                 }
-                .frame(maxWidth: .infinity)
-            } else {
-                Spacer(minLength: 0)
+                .padding(.top, 4)
             }
         }
         .padding(.init(top: 22, leading: 26, bottom: 12, trailing: 26))
@@ -454,11 +457,14 @@ public struct AdminScreenView: View {
                 let p = GymWeightLogic.chartPoints(weights: rows.map(\.kg), goal: goal,
                                                    width: g.size.width, height: g.size.height)
                 ZStack {
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: p.goalY))
-                        path.addLine(to: CGPoint(x: g.size.width, y: p.goalY))
+                    // 목표선은 기록 범위 안일 때만 (chartPoints 가 nil 로 알린다)
+                    if let goalY = p.goalY {
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: goalY))
+                            path.addLine(to: CGPoint(x: g.size.width, y: goalY))
+                        }
+                        .stroke(GY.ink4, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
                     }
-                    .stroke(GY.ink4, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
                     Path { path in
                         guard let first = p.weightPts.first else { return }
                         path.move(to: first)
