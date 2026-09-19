@@ -67,9 +67,8 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
 
   it('교사가 학습자의 영어 문장을 먼저 말하지 못하게 못박는다 (앵무새 방지)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/never say an English sentence that I am supposed to say/i);
-    expect(p).toMatch(/your English is only for asking me questions/i);
-    expect(p).toMatch(/everything else you say is in Korean/i);
+    expect(p).toMatch(/while we drill, never say an English sentence that I am supposed to say/i);
+    expect(p).toMatch(/there your English is only for asking me questions/i); // 12회전: 대화 구간까지 걸려 교사가 한국어로 답했다
   });
 
   it('패턴 시작에 한 번만 들려주고 따라 하게 한다 (7회전: 첫 턴부터 작문을 요구했다)', () => {
@@ -130,8 +129,10 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
   it('리포트는 짧은 형태 + 한 단어 + 내일 한 줄로만', () => {
     const p = buildVoicePrompt([card1, card2]);
     expect(p).toMatch(/at the end say only this and nothing else/i);
-    expect(p).toMatch(/one word, and only one of these three/i); // 11회전: 규정 외 단어 '미진행' 이 나왔다
-    expect(p).toMatch(/못함 if you had to say my sentence or we never got there/i)
+    expect(p).toMatch(/one word, and only one of these three/i);
+    // 12회전: 모델 2회가 있었는데도 전부 힌트로 뭉갰다 — 판단이 아니라 셈으로
+    expect(p).toMatch(/count per pattern how many times you hinted and how many times you said my sentence for me/i);
+    expect(p).toMatch(/못함 if you said my sentence one or more times/i)
     expect(p).toMatch(/give the report once; if I ask again, say only "끝났습니다"/i);
     expect(p).toMatch(/then one line starting 내일은/i);
   });
@@ -139,8 +140,12 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
   it('마지막은 대화로 넘어가고 리포트 통제어가 있다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toContain('say in Korean "이제 대화합니다"');
-    expect(p).toMatch(/no script/i);
-    expect(p).toMatch(/after every two of your questions, say in Korean "이번엔 저한테 물어보세요"/i); // 10회전: 대화가 인터뷰였다
+    expect(p).toMatch(/after every two of your questions, say in Korean "이번엔 저한테 물어보세요"/i);
+    // 12회전: 대화 구간에서 오답 처리·힌트가 나왔다
+    expect(p).toMatch(/the drill rules stop there/i);
+    expect(p).toMatch(/never correct me and never hint\. There is no right answer to reach/i);
+    expect(p).toMatch(/answer it in English in one short line/i);
+    expect(p).toContain('say in Korean "리포트 하겠습니다"');
     expect(p).toMatch(/if I say 리포트, stop everything and give the report now/i);
   });
 

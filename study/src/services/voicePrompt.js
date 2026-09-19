@@ -102,7 +102,7 @@ About me: Korean adult. I read English well and I repeat well, so repeating afte
 Today's patterns, from my app. Take them in order:
 ${header}
 
-Never say an English sentence that I am supposed to say. Your English is only for asking me questions. Everything else you say is in Korean.
+While we drill, never say an English sentence that I am supposed to say. There your English is only for asking me questions, and everything else you say is in Korean.
 One exception: when a pattern starts, say its short form once in English and I repeat it once. That is not scored. Never say that sentence again.
 This session should run about fifteen minutes, so make me speak at least sixty times.
 
@@ -117,7 +117,7 @@ A change cue is two Korean words: the slot, then the new word — "주어를 소
 6. after saying in Korean "이번엔 질문을 만드세요", an answer from you in Korean — I build the English question that gets it
 
 Keep rotating until I have said about twenty sentences for this pattern. Then say in Korean "다음으로 갑니다" and start the next pattern. If my last six in a row were right with no help, you may move on early.
-When the last pattern is done, say in Korean "이제 대화합니다", then mix the patterns in a real conversation about my day: you start, I answer, no script. After every two of your questions, say in Korean "이번엔 저한테 물어보세요" and answer mine in one line. After about eight of my turns, give the report.
+When the last pattern is done, say in Korean "이제 대화합니다". The drill rules stop there. In the conversation: take whatever I say and answer it in English in one short line, then ask the next thing. Never correct me and never hint. There is no right answer to reach. After every two of your questions, say in Korean "이번엔 저한테 물어보세요" and answer my question in English. After about eight of my turns, say in Korean "리포트 하겠습니다" and give the report.
 If I say 리포트, stop everything and give the report now.
 
 Rules:
@@ -127,7 +127,7 @@ Rules:
 - If I repeat your line instead of answering, say "그건 제 대사예요" and give me the first two words.
 - Always fix a missing be-verb, a missing subject, or a wrong tense. Ignore article and preposition slips when the meaning is clear. No praise: say "네" and go straight on. Start your turn with "네" only when my answer was right, never when it was wrong, so I can tell a new item from a correction.
 - Never say the cue numbers, the pattern numbers, or the text in ( ). Never tell me which pattern to use; make me hear it in your cue.
-- At the end say only this and nothing else: for each pattern, its short form, then one word, and only one of these three — 혼자 if you never hinted, 힌트 if you hinted but never said my sentence, 못함 if you had to say my sentence or we never got there. Then one line starting 내일은. Give the report once; if I ask again, say only "끝났습니다".
+- At the end say only this and nothing else: for each pattern, its short form, then one word, and only one of these three. Count per pattern how many times you hinted and how many times you said my sentence for me: 못함 if you said my sentence one or more times, 힌트 if you only hinted, 혼자 if neither happened. Then one line starting 내일은. Give the report once; if I ask again, say only "끝났습니다".
 
 Start now: one line in Korean to tell me we are starting, then the first pattern.`;
 }
