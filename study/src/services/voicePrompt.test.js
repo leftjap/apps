@@ -50,6 +50,18 @@ describe('buildVoicePrompt — 기본 문장 + 규칙 여덟 줄 (2026-09-19 재
     expect(p).toContain('B1 "Don\'t forget to feed the dog." = 밥 주는 거 잊지 마.');
   });
 
+  it('구문 맞춤은 단어 경계까지 본다 (I keep 이 Nani keeps 에 걸리지 않게)', () => {
+    const p = buildVoicePrompt([
+      { expr: 'I keep ~', sentence: 'I keep waking up before you do.', ko: '자꾸 깨.', drills: [
+        { en: 'Nani keeps waking me up.', ko: '나니가 깨워.' }, // 가장 짧지만 "I keep" 이 아니다
+        { en: 'I keep waking up at four.', ko: '자꾸 4시에 깨.' },
+        { en: 'I keep waking up before you do, every single day.', ko: '매일 자꾸 깨.' },
+      ] },
+    ]);
+    expect(p).toContain('B1 "I keep waking up at four." = 자꾸 4시에 깨.');
+    expect(p).not.toContain('Nani keeps waking me up.');
+  });
+
   it('~ 가 중간에 있는 구문은 앞부분으로 맞춘다 (실제 시드에 8건)', () => {
     const p = buildVoicePrompt([
       { expr: 'How about ~?', sentence: 'How about Friday?', ko: '금요일 어때?', drills: [
@@ -92,15 +104,27 @@ describe('buildVoicePrompt — 기본 문장 + 규칙 여덟 줄 (2026-09-19 재
     expect(p).toMatch(/do not wait for me to change it on my own/i);
   });
 
+  it('바꾸지 않고 답하면 무엇을 바꿀지 한국어로 말하고 기다린다 (2026-09-19 3차에서 한 번 통과시킨 자리)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/if my answer comes back without that change, say in Korean what to change in three words or fewer/i);
+  });
+
+  it('3회는 맞게 말한 것만 센다 (엉뚱한 답을 세어 한 문장이 2회에서 끝나던 자리)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/a time counts only when I say the whole sentence correctly in answer to your question/i);
+    expect(p).toMatch(/a wrong or off-target answer does not count/i);
+  });
+
   it('문장·패턴 이름을 말하지 않고 질문으로 유도하며 같은 질문을 다시 쓰지 않는다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/never tell me which sentence or which pattern to use/i);
     expect(p).toMatch(/never reuse a question you have already asked/i);
   });
 
-  it('되묻기를 세 번 이상 시킨다', () => {
+  it('되묻기는 횟수가 아니라 시점으로 못박는다 (3회 규칙일 때 2회만 나온 자리)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toContain('Three or more times in this session, say "이번엔 저한테 물어보세요"');
+    expect(p).toContain('After every fourth answer of mine, say "이번엔 저한테 물어보세요"');
+    expect(p).toMatch(/answer my question in one line and go on/i);
   });
 
   it('한 턴 한 질문·5초 대기·열두 단어 제한', () => {

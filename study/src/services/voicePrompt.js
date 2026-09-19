@@ -8,9 +8,11 @@
  * · 단계 대본과 대사 목록을 주면 교사가 목록 밖 표현을 지어내고 학습자는 빈칸만 채운다
  *   (2026-09-10 v4 실측 `~/apps/tmp/voice-teacher/runs-analysis-v4.md`). 길이가 아니라 대본이 문제였다.
  *   그래서 목적·재료·규칙 여덟 줄만 주고 진행은 교사에게 맡긴다.
- * · 재료는 목표 문장이 아니라 기본 문장 — 구문마다 가장 짧은 문장. 앱 세션 ② 단계와 같은 규칙이다.
- * · 실제 ChatGPT 두 번 검증(2026-09-19): 변형 강제·질문 중복 금지·되묻기 횟수를 숫자로 박아야 지켜졌다.
- *   규칙 줄을 더 늘리면 지시 준수가 떨어지므로(2026-09-15 기록) 3회 세기가 한 번 어긋나는 것은 그대로 둔다.
+ * · 재료는 목표 문장이 아니라 기본 문장 — 구문을 포함하는 드릴 중 가장 짧은 것. 세션 시안의 ② 단계와
+ *   같은 뜻이지만 그 시안은 아직 앱에 없고, 여기서는 단어 경계까지 본다.
+ * · 실제 ChatGPT 다섯 번 검증(2026-09-19): 규칙 줄을 늘리지 말고 기존 줄을 정확하게 만들어야 지켜진다.
+ *   "안 바꾸면 무엇을 바꿀지 말하라", "맞게 말한 것만 센다", "네 번째 답마다 되묻게 하라" 로 조건과
+ *   시점을 박은 뒤에야 변형 강제·3회 세기·되묻기가 안정됐다.
  * · 미니대화는 이 프롬프트에서 쓰지 않는다. 대본 대화를 태우면 구간 전체가 따라 말하기로 무너졌다(2026-09-14 실기).
  */
 export const VOICE_PROMPT_INTRO = '[아래를 ChatGPT 새 대화에 붙여 넣고, 텍스트 답장이 온 뒤에 같은 대화에서 음성 모드를 켜세요]';
@@ -37,14 +39,21 @@ const sentenceOf = (it) => it.sentence || it.expr;
 const wordCount = (s) => str(s).split(/\s+/).filter(Boolean).length;
 
 /* 구문의 앞머리 — "Do you want to ~" 는 물론 "How about ~?", "pick ~ up" 처럼 ~ 가 중간에 있는 키도
- * 앞부분으로 맞춘다(실제 시드 313개 중 8개). 맞춤은 단어 경계를 보지 않는 부분 문자열이라
- * "I keep" 이 "Nani keeps" 에 걸리는 자리가 있는데, 세션 시안의 기본 문장 규칙과 같게 두려고 그대로 둔다. */
-const headOf = (expr) => (expr.split('~')[0].trim() || expr.replace(/~/g, ' ').trim()).toLowerCase();
+ * 앞부분으로 맞춘다(실제 시드 313개 중 8개). */
+const headOf = (expr) => expr.split('~')[0].trim() || expr.replace(/~/g, ' ').trim();
+
+/* 단어 경계까지 본다. 그냥 부분 문자열로 찾으면 "I keep" 이 "Nani keeps" 안에 걸려,
+ * 학습자가 배운 형태가 아닌 문장이 기본 문장으로 뽑힌다(en-personal-2026-09-17 카드 2에서 실제로 발생). */
+function headMatcher(head) {
+  const esc = head.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${esc}($|[^\\p{L}\\p{N}])`, 'iu');
+}
 
 /** 기본 문장 — 구문을 포함하는 드릴 중 가장 짧은 것. 없으면 가장 짧은 드릴, 드릴도 없으면 목표 문장. */
 function baseOf(it) {
   const head = headOf(it.expr);
-  const withHead = head ? it.drills.filter((d) => d.en.toLowerCase().includes(head)) : [];
+  const re = head ? headMatcher(head) : null;
+  const withHead = re ? it.drills.filter((d) => re.test(d.en)) : [];
   const pool = withHead.length ? withHead : it.drills;
   if (!pool.length) return { en: sentenceOf(it), ko: it.ko };
   return pool.reduce((a, b) => (wordCount(b.en) < wordCount(a.en) ? b : a));
@@ -85,9 +94,9 @@ Today's session, the sentences I practiced:
 ${header}
 
 How to run it:
-- Make me say each of ${span} three times, spread out. For one of those three, ask in a way that forces me to change a person, a time, or a thing. Do not wait for me to change it on my own.
+- Make me say each of ${span} three times, spread out. A time counts only when I say the whole sentence correctly in answer to your question; a wrong or off-target answer does not count. For one of those three, ask in a way that forces me to change a person, a time, or a thing, and do not wait for me to change it on my own. If my answer comes back without that change, say in Korean what to change in three words or fewer, then wait.
 - Ask me things that make ${span} the natural answer. Never tell me which sentence or which pattern to use. Ask a different question every time: never reuse a question you have already asked.
-- Three or more times in this session, say "이번엔 저한테 물어보세요", then answer my question in one line and go on.
+- After every fourth answer of mine, say "이번엔 저한테 물어보세요", then answer my question in one line and go on.
 - One question per turn. Then stop and wait at least five seconds. Your turn is one line, under twelve words. I must talk more than you.
 - Never say my sentence for me. When I am stuck or wrong, give one hint: the first two words, or in Korean what to fix in three words or fewer ("주어부터", "과거로요"). Then wait again.
 - If the hint does not work, say the whole sentence once, say "따라 하세요.", and ask for that sentence again two or three turns later.
