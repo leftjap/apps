@@ -111,6 +111,28 @@ public enum GymScreens {
     }
 
     // 홈 idle 데모 — 진행 중 세션 없음 (HomeA 분기).
+    // 체중 탭 시안 F 대조 (작업지시서 2026-09-19) — 10주 × 주 3회로 시안과 같은 칸 밀도를 만든다.
+    // 실기기 기록은 PUBLIC 저장소에 넣지 않으므로 합성 시리즈다: 오래된 쪽이 무겁고 주 안에서
+    // 흔들린다. 마지막 주는 월·화·수만 있어 오늘(토)은 미입력이다 — 시안과 같은 상태.
+    @MainActor static func demoWeightChartModel() -> GymAppModel {
+        let m = demoModel()
+        guard let today = GymAppModel.dayFmt.date(from: "2026-09-19") else { return m }
+        m.referenceToday = today
+        let cal = GymAppModel.kst
+        var rows: [GymWeight] = []
+        for w in 0..<10 {
+            guard let monday = cal.date(byAdding: .day, value: -(w * 7 + 5), to: today) else { continue }
+            for (j, d) in (w == 0 ? [0, 1, 2] : [0, 2, 5]).enumerated() {
+                guard let day = cal.date(byAdding: .day, value: d, to: monday) else { continue }
+                let kg = (73.9 + Double(w) * 0.09 + [0.0, 0.35, -0.25][j])
+                rows.append(GymWeight(date: GymAppModel.dayFmt.string(from: day),
+                                      kg: (kg * 10).rounded() / 10, height: 173))
+            }
+        }
+        m.weights = rows.sorted { $0.date > $1.date }      // date desc
+        healthySync(m); return m
+    }
+
     @MainActor static func demoIdleModel() -> GymAppModel {
         let m = demoEmptyModel()
         if let d = GymAppModel.dayFmt.date(from: "2026-05-06") { m.referenceToday = d }
@@ -420,6 +442,10 @@ public enum GymScreens {
         case "home-active":  return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))
         case "admin":        return AnyView(AdminScreenView(model: demoModel(), initialTab: .ex, embedScroll: false).frame(width: 390, height: 844))
         case "admin-weight": return AnyView(AdminScreenView(model: demoModel(), initialTab: .weight, embedScroll: false).frame(width: 390, height: 844))
+        // 체중 탭 재설계 (작업지시서 2026-09-19) — 시안 F 와 같은 375×812. 히어로·차트 대조용이다:
+        // ImageRenderer 가 ScrollView 안을 못 그려 목록 자리는 빈다. 목록 행 수와 세로 예산은
+        // 이 그림으로 판단하지 않는다(세이프에어리어도 없다) — 시뮬 실앱 스크린샷으로 본다.
+        case "admin-weight-375": return AnyView(AdminScreenView(model: demoWeightChartModel(), initialTab: .weight).frame(width: 375, height: 812))
         case "admin-profile":return AnyView(AdminScreenView(model: demoModel(), initialTab: .profile, embedScroll: false).frame(width: 390, height: 844))
         case "admin-profile-atrisk": return AnyView(AdminScreenView(model: demoAtRiskModel(), initialTab: .profile, embedScroll: false).frame(width: 390, height: 844))
         case "admin-profile-edit": return AnyView(AdminScreenView(model: demoModel(), initialTab: .profile, embedScroll: false, initialProfileField: "birthdate").frame(width: 390, height: 844))

@@ -272,144 +272,161 @@ public struct AdminScreenView: View {
         return Self.md.string(from: d)
     }
     func fmtKg(_ v: Double) -> String { Self.wf.string(from: NSNumber(value: v)) ?? "\(v)" }
+    /// 체중 표기 — 소수 1자리 고정. `wf` 는 74.0 을 "74" 로 떨궈 목록의 소수점 열이 어긋났다.
+    /// `wf` 자체는 운동 기본중량("20kg")·키패드 prefill 이 함께 쓰므로 건드리지 않는다.
+    static let wf1: NumberFormatter = {
+        let f = NumberFormatter(); f.numberStyle = .decimal
+        f.minimumFractionDigits = 1; f.maximumFractionDigits = 1
+        return f
+    }()
+    func fmtKg1(_ v: Double) -> String { Self.wf1.string(from: NSNumber(value: v)) ?? "\(v)" }
+
+    // 입력 기록 — 전체 이력. 헤더("전체 N건")와 통계 3열은 지웠다: 건수는 히어로 메타가,
+    // 최저·시작은 차트와 히어로가 말한다 (작업지시서 2026-09-19 §3-3).
     var weightPane: some View {
         let entries = model.weightEntries()          // date desc
-        let start = entries.last?.w
-        let minKg = entries.map(\.w.kg).min()
         let todayStr = GymAppModel.dayFmt.string(from: model.referenceToday)
-
-        return VStack(spacing: 0) {
-            // 입력 기록 헤더
-            HStack {
-                Text("입력 기록").font(.sans(12, 600)).tracking(0.24).foregroundStyle(GY.ink2)
-                Spacer()
-                Text(entries.isEmpty ? "" : "전체 \(entries.count)건")
-                    .font(.sans(12, 500)).foregroundStyle(GY.ink4)
+        return LazyVStack(spacing: 0) {
+            if entries.isEmpty {
+                Text("아직 기록이 없습니다. 아래 버튼으로 입력하세요.")
+                    .font(.sans(13, 400)).foregroundStyle(GY.ink3).padding(.vertical, 24)
             }
-            .padding(.horizontal, 26).padding(.top, 4).padding(.bottom, 4)
-            // 리스트 — 오늘 미입력 행 + 전체 이력 (최저 마크 + 증감 ▼crail/▲뉴트럴).
-            // 10건에서 끊겨 과거를 못 봤다 (사용자 2026-09-18). 건수가 늘어나므로 Lazy 로.
-            LazyVStack(spacing: 0) {
-                if entries.isEmpty {
-                    Text("아직 기록이 없습니다. 아래 버튼으로 입력하세요.")
-                        .font(.sans(13, 400)).foregroundStyle(GY.ink4).padding(.vertical, 24)
-                }
-                if let first = entries.first, first.w.date != todayStr {
-                    weightRowView(label: mdLabel(todayStr), today: true, valText: nil,
-                                  isMin: false, delta: nil)
-                }
-                ForEach(entries, id: \.w.date) { e in
-                    weightRowView(label: mdLabel(e.w.date), today: false,
-                                  valText: fmtKg(e.w.kg),
-                                  isMin: entries.count > 1 && e.w.kg == minKg,
-                                  delta: e.delta)
-                }
+            if let first = entries.first, first.w.date != todayStr {
+                weightRowView(dayStr: todayStr, today: true, valText: nil, delta: nil)
             }
-            .padding(.horizontal, 26)
-            // 통계 3열 — 시작/최저/7일 평균 (mock weight-stat-*)
-            if let start {
-                let last7 = entries.prefix(7).map(\.w.kg)
-                let avg7 = last7.reduce(0, +) / Double(last7.count)
-                HStack(spacing: 8) {
-                    weightStat(fmtKg(start.kg), "시작", GY.ink1)
-                    weightStat(minKg.map { fmtKg($0) } ?? "—", "최저", GY.crailDeep)
-                    weightStat(fmtKg((avg7 * 10).rounded() / 10), "7일 평균", GY.ink1)
-                }
-                .padding(.horizontal, 26).padding(.top, 12)
-                .overlay(alignment: .top) {
-                    Rectangle().fill(GY.lineSoft).frame(height: 1).padding(.horizontal, 26)
-                }
-                .padding(.top, 12).padding(.bottom, 20)
-            }
-        }.padding(.top, 8)
-    }
-
-    static let chartH: CGFloat = 104      // 추이 차트 높이
-    static let axisW: CGFloat = 26        // 세로 축 라벨 폭 ("105.2" 까지 들어간다)
-    static let axisGap: CGFloat = 6
-
-    // 히어로 — 현재 체중 + 시작 대비 증감 + 목표 메타 + 추이 차트 (mock weight-hero).
-    // 탭 상단 고정: 입력 기록이 전체 이력이라 스크롤이 길어졌는데, 목록 어디를 보고 있든
-    // 현재 체중과 추이를 함께 읽어야 한다 (사용자 2026-09-19).
-    var weightHero: some View {
-        let ws = model.weights                       // date desc
-        let latest = ws.first
-        let start = ws.last
-        let goal = model.settings.goalWeight
-        let shown = Array(ws.prefix(30))             // 차트가 그리는 구간 (weightChart 의 suffix(30) 과 같다)
-        return VStack(alignment: .leading, spacing: 0) {
-            // 현재 값은 한 줄로 작게. 큰 숫자가 쓰던 자리는 추이 차트에 넘겼다 — 최신 값은 바로
-            // 아래 입력 기록 첫 줄에도 있고, 여기서 보고 싶은 것은 그간의 흐름이다 (사용자 2026-09-19).
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text("현재").font(.sans(12, 500)).foregroundStyle(GY.ink3)
-                Text(latest.map { fmtKg($0.kg) } ?? "—")
-                    .font(.mono(22, 600)).tracking(-0.44).foregroundStyle(GY.ink1)
-                    .accessibilityIdentifier("weight-hero-num")
-                Text("kg").font(.mono(12, 500)).foregroundStyle(GY.ink4)
-                if let latest, let start, latest.kg != start.kg {
-                    let d = ((latest.kg - start.kg) * 10).rounded() / 10
-                    Text("\(d < 0 ? "↓" : "↑") \(fmtKg(d))")
-                        .font(.mono(12, 600)).foregroundStyle(d < 0 ? GY.crailDeep : GY.ink4)
-                }
-                Spacer(minLength: 8)
-                // 목표 메타 — "목표 69 · −3.4kg 남음 · 약 N주" (weights.js hero meta)
-                Group {
-                    if let latest {
-                        let remaining = GymWeightLogic.remainingLoss(current: latest.kg, goal: goal)
-                        let weeks = GymWeightLogic.estimateGoalDate(current: latest.kg, goal: goal)
-                            .flatMap { GymWeightLogic.weeksUntil($0) }
-                        let weeksText = (remaining > 0 ? weeks.flatMap { $0 > 0 ? " · 약 \($0)주" : nil } : nil) ?? ""
-                        (Text("목표 ").font(.sans(12, 500)).foregroundStyle(GY.ink4)
-                         + Text(fmtKg(goal)).font(.mono(12, 600)).foregroundStyle(GY.crailDeep)
-                         + Text(remaining > 0 ? " · −\(fmtKg(remaining))kg 남음" : " · 목표 달성")
-                            .font(.sans(12, 600)).foregroundStyle(GY.ink2)
-                         + Text(weeksText).font(.sans(12, 500)).foregroundStyle(GY.ink4))
-                    } else {
-                        Text("목표 \(fmtKg(goal))kg · 첫 입력을 기다립니다")
-                            .font(.sans(12, 500)).foregroundStyle(GY.ink4)
-                    }
-                }
-                .lineLimit(1).minimumScaleFactor(0.85)
-            }
-            // 추이 차트 — 체중 라인(crail) + 목표선(점선), 최근 30건 (weights.js projectChart).
-            // 2건 미만이면 선이 안 그려지므로 축 라벨도 함께 숨긴다 — 고정 영역이라 빈 껍데기가
-            // 늘 보이면 목표 줄과 겹쳐 읽힌다 (2026-09-19 빈 상태 실측).
-            if ws.count >= 2 {
-                let range = GymWeightLogic.chartRange(weights: shown.map(\.kg).reversed())
-                HStack(alignment: .top, spacing: Self.axisGap) {
-                    weightChart(entries: ws.reversed(), goal: goal)
-                        .frame(height: Self.chartH)
-                    // 세로 축 — 선이 닿는 위아래 끝 kg. 격자를 긋지 않아 몇 kg 대인지 알 수 없었다
-                    // (사용자 2026-09-19). 점이 상하 10pt 안쪽에 놓이므로 라벨도 그 높이에 맞춘다.
-                    VStack(alignment: .leading, spacing: 0) {
-                        if range.max > range.min { Text(fmtKg(range.max)) }
-                        Spacer(minLength: 0)
-                        // 값이 전부 같으면 선이 바닥에 그려지므로(span 0 방어) 이 라벨만 남기고
-                        // 아래에 붙인다 — 위에 두면 라벨과 선의 높이가 어긋난다.
-                        Text(fmtKg(range.min))
-                    }
-                    .font(.mono(9, 500)).foregroundStyle(GY.ink4)
-                    .frame(width: Self.axisW, height: Self.chartH - 9, alignment: .leading)
-                    .padding(.vertical, 4.5)
-                }
-                .padding(.top, 12)
-                // 가로 축 라벨은 실제로 그린 구간의 양 끝 날짜다. 예전 "14일 전"은 30건을 그리면서
-                // 14일이라 적어 늘 틀렸고, "오늘"도 오늘 미입력이면 사실이 아니었다.
-                HStack {
-                    Text(shown.last.map { mdLabel($0.date) } ?? "")
-                        .font(.mono(9, 500)).foregroundStyle(GY.ink4)
-                    Spacer()
-                    Text(shown.first.map { mdLabel($0.date) } ?? "")
-                        .font(.mono(9, 500)).foregroundStyle(GY.ink4)
-                }
-                .padding(.trailing, Self.axisW + Self.axisGap)   // 세로 축 폭만큼 빼야 차트 끝과 맞는다
-                .padding(.top, 4)
+            ForEach(Array(entries.enumerated()), id: \.element.w.date) { i, e in
+                weightRowView(dayStr: e.w.date, today: false, valText: fmtKg1(e.w.kg),
+                              delta: e.delta, last: i + 1 == entries.count)
             }
         }
-        .padding(.init(top: 22, leading: 26, bottom: 12, trailing: 26))
+        .padding(.horizontal, 24)
+    }
+
+    // 기록 행 44pt — 날짜·요일 / 증감(폭 42) / 값(폭 56). " kg" 접미사는 뺐다(44회 반복이고
+    // 단위는 히어로가 말한다). 요일을 새로 붙여 주 리듬이 목록에서도 보인다 (§3-3).
+    func weightRowView(dayStr: String, today: Bool, valText: String?, delta: Double?,
+                       last: Bool = false) -> some View {
+        let day = GymAppModel.dayFmt.date(from: dayStr)
+        return HStack(spacing: 7) {
+            Text(day.map { Self.md.string(from: $0) } ?? dayStr)
+                .font(.sans(15, today ? 600 : 500)).foregroundStyle(GY.ink1)
+            Text(day.map { Self.wd.string(from: $0) } ?? "")
+                .font(.sans(12, 500)).foregroundStyle(GY.ink4)
+            if today { Text("오늘").font(.sans(11, 700)).foregroundStyle(GY.crailDeep) }
+            Spacer(minLength: 4)
+            if let valText {
+                weightDelta(delta).frame(width: 42, alignment: .trailing)
+                Text(valText).font(.mono(18, 600)).tracking(-0.3).foregroundStyle(GY.ink1)
+                    .frame(width: 56, alignment: .trailing)
+            } else {
+                Text("미입력").font(.sans(13, 500)).foregroundStyle(GY.ink4)
+            }
+        }
+        .frame(height: 44)
+        .overlay(alignment: .bottom) {
+            if !last { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+        }
+    }
+
+    // 증감 — 감소 ▼crailDeep(목표 진척) / 증가 ▲ink3. 이중 음수를 쓰지 않는다.
+    @ViewBuilder func weightDelta(_ delta: Double?) -> some View {
+        if let delta {
+            if abs(delta) < 0.05 {
+                Text("— 0.0").font(.mono(12, 500)).foregroundStyle(GY.ink3)
+            } else if delta < 0 {
+                Text("▼\(fmtKg1(-delta))").font(.mono(12, 600)).foregroundStyle(GY.crailDeep)
+            } else {
+                Text("▲\(fmtKg1(delta))").font(.mono(12, 500)).foregroundStyle(GY.ink3)
+            }
+        }
+    }
+
+    // MARK: - 히어로 + 추이 차트 (작업지시서 2026-09-19 §3-1·3-2)
+
+    /// 추이 차트 높이. 812급은 222(시안 F), 작은 화면(SE 667)은 178 — 222 로 두면 목록이
+    /// 2행밖에 안 남았다 (2026-09-19 시뮬 실측). 44pt 를 돌려주면 3행 + 다음 행 머리가 보인다.
+    /// gymshot(macOS)은 screenHeight 가 812 고정이라 스냅샷은 늘 222 다.
+    static var chartH: CGFloat {
+        HomeScreenView.screenHeight < HomeScreenView.compactScreenHeight ? 178 : 222
+    }
+    static let chartLeft: CGFloat = 20       // 플롯 좌 여백
+    static let chartRight: CGFloat = 40      // 세로 축 라벨이 쓰는 폭
+    static let chartGridExtra: CGFloat = 13  // 격자는 플롯보다 이만큼 더 나간다(축 라벨 6pt 앞에서 끊김)
+    static let axisLabelTrailing: CGFloat = 8
+    static let wd: DateFormatter = { let f = DateFormatter(); f.dateFormat = "E"; f.locale = Locale(identifier: "ko_KR"); f.timeZone = TimeZone(identifier: "Asia/Seoul"); return f }()
+
+    // 히어로 — 현재 값을 크게, 차트는 그 아래 통째로. 탭 상단 고정(목록 어디를 보고 있든
+    // 현재 체중과 추이를 함께 읽는다). 배경 틴트·목표선·기간 칩·범례는 넣지 않는다.
+    var weightHero: some View {
+        let ws = model.weights                       // date desc
+        let buckets = GymWeightLogic.weekBuckets(rows: ws.map { (date: $0.date, kg: $0.kg) },
+                                                 now: model.referenceToday)
+        return VStack(alignment: .leading, spacing: 0) {
+            weightHeroValue(latest: ws.first, start: ws.last, count: ws.count)
+            // 점 2개 미만이면 추세선이 안 그려진다 — 고정 영역이라 빈 껍데기를 남기지 않는다.
+            if ws.count >= 2, !buckets.isEmpty {
+                weightChart(buckets: buckets)
+                    .frame(height: Self.chartH).padding(.top, 12)
+                // 가로축은 주 단위로 통일한다. 날짜로 적으면 마지막 칸의 끝(이번 주 일요일)과
+                // 마지막 기록일이 어긋난다.
+                HStack(spacing: 8) {
+                    if buckets.count >= 2 { Text("\(buckets.count - 1)주 전") }
+                    Spacer(minLength: 0)
+                    Text("이번 주")
+                }
+                .font(.sans(10, 500)).foregroundStyle(GY.ink3)
+                .padding(.init(top: 9, leading: Self.chartLeft, bottom: 14,
+                               trailing: Self.chartRight))
+            }
+        }
         .background(GY.shell)
         // 목록이 히어로 밑으로 지나가는 것이 보이도록 경계선 (고정 영역임을 알린다)
         .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+    }
+
+    func weightHeroValue(latest: GymWeight?, start: GymWeight?, count: Int) -> some View {
+        let goal = model.settings.goalWeight
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text(latest.map { fmtKg1($0.kg) } ?? "—")
+                    .font(.mono(52, 600)).tracking(-1.6).foregroundStyle(GY.ink1)
+                    .accessibilityIdentifier("weight-hero-num")
+                Text("kg").font(.sans(15, 500)).foregroundStyle(GY.ink3).padding(.leading, 6)
+                Spacer(minLength: 8)
+                // 기록이 하나뿐이면 latest 와 start 가 같은 행이라 "시작 … 대비" 가 제 값을 가리킨다.
+                if let latest, let start, latest.date != start.date {
+                    let d = ((latest.kg - start.kg) * 10).rounded() / 10
+                    (Text("시작 ").font(.sans(11, 500))
+                     + Text(fmtKg1(start.kg)).font(.mono(11, 600))
+                     + Text(" 대비").font(.sans(11, 500)))
+                        .foregroundStyle(GY.ink3)
+                    Text(d == 0 ? "—" : (d < 0 ? "▼\(fmtKg1(-d))" : "▲\(fmtKg1(d))"))
+                        .font(.mono(15, 600)).foregroundStyle(d < 0 ? GY.crailDeep : GY.ink3)
+                        .padding(.leading, 5)
+                }
+            }
+            // 메타 — 건수와 목표. 시작값은 위 증감 줄이 말하므로 여기서 뺐다.
+            weightHeroMeta(latest: latest, goal: goal, count: count)
+                .foregroundStyle(GY.ink2)
+                .accessibilityIdentifier("weight-hero-meta")   // 식별자는 말단 Text 에만
+                .padding(.top, 9)
+        }
+        .padding(.init(top: 16, leading: 24, bottom: 0, trailing: 20))
+    }
+
+    // "44회 기록 · 목표 69.0 까지 4.9kg" — 숫자만 mono. 삭제한 목록 헤더("전체 N건")의 건수가
+    // 여기로 왔다.
+    func weightHeroMeta(latest: GymWeight?, goal: Double, count: Int) -> Text {
+        guard let latest else {
+            return Text("목표 \(fmtKg1(goal))kg · 첫 입력을 기다립니다").font(.sans(12, 500))
+        }
+        let remaining = GymWeightLogic.remainingLoss(current: latest.kg, goal: goal)
+        let head = Text("\(count)").font(.mono(12, 600))
+            + Text("회 기록 · 목표 ").font(.sans(12, 500))
+            + Text(fmtKg1(goal)).font(.mono(12, 600))
+        guard remaining > 0 else { return head + Text(" 달성").font(.sans(12, 500)) }
+        return head + Text(" 까지 ").font(.sans(12, 500))
+            + Text(fmtKg1(remaining)).font(.mono(12, 600)) + Text("kg").font(.sans(12, 500))
     }
 
     // 오늘 체중 입력 (mock weight-input-trigger) — 탭 하단 고정. 입력 기록이 전체 이력이라
@@ -433,69 +450,123 @@ public struct AdminScreenView: View {
         .background(GY.shell)
     }
 
-    func weightRowView(label: String, today: Bool, valText: String?, isMin: Bool, delta: Double?) -> some View {
-        HStack(spacing: 8) {
-            (Text(label).font(.sans(15, 500)).foregroundStyle(GY.ink1)
-             + Text(today ? "  오늘" : "").font(.sans(11, 700)).foregroundStyle(GY.crailDeep))
-            Spacer()
-            if let delta {
-                let mag = fmtKg(abs(delta))
-                if abs(delta) < 0.05 {
-                    Text("— 0.0").font(.mono(12, 500)).foregroundStyle(GY.ink4)
-                } else if delta < 0 {
-                    Text("▼ \(mag)").font(.mono(12, 600)).foregroundStyle(GY.crailDeep)   // 감소 = 목표 진척
-                } else {
-                    Text("▲ \(mag)").font(.mono(12, 500)).foregroundStyle(GY.ink4)
-                }
-            }
-            if let valText {
-                (Text(valText).font(.mono(16, 600)).foregroundStyle(GY.ink1)
-                 + Text(" kg").font(.sans(12, 500)).foregroundStyle(GY.ink4)
-                 + Text(isMin ? "  최저" : "").font(.sans(10, 700)).foregroundStyle(GY.crailDeep))
-                    .padding(.leading, 8)
-            } else {
-                Text("미입력").font(.sans(14, 500)).foregroundStyle(GY.ink4)
+    // 차트 좌표 한 벌 — 칸 기하·축 범위·평활은 GymWeightLogic 이 낸다(테스트가 그쪽에 있다).
+    struct WeightChartGeo {
+        let cell: GymWeightLogic.WeekCellMetrics
+        let lo: Double, hi: Double
+        let ticks: [Double]
+        let width: CGFloat, height: CGFloat
+        /// 실측 점 — 버킷 순서대로 평탄화. r == nil 이면 칸이 좁아 점을 그리지 않는다.
+        let dots: [(x: CGFloat, kg: Double, r: CGFloat?)]
+        let trend: [Double]          // 지수평활 값 — dots 와 같은 순서·개수
+
+        init(buckets: [GymWeightLogic.WeekBucket], width: CGFloat, height: CGFloat) {
+            self.width = width; self.height = height
+            let plotW = width - AdminScreenView.chartLeft - AdminScreenView.chartRight
+            let m = GymWeightLogic.cellMetrics(plotWidth: plotW, weeks: buckets.count)
+            let values = buckets.flatMap(\.values)
+            let r = GymWeightLogic.axisRange(values: values)
+            cell = m; lo = r.lo; hi = r.hi
+            ticks = GymWeightLogic.axisTicks(lo: r.lo, hi: r.hi).ticks
+            trend = GymWeightLogic.ema(values)
+            dots = buckets.enumerated().flatMap { i, b -> [(x: CGFloat, kg: Double, r: CGFloat?)] in
+                let rad = m.dotRadius(count: b.values.count)
+                let xs = m.dotXs(cellX: AdminScreenView.chartLeft + CGFloat(i) * m.cellWidth,
+                                 count: b.values.count)
+                return zip(xs, b.values).map { (x: $0, kg: $1, r: rad) }
             }
         }
-        .padding(.vertical, 13)
-        .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+        func y(_ v: Double) -> CGFloat { CGFloat((hi - v) / (hi - lo)) * height }
+        func cellX(_ i: Int) -> CGFloat { AdminScreenView.chartLeft + CGFloat(i) * cell.cellWidth }
+        var gridRight: CGFloat {
+            width - AdminScreenView.chartRight + AdminScreenView.chartGridExtra
+        }
     }
 
-    func weightStat(_ val: String, _ label: String, _ tint: Color) -> some View {
-        VStack(spacing: 4) {
-            (Text(val).font(.mono(16, 600)).foregroundStyle(tint)
-             + Text(" kg").font(.sans(12, 500)).foregroundStyle(GY.ink4))
-            Text(label).font(.sans(12, 500)).foregroundStyle(GY.ink4)
-        }.frame(maxWidth: .infinity)
-    }
-
-    // 추이 차트 — 체중 라인 + 목표 점선 (7일 이동평균선은 PWA 정합상 비표시 채널 유지).
-    func weightChart(entries: [GymWeight], goal: Double) -> some View {
+    // 추이 차트 — 주 변동폭 박스 + 일별 실측 점 + 지수평활 추세선 (a=0.12).
+    // 세로는 기록 범위에 상하 0.5kg, 최소 3.0kg. 가로는 **주 단위 칸**이라 이틀 공백이
+    // 하루치 폭으로 그려지지 않는다. 목표선은 그리지 않는다 — 목표 69 는 범위 밖이라 늘 안
+    // 그려졌고, 남은 양은 히어로 메타가 숫자로 말한다.
+    func weightChart(buckets: [GymWeightLogic.WeekBucket]) -> some View {
         GeometryReader { g in
-            let rows = Array(entries.suffix(30))
-            if rows.count >= 2 {
-                let p = GymWeightLogic.chartPoints(weights: rows.map(\.kg), goal: goal,
-                                                   width: g.size.width, height: g.size.height)
-                ZStack {
-                    // 목표선은 기록 범위 안일 때만 (chartPoints 가 nil 로 알린다)
-                    if let goalY = p.goalY {
-                        Path { path in
-                            path.move(to: CGPoint(x: 0, y: goalY))
-                            path.addLine(to: CGPoint(x: g.size.width, y: goalY))
-                        }
-                        .stroke(GY.ink4, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            let geo = WeightChartGeo(buckets: buckets, width: g.size.width, height: g.size.height)
+            ZStack(alignment: .topLeading) {
+                // ① 격자 — 눈금 자리 가로선. 축 라벨에 닿지 않게 앞에서 끊는다.
+                Path { p in
+                    for t in geo.ticks {
+                        p.move(to: CGPoint(x: Self.chartLeft, y: geo.y(t)))
+                        p.addLine(to: CGPoint(x: geo.gridRight, y: geo.y(t)))
                     }
-                    Path { path in
-                        guard let first = p.weightPts.first else { return }
-                        path.move(to: first)
-                        for pt in p.weightPts.dropFirst() { path.addLine(to: pt) }
-                    }
-                    .stroke(GY.crailBase, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 }
-            } else {
-                Rectangle().fill(.clear)
+                .stroke(GY.lineSoft, lineWidth: 1)
+                // ② 주 박스 — 그 주 최저~최고. 빈 주는 그리지 않고 칸만 자리를 지킨다.
+                if geo.cell.showsBox {
+                    ForEach(buckets.indices, id: \.self) { i in
+                        if !buckets[i].values.isEmpty {
+                            let top = geo.y(buckets[i].max)
+                            RoundedRectangle(cornerRadius: min(3, geo.cell.boxWidth / 2))
+                                .fill(GY.weightBand)
+                                .frame(width: geo.cell.boxWidth,
+                                       height: max(4, geo.y(buckets[i].min) - top))
+                                .offset(x: geo.cellX(i) + geo.cell.inset, y: top)
+                        }
+                    }
+                }
+                // ③ 일별 실측 점 — 한 칸 안에서 안쪽 64% 폭에 균등 배치.
+                ForEach(geo.dots.indices, id: \.self) { i in
+                    if let r = geo.dots[i].r {
+                        Circle().fill(GY.weightDot).frame(width: r * 2, height: r * 2)
+                            .offset(x: geo.dots[i].x - r, y: geo.y(geo.dots[i].kg) - r)
+                    }
+                }
+                // ④ 최고·최저 마커 + 라벨
+                weightExtremes(geo)
+                // ⑤ 추세선 — 실측 점과 같은 x 좌표.
+                Path { p in
+                    for (i, e) in geo.trend.enumerated() {
+                        let pt = CGPoint(x: geo.dots[i].x, y: geo.y(e))
+                        if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+                    }
+                }
+                .stroke(GY.crailDeep,
+                        style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+                // ⑥ 최신 실측 점 — 히어로의 큰 숫자와 같은 값이라 혼동이 없다.
+                if let d = geo.dots.last {
+                    Circle().fill(GY.crailDeep)
+                        .overlay(Circle().stroke(GY.shell, lineWidth: 1.2))
+                        .frame(width: 5.6, height: 5.6)
+                        .offset(x: d.x - 2.8, y: geo.y(d.kg) - 2.8)
+                }
+                // 세로 축 라벨 — 격자선과 수직 중앙 정렬, trailing.
+                ForEach(geo.ticks, id: \.self) { t in
+                    Text("\(Int(t))").font(.mono(10, 600)).foregroundStyle(GY.ink3)
+                        .frame(width: 40, height: 14, alignment: .trailing)
+                        .offset(x: g.size.width - Self.axisLabelTrailing - 40, y: geo.y(t) - 7)
+                }
             }
         }
+    }
+
+    // 최고·최저 — 그 점에 빈 원 마커 + 값 라벨. 라벨 위치는 시안 F 의 baseline(최고 마커 위 11,
+    // 최저 마커 아래 16)을 중심 기준으로 환산한 값이다 — 눈으로 위아래가 대칭이다.
+    @ViewBuilder func weightExtremes(_ geo: WeightChartGeo) -> some View {
+        let kgs = geo.dots.map(\.kg)
+        if let mx = kgs.max(), let mn = kgs.min(), mx > mn,
+           let iMax = kgs.firstIndex(of: mx), let iMin = kgs.firstIndex(of: mn) {
+            weightExtremeMarker(geo, at: iMax, text: "최고 \(fmtKg1(mx))", dy: -14.5)
+            weightExtremeMarker(geo, at: iMin, text: "최저 \(fmtKg1(mn))", dy: 12.5)
+        }
+    }
+
+    @ViewBuilder func weightExtremeMarker(_ geo: WeightChartGeo, at i: Int,
+                                          text: String, dy: CGFloat) -> some View {
+        let x = geo.dots[i].x, y = geo.y(geo.dots[i].kg)
+        Circle().fill(GY.shell).overlay(Circle().stroke(GY.ink3, lineWidth: 1.5))
+            .frame(width: 6.2, height: 6.2)
+            .offset(x: x - 3.1, y: y - 3.1)
+        Text(text).font(.sans(10, 600)).foregroundStyle(GY.ink2)
+            .frame(width: 70, height: 13)
+            .offset(x: x - 35, y: y + dy - 6.5)
     }
 
     // MARK: - 프로필 탭 (mocks pane-profile — 4필드 편집 + 동기화 카드 + 로그아웃 + 푸터, §10-3)

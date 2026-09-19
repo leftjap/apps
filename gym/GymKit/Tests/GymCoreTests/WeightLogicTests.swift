@@ -129,42 +129,170 @@ private typealias WeightSparkSample = GymWeightLogic.WeightSparkSample
                                                width: 132, height: 38, pad: 3).isEmpty)
     }
 
-    // 스케일은 **체중만**으로 잡는다. 목표를 범위에 넣으면 목표가 멀수록 실제 변동이 눌려
-    // 추이가 평평한 선으로 보인다 (사용자 2026-09-19 — 69 목표에 73~75 기록이면 높이의 1/3만 씀).
-    @Test func chartPointsUseWeightRangeNotGoal() {
-        let rows: [Double] = [72, 70]
-        let p = GymWeightLogic.chartPoints(weights: rows, goal: 69, width: 300, height: 120)
-        #expect(p.weightPts.count == 2)
-        // min=70, max=72 → 72 는 top(10), 70 은 bottom(110). 목표 69 는 범위 밖이라 선을 안 그린다.
-        #expect(abs(p.weightPts[0].y - 10) < 0.01)
-        #expect(abs(p.weightPts[1].y - 110) < 0.01)
-        #expect(p.goalY == nil)
-        #expect(p.weightPts[0].x == 0 && p.weightPts[1].x == 300)
+    // MARK: - 체중 탭 재설계 (작업지시서 2026-09-19 §2) — 축 범위·눈금·지수평활·주 버킷·칸 기하
+
+    static func kst(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 0, _ min: Int = 0) -> Date {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        return c.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: min))!
     }
 
-    // 축 라벨이 쓸 세로 범위는 스케일과 **같은 곳**에서 나와야 한다. 둘이 따로 계산하면
-    // 라벨이 가리키는 kg 와 선의 높이가 어긋난다 (사용자 2026-09-19 우측 지표 요청).
-    @Test func chartRangeMatchesPointScale() {
-        let rows: [Double] = [74.2, 73.7, 75.1, 74.0]
-        let r = GymWeightLogic.chartRange(weights: rows)
-        #expect(r.min == 73.7 && r.max == 75.1)
-        let p = GymWeightLogic.chartPoints(weights: rows, goal: 69, width: 300, height: 120)
-        // 최댓값 점이 top(10), 최솟값 점이 bottom(110) 에 놓인다 = 라벨 두 개가 그 자리를 가리킨다
-        #expect(abs(p.weightPts[2].y - 10) < 0.01)
-        #expect(abs(p.weightPts[1].y - 110) < 0.01)
+    // 축 범위 — 기록 min/max 에 0.5 씩. span 이 최소치를 넘으면 그대로 쓴다.
+    @Test func axisRangePadsRecordedRangeEvenly() {
+        let r = GymWeightLogic.axisRange(values: [72.7, 74.3, 75.1, 73.9])
+        #expect(abs(r.lo - 72.2) < 0.001)
+        #expect(abs(r.hi - 75.6) < 0.001)
     }
 
-    // 값이 하나로 같으면 선은 바닥에 그려진다(span 0 방어). 위아래 라벨을 둘 다 붙이면
-    // 위쪽 라벨이 가리킬 점이 없으므로 뷰가 하나만 쓰도록 min == max 를 알려야 한다.
-    @Test func chartRangeIsFlatWhenAllSame() {
-        let r = GymWeightLogic.chartRange(weights: [73.0, 73.0, 73.0])
-        #expect(r.min == r.max)
+    // 목표(69)에 도달해 기록이 68.8~69.4 로 좁아지면 여백만으로는 1.6kg 이라 1kg 이 159pt 가 된다.
+    // 0.2kg 흔들림이 32pt 로 튀는 것을 막으려고 최소 3.0kg 을 중앙 기준으로 벌린다.
+    @Test func axisRangeWidensToMinSpanAroundCenter() {
+        let r = GymWeightLogic.axisRange(values: [68.8, 69.0, 69.4])
+        #expect(abs(r.lo - 67.6) < 0.001)
+        #expect(abs(r.hi - 70.6) < 0.001)
     }
 
-    // 목표가 기록 범위 안이면 그 자리에 그린다.
-    @Test func chartPointsKeepGoalLineWhenInRange() {
-        let p = GymWeightLogic.chartPoints(weights: [72, 68], goal: 70, width: 300, height: 120)
-        // min=68, max=72 → 70 은 한가운데(60)
-        #expect(p.goalY.map { abs($0 - 60) < 0.01 } == true)
+    // 1년치처럼 넓으면 최소 범위가 개입하지 않는다.
+    @Test func axisRangeKeepsWideSpan() {
+        let r = GymWeightLogic.axisRange(values: [68.9, 72.0, 76.2])
+        #expect(abs(r.lo - 68.4) < 0.001)
+        #expect(abs(r.hi - 76.7) < 0.001)
+    }
+
+    // 눈금 — 범위 양 끝(72.2·75.6)에는 격자를 긋지 않는다. 축 라벨이 반쯤 잘려 붙는다.
+    @Test func axisTicksStepOneExcludesRangeEnds() {
+        let t = GymWeightLogic.axisTicks(lo: 72.2, hi: 75.6)
+        #expect(t.step == 1)
+        #expect(t.ticks == [73, 74, 75])
+    }
+
+    @Test func axisTicksStepTwoForWideRange() {
+        let t = GymWeightLogic.axisTicks(lo: 68.4, hi: 76.7)
+        #expect(t.step == 2)
+        #expect(t.ticks == [70, 72, 74, 76])
+    }
+
+    // 지수평활은 신호다 — 오르는 입력을 늘 뒤에서 따라간다(첫 점만 실측과 같다).
+    @Test func emaLagsBehindRisingInput() {
+        let v: [Double] = [70, 71, 72, 73, 74]
+        let e = GymWeightLogic.ema(v)
+        #expect(e[0] == 70)
+        for i in 1..<v.count { #expect(e[i] < v[i]) }
+        #expect(e[4] > e[3])
+    }
+
+    // 시안 F 표본 30건 — 작업지시서 SVG 의 실측 점 좌표에서 복원했다(축 72.2~75.6, 222pt).
+    static let mockupSample: [Double] = [
+        73.7, 73.5, 74.0, 73.8, 73.6, 72.9, 74.9, 73.4, 72.7, 73.7,
+        74.1, 74.0, 73.8, 73.0, 74.2, 74.1, 73.9, 73.0, 74.0, 74.7,
+        73.7, 74.2, 74.3, 74.0, 74.6, 74.5, 75.1, 74.4, 74.3, 73.9,
+    ]
+
+    @Test func emaMatchesMockupSample() {
+        let e = GymWeightLogic.ema(Self.mockupSample)
+        #expect(e.count == 30)
+        #expect(abs(e[0] - 73.70) < 0.005)
+        #expect(abs(e[29] - 74.19) < 0.005)
+    }
+
+    // 주 경계는 월요일 — 9/13(일)과 9/14(월)은 다른 버킷이다 (HomeLogic weeklyBalance 와 같은 규칙).
+    @Test func weekBucketsSplitOnMonday() {
+        let b = GymWeightLogic.weekBuckets(rows: [("2026-09-13", 75.1), ("2026-09-14", 74.4)],
+                                           now: Self.kst(2026, 9, 19))
+        #expect(b.count == 2)
+        #expect(b[0].values == [75.1])
+        #expect(b[0].start == Self.kst(2026, 9, 7))
+        #expect(b[1].values == [74.4])
+        #expect(b[1].start == Self.kst(2026, 9, 14))
+    }
+
+    // 기록이 없는 주도 빈 버킷으로 남긴다 — 건너뛰면 가로축이 다시 기록 순번이 된다.
+    @Test func weekBucketsFillEmptyWeeks() {
+        let b = GymWeightLogic.weekBuckets(rows: [("2026-06-29", 73.3), ("2026-07-14", 73.7)],
+                                           now: Self.kst(2026, 7, 14))
+        #expect(b.count == 3)                       // 6/29 · 7/6(빈) · 7/13
+        #expect(b[1].values.isEmpty)
+        #expect(b[1].start == Self.kst(2026, 7, 6))
+        #expect(b[2].values == [73.7])
+    }
+
+    // 마지막 버킷은 오늘이 속한 주다 — 오늘 미입력이면 그 주 값이 적어 박스가 짧아진다. 그게 사실이다.
+    @Test func weekBucketsEndAtTodayWeekEvenWithNoRecord() {
+        let b = GymWeightLogic.weekBuckets(rows: [("2026-09-11", 74.5)], now: Self.kst(2026, 9, 19))
+        #expect(b.count == 2)
+        #expect(b.last?.values.isEmpty == true)
+        #expect(b.last?.start == Self.kst(2026, 9, 14))
+    }
+
+    // 23:50 KST 는 아직 그날(일요일)이다 — 다음 주로 넘어가지 않는다.
+    @Test func weekBucketsKeepLateEveningInSameWeek() {
+        let b = GymWeightLogic.weekBuckets(rows: [("2026-09-20", 74.0)],
+                                           now: Self.kst(2026, 9, 20, 23, 50))
+        #expect(b.count == 1)
+        #expect(b[0].start == Self.kst(2026, 9, 14))
+        #expect(b[0].values == [74.0])
+    }
+
+    // 자정을 넘긴 00:20 KST(월)은 새 주다 — UTC 로 셌다면 전날 주에 머문다.
+    @Test func weekBucketsRollToNewWeekAfterKSTMidnight() {
+        let b = GymWeightLogic.weekBuckets(rows: [("2026-09-20", 74.0)],
+                                           now: Self.kst(2026, 9, 21, 0, 20))
+        #expect(b.count == 2)
+        #expect(b.last?.start == Self.kst(2026, 9, 21))
+        #expect(b[0].values == [74.0])
+    }
+
+    // 입력 순서가 내림차순(모델의 weights)이어도 버킷 안은 날짜 오름차순이다.
+    @Test func weekBucketsSortValuesAscendingByDate() {
+        let b = GymWeightLogic.weekBuckets(rows: [("2026-09-16", 73.9), ("2026-09-15", 74.3),
+                                                  ("2026-09-14", 74.4)],
+                                           now: Self.kst(2026, 9, 19))
+        #expect(b.count == 1)
+        #expect(b[0].values == [74.4, 74.3, 73.9])
+        #expect(b[0].min == 73.9 && b[0].max == 74.4)
+    }
+
+    // 점은 칸 안쪽 64% 에 균등 배치한다 — 이 여백이 없으면 첫·끝 점이 박스 모서리 밖으로 반쯤 난다.
+    @Test func dotsStayInsideBoxAndCenter() {
+        let m = GymWeightLogic.cellMetrics(plotWidth: 315, weeks: 10)
+        for k in [1, 2, 7] {
+            let xs = m.dotXs(cellX: 0, count: k)
+            let r = m.dotRadius(count: k) ?? 1.9
+            #expect(xs.count == k)
+            #expect(xs.first! - r >= m.inset - 0.001)
+            #expect(xs.last! + r <= m.inset + m.boxWidth + 0.001)
+            #expect(abs((xs.first! + xs.last!) / 2 - (m.inset + m.boxWidth / 2)) < 0.001)
+            #expect(zip(xs, xs.dropFirst()).allSatisfy { $1 > $0 })
+        }
+    }
+
+    // 칸 x 만큼 통째로 옮겨 앉는다.
+    @Test func dotXsShiftWithCell() {
+        let m = GymWeightLogic.cellMetrics(plotWidth: 315, weeks: 10)
+        let a = m.dotXs(cellX: 0, count: 3), b = m.dotXs(cellX: 31.5, count: 3)
+        #expect(zip(a, b).allSatisfy { abs(($1 - $0) - 31.5) < 0.001 })
+    }
+
+    // 밀도 — 별도 "심지 모드" 없이 칸 폭에 비례해 저절로 가늘어진다 (§5 실측 임계).
+    @Test func densityFoldsDotsThenBoxAsWeeksGrow() {
+        let w10 = GymWeightLogic.cellMetrics(plotWidth: 315, weeks: 10)
+        #expect(abs(w10.boxWidth - 22.68) < 0.01)
+        #expect(w10.showsBox)
+        #expect(w10.dotRadius(count: 3) == 1.9)      // 간격 4.8
+        let w14 = GymWeightLogic.cellMetrics(plotWidth: 315, weeks: 14)
+        #expect(abs(w14.boxWidth - 16.2) < 0.01)
+        #expect(w14.dotRadius(count: 4) == 1.4)      // 간격 2.6
+        let w18 = GymWeightLogic.cellMetrics(plotWidth: 315, weeks: 18)
+        #expect(abs(w18.boxWidth - 12.6) < 0.01)
+        #expect(w18.showsBox)
+        #expect(w18.dotRadius(count: 4) == nil)      // 간격 2.0 — 점만 접는다
+        let w104 = GymWeightLogic.cellMetrics(plotWidth: 315, weeks: 104)
+        #expect(abs(w104.boxWidth - 2.18) < 0.02)
+        #expect(!w104.showsBox)                      // 3pt 미만 — 추세선만 남는다
+    }
+
+    // 기록 없는 칸은 점도 없다.
+    @Test func dotRadiusIsNilForEmptyCell() {
+        #expect(GymWeightLogic.cellMetrics(plotWidth: 315, weeks: 10).dotRadius(count: 0) == nil)
     }
 }

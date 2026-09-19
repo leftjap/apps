@@ -54,6 +54,11 @@ public enum GY {
     public static let cardioTeal = Color(hex: 0x30807A)       // 기록 — 채움 + 흰 숫자
     public static let cardioTealSoft = Color(hex: 0x9CC0BC)   // 참조 — 2.4px 테두리 + 같은 색 숫자
 
+    // 체중 차트 (작업지시서 2026-09-19 시안 F). paper.css 에 대응물이 없어 hex 로 둔다
+    // (teal/pine/ghost 와 같은 방식). 마커 테두리는 새 색을 만들지 않고 ink3 를 쓴다.
+    public static let weightBand = Color(hex: 0xF4E1D4)   // 주 변동폭 박스
+    public static let weightDot = Color(hex: 0xBCA084)    // 일별 실측 점
+
     public static let warning = Color(hex: 0xC98A3F)
     public static let danger = Color(hex: 0xC5544A)
 

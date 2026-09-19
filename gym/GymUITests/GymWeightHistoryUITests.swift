@@ -1,7 +1,7 @@
 import XCTest
 
 // 관리 > 체중 탭 입력 기록 — 과거 기록이 10건에서 끊겨 더 볼 수 없었다 (사용자 2026-09-18).
-// 세 가지를 본다: 헤더가 밝힌 "전체 N건" 이 스크롤로 전부 닿는지, 히어로(현재 체중 + 추이 차트)가
+// 세 가지를 본다: 히어로 메타가 밝힌 "N회 기록" 이 스크롤로 전부 닿는지, 히어로(현재 체중 + 추이 차트)가
 // 상단에 고정돼 있는지, 입력 버튼이 하단에 고정돼 있는지. 고정은 frame 이 그대로인지로 판정한다
 // — exists 는 스크롤 밖으로 밀려나도 true 라 고정을 증명하지 못한다.
 // 기록은 `--demo-weights` 가 심는다 — 다른 테스트의 `--reset` 이 체중까지 비워서, 실데이터에
@@ -17,12 +17,13 @@ final class GymWeightHistoryUITests: XCTestCase {
         return app
     }
 
-    /// 헤더 "전체 N건" 의 N.
+    /// 히어로 메타 "N회 기록 · 목표 …" 의 N. 목록 헤더("전체 N건")는 2026-09-19 재설계에서
+    /// 지웠고 건수가 히어로로 옮겨왔다 — 여기서 못 읽으면 스크롤 검증이 통째로 skip 된다.
     private func totalCount(_ app: XCUIApplication) -> Int? {
-        let t = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "전체 ")).firstMatch
-        guard t.waitForExistence(timeout: 5) else { return nil }
-        return Int(t.label.replacingOccurrences(of: "전체 ", with: "")
-                          .replacingOccurrences(of: "건", with: ""))
+        let t = app.staticTexts["weight-hero-meta"]
+        guard t.waitForExistence(timeout: 5),
+              let head = t.label.components(separatedBy: "회 기록").first else { return nil }
+        return Int(head)
     }
 
     func testScrollsThroughEveryWeightEntry() throws {
@@ -59,7 +60,7 @@ final class GymWeightHistoryUITests: XCTestCase {
 
         // 오늘 미입력 행이 맨 위에 하나 더 붙을 수 있으므로 total 이상이면 통과.
         XCTAssertGreaterThanOrEqual(seen.count, total,
-                                    "헤더는 \(total)건인데 스크롤로 닿은 행은 \(seen.count)건뿐이다")
+                                    "히어로는 \(total)건인데 스크롤로 닿은 행은 \(seen.count)건뿐이다")
 
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "weight-history-bottom"
