@@ -142,7 +142,8 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
   it('마지막은 대화로 넘어가고 리포트 통제어가 있다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toContain('say in Korean "이제 대화합니다"');
-    expect(p).toMatch(/after every two of your questions, say in Korean "이번엔 저한테 물어보세요"/i);
+    expect(p).toMatch(/every second question of yours is followed by "이번엔 저한테 물어보세요"/i);
+    expect(p).toMatch(/so I ask you as often as you ask me/i); // 16회전: 여덟 턴에 2회뿐이었다
     // 12회전: 대화 구간에서 오답 처리·힌트가 나왔다
     expect(p).toMatch(/the drill rules stop there/i);
     expect(p).toMatch(/never correct me and never hint\. There is no right answer to reach/i);
@@ -151,8 +152,9 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/you are a person in my day, not an assistant/i);
     expect(p).toMatch(/never say you are an AI or that you do not sleep, eat or have a pet/i);
     // 14회전: 답과 리포트를 한 턴에 냈다
-    expect(p).toMatch(/in a turn of its own with nothing else in it, say in Korean "리포트 하겠습니다"/i);
-    expect(p).toContain('say in Korean "리포트 하겠습니다"');
+    // 18회전: 말만 하고 기다리는 턴은 모델이 건너뛴다 — 마커를 리포트 턴 머리에 붙인다
+    expect(p).toMatch(/in a turn that holds nothing but the report, open with "리포트 하겠습니다" in Korean/i);
+    expect(p).toMatch(/never finish on a turn where I asked you something/i);
     // 13회전: 내 질문을 씹고 6턴에서 끊었다
     expect(p).toMatch(/answer every question I ask before you move on/i);
     expect(p).toMatch(/do not stop before eight; never stop on a turn where I asked you something/i);
