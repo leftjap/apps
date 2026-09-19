@@ -53,6 +53,7 @@ private func millieModel() -> RTAppModel {
 @Suite struct RTDetailTotalsPinTests {
     @Test func paperDetailTotals() throws {
         let live = try #require(Screen08Detail(model: paperModel()).live)
+        #expect(live.book.title == "압록강은 흐른다")   // 대체 표지 재료 — 09 시트와 같아야 한다
         #expect(live.total == "0:46")     // 20분 + 26분
         #expect(live.count == 2)          // 세션 2회
         #expect(live.days == 3)           // 9.17 추가 → 9.19 = 3일째
@@ -78,6 +79,9 @@ private func millieModel() -> RTAppModel {
         m.openSheet(.finish)
         let live = try #require(Sheet09Finish(model: m).live)
         #expect(live.subtitle == "압록강은 흐른다 · 이미륵 · 3일 동안")   // 몰입이 아니라
+        // 표지 이미지가 없을 때 제목이 찍힌 대체 표지가 떠야 한다 (시안 표지엔 제목이 있었다)
+        #expect(live.title == "압록강은 흐른다")
+        #expect(live.author == "이미륵")
         #expect(live.total == "0:46")
         #expect(live.count == 2)
         #expect(live.countUnit == "회")

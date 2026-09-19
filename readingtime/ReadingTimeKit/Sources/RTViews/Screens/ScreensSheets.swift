@@ -160,6 +160,8 @@ public struct Sheet07AddTime: View {
 // 어떤 책을 완독해도 시안 책이 떴다. 저장(saveFinished)은 selectedBook 기준이라 옳았다.
 public struct Sheet09Finish: View {
     struct Live {
+        let title: String        // 대체 표지용 — 시안 표지엔 제목이 그려져 있었다(FlowCover)
+        let author: String
         let subtitle: String     // "제목 · 저자 · N일 동안"
         let coverUrl: String
         let total: String        // "0:46"
@@ -181,6 +183,8 @@ public struct Sheet09Finish: View {
             let totals = m.bookTotals(book, in: data)
             let millie = book.millieBookId != nil
             self.live = Live(
+                title: book.title,
+                author: book.author,
                 subtitle: [book.title, book.author, "\(days)일 동안"]
                     .filter { !$0.isEmpty }.joined(separator: " · "),
                 coverUrl: book.coverUrl,
@@ -224,7 +228,10 @@ public struct Sheet09Finish: View {
                 .rtRippleLoop(duration: 3, delay: 0.4)
             Group {
                 if let live {
-                    RTRemoteCover(url: live.coverUrl, size: .init(width: 78, height: 114), radius: 5)
+                    // title 을 넘겨야 표지 이미지가 없을 때 제목이 찍힌 대체 표지가 나온다.
+                    // 안 넘기면 빈 사각형이라, 시안에서 표지에 있던 제목이 사라진다.
+                    RTRemoteCover(url: live.coverUrl, size: .init(width: 78, height: 114), radius: 5,
+                                  title: live.title, author: live.author)
                 } else {
                     FlowCover(.init(width: 78, height: 114, frameInset: 6,
                                     padTop: 0, padBottom: 0, authorEN: nil,

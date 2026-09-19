@@ -135,7 +135,8 @@ public struct Screen08Detail: View {
         HStack(alignment: .top, spacing: 18) {
             Group {
                 if let live {
-                    RTRemoteCover(url: live.book.coverUrl, size: .init(width: 104, height: 152), radius: 5)
+                    RTRemoteCover(url: live.book.coverUrl, size: .init(width: 104, height: 152), radius: 5,
+                                  title: live.book.title, author: live.book.author)
                 } else {
                     FlowCover(.init(width: 104, height: 152, spine: 4, frameInset: 7,
                                     padTop: 15, padBottom: 11, authorEN: 5,
