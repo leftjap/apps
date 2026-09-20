@@ -100,14 +100,17 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/work in passes, one slot per pass, and in each pass go through every sentence in order before you change slot/i);
     expect(p).toMatch(/pass one the subject, pass two the thing or activity, pass three the time/i);
     expect(p).toMatch(/never take the same sentence twice in a row/i);
-    expect(p).toMatch(/six passes in all, so 12 answers from me/i);
+    expect(p).toMatch(/three passes in all, so 6 answers from me/i);
+    expect(p).not.toMatch(/the same three passes again/i);
     expect(p).toContain('"주어를 소연으로", "동작을 운동으로", "시간을 이번 주로"');
+    // 24회전: 단서 낱말 출처가 없어 교사가 하품·독서·낮잠을 지어냈다
+    expect(p).toMatch(/take the new word from my day or from the practiced lines, never from outside my life/i);
     expect(p).toMatch(/every change starts from that sentence's short form, never from my last answer/i);
   });
 
-  it('단계마다 분량을 따로 준다 (21회전: 바꿔 말하기가 절반을 먹고 질문과 답이 13턴뿐이었다)', () => {
+  it('단계마다 분량을 따로 주되 인출 단계에 무게를 싣는다 (24회전: 기계적인 치환이 24, 의미가 붙는 인출이 16이었다)', () => {
     const p = buildVoicePrompt([card1, card2, card1, card2]);
-    expect(p).toMatch(/I speak about 48 times in the drill — 8 in review, 24 in the substitutions, 16 in the questions/);
+    expect(p).toMatch(/I speak about 44 times in the drill — 8 in review, 12 in the substitutions, 24 in the questions/);
   });
 
   it('대화 되묻기 시점을 내 턴으로 센다 (23회전: 교사 질문으로 세니 8턴 안에 질문이 7개뿐이라 3회였다)', () => {
@@ -120,14 +123,14 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     const p = buildVoicePrompt([card1, card2]);
     expect(p).toMatch(/now mix the sentences/i);
     expect(p).toContain('이번엔 질문을 만드세요');
-    expect(p).toMatch(/keep alternating those two for 8 answers from me/i);
+    expect(p).toMatch(/keep alternating those two for 12 answers from me/i);
     expect(p).toMatch(/in this stage a slot cue is wrong/i);   // 21회전: C 에서 B 단서로 교정했다
     expect(p).toMatch(/never "주어를 …으로"/);
   });
 
   it('문장이 바뀔 때마다 어느 문장인지 한국어로 알려 준다', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/before each new sentence in A and B, say in Korean which sentence it is/i);
+    expect(p).toMatch(/before each new sentence in A and B, say in Korean which sentence it is, using the Korean of its short form/i);
   });
 
   it('패턴 시작에 한 번만 들려주고 따라 하게 한다 (7회전: 첫 턴부터 작문을 요구했다)', () => {
@@ -194,7 +197,7 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     const p = buildVoicePrompt([card1, card2]);
     const bg = p.split('\n').filter((l) => l.includes('공항에 마중 나가는 길'));
     expect(bg).toHaveLength(1);
-    expect(bg[0]).toMatch(/so your questions make sense/i);
+    expect(bg[0]).toMatch(/so your cues and questions come from my life/i);
   });
 
   it('짧은 형태는 구문을 포함하는 드릴 중 최단이고 단어 경계까지 본다', () => {
