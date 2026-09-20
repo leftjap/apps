@@ -4,15 +4,15 @@
  "date": "2026-10-08",
  "cards": [
   {
-   "id": "en-personal-bangkok-01-looking-forward",
-   "sentence": "I've been looking forward to this.",
-   "meaning": "이거 계속 기다렸어.",
+   "id": "en-personal-bangkok-01-been-ages",
+   "sentence": "It's been ages.",
+   "meaning": "엄청 오랜만이지.",
    "reading": null,
-   "phonetic_kr": "아이v 빈 루킹 f포어r워r드 터 디스",
+   "phonetic_kr": "잇츠 빈 에이지즈",
    "order_index": 1,
    "explanation": {
-    "key": "looking forward to ~ = ~을 계속 기다려 왔다 (영상 #5 I've been + look forward to)",
-    "anchor": "계속 기다렸어",
+    "key": "It's been ~ = ~한 지 오래됐다. 모두영어 2편 #110 It's been ages. 그대로",
+    "anchor": "오랜만",
     "situation": "방콕. 소연을 따라 왔다. 2022년 이후 처음이다.",
     "miniDialogue": [
      {
@@ -25,16 +25,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been looking forward to this.",
-      "ko": "이거 계속 기다렸어.",
-      "kr": "아이v 빈 루킹 f포어r워r드 터 디스"
+      "en": "It's been ages.",
+      "ko": "엄청 오랜만이지.",
+      "kr": "잇츠 빈 에이지즈"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Would you fly business next time?",
-      "ko": "다음에도 비즈니스 탈 거야?",
-      "kr": "워저 f플라이 비z니스 넥스 타임"
+      "en": "The business seat was nice, right?",
+      "ko": "비즈니스 좌석 좋았지?",
+      "kr": "더 비z니스 씨잇 워z 나이스 라잇"
      },
      {
       "speaker": "B",
@@ -74,63 +74,53 @@
     ],
     "drills": [
      {
-      "en": "I've been looking forward to the trip.",
-      "ko": "이 여행을 계속 기다렸어.",
-      "kr": "아이v 빈 루킹 f포어r워r드 터 더 트립"
+      "en": "It's been three years.",
+      "ko": "삼 년 됐네.",
+      "kr": "잇츠 빈 쓰리이 이어r즈"
      },
      {
-      "en": "She's been looking forward to it.",
-      "ko": "소연이 계속 기다렸어.",
-      "kr": "쉬z 빈 루킹 f포어r워r드 터 잇"
+      "en": "It's been a long day.",
+      "ko": "긴 하루였어.",
+      "kr": "잇츠 비너 롱 데이"
      },
      {
-      "en": "Have you been here before?",
-      "ko": "여기 와본 적 있어?",
-      "kr": "해v 여 빈 히어r 비f포어r"
+      "en": "Was it that long ago?",
+      "ko": "그게 그렇게 오래전이야?",
+      "kr": "워z 잇 댓 롱 어고우"
      },
      {
-      "en": "We're looking forward to dinner.",
-      "ko": "저녁이 기다려져.",
-      "kr": "위어r 루킹 f포어r워r드 터 디너r"
-     },
-     {
-      "en": "I've been waiting all year.",
-      "ko": "일 년을 기다렸어.",
-      "kr": "아이v 빈 웨이링 올 이어r"
+      "en": "We haven't been here in years.",
+      "ko": "우리 몇 년 만이야.",
+      "kr": "위 해븐 빈 히어r 이니어r즈"
      }
     ],
     "grammar": [
      {
-      "struct": "looking forward to ~",
-      "body": "~을 계속 기다려 왔다 (영상 #5 I've been + look forward to)"
+      "struct": "It's been ~",
+      "body": "~한 지 오래됐다. 모두영어 2편 #110 It's been ages. 그대로"
      }
     ],
     "chunks": [
      [
-      "I've been",
-      "아이v 빈",
-      "계속 ~해 왔다"
+      "It's been",
+      "잇츠 빈",
+      "~한 지 됐다"
      ],
      [
-      "looking forward to",
-      "루킹 f포어r워r드 터",
-      "~을 기다리다"
-     ],
-     [
-      "this.",
-      "디스",
-      "이것을"
+      "ages.",
+      "에이지즈",
+      "아주 오래"
      ]
     ],
     "phonemes": [
      [
-      "/f/ forward",
-      "forward 의 f 는 윗니를 아랫입술에, 두 r 을 다 살린다 — f포어r워r드"
+      "/dʒ/ ages",
+      "ages 의 g 는 '지' 소리, 끝 s 는 z — 에이지즈"
      ]
     ],
-    "mistake": "look forward to + 명사나 -ing. look forward to go (X)",
-    "similar": "I can't wait for this.",
-    "category": "여행/기대",
+    "mistake": "ages 는 '나이' 가 아니라 '아주 오랜 시간'. It's been a while 보다 더 길게 느껴질 때",
+    "similar": "It's been a while.",
+    "category": "여행/인사",
     "frequency": 8
    }
   },
@@ -156,16 +146,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been looking forward to this.",
-      "ko": "이거 계속 기다렸어.",
-      "kr": "아이v 빈 루킹 f포어r워r드 터 디스"
+      "en": "It's been ages.",
+      "ko": "엄청 오랜만이지.",
+      "kr": "잇츠 빈 에이지즈"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Would you fly business next time?",
-      "ko": "다음에도 비즈니스 탈 거야?",
-      "kr": "워저 f플라이 비z니스 넥스 타임"
+      "en": "The business seat was nice, right?",
+      "ko": "비즈니스 좌석 좋았지?",
+      "kr": "더 비z니스 씨잇 워z 나이스 라잇"
      },
      {
       "speaker": "B",
@@ -277,16 +267,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been looking forward to this.",
-      "ko": "이거 계속 기다렸어.",
-      "kr": "아이v 빈 루킹 f포어r워r드 터 디스"
+      "en": "It's been ages.",
+      "ko": "엄청 오랜만이지.",
+      "kr": "잇츠 빈 에이지즈"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Would you fly business next time?",
-      "ko": "다음에도 비즈니스 탈 거야?",
-      "kr": "워저 f플라이 비z니스 넥스 타임"
+      "en": "The business seat was nice, right?",
+      "ko": "비즈니스 좌석 좋았지?",
+      "kr": "더 비z니스 씨잇 워z 나이스 라잇"
      },
      {
       "speaker": "B",
@@ -398,16 +388,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been looking forward to this.",
-      "ko": "이거 계속 기다렸어.",
-      "kr": "아이v 빈 루킹 f포어r워r드 터 디스"
+      "en": "It's been ages.",
+      "ko": "엄청 오랜만이지.",
+      "kr": "잇츠 빈 에이지즈"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Would you fly business next time?",
-      "ko": "다음에도 비즈니스 탈 거야?",
-      "kr": "워저 f플라이 비z니스 넥스 타임"
+      "en": "The business seat was nice, right?",
+      "ko": "비즈니스 좌석 좋았지?",
+      "kr": "더 비z니스 씨잇 워z 나이스 라잇"
      },
      {
       "speaker": "B",

@@ -39,16 +39,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to ask me.",
-      "ko": "나한테 안 물어봐도 돼.",
-      "kr": "유 돈 해f터 애스크 미"
+      "en": "No harm done.",
+      "ko": "괜찮아, 별일 아니야.",
+      "kr": "노우 하r암 던"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "The leak held us up for months.",
-      "ko": "누수 때문에 몇 달을 미뤘잖아.",
-      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+      "en": "We put it off because of the leak.",
+      "ko": "누수 때문에 미뤄뒀잖아.",
+      "kr": "위 푸리로f 비커z 어v 더 리익"
      },
      {
       "speaker": "B",
@@ -125,15 +125,15 @@
    }
   },
   {
-   "id": "en-personal-new-washer-02-dont-have-to-ask",
-   "sentence": "You don't have to ask me.",
-   "meaning": "나한테 안 물어봐도 돼.",
+   "id": "en-personal-new-washer-02-no-harm-done",
+   "sentence": "No harm done.",
+   "meaning": "괜찮아, 별일 아니야.",
    "reading": null,
-   "phonetic_kr": "유 돈 해f터 애스크 미",
+   "phonetic_kr": "노우 하r암 던",
    "order_index": 2,
    "explanation": {
-    "key": "You don't have to ~ = ~할 필요 없어 (영상 #23)",
-    "anchor": "안 물어봐도 돼",
+    "key": "No harm done = 별 탈 없어 / 괜찮아. 모두영어 #251 그대로",
+    "anchor": "괜찮아",
     "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
     "miniDialogue": [
      {
@@ -160,16 +160,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to ask me.",
-      "ko": "나한테 안 물어봐도 돼.",
-      "kr": "유 돈 해f터 애스크 미"
+      "en": "No harm done.",
+      "ko": "괜찮아, 별일 아니야.",
+      "kr": "노우 하r암 던"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "The leak held us up for months.",
-      "ko": "누수 때문에 몇 달을 미뤘잖아.",
-      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+      "en": "We put it off because of the leak.",
+      "ko": "누수 때문에 미뤄뒀잖아.",
+      "kr": "위 푸리로f 비커z 어v 더 리익"
      },
      {
       "speaker": "B",
@@ -195,54 +195,59 @@
     ],
     "drills": [
      {
-      "en": "You don't have to wait for me.",
-      "ko": "나 기다릴 필요 없어.",
-      "kr": "유 돈 해f터 웨잇 f퍼r 미"
+      "en": "There's no harm done.",
+      "ko": "잘못된 건 하나도 없어.",
+      "kr": "데어r즈 노우 하r암 던"
      },
      {
-      "en": "I don't have to work today.",
-      "ko": "오늘은 일 안 해도 돼.",
-      "kr": "아이 돈 해f터 워r크 터데이"
+      "en": "It's fine, really.",
+      "ko": "진짜 괜찮아.",
+      "kr": "잇츠 f파인 리얼리"
      },
      {
-      "en": "Do we have to move it?",
-      "ko": "이거 옮겨야 해?",
-      "kr": "두 위 해f터 무우v 잇"
+      "en": "Don't feel bad about it.",
+      "ko": "미안해하지 마.",
+      "kr": "돈 f피일 배더바우릿"
      },
      {
-      "en": "She didn't have to pay.",
-      "ko": "소연은 안 내도 됐어.",
-      "kr": "쉬 디든 해f터 페이"
+      "en": "You did the right thing.",
+      "ko": "잘한 거야.",
+      "kr": "유 딧 더 라잇 씽"
+     },
+     {
+      "en": "No one got hurt.",
+      "ko": "다친 사람 없잖아.",
+      "kr": "노우 원 갓 허r트"
      }
     ],
     "grammar": [
      {
-      "struct": "You don't have to ~",
-      "body": "~할 필요 없어 (영상 #23)"
+      "struct": "No harm done",
+      "body": "별 탈 없어 / 괜찮아. 모두영어 #251 그대로"
      }
     ],
     "chunks": [
      [
-      "You don't have to",
-      "유 돈 해f터",
-      "너는 ~할 필요 없다"
+      "No harm",
+      "노우 하r암",
+      "해를 입은 것 없다"
      ],
      [
-      "ask me.",
-      "애스크 미",
-      "나한테 묻다"
+      "done.",
+      "던",
+      "생긴"
      ]
     ],
     "phonemes": [
      [
-      "/f/ have to",
-      "have 의 v 는 t 앞에서 f 소리로 바뀐다 — 해f터"
+      "/ɑr/ harm",
+      "harm 의 ar 은 입을 크게 벌려 하r암 — r 을 끝까지 살린다"
      ]
     ],
-    "mistake": "don't have to(안 해도 됨) ≠ must not(하면 안 됨)",
-    "similar": "No need to ask.",
+    "mistake": "No harm done. 은 통째로 쓰는 관용구. No harm is done (X)",
+    "similar": "It's fine. / Don't worry about it.",
     "category": "일상/배려",
-    "frequency": 9
+    "frequency": 7
    }
   },
   {
@@ -281,16 +286,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to ask me.",
-      "ko": "나한테 안 물어봐도 돼.",
-      "kr": "유 돈 해f터 애스크 미"
+      "en": "No harm done.",
+      "ko": "괜찮아, 별일 아니야.",
+      "kr": "노우 하r암 던"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "The leak held us up for months.",
-      "ko": "누수 때문에 몇 달을 미뤘잖아.",
-      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+      "en": "We put it off because of the leak.",
+      "ko": "누수 때문에 미뤄뒀잖아.",
+      "kr": "위 푸리로f 비커z 어v 더 리익"
      },
      {
       "speaker": "B",
@@ -402,16 +407,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to ask me.",
-      "ko": "나한테 안 물어봐도 돼.",
-      "kr": "유 돈 해f터 애스크 미"
+      "en": "No harm done.",
+      "ko": "괜찮아, 별일 아니야.",
+      "kr": "노우 하r암 던"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "The leak held us up for months.",
-      "ko": "누수 때문에 몇 달을 미뤘잖아.",
-      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+      "en": "We put it off because of the leak.",
+      "ko": "누수 때문에 미뤄뒀잖아.",
+      "kr": "위 푸리로f 비커z 어v 더 리익"
      },
      {
       "speaker": "B",
