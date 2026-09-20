@@ -71,6 +71,51 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/there your English is only for asking me questions/i); // 12회전: 대화 구간까지 걸려 교사가 한국어로 답했다
   });
 
+  it('세션 분량을 발화 횟수로 준다 (7회전: 너무 짧았다)', () => {
+    const p = buildVoicePrompt([card1]);
+  });
+
+  it('따라 말하기가 쓸모없다고 학습자 상태에 적는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/repeating after you teaches me nothing/i);
+    expect(p).toMatch(/what I cannot do is build a sentence myself/i);
+  });
+
+  it('복습 → 바꿔 말하기 → 질문과 답 세 단계를 섞지 않고 순서대로 간다 (20회전: 한 바퀴 안에 다 섞여 있었다)', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toMatch(/work in three stages, in this order, and never mix them/i);
+    expect(p).toContain('A. 복습 — say "복습부터 합니다"');
+    expect(p).toContain('B. 바꿔 말하기 — say "이제 바꿔 말하기입니다"');
+    expect(p).toContain('C. 질문과 답 — say "이제 질문과 답입니다"');
+  });
+
+  it('복습은 네 문장을 한 번 훑고 아무것도 바꾸지 않는다', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toMatch(/say the short form once in English, I repeat it once, then say its Korean meaning and I say the English from meaning/i);
+    expect(p).toMatch(/nothing changed yet\. One pass over every sentence/i);
+  });
+
+  it('바꿔 말하기는 자리+낱말 단서로 두 바퀴, 기준은 짧은 형태', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/change the subject, then the thing or activity, then the time/i);
+    expect(p).toContain('"주어를 소연으로", "동작을 운동으로", "시간을 이번 주로"');
+    expect(p).toMatch(/every change starts from that sentence's short form, never from my last answer/i);
+    expect(p).toMatch(/two passes over every sentence/i);
+  });
+
+  it('질문과 답 단계에서 문장을 섞고 분량으로 끝낸다', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toMatch(/now mix the sentences/i);
+    expect(p).toContain('이번엔 질문을 만드세요');
+    expect(p).toMatch(/until I have spoken about 26 times in all three stages/i);
+    expect(buildVoicePrompt([card1, card2, card1, card2])).toMatch(/about 52 times in all three stages/i);
+  });
+
+  it('문장이 바뀔 때마다 어느 문장인지 한국어로 알려 준다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/before each new sentence in A and B, say in Korean which sentence it is/i);
+  });
+
   it('패턴 시작에 한 번만 들려주고 따라 하게 한다 (7회전: 첫 턴부터 작문을 요구했다)', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/when a pattern starts, say its short form once in English and I repeat it once/i);
@@ -87,47 +132,10 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/what I cannot do is build a sentence myself/i);
   });
 
-  it('여섯 가지 단서를 순서대로 돌리는 회전 구조다 (8회전: 단계·통과 판정을 동시에 세다 위치를 잃었다)', () => {
-    const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/rotate through these six cue types in order, again and again with new content/i);
-    // 13회전: 기준 문장을 놓쳐 교정이 잦았다
-    expect(p).toMatch(/before each lap of the six, say in Korean which sentence the lap works from/i);
-    expect(p).toMatch(/every change starts from the short form, never from my last sentence/i); // 9회전: 치환이 누적돼 기억 부담이 커졌다
-    expect(p).toMatch(/1\. the whole meaning in Korean — I say the English/);
-    expect(p).toMatch(/2\. the subject to change — I say the whole new sentence/);
-    expect(p).toMatch(/3\. the thing or activity to change/);
-    expect(p).toMatch(/4\. the time or place to change/);
-    // 11회전: "4시로요" 처럼 자리를 빼면 어느 자리를 바꾸는지 몰라 계속 틀렸다
-    expect(p).toMatch(/a change cue is two Korean words: the slot, then the new word/i);
-    expect(p).toContain('"주어를 소연으로", "동작을 운동으로", "시간을 이번 주로"');
-    expect(p).toMatch(/never describe it and never leave the slot out/i);
-    expect(p).toMatch(/5\. a question from you in English — I answer in English, changing something myself/);
-    expect(p).toContain('이번엔 질문을 만드세요');
-  });
-
-  it('세어야 할 것이 패턴당 문장 수 하나다', () => {
-    const p = buildVoicePrompt([card1]);
-    expect(p).toContain('say in Korean "다음으로 갑니다"');
-    expect(p).toMatch(/if my last six in a row were right with no help, you may move on early/i);
-    // 8회전에서 지워진 것들 — 동시에 세게 만들면 안 된다
-    expect(p).not.toMatch(/a step passes only after/i);
-    expect(p).not.toMatch(/at four wrong in one step/i);
-    expect(p).not.toMatch(/at least eight changes/i);
-  });
-
   it('패턴 시작에 한 번만 들려주고 따라 하게 한다 (7회전: 첫 턴부터 작문을 요구했다)', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/when a pattern starts, say its short form once in English and I repeat it once/i);
     expect(p).toMatch(/that is not scored\. Never say that sentence again/i);
-  });
-
-  it('패턴당 목표를 패턴 수로 나눠 계산한다 (19회전: 60발화와 패턴당 20문장이 모순이라 완주가 안 됐다)', () => {
-    const one = buildVoicePrompt([card1]);
-    expect(one).toMatch(/I speak about 52 times per pattern/);
-    const four = buildVoicePrompt([card1, card2, card1, card2]);
-    expect(four).toMatch(/I speak about 13 times per pattern/);
-    expect(four).toMatch(/Keep rotating until I have said about 13 sentences for this pattern/);
-    expect(four).toMatch(/do not stretch one pattern past that/i);
   });
 
   it('리포트는 짧은 형태 + 한 단어 + 내일 한 줄로만', () => {
