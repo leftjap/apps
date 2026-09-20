@@ -95,20 +95,33 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/nothing changed yet\. One pass over every sentence/i);
   });
 
-  it('바꿔 말하기는 자리+낱말 단서로 두 바퀴, 기준은 짧은 형태', () => {
-    const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/change the subject, then the thing or activity, then the time/i);
+  it('바꿔 말하기는 슬롯별 패스로 돌아 같은 문장이 연속으로 오지 않는다 (21회전: 문장별로 두 바퀴를 붙여 돌았다)', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toMatch(/work in passes, one slot per pass, and in each pass go through every sentence in order before you change slot/i);
+    expect(p).toMatch(/pass one the subject, pass two the thing or activity, pass three the time/i);
+    expect(p).toMatch(/never take the same sentence twice in a row/i);
+    expect(p).toMatch(/six passes in all, so 12 answers from me/i);
     expect(p).toContain('"주어를 소연으로", "동작을 운동으로", "시간을 이번 주로"');
     expect(p).toMatch(/every change starts from that sentence's short form, never from my last answer/i);
-    expect(p).toMatch(/two passes over every sentence/i);
+  });
+
+  it('단계마다 분량을 따로 준다 (21회전: 바꿔 말하기가 절반을 먹고 질문과 답이 13턴뿐이었다)', () => {
+    const p = buildVoicePrompt([card1, card2, card1, card2]);
+    expect(p).toMatch(/I speak about 48 times in the drill — 8 in review, 24 in the substitutions, 16 in the questions/);
+  });
+
+  it('대화 되묻기 시점을 서수로 못박는다 (21회전: 여덟 질문에 두 번뿐이었다)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/after your second question, and again after your fourth, sixth and eighth, say "이번엔 저한테 물어보세요"/i);
   });
 
   it('질문과 답 단계에서 문장을 섞고 분량으로 끝낸다', () => {
     const p = buildVoicePrompt([card1, card2]);
     expect(p).toMatch(/now mix the sentences/i);
     expect(p).toContain('이번엔 질문을 만드세요');
-    expect(p).toMatch(/until I have spoken about 26 times in all three stages/i);
-    expect(buildVoicePrompt([card1, card2, card1, card2])).toMatch(/about 52 times in all three stages/i);
+    expect(p).toMatch(/keep alternating those two for 8 answers from me/i);
+    expect(p).toMatch(/in this stage a slot cue is wrong/i);   // 21회전: C 에서 B 단서로 교정했다
+    expect(p).toMatch(/never "주어를 …으로"/);
   });
 
   it('문장이 바뀔 때마다 어느 문장인지 한국어로 알려 준다', () => {
@@ -152,8 +165,6 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
   it('마지막은 대화로 넘어가고 리포트 통제어가 있다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toContain('say in Korean "이제 대화합니다"');
-    expect(p).toMatch(/every second question of yours is followed by "이번엔 저한테 물어보세요"/i);
-    expect(p).toMatch(/so I ask you as often as you ask me/i); // 16회전: 여덟 턴에 2회뿐이었다
     // 12회전: 대화 구간에서 오답 처리·힌트가 나왔다
     expect(p).toMatch(/the drill rules stop there/i);
     expect(p).toMatch(/never correct me and never hint\. There is no right answer to reach/i);

@@ -92,7 +92,8 @@ export function buildVoicePrompt(items) {
     ? list.map((it, i) => patternBlock(it, i + 1)).join('\n')
     : 'P1  short "(use a few simple everyday sentences)"';
   const bg = background(list);
-  const total = Math.max(12, 13 * Math.max(1, list.length));
+  const sentences = Math.max(1, list.length);
+  const total = 12 * sentences;
 
   return `${VOICE_PROMPT_INTRO}
 
@@ -105,17 +106,17 @@ ${header}
 
 While we drill, never say an English sentence that I am supposed to say. There your English is only for asking me questions, and everything else you say is in Korean.
 One exception: when a pattern starts, say its short form once in English and I repeat it once. That is not scored. Never say that sentence again.
-This session should run about fifteen minutes. I speak about ${total} times in the drill and about eight more in the closing conversation.
+This session should run about fifteen minutes. I speak about ${total} times in the drill — ${sentences * 2} in review, ${sentences * 6} in the substitutions, ${sentences * 4} in the questions — and about eight more in the closing conversation.
 
 Work in three stages, in this order, and never mix them. Announce each one in Korean before you start it.
 
 A. 복습 — say "복습부터 합니다". Go through the sentences in order, one per turn: say the short form once in English, I repeat it once, then say its Korean meaning and I say the English from meaning. Nothing changed yet. One pass over every sentence.
-B. 바꿔 말하기 — say "이제 바꿔 말하기입니다". Go through the sentences in order again, and for each one ask me to change the subject, then the thing or activity, then the time. A change cue is two Korean words: the slot, then the new word — "주어를 소연으로", "동작을 운동으로", "시간을 이번 주로". Name the new word; never describe it and never leave the slot out. Every change starts from that sentence's short form, never from my last answer, so I only ever hold one sentence in my head. Two passes over every sentence.
-C. 질문과 답 — say "이제 질문과 답입니다". Now mix the sentences. Ask me a question in English that one of them answers, and I answer in English with something changed. Then say "이번엔 질문을 만드세요", give an answer in Korean, and I build the English question that gets it. Keep alternating those two until I have spoken about ${total} times in all three stages.
+B. 바꿔 말하기 — say "이제 바꿔 말하기입니다". Work in passes, one slot per pass, and in each pass go through every sentence in order before you change slot: pass one the subject, pass two the thing or activity, pass three the time, then the same three passes again with different words. Never take the same sentence twice in a row. A change cue is two Korean words: the slot, then the new word — "주어를 소연으로", "동작을 운동으로", "시간을 이번 주로". Name the new word; never describe it and never leave the slot out. Every change starts from that sentence's short form, never from my last answer, so I only ever hold one sentence in my head. Six passes in all, so ${sentences * 6} answers from me.
+C. 질문과 답 — say "이제 질문과 답입니다". Now mix the sentences. Ask me a question in English that one of them answers, and I answer in English with something changed. Then say "이번엔 질문을 만드세요", give an answer in Korean, and I build the English question that gets it. Keep alternating those two for ${sentences * 4} answers from me. In this stage a slot cue is wrong: when my answer misses, say in Korean which sentence answers it in three words or fewer ("먹는 얘기요"), never "주어를 …으로".
 
 Before each new sentence in A and B, say in Korean which sentence it is, like "이번엔 잘 못 먹고 있어입니다". Then I always know what the cues change.
 
-When the last pattern is done, say in Korean "이제 대화합니다". The drill rules stop there. In the conversation you are a person in my day, not an assistant: answer as someone with a life of your own and never say you are an AI or that you do not sleep, eat or have a pet. Take whatever I say and answer it in English in one short line, then ask the next thing. Never correct me and never hint. There is no right answer to reach. Every second question of yours is followed by "이번엔 저한테 물어보세요" in Korean, so I ask you as often as you ask me; then answer my question in English. Answer every question I ask before you move on. Count my turns in the conversation and do not stop before eight; never stop on a turn where I asked you something. Answer my last turn like any other, and never finish on a turn where I asked you something. Then, in a turn that holds nothing but the report, open with "리포트 하겠습니다" in Korean and give it.
+When the last pattern is done, say in Korean "이제 대화합니다". The drill rules stop there. In the conversation you are a person in my day, not an assistant: answer as someone with a life of your own and never say you are an AI or that you do not sleep, eat or have a pet. Take whatever I say and answer it in English in one short line, then ask the next thing. Never correct me and never hint. There is no right answer to reach. After your second question, and again after your fourth, sixth and eighth, say "이번엔 저한테 물어보세요" in Korean; then answer my question in English. Answer every question I ask before you move on. Count my turns in the conversation and do not stop before eight; never stop on a turn where I asked you something. Answer my last turn like any other, and never finish on a turn where I asked you something. Then, in a turn that holds nothing but the report, open with "리포트 하겠습니다" in Korean and give it.
 If I say 리포트, stop everything and give the report now.
 
 Rules:
