@@ -79,7 +79,6 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
 
   it('세션 분량을 발화 횟수로 준다 (7회전: 너무 짧았다)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/about fifteen minutes, so make me speak at least sixty times/i);
   });
 
   it('따라 말하기가 쓸모없다고 학습자 상태에 적는다', () => {
@@ -108,7 +107,6 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
 
   it('세어야 할 것이 패턴당 문장 수 하나다', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/keep rotating until I have said about twenty sentences for this pattern/i);
     expect(p).toContain('say in Korean "다음으로 갑니다"');
     expect(p).toMatch(/if my last six in a row were right with no help, you may move on early/i);
     // 8회전에서 지워진 것들 — 동시에 세게 만들면 안 된다
@@ -123,15 +121,19 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/that is not scored\. Never say that sentence again/i);
   });
 
-  it('세션 분량을 발화 횟수로 준다', () => {
-    const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/about fifteen minutes, so make me speak at least sixty times/i);
+  it('패턴당 목표를 패턴 수로 나눠 계산한다 (19회전: 60발화와 패턴당 20문장이 모순이라 완주가 안 됐다)', () => {
+    const one = buildVoicePrompt([card1]);
+    expect(one).toMatch(/I speak about 52 times per pattern/);
+    const four = buildVoicePrompt([card1, card2, card1, card2]);
+    expect(four).toMatch(/I speak about 13 times per pattern/);
+    expect(four).toMatch(/Keep rotating until I have said about 13 sentences for this pattern/);
+    expect(four).toMatch(/do not stretch one pattern past that/i);
   });
 
   it('리포트는 짧은 형태 + 한 단어 + 내일 한 줄로만', () => {
     const p = buildVoicePrompt([card1, card2]);
     expect(p).toMatch(/at the end say only this and nothing else/i);
-    expect(p).toMatch(/one word, and only one of these three/i);
+    expect(p).toMatch(/one word, and only one of these three with nothing added in brackets or parentheses/i); // 19회전: '혼자 (미진행)' 이 나왔다
     // 12회전: 모델 2회가 있었는데도 전부 힌트로 뭉갰다 — 판단이 아니라 셈으로
     expect(p).toMatch(/count per pattern how many times you hinted and how many times you said my sentence for me/i);
     expect(p).toMatch(/못함 if you said my sentence one or more times/i)
