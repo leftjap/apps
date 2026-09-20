@@ -45,7 +45,7 @@
 1. **사용자 피드백 대기.** 휴대폰에서 앱을 완전히 닫았다 열어(구 서비스워커 캐시) 파일럿 세션을 해 본 소감. 특히 8줄 대화 녹음, `kr · ko` 부제, 장면 줄, 복습 단서.
 2. §4-1 결정 반영. 면제 안이면 `scripts/validate-seed.mjs` 의 근접중복 검사와 `applied.js` 의 `filterNearDupDrills` 에 `track === 'personal'` 분기 + 테스트. 그 뒤 파일럿 시드의 드릴을 계획서 원안(확장 3개)으로 되돌린다.
 3. **시안 1·3·4·5 를 시드로.** 파일럿 시드를 본보기로 대화 8줄(지오 대사 = 카드 sentence, 정확히 1회 일치), 카드마다 10필드(key·situation·drills≥4·grammar·chunks·phonemes·mistake·similar·category·frequency)와 `anchor`, 줄마다 `en/ko/kr/name`. 저작 순서: 시안 2판 → 해당 일기 원문 재독 → 대화 → 카드 → `node scripts/validate-seed.mjs --payload …`(경고는 허용, 에러 0) → 봇 계정으로 화면 확인(선택) → `node scripts/seed-supabase.mjs --payload … --user-id 7bae5645-61c6-4476-9ff2-4c30a72812ff`. `date` 는 적재일이고, 같은 (lang, date) 에 다른 묶음이 있으면 서버 가드가 막으니 하루에 한 묶음.
-4. 세션 생성 절차를 스킬로 박제할지 검토(5단계 이상이면 `~/.claude/skills/`).
+4. ~~세션 생성 절차를 스킬로 박제할지 검토~~ 완료(2026-09-20): 스킬 `study-dialogue-batch`. 묶음(10편) 저작→검증→시드→적재 절차와 '이미 쓴 일기 날짜·30패턴·모두영어 문장' 장부가 그 안에 있다. 도구는 `scripts/dialogue/`(to-seed·verify-draft·check-sources).
 5. 남은 사소한 것: 녹음 흐름이 `drillRows`/`miniDialogueEl` 에 중복(세 번째 사용처가 생기면 헬퍼로), `miniLinesOf` 필터 두 벌(`applied.js` 로 이동 권장), 같은 대화에 동일 `en` 줄이 둘이면 `#mini#` 이력이 겹침(게이트 검사 추가 권장), 복습 `#mini#` 영속 테스트 없음, 리셋 스크립트 백업 파일명이 UTC 날짜.
 
 ## 6. 실패 이력·주의 (반복 금지)
