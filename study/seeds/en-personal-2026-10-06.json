@@ -1,0 +1,501 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-06",
+ "cards": [
+  {
+   "id": "en-personal-bossam-01-can-i-get",
+   "sentence": "Can I get us some makgeolli?",
+   "meaning": "막걸리 좀 시킬까?",
+   "reading": null,
+   "phonetic_kr": "커나이 게러스 썸 막걸리",
+   "order_index": 1,
+   "explanation": {
+    "key": "Can I get ~ = ~ 시켜도 될까? / ~ 갖다 줄까? (영상 #7). 모두영어 2편 #74 Can I get a coffee?",
+    "anchor": "시킬까",
+    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'm glad we came here after shopping.",
+      "ko": "장 보고 여기 오길 잘했다.",
+      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can I get us some makgeolli?",
+      "ko": "막걸리 좀 시킬까?",
+      "kr": "커나이 게러스 썸 막걸리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Please. This is the best bossam ever.",
+      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
+      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I feel the same way.",
+      "ko": "나도 그래.",
+      "kr": "아이 f피일 더 쎄임 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The fat is barely there.",
+      "ko": "비계가 거의 없네.",
+      "kr": "더 f패리z 베어r리 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why the texture is so good.",
+      "ko": "그래서 식감이 좋은 거야.",
+      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Oh, it's my mother's birthday today.",
+      "ko": "아 참, 오늘 우리 엄마 생신이야.",
+      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you mind if we call her now?",
+      "ko": "지금 전화드려도 될까?",
+      "kr": "더여 마인디f 위 커얼 허r 나우"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Can I get a refill?",
+      "ko": "리필 좀 될까요?",
+      "kr": "커나이 게러 리이f필"
+     },
+     {
+      "en": "Can you get me some water?",
+      "ko": "물 좀 갖다 줄래?",
+      "kr": "컨 여 겟 미 썸 워러r"
+     },
+     {
+      "en": "I'll get the check.",
+      "ko": "계산은 내가 할게.",
+      "kr": "아일 겟 더 첵"
+     },
+     {
+      "en": "Let me get one more bottle.",
+      "ko": "한 병 더 시킬게.",
+      "kr": "렛 미 겟 원 모어r 바를"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Can I get ~",
+      "body": "~ 시켜도 될까? / ~ 갖다 줄까? (영상 #7). 모두영어 2편 #74 Can I get a coffee?"
+     }
+    ],
+    "chunks": [
+     [
+      "Can I get us",
+      "커나이 게러스",
+      "우리 ~ 시킬까"
+     ],
+     [
+      "some makgeolli?",
+      "썸 막걸리",
+      "막걸리 좀"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/n/ Can I",
+      "can 의 n 이 I 와 붙는다 — 커나이"
+     ]
+    ],
+    "mistake": "Can I get ~? 은 주문할 때 가장 흔한 틀. Can I have ~? 도 같다",
+    "similar": "Should I order ~?",
+    "category": "일상/주문",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bossam-02-same-way",
+   "sentence": "I feel the same way.",
+   "meaning": "나도 그래.",
+   "reading": null,
+   "phonetic_kr": "아이 f피일 더 쎄임 웨이",
+   "order_index": 2,
+   "explanation": {
+    "key": "I feel the same ~ = 나도 같은 마음이야. 모두영어 #128 I feel the same way. 그대로",
+    "anchor": "나도 그래",
+    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'm glad we came here after shopping.",
+      "ko": "장 보고 여기 오길 잘했다.",
+      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can I get us some makgeolli?",
+      "ko": "막걸리 좀 시킬까?",
+      "kr": "커나이 게러스 썸 막걸리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Please. This is the best bossam ever.",
+      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
+      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I feel the same way.",
+      "ko": "나도 그래.",
+      "kr": "아이 f피일 더 쎄임 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The fat is barely there.",
+      "ko": "비계가 거의 없네.",
+      "kr": "더 f패리z 베어r리 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why the texture is so good.",
+      "ko": "그래서 식감이 좋은 거야.",
+      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Oh, it's my mother's birthday today.",
+      "ko": "아 참, 오늘 우리 엄마 생신이야.",
+      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you mind if we call her now?",
+      "ko": "지금 전화드려도 될까?",
+      "kr": "더여 마인디f 위 커얼 허r 나우"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I feel the same about this place.",
+      "ko": "이 집도 나도 그래.",
+      "kr": "아이 f피일 더 쎄이머바웃 디스 플레이스"
+     },
+     {
+      "en": "Do you feel the same way?",
+      "ko": "너도 그래?",
+      "kr": "더여 f피일 더 쎄임 웨이"
+     },
+     {
+      "en": "She felt the same way.",
+      "ko": "소연도 똑같이 느꼈대.",
+      "kr": "쉬 f펠트 더 쎄임 웨이"
+     },
+     {
+      "en": "We don't feel the same about it.",
+      "ko": "우린 생각이 달라.",
+      "kr": "위 돈 f피일 더 쎄이머바우릿"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I feel the same ~",
+      "body": "나도 같은 마음이야. 모두영어 #128 I feel the same way. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I feel",
+      "아이 f피일",
+      "나는 느낀다"
+     ],
+     [
+      "the same way.",
+      "더 쎄임 웨이",
+      "똑같이"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ feel",
+      "feel 의 ee 는 길게 — f피일, '필' 로 짧게 끊지 않는다"
+     ]
+    ],
+    "mistake": "feel the same way 는 통째로 쓰는 표현. feel same (X)",
+    "similar": "Same here.",
+    "category": "일상/공감",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bossam-03-thats-why",
+   "sentence": "That's why the texture is so good.",
+   "meaning": "그래서 식감이 좋은 거야.",
+   "reading": null,
+   "phonetic_kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿",
+   "order_index": 3,
+   "explanation": {
+    "key": "That's why ~ = 그래서 ~인 거야 (앞말이 이유, 영상 #29)",
+    "anchor": "그래서",
+    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'm glad we came here after shopping.",
+      "ko": "장 보고 여기 오길 잘했다.",
+      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can I get us some makgeolli?",
+      "ko": "막걸리 좀 시킬까?",
+      "kr": "커나이 게러스 썸 막걸리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Please. This is the best bossam ever.",
+      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
+      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I feel the same way.",
+      "ko": "나도 그래.",
+      "kr": "아이 f피일 더 쎄임 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The fat is barely there.",
+      "ko": "비계가 거의 없네.",
+      "kr": "더 f패리z 베어r리 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why the texture is so good.",
+      "ko": "그래서 식감이 좋은 거야.",
+      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Oh, it's my mother's birthday today.",
+      "ko": "아 참, 오늘 우리 엄마 생신이야.",
+      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you mind if we call her now?",
+      "ko": "지금 전화드려도 될까?",
+      "kr": "더여 마인디f 위 커얼 허r 나우"
+     }
+    ],
+    "drills": [
+     {
+      "en": "That's why I like this place.",
+      "ko": "그래서 이 집이 좋아.",
+      "kr": "댓츠 와이 아이 라익 디스 플레이스"
+     },
+     {
+      "en": "That's because they slice it thin.",
+      "ko": "얇게 썰어서 그래.",
+      "kr": "댓츠 비커z 데이 슬라이씻 씬"
+     },
+     {
+      "en": "Is that why you came?",
+      "ko": "그래서 온 거야?",
+      "kr": "이z 댓 와이 여 케임"
+     },
+     {
+      "en": "We left early. That's why we got a table.",
+      "ko": "일찍 나왔어. 그래서 자리가 있었지.",
+      "kr": "위 레f트 어r리 댓츠 와이 위 가러 테이블"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "That's why ~",
+      "body": "그래서 ~인 거야 (앞말이 이유, 영상 #29)"
+     }
+    ],
+    "chunks": [
+     [
+      "That's why",
+      "댓츠 와이",
+      "그래서 ~인 거야"
+     ],
+     [
+      "the texture",
+      "더 텍스처r",
+      "식감이"
+     ],
+     [
+      "is so good.",
+      "이z 쏘우 굿",
+      "이렇게 좋다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/w/ why",
+      "why 의 w 는 입술을 둥글게 — 와이"
+     ]
+    ],
+    "mistake": "That's why + 결과, That's because + 이유. 순서를 바꾸면 뜻이 뒤집힌다",
+    "similar": "That's how it stays so light.",
+    "category": "일상/설명",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bossam-04-do-you-mind",
+   "sentence": "Do you mind if we call her now?",
+   "meaning": "지금 전화드려도 될까?",
+   "reading": null,
+   "phonetic_kr": "더여 마인디f 위 커얼 허r 나우",
+   "order_index": 4,
+   "explanation": {
+    "key": "Do you mind if ~ = ~해도 될까? (정중히 묻기, 영상 #9)",
+    "anchor": "될까",
+    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'm glad we came here after shopping.",
+      "ko": "장 보고 여기 오길 잘했다.",
+      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can I get us some makgeolli?",
+      "ko": "막걸리 좀 시킬까?",
+      "kr": "커나이 게러스 썸 막걸리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Please. This is the best bossam ever.",
+      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
+      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I feel the same way.",
+      "ko": "나도 그래.",
+      "kr": "아이 f피일 더 쎄임 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The fat is barely there.",
+      "ko": "비계가 거의 없네.",
+      "kr": "더 f패리z 베어r리 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why the texture is so good.",
+      "ko": "그래서 식감이 좋은 거야.",
+      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Oh, it's my mother's birthday today.",
+      "ko": "아 참, 오늘 우리 엄마 생신이야.",
+      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you mind if we call her now?",
+      "ko": "지금 전화드려도 될까?",
+      "kr": "더여 마인디f 위 커얼 허r 나우"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Do you mind if I sit here?",
+      "ko": "여기 앉아도 될까요?",
+      "kr": "더여 마인디f 아이 씻 히어r"
+     },
+     {
+      "en": "I don't mind waiting.",
+      "ko": "기다려도 괜찮아.",
+      "kr": "아이 돈 마인드 웨이링"
+     },
+     {
+      "en": "Would you mind closing the door?",
+      "ko": "문 좀 닫아주시겠어요?",
+      "kr": "워저 마인드 클로우징 더 도어r"
+     },
+     {
+      "en": "She didn't mind at all.",
+      "ko": "소연은 전혀 개의치 않았어.",
+      "kr": "쉬 디든 마인더롤"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Do you mind if ~",
+      "body": "~해도 될까? (정중히 묻기, 영상 #9)"
+     }
+    ],
+    "chunks": [
+     [
+      "Do you mind if",
+      "더여 마인디f",
+      "~해도 괜찮을까"
+     ],
+     [
+      "we call her",
+      "위 커얼 허r",
+      "우리가 전화하면"
+     ],
+     [
+      "now?",
+      "나우",
+      "지금"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/aɪ/ mind",
+      "mind 의 i 는 아이 — 마인드, '민드' 가 아니다"
+     ]
+    ],
+    "mistake": "Do you mind ~? 에 '괜찮다' 고 답할 때는 No 가 맞다. Yes 는 싫다는 뜻",
+    "similar": "Would it be okay if ~?",
+    "category": "일상/부탁",
+    "frequency": 8
+   }
+  }
+ ]
+}

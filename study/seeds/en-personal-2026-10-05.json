@@ -1,0 +1,516 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-05",
+ "cards": [
+  {
+   "id": "en-personal-roadside-lunch-01-want-something",
+   "sentence": "Do you want something to eat?",
+   "meaning": "뭐 좀 먹을래?",
+   "reading": null,
+   "phonetic_kr": "더여 원 썸씽 터 이잇",
+   "order_index": 1,
+   "explanation": {
+    "key": "Do you want ~ = ~할래? / ~ 먹을래? 모두영어 #51 Do you want something to eat? 그대로",
+    "anchor": "먹을래",
+    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We've been driving for two hours.",
+      "ko": "두 시간째 운전 중이야.",
+      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you want something to eat?",
+      "ko": "뭐 좀 먹을래?",
+      "kr": "더여 원 썸씽 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's good around here?",
+      "ko": "이 근처에 뭐가 맛있어?",
+      "kr": "왓츠 구더라운 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should get the cheonggukjang.",
+      "ko": "청국장 먹어보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 겟 더 청국장"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the gondre set instead.",
+      "ko": "난 곤드레 정식으로 할래.",
+      "kr": "아일 겟 더 곤드레 쎄틴스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to add the tofu.",
+      "ko": "두부도 같이 시키는 게 좋아.",
+      "kr": "유 마잇 워너 애드 더 토우f푸"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "By the way, your father won the election?",
+      "ko": "그나저나 아버님 회장 되신 거야?",
+      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to hear about it.",
+      "ko": "얼른 얘기 듣고 싶어.",
+      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Do you want to stop here?",
+      "ko": "여기서 쉴래?",
+      "kr": "더여 워너 스탑 히어r"
+     },
+     {
+      "en": "I want something warm.",
+      "ko": "따뜻한 게 먹고 싶어.",
+      "kr": "아이 원 썸씽 워r엄"
+     },
+     {
+      "en": "Does she want anything?",
+      "ko": "소연은 뭐 먹고 싶대?",
+      "kr": "더z 쉬 워네니씽"
+     },
+     {
+      "en": "Do you want to drive?",
+      "ko": "운전할래?",
+      "kr": "더여 워너 드라이v"
+     },
+     {
+      "en": "We wanted something quick.",
+      "ko": "우린 빨리 되는 게 좋았어.",
+      "kr": "위 워니드 썸씽 퀵"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Do you want ~",
+      "body": "~할래? / ~ 먹을래? 모두영어 #51 Do you want something to eat? 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "Do you want",
+      "더여 원",
+      "~을 원하니"
+     ],
+     [
+      "something",
+      "썸씽",
+      "뭔가"
+     ],
+     [
+      "to eat?",
+      "터 이잇",
+      "먹을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ Do you",
+      "do 와 you 가 약해져 붙는다 — 더여, '두 유' 가 아니다"
+     ]
+    ],
+    "mistake": "something to eat 처럼 to + 동사원형이 뒤에서 꾸민다",
+    "similar": "Are you hungry?",
+    "category": "일상/식사",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-roadside-lunch-02-think-you-should",
+   "sentence": "I think you should get the cheonggukjang.",
+   "meaning": "청국장 먹어보는 게 좋겠어.",
+   "reading": null,
+   "phonetic_kr": "아이 씽켜 슈드 겟 더 청국장",
+   "order_index": 2,
+   "explanation": {
+    "key": "I think you should ~ = ~하는 게 좋겠어 (부드러운 권유, 영상 #12)",
+    "anchor": "좋겠어",
+    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We've been driving for two hours.",
+      "ko": "두 시간째 운전 중이야.",
+      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you want something to eat?",
+      "ko": "뭐 좀 먹을래?",
+      "kr": "더여 원 썸씽 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's good around here?",
+      "ko": "이 근처에 뭐가 맛있어?",
+      "kr": "왓츠 구더라운 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should get the cheonggukjang.",
+      "ko": "청국장 먹어보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 겟 더 청국장"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the gondre set instead.",
+      "ko": "난 곤드레 정식으로 할래.",
+      "kr": "아일 겟 더 곤드레 쎄틴스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to add the tofu.",
+      "ko": "두부도 같이 시키는 게 좋아.",
+      "kr": "유 마잇 워너 애드 더 토우f푸"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "By the way, your father won the election?",
+      "ko": "그나저나 아버님 회장 되신 거야?",
+      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to hear about it.",
+      "ko": "얼른 얘기 듣고 싶어.",
+      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I think you should call her.",
+      "ko": "전화해 보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 커얼 허r"
+     },
+     {
+      "en": "You should try the tofu.",
+      "ko": "두부 한번 먹어봐.",
+      "kr": "유 슈드 트라이 더 토우f푸"
+     },
+     {
+      "en": "Do you think I should go?",
+      "ko": "내가 가는 게 좋을까?",
+      "kr": "더여 씽카이 슈드 고우"
+     },
+     {
+      "en": "I don't think you should drive.",
+      "ko": "운전은 안 하는 게 좋겠어.",
+      "kr": "아이 돈 씽켜 슈드 드라이v"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I think you should ~",
+      "body": "~하는 게 좋겠어 (부드러운 권유, 영상 #12)"
+     }
+    ],
+    "chunks": [
+     [
+      "I think you should",
+      "아이 씽켜 슈드",
+      "~하는 게 좋겠어"
+     ],
+     [
+      "get",
+      "겟",
+      "시키다"
+     ],
+     [
+      "the cheonggukjang.",
+      "더 청국장",
+      "청국장을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/tʃ/ think you",
+      "think 의 k 와 you 가 붙어 '켜' 로 난다 — 씽켜"
+     ]
+    ],
+    "mistake": "should + 동사원형. I think you should to get (X)",
+    "similar": "You'd better get ~",
+    "category": "일상/권유",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-roadside-lunch-03-might-want-to",
+   "sentence": "You might want to add the tofu.",
+   "meaning": "두부도 같이 시키는 게 좋아.",
+   "reading": null,
+   "phonetic_kr": "유 마잇 워너 애드 더 토우f푸",
+   "order_index": 3,
+   "explanation": {
+    "key": "You might want to ~ = ~하는 게 좋을걸 (가볍게 권할 때, 영상 #24)",
+    "anchor": "좋아",
+    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We've been driving for two hours.",
+      "ko": "두 시간째 운전 중이야.",
+      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you want something to eat?",
+      "ko": "뭐 좀 먹을래?",
+      "kr": "더여 원 썸씽 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's good around here?",
+      "ko": "이 근처에 뭐가 맛있어?",
+      "kr": "왓츠 구더라운 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should get the cheonggukjang.",
+      "ko": "청국장 먹어보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 겟 더 청국장"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the gondre set instead.",
+      "ko": "난 곤드레 정식으로 할래.",
+      "kr": "아일 겟 더 곤드레 쎄틴스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to add the tofu.",
+      "ko": "두부도 같이 시키는 게 좋아.",
+      "kr": "유 마잇 워너 애드 더 토우f푸"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "By the way, your father won the election?",
+      "ko": "그나저나 아버님 회장 되신 거야?",
+      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to hear about it.",
+      "ko": "얼른 얘기 듣고 싶어.",
+      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You might want to sit inside.",
+      "ko": "안쪽에 앉는 게 좋을걸.",
+      "kr": "유 마잇 워너 씨린싸이드"
+     },
+     {
+      "en": "We might want to leave early.",
+      "ko": "우리 일찍 나서는 게 좋겠어.",
+      "kr": "위 마잇 워너 리이v 어r리"
+     },
+     {
+      "en": "She might want to rest.",
+      "ko": "소연은 좀 쉬는 게 좋을 거야.",
+      "kr": "쉬 마잇 워너 레스트"
+     },
+     {
+      "en": "You might not want to drive.",
+      "ko": "운전은 안 하는 게 좋을걸.",
+      "kr": "유 마잇 낫 워너 드라이v"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You might want to ~",
+      "body": "~하는 게 좋을걸 (가볍게 권할 때, 영상 #24)"
+     }
+    ],
+    "chunks": [
+     [
+      "You might want to",
+      "유 마잇 워너",
+      "~하는 게 좋을걸"
+     ],
+     [
+      "add",
+      "애드",
+      "추가하다"
+     ],
+     [
+      "the tofu.",
+      "더 토우f푸",
+      "두부를"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/wɑ/ want to",
+      "want to 는 붙어 '워너' 로 난다 — 마잇 워너"
+     ]
+    ],
+    "mistake": "might want to 는 명령이 아니라 가벼운 권유. 상대가 부담 없이 듣는다",
+    "similar": "You may want to ~",
+    "category": "일상/권유",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-roadside-lunch-04-cant-wait-to",
+   "sentence": "I can't wait to hear about it.",
+   "meaning": "얼른 얘기 듣고 싶어.",
+   "reading": null,
+   "phonetic_kr": "아이 캔트 웨잇 터 히어r 어바우릿",
+   "order_index": 4,
+   "explanation": {
+    "key": "I can't wait to ~ = 빨리 ~하고 싶다 (영상 #28)",
+    "anchor": "듣고 싶어",
+    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We've been driving for two hours.",
+      "ko": "두 시간째 운전 중이야.",
+      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you want something to eat?",
+      "ko": "뭐 좀 먹을래?",
+      "kr": "더여 원 썸씽 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's good around here?",
+      "ko": "이 근처에 뭐가 맛있어?",
+      "kr": "왓츠 구더라운 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should get the cheonggukjang.",
+      "ko": "청국장 먹어보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 겟 더 청국장"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the gondre set instead.",
+      "ko": "난 곤드레 정식으로 할래.",
+      "kr": "아일 겟 더 곤드레 쎄틴스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to add the tofu.",
+      "ko": "두부도 같이 시키는 게 좋아.",
+      "kr": "유 마잇 워너 애드 더 토우f푸"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "By the way, your father won the election?",
+      "ko": "그나저나 아버님 회장 되신 거야?",
+      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to hear about it.",
+      "ko": "얼른 얘기 듣고 싶어.",
+      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I can't wait to get home.",
+      "ko": "얼른 집에 가고 싶다.",
+      "kr": "아이 캔트 웨잇 터 겟 호움"
+     },
+     {
+      "en": "She can't wait for dinner.",
+      "ko": "소연이 저녁을 기다리고 있어.",
+      "kr": "쉬 캔트 웨잇 f퍼r 디너r"
+     },
+     {
+      "en": "We couldn't wait any longer.",
+      "ko": "더는 못 기다렸어.",
+      "kr": "위 커든 웨이레니 롱거r"
+     },
+     {
+      "en": "Can't you wait a minute?",
+      "ko": "잠깐 못 기다려?",
+      "kr": "캔처 웨이러 미닛"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I can't wait to ~",
+      "body": "빨리 ~하고 싶다 (영상 #28)"
+     }
+    ],
+    "chunks": [
+     [
+      "I can't wait to",
+      "아이 캔트 웨잇 터",
+      "빨리 ~하고 싶다"
+     ],
+     [
+      "hear",
+      "히어r",
+      "듣다"
+     ],
+     [
+      "about it.",
+      "어바우릿",
+      "그 얘기를"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/eɪ/ wait",
+      "wait 의 ai 는 에이 — 웨잇, '왓' 으로 줄지 않는다"
+     ]
+    ],
+    "mistake": "can't wait to + 동사원형 / can't wait for + 명사",
+    "similar": "I'm looking forward to it.",
+    "category": "일상/기대",
+    "frequency": 8
+   }
+  }
+ ]
+}

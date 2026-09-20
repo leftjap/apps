@@ -1,0 +1,506 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-04",
+ "cards": [
+  {
+   "id": "en-personal-desk-cat-01-ive-been-sitting",
+   "sentence": "I've been sitting here all day.",
+   "meaning": "하루 종일 여기 앉아 있었거든.",
+   "reading": null,
+   "phonetic_kr": "아이v 빈 씨링 히어r 올 데이",
+   "order_index": 1,
+   "explanation": {
+    "key": "I've been ~ = (지금까지 계속) ~해 왔다 (영상 #5)",
+    "anchor": "앉아 있었거든",
+    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani moved to your desk.",
+      "ko": "나니가 네 책상으로 옮겼네.",
+      "kr": "나니 무우v드 터 여r 데스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been sitting here all day.",
+      "ko": "하루 종일 여기 앉아 있었거든.",
+      "kr": "아이v 빈 씨링 히어r 올 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "She's lying in front of your keyboard.",
+      "ko": "키보드 앞에 누워 있어.",
+      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't concentrate.",
+      "ko": "집중이 안 돼.",
+      "kr": "아이 캔트 칸쓴트레잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then move her somewhere else.",
+      "ko": "그럼 다른 데로 옮겨.",
+      "kr": "덴 무우v 허r 썸웨어r 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me finish this first.",
+      "ko": "이것만 먼저 끝낼게.",
+      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the new monitor better?",
+      "ko": "새 모니터는 좀 나아?",
+      "kr": "이z 더 누우 마니러r 베러r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't get enough of it.",
+      "ko": "아무리 봐도 좋아.",
+      "kr": "아이 캔트 게리너f 어v잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been reading all morning.",
+      "ko": "아침 내내 책 읽었어.",
+      "kr": "아이v 빈 리이딩 올 모어r닝"
+     },
+     {
+      "en": "She's been sleeping all day.",
+      "ko": "나니는 하루 종일 자고 있어.",
+      "kr": "쉬z 빈 슬리이핑 올 데이"
+     },
+     {
+      "en": "Have you been waiting long?",
+      "ko": "오래 기다렸어?",
+      "kr": "해v 여 빈 웨이링 롱"
+     },
+     {
+      "en": "We've been talking for an hour.",
+      "ko": "우리 한 시간째 얘기 중이야.",
+      "kr": "위v 빈 토킹 f퍼r 어나워r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "(지금까지 계속) ~해 왔다 (영상 #5)"
+     }
+    ],
+    "chunks": [
+     [
+      "I've been",
+      "아이v 빈",
+      "계속 ~해 왔다"
+     ],
+     [
+      "sitting here",
+      "씨링 히어r",
+      "여기 앉아"
+     ],
+     [
+      "all day.",
+      "올 데이",
+      "하루 종일"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ sitting",
+      "sitting 의 t 는 모음 사이에서 ㄹ 로 굴러 — 씨링"
+     ]
+    ],
+    "mistake": "have been + -ing. I've been sit (X)",
+    "similar": "I've been at this desk all day.",
+    "category": "일상/집",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-desk-cat-02-cant-concentrate",
+   "sentence": "I can't concentrate.",
+   "meaning": "집중이 안 돼.",
+   "reading": null,
+   "phonetic_kr": "아이 캔트 칸쓴트레잇",
+   "order_index": 2,
+   "explanation": {
+    "key": "I can't concentrate = 집중이 안 돼. 모두영어 #263 그대로",
+    "anchor": "안 돼",
+    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani moved to your desk.",
+      "ko": "나니가 네 책상으로 옮겼네.",
+      "kr": "나니 무우v드 터 여r 데스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been sitting here all day.",
+      "ko": "하루 종일 여기 앉아 있었거든.",
+      "kr": "아이v 빈 씨링 히어r 올 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "She's lying in front of your keyboard.",
+      "ko": "키보드 앞에 누워 있어.",
+      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't concentrate.",
+      "ko": "집중이 안 돼.",
+      "kr": "아이 캔트 칸쓴트레잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then move her somewhere else.",
+      "ko": "그럼 다른 데로 옮겨.",
+      "kr": "덴 무우v 허r 썸웨어r 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me finish this first.",
+      "ko": "이것만 먼저 끝낼게.",
+      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the new monitor better?",
+      "ko": "새 모니터는 좀 나아?",
+      "kr": "이z 더 누우 마니러r 베러r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't get enough of it.",
+      "ko": "아무리 봐도 좋아.",
+      "kr": "아이 캔트 게리너f 어v잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I can't concentrate when she stares.",
+      "ko": "쳐다보면 집중이 안 돼.",
+      "kr": "아이 캔트 칸쓴트레잇 웬 쉬 스테어r즈"
+     },
+     {
+      "en": "She can't work from home.",
+      "ko": "소연은 집에서 일을 못 해.",
+      "kr": "쉬 캔트 워r크 f럼 호움"
+     },
+     {
+      "en": "Can't you move her?",
+      "ko": "나니 좀 못 옮겨?",
+      "kr": "캔처 무우v 허r"
+     },
+     {
+      "en": "I couldn't concentrate last night.",
+      "ko": "어젯밤엔 집중이 안 됐어.",
+      "kr": "아이 커든 칸쓴트레잇 라스 나잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I can't concentrate",
+      "body": "집중이 안 돼. 모두영어 #263 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I can't",
+      "아이 캔트",
+      "나는 ~할 수 없다"
+     ],
+     [
+      "concentrate.",
+      "칸쓴트레잇",
+      "집중하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/s/ concentrate",
+      "concentrate 의 가운데 c 는 s 소리 — 칸쓴트레잇"
+     ]
+    ],
+    "mistake": "can't + 동사원형. I can't to concentrate (X)",
+    "similar": "I can't focus.",
+    "category": "일상/집중",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-desk-cat-03-let-me-finish",
+   "sentence": "Let me finish this first.",
+   "meaning": "이것만 먼저 끝낼게.",
+   "reading": null,
+   "phonetic_kr": "렛 미 f피니쉬 디스 f퍼r스트",
+   "order_index": 3,
+   "explanation": {
+    "key": "Let me ~ = 내가 ~할게 / ~해 볼게 (영상 #6)",
+    "anchor": "끝낼게",
+    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani moved to your desk.",
+      "ko": "나니가 네 책상으로 옮겼네.",
+      "kr": "나니 무우v드 터 여r 데스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been sitting here all day.",
+      "ko": "하루 종일 여기 앉아 있었거든.",
+      "kr": "아이v 빈 씨링 히어r 올 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "She's lying in front of your keyboard.",
+      "ko": "키보드 앞에 누워 있어.",
+      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't concentrate.",
+      "ko": "집중이 안 돼.",
+      "kr": "아이 캔트 칸쓴트레잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then move her somewhere else.",
+      "ko": "그럼 다른 데로 옮겨.",
+      "kr": "덴 무우v 허r 썸웨어r 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me finish this first.",
+      "ko": "이것만 먼저 끝낼게.",
+      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the new monitor better?",
+      "ko": "새 모니터는 좀 나아?",
+      "kr": "이z 더 누우 마니러r 베러r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't get enough of it.",
+      "ko": "아무리 봐도 좋아.",
+      "kr": "아이 캔트 게리너f 어v잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let me call her first.",
+      "ko": "내가 먼저 전화해 볼게.",
+      "kr": "렛 미 커얼 허r f퍼r스트"
+     },
+     {
+      "en": "Let me help you with that.",
+      "ko": "그거 내가 도와줄게.",
+      "kr": "렛 미 헬프 여 위드 댓"
+     },
+     {
+      "en": "Can you let me finish?",
+      "ko": "나 마저 하게 둘래?",
+      "kr": "컨 여 렛 미 f피니쉬"
+     },
+     {
+      "en": "I'll finish this after dinner.",
+      "ko": "저녁 먹고 끝낼게.",
+      "kr": "아일 f피니쉬 디새f터r 디너r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "내가 ~할게 / ~해 볼게 (영상 #6)"
+     }
+    ],
+    "chunks": [
+     [
+      "Let me",
+      "렛 미",
+      "내가 ~할게"
+     ],
+     [
+      "finish this",
+      "f피니쉬 디스",
+      "이것을 끝내다"
+     ],
+     [
+      "first.",
+      "f퍼r스트",
+      "먼저"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ finish",
+      "finish 의 f 는 윗니를 아랫입술에 — f피니쉬"
+     ]
+    ],
+    "mistake": "Let me + 동사원형. Let me to finish (X)",
+    "similar": "Give me a minute.",
+    "category": "일상/집",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-desk-cat-04-cant-get-enough",
+   "sentence": "I can't get enough of it.",
+   "meaning": "아무리 봐도 좋아.",
+   "reading": null,
+   "phonetic_kr": "아이 캔트 게리너f 어v잇",
+   "order_index": 4,
+   "explanation": {
+    "key": "I can't get enough of ~ = 아무리 해도 좋아 / 질리지 않아. 모두영어 2편 #44 I can't get enough of it. 그대로",
+    "anchor": "아무리 봐도 좋아",
+    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani moved to your desk.",
+      "ko": "나니가 네 책상으로 옮겼네.",
+      "kr": "나니 무우v드 터 여r 데스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been sitting here all day.",
+      "ko": "하루 종일 여기 앉아 있었거든.",
+      "kr": "아이v 빈 씨링 히어r 올 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "She's lying in front of your keyboard.",
+      "ko": "키보드 앞에 누워 있어.",
+      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't concentrate.",
+      "ko": "집중이 안 돼.",
+      "kr": "아이 캔트 칸쓴트레잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then move her somewhere else.",
+      "ko": "그럼 다른 데로 옮겨.",
+      "kr": "덴 무우v 허r 썸웨어r 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me finish this first.",
+      "ko": "이것만 먼저 끝낼게.",
+      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the new monitor better?",
+      "ko": "새 모니터는 좀 나아?",
+      "kr": "이z 더 누우 마니러r 베러r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't get enough of it.",
+      "ko": "아무리 봐도 좋아.",
+      "kr": "아이 캔트 게리너f 어v잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I can't get enough of this monitor.",
+      "ko": "이 모니터가 아주 마음에 들어.",
+      "kr": "아이 캔트 게리너f 어v 디스 마니러r"
+     },
+     {
+      "en": "She can't get enough of the desk.",
+      "ko": "나니가 책상을 아주 좋아해.",
+      "kr": "쉬 캔트 게리너f 어v 더 데스크"
+     },
+     {
+      "en": "I got enough sleep last night.",
+      "ko": "어젯밤엔 잠을 푹 잤어.",
+      "kr": "아이 가리너f 슬리입 라스 나잇"
+     },
+     {
+      "en": "Do we have enough time?",
+      "ko": "시간이 충분해?",
+      "kr": "두 위 해v 이너f 타임"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I can't get enough of ~",
+      "body": "아무리 해도 좋아 / 질리지 않아. 모두영어 2편 #44 I can't get enough of it. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I can't",
+      "아이 캔트",
+      "나는 ~할 수 없다"
+     ],
+     [
+      "get enough",
+      "게리너f",
+      "충분히 얻다"
+     ],
+     [
+      "of it.",
+      "어v잇",
+      "그것을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ get enough",
+      "get 의 t 가 enough 의 모음과 붙어 ㄹ 로 흐른다 — 게리너f"
+     ]
+    ],
+    "mistake": "부정문이지만 칭찬이다 — '아무리 가져도 충분하지 않다' = 너무 좋다",
+    "similar": "I love it.",
+    "category": "일상/취향",
+    "frequency": 7
+   }
+  }
+ ]
+}

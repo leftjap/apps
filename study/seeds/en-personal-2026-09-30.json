@@ -1,0 +1,511 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-30",
+ "cards": [
+  {
+   "id": "en-personal-saltgrill-01-theres",
+   "sentence": "There's a place in Mangwon.",
+   "meaning": "망원동에 한 곳 있어.",
+   "reading": null,
+   "phonetic_kr": "데어r저 플레이씬 망원",
+   "order_index": 1,
+   "explanation": {
+    "key": "There's ~ = ~가 있다 (There is 의 축약, 영상 #16)",
+    "anchor": "있어",
+    "situation": "저녁. 소연이 매콤한 걸 먹고 싶다고 해서 망원동으로 가는 버스를 탔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want something spicy tonight.",
+      "ko": "오늘은 매콤한 게 먹고 싶어.",
+      "kr": "아이 원 썸씽 스파이씨 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a place in Mangwon.",
+      "ko": "망원동에 한 곳 있어.",
+      "kr": "데어r저 플레이씬 망원"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait, I've wanted to try that one over there.",
+      "ko": "잠깐, 저기 한번 가보고 싶었는데.",
+      "kr": "웨잇 아이v 워니러 트라이 댓 원 오우버r 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's worth a try.",
+      "ko": "가볼 만하지.",
+      "kr": "잇츠 워r써 트라이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We got in without waiting.",
+      "ko": "안 기다리고 들어왔네.",
+      "kr": "위 가린 위다웃 웨이링"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't expect that.",
+      "ko": "그럴 줄 몰랐어.",
+      "kr": "아이 디든 익스펙 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The pork tastes like the old days.",
+      "ko": "고기가 딱 옛날 맛이야.",
+      "kr": "더 포어r크 테이스츠 라익 디 오울드 데이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I couldn't agree more.",
+      "ko": "완전 동감이야.",
+      "kr": "아이 커든 어그리이 모어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "There's a taxi outside.",
+      "ko": "밖에 택시 있어.",
+      "kr": "데어r저 택씨 아웃싸이드"
+     },
+     {
+      "en": "There are two seats left.",
+      "ko": "자리가 두 개 남았어.",
+      "kr": "데어r 아r 투우 씨잇츠 레f트"
+     },
+     {
+      "en": "Is there a place near here?",
+      "ko": "이 근처에 그런 데 있어?",
+      "kr": "이z 데어r 어 플레이스 니어r 히어r"
+     },
+     {
+      "en": "There's no line today.",
+      "ko": "오늘은 줄이 없네.",
+      "kr": "데어r즈 노우 라인 터데이"
+     },
+     {
+      "en": "We have a place in mind.",
+      "ko": "우리 가려던 데가 있어.",
+      "kr": "위 해버 플레이씬 마인드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "There's ~",
+      "body": "~가 있다 (There is 의 축약, 영상 #16)"
+     }
+    ],
+    "chunks": [
+     [
+      "There's a",
+      "데어r저",
+      "~가 하나 있다"
+     ],
+     [
+      "place in",
+      "플레이씬",
+      "~에 한 곳"
+     ],
+     [
+      "Mangwon.",
+      "망원",
+      "망원동"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ There's",
+      "there's 의 s 는 z 소리 — 데어r즈. 뒤에 a 가 오면 이어져 데어r저"
+     ]
+    ],
+    "mistake": "There's + 단수, There are + 복수",
+    "similar": "I know a place in ~",
+    "category": "일상/외식",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-saltgrill-02-worth-a-try",
+   "sentence": "It's worth a try.",
+   "meaning": "가볼 만하지.",
+   "reading": null,
+   "phonetic_kr": "잇츠 워r써 트라이",
+   "order_index": 2,
+   "explanation": {
+    "key": "It's worth ~ = ~할 값어치가 있다 / 해볼 만하다. 모두영어 #179 It's worth a try. 그대로",
+    "anchor": "만하지",
+    "situation": "저녁. 소연이 매콤한 걸 먹고 싶다고 해서 망원동으로 가는 버스를 탔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want something spicy tonight.",
+      "ko": "오늘은 매콤한 게 먹고 싶어.",
+      "kr": "아이 원 썸씽 스파이씨 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a place in Mangwon.",
+      "ko": "망원동에 한 곳 있어.",
+      "kr": "데어r저 플레이씬 망원"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait, I've wanted to try that one over there.",
+      "ko": "잠깐, 저기 한번 가보고 싶었는데.",
+      "kr": "웨잇 아이v 워니러 트라이 댓 원 오우버r 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's worth a try.",
+      "ko": "가볼 만하지.",
+      "kr": "잇츠 워r써 트라이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We got in without waiting.",
+      "ko": "안 기다리고 들어왔네.",
+      "kr": "위 가린 위다웃 웨이링"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't expect that.",
+      "ko": "그럴 줄 몰랐어.",
+      "kr": "아이 디든 익스펙 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The pork tastes like the old days.",
+      "ko": "고기가 딱 옛날 맛이야.",
+      "kr": "더 포어r크 테이스츠 라익 디 오울드 데이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I couldn't agree more.",
+      "ko": "완전 동감이야.",
+      "kr": "아이 커든 어그리이 모어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It's worth a call.",
+      "ko": "전화해볼 만해.",
+      "kr": "잇츠 워r써 커얼"
+     },
+     {
+      "en": "That place is worth a visit.",
+      "ko": "그 집은 가볼 만해.",
+      "kr": "댓 플레이씨z 워r써 v이짓"
+     },
+     {
+      "en": "Was it worth the wait?",
+      "ko": "기다릴 만했어?",
+      "kr": "워z 잇 워r쓰 더 웨잇"
+     },
+     {
+      "en": "It wasn't worth it.",
+      "ko": "그럴 값어치는 없었어.",
+      "kr": "잇 워즌 워r씨릿"
+     },
+     {
+      "en": "The bus ride is worth it.",
+      "ko": "버스 타고 갈 만해.",
+      "kr": "더 버스 라이디z 워r씨릿"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It's worth ~",
+      "body": "~할 값어치가 있다 / 해볼 만하다. 모두영어 #179 It's worth a try. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "It's",
+      "잇츠",
+      "그건"
+     ],
+     [
+      "worth a try.",
+      "워r써 트라이",
+      "해볼 만하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/θ/ worth",
+      "worth 의 th 는 혀끝을 이 사이에 — 워r쓰. 뒤 a 와 이어져 워r써"
+     ]
+    ],
+    "mistake": "worth 뒤에는 명사나 -ing. worth to try (X)",
+    "similar": "Why not? / Let's give it a shot.",
+    "category": "일상/제안",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-saltgrill-03-didnt-expect",
+   "sentence": "I didn't expect that.",
+   "meaning": "그럴 줄 몰랐어.",
+   "reading": null,
+   "phonetic_kr": "아이 디든 익스펙 댓",
+   "order_index": 3,
+   "explanation": {
+    "key": "I didn't expect ~ = ~일 줄 몰랐어. 모두영어 #125 I didn't expect that. 그대로",
+    "anchor": "몰랐어",
+    "situation": "저녁. 소연이 매콤한 걸 먹고 싶다고 해서 망원동으로 가는 버스를 탔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want something spicy tonight.",
+      "ko": "오늘은 매콤한 게 먹고 싶어.",
+      "kr": "아이 원 썸씽 스파이씨 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a place in Mangwon.",
+      "ko": "망원동에 한 곳 있어.",
+      "kr": "데어r저 플레이씬 망원"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait, I've wanted to try that one over there.",
+      "ko": "잠깐, 저기 한번 가보고 싶었는데.",
+      "kr": "웨잇 아이v 워니러 트라이 댓 원 오우버r 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's worth a try.",
+      "ko": "가볼 만하지.",
+      "kr": "잇츠 워r써 트라이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We got in without waiting.",
+      "ko": "안 기다리고 들어왔네.",
+      "kr": "위 가린 위다웃 웨이링"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't expect that.",
+      "ko": "그럴 줄 몰랐어.",
+      "kr": "아이 디든 익스펙 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The pork tastes like the old days.",
+      "ko": "고기가 딱 옛날 맛이야.",
+      "kr": "더 포어r크 테이스츠 라익 디 오울드 데이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I couldn't agree more.",
+      "ko": "완전 동감이야.",
+      "kr": "아이 커든 어그리이 모어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I didn't expect a table.",
+      "ko": "자리가 있을 줄 몰랐어.",
+      "kr": "아이 디든 익스펙터 테이블"
+     },
+     {
+      "en": "We didn't expect you tonight.",
+      "ko": "오늘 밤에 올 줄 몰랐어.",
+      "kr": "위 디든 익스펙 여 터나잇"
+     },
+     {
+      "en": "Did you expect a line?",
+      "ko": "줄 설 줄 알았어?",
+      "kr": "디저 익스펙터 라인"
+     },
+     {
+      "en": "I expected it to be full.",
+      "ko": "꽉 찼을 줄 알았어.",
+      "kr": "아이 익스펙티릿 터 비 f풀"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I didn't expect ~",
+      "body": "~일 줄 몰랐어. 모두영어 #125 I didn't expect that. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I didn't",
+      "아이 디든",
+      "나는 ~하지 않았다"
+     ],
+     [
+      "expect",
+      "익스펙",
+      "예상하다"
+     ],
+     [
+      "that.",
+      "댓",
+      "그것을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ didn't expect",
+      "didn't 의 끝 t 는 뒤 자음 앞에서 떨어진다 — 디든 익스펙"
+     ]
+    ],
+    "mistake": "expect 뒤에 that 절도 온다 — I didn't expect that it would be empty.",
+    "similar": "I didn't see that coming.",
+    "category": "일상/반응",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-saltgrill-04-agree-more",
+   "sentence": "I couldn't agree more.",
+   "meaning": "완전 동감이야.",
+   "reading": null,
+   "phonetic_kr": "아이 커든 어그리이 모어r",
+   "order_index": 4,
+   "explanation": {
+    "key": "I couldn't agree ~ = 더할 나위 없이 동의해. 모두영어 2편 #41 I couldn't agree more. 그대로",
+    "anchor": "동감이야",
+    "situation": "저녁. 소연이 매콤한 걸 먹고 싶다고 해서 망원동으로 가는 버스를 탔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want something spicy tonight.",
+      "ko": "오늘은 매콤한 게 먹고 싶어.",
+      "kr": "아이 원 썸씽 스파이씨 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a place in Mangwon.",
+      "ko": "망원동에 한 곳 있어.",
+      "kr": "데어r저 플레이씬 망원"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait, I've wanted to try that one over there.",
+      "ko": "잠깐, 저기 한번 가보고 싶었는데.",
+      "kr": "웨잇 아이v 워니러 트라이 댓 원 오우버r 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's worth a try.",
+      "ko": "가볼 만하지.",
+      "kr": "잇츠 워r써 트라이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "We got in without waiting.",
+      "ko": "안 기다리고 들어왔네.",
+      "kr": "위 가린 위다웃 웨이링"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't expect that.",
+      "ko": "그럴 줄 몰랐어.",
+      "kr": "아이 디든 익스펙 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The pork tastes like the old days.",
+      "ko": "고기가 딱 옛날 맛이야.",
+      "kr": "더 포어r크 테이스츠 라익 디 오울드 데이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I couldn't agree more.",
+      "ko": "완전 동감이야.",
+      "kr": "아이 커든 어그리이 모어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I couldn't agree with you more.",
+      "ko": "네 말에 완전 동의해.",
+      "kr": "아이 커든 어그리이 위드 여 모어r"
+     },
+     {
+      "en": "We agree on the place.",
+      "ko": "가게는 우리 생각이 같아.",
+      "kr": "위 어그리이 온 더 플레이스"
+     },
+     {
+      "en": "Do you agree with her?",
+      "ko": "소연 말에 동의해?",
+      "kr": "더여 어그리이 위드 허r"
+     },
+     {
+      "en": "She didn't agree at first.",
+      "ko": "소연은 처음엔 동의 안 했어.",
+      "kr": "쉬 디든 어그리이 엇 f퍼r스트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I couldn't agree ~",
+      "body": "더할 나위 없이 동의해. 모두영어 2편 #41 I couldn't agree more. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I couldn't",
+      "아이 커든",
+      "나는 ~할 수 없었다"
+     ],
+     [
+      "agree more.",
+      "어그리이 모어r",
+      "더 동의하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ agree",
+      "agree 의 ee 는 길게 — 어그리이, '어그리' 로 짧게 끊지 않는다"
+     ]
+    ],
+    "mistake": "부정문이지만 뜻은 강한 긍정 — '더 동의할 수가 없다' = 완전 동의",
+    "similar": "Same here.",
+    "category": "일상/공감",
+    "frequency": 8
+   }
+  }
+ ]
+}

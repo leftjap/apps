@@ -1,0 +1,491 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-07",
+ "cards": [
+  {
+   "id": "en-personal-new-washer-01-worth-the-wait",
+   "sentence": "It was worth the wait.",
+   "meaning": "기다린 보람이 있네.",
+   "reading": null,
+   "phonetic_kr": "잇 워z 워r쓰 더 웨잇",
+   "order_index": 1,
+   "explanation": {
+    "key": "It was worth ~ = ~할 값어치가 있었다. 모두영어 2편 #5 It was worth the wait. 그대로",
+    "anchor": "보람이 있네",
+    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The new washer arrived today.",
+      "ko": "새 세탁기 오늘 왔어.",
+      "kr": "더 누우 와셔r 어라이v드 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was worth the wait.",
+      "ko": "기다린 보람이 있네.",
+      "kr": "잇 워z 워r쓰 더 웨잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I picked it without asking you.",
+      "ko": "내가 그냥 골랐어.",
+      "kr": "아이 픽팃 위다우래스킹 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to ask me.",
+      "ko": "나한테 안 물어봐도 돼.",
+      "kr": "유 돈 해f터 애스크 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The leak held us up for months.",
+      "ko": "누수 때문에 몇 달을 미뤘잖아.",
+      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's finally over.",
+      "ko": "드디어 끝났네.",
+      "kr": "잇츠 f파이널리 오우버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Do you want to try it now?",
+      "ko": "지금 한번 돌려볼래?",
+      "kr": "더여 워너 트라잇 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you show me?",
+      "ko": "어떻게 하는지 보여줄래?",
+      "kr": "컨 여 쇼우 미"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It was worth the money.",
+      "ko": "돈 값은 했어.",
+      "kr": "잇 워z 워r쓰 더 머니"
+     },
+     {
+      "en": "The trip was worth it.",
+      "ko": "그 여행은 갈 만했어.",
+      "kr": "더 트립 워z 워r씨릿"
+     },
+     {
+      "en": "Was it worth the trouble?",
+      "ko": "그 고생할 만했어?",
+      "kr": "워z 잇 워r쓰 더 트러블"
+     },
+     {
+      "en": "It wasn't worth the wait.",
+      "ko": "기다린 보람이 없었어.",
+      "kr": "잇 워즌 워r쓰 더 웨잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It was worth ~",
+      "body": "~할 값어치가 있었다. 모두영어 2편 #5 It was worth the wait. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "It was worth",
+      "잇 워z 워r쓰",
+      "~할 값어치가 있었다"
+     ],
+     [
+      "the wait.",
+      "더 웨잇",
+      "기다림"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ was",
+      "was 의 s 는 z 소리 — 워z"
+     ]
+    ],
+    "mistake": "worth 뒤에는 명사. worth to wait (X)",
+    "similar": "It paid off.",
+    "category": "일상/평가",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-new-washer-02-dont-have-to-ask",
+   "sentence": "You don't have to ask me.",
+   "meaning": "나한테 안 물어봐도 돼.",
+   "reading": null,
+   "phonetic_kr": "유 돈 해f터 애스크 미",
+   "order_index": 2,
+   "explanation": {
+    "key": "You don't have to ~ = ~할 필요 없어 (영상 #23)",
+    "anchor": "안 물어봐도 돼",
+    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The new washer arrived today.",
+      "ko": "새 세탁기 오늘 왔어.",
+      "kr": "더 누우 와셔r 어라이v드 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was worth the wait.",
+      "ko": "기다린 보람이 있네.",
+      "kr": "잇 워z 워r쓰 더 웨잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I picked it without asking you.",
+      "ko": "내가 그냥 골랐어.",
+      "kr": "아이 픽팃 위다우래스킹 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to ask me.",
+      "ko": "나한테 안 물어봐도 돼.",
+      "kr": "유 돈 해f터 애스크 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The leak held us up for months.",
+      "ko": "누수 때문에 몇 달을 미뤘잖아.",
+      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's finally over.",
+      "ko": "드디어 끝났네.",
+      "kr": "잇츠 f파이널리 오우버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Do you want to try it now?",
+      "ko": "지금 한번 돌려볼래?",
+      "kr": "더여 워너 트라잇 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you show me?",
+      "ko": "어떻게 하는지 보여줄래?",
+      "kr": "컨 여 쇼우 미"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You don't have to wait for me.",
+      "ko": "나 기다릴 필요 없어.",
+      "kr": "유 돈 해f터 웨잇 f퍼r 미"
+     },
+     {
+      "en": "I don't have to work today.",
+      "ko": "오늘은 일 안 해도 돼.",
+      "kr": "아이 돈 해f터 워r크 터데이"
+     },
+     {
+      "en": "Do we have to move it?",
+      "ko": "이거 옮겨야 해?",
+      "kr": "두 위 해f터 무우v 잇"
+     },
+     {
+      "en": "She didn't have to pay.",
+      "ko": "소연은 안 내도 됐어.",
+      "kr": "쉬 디든 해f터 페이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You don't have to ~",
+      "body": "~할 필요 없어 (영상 #23)"
+     }
+    ],
+    "chunks": [
+     [
+      "You don't have to",
+      "유 돈 해f터",
+      "너는 ~할 필요 없다"
+     ],
+     [
+      "ask me.",
+      "애스크 미",
+      "나한테 묻다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ have to",
+      "have 의 v 는 t 앞에서 f 소리로 바뀐다 — 해f터"
+     ]
+    ],
+    "mistake": "don't have to(안 해도 됨) ≠ must not(하면 안 됨)",
+    "similar": "No need to ask.",
+    "category": "일상/배려",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-new-washer-03-finally-over",
+   "sentence": "It's finally over.",
+   "meaning": "드디어 끝났네.",
+   "reading": null,
+   "phonetic_kr": "잇츠 f파이널리 오우버r",
+   "order_index": 3,
+   "explanation": {
+    "key": "It's finally ~ = 드디어 ~다. 모두영어 2편 #7 It's finally over. 그대로",
+    "anchor": "끝났네",
+    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The new washer arrived today.",
+      "ko": "새 세탁기 오늘 왔어.",
+      "kr": "더 누우 와셔r 어라이v드 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was worth the wait.",
+      "ko": "기다린 보람이 있네.",
+      "kr": "잇 워z 워r쓰 더 웨잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I picked it without asking you.",
+      "ko": "내가 그냥 골랐어.",
+      "kr": "아이 픽팃 위다우래스킹 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to ask me.",
+      "ko": "나한테 안 물어봐도 돼.",
+      "kr": "유 돈 해f터 애스크 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The leak held us up for months.",
+      "ko": "누수 때문에 몇 달을 미뤘잖아.",
+      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's finally over.",
+      "ko": "드디어 끝났네.",
+      "kr": "잇츠 f파이널리 오우버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Do you want to try it now?",
+      "ko": "지금 한번 돌려볼래?",
+      "kr": "더여 워너 트라잇 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you show me?",
+      "ko": "어떻게 하는지 보여줄래?",
+      "kr": "컨 여 쇼우 미"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It's finally warm today.",
+      "ko": "오늘 드디어 따뜻하네.",
+      "kr": "잇츠 f파이널리 워r엄 터데이"
+     },
+     {
+      "en": "The work is over.",
+      "ko": "공사가 끝났어.",
+      "kr": "더 워r키z 오우버r"
+     },
+     {
+      "en": "Are we finally done?",
+      "ko": "이제 다 끝난 거야?",
+      "kr": "아r 위 f파이널리 던"
+     },
+     {
+      "en": "We finally got it done.",
+      "ko": "드디어 다 했다.",
+      "kr": "위 f파이널리 가릿 던"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It's finally ~",
+      "body": "드디어 ~다. 모두영어 2편 #7 It's finally over. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "It's finally",
+      "잇츠 f파이널리",
+      "드디어"
+     ],
+     [
+      "over.",
+      "오우버r",
+      "끝난"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ finally",
+      "finally 의 f 는 윗니를 아랫입술에 — f파이널리"
+     ]
+    ],
+    "mistake": "over 는 '위' 가 아니라 '끝난' 이라는 뜻으로 쓰였다",
+    "similar": "It's done.",
+    "category": "일상/마무리",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-new-washer-04-can-you-show",
+   "sentence": "Can you show me?",
+   "meaning": "어떻게 하는지 보여줄래?",
+   "reading": null,
+   "phonetic_kr": "컨 여 쇼우 미",
+   "order_index": 4,
+   "explanation": {
+    "key": "Can you ~ = ~해줄래? (부탁의 기본 틀, 영상 #8). 모두영어 2편 #136 Can you show me? 그대로",
+    "anchor": "보여줄래",
+    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The new washer arrived today.",
+      "ko": "새 세탁기 오늘 왔어.",
+      "kr": "더 누우 와셔r 어라이v드 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was worth the wait.",
+      "ko": "기다린 보람이 있네.",
+      "kr": "잇 워z 워r쓰 더 웨잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I picked it without asking you.",
+      "ko": "내가 그냥 골랐어.",
+      "kr": "아이 픽팃 위다우래스킹 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to ask me.",
+      "ko": "나한테 안 물어봐도 돼.",
+      "kr": "유 돈 해f터 애스크 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The leak held us up for months.",
+      "ko": "누수 때문에 몇 달을 미뤘잖아.",
+      "kr": "더 리익 헬더썹 f퍼r 먼쓰"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's finally over.",
+      "ko": "드디어 끝났네.",
+      "kr": "잇츠 f파이널리 오우버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Do you want to try it now?",
+      "ko": "지금 한번 돌려볼래?",
+      "kr": "더여 워너 트라잇 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you show me?",
+      "ko": "어떻게 하는지 보여줄래?",
+      "kr": "컨 여 쇼우 미"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Can you help me with this?",
+      "ko": "이것 좀 도와줄래?",
+      "kr": "컨 여 헬프 미 위드 디스"
+     },
+     {
+      "en": "Could you show me again?",
+      "ko": "한 번 더 보여줄래?",
+      "kr": "커저 쇼우 미 어겐"
+     },
+     {
+      "en": "I'll show you tomorrow.",
+      "ko": "내일 보여줄게.",
+      "kr": "아일 쇼우 여 터마로우"
+     },
+     {
+      "en": "Can't you show her?",
+      "ko": "소연한테 보여주면 안 돼?",
+      "kr": "캔처 쇼우 허r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Can you ~",
+      "body": "~해줄래? (부탁의 기본 틀, 영상 #8). 모두영어 2편 #136 Can you show me? 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "Can you",
+      "컨 여",
+      "~해줄래"
+     ],
+     [
+      "show me?",
+      "쇼우 미",
+      "나한테 보여주다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃ/ show",
+      "show 의 sh 는 '쉬' 에 가깝게, 입술을 둥글게 — 쇼우"
+     ]
+    ],
+    "mistake": "Can you ~? 는 부탁, Could you ~? 는 더 정중한 부탁",
+    "similar": "Would you show me?",
+    "category": "일상/부탁",
+    "frequency": 10
+   }
+  }
+ ]
+}

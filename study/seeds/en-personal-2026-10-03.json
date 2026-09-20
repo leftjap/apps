@@ -1,0 +1,496 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-03",
+ "cards": [
+  {
+   "id": "en-personal-overslept-01-overslept",
+   "sentence": "I overslept.",
+   "meaning": "늦잠 잤어.",
+   "reading": null,
+   "phonetic_kr": "아이 오우버r슬렙트",
+   "order_index": 1,
+   "explanation": {
+    "key": "I overslept = 늦잠 잤어. 모두영어 #259 그대로",
+    "anchor": "늦잠",
+    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You slept until noon.",
+      "ko": "정오까지 잤어.",
+      "kr": "유 슬렙 틸 누운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I overslept.",
+      "ko": "늦잠 잤어.",
+      "kr": "아이 오우버r슬렙트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Let's get sashimi tonight.",
+      "ko": "오늘 저녁엔 회 먹자.",
+      "kr": "렛츠 겟 싸시미 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That sounds great.",
+      "ko": "그거 좋다.",
+      "kr": "댓 사운즈 그뤠잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you moving that file again?",
+      "ko": "그 파일 또 옮기는 거야?",
+      "kr": "아r 여 무우v잉 댓 f파일 어겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 못 정했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just leave it where it is.",
+      "ko": "그냥 그 자리에 둬.",
+      "kr": "저스 리이v 잇 웨어r 이리z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might be right.",
+      "ko": "네 말이 맞을지도.",
+      "kr": "유 마잇 비 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "She overslept this morning.",
+      "ko": "소연이 오늘 아침 늦잠 잤어.",
+      "kr": "쉬 오우버r슬렙 디스 모어r닝"
+     },
+     {
+      "en": "Did you oversleep?",
+      "ko": "늦잠 잤어?",
+      "kr": "디저 오우버r슬리입"
+     },
+     {
+      "en": "I overslept, so I skipped lunch.",
+      "ko": "늦잠 자서 점심을 걸렀어.",
+      "kr": "아이 오우버r슬렙트 쏘우 아이 스킵트 런치"
+     },
+     {
+      "en": "I don't want to oversleep tomorrow.",
+      "ko": "내일은 늦잠 자기 싫어.",
+      "kr": "아이 돈 워너 오우버r슬리입 터마로우"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I overslept",
+      "body": "늦잠 잤어. 모두영어 #259 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I",
+      "아이",
+      "나는"
+     ],
+     [
+      "overslept.",
+      "오우버r슬렙트",
+      "늦잠 잤다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/oʊ/ over",
+      "over 의 o 는 오우 — 오우버r, '오버' 가 아니다"
+     ]
+    ],
+    "mistake": "oversleep-overslept. I was overslept (X) — 수동태가 아니다",
+    "similar": "I slept in.",
+    "category": "일상/아침",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-overslept-02-sounds-great",
+   "sentence": "That sounds great.",
+   "meaning": "그거 좋다.",
+   "reading": null,
+   "phonetic_kr": "댓 사운즈 그뤠잇",
+   "order_index": 2,
+   "explanation": {
+    "key": "That sounds ~ = 그거 ~하게 들린다 / 좋다. 모두영어 #41 That sounds great. 그대로",
+    "anchor": "좋다",
+    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You slept until noon.",
+      "ko": "정오까지 잤어.",
+      "kr": "유 슬렙 틸 누운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I overslept.",
+      "ko": "늦잠 잤어.",
+      "kr": "아이 오우버r슬렙트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Let's get sashimi tonight.",
+      "ko": "오늘 저녁엔 회 먹자.",
+      "kr": "렛츠 겟 싸시미 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That sounds great.",
+      "ko": "그거 좋다.",
+      "kr": "댓 사운즈 그뤠잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you moving that file again?",
+      "ko": "그 파일 또 옮기는 거야?",
+      "kr": "아r 여 무우v잉 댓 f파일 어겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 못 정했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just leave it where it is.",
+      "ko": "그냥 그 자리에 둬.",
+      "kr": "저스 리이v 잇 웨어r 이리z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might be right.",
+      "ko": "네 말이 맞을지도.",
+      "kr": "유 마잇 비 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "That sounds easy.",
+      "ko": "그거 쉽겠다.",
+      "kr": "댓 사운지이지"
+     },
+     {
+      "en": "It sounds too late.",
+      "ko": "너무 늦은 것 같은데.",
+      "kr": "잇 사운즈 투우 레잇"
+     },
+     {
+      "en": "Does that sound okay?",
+      "ko": "그렇게 해도 괜찮아?",
+      "kr": "더즈 댓 사운도우케이"
+     },
+     {
+      "en": "Your plan sounds better.",
+      "ko": "네 계획이 더 낫겠다.",
+      "kr": "여r 플랜 사운즈 베러r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "That sounds ~",
+      "body": "그거 ~하게 들린다 / 좋다. 모두영어 #41 That sounds great. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "That sounds",
+      "댓 사운즈",
+      "그거 ~하게 들린다"
+     ],
+     [
+      "great.",
+      "그뤠잇",
+      "좋다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/gr/ great",
+      "great 의 gr 은 한 번에 — 그뤠잇, '그레이트' 로 늘이지 않는다"
+     ]
+    ],
+    "mistake": "sounds 뒤에는 형용사. That sounds greatly (X)",
+    "similar": "Sounds good to me.",
+    "category": "일상/반응",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-overslept-03-havent-decided",
+   "sentence": "I haven't decided yet.",
+   "meaning": "아직 못 정했어.",
+   "reading": null,
+   "phonetic_kr": "아이 해븐 디싸이리드 옛",
+   "order_index": 3,
+   "explanation": {
+    "key": "I haven't ~ = 아직 ~하지 않았어. 모두영어 2편 #86 I haven't decided yet. 그대로",
+    "anchor": "못 정했어",
+    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You slept until noon.",
+      "ko": "정오까지 잤어.",
+      "kr": "유 슬렙 틸 누운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I overslept.",
+      "ko": "늦잠 잤어.",
+      "kr": "아이 오우버r슬렙트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Let's get sashimi tonight.",
+      "ko": "오늘 저녁엔 회 먹자.",
+      "kr": "렛츠 겟 싸시미 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That sounds great.",
+      "ko": "그거 좋다.",
+      "kr": "댓 사운즈 그뤠잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you moving that file again?",
+      "ko": "그 파일 또 옮기는 거야?",
+      "kr": "아r 여 무우v잉 댓 f파일 어겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 못 정했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just leave it where it is.",
+      "ko": "그냥 그 자리에 둬.",
+      "kr": "저스 리이v 잇 웨어r 이리z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might be right.",
+      "ko": "네 말이 맞을지도.",
+      "kr": "유 마잇 비 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I haven't called him back.",
+      "ko": "아직 답전화 안 했어.",
+      "kr": "아이 해븐 커얼드 힘 백"
+     },
+     {
+      "en": "We haven't eaten yet.",
+      "ko": "우린 아직 안 먹었어.",
+      "kr": "위 해브니이튼 옛"
+     },
+     {
+      "en": "Have you decided yet?",
+      "ko": "정했어?",
+      "kr": "해v 여 디싸이리드 옛"
+     },
+     {
+      "en": "She decided last night.",
+      "ko": "소연은 어젯밤에 정했어.",
+      "kr": "쉬 디싸이리드 라스 나잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I haven't ~",
+      "body": "아직 ~하지 않았어. 모두영어 2편 #86 I haven't decided yet. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I haven't",
+      "아이 해븐",
+      "나는 아직 ~하지 않았다"
+     ],
+     [
+      "decided",
+      "디싸이리드",
+      "정하다"
+     ],
+     [
+      "yet.",
+      "옛",
+      "아직"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ decided",
+      "decided 의 가운데 d 는 모음 사이에서 ㄹ 처럼 굴러 — 디싸이리드"
+     ]
+    ],
+    "mistake": "haven't + 과거분사. I didn't decided yet (X)",
+    "similar": "I'm still thinking about it.",
+    "category": "일상/결정",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-overslept-04-might-be-right",
+   "sentence": "You might be right.",
+   "meaning": "네 말이 맞을지도.",
+   "reading": null,
+   "phonetic_kr": "유 마잇 비 라잇",
+   "order_index": 4,
+   "explanation": {
+    "key": "You might be ~ = 네가 ~일지도 몰라. 모두영어 #169 You might be right. 그대로",
+    "anchor": "맞을지도",
+    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You slept until noon.",
+      "ko": "정오까지 잤어.",
+      "kr": "유 슬렙 틸 누운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I overslept.",
+      "ko": "늦잠 잤어.",
+      "kr": "아이 오우버r슬렙트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Let's get sashimi tonight.",
+      "ko": "오늘 저녁엔 회 먹자.",
+      "kr": "렛츠 겟 싸시미 터나잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That sounds great.",
+      "ko": "그거 좋다.",
+      "kr": "댓 사운즈 그뤠잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you moving that file again?",
+      "ko": "그 파일 또 옮기는 거야?",
+      "kr": "아r 여 무우v잉 댓 f파일 어겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 못 정했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just leave it where it is.",
+      "ko": "그냥 그 자리에 둬.",
+      "kr": "저스 리이v 잇 웨어r 이리z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might be right.",
+      "ko": "네 말이 맞을지도.",
+      "kr": "유 마잇 비 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You might be late.",
+      "ko": "너 늦을지도 몰라.",
+      "kr": "유 마잇 비 레잇"
+     },
+     {
+      "en": "I might be wrong.",
+      "ko": "내가 틀렸을 수도 있어.",
+      "kr": "아이 마잇 비 롱"
+     },
+     {
+      "en": "She might be asleep.",
+      "ko": "소연은 자고 있을지도.",
+      "kr": "쉬 마잇 비 어슬리입"
+     },
+     {
+      "en": "We might be out late.",
+      "ko": "우리 늦게까지 밖에 있을지도.",
+      "kr": "위 마잇 비 아웃 레잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You might be ~",
+      "body": "네가 ~일지도 몰라. 모두영어 #169 You might be right. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "You might be",
+      "유 마잇 비",
+      "너는 ~일지도 모른다"
+     ],
+     [
+      "right.",
+      "라잇",
+      "맞다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ might be",
+      "might 의 끝 t 는 뒤 자음 앞에서 거의 안 들린다 — 마잇 비"
+     ]
+    ],
+    "mistake": "might + 동사원형. You might are right (X)",
+    "similar": "Maybe you're right.",
+    "category": "일상/동의",
+    "frequency": 8
+   }
+  }
+ ]
+}

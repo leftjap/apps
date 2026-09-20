@@ -1,0 +1,501 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-09",
+ "cards": [
+  {
+   "id": "en-personal-false-alarm-01-sick-of-it",
+   "sentence": "I'm sick of it.",
+   "meaning": "지긋지긋해.",
+   "reading": null,
+   "phonetic_kr": "아임 씨커v잇",
+   "order_index": 1,
+   "explanation": {
+    "key": "I'm sick of ~ = ~에 질렸어 / 지긋지긋해. 모두영어 2편 #6 I'm sick of it. 그대로",
+    "anchor": "지긋지긋해",
+    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the alarm still going off?",
+      "ko": "경보기 아직도 울려?",
+      "kr": "이z 디 얼라r암 스틸 고잉 오f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm sick of it.",
+      "ko": "지긋지긋해.",
+      "kr": "아임 씨커v잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's setting it off?",
+      "ko": "왜 울리는 건데?",
+      "kr": "왓츠 쎄링 이로f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "As far as I know, it's the work downstairs.",
+      "ko": "내가 아는 한 아래층 공사 때문이야.",
+      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani must be scared.",
+      "ko": "나니가 무섭겠다.",
+      "kr": "나니 머스 비 스케어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I taped the speaker.",
+      "ko": "그래서 스피커에 테이프를 붙였어.",
+      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Does the tape help?",
+      "ko": "테이프가 효과가 있어?",
+      "kr": "더즈 더 테입 헬프"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's better than nothing.",
+      "ko": "없는 것보단 낫지.",
+      "kr": "잇츠 베러r 던 낫씽"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm sick of the noise.",
+      "ko": "이 소리 지긋지긋해.",
+      "kr": "아임 씨커v 더 노이z"
+     },
+     {
+      "en": "She's sick of waiting.",
+      "ko": "소연은 기다리는 데 질렸어.",
+      "kr": "쉬z 씨커v 웨이링"
+     },
+     {
+      "en": "Aren't you sick of it?",
+      "ko": "너도 질리지 않아?",
+      "kr": "아r언 여 씨커v잇"
+     },
+     {
+      "en": "We got sick of the smell.",
+      "ko": "냄새에 질려버렸어.",
+      "kr": "위 갓 씨커v 더 스멜"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm sick of ~",
+      "body": "~에 질렸어 / 지긋지긋해. 모두영어 2편 #6 I'm sick of it. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm",
+      "아임",
+      "나는"
+     ],
+     [
+      "sick of it.",
+      "씨커v잇",
+      "그것에 질렸다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ sick of",
+      "sick 의 k 가 of 와 붙는다 — 씨커v"
+     ]
+    ],
+    "mistake": "sick of = 질리다. be sick(아프다)과 구별한다",
+    "similar": "I've had enough of it.",
+    "category": "일상/짜증",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-false-alarm-02-as-far-as-i-know",
+   "sentence": "As far as I know, it's the work downstairs.",
+   "meaning": "내가 아는 한 아래층 공사 때문이야.",
+   "reading": null,
+   "phonetic_kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈",
+   "order_index": 2,
+   "explanation": {
+    "key": "As far as I know, ~ = 내가 아는 한 ~야 (단정을 피할 때, 영상 #22)",
+    "anchor": "내가 아는 한",
+    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the alarm still going off?",
+      "ko": "경보기 아직도 울려?",
+      "kr": "이z 디 얼라r암 스틸 고잉 오f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm sick of it.",
+      "ko": "지긋지긋해.",
+      "kr": "아임 씨커v잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's setting it off?",
+      "ko": "왜 울리는 건데?",
+      "kr": "왓츠 쎄링 이로f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "As far as I know, it's the work downstairs.",
+      "ko": "내가 아는 한 아래층 공사 때문이야.",
+      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani must be scared.",
+      "ko": "나니가 무섭겠다.",
+      "kr": "나니 머스 비 스케어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I taped the speaker.",
+      "ko": "그래서 스피커에 테이프를 붙였어.",
+      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Does the tape help?",
+      "ko": "테이프가 효과가 있어?",
+      "kr": "더즈 더 테입 헬프"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's better than nothing.",
+      "ko": "없는 것보단 낫지.",
+      "kr": "잇츠 베러r 던 낫씽"
+     }
+    ],
+    "drills": [
+     {
+      "en": "As far as I know, she's home.",
+      "ko": "내가 알기론 소연은 집에 있어.",
+      "kr": "애z f파r 애자이 노우 쉬z 호움"
+     },
+     {
+      "en": "I know the alarm is broken.",
+      "ko": "경보기가 고장 난 건 알아.",
+      "kr": "아이 노우 디 얼라r아미z 브로우큰"
+     },
+     {
+      "en": "Do you know what happened?",
+      "ko": "무슨 일인지 알아?",
+      "kr": "더여 노우 왓 해픈드"
+     },
+     {
+      "en": "As far as we know, it's over.",
+      "ko": "우리가 아는 한은 끝났어.",
+      "kr": "애z f파r 애z 위 노우 잇츠 오우버r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "As far as I know, ~",
+      "body": "내가 아는 한 ~야 (단정을 피할 때, 영상 #22)"
+     }
+    ],
+    "chunks": [
+     [
+      "As far as I know,",
+      "애z f파r 애자이 노우",
+      "내가 아는 한"
+     ],
+     [
+      "it's the work",
+      "잇츠 더 워r크",
+      "그건 공사"
+     ],
+     [
+      "downstairs.",
+      "다운스테어r즈",
+      "아래층"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ as I",
+      "as 의 s 는 z 소리이고 I 와 붙는다 — 애자이"
+     ]
+    ],
+    "mistake": "as far as I know 는 확신을 낮추는 말. 확실할 때는 붙이지 않는다",
+    "similar": "Not that I know of.",
+    "category": "일상/추측",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-false-alarm-03-thats-why-taped",
+   "sentence": "That's why I taped the speaker.",
+   "meaning": "그래서 스피커에 테이프를 붙였어.",
+   "reading": null,
+   "phonetic_kr": "댓츠 와이 아이 테입트 더 스피이커r",
+   "order_index": 3,
+   "explanation": {
+    "key": "That's why ~ = 그래서 ~한 거야 (앞말이 이유, 영상 #29)",
+    "anchor": "그래서",
+    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the alarm still going off?",
+      "ko": "경보기 아직도 울려?",
+      "kr": "이z 디 얼라r암 스틸 고잉 오f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm sick of it.",
+      "ko": "지긋지긋해.",
+      "kr": "아임 씨커v잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's setting it off?",
+      "ko": "왜 울리는 건데?",
+      "kr": "왓츠 쎄링 이로f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "As far as I know, it's the work downstairs.",
+      "ko": "내가 아는 한 아래층 공사 때문이야.",
+      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani must be scared.",
+      "ko": "나니가 무섭겠다.",
+      "kr": "나니 머스 비 스케어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I taped the speaker.",
+      "ko": "그래서 스피커에 테이프를 붙였어.",
+      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Does the tape help?",
+      "ko": "테이프가 효과가 있어?",
+      "kr": "더즈 더 테입 헬프"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's better than nothing.",
+      "ko": "없는 것보단 낫지.",
+      "kr": "잇츠 베러r 던 낫씽"
+     }
+    ],
+    "drills": [
+     {
+      "en": "That's why she stayed home.",
+      "ko": "그래서 소연이 집에 있었어.",
+      "kr": "댓츠 와이 쉬 스테이드 호움"
+     },
+     {
+      "en": "That's because the work started.",
+      "ko": "공사가 시작돼서 그래.",
+      "kr": "댓츠 비커z 더 워r크 스타r리드"
+     },
+     {
+      "en": "Is that why you covered it?",
+      "ko": "그래서 덮어놓은 거야?",
+      "kr": "이z 댓 와이 여 커버r딧"
+     },
+     {
+      "en": "She can't see it coming. That's why.",
+      "ko": "나니는 볼 수가 없잖아. 그래서야.",
+      "kr": "쉬 캔트 씨잇 커밍 댓츠 와이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "That's why ~",
+      "body": "그래서 ~한 거야 (앞말이 이유, 영상 #29)"
+     }
+    ],
+    "chunks": [
+     [
+      "That's why",
+      "댓츠 와이",
+      "그래서 ~한 거야"
+     ],
+     [
+      "I taped",
+      "아이 테입트",
+      "내가 테이프를 붙였다"
+     ],
+     [
+      "the speaker.",
+      "더 스피이커r",
+      "스피커에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ taped",
+      "taped 의 -ed 는 t 소리 — 테입트, '테이프드' 가 아니다"
+     ]
+    ],
+    "mistake": "That's why + 결과. 이유를 말할 때는 That's because",
+    "similar": "So I taped it.",
+    "category": "일상/집",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-false-alarm-04-better-than-nothing",
+   "sentence": "It's better than nothing.",
+   "meaning": "없는 것보단 낫지.",
+   "reading": null,
+   "phonetic_kr": "잇츠 베러r 던 낫씽",
+   "order_index": 4,
+   "explanation": {
+    "key": "It's better than ~ = ~보다는 낫다. 모두영어 2편 #172 It's better than nothing. 그대로",
+    "anchor": "낫지",
+    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is the alarm still going off?",
+      "ko": "경보기 아직도 울려?",
+      "kr": "이z 디 얼라r암 스틸 고잉 오f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm sick of it.",
+      "ko": "지긋지긋해.",
+      "kr": "아임 씨커v잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What's setting it off?",
+      "ko": "왜 울리는 건데?",
+      "kr": "왓츠 쎄링 이로f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "As far as I know, it's the work downstairs.",
+      "ko": "내가 아는 한 아래층 공사 때문이야.",
+      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Nani must be scared.",
+      "ko": "나니가 무섭겠다.",
+      "kr": "나니 머스 비 스케어r드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I taped the speaker.",
+      "ko": "그래서 스피커에 테이프를 붙였어.",
+      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Does the tape help?",
+      "ko": "테이프가 효과가 있어?",
+      "kr": "더즈 더 테입 헬프"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's better than nothing.",
+      "ko": "없는 것보단 낫지.",
+      "kr": "잇츠 베러r 던 낫씽"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It's better than waiting.",
+      "ko": "기다리는 것보단 낫지.",
+      "kr": "잇츠 베러r 던 웨이링"
+     },
+     {
+      "en": "This is better than yesterday.",
+      "ko": "어제보단 낫네.",
+      "kr": "디씨z 베러r 던 예스터r데이"
+     },
+     {
+      "en": "Is it any better now?",
+      "ko": "좀 나아졌어?",
+      "kr": "이z 이레니 베러r 나우"
+     },
+     {
+      "en": "She feels better today.",
+      "ko": "소연이 오늘은 좀 나아.",
+      "kr": "쉬 f피일z 베러r 터데이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It's better than ~",
+      "body": "~보다는 낫다. 모두영어 2편 #172 It's better than nothing. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "It's better",
+      "잇츠 베러r",
+      "그게 더 낫다"
+     ],
+     [
+      "than nothing.",
+      "던 낫씽",
+      "아무것도 없는 것보다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ better",
+      "better 의 t 는 모음 사이에서 ㄹ 로 굴러 — 베러r"
+     ]
+    ],
+    "mistake": "better than + 명사. more better (X)",
+    "similar": "At least it helps.",
+    "category": "일상/위로",
+    "frequency": 9
+   }
+  }
+ ]
+}
