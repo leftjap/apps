@@ -110,9 +110,10 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/I speak about 48 times in the drill — 8 in review, 24 in the substitutions, 16 in the questions/);
   });
 
-  it('대화 되묻기 시점을 서수로 못박는다 (21회전: 여덟 질문에 두 번뿐이었다)', () => {
+  it('대화 되묻기 시점을 내 턴으로 센다 (23회전: 교사 질문으로 세니 8턴 안에 질문이 7개뿐이라 3회였다)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/after your second question, and again after your fourth, sixth and eighth, say "이번엔 저한테 물어보세요"/i);
+    expect(p).toMatch(/after my first, third, fifth and seventh turn, answer in one English line with no question and add "이번엔 저한테 물어보세요"/i);
+    expect(p).not.toMatch(/after your second question/i);
   });
 
   it('질문과 답 단계에서 문장을 섞고 분량으로 끝낸다', () => {
@@ -178,7 +179,7 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/never finish on a turn where I asked you something/i);
     // 13회전: 내 질문을 씹고 6턴에서 끊었다
     expect(p).toMatch(/answer every question I ask before you move on/i);
-    expect(p).toMatch(/do not stop before eight; never stop on a turn where I asked you something/i);
+    expect(p).toMatch(/do not stop before my eighth turn; never stop on a turn where I asked you something/i);
     expect(p).toMatch(/if I say 리포트, stop everything and give the report now/i);
   });
 
