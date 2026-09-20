@@ -1,0 +1,501 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-20",
+ "cards": [
+  {
+   "id": "en-personal-pickup-01-about-to",
+   "sentence": "I was just about to call you.",
+   "meaning": "막 전화하려던 참이었어.",
+   "reading": null,
+   "phonetic_kr": "아이 워z 저스터바우러 커얼 유",
+   "order_index": 1,
+   "explanation": {
+    "key": "I was about to ~ = 막 ~하려던 참이었다. 모두영어 #45 I was just about to call you. 그대로",
+    "anchor": "참이었어",
+    "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did you get my message? We landed early.",
+      "ko": "내 문자 봤어? 일찍 착륙했어.",
+      "kr": "디저 겟 마이 메씨지 위 랜디더r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I was just about to call you.",
+      "ko": "막 전화하려던 참이었어.",
+      "kr": "아이 워z 저스터바우러 커얼 유"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you on your way?",
+      "ko": "오는 중이야?",
+      "kr": "아r 여 온 여r 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm on my way.",
+      "ko": "가는 중이야.",
+      "kr": "아이몬 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Sorry, I know it's early.",
+      "ko": "미안, 너무 이른 시간이지.",
+      "kr": "쏘리 아이 노우 잇처r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to be sorry.",
+      "ko": "미안해할 필요 없어.",
+      "kr": "유 돈 해f터 비 쏘리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Drive safe. It's freezing out here.",
+      "ko": "조심히 와. 밖에 너무 추워.",
+      "kr": "드라이v 쎄이f 잇츠 f리이징 아웃 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll call you when I get there.",
+      "ko": "도착하면 전화할게.",
+      "kr": "아일 커얼 여 웨나이 겟 데어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I was just about to go to bed.",
+      "ko": "막 자려던 참이었어.",
+      "kr": "아이 워z 저스터바우러 고우 터 베드"
+     },
+     {
+      "en": "We were about to leave.",
+      "ko": "막 나가려던 참이었어.",
+      "kr": "위 워r 어바우러 리이v"
+     },
+     {
+      "en": "She was about to board.",
+      "ko": "소연이 막 탑승하려던 참이었어.",
+      "kr": "쉬 워z 어바우러 보어r드"
+     },
+     {
+      "en": "Were you about to call me?",
+      "ko": "나한테 전화하려던 참이었어?",
+      "kr": "워r 여 어바우러 커얼 미"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I was about to ~",
+      "body": "막 ~하려던 참이었다. 모두영어 #45 I was just about to call you. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I was",
+      "아이 워z",
+      "나는 ~였다"
+     ],
+     [
+      "just about to",
+      "저스터바우러",
+      "막 ~하려던 참"
+     ],
+     [
+      "call you.",
+      "커얼 유",
+      "너에게 전화하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ about to",
+      "about to 의 t 는 뒤 모음과 붙어 ㄹ 로 흐른다 — 저스터바우러"
+     ]
+    ],
+    "mistake": "about to + 동사원형. just 는 about 앞",
+    "similar": "I was just going to ~",
+    "category": "일상/약속",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-pickup-02-on-my-way",
+   "sentence": "I'm on my way.",
+   "meaning": "가는 중이야.",
+   "reading": null,
+   "phonetic_kr": "아이몬 마이 웨이",
+   "order_index": 2,
+   "explanation": {
+    "key": "I'm on my way = 가는 중이야 (고정 표현). 모두영어 #67 그대로",
+    "anchor": "가는 중",
+    "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did you get my message? We landed early.",
+      "ko": "내 문자 봤어? 일찍 착륙했어.",
+      "kr": "디저 겟 마이 메씨지 위 랜디더r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I was just about to call you.",
+      "ko": "막 전화하려던 참이었어.",
+      "kr": "아이 워z 저스터바우러 커얼 유"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you on your way?",
+      "ko": "오는 중이야?",
+      "kr": "아r 여 온 여r 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm on my way.",
+      "ko": "가는 중이야.",
+      "kr": "아이몬 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Sorry, I know it's early.",
+      "ko": "미안, 너무 이른 시간이지.",
+      "kr": "쏘리 아이 노우 잇처r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to be sorry.",
+      "ko": "미안해할 필요 없어.",
+      "kr": "유 돈 해f터 비 쏘리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Drive safe. It's freezing out here.",
+      "ko": "조심히 와. 밖에 너무 추워.",
+      "kr": "드라이v 쎄이f 잇츠 f리이징 아웃 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll call you when I get there.",
+      "ko": "도착하면 전화할게.",
+      "kr": "아일 커얼 여 웨나이 겟 데어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm almost there.",
+      "ko": "거의 다 왔어.",
+      "kr": "아이몰모우스 데어r"
+     },
+     {
+      "en": "She's on her way home.",
+      "ko": "소연이 집에 오는 중이야.",
+      "kr": "쉬z 온 허r 웨이 호움"
+     },
+     {
+      "en": "I'm on my way to the gym.",
+      "ko": "체육관 가는 중이야.",
+      "kr": "아이몬 마이 웨이 터 더 짐"
+     },
+     {
+      "en": "We're on our way to the airport.",
+      "ko": "우리 공항 가는 중이야.",
+      "kr": "위r 오나워r 웨이 터 디 에어r포어r트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm on my way",
+      "body": "가는 중이야 (고정 표현). 모두영어 #67 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm on",
+      "아이몬",
+      "나는 ~중"
+     ],
+     [
+      "my way.",
+      "마이 웨이",
+      "가는 길"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/w/ way",
+      "way 의 w 는 입술을 둥글게 내밀며 웨이 — 우에이 로 늘이지 않는다"
+     ]
+    ],
+    "mistake": "I'm on the way 도 되지만 회화는 on my way 가 기본",
+    "similar": "I'm coming.",
+    "category": "일상/이동",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-pickup-03-dont-have-to",
+   "sentence": "You don't have to be sorry.",
+   "meaning": "미안해할 필요 없어.",
+   "reading": null,
+   "phonetic_kr": "유 돈 해f터 비 쏘리",
+   "order_index": 3,
+   "explanation": {
+    "key": "You don't have to ~ = ~할 필요 없어. 모두영어 #252 You don't have to be sorry. 그대로",
+    "anchor": "필요 없어",
+    "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did you get my message? We landed early.",
+      "ko": "내 문자 봤어? 일찍 착륙했어.",
+      "kr": "디저 겟 마이 메씨지 위 랜디더r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I was just about to call you.",
+      "ko": "막 전화하려던 참이었어.",
+      "kr": "아이 워z 저스터바우러 커얼 유"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you on your way?",
+      "ko": "오는 중이야?",
+      "kr": "아r 여 온 여r 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm on my way.",
+      "ko": "가는 중이야.",
+      "kr": "아이몬 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Sorry, I know it's early.",
+      "ko": "미안, 너무 이른 시간이지.",
+      "kr": "쏘리 아이 노우 잇처r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to be sorry.",
+      "ko": "미안해할 필요 없어.",
+      "kr": "유 돈 해f터 비 쏘리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Drive safe. It's freezing out here.",
+      "ko": "조심히 와. 밖에 너무 추워.",
+      "kr": "드라이v 쎄이f 잇츠 f리이징 아웃 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll call you when I get there.",
+      "ko": "도착하면 전화할게.",
+      "kr": "아일 커얼 여 웨나이 겟 데어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You don't have to explain.",
+      "ko": "설명 안 해도 돼.",
+      "kr": "유 돈 해f터 익스플레인"
+     },
+     {
+      "en": "You don't have to hurry.",
+      "ko": "서두를 필요 없어.",
+      "kr": "유 돈 해f터 허리"
+     },
+     {
+      "en": "We don't have to park far.",
+      "ko": "멀리 댈 필요 없어.",
+      "kr": "위 돈 해f터 파r크 f파r"
+     },
+     {
+      "en": "Do I have to come in?",
+      "ko": "안으로 들어가야 해?",
+      "kr": "두 아이 해f터 커민"
+     },
+     {
+      "en": "You don't have to do this alone.",
+      "ko": "혼자 다 할 필요 없어.",
+      "kr": "유 돈 해f터 두 디썰로운"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You don't have to ~",
+      "body": "~할 필요 없어. 모두영어 #252 You don't have to be sorry. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "You don't have to",
+      "유 돈 해f터",
+      "너는 ~할 필요 없어"
+     ],
+     [
+      "be sorry.",
+      "비 쏘리",
+      "미안해하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ have to",
+      "have to 의 v 는 t 앞에서 f 소리로 바뀐다 — 해f터"
+     ]
+    ],
+    "mistake": "don't have to(안 해도 됨) ≠ must not(하면 안 됨)",
+    "similar": "No need to ~",
+    "category": "일상/위로",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-pickup-04-ill-call",
+   "sentence": "I'll call you when I get there.",
+   "meaning": "도착하면 전화할게.",
+   "reading": null,
+   "phonetic_kr": "아일 커얼 여 웨나이 겟 데어r",
+   "order_index": 4,
+   "explanation": {
+    "key": "I'll call you when ~ = ~하면 전화할게. 모두영어 #63 그대로. 233 뱅크 추가 34 I'll ~ + when 절",
+    "anchor": "전화할게",
+    "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did you get my message? We landed early.",
+      "ko": "내 문자 봤어? 일찍 착륙했어.",
+      "kr": "디저 겟 마이 메씨지 위 랜디더r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I was just about to call you.",
+      "ko": "막 전화하려던 참이었어.",
+      "kr": "아이 워z 저스터바우러 커얼 유"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you on your way?",
+      "ko": "오는 중이야?",
+      "kr": "아r 여 온 여r 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm on my way.",
+      "ko": "가는 중이야.",
+      "kr": "아이몬 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Sorry, I know it's early.",
+      "ko": "미안, 너무 이른 시간이지.",
+      "kr": "쏘리 아이 노우 잇처r얼리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to be sorry.",
+      "ko": "미안해할 필요 없어.",
+      "kr": "유 돈 해f터 비 쏘리"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Drive safe. It's freezing out here.",
+      "ko": "조심히 와. 밖에 너무 추워.",
+      "kr": "드라이v 쎄이f 잇츠 f리이징 아웃 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll call you when I get there.",
+      "ko": "도착하면 전화할게.",
+      "kr": "아일 커얼 여 웨나이 겟 데어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'll call you later.",
+      "ko": "이따 전화할게.",
+      "kr": "아일 커얼 여 레이러r"
+     },
+     {
+      "en": "I'll call you when I'm done.",
+      "ko": "끝나면 전화할게.",
+      "kr": "아일 커얼 여 웨나임 던"
+     },
+     {
+      "en": "Call me when you land.",
+      "ko": "착륙하면 전화해.",
+      "kr": "커얼 미 웬 여 랜드"
+     },
+     {
+      "en": "She'll call when she's done.",
+      "ko": "소연이 끝나면 전화할 거야.",
+      "kr": "쉴 커얼 웬 쉬z 던"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'll call you when ~",
+      "body": "~하면 전화할게. 모두영어 #63 그대로. 233 뱅크 추가 34 I'll ~ + when 절"
+     }
+    ],
+    "chunks": [
+     [
+      "I'll call you",
+      "아일 커얼 여",
+      "전화할게"
+     ],
+     [
+      "when I get there.",
+      "웨나이 겟 데어r",
+      "도착하면"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/n/ when I",
+      "when 의 n 이 뒤 모음과 붙는다 — 웨나이"
+     ]
+    ],
+    "mistake": "when 절은 현재형. when I'll get there (X)",
+    "similar": "I'll let you know when ~",
+    "category": "일상/약속",
+    "frequency": 9
+   }
+  }
+ ]
+}

@@ -1,0 +1,501 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-29",
+ "cards": [
+  {
+   "id": "en-personal-anniversary-01-feels-like",
+   "sentence": "It feels like just yesterday.",
+   "meaning": "바로 어제 같은데.",
+   "reading": null,
+   "phonetic_kr": "잇 f피일z 라익 저스 예스터r데이",
+   "order_index": 1,
+   "explanation": {
+    "key": "It feels like ~ = 몸이나 기분으로 느끼는 판단 (영상 #13). 모두영어 #22 It feels like just yesterday. 그대로",
+    "anchor": "같은데",
+    "situation": "저녁. 결혼 15주년. 갈비를 먹고 소연에게 새 아이폰을 선물했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fifteen years today. Can you believe it?",
+      "ko": "오늘로 15년이야. 믿어져?",
+      "kr": "f피f티니어r즈 터데이 캔 여 빌리이빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like just yesterday.",
+      "ko": "바로 어제 같은데.",
+      "kr": "잇 f피일z 라익 저스 예스터r데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why did we get married on such a hot day?",
+      "ko": "우린 왜 그렇게 더운 날 결혼했을까?",
+      "kr": "와이 디드 위 겟 메리돈 써처 핫 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, we were poor back then.",
+      "ko": "그게, 그땐 우리가 가난했잖아.",
+      "kr": "더 씽 이z 위 워r 푸어r 백 덴"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fair enough. Let's order the galbi.",
+      "ko": "하긴. 갈비 시키자.",
+      "kr": "f페어r 이너f 렛초어r더r 더 갈비"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me show you something.",
+      "ko": "보여줄 게 있어.",
+      "kr": "렛 미 쇼우 여 썸씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "A new iPhone? It means a lot to me.",
+      "ko": "새 아이폰? 정말 고마워.",
+      "kr": "어 뉴우 아이f포운 잇 미인저 랏 터 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You deserve it.",
+      "ko": "넌 받을 자격 있어.",
+      "kr": "유 디저r빗"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Seems like yesterday.",
+      "ko": "어제 같아.",
+      "kr": "씨임즈 라익 예스터r데이"
+     },
+     {
+      "en": "It feels like a long time.",
+      "ko": "오래된 것 같아.",
+      "kr": "잇 f피일z 라이커 롱 타임"
+     },
+     {
+      "en": "It doesn't feel like fifteen years.",
+      "ko": "15년 된 것 같지가 않아.",
+      "kr": "잇 더즌 f피일 라익 f피f티니어r즈"
+     },
+     {
+      "en": "Does it feel like summer to you?",
+      "ko": "넌 여름 같아?",
+      "kr": "더z 잇 f피일 라익 써머r 터 유"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It feels like ~",
+      "body": "몸이나 기분으로 느끼는 판단 (영상 #13). 모두영어 #22 It feels like just yesterday. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "It feels like",
+      "잇 f피일z 라익",
+      "~같아"
+     ],
+     [
+      "just yesterday.",
+      "저스 예스터r데이",
+      "바로 어제"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ feels",
+      "feels 의 s 는 유성 z — f피일z"
+     ]
+    ],
+    "mistake": "It feels + 형용사 / It feels like + 명사·절",
+    "similar": "Seems like yesterday.",
+    "category": "가족/기념일",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-anniversary-02-thing-is",
+   "sentence": "The thing is, we were poor back then.",
+   "meaning": "그게, 그땐 우리가 가난했잖아.",
+   "reading": null,
+   "phonetic_kr": "더 씽 이z 위 워r 푸어r 백 덴",
+   "order_index": 2,
+   "explanation": {
+    "key": "The thing is, ~ = 사정을 꺼낼 때 쓰는 서두 (영상 #21)",
+    "anchor": "그게",
+    "situation": "저녁. 결혼 15주년. 갈비를 먹고 소연에게 새 아이폰을 선물했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fifteen years today. Can you believe it?",
+      "ko": "오늘로 15년이야. 믿어져?",
+      "kr": "f피f티니어r즈 터데이 캔 여 빌리이빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like just yesterday.",
+      "ko": "바로 어제 같은데.",
+      "kr": "잇 f피일z 라익 저스 예스터r데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why did we get married on such a hot day?",
+      "ko": "우린 왜 그렇게 더운 날 결혼했을까?",
+      "kr": "와이 디드 위 겟 메리돈 써처 핫 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, we were poor back then.",
+      "ko": "그게, 그땐 우리가 가난했잖아.",
+      "kr": "더 씽 이z 위 워r 푸어r 백 덴"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fair enough. Let's order the galbi.",
+      "ko": "하긴. 갈비 시키자.",
+      "kr": "f페어r 이너f 렛초어r더r 더 갈비"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me show you something.",
+      "ko": "보여줄 게 있어.",
+      "kr": "렛 미 쇼우 여 썸씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "A new iPhone? It means a lot to me.",
+      "ko": "새 아이폰? 정말 고마워.",
+      "kr": "어 뉴우 아이f포운 잇 미인저 랏 터 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You deserve it.",
+      "ko": "넌 받을 자격 있어.",
+      "kr": "유 디저r빗"
+     }
+    ],
+    "drills": [
+     {
+      "en": "The thing is, we had no money.",
+      "ko": "그게, 우린 돈이 없었어.",
+      "kr": "더 씽 이z 위 해드 노우 머니"
+     },
+     {
+      "en": "The thing is, we didn't have a choice.",
+      "ko": "그게, 선택의 여지가 없었어.",
+      "kr": "더 씽 이z 위 디든 해버 초이스"
+     },
+     {
+      "en": "Here's the thing. I'd do it again.",
+      "ko": "그게 말이야. 다시 해도 그렇게 할 거야.",
+      "kr": "히어r즈 더 씽 아이드 두 이러겐"
+     },
+     {
+      "en": "Problem is, it's always hot in August.",
+      "ko": "문제는 8월은 늘 덥다는 거야.",
+      "kr": "프라블러미z 잇촐웨이z 하리너거스트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "The thing is, ~",
+      "body": "사정을 꺼낼 때 쓰는 서두 (영상 #21)"
+     }
+    ],
+    "chunks": [
+     [
+      "The thing is,",
+      "더 씽 이z",
+      "그게 말이야"
+     ],
+     [
+      "we were poor",
+      "위 워r 푸어r",
+      "우린 가난했어"
+     ],
+     [
+      "back then.",
+      "백 덴",
+      "그땐"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/r/ poor",
+      "poor 의 r 은 혀를 말아 넣는다 — 푸어r"
+     ]
+    ],
+    "mistake": "회화에선 that 을 뺀다",
+    "similar": "Here's the thing.",
+    "category": "가족/기념일",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-anniversary-03-let-me-show",
+   "sentence": "Let me show you something.",
+   "meaning": "보여줄 게 있어.",
+   "reading": null,
+   "phonetic_kr": "렛 미 쇼우 여 썸씽",
+   "order_index": 3,
+   "explanation": {
+    "key": "Let me ~ = 내가 ~할게 (영상 #6). 모두영어 2편 #102 Let me show you something. 그대로",
+    "anchor": "보여줄",
+    "situation": "저녁. 결혼 15주년. 갈비를 먹고 소연에게 새 아이폰을 선물했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fifteen years today. Can you believe it?",
+      "ko": "오늘로 15년이야. 믿어져?",
+      "kr": "f피f티니어r즈 터데이 캔 여 빌리이빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like just yesterday.",
+      "ko": "바로 어제 같은데.",
+      "kr": "잇 f피일z 라익 저스 예스터r데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why did we get married on such a hot day?",
+      "ko": "우린 왜 그렇게 더운 날 결혼했을까?",
+      "kr": "와이 디드 위 겟 메리돈 써처 핫 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, we were poor back then.",
+      "ko": "그게, 그땐 우리가 가난했잖아.",
+      "kr": "더 씽 이z 위 워r 푸어r 백 덴"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fair enough. Let's order the galbi.",
+      "ko": "하긴. 갈비 시키자.",
+      "kr": "f페어r 이너f 렛초어r더r 더 갈비"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me show you something.",
+      "ko": "보여줄 게 있어.",
+      "kr": "렛 미 쇼우 여 썸씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "A new iPhone? It means a lot to me.",
+      "ko": "새 아이폰? 정말 고마워.",
+      "kr": "어 뉴우 아이f포운 잇 미인저 랏 터 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You deserve it.",
+      "ko": "넌 받을 자격 있어.",
+      "kr": "유 디저r빗"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let me show you the photos.",
+      "ko": "사진 보여줄게.",
+      "kr": "렛 미 쇼우 여 더 f포우토우z"
+     },
+     {
+      "en": "Let me get this one.",
+      "ko": "이건 내가 살게.",
+      "kr": "렛 미 겟 디스 원"
+     },
+     {
+      "en": "Can you show me?",
+      "ko": "보여줄래?",
+      "kr": "캔 여 쇼우 미"
+     },
+     {
+      "en": "She showed me the ring.",
+      "ko": "소연이 반지를 보여줬어.",
+      "kr": "쉬 쇼우드 미 더 링"
+     },
+     {
+      "en": "Let me show you the new one.",
+      "ko": "새로 산 거 보여줄게.",
+      "kr": "렛 미 쇼우 여 더 뉴우 원"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "내가 ~할게 (영상 #6). 모두영어 2편 #102 Let me show you something. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "Let me show you",
+      "렛 미 쇼우 여",
+      "보여줄게"
+     ],
+     [
+      "something.",
+      "썸씽",
+      "뭔가를"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃ/ show",
+      "show 의 sh 는 입술을 내밀고 쇼우"
+     ]
+    ],
+    "mistake": "Let me + 동사원형",
+    "similar": "I'll show you.",
+    "category": "가족/기념일",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-anniversary-04-you-deserve-it",
+   "sentence": "You deserve it.",
+   "meaning": "넌 받을 자격 있어.",
+   "reading": null,
+   "phonetic_kr": "유 디저r빗",
+   "order_index": 4,
+   "explanation": {
+    "key": "You deserve it = 넌 받을 자격 있어 / 그럴 만해. 모두영어 #115 그대로",
+    "anchor": "자격",
+    "situation": "저녁. 결혼 15주년. 갈비를 먹고 소연에게 새 아이폰을 선물했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fifteen years today. Can you believe it?",
+      "ko": "오늘로 15년이야. 믿어져?",
+      "kr": "f피f티니어r즈 터데이 캔 여 빌리이빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like just yesterday.",
+      "ko": "바로 어제 같은데.",
+      "kr": "잇 f피일z 라익 저스 예스터r데이"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why did we get married on such a hot day?",
+      "ko": "우린 왜 그렇게 더운 날 결혼했을까?",
+      "kr": "와이 디드 위 겟 메리돈 써처 핫 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, we were poor back then.",
+      "ko": "그게, 그땐 우리가 가난했잖아.",
+      "kr": "더 씽 이z 위 워r 푸어r 백 덴"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fair enough. Let's order the galbi.",
+      "ko": "하긴. 갈비 시키자.",
+      "kr": "f페어r 이너f 렛초어r더r 더 갈비"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me show you something.",
+      "ko": "보여줄 게 있어.",
+      "kr": "렛 미 쇼우 여 썸씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "A new iPhone? It means a lot to me.",
+      "ko": "새 아이폰? 정말 고마워.",
+      "kr": "어 뉴우 아이f포운 잇 미인저 랏 터 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You deserve it.",
+      "ko": "넌 받을 자격 있어.",
+      "kr": "유 디저r빗"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You deserve a break.",
+      "ko": "넌 쉴 자격 있어.",
+      "kr": "유 디저r버 브레익"
+     },
+     {
+      "en": "She deserves better.",
+      "ko": "소연은 더 좋은 걸 받을 만해.",
+      "kr": "쉬 디저r브z 베러r"
+     },
+     {
+      "en": "I don't deserve this.",
+      "ko": "난 이런 거 받을 자격 없어.",
+      "kr": "아이 돈 디저r브 디스"
+     },
+     {
+      "en": "You deserve it more than anyone.",
+      "ko": "누구보다 네가 받을 자격 있어.",
+      "kr": "유 디저r빗 모어r 더네니원"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You deserve it",
+      "body": "넌 받을 자격 있어 / 그럴 만해. 모두영어 #115 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "You",
+      "유",
+      "너는"
+     ],
+     [
+      "deserve it.",
+      "디저r빗",
+      "받을 자격 있어"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ deserve it",
+      "deserve 의 v 가 it 과 붙는다 — 디저r빗"
+     ]
+    ],
+    "mistake": "deserve + 명사 / deserve to + 동사",
+    "similar": "You earned it.",
+    "category": "가족/기념일",
+    "frequency": 8
+   }
+  }
+ ]
+}

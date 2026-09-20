@@ -1,0 +1,496 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-27",
+ "cards": [
+  {
+   "id": "en-personal-friend-01-try-something-else",
+   "sentence": "Let's try something else.",
+   "meaning": "다른 데 가 보자.",
+   "reading": null,
+   "phonetic_kr": "렛츠 트라이 썸씽 엘스",
+   "order_index": 1,
+   "explanation": {
+    "key": "Let's try ~ = ~해 보자. 모두영어 #177 Let's try something else. 그대로. 233 뱅크 추가 31 Let's ~",
+    "anchor": "가 보자",
+    "situation": "저녁. 연남동에서 정경섭과 당구를 친 뒤 저녁을 먹으러 갔는데 혼시츠와 야키토리묵이 예약제라 못 들어갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Honshitsu is reservation only. We can't get in.",
+      "ko": "혼시츠는 예약제래. 못 들어가.",
+      "kr": "혼시츠 이z 레저r베이셔노운리 위 캔트 게린"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's try something else.",
+      "ko": "다른 데 가 보자.",
+      "kr": "렛츠 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "The yakitori place is the same. Any ideas?",
+      "ko": "야키토리집도 마찬가지야. 다른 데 없을까?",
+      "kr": "더 야키토리 플레이씨z 더 쎄임 에니 아이디어z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me think about it.",
+      "ko": "잠깐 생각해 볼게.",
+      "kr": "렛 미 씽커바우릿"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "How about Andong Silbi? It's a taxi ride away.",
+      "ko": "안동실비는 어때? 택시로 가면 돼.",
+      "kr": "하우 어바웃 안동실비 잇처 택씨 라이더웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm up for anything.",
+      "ko": "난 뭐든 좋아.",
+      "kr": "아이멉 f퍼r 에니씽"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Sorry I was late today, by the way.",
+      "ko": "그런데 아까 늦어서 미안.",
+      "kr": "쏘리 아이 워z 레잇 터데이 바이 더 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to explain.",
+      "ko": "설명 안 해도 돼.",
+      "kr": "유 돈 해f터 익스플레인"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let's try the place next door.",
+      "ko": "옆집 가 보자.",
+      "kr": "렛츠 트라이 더 플레이스 넥스 도어r"
+     },
+     {
+      "en": "Let's start over.",
+      "ko": "처음부터 다시 하자.",
+      "kr": "렛츠 스타r로우버r"
+     },
+     {
+      "en": "Shall we try somewhere else?",
+      "ko": "다른 데 가 볼까?",
+      "kr": "셜 위 트라이 썸웨어r 엘스"
+     },
+     {
+      "en": "I've tried everything.",
+      "ko": "다 해 봤어.",
+      "kr": "아이v 트라이데v리씽"
+     },
+     {
+      "en": "Why don't we try the other one?",
+      "ko": "다른 데로 가 볼까?",
+      "kr": "와이 돈 위 트라이 디 아더r 원"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let's try ~",
+      "body": "~해 보자. 모두영어 #177 Let's try something else. 그대로. 233 뱅크 추가 31 Let's ~"
+     }
+    ],
+    "chunks": [
+     [
+      "Let's try",
+      "렛츠 트라이",
+      "해 보자"
+     ],
+     [
+      "something else.",
+      "썸씽 엘스",
+      "다른 걸"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/θ/ something",
+      "something 의 th 는 혀끝을 윗니에 — 썸씽"
+     ]
+    ],
+    "mistake": "Let's = Let us. 뒤에 동사원형",
+    "similar": "How about ~?",
+    "category": "친구/약속",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-friend-02-let-me-think",
+   "sentence": "Let me think about it.",
+   "meaning": "잠깐 생각해 볼게.",
+   "reading": null,
+   "phonetic_kr": "렛 미 씽커바우릿",
+   "order_index": 2,
+   "explanation": {
+    "key": "Let me ~ = 내가 ~할게 / ~해 볼게 (영상 #6). 모두영어 2편 #101 Let me think about it. 그대로",
+    "anchor": "생각해 볼게",
+    "situation": "저녁. 연남동에서 정경섭과 당구를 친 뒤 저녁을 먹으러 갔는데 혼시츠와 야키토리묵이 예약제라 못 들어갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Honshitsu is reservation only. We can't get in.",
+      "ko": "혼시츠는 예약제래. 못 들어가.",
+      "kr": "혼시츠 이z 레저r베이셔노운리 위 캔트 게린"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's try something else.",
+      "ko": "다른 데 가 보자.",
+      "kr": "렛츠 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "The yakitori place is the same. Any ideas?",
+      "ko": "야키토리집도 마찬가지야. 다른 데 없을까?",
+      "kr": "더 야키토리 플레이씨z 더 쎄임 에니 아이디어z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me think about it.",
+      "ko": "잠깐 생각해 볼게.",
+      "kr": "렛 미 씽커바우릿"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "How about Andong Silbi? It's a taxi ride away.",
+      "ko": "안동실비는 어때? 택시로 가면 돼.",
+      "kr": "하우 어바웃 안동실비 잇처 택씨 라이더웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm up for anything.",
+      "ko": "난 뭐든 좋아.",
+      "kr": "아이멉 f퍼r 에니씽"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Sorry I was late today, by the way.",
+      "ko": "그런데 아까 늦어서 미안.",
+      "kr": "쏘리 아이 워z 레잇 터데이 바이 더 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to explain.",
+      "ko": "설명 안 해도 돼.",
+      "kr": "유 돈 해f터 익스플레인"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let me check my schedule.",
+      "ko": "일정 좀 볼게.",
+      "kr": "렛 미 첵 마이 스케쥴"
+     },
+     {
+      "en": "Let me see what I can do.",
+      "ko": "내가 뭘 할 수 있는지 볼게.",
+      "kr": "렛 미 씨이 와라이 컨 두"
+     },
+     {
+      "en": "Can you let me pick?",
+      "ko": "내가 골라도 돼?",
+      "kr": "캔 여 렛 미 픽"
+     },
+     {
+      "en": "He let me choose the place.",
+      "ko": "걔가 나더러 고르래.",
+      "kr": "히 렛 미 추우z 더 플레이스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "내가 ~할게 / ~해 볼게 (영상 #6). 모두영어 2편 #101 Let me think about it. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "Let me",
+      "렛 미",
+      "내가 ~할게"
+     ],
+     [
+      "think about it.",
+      "씽커바우릿",
+      "그것에 대해 생각하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ think about",
+      "think 의 k 가 about 과 붙는다 — 씽커바우릿"
+     ]
+    ],
+    "mistake": "Let me + 동사원형. Let me to think (X)",
+    "similar": "Give me a second.",
+    "category": "친구/약속",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-friend-03-up-for-anything",
+   "sentence": "I'm up for anything.",
+   "meaning": "난 뭐든 좋아.",
+   "reading": null,
+   "phonetic_kr": "아이멉 f퍼r 에니씽",
+   "order_index": 3,
+   "explanation": {
+    "key": "I'm up for ~ = ~할 마음 있어 / 뭐든 좋아. 모두영어 2편 #10 그대로",
+    "anchor": "뭐든 좋아",
+    "situation": "저녁. 연남동에서 정경섭과 당구를 친 뒤 저녁을 먹으러 갔는데 혼시츠와 야키토리묵이 예약제라 못 들어갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Honshitsu is reservation only. We can't get in.",
+      "ko": "혼시츠는 예약제래. 못 들어가.",
+      "kr": "혼시츠 이z 레저r베이셔노운리 위 캔트 게린"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's try something else.",
+      "ko": "다른 데 가 보자.",
+      "kr": "렛츠 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "The yakitori place is the same. Any ideas?",
+      "ko": "야키토리집도 마찬가지야. 다른 데 없을까?",
+      "kr": "더 야키토리 플레이씨z 더 쎄임 에니 아이디어z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me think about it.",
+      "ko": "잠깐 생각해 볼게.",
+      "kr": "렛 미 씽커바우릿"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "How about Andong Silbi? It's a taxi ride away.",
+      "ko": "안동실비는 어때? 택시로 가면 돼.",
+      "kr": "하우 어바웃 안동실비 잇처 택씨 라이더웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm up for anything.",
+      "ko": "난 뭐든 좋아.",
+      "kr": "아이멉 f퍼r 에니씽"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Sorry I was late today, by the way.",
+      "ko": "그런데 아까 늦어서 미안.",
+      "kr": "쏘리 아이 워z 레잇 터데이 바이 더 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to explain.",
+      "ko": "설명 안 해도 돼.",
+      "kr": "유 돈 해f터 익스플레인"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm up for a walk.",
+      "ko": "산책 좋지.",
+      "kr": "아이멉 f퍼r 어 워크"
+     },
+     {
+      "en": "Are you up for beef?",
+      "ko": "소고기 어때?",
+      "kr": "아r 여 업 f퍼r 비이f"
+     },
+     {
+      "en": "She's not up for it tonight.",
+      "ko": "소연은 오늘 밤엔 안 내켜 해.",
+      "kr": "쉬z 나럽 f퍼r 잇 터나잇"
+     },
+     {
+      "en": "Count me in.",
+      "ko": "나도 끼워 줘.",
+      "kr": "카운 미 인"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm up for ~",
+      "body": "~할 마음 있어 / 뭐든 좋아. 모두영어 2편 #10 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm up",
+      "아이멉",
+      "나는 좋아"
+     ],
+     [
+      "for anything.",
+      "f퍼r 에니씽",
+      "뭐든"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/m/ I'm up",
+      "I'm 의 m 이 up 과 붙는다 — 아이멉"
+     ]
+    ],
+    "mistake": "up for + 명사/-ing. up to 는 다른 뜻",
+    "similar": "Anything works for me.",
+    "category": "친구/약속",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-friend-04-dont-have-to-explain",
+   "sentence": "You don't have to explain.",
+   "meaning": "설명 안 해도 돼.",
+   "reading": null,
+   "phonetic_kr": "유 돈 해f터 익스플레인",
+   "order_index": 4,
+   "explanation": {
+    "key": "You don't have to ~ = ~할 필요 없어 (영상 #23). 모두영어 #212 You don't have to explain. 그대로",
+    "anchor": "안 해도 돼",
+    "situation": "저녁. 연남동에서 정경섭과 당구를 친 뒤 저녁을 먹으러 갔는데 혼시츠와 야키토리묵이 예약제라 못 들어갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Honshitsu is reservation only. We can't get in.",
+      "ko": "혼시츠는 예약제래. 못 들어가.",
+      "kr": "혼시츠 이z 레저r베이셔노운리 위 캔트 게린"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's try something else.",
+      "ko": "다른 데 가 보자.",
+      "kr": "렛츠 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "The yakitori place is the same. Any ideas?",
+      "ko": "야키토리집도 마찬가지야. 다른 데 없을까?",
+      "kr": "더 야키토리 플레이씨z 더 쎄임 에니 아이디어z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me think about it.",
+      "ko": "잠깐 생각해 볼게.",
+      "kr": "렛 미 씽커바우릿"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "How about Andong Silbi? It's a taxi ride away.",
+      "ko": "안동실비는 어때? 택시로 가면 돼.",
+      "kr": "하우 어바웃 안동실비 잇처 택씨 라이더웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm up for anything.",
+      "ko": "난 뭐든 좋아.",
+      "kr": "아이멉 f퍼r 에니씽"
+     },
+     {
+      "speaker": "A",
+      "name": "경섭",
+      "en": "Sorry I was late today, by the way.",
+      "ko": "그런데 아까 늦어서 미안.",
+      "kr": "쏘리 아이 워z 레잇 터데이 바이 더 웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to explain.",
+      "ko": "설명 안 해도 돼.",
+      "kr": "유 돈 해f터 익스플레인"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You don't have to apologize.",
+      "ko": "사과 안 해도 돼.",
+      "kr": "유 돈 해f터 어팔러자이z"
+     },
+     {
+      "en": "We don't have to eat there.",
+      "ko": "거기서 안 먹어도 돼.",
+      "kr": "위 돈 해f터 이잇 데어r"
+     },
+     {
+      "en": "Do we have to book?",
+      "ko": "예약해야 해?",
+      "kr": "두 위 해f터 북"
+     },
+     {
+      "en": "He doesn't have to come.",
+      "ko": "걔는 안 와도 돼.",
+      "kr": "히 더즌 해f터 컴"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You don't have to ~",
+      "body": "~할 필요 없어 (영상 #23). 모두영어 #212 You don't have to explain. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "You don't have to",
+      "유 돈 해f터",
+      "~할 필요 없어"
+     ],
+     [
+      "explain.",
+      "익스플레인",
+      "설명하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ks/ explain",
+      "explain 의 x 는 ks — 익스플레인"
+     ]
+    ],
+    "mistake": "don't have to(안 해도 됨) ≠ must not(하면 안 됨)",
+    "similar": "No need to ~",
+    "category": "친구/약속",
+    "frequency": 8
+   }
+  }
+ ]
+}

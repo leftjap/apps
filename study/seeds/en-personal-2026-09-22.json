@@ -1,0 +1,506 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-22",
+ "cards": [
+  {
+   "id": "en-personal-nani-01-sounds-like",
+   "sentence": "It sounds like she ate too much again.",
+   "meaning": "또 과식한 소리 같아.",
+   "reading": null,
+   "phonetic_kr": "잇 싸운z 라익 쉬 에잇 투우 머치 어겐",
+   "order_index": 1,
+   "explanation": {
+    "key": "It sounds like ~ = 들리는 것으로 미루어 ~인 것 같다 (영상 #15. 영상 예문 Sounds like a plan 은 관용구라 이 뜻이 아님)",
+    "anchor": "소리 같아",
+    "situation": "아침. 소연은 런던 비행 중. 앞이 보이지 않는 나니는 건사료를 조금만 과식해도 토한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did Nani throw up again?",
+      "ko": "나니 또 토했어?",
+      "kr": "디드 나니 쓰로우 어퍼겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like she ate too much again.",
+      "ko": "또 과식한 소리 같아.",
+      "kr": "잇 싸운z 라익 쉬 에잇 투우 머치 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The dry food?",
+      "ko": "건사료?",
+      "kr": "더 드라이 f푸우드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm trying to cut down.",
+      "ko": "줄이려고 하는 중이야.",
+      "kr": "아임 트라잉 터 컷 다운"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Give her more wet food instead.",
+      "ko": "잘했어. 대신 습식을 더 줘.",
+      "kr": "굿 기v 허r 모어r 웻 f푸우딘스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Leave it to me.",
+      "ko": "나한테 맡겨.",
+      "kr": "리이v 잇 터 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is she okay now?",
+      "ko": "지금은 괜찮아?",
+      "kr": "이z 쉬 오우케이 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's nothing to worry about.",
+      "ko": "걱정할 거 없어.",
+      "kr": "데어r즈 낫씽 터 워리 어바웃"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It sounds like rain.",
+      "ko": "비 오는 소리 같아.",
+      "kr": "잇 싸운z 라익 레인"
+     },
+     {
+      "en": "It sounds like she's hungry.",
+      "ko": "배고픈 소리 같은데.",
+      "kr": "잇 싸운z 라익 쉬z 헝그리"
+     },
+     {
+      "en": "You sound tired.",
+      "ko": "목소리가 피곤해 보여.",
+      "kr": "유 싸운 타이어r드"
+     },
+     {
+      "en": "Does it sound like the door?",
+      "ko": "문 소리 같아?",
+      "kr": "더z 잇 싸운 라익 더 도어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It sounds like ~",
+      "body": "들리는 것으로 미루어 ~인 것 같다 (영상 #15. 영상 예문 Sounds like a plan 은 관용구라 이 뜻이 아님)"
+     }
+    ],
+    "chunks": [
+     [
+      "It sounds like",
+      "잇 싸운z 라익",
+      "~한 소리 같아"
+     ],
+     [
+      "she ate too much",
+      "쉬 에잇 투우 머치",
+      "너무 많이 먹었다"
+     ],
+     [
+      "again.",
+      "어겐",
+      "또"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ sounds",
+      "sounds 의 s 는 유성 z — 싸운z"
+     ]
+    ],
+    "mistake": "Sounds like a plan. 은 '좋다, 그렇게 하자' 는 관용구. 들리는 판단이 아니다",
+    "similar": "It seems like ~ (근거가 소리가 아닐 때)",
+    "category": "일상/반려동물",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-nani-02-trying-to",
+   "sentence": "I'm trying to cut down.",
+   "meaning": "줄이려고 하는 중이야.",
+   "reading": null,
+   "phonetic_kr": "아임 트라잉 터 컷 다운",
+   "order_index": 2,
+   "explanation": {
+    "key": "I'm trying to ~ = 지금 ~하려고 애쓰는 중 (영상 #1). 모두영어 2편 #78 I'm trying to cut down. 그대로 (cut down = 줄이다)",
+    "anchor": "줄이려고",
+    "situation": "아침. 소연은 런던 비행 중. 앞이 보이지 않는 나니는 건사료를 조금만 과식해도 토한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did Nani throw up again?",
+      "ko": "나니 또 토했어?",
+      "kr": "디드 나니 쓰로우 어퍼겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like she ate too much again.",
+      "ko": "또 과식한 소리 같아.",
+      "kr": "잇 싸운z 라익 쉬 에잇 투우 머치 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The dry food?",
+      "ko": "건사료?",
+      "kr": "더 드라이 f푸우드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm trying to cut down.",
+      "ko": "줄이려고 하는 중이야.",
+      "kr": "아임 트라잉 터 컷 다운"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Give her more wet food instead.",
+      "ko": "잘했어. 대신 습식을 더 줘.",
+      "kr": "굿 기v 허r 모어r 웻 f푸우딘스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Leave it to me.",
+      "ko": "나한테 맡겨.",
+      "kr": "리이v 잇 터 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is she okay now?",
+      "ko": "지금은 괜찮아?",
+      "kr": "이z 쉬 오우케이 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's nothing to worry about.",
+      "ko": "걱정할 거 없어.",
+      "kr": "데어r즈 낫씽 터 워리 어바웃"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm trying to feed her less.",
+      "ko": "덜 주려고 하는 중이야.",
+      "kr": "아임 트라잉 터 f피이드 허r 레스"
+     },
+     {
+      "en": "She's trying to eat slowly.",
+      "ko": "나니가 천천히 먹으려고 해.",
+      "kr": "쉬z 트라잉 터 이잇 슬로울리"
+     },
+     {
+      "en": "What are you trying to do?",
+      "ko": "뭐 하려는 거야?",
+      "kr": "워러r여 트라잉 터 두"
+     },
+     {
+      "en": "We're trying to keep her calm.",
+      "ko": "나니를 진정시키려고 하는 중이야.",
+      "kr": "위r 트라잉 터 키입 허r 카암"
+     },
+     {
+      "en": "I'm trying to cut down on coffee.",
+      "ko": "커피를 줄이려고 하는 중이야.",
+      "kr": "아임 트라잉 터 컷 다우논 커f피"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm trying to ~",
+      "body": "지금 ~하려고 애쓰는 중 (영상 #1). 모두영어 2편 #78 I'm trying to cut down. 그대로 (cut down = 줄이다)"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm trying to",
+      "아임 트라잉 터",
+      "~하려고 하는 중"
+     ],
+     [
+      "cut down.",
+      "컷 다운",
+      "줄이다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/tr/ trying",
+      "trying 의 tr 은 츄 에 가깝게 — 트라잉"
+     ]
+    ],
+    "mistake": "try to + 동사원형",
+    "similar": "I'm working on ~",
+    "category": "일상/반려동물",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-nani-03-leave-it",
+   "sentence": "Leave it to me.",
+   "meaning": "나한테 맡겨.",
+   "reading": null,
+   "phonetic_kr": "리이v 잇 터 미",
+   "order_index": 3,
+   "explanation": {
+    "key": "Leave it to me = 나한테 맡겨. 모두영어 2편 #14 그대로",
+    "anchor": "맡겨",
+    "situation": "아침. 소연은 런던 비행 중. 앞이 보이지 않는 나니는 건사료를 조금만 과식해도 토한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did Nani throw up again?",
+      "ko": "나니 또 토했어?",
+      "kr": "디드 나니 쓰로우 어퍼겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like she ate too much again.",
+      "ko": "또 과식한 소리 같아.",
+      "kr": "잇 싸운z 라익 쉬 에잇 투우 머치 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The dry food?",
+      "ko": "건사료?",
+      "kr": "더 드라이 f푸우드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm trying to cut down.",
+      "ko": "줄이려고 하는 중이야.",
+      "kr": "아임 트라잉 터 컷 다운"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Give her more wet food instead.",
+      "ko": "잘했어. 대신 습식을 더 줘.",
+      "kr": "굿 기v 허r 모어r 웻 f푸우딘스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Leave it to me.",
+      "ko": "나한테 맡겨.",
+      "kr": "리이v 잇 터 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is she okay now?",
+      "ko": "지금은 괜찮아?",
+      "kr": "이z 쉬 오우케이 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's nothing to worry about.",
+      "ko": "걱정할 거 없어.",
+      "kr": "데어r즈 낫씽 터 워리 어바웃"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Leave it to her.",
+      "ko": "소연한테 맡겨.",
+      "kr": "리이v 잇 터 허r"
+     },
+     {
+      "en": "I'll take care of it.",
+      "ko": "내가 처리할게.",
+      "kr": "아일 테익 케어r 어v잇"
+     },
+     {
+      "en": "Can you leave it to me?",
+      "ko": "나한테 맡겨 줄래?",
+      "kr": "캔 여 리이v 잇 터 미"
+     },
+     {
+      "en": "Let me handle it.",
+      "ko": "내가 처리할게.",
+      "kr": "렛 미 핸들릿"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Leave it to me",
+      "body": "나한테 맡겨. 모두영어 2편 #14 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "Leave it",
+      "리이v 잇",
+      "그것을 맡겨"
+     ],
+     [
+      "to me.",
+      "터 미",
+      "나에게"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ leave",
+      "leave 의 v 는 윗니를 아랫입술에 대고 울린다 — 리이v"
+     ]
+    ],
+    "mistake": "Leave me alone(혼자 있게 해 줘) 과 혼동 주의",
+    "similar": "I'll take care of it.",
+    "category": "일상/반려동물",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-nani-04-there-is",
+   "sentence": "There's nothing to worry about.",
+   "meaning": "걱정할 거 없어.",
+   "reading": null,
+   "phonetic_kr": "데어r즈 낫씽 터 워리 어바웃",
+   "order_index": 4,
+   "explanation": {
+    "key": "There's ~ = ~가 있다 (There is 의 축약, 영상 #16). 모두영어 #76 There's nothing to worry about. 그대로",
+    "anchor": "걱정할 거 없어",
+    "situation": "아침. 소연은 런던 비행 중. 앞이 보이지 않는 나니는 건사료를 조금만 과식해도 토한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Did Nani throw up again?",
+      "ko": "나니 또 토했어?",
+      "kr": "디드 나니 쓰로우 어퍼겐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like she ate too much again.",
+      "ko": "또 과식한 소리 같아.",
+      "kr": "잇 싸운z 라익 쉬 에잇 투우 머치 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "The dry food?",
+      "ko": "건사료?",
+      "kr": "더 드라이 f푸우드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm trying to cut down.",
+      "ko": "줄이려고 하는 중이야.",
+      "kr": "아임 트라잉 터 컷 다운"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Give her more wet food instead.",
+      "ko": "잘했어. 대신 습식을 더 줘.",
+      "kr": "굿 기v 허r 모어r 웻 f푸우딘스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Leave it to me.",
+      "ko": "나한테 맡겨.",
+      "kr": "리이v 잇 터 미"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Is she okay now?",
+      "ko": "지금은 괜찮아?",
+      "kr": "이z 쉬 오우케이 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's nothing to worry about.",
+      "ko": "걱정할 거 없어.",
+      "kr": "데어r즈 낫씽 터 워리 어바웃"
+     }
+    ],
+    "drills": [
+     {
+      "en": "There's a new bag of food.",
+      "ko": "사료 새 봉지 있어.",
+      "kr": "데어r저 뉴우 배거v f푸우드"
+     },
+     {
+      "en": "Is there any left?",
+      "ko": "남은 거 있어?",
+      "kr": "이z 데어r 에니 레f트"
+     },
+     {
+      "en": "We have two cans left.",
+      "ko": "캔 두 개 남았어.",
+      "kr": "위 해v 투우 캔z 레f트"
+     },
+     {
+      "en": "There's always a way.",
+      "ko": "방법은 늘 있어.",
+      "kr": "데어r졸웨이저 웨이"
+     },
+     {
+      "en": "There's no need to apologize.",
+      "ko": "사과할 필요 없어.",
+      "kr": "데어r즈 노우 니이 터 어팔러자이z"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "There's ~",
+      "body": "~가 있다 (There is 의 축약, 영상 #16). 모두영어 #76 There's nothing to worry about. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "There's nothing",
+      "데어r즈 낫씽",
+      "아무것도 없어"
+     ],
+     [
+      "to worry about.",
+      "터 워리 어바웃",
+      "걱정할"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ð/ there",
+      "there 의 th 는 혀끝을 대고 울리는 유성음 — 데어r"
+     ]
+    ],
+    "mistake": "There is + 복수 (X) → There are",
+    "similar": "Don't worry about it.",
+    "category": "일상/위로",
+    "frequency": 9
+   }
+  }
+ ]
+}

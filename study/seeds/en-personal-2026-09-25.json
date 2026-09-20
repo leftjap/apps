@@ -1,0 +1,506 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-25",
+ "cards": [
+  {
+   "id": "en-personal-bath-01-taking-forever",
+   "sentence": "It's taking forever.",
+   "meaning": "끝이 안 나.",
+   "reading": null,
+   "phonetic_kr": "잇츠 테이킹 f퍼레버r",
+   "order_index": 1,
+   "explanation": {
+    "key": "It's taking forever = 끝이 안 난다 / 너무 오래 걸린다. 모두영어 2편 #2 그대로",
+    "anchor": "끝이 안 나",
+    "situation": "저녁. 나니를 혼자 목욕시켰다. 털이 많아 드라이만 30분이 걸렸다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you still drying Nani?",
+      "ko": "아직 나니 말리는 중이야?",
+      "kr": "아r 여 스틸 드라잉 나니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's taking forever.",
+      "ko": "끝이 안 나.",
+      "kr": "잇츠 테이킹 f퍼레버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "There's too much fur to see her skin.",
+      "ko": "털이 너무 많아서 피부가 안 보여.",
+      "kr": "데어r즈 투우 머치 f퍼r 터 씨이 허r 스킨"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think I can handle it.",
+      "ko": "나 혼자는 감당이 안 돼.",
+      "kr": "아이 돈 씽카이 컨 핸들릿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You don't have to do this alone.",
+      "ko": "혼자 다 할 필요 없어.",
+      "kr": "유 돈 해f터 두 디썰로운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to do it together next time.",
+      "ko": "다음엔 같이 하고 싶어.",
+      "kr": "아이드 라익 터 두잇 터게더r 넥스 타임"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Deal. Thanks for doing it today.",
+      "ko": "좋아. 오늘 해 줘서 고마워.",
+      "kr": "디일 쌩스 f퍼r 두잉잇 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't worry about it.",
+      "ko": "별거 아니야.",
+      "kr": "돈 워리 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It might take a while.",
+      "ko": "좀 걸릴지도 몰라.",
+      "kr": "잇 마잇 테이커 와일"
+     },
+     {
+      "en": "Why is it taking so long?",
+      "ko": "왜 이렇게 오래 걸려?",
+      "kr": "와이 이z 잇 테이킹 쏘우 롱"
+     },
+     {
+      "en": "It's taking forever to dry.",
+      "ko": "말리는 데 끝이 없네.",
+      "kr": "잇츠 테이킹 f퍼레버r 터 드라이"
+     },
+     {
+      "en": "Drying her takes forever.",
+      "ko": "나니 말리는 건 한참 걸려.",
+      "kr": "드라잉 허r 테익스 f퍼레버r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It's taking forever",
+      "body": "끝이 안 난다 / 너무 오래 걸린다. 모두영어 2편 #2 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "It's taking",
+      "잇츠 테이킹",
+      "걸리고 있어"
+     ],
+     [
+      "forever.",
+      "f퍼레버r",
+      "끝없이"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ forever",
+      "forever 의 첫 f 는 윗니를 아랫입술에 — f퍼레버r"
+     ]
+    ],
+    "mistake": "take forever = 아주 오래 걸리다 (과장 표현)",
+    "similar": "It's taking a while.",
+    "category": "일상/반려동물",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bath-02-cant-handle",
+   "sentence": "I don't think I can handle it.",
+   "meaning": "나 혼자는 감당이 안 돼.",
+   "reading": null,
+   "phonetic_kr": "아이 돈 씽카이 컨 핸들릿",
+   "order_index": 2,
+   "explanation": {
+    "key": "I don't think ~ = ~은 아닌 것 같아 / 못 하겠어 (영상 #11). 모두영어 #265 I don't think I can handle it. 그대로",
+    "anchor": "감당이 안 돼",
+    "situation": "저녁. 나니를 혼자 목욕시켰다. 털이 많아 드라이만 30분이 걸렸다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you still drying Nani?",
+      "ko": "아직 나니 말리는 중이야?",
+      "kr": "아r 여 스틸 드라잉 나니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's taking forever.",
+      "ko": "끝이 안 나.",
+      "kr": "잇츠 테이킹 f퍼레버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "There's too much fur to see her skin.",
+      "ko": "털이 너무 많아서 피부가 안 보여.",
+      "kr": "데어r즈 투우 머치 f퍼r 터 씨이 허r 스킨"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think I can handle it.",
+      "ko": "나 혼자는 감당이 안 돼.",
+      "kr": "아이 돈 씽카이 컨 핸들릿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You don't have to do this alone.",
+      "ko": "혼자 다 할 필요 없어.",
+      "kr": "유 돈 해f터 두 디썰로운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to do it together next time.",
+      "ko": "다음엔 같이 하고 싶어.",
+      "kr": "아이드 라익 터 두잇 터게더r 넥스 타임"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Deal. Thanks for doing it today.",
+      "ko": "좋아. 오늘 해 줘서 고마워.",
+      "kr": "디일 쌩스 f퍼r 두잉잇 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't worry about it.",
+      "ko": "별거 아니야.",
+      "kr": "돈 워리 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I can handle it.",
+      "ko": "내가 할 수 있어.",
+      "kr": "아이 컨 핸들릿"
+     },
+     {
+      "en": "I don't think I'm ready.",
+      "ko": "아직 준비가 안 된 것 같아.",
+      "kr": "아이 돈 씽카임 레디"
+     },
+     {
+      "en": "She doesn't think it's a big deal.",
+      "ko": "소연은 별일 아니래.",
+      "kr": "쉬 더즌 씽킷처 빅 디일"
+     },
+     {
+      "en": "Don't you think she needs a trim?",
+      "ko": "털 좀 잘라야 하지 않아?",
+      "kr": "돈처 씽크 쉬 니이저 트림"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I don't think ~",
+      "body": "~은 아닌 것 같아 / 못 하겠어 (영상 #11). 모두영어 #265 I don't think I can handle it. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I don't",
+      "아이 돈",
+      "나는 ~아니다"
+     ],
+     [
+      "think I",
+      "씽카이",
+      "~라고 생각해"
+     ],
+     [
+      "can handle it.",
+      "컨 핸들릿",
+      "감당할 수 있다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ think I",
+      "think 의 k 가 I 와 붙는다 — 씽카이"
+     ]
+    ],
+    "mistake": "I think I can't 보다 I don't think I can 이 자연스럽다",
+    "similar": "I can't handle it.",
+    "category": "일상/반려동물",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bath-03-id-like-to",
+   "sentence": "I'd like to do it together next time.",
+   "meaning": "다음엔 같이 하고 싶어.",
+   "reading": null,
+   "phonetic_kr": "아이드 라익 터 두잇 터게더r 넥스 타임",
+   "order_index": 3,
+   "explanation": {
+    "key": "I'd like to ~ = ~하고 싶어 (부드럽게, 영상 #17). 233 뱅크 032 I'd like ~ 의 동사형",
+    "anchor": "싶어",
+    "situation": "저녁. 나니를 혼자 목욕시켰다. 털이 많아 드라이만 30분이 걸렸다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you still drying Nani?",
+      "ko": "아직 나니 말리는 중이야?",
+      "kr": "아r 여 스틸 드라잉 나니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's taking forever.",
+      "ko": "끝이 안 나.",
+      "kr": "잇츠 테이킹 f퍼레버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "There's too much fur to see her skin.",
+      "ko": "털이 너무 많아서 피부가 안 보여.",
+      "kr": "데어r즈 투우 머치 f퍼r 터 씨이 허r 스킨"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think I can handle it.",
+      "ko": "나 혼자는 감당이 안 돼.",
+      "kr": "아이 돈 씽카이 컨 핸들릿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You don't have to do this alone.",
+      "ko": "혼자 다 할 필요 없어.",
+      "kr": "유 돈 해f터 두 디썰로운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to do it together next time.",
+      "ko": "다음엔 같이 하고 싶어.",
+      "kr": "아이드 라익 터 두잇 터게더r 넥스 타임"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Deal. Thanks for doing it today.",
+      "ko": "좋아. 오늘 해 줘서 고마워.",
+      "kr": "디일 쌩스 f퍼r 두잉잇 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't worry about it.",
+      "ko": "별거 아니야.",
+      "kr": "돈 워리 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'd like to try that place.",
+      "ko": "그 집 가 보고 싶어.",
+      "kr": "아이드 라익 터 트라이 댓 플레이스"
+     },
+     {
+      "en": "I'd like a smaller towel.",
+      "ko": "더 작은 수건이 좋겠어.",
+      "kr": "아이드 라이커 스몰러r 타월"
+     },
+     {
+      "en": "Would you like to help?",
+      "ko": "도와줄래?",
+      "kr": "워저 라익 터 헬프"
+     },
+     {
+      "en": "She'd like to come along.",
+      "ko": "소연도 같이 가고 싶어 해.",
+      "kr": "쉬드 라익 터 커멀롱"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'd like to ~",
+      "body": "~하고 싶어 (부드럽게, 영상 #17). 233 뱅크 032 I'd like ~ 의 동사형"
+     }
+    ],
+    "chunks": [
+     [
+      "I'd like to",
+      "아이드 라익 터",
+      "~하고 싶어"
+     ],
+     [
+      "do it together",
+      "두잇 터게더r",
+      "같이 하다"
+     ],
+     [
+      "next time.",
+      "넥스 타임",
+      "다음에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ I'd",
+      "I'd 의 d 를 빼면 I 와 구별이 안 된다 — 아이드"
+     ]
+    ],
+    "mistake": "I'd like to = I would like to. I like to(습관) 와 다르다",
+    "similar": "I want to ~",
+    "category": "일상/반려동물",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bath-04-dont-worry",
+   "sentence": "Don't worry about it.",
+   "meaning": "별거 아니야.",
+   "reading": null,
+   "phonetic_kr": "돈 워리 어바우릿",
+   "order_index": 4,
+   "explanation": {
+    "key": "Don't worry about it = 별거 아니야 / 신경 쓰지 마. 모두영어 #81 그대로",
+    "anchor": "별거 아니야",
+    "situation": "저녁. 나니를 혼자 목욕시켰다. 털이 많아 드라이만 30분이 걸렸다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you still drying Nani?",
+      "ko": "아직 나니 말리는 중이야?",
+      "kr": "아r 여 스틸 드라잉 나니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's taking forever.",
+      "ko": "끝이 안 나.",
+      "kr": "잇츠 테이킹 f퍼레버r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "There's too much fur to see her skin.",
+      "ko": "털이 너무 많아서 피부가 안 보여.",
+      "kr": "데어r즈 투우 머치 f퍼r 터 씨이 허r 스킨"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think I can handle it.",
+      "ko": "나 혼자는 감당이 안 돼.",
+      "kr": "아이 돈 씽카이 컨 핸들릿"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You don't have to do this alone.",
+      "ko": "혼자 다 할 필요 없어.",
+      "kr": "유 돈 해f터 두 디썰로운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to do it together next time.",
+      "ko": "다음엔 같이 하고 싶어.",
+      "kr": "아이드 라익 터 두잇 터게더r 넥스 타임"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Deal. Thanks for doing it today.",
+      "ko": "좋아. 오늘 해 줘서 고마워.",
+      "kr": "디일 쌩스 f퍼r 두잉잇 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't worry about it.",
+      "ko": "별거 아니야.",
+      "kr": "돈 워리 어바우릿"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Don't worry about it too much.",
+      "ko": "너무 신경 쓰지 마.",
+      "kr": "돈 워리 어바우릿 투우 머치"
+     },
+     {
+      "en": "I'm not worried about it.",
+      "ko": "난 걱정 안 해.",
+      "kr": "아임 낫 워리더바우릿"
+     },
+     {
+      "en": "Are you worried about her?",
+      "ko": "나니 걱정돼?",
+      "kr": "아r 여 워리더바웃 허r"
+     },
+     {
+      "en": "She worries too much.",
+      "ko": "소연은 걱정이 너무 많아.",
+      "kr": "쉬 워리z 투우 머치"
+     },
+     {
+      "en": "Don't worry, I've got this.",
+      "ko": "걱정 마, 내가 할게.",
+      "kr": "돈 워리 아이v 갓 디스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Don't worry about it",
+      "body": "별거 아니야 / 신경 쓰지 마. 모두영어 #81 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "Don't worry",
+      "돈 워리",
+      "걱정 마"
+     ],
+     [
+      "about it.",
+      "어바우릿",
+      "그건"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ about it",
+      "about 의 t 가 뒤 모음과 붙어 ㄹ — 어바우릿"
+     ]
+    ],
+    "mistake": "worry about + 명사. worry for (X)",
+    "similar": "No problem.",
+    "category": "일상/위로",
+    "frequency": 9
+   }
+  }
+ ]
+}

@@ -1,0 +1,506 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-21",
+ "cards": [
+  {
+   "id": "en-personal-restaurant-01-looks-like",
+   "sentence": "It looks like there's one table left.",
+   "meaning": "자리 하나 남은 것 같아.",
+   "reading": null,
+   "phonetic_kr": "잇 룩스 라익 데어r즈 원 테이블 레f트",
+   "order_index": 1,
+   "explanation": {
+    "key": "It looks like ~ = 눈으로 보고 내리는 판단 (영상 #14)",
+    "anchor": "남은 것 같아",
+    "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "This place is packed.",
+      "ko": "여기 꽉 찼네.",
+      "kr": "디스 플레이씨z 팩트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like there's one table left.",
+      "ko": "자리 하나 남은 것 같아.",
+      "kr": "잇 룩스 라익 데어r즈 원 테이블 레f트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Lucky us. Let's grab it.",
+      "ko": "운 좋다. 앉자.",
+      "kr": "럭키 어스 렛츠 그래빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to eat.",
+      "ko": "빨리 먹고 싶다.",
+      "kr": "아이 캔트 웨잇 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Doesn't the meat smell a bit off?",
+      "ko": "고기 냄새 좀 이상하지 않아?",
+      "kr": "더즌 더 미잇 스멜러 비러f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think it's fresh.",
+      "ko": "신선하지 않은 것 같아.",
+      "kr": "아이 돈 씽킷츠 f프레쉬"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you almost done?",
+      "ko": "거의 다 먹었어?",
+      "kr": "아r 여 올모우스 던"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It looks like rain.",
+      "ko": "비 올 것 같아.",
+      "kr": "잇 룩스 라익 레인"
+     },
+     {
+      "en": "It looks like they're full.",
+      "ko": "만석인 것 같아.",
+      "kr": "잇 룩스 라익 데어r f풀"
+     },
+     {
+      "en": "Looks like we're early.",
+      "ko": "우리가 일찍 왔나 봐.",
+      "kr": "룩스 라익 위r 어r얼리"
+     },
+     {
+      "en": "Does it look like a long wait?",
+      "ko": "오래 기다려야 할 것 같아?",
+      "kr": "더z 잇 룩 라이커 러엉 웨잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It looks like ~",
+      "body": "눈으로 보고 내리는 판단 (영상 #14)"
+     }
+    ],
+    "chunks": [
+     [
+      "It looks like",
+      "잇 룩스 라익",
+      "~인 것 같아"
+     ],
+     [
+      "there's one table",
+      "데어r즈 원 테이블",
+      "자리 하나 있다"
+     ],
+     [
+      "left.",
+      "레f트",
+      "남은"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ left",
+      "left 의 f 는 윗니를 아랫입술에 대고 — 레f트"
+     ]
+    ],
+    "mistake": "It looks like + 절 / It looks + 형용사 (It looks good)",
+    "similar": "It seems like ~",
+    "category": "일상/외식",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-restaurant-02-cant-wait-to",
+   "sentence": "I can't wait to eat.",
+   "meaning": "빨리 먹고 싶다.",
+   "reading": null,
+   "phonetic_kr": "아이 캔트 웨잇 터 이잇",
+   "order_index": 2,
+   "explanation": {
+    "key": "I can't wait to ~ = 빨리 ~하고 싶다 / ~가 너무 기대된다 (영상 #28)",
+    "anchor": "빨리 먹고 싶다",
+    "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "This place is packed.",
+      "ko": "여기 꽉 찼네.",
+      "kr": "디스 플레이씨z 팩트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like there's one table left.",
+      "ko": "자리 하나 남은 것 같아.",
+      "kr": "잇 룩스 라익 데어r즈 원 테이블 레f트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Lucky us. Let's grab it.",
+      "ko": "운 좋다. 앉자.",
+      "kr": "럭키 어스 렛츠 그래빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to eat.",
+      "ko": "빨리 먹고 싶다.",
+      "kr": "아이 캔트 웨잇 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Doesn't the meat smell a bit off?",
+      "ko": "고기 냄새 좀 이상하지 않아?",
+      "kr": "더즌 더 미잇 스멜러 비러f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think it's fresh.",
+      "ko": "신선하지 않은 것 같아.",
+      "kr": "아이 돈 씽킷츠 f프레쉬"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you almost done?",
+      "ko": "거의 다 먹었어?",
+      "kr": "아r 여 올모우스 던"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I can't wait to get home.",
+      "ko": "빨리 집에 가고 싶어.",
+      "kr": "아이 캔트 웨잇 터 겟 호움"
+     },
+     {
+      "en": "I can't wait for the weekend.",
+      "ko": "주말이 너무 기다려져.",
+      "kr": "아이 캔트 웨잇 f퍼r 더 위이켄드"
+     },
+     {
+      "en": "She can't wait to try it.",
+      "ko": "소연은 빨리 먹어 보고 싶어 해.",
+      "kr": "쉬 캔트 웨잇 터 트라이 잇"
+     },
+     {
+      "en": "Can't you wait till we get home?",
+      "ko": "집에 갈 때까지 못 기다려?",
+      "kr": "캔트 여 웨잇 틸 위 겟 호움"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I can't wait to ~",
+      "body": "빨리 ~하고 싶다 / ~가 너무 기대된다 (영상 #28)"
+     }
+    ],
+    "chunks": [
+     [
+      "I can't wait",
+      "아이 캔트 웨잇",
+      "기다릴 수 없어"
+     ],
+     [
+      "to eat.",
+      "터 이잇",
+      "먹는 것을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ eat",
+      "eat 은 길게 이이 — 잇 으로 짧게 끊으면 it 으로 들린다"
+     ]
+    ],
+    "mistake": "can't wait to + 동사원형 / can't wait for + 명사",
+    "similar": "I'm looking forward to ~ing",
+    "category": "일상/외식",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-restaurant-03-dont-think",
+   "sentence": "I don't think it's fresh.",
+   "meaning": "신선하지 않은 것 같아.",
+   "reading": null,
+   "phonetic_kr": "아이 돈 씽킷츠 f프레쉬",
+   "order_index": 3,
+   "explanation": {
+    "key": "I don't think ~ = ~은 아닌 것 같아 (부드러운 부정, 영상 #11). 모두영어 #176 I don't think that's a good idea.",
+    "anchor": "않은 것 같아",
+    "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "This place is packed.",
+      "ko": "여기 꽉 찼네.",
+      "kr": "디스 플레이씨z 팩트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like there's one table left.",
+      "ko": "자리 하나 남은 것 같아.",
+      "kr": "잇 룩스 라익 데어r즈 원 테이블 레f트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Lucky us. Let's grab it.",
+      "ko": "운 좋다. 앉자.",
+      "kr": "럭키 어스 렛츠 그래빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to eat.",
+      "ko": "빨리 먹고 싶다.",
+      "kr": "아이 캔트 웨잇 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Doesn't the meat smell a bit off?",
+      "ko": "고기 냄새 좀 이상하지 않아?",
+      "kr": "더즌 더 미잇 스멜러 비러f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think it's fresh.",
+      "ko": "신선하지 않은 것 같아.",
+      "kr": "아이 돈 씽킷츠 f프레쉬"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you almost done?",
+      "ko": "거의 다 먹었어?",
+      "kr": "아r 여 올모우스 던"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I don't think that's a good idea.",
+      "ko": "좋은 생각은 아닌 것 같아.",
+      "kr": "아이 돈 씽크 댓처 구다이디어"
+     },
+     {
+      "en": "I don't think we need more.",
+      "ko": "더 시킬 필요는 없을 것 같아.",
+      "kr": "아이 돈 씽 퀴 니이드 모어r"
+     },
+     {
+      "en": "She doesn't think it's worth it.",
+      "ko": "소연은 그럴 가치가 없대.",
+      "kr": "쉬 더즌 씽킷츠 워r씻"
+     },
+     {
+      "en": "Don't you think it's too salty?",
+      "ko": "너무 짜지 않아?",
+      "kr": "돈 처 씽킷츠 투우 썰티"
+     },
+     {
+      "en": "I don't think I'm ready.",
+      "ko": "아직 준비가 안 된 것 같아.",
+      "kr": "아이 돈 씽카임 레디"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I don't think ~",
+      "body": "~은 아닌 것 같아 (부드러운 부정, 영상 #11). 모두영어 #176 I don't think that's a good idea."
+     }
+    ],
+    "chunks": [
+     [
+      "I don't",
+      "아이 돈",
+      "나는 ~아니다"
+     ],
+     [
+      "think it's",
+      "씽킷츠",
+      "~라고 생각해"
+     ],
+     [
+      "fresh.",
+      "f프레쉬",
+      "신선한"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/θ/ think",
+      "think 의 th 는 혀끝을 윗니에 살짝 대고 — 씽"
+     ]
+    ],
+    "mistake": "I think it's not ~ 보다 I don't think it's ~ 이 자연스럽다",
+    "similar": "I doubt ~",
+    "category": "일상/외식",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-restaurant-04-finishing-up",
+   "sentence": "I'm finishing up.",
+   "meaning": "마무리하는 중이야.",
+   "reading": null,
+   "phonetic_kr": "아임 f피니슁 업",
+   "order_index": 4,
+   "explanation": {
+    "key": "I'm finishing up = 거의 다 했어 / 마무리 중이야. 모두영어 #204 그대로 (finish up = 마저 끝내다)",
+    "anchor": "마무리",
+    "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "This place is packed.",
+      "ko": "여기 꽉 찼네.",
+      "kr": "디스 플레이씨z 팩트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like there's one table left.",
+      "ko": "자리 하나 남은 것 같아.",
+      "kr": "잇 룩스 라익 데어r즈 원 테이블 레f트"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Lucky us. Let's grab it.",
+      "ko": "운 좋다. 앉자.",
+      "kr": "럭키 어스 렛츠 그래빗"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I can't wait to eat.",
+      "ko": "빨리 먹고 싶다.",
+      "kr": "아이 캔트 웨잇 터 이잇"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Doesn't the meat smell a bit off?",
+      "ko": "고기 냄새 좀 이상하지 않아?",
+      "kr": "더즌 더 미잇 스멜러 비러f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think it's fresh.",
+      "ko": "신선하지 않은 것 같아.",
+      "kr": "아이 돈 씽킷츠 f프레쉬"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Are you almost done?",
+      "ko": "거의 다 먹었어?",
+      "kr": "아r 여 올모우스 던"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm almost done.",
+      "ko": "거의 다 했어.",
+      "kr": "아이몰모우스 던"
+     },
+     {
+      "en": "Are you almost done?",
+      "ko": "거의 다 했어?",
+      "kr": "아r 여 올모우스 던"
+     },
+     {
+      "en": "Let's finish up and go.",
+      "ko": "얼른 마저 먹고 가자.",
+      "kr": "렛츠 f피니셔번 고우"
+     },
+     {
+      "en": "I'm finishing up at work.",
+      "ko": "일 마무리하는 중이야.",
+      "kr": "아임 f피니슁 어팻 워r크"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm finishing up",
+      "body": "거의 다 했어 / 마무리 중이야. 모두영어 #204 그대로 (finish up = 마저 끝내다)"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm",
+      "아임",
+      "나는"
+     ],
+     [
+      "finishing up.",
+      "f피니슁 업",
+      "마무리하는 중"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃ/ finishing",
+      "finishing 의 sh 는 쉬 — 슁 으로 콧소리를 얹는다"
+     ]
+    ],
+    "mistake": "I finished 는 이미 끝냄. finishing up 은 끝내는 중",
+    "similar": "I'm almost done.",
+    "category": "일상/외식",
+    "frequency": 7
+   }
+  }
+ ]
+}

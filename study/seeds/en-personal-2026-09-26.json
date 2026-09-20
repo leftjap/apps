@@ -1,0 +1,501 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-26",
+ "cards": [
+  {
+   "id": "en-personal-back-01-my-back-hurts",
+   "sentence": "My back hurts.",
+   "meaning": "허리가 아파.",
+   "reading": null,
+   "phonetic_kr": "마이 백 허r츠",
+   "order_index": 1,
+   "explanation": {
+    "key": "My ~ hurts = ~가 아파. 233 뱅크 추가 42",
+    "anchor": "아파",
+    "situation": "저녁. 스쿼트와 데드리프트를 한 뒤 허리가 아팠다. 소연이 병원에 가 보라고 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you walking like that?",
+      "ko": "왜 그렇게 걸어?",
+      "kr": "와이 아r 여 워킹 라익 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My back hurts.",
+      "ko": "허리가 아파.",
+      "kr": "마이 백 허r츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What did you do?",
+      "ko": "뭐 했는데?",
+      "kr": "왓 디저 두"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it was the deadlifts.",
+      "ko": "데드리프트 때문인지 모르겠어.",
+      "kr": "아임 낫 슈어r 이f 잇 워z 더 데들리f츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I think you should see a doctor.",
+      "ko": "병원에 가 보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 씨이어 닥터r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not that bad.",
+      "ko": "그 정도는 아니야.",
+      "kr": "잇츠 낫 댓 배드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You should get some rest.",
+      "ko": "좀 쉬어야 해.",
+      "kr": "유 슈드 겟 썸 레스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll let you know if it gets worse.",
+      "ko": "더 나빠지면 알려줄게.",
+      "kr": "아일 레처 노우 이f 잇 겟츠 워r스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "My knee hurts.",
+      "ko": "무릎이 아파.",
+      "kr": "마이 니이 허r츠"
+     },
+     {
+      "en": "Does it hurt here?",
+      "ko": "여기가 아파?",
+      "kr": "더z 잇 허r트 히어r"
+     },
+     {
+      "en": "Her eyes hurt at night.",
+      "ko": "나니는 밤에 눈이 아파해.",
+      "kr": "허r 아이z 허r텟 나잇"
+     },
+     {
+      "en": "It hurts when I bend.",
+      "ko": "숙이면 아파.",
+      "kr": "잇 허r츠 웨나이 벤드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "My ~ hurts",
+      "body": "~가 아파. 233 뱅크 추가 42"
+     }
+    ],
+    "chunks": [
+     [
+      "My back",
+      "마이 백",
+      "내 허리가"
+     ],
+     [
+      "hurts.",
+      "허r츠",
+      "아프다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/r/ hurts",
+      "hurts 의 r 은 혀를 말아 넣는다 — 허r츠"
+     ]
+    ],
+    "mistake": "hurt 는 동사. My back is hurt (X)",
+    "similar": "I have a backache.",
+    "category": "건강/통증",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-back-02-not-sure-if",
+   "sentence": "I'm not sure if it was the deadlifts.",
+   "meaning": "데드리프트 때문인지 모르겠어.",
+   "reading": null,
+   "phonetic_kr": "아임 낫 슈어r 이f 잇 워z 더 데들리f츠",
+   "order_index": 2,
+   "explanation": {
+    "key": "I'm not sure if ~ = ~인지 확신이 안 선다 (영상 #10)",
+    "anchor": "모르겠어",
+    "situation": "저녁. 스쿼트와 데드리프트를 한 뒤 허리가 아팠다. 소연이 병원에 가 보라고 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you walking like that?",
+      "ko": "왜 그렇게 걸어?",
+      "kr": "와이 아r 여 워킹 라익 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My back hurts.",
+      "ko": "허리가 아파.",
+      "kr": "마이 백 허r츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What did you do?",
+      "ko": "뭐 했는데?",
+      "kr": "왓 디저 두"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it was the deadlifts.",
+      "ko": "데드리프트 때문인지 모르겠어.",
+      "kr": "아임 낫 슈어r 이f 잇 워z 더 데들리f츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I think you should see a doctor.",
+      "ko": "병원에 가 보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 씨이어 닥터r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not that bad.",
+      "ko": "그 정도는 아니야.",
+      "kr": "잇츠 낫 댓 배드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You should get some rest.",
+      "ko": "좀 쉬어야 해.",
+      "kr": "유 슈드 겟 썸 레스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll let you know if it gets worse.",
+      "ko": "더 나빠지면 알려줄게.",
+      "kr": "아일 레처 노우 이f 잇 겟츠 워r스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm not sure if I should go.",
+      "ko": "가야 할지 모르겠어.",
+      "kr": "아임 낫 슈어r 이f 아이 슈드 고우"
+     },
+     {
+      "en": "I'm not sure if the clinic is open.",
+      "ko": "병원이 문 열었는지 모르겠어.",
+      "kr": "아임 낫 슈어r 이f 더 클리니키z 오우픈"
+     },
+     {
+      "en": "We're not sure if it's serious.",
+      "ko": "심각한 건지 모르겠어.",
+      "kr": "위r 낫 슈어r 이f 잇츠 씨리어스"
+     },
+     {
+      "en": "Are you sure it was the squats?",
+      "ko": "스쿼트 때문인 거 확실해?",
+      "kr": "아r 여 슈어r 잇 워z 더 스쿼츠"
+     },
+     {
+      "en": "I'm not sure yet.",
+      "ko": "아직 모르겠어.",
+      "kr": "아임 낫 슈어r 옛"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm not sure if ~",
+      "body": "~인지 확신이 안 선다 (영상 #10)"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm not sure",
+      "아임 낫 슈어r",
+      "잘 모르겠어"
+     ],
+     [
+      "if it was",
+      "이f 잇 워z",
+      "~였는지"
+     ],
+     [
+      "the deadlifts.",
+      "더 데들리f츠",
+      "데드리프트"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃ/ sure",
+      "sure 의 s 는 쉬 소리 — 슈어r"
+     ]
+    ],
+    "mistake": "if 뒤에 완전한 절. I'm not sure if it. (X)",
+    "similar": "I'm not sure whether ~",
+    "category": "건강/통증",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-back-03-not-that-bad",
+   "sentence": "It's not that bad.",
+   "meaning": "그 정도는 아니야.",
+   "reading": null,
+   "phonetic_kr": "잇츠 낫 댓 배드",
+   "order_index": 3,
+   "explanation": {
+    "key": "It's not that bad = 그 정도는 아니야. 모두영어 #192 그대로 (that = 그렇게)",
+    "anchor": "그 정도는",
+    "situation": "저녁. 스쿼트와 데드리프트를 한 뒤 허리가 아팠다. 소연이 병원에 가 보라고 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you walking like that?",
+      "ko": "왜 그렇게 걸어?",
+      "kr": "와이 아r 여 워킹 라익 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My back hurts.",
+      "ko": "허리가 아파.",
+      "kr": "마이 백 허r츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What did you do?",
+      "ko": "뭐 했는데?",
+      "kr": "왓 디저 두"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it was the deadlifts.",
+      "ko": "데드리프트 때문인지 모르겠어.",
+      "kr": "아임 낫 슈어r 이f 잇 워z 더 데들리f츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I think you should see a doctor.",
+      "ko": "병원에 가 보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 씨이어 닥터r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not that bad.",
+      "ko": "그 정도는 아니야.",
+      "kr": "잇츠 낫 댓 배드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You should get some rest.",
+      "ko": "좀 쉬어야 해.",
+      "kr": "유 슈드 겟 썸 레스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll let you know if it gets worse.",
+      "ko": "더 나빠지면 알려줄게.",
+      "kr": "아일 레처 노우 이f 잇 겟츠 워r스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It could be worse.",
+      "ko": "더 나쁠 수도 있었어.",
+      "kr": "잇 커드 비 워r스"
+     },
+     {
+      "en": "It's not that bad when I sit.",
+      "ko": "앉아 있으면 그렇게 심하진 않아.",
+      "kr": "잇츠 낫 댓 배드 웨나이 씻"
+     },
+     {
+      "en": "Is it that bad?",
+      "ko": "그렇게 심해?",
+      "kr": "이z 잇 댓 배드"
+     },
+     {
+      "en": "The pain isn't that bad today.",
+      "ko": "오늘은 통증이 그렇게 심하진 않아.",
+      "kr": "더 페이니즌 댓 배드 터데이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It's not that bad",
+      "body": "그 정도는 아니야. 모두영어 #192 그대로 (that = 그렇게)"
+     }
+    ],
+    "chunks": [
+     [
+      "It's not",
+      "잇츠 낫",
+      "~아니야"
+     ],
+     [
+      "that bad.",
+      "댓 배드",
+      "그렇게 심한"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ð/ that",
+      "that 의 th 는 유성음 — 댓"
+     ]
+    ],
+    "mistake": "that 은 부사 '그렇게'. so bad 와 같은 뜻",
+    "similar": "It could be worse.",
+    "category": "건강/통증",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-back-04-let-you-know",
+   "sentence": "I'll let you know if it gets worse.",
+   "meaning": "더 나빠지면 알려줄게.",
+   "reading": null,
+   "phonetic_kr": "아일 레처 노우 이f 잇 겟츠 워r스",
+   "order_index": 4,
+   "explanation": {
+    "key": "I'll let you know ~ = 알려줄게 (영상 #26)",
+    "anchor": "알려줄게",
+    "situation": "저녁. 스쿼트와 데드리프트를 한 뒤 허리가 아팠다. 소연이 병원에 가 보라고 했다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you walking like that?",
+      "ko": "왜 그렇게 걸어?",
+      "kr": "와이 아r 여 워킹 라익 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My back hurts.",
+      "ko": "허리가 아파.",
+      "kr": "마이 백 허r츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "What did you do?",
+      "ko": "뭐 했는데?",
+      "kr": "왓 디저 두"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it was the deadlifts.",
+      "ko": "데드리프트 때문인지 모르겠어.",
+      "kr": "아임 낫 슈어r 이f 잇 워z 더 데들리f츠"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I think you should see a doctor.",
+      "ko": "병원에 가 보는 게 좋겠어.",
+      "kr": "아이 씽켜 슈드 씨이어 닥터r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not that bad.",
+      "ko": "그 정도는 아니야.",
+      "kr": "잇츠 낫 댓 배드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You should get some rest.",
+      "ko": "좀 쉬어야 해.",
+      "kr": "유 슈드 겟 썸 레스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll let you know if it gets worse.",
+      "ko": "더 나빠지면 알려줄게.",
+      "kr": "아일 레처 노우 이f 잇 겟츠 워r스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'll let you know when I leave.",
+      "ko": "나갈 때 알려줄게.",
+      "kr": "아일 레처 노우 웨나이 리이v"
+     },
+     {
+      "en": "I'll let you know if I'm late.",
+      "ko": "늦으면 알려줄게.",
+      "kr": "아일 레처 노우 이f 아임 레잇"
+     },
+     {
+      "en": "She'll let me know when she lands.",
+      "ko": "소연이 착륙하면 알려줄 거야.",
+      "kr": "쉴 렛 미 노우 웬 쉬 랜z"
+     },
+     {
+      "en": "Just let me know where you are.",
+      "ko": "어디 있는지만 알려줘.",
+      "kr": "저스 렛 미 노우 웨어r 여 아r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'll let you know ~",
+      "body": "알려줄게 (영상 #26)"
+     }
+    ],
+    "chunks": [
+     [
+      "I'll let you know",
+      "아일 레처 노우",
+      "알려줄게"
+     ],
+     [
+      "if it gets worse.",
+      "이f 잇 겟츠 워r스",
+      "더 나빠지면"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/tj/ let you",
+      "let 의 t 와 you 가 붙어 처 가 된다 — 레처"
+     ]
+    ],
+    "mistake": "let you to know (X)",
+    "similar": "I'll keep you posted.",
+    "category": "건강/통증",
+    "frequency": 9
+   }
+  }
+ ]
+}

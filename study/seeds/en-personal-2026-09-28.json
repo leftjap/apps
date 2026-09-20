@@ -1,0 +1,506 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-28",
+ "cards": [
+  {
+   "id": "en-personal-morning-01-dont-think-need",
+   "sentence": "I don't think we need it anymore.",
+   "meaning": "이제 안 쓸 것 같아서.",
+   "reading": null,
+   "phonetic_kr": "아이 돈 씽 퀴 니이디래니모어r",
+   "order_index": 1,
+   "explanation": {
+    "key": "I don't think ~ = ~은 아닌 것 같아 (부드러운 부정, 영상 #11)",
+    "anchor": "안 쓸 것 같아",
+    "situation": "아침. 소연이 출근 준비를 하는 동안 낡은 채반을 버리려다 소연이 인상을 썼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you throwing that out? It's still fine.",
+      "ko": "그거 왜 버려? 아직 멀쩡한데.",
+      "kr": "와이 아r 여 쓰로우잉 대라웃 잇츠 스틸 f파인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think we need it anymore.",
+      "ko": "이제 안 쓸 것 같아서.",
+      "kr": "아이 돈 씽 퀴 니이디래니모어r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "It's perfectly fine. You didn't even ask.",
+      "ko": "멀쩡하잖아. 물어보지도 않았잖아.",
+      "kr": "잇츠 퍼r f픽틀리 f파인 유 디드니이븐 애스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to.",
+      "ko": "일부러 그런 거 아니야.",
+      "kr": "아이 디든 미인 투"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just ask me first next time.",
+      "ko": "다음엔 먼저 물어봐.",
+      "kr": "저스태스크 미 f퍼r스 넥스 타임"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It won't happen again.",
+      "ko": "다시는 안 그럴게.",
+      "kr": "잇 워운 해프너겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Let's just move on.",
+      "ko": "알았어. 그냥 넘어가자.",
+      "kr": "f파인 렛츠 저스 무우v 온"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "How can I make it up to you?",
+      "ko": "어떻게 하면 풀릴까?",
+      "kr": "하우 커나이 메이키럽 터 유"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I don't think we use it.",
+      "ko": "우리 그거 안 쓰는 것 같은데.",
+      "kr": "아이 돈 씽 퀴 유우z 잇"
+     },
+     {
+      "en": "I don't think it's worth keeping.",
+      "ko": "갖고 있을 만한 건 아닌 것 같아.",
+      "kr": "아이 돈 씽킷츠 워r쓰 키이핑"
+     },
+     {
+      "en": "She doesn't think it's old.",
+      "ko": "소연은 낡은 게 아니래.",
+      "kr": "쉬 더즌 씽킷초울드"
+     },
+     {
+      "en": "Don't you think we have too much stuff?",
+      "ko": "우리 물건이 너무 많지 않아?",
+      "kr": "돈처 씽 퀴 해v 투우 머치 스터f"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I don't think ~",
+      "body": "~은 아닌 것 같아 (부드러운 부정, 영상 #11)"
+     }
+    ],
+    "chunks": [
+     [
+      "I don't",
+      "아이 돈",
+      "나는 ~아니다"
+     ],
+     [
+      "think we",
+      "씽 퀴",
+      "~라고 생각해"
+     ],
+     [
+      "need it anymore.",
+      "니이디래니모어r",
+      "이제 그게 필요하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ need it",
+      "need 의 d 가 it 과 붙어 ㄹ 로 흐른다 — 니이디래니모어r"
+     ]
+    ],
+    "mistake": "I think it's not ~ 보다 I don't think it's ~ 이 자연스럽다",
+    "similar": "I doubt ~",
+    "category": "일상/집안일",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-morning-02-didnt-mean-to",
+   "sentence": "I didn't mean to.",
+   "meaning": "일부러 그런 거 아니야.",
+   "reading": null,
+   "phonetic_kr": "아이 디든 미인 투",
+   "order_index": 2,
+   "explanation": {
+    "key": "I didn't mean to ~ = 일부러 그런 거 아니야 / ~하려던 게 아니야 (영상 #27). 모두영어 #15 I didn't mean to. 그대로",
+    "anchor": "일부러",
+    "situation": "아침. 소연이 출근 준비를 하는 동안 낡은 채반을 버리려다 소연이 인상을 썼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you throwing that out? It's still fine.",
+      "ko": "그거 왜 버려? 아직 멀쩡한데.",
+      "kr": "와이 아r 여 쓰로우잉 대라웃 잇츠 스틸 f파인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think we need it anymore.",
+      "ko": "이제 안 쓸 것 같아서.",
+      "kr": "아이 돈 씽 퀴 니이디래니모어r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "It's perfectly fine. You didn't even ask.",
+      "ko": "멀쩡하잖아. 물어보지도 않았잖아.",
+      "kr": "잇츠 퍼r f픽틀리 f파인 유 디드니이븐 애스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to.",
+      "ko": "일부러 그런 거 아니야.",
+      "kr": "아이 디든 미인 투"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just ask me first next time.",
+      "ko": "다음엔 먼저 물어봐.",
+      "kr": "저스태스크 미 f퍼r스 넥스 타임"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It won't happen again.",
+      "ko": "다시는 안 그럴게.",
+      "kr": "잇 워운 해프너겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Let's just move on.",
+      "ko": "알았어. 그냥 넘어가자.",
+      "kr": "f파인 렛츠 저스 무우v 온"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "How can I make it up to you?",
+      "ko": "어떻게 하면 풀릴까?",
+      "kr": "하우 커나이 메이키럽 터 유"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I didn't mean to hurt you.",
+      "ko": "상처 주려던 게 아니야.",
+      "kr": "아이 디든 미인 터 허r처"
+     },
+     {
+      "en": "I didn't mean to throw it out.",
+      "ko": "버리려던 게 아니야.",
+      "kr": "아이 디든 미인 터 쓰로우 이라웃"
+     },
+     {
+      "en": "She didn't mean to snap at you.",
+      "ko": "소연이 일부러 쏘아붙인 게 아니야.",
+      "kr": "쉬 디든 미인 터 스내팻 유"
+     },
+     {
+      "en": "Did you mean to do that?",
+      "ko": "일부러 그런 거야?",
+      "kr": "디저 미인 터 두 댓"
+     },
+     {
+      "en": "It was an accident.",
+      "ko": "실수였어.",
+      "kr": "잇 워z 어낵씨던트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I didn't mean to ~",
+      "body": "일부러 그런 거 아니야 / ~하려던 게 아니야 (영상 #27). 모두영어 #15 I didn't mean to. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I didn't",
+      "아이 디든",
+      "나는 ~안 했어"
+     ],
+     [
+      "mean to.",
+      "미인 투",
+      "그러려고"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ mean",
+      "mean 은 길게 미인 — 짧게 끊으면 min 으로 들린다"
+     ]
+    ],
+    "mistake": "mean to + 동사원형. 뒤를 생략하면 '일부러 그런 거 아니야'",
+    "similar": "It was an accident.",
+    "category": "일상/집안일",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-morning-03-wont-happen-again",
+   "sentence": "It won't happen again.",
+   "meaning": "다시는 안 그럴게.",
+   "reading": null,
+   "phonetic_kr": "잇 워운 해프너겐",
+   "order_index": 3,
+   "explanation": {
+    "key": "~ won't happen again = 다시는 안 그럴게. 모두영어 #277 그대로",
+    "anchor": "다시는",
+    "situation": "아침. 소연이 출근 준비를 하는 동안 낡은 채반을 버리려다 소연이 인상을 썼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you throwing that out? It's still fine.",
+      "ko": "그거 왜 버려? 아직 멀쩡한데.",
+      "kr": "와이 아r 여 쓰로우잉 대라웃 잇츠 스틸 f파인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think we need it anymore.",
+      "ko": "이제 안 쓸 것 같아서.",
+      "kr": "아이 돈 씽 퀴 니이디래니모어r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "It's perfectly fine. You didn't even ask.",
+      "ko": "멀쩡하잖아. 물어보지도 않았잖아.",
+      "kr": "잇츠 퍼r f픽틀리 f파인 유 디드니이븐 애스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to.",
+      "ko": "일부러 그런 거 아니야.",
+      "kr": "아이 디든 미인 투"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just ask me first next time.",
+      "ko": "다음엔 먼저 물어봐.",
+      "kr": "저스태스크 미 f퍼r스 넥스 타임"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It won't happen again.",
+      "ko": "다시는 안 그럴게.",
+      "kr": "잇 워운 해프너겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Let's just move on.",
+      "ko": "알았어. 그냥 넘어가자.",
+      "kr": "f파인 렛츠 저스 무우v 온"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "How can I make it up to you?",
+      "ko": "어떻게 하면 풀릴까?",
+      "kr": "하우 커나이 메이키럽 터 유"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It won't take long.",
+      "ko": "오래 안 걸려.",
+      "kr": "잇 워운 테익 롱"
+     },
+     {
+      "en": "I won't be too late.",
+      "ko": "너무 늦진 않을게.",
+      "kr": "아이 워운 비 투우 레잇"
+     },
+     {
+      "en": "Don't let it happen again.",
+      "ko": "다시는 그러지 마.",
+      "kr": "돈 레릿 해프너겐"
+     },
+     {
+      "en": "That won't happen again.",
+      "ko": "그런 일은 다시 없을 거야.",
+      "kr": "댓 워운 해프너겐"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "~ won't happen again",
+      "body": "다시는 안 그럴게. 모두영어 #277 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "It won't",
+      "잇 워운",
+      "그런 일은 없을 거야"
+     ],
+     [
+      "happen again.",
+      "해프너겐",
+      "다시 일어나다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/n/ happen again",
+      "happen 의 n 이 again 과 붙는다 — 해프너겐"
+     ]
+    ],
+    "mistake": "won't = will not. It won't happens (X)",
+    "similar": "I promise.",
+    "category": "일상/집안일",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-morning-04-make-it-up",
+   "sentence": "How can I make it up to you?",
+   "meaning": "어떻게 하면 풀릴까?",
+   "reading": null,
+   "phonetic_kr": "하우 커나이 메이키럽 터 유",
+   "order_index": 4,
+   "explanation": {
+    "key": "make it up to ~ = 어떻게 하면 풀릴까 / 어떻게 만회할까. 모두영어 #250 그대로 (make it up to = 보상하다)",
+    "anchor": "풀릴까",
+    "situation": "아침. 소연이 출근 준비를 하는 동안 낡은 채반을 버리려다 소연이 인상을 썼다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Why are you throwing that out? It's still fine.",
+      "ko": "그거 왜 버려? 아직 멀쩡한데.",
+      "kr": "와이 아r 여 쓰로우잉 대라웃 잇츠 스틸 f파인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think we need it anymore.",
+      "ko": "이제 안 쓸 것 같아서.",
+      "kr": "아이 돈 씽 퀴 니이디래니모어r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "It's perfectly fine. You didn't even ask.",
+      "ko": "멀쩡하잖아. 물어보지도 않았잖아.",
+      "kr": "잇츠 퍼r f픽틀리 f파인 유 디드니이븐 애스크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to.",
+      "ko": "일부러 그런 거 아니야.",
+      "kr": "아이 디든 미인 투"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just ask me first next time.",
+      "ko": "다음엔 먼저 물어봐.",
+      "kr": "저스태스크 미 f퍼r스 넥스 타임"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It won't happen again.",
+      "ko": "다시는 안 그럴게.",
+      "kr": "잇 워운 해프너겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Let's just move on.",
+      "ko": "알았어. 그냥 넘어가자.",
+      "kr": "f파인 렛츠 저스 무우v 온"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "How can I make it up to you?",
+      "ko": "어떻게 하면 풀릴까?",
+      "kr": "하우 커나이 메이키럽 터 유"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'll make it up to you.",
+      "ko": "내가 만회할게.",
+      "kr": "아일 메이키럽 터 유"
+     },
+     {
+      "en": "Let me make it up to you tonight.",
+      "ko": "오늘 밤 내가 풀어 줄게.",
+      "kr": "렛 미 메이키럽 터 여 터나잇"
+     },
+     {
+      "en": "How can I help?",
+      "ko": "내가 뭘 도우면 돼?",
+      "kr": "하우 커나이 헬프"
+     },
+     {
+      "en": "She made it up to me with dinner.",
+      "ko": "소연이 저녁으로 풀어 줬어.",
+      "kr": "쉬 메이디럽 터 미 위드 디너r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "make it up to ~",
+      "body": "어떻게 하면 풀릴까 / 어떻게 만회할까. 모두영어 #250 그대로 (make it up to = 보상하다)"
+     }
+    ],
+    "chunks": [
+     [
+      "How can I",
+      "하우 커나이",
+      "어떻게 하면"
+     ],
+     [
+      "make it up",
+      "메이키럽",
+      "만회하다"
+     ],
+     [
+      "to you?",
+      "터 유",
+      "너에게"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ make it up",
+      "make 의 k 와 it 의 t 가 뒤 모음에 붙는다 — 메이키럽"
+     ]
+    ],
+    "mistake": "make up(화해하다) 과 make it up to(보상하다) 구별",
+    "similar": "I'll make it up to you.",
+    "category": "일상/집안일",
+    "frequency": 7
+   }
+  }
+ ]
+}

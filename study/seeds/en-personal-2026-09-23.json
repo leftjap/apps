@@ -1,0 +1,501 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-09-23",
+ "cards": [
+  {
+   "id": "en-personal-gym-01-ive-been",
+   "sentence": "I've been working out.",
+   "meaning": "운동하고 있어.",
+   "reading": null,
+   "phonetic_kr": "아이v 빈 워r킹 아웃",
+   "order_index": 1,
+   "explanation": {
+    "key": "I've been ~ = 요즘 계속 ~ing 하고 있다 (영상 #5). 모두영어 #54 I've been working out. 그대로",
+    "anchor": "운동하고 있어",
+    "situation": "저녁. 어제 하루 종일 기분이 가라앉았는데 소연은 운동을 안 가서 그렇다고 했다. 오늘 운동을 다녀왔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You look better today.",
+      "ko": "오늘은 얼굴이 낫네.",
+      "kr": "유 룩 베러r 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been working out.",
+      "ko": "운동하고 있어.",
+      "kr": "아이v 빈 워r킹 아웃"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "See? I told you it wasn't the money.",
+      "ko": "거봐, 돈 때문이 아니랬잖아.",
+      "kr": "씨이 아이 톨저 잇 워즌 더 머니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I like you.",
+      "ko": "그래서 내가 널 좋아하는 거야.",
+      "kr": "댓츠 와이 아이 라이켜"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Have you lost weight, at least?",
+      "ko": "살은 좀 빠졌고?",
+      "kr": "해v 여 로스 웨잇 엇 리이스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, my weight hasn't changed.",
+      "ko": "그게, 몸무게는 그대로야.",
+      "kr": "더 씽 이z 마이 웨잇 해즌 체인지드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Don't overthink it.",
+      "ko": "너무 깊게 생각하지 마.",
+      "kr": "도노우버r씽킷"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's see how it goes.",
+      "ko": "어떻게 되나 보자.",
+      "kr": "렛츠 씨이 하우 잇 고우z"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been sleeping better.",
+      "ko": "요즘 잠을 더 잘 자.",
+      "kr": "아이v 빈 슬리이핑 베러r"
+     },
+     {
+      "en": "Nani's been sleeping on my desk.",
+      "ko": "나니가 요즘 내 책상에서 자.",
+      "kr": "나니z 빈 슬리이핑 온 마이 데스크"
+     },
+     {
+      "en": "Have you been running?",
+      "ko": "요즘 뛰어?",
+      "kr": "해v 여 빈 러닝"
+     },
+     {
+      "en": "I've been really busy.",
+      "ko": "요즘 정말 바빴어.",
+      "kr": "아이v 빈 리얼리 비지"
+     },
+     {
+      "en": "I've been eating less at night.",
+      "ko": "요즘 밤에 덜 먹고 있어.",
+      "kr": "아이v 비니이링 레썻 나잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "요즘 계속 ~ing 하고 있다 (영상 #5). 모두영어 #54 I've been working out. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "I've been",
+      "아이v 빈",
+      "계속 ~해 왔어"
+     ],
+     [
+      "working out.",
+      "워r킹 아웃",
+      "운동하는 중"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ I've",
+      "I've 의 v 를 빼면 I 와 구별이 안 된다 — 아이v"
+     ]
+    ],
+    "mistake": "I've been go (X) → I've been going",
+    "similar": "I keep ~ing",
+    "category": "일상/운동",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-gym-02-thats-why",
+   "sentence": "That's why I like you.",
+   "meaning": "그래서 내가 널 좋아하는 거야.",
+   "reading": null,
+   "phonetic_kr": "댓츠 와이 아이 라이켜",
+   "order_index": 2,
+   "explanation": {
+    "key": "That's why ~ = 그래서 ~인 거야 (앞말이 이유, 영상 #29). 모두영어 #325 That's why I like you. 그대로",
+    "anchor": "그래서",
+    "situation": "저녁. 어제 하루 종일 기분이 가라앉았는데 소연은 운동을 안 가서 그렇다고 했다. 오늘 운동을 다녀왔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You look better today.",
+      "ko": "오늘은 얼굴이 낫네.",
+      "kr": "유 룩 베러r 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been working out.",
+      "ko": "운동하고 있어.",
+      "kr": "아이v 빈 워r킹 아웃"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "See? I told you it wasn't the money.",
+      "ko": "거봐, 돈 때문이 아니랬잖아.",
+      "kr": "씨이 아이 톨저 잇 워즌 더 머니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I like you.",
+      "ko": "그래서 내가 널 좋아하는 거야.",
+      "kr": "댓츠 와이 아이 라이켜"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Have you lost weight, at least?",
+      "ko": "살은 좀 빠졌고?",
+      "kr": "해v 여 로스 웨잇 엇 리이스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, my weight hasn't changed.",
+      "ko": "그게, 몸무게는 그대로야.",
+      "kr": "더 씽 이z 마이 웨잇 해즌 체인지드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Don't overthink it.",
+      "ko": "너무 깊게 생각하지 마.",
+      "kr": "도노우버r씽킷"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's see how it goes.",
+      "ko": "어떻게 되나 보자.",
+      "kr": "렛츠 씨이 하우 잇 고우z"
+     }
+    ],
+    "drills": [
+     {
+      "en": "That's why I'm tired.",
+      "ko": "그래서 피곤한 거야.",
+      "kr": "댓츠 와이 아임 타이어r드"
+     },
+     {
+      "en": "That's why she was right.",
+      "ko": "그래서 소연 말이 맞았던 거야.",
+      "kr": "댓츠 와이 쉬 워z 라잇"
+     },
+     {
+      "en": "Is that why you went?",
+      "ko": "그래서 간 거야?",
+      "kr": "이z 댓 와이 여 웬트"
+     },
+     {
+      "en": "This is why I run.",
+      "ko": "이래서 내가 뛰는 거야.",
+      "kr": "디시z 와이 아이 런"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "That's why ~",
+      "body": "그래서 ~인 거야 (앞말이 이유, 영상 #29). 모두영어 #325 That's why I like you. 그대로"
+     }
+    ],
+    "chunks": [
+     [
+      "That's why",
+      "댓츠 와이",
+      "그래서"
+     ],
+     [
+      "I like you.",
+      "아이 라이켜",
+      "내가 너를 좋아해"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/kj/ like you",
+      "like 의 k 와 you 가 붙어 켜 가 된다 — 라이켜"
+     ]
+    ],
+    "mistake": "'왜?' 질문의 답이 아니다. 앞에 나온 말을 이유로 받을 때만",
+    "similar": "That's the reason ~",
+    "category": "일상/대화",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-gym-03-thing-is",
+   "sentence": "The thing is, my weight hasn't changed.",
+   "meaning": "그게, 몸무게는 그대로야.",
+   "reading": null,
+   "phonetic_kr": "더 씽 이z 마이 웨잇 해즌 체인지드",
+   "order_index": 3,
+   "explanation": {
+    "key": "The thing is, ~ = 사정을 꺼낼 때 쓰는 서두 (영상 #21)",
+    "anchor": "그게",
+    "situation": "저녁. 어제 하루 종일 기분이 가라앉았는데 소연은 운동을 안 가서 그렇다고 했다. 오늘 운동을 다녀왔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You look better today.",
+      "ko": "오늘은 얼굴이 낫네.",
+      "kr": "유 룩 베러r 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been working out.",
+      "ko": "운동하고 있어.",
+      "kr": "아이v 빈 워r킹 아웃"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "See? I told you it wasn't the money.",
+      "ko": "거봐, 돈 때문이 아니랬잖아.",
+      "kr": "씨이 아이 톨저 잇 워즌 더 머니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I like you.",
+      "ko": "그래서 내가 널 좋아하는 거야.",
+      "kr": "댓츠 와이 아이 라이켜"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Have you lost weight, at least?",
+      "ko": "살은 좀 빠졌고?",
+      "kr": "해v 여 로스 웨잇 엇 리이스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, my weight hasn't changed.",
+      "ko": "그게, 몸무게는 그대로야.",
+      "kr": "더 씽 이z 마이 웨잇 해즌 체인지드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Don't overthink it.",
+      "ko": "너무 깊게 생각하지 마.",
+      "kr": "도노우버r씽킷"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's see how it goes.",
+      "ko": "어떻게 되나 보자.",
+      "kr": "렛츠 씨이 하우 잇 고우z"
+     }
+    ],
+    "drills": [
+     {
+      "en": "The thing is, I'm still tired.",
+      "ko": "그게, 아직 피곤해.",
+      "kr": "더 씽 이z 아임 스틸 타이어r드"
+     },
+     {
+      "en": "The thing is, I skipped yesterday.",
+      "ko": "그게, 어제 빠졌거든.",
+      "kr": "더 씽 이z 아이 스킵 예스터r데이"
+     },
+     {
+      "en": "Here's the thing. I hate running.",
+      "ko": "그게 말이야. 뛰는 거 싫어.",
+      "kr": "히어r즈 더 씽 아이 헤잇 러닝"
+     },
+     {
+      "en": "Problem is, the gym closes at ten.",
+      "ko": "문제는 체육관이 열 시에 닫는다는 거야.",
+      "kr": "프라블러미z 더 짐 클로우지z 엇 텐"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "The thing is, ~",
+      "body": "사정을 꺼낼 때 쓰는 서두 (영상 #21)"
+     }
+    ],
+    "chunks": [
+     [
+      "The thing is,",
+      "더 씽 이z",
+      "그게 말이야"
+     ],
+     [
+      "my weight",
+      "마이 웨잇",
+      "내 몸무게"
+     ],
+     [
+      "hasn't changed.",
+      "해즌 체인지드",
+      "안 변했어"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ is",
+      "is 의 s 는 유성 z — 이z"
+     ]
+    ],
+    "mistake": "회화에선 that 을 뺀다",
+    "similar": "Here's the thing.",
+    "category": "일상/대화",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-gym-04-lets-see",
+   "sentence": "Let's see how it goes.",
+   "meaning": "어떻게 되나 보자.",
+   "reading": null,
+   "phonetic_kr": "렛츠 씨이 하우 잇 고우z",
+   "order_index": 4,
+   "explanation": {
+    "key": "Let's see how ~ = 어떻게 되는지 보자. 모두영어 2편 #28 그대로. 233 뱅크 추가 31 Let's ~",
+    "anchor": "보자",
+    "situation": "저녁. 어제 하루 종일 기분이 가라앉았는데 소연은 운동을 안 가서 그렇다고 했다. 오늘 운동을 다녀왔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "You look better today.",
+      "ko": "오늘은 얼굴이 낫네.",
+      "kr": "유 룩 베러r 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been working out.",
+      "ko": "운동하고 있어.",
+      "kr": "아이v 빈 워r킹 아웃"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "See? I told you it wasn't the money.",
+      "ko": "거봐, 돈 때문이 아니랬잖아.",
+      "kr": "씨이 아이 톨저 잇 워즌 더 머니"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I like you.",
+      "ko": "그래서 내가 널 좋아하는 거야.",
+      "kr": "댓츠 와이 아이 라이켜"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Have you lost weight, at least?",
+      "ko": "살은 좀 빠졌고?",
+      "kr": "해v 여 로스 웨잇 엇 리이스트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, my weight hasn't changed.",
+      "ko": "그게, 몸무게는 그대로야.",
+      "kr": "더 씽 이z 마이 웨잇 해즌 체인지드"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Don't overthink it.",
+      "ko": "너무 깊게 생각하지 마.",
+      "kr": "도노우버r씽킷"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let's see how it goes.",
+      "ko": "어떻게 되나 보자.",
+      "kr": "렛츠 씨이 하우 잇 고우z"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let's see how she feels tomorrow.",
+      "ko": "내일 소연 컨디션 보고 정하자.",
+      "kr": "렛츠 씨이 하우 쉬 f피일z 터마로우"
+     },
+     {
+      "en": "We'll see.",
+      "ko": "두고 보자.",
+      "kr": "윌 씨이"
+     },
+     {
+      "en": "Can we see how it goes first?",
+      "ko": "일단 어떻게 되는지 볼까?",
+      "kr": "캔 위 씨이 하우 잇 고우z f퍼r스트"
+     },
+     {
+      "en": "Let me see what I can do.",
+      "ko": "내가 뭘 할 수 있는지 볼게.",
+      "kr": "렛 미 씨이 와라이 캔 두"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let's see how ~",
+      "body": "어떻게 되는지 보자. 모두영어 2편 #28 그대로. 233 뱅크 추가 31 Let's ~"
+     }
+    ],
+    "chunks": [
+     [
+      "Let's see",
+      "렛츠 씨이",
+      "보자"
+     ],
+     [
+      "how it goes.",
+      "하우 잇 고우z",
+      "어떻게 되는지"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ goes",
+      "goes 의 s 는 유성 z — 고우z"
+     ]
+    ],
+    "mistake": "Let's see 뒤에 절(how it goes / what happens)",
+    "similar": "We'll see.",
+    "category": "일상/대화",
+    "frequency": 8
+   }
+  }
+ ]
+}
