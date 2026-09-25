@@ -2845,3 +2845,95 @@ describe('sessionExprV2 — 대화 접기 상태에서도 그 줄의 흔적만 �
     expect(rows[1].querySelector('.vs-ln-trace')).toBeNull(); // 선택 줄에는 흔적을 그리지 않는다
   });
 });
+
+/* 대화 줄 목소리 순환 (2026-09-25 사용자 결정) — 같은 줄을 다시 누르면 같은 성별의 다른 목소리로 듣는다.
+ * 종전엔 소연(A) 줄은 늘 Ava, 지오(B) 줄은 늘 Andrew 였다. 성별은 지킨다(소연 대사가 남성 목소리로 나오면
+ * 대화가 뒤섞인다). 전체 듣기는 한 번 재생하는 동안 인물마다 한 목소리를 유지하고, 다시 누르면 다음 목소리로 넘어간다. */
+describe('대화 줄 목소리 — 누를 때마다 같은 성별 안에서 바뀐다', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const FEMALE = ['en-US-AvaMultilingualNeural', 'en-US-EmmaMultilingualNeural'];
+  const MALE = ['en-US-AndrewMultilingualNeural', 'en-US-GuyNeural', 'en-US-EricNeural'];
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'This place is packed.', ko: '여기 꽉 찼네.' },
+    { speaker: 'B', name: '지오', en: "It looks like there's one table left.", ko: '자리 하나 남은 것 같아.' },
+    { speaker: 'A', name: '소연', en: "Lucky us. Let's grab it.", ko: '운 좋다. 앉자.' },
+    { speaker: 'B', name: '지오', en: "I can't wait to eat.", ko: '빨리 먹고 싶다.' },
+  ];
+  const card = (id, sentence) => ({ id, lang: 'en', sentence, ko: '뜻', pron: '발음',
+    explanation: { key: `${sentence} = 뜻`, situation: '감자탕집', miniDialogue: MD, drills: [] } });
+  function st() {
+    const s = makeState();
+    s.cards = [card('c1', "It looks like there's one table left."), card('c2', "I can't wait to eat.")];
+    s.step = 1; s.sentence = s.cards[0];
+    return s;
+  }
+  const mount = (state) => {
+    document.body.innerHTML = '';
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, {});
+    return host;
+  };
+  const playOf = (host, i) => [...host.querySelectorAll('.vs-ln')][i].querySelector('button[aria-label="듣기"]');
+  let speak;
+  beforeEach(() => {
+    speak = vi.fn((_t, o) => o?.onEnd?.());
+    window.studySpeech = { speak, cancel: vi.fn() };
+  });
+  const voices = () => speak.mock.calls.map((c) => c[1].voice);
+
+  it('소연 줄 듣기를 누를 때마다 여성 목소리끼리 바뀐다', () => {
+    const play = playOf(mount(st()), 2); // Lucky us. Let's grab it.
+    play.click(); play.click(); play.click();
+    expect(voices()).toEqual([FEMALE[0], FEMALE[1], FEMALE[0]]);
+    expect(speak.mock.calls.every((c) => c[1].rate === 1.0)).toBe(true);
+  });
+
+  it('지오 줄 듣기는 남성 목소리끼리 바뀐다', () => {
+    const play = playOf(mount(st()), 3); // I can't wait to eat. (접힌 카드 줄)
+    play.click(); play.click(); play.click(); play.click();
+    expect(voices()).toEqual([MALE[0], MALE[1], MALE[2], MALE[0]]);
+  });
+
+  it('선택 줄 듣기 필도 누를 때마다 바뀐다', () => {
+    const pill = mount(st()).querySelector('.vs-ln.sel .vs-pill');
+    pill.click(); pill.click();
+    expect(voices()).toEqual([MALE[0], MALE[1]]);
+    expect(speak.mock.calls.every((c) => c[1].rate === 1.0)).toBe(true);
+  });
+
+  it('카드를 옮겨 화면을 다시 그려도 같은 줄의 순서가 이어진다', () => {
+    const state = st();
+    let host = mount(state);
+    host.querySelector('.vs-ln.sel .vs-pill').click(); // 1번 카드 줄을 필로 한 번
+    playOf(host, 2).click();                           // 소연 줄 한 번
+    state.step = 2; state.sentence = state.cards[1];   // 2번 카드로 이동 (onJump 와 같은 전체 재렌더)
+    host = mount(state);
+    playOf(host, 1).click();                           // 1번 카드 줄 — 이제 원 버튼으로
+    playOf(host, 2).click();
+    expect(voices()).toEqual([MALE[0], FEMALE[0], MALE[1], FEMALE[1]]);
+  });
+
+  it('전체 듣기는 한 번 재생하는 동안 인물마다 한 목소리이고, 다시 누르면 다음 목소리로 넘어간다', () => {
+    const all = mount(st()).querySelector('[data-role="stage-all"]');
+    all.click();
+    expect(voices()).toEqual([FEMALE[0], MALE[0], FEMALE[0], MALE[0]]);
+    speak.mockClear();
+    all.click();
+    expect(voices()).toEqual([FEMALE[1], MALE[1], FEMALE[1], MALE[1]]);
+  });
+
+  it('복습 미니대화 블록도 같은 규칙이다', () => {
+    const el = miniDialogueEl(MD.slice(0, 3), { id: 'c1', lang: 'en', sentence: "It looks like there's one table left." }, 'en', 'It looks like');
+    document.body.appendChild(el);
+    const plays = [...el.querySelectorAll('button[aria-label="듣기"]')];
+    plays[0].click(); plays[0].click();
+    expect(voices()).toEqual([FEMALE[0], FEMALE[1]]);
+    speak.mockClear();
+    const all = el.querySelector('[data-role="mini-all"]');
+    all.click();
+    expect(voices()).toEqual([FEMALE[0], MALE[0], FEMALE[0]]);
+    speak.mockClear();
+    all.click();
+    expect(voices()).toEqual([FEMALE[1], MALE[1], FEMALE[1]]);
+  });
+});

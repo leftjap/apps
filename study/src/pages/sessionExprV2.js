@@ -638,6 +638,29 @@ export const MINI_VOICES = {
   A: 'en-US-AvaMultilingualNeural',    // 여성 (소연 등)
   B: 'en-US-AndrewMultilingualNeural', // 남성 (학습자 지오 등) — 성별로만 나눈다 (사용자 2026-09-13)
 };
+/* 대화 줄 목소리 순환 (2026-09-25 사용자 결정) — 같은 줄을 다시 누르면 같은 성별의 다른 목소리로 읽는다.
+ * 한 목소리로만 들으면 그 목소리에만 귀가 익는다(응용 행이 PRACTICE_VOICES 를 돌리는 이유와 같다).
+ * 성별은 지킨다 — 소연 대사가 남성 목소리로 나오면 대화가 뒤섞인다. 첫 목소리는 종전 고정값(MINI_VOICES)이다.
+ * turns 는 '키(줄 문장) → 누른 횟수'. 세션 state 에 두면 카드를 옮겨 화면을 다시 그려도 순서가 이어진다. */
+const MINI_VOICE_POOLS = {
+  A: [MINI_VOICES.A, 'en-US-EmmaMultilingualNeural'],
+  B: [MINI_VOICES.B, 'en-US-GuyNeural', 'en-US-EricNeural'],
+};
+export function nextMiniVoice(turns, speaker, key) {
+  const pool = MINI_VOICE_POOLS[String(speaker ?? '').trim().toUpperCase()] || MINI_VOICE_POOLS.A;
+  const n = Number(turns[key]) || 0;
+  turns[key] = n + 1;
+  return pool[n % pool.length];
+}
+/* 전체 듣기 한 판 — 인물마다 목소리를 한 번만 정해 끝까지 쓴다(줄마다 바뀌면 누가 말하는지 따라가기 어렵다).
+ * 다시 누르면 새 판이라 다음 목소리로 넘어간다. 키가 한글이라 영어 줄 문장의 횟수와 섞이지 않는다. */
+function runVoices(turns) {
+  const picked = {};
+  return (sp) => {
+    const k = String(sp ?? '').trim().toUpperCase();
+    return (picked[k] ??= nextMiniVoice(turns, sp, '전체 듣기 ' + k));
+  };
+}
 const MINI_CSS = `
 .vs-mini-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
 .vs-mini-scene{font-size:12.5px;line-height:1.5;color:var(--faint);margin:6px 2px 0}
@@ -647,12 +670,11 @@ const MINI_CSS = `
 .vs-mini-line.tgt::before{content:"";position:absolute;inset:2px -10px;background:var(--teal-soft);border-radius:12px;z-index:-1}
 .vs-mini-line.tgt .en,.vs-mini-line.tgt .ix{color:var(--teal-deep)}
 .vs-mini-line.tgt .en{font-weight:800}`;
-export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved, scene } = {}) {
+export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved, scene, voiceTurns = {} } = {}) {
   const lines = miniLinesOf(md);
   if (!lines.length) return null;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   const target = String(s?.sentence ?? '').trim();
-  const voiceOf = (sp) => MINI_VOICES[String(sp ?? '').trim().toUpperCase()] || MINI_VOICES.A;
   let recCtrl = null, recRow = null;
   const rows = lines.map((l, i) => {
     const isT = l.en.trim() === target;
@@ -660,7 +682,7 @@ export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved
     const scoreEl = h('span', { class: 'vs-gscore', style: hist.length ? '' : 'display:none;' },
       hist.slice(-DRILL_DOTS_MAX).map((v) => scoreDot(v, { size: 26, fresh: false })));
     const play = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
-    play.addEventListener('click', () => speakWithFeedback(play, l.en, { lang: ttsLang, voice: voiceOf(l.speaker), rate: 1.0 }));
+    play.addEventListener('click', () => speakWithFeedback(play, l.en, { lang: ttsLang, voice: nextMiniVoice(voiceTurns, l.speaker, l.en), rate: 1.0 }));
     const rec = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
     const row = h('div', { class: 'vs-drow vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
       h('span', { class: 'ix' }, String(l.name || l.speaker || '')),
@@ -710,6 +732,7 @@ export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved
   });
   const allBtn = h('button', { class: 'vs-mini-all', type: 'button', 'data-role': 'mini-all' }, vIcon(VI.PLAY, { size: 11, fill: true }), '전체 듣기');
   allBtn.addEventListener('click', () => {
+    const voiceOf = runVoices(voiceTurns);
     const playAt = (k) => {
       if (k >= rows.length) return;
       const r = rows[k];
@@ -739,9 +762,8 @@ function traceRow(scores) {
 }
 
 export function dialogueStageEl(group, ctx = {}) {
-  const { lang = 'en', selCardId, expr, cueIndex = -1, phone = false, leadSep = false } = ctx;
+  const { lang = 'en', selCardId, expr, cueIndex = -1, phone = false, leadSep = false, voiceTurns = {} } = ctx;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
-  const voiceOf = (sp) => MINI_VOICES[String(sp ?? '').trim().toUpperCase()] || MINI_VOICES.A;
   const lines = group.lines;
   const selLineIdx = lines.findIndex((_, i) => group.cardAt[i]?.card?.id === selCardId);
   const rows = [];
@@ -784,7 +806,7 @@ export function dialogueStageEl(group, ctx = {}) {
       const play = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
       play.addEventListener('click', (e) => {
         e.stopPropagation();
-        speakWithFeedback(play, ln.en, { lang: ttsLang, voice: voiceOf(ln.speaker), rate: 1.0 });
+        speakWithFeedback(play, ln.en, { lang: ttsLang, voice: nextMiniVoice(voiceTurns, ln.speaker, ln.en), rate: 1.0 });
       });
       const rec = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
       rec.addEventListener('click', (e) => {
@@ -839,6 +861,7 @@ export function dialogueStageEl(group, ctx = {}) {
       if (playing >= 0) { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } stopAll(); return; }
       allBtn.classList.add('playing');
       allBtn.lastChild.textContent = '재생 중';
+      const voiceOf = runVoices(voiceTurns);
       const step = (k) => {
         if (playing < 0) return; // 중단됨
         if (k >= rows.length) { stopAll(); return; }
@@ -1212,6 +1235,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   // 스냅샷(activeSession)에 exLog 로 실려 나간다.
   if (!state.exLog || typeof state.exLog !== 'object') state.exLog = {};
   const cardEx = s?.id ? (state.exLog[s.id] ??= {}) : {};
+  const voiceTurns = (state.voiceTurns ??= {}); // 대화 줄 목소리 순환 횟수 — 카드 이동(전체 재렌더) 뒤에도 이어진다 (nextMiniVoice)
 
   const hasScene = Array.isArray(state.cards[0]?.explanation?.dialogue);
   const offset = hasScene ? 1 : 0;
@@ -1268,10 +1292,11 @@ export function renderSessionExprV2(host, state, handlers = {}) {
      * ja 도 2026-08-28 부터 순환한다 (JA_PRACTICE_VOICES 신설 전에는 AoiNeural 한 목소리뿐이었다).
      * 시드에 speaker 가 지정된 카드(구 콩트 트랙)는 그 화자를 존중해 순환에서 제외한다. */
     const pool = lang === 'ja' ? JA_PRACTICE_VOICES : PRACTICE_VOICES;
-    /* 대화 줄이 된 선택 줄은 대화 규칙으로 읽는다 — 화자 성별 고정 · rate 1.0 (2026-09-14 클로드 디자인 결정 §0-5).
+    /* 대화 줄이 된 선택 줄은 대화 규칙으로 읽는다 — 화자 성별 안에서 누를 때마다 순환 · rate 1.0
+     * (2026-09-14 클로드 디자인 결정 §0-5 는 성별 고정이었고 2026-09-25 사용자 결정으로 순환). 같은 줄의 원 버튼과 횟수를 나눈다.
      * 대화가 없는 카드의 단독 줄은 화자가 없으므로 기존 문장 카드 규칙(화자 순환 · 기본 속도)을 유지한다. */
     if (!isSoloCard && selLine) {
-      const voice = MINI_VOICES[String(selLine.speaker ?? '').trim().toUpperCase()] || MINI_VOICES.A;
+      const voice = nextMiniVoice(voiceTurns, selLine.speaker, selLine.en);
       window.studySpeech.speak(s.sentence, { lang: ttsLang, voice, rate: 1.0, onEnd: stopPlaying });
     } else if (lang === 'ja' && s?.speaker) {
       window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s.speaker, onEnd: stopPlaying });
@@ -1616,7 +1641,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const srcIdx = (i) => (collapsed ? keepIdx[i] : i);
 
   const stages = viewGroups.map((g, gi) => dialogueStageEl(g, {
-    lang, selCardId: s?.id, expr, phone: state.size !== 'desktop',
+    lang, selCardId: s?.id, expr, phone: state.size !== 'desktop', voiceTurns,
     // 단독 줄이 연달아 오면 한 열로 잇는다 — 대화 묶음 뒤에서는 묶음 경계라 잇지 않는다.
     leadSep: !g.hasDialogue && gi > 0 && !viewGroups[gi - 1].hasDialogue,
     cueIndex: gi === viewSelIdx ? (collapsed ? 0 : selLineIdx - 1) : -1,

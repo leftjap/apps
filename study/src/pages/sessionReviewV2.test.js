@@ -999,4 +999,31 @@ describe('renderSessionReviewV2 — 상대 줄 단서 (2026-09-12)', () => {
     const host = mountCard({ interval: 1, state: { sentence: withMd(MD) } });
     expect(host.querySelector('.vr-cue button').disabled).toBe(false);
   });
+
+  /* 2026-09-25 사용자 결정 — 대화 줄은 누를 때마다 같은 성별 안에서 목소리를 바꾼다(sessionExprV2 같은 describe).
+   * 단서도 대화의 한 줄이고, 공개 뒤 대화 블록의 같은 줄은 단서에서 누른 순서를 잇는다. */
+  const cueVoices = (speak) => speak.mock.calls.filter((c) => c[0] === 'Did you sleep?').map((c) => c[1].voice);
+
+  it('단서 듣기도 누를 때마다 같은 성별(여성) 안에서 바뀐다', () => {
+    const speak = vi.fn((_t, o) => o?.onEnd?.());
+    window.studySpeech = { speak, cancel: vi.fn() };
+    const host = mountCard({ interval: 1, state: { sentence: withMd(MD) } });
+    const btn = host.querySelector('.vr-cue button');
+    btn.click(); btn.click();
+    expect(cueVoices(speak)).toEqual(['en-US-AvaMultilingualNeural', 'en-US-EmmaMultilingualNeural']);
+  });
+
+  it('공개 뒤 대화 블록의 같은 줄은 단서에서 누른 순서를 잇는다', () => {
+    vi.useFakeTimers();
+    try {
+      const speak = vi.fn((_t, o) => o?.onEnd?.());
+      window.studySpeech = { speak, cancel: vi.fn() };
+      const host = mountCard({ interval: 1, demo: true, state: { sentence: withMd(MD) } });
+      host.querySelector('.vr-cue button').click();
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      host.querySelector('.vs-mini button[aria-label="듣기"]').click();
+      expect(cueVoices(speak)).toEqual(['en-US-AvaMultilingualNeural', 'en-US-EmmaMultilingualNeural']);
+    } finally { vi.useRealTimers(); }
+  });
 });

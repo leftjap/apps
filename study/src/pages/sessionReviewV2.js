@@ -26,7 +26,7 @@ import { judgeRecording } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
-import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores, miniDialogueEl, SESSION_BLOCKS, MINI_VOICES } from './sessionExprV2.js';
+import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores, miniDialogueEl, SESSION_BLOCKS, nextMiniVoice } from './sessionExprV2.js';
 import { PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 
 const PASS_THRESHOLD = 80;
@@ -314,6 +314,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 카드별 연습 진행 (응용 행 점수 / 체이닝) — 신규 세션과 동일 계약 (2026-08-21)
   if (!state.exLog || typeof state.exLog !== 'object') state.exLog = {};
   const cardEx = s?.id ? (state.exLog[s.id] ??= {}) : {};
+  const voiceTurns = (state.voiceTurns ??= {}); // 대화 줄 목소리 순환 횟수 — 단서와 공개 뒤 대화 블록이 나눈다 (nextMiniVoice)
   const card = state.cards[state.step - 1] || {};
   const total = state.total || state.cards.length;
   const idx = state.step;
@@ -658,8 +659,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   let cueEl = null;
   if (cue) {
     const cuePlay = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '상대 줄 듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
-    const cueVoice = MINI_VOICES[String(cue.speaker ?? '').trim().toUpperCase()] || MINI_VOICES.A;
-    cuePlay.addEventListener('click', () => speakWithFeedback(cuePlay, cue.en, { lang: ttsLang, voice: cueVoice, rate: 1.0 }));
+    // 단서도 대화의 한 줄 — 누를 때마다 같은 성별 안에서 목소리를 바꾼다 (2026-09-25 사용자 결정, nextMiniVoice).
+    cuePlay.addEventListener('click', () => speakWithFeedback(cuePlay, cue.en, { lang: ttsLang, voice: nextMiniVoice(voiceTurns, cue.speaker, cue.en), rate: 1.0 }));
     cueEl = h('div', { class: 'vr-cue' }, v2Style(CUE_CSS),
       h('span', { class: 'vr-cue-who' }, String(cue.name || cue.speaker || '')),
       h('div', { class: 'vr-cue-body' }, h('div', { class: 'en' }, cue.en), cue.ko ? h('div', { class: 'sub' }, cue.ko) : null),
@@ -681,7 +682,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   };
   const mountMini = () => {
     if (miniSlot.childElementCount) return;
-    const el = miniDialogueEl(ex?.miniDialogue, s, lang, expr, { demo: state.demo, onScore: onMiniScore, saved: cardEx.mini, scene: ex?.situation });
+    const el = miniDialogueEl(ex?.miniDialogue, s, lang, expr, { demo: state.demo, onScore: onMiniScore, saved: cardEx.mini, scene: ex?.situation, voiceTurns });
     if (el) miniSlot.appendChild(el);
   };
   if (revealed) mountMini();
