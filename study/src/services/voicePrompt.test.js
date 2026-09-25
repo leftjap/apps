@@ -182,6 +182,8 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
   it('마지막은 대화로 넘어가고 리포트 통제어가 있다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toContain('say in Korean "이제 대화합니다"');
+    // 26회전: "네. 이제 대화합니다." 만 말하고 멈춰 첫 질문이 없었다 — 같은 턴에 첫 질문을 하게 한다
+    expect(p).toMatch(/say in Korean "이제 대화합니다" and, in that same turn, ask me your first question in English/i);
     // 12회전: 대화 구간에서 오답 처리·힌트가 나왔다
     expect(p).toMatch(/the drill rules stop there/i);
     expect(p).toMatch(/never correct me and never hint\. There is no right answer to reach/i);
