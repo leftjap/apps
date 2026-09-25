@@ -34,20 +34,31 @@ const card2 = {
 };
 
 describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
-  it('패턴마다 짧은 형태와 목표 문장을 함께 준다', () => {
+  it('짧은 형태는 앱에서 배운 목표 문장이다 (2026-09-25 실사용: 드릴 중 최단을 고르자 네 패턴이 모두 응용 문장으로 연습됐다)', () => {
     const p = buildVoicePrompt([card1, card2]);
     expect(p).toContain('P1 (on my way)');
-    expect(p).toContain('short "I\'m on my way to the airport." = 공항 가는 중이야.');
-    expect(p).toContain('goal "I\'m on my way." = 가는 중이야.');
+    expect(p).toContain('short "I\'m on my way." = 가는 중이야.');
+    expect(p).not.toContain('short "I\'m on my way to the airport."');
+    expect(p).not.toContain('goal "'); // 짧은 형태가 곧 목표 문장이라 따로 적지 않는다
     expect(p).toContain('P2 (almost there)');
   });
 
-  it('슬롯 바꾸기 재료로 이미 연습한 드릴을 붙인다 (짧은 형태는 빼고)', () => {
+  it('드릴이 목표 문장보다 짧아도 목표 문장으로 연습한다 (2026-09-25: "It looks like rain." 이 배운 문장을 밀어냈다)', () => {
+    const p = buildVoicePrompt([{ expr: 'It looks like ~', sentence: "It looks like there's one table left.", ko: '자리 하나 남은 것 같아.', drills: [
+      { en: 'It looks like rain.', ko: '비 올 것 같아.' },
+      { en: "It looks like they're full.", ko: '만석인 것 같아.' },
+    ] }]);
+    expect(p).toContain(`short "It looks like there's one table left." = 자리 하나 남은 것 같아.`);
+    const line = p.split('\n').find((l) => l.trim().startsWith('practiced:'));
+    expect(line).toContain('"It looks like rain."');
+  });
+
+  it('치환 재료로 연습한 드릴을 전부 붙인다', () => {
     const p = buildVoicePrompt([card1]);
     const line = p.split('\n').find((l) => l.trim().startsWith('practiced:'));
+    expect(line).toContain('"I\'m on my way to the airport."');
     expect(line).toContain('"Are you on your way?"');
     expect(line).toContain('"My wife is on her way."');
-    expect(line).not.toContain('"I\'m on my way to the airport."'); // short 로 이미 나왔다
   });
 
   it('드릴이 없으면 practiced 줄을 만들지 않고 짧은 형태가 곧 목표 문장이다', () => {
@@ -100,6 +111,8 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     expect(p).toMatch(/work in passes, one slot per pass, and in each pass go through every sentence in order before you change slot/i);
     expect(p).toMatch(/pass one the subject, pass two the thing or activity, pass three the time/i);
     expect(p).toMatch(/never take the same sentence twice in a row/i);
+    // 2026-09-25 실사용: "It looks like rain" 에 "주어를 지금 날씨로" 를 주고, 맞게 바꾼 답은 틀이 깨진다며 되돌렸다
+    expect(p).toMatch(/if changing a sentence's subject would break the pattern — "It looks like ~", or a command like "Don't forget to ~" — change its thing or activity in the subject pass instead/i);
     expect(p).toMatch(/three passes in all, so 6 answers from me/i);
     expect(p).not.toMatch(/the same three passes again/i);
     expect(p).toContain('"주어를 소연으로", "동작을 운동으로", "시간을 이번 주로"');
@@ -198,26 +211,6 @@ describe('buildVoicePrompt — 패턴 숙달 단계 (2026-09-19 2판)', () => {
     const bg = p.split('\n').filter((l) => l.includes('공항에 마중 나가는 길'));
     expect(bg).toHaveLength(1);
     expect(bg[0]).toMatch(/so your cues and questions come from my life/i);
-  });
-
-  it('짧은 형태는 구문을 포함하는 드릴 중 최단이고 단어 경계까지 본다', () => {
-    const p = buildVoicePrompt([
-      { expr: 'I keep ~', sentence: 'I keep waking up before you do.', ko: '자꾸 깨.', drills: [
-        { en: 'Nani keeps waking me up.', ko: '나니가 깨워.' },
-        { en: 'I keep waking up at four.', ko: '자꾸 4시에 깨.' },
-      ] },
-    ]);
-    expect(p).toContain('short "I keep waking up at four." = 자꾸 4시에 깨.');
-  });
-
-  it('~ 가 중간에 있는 구문은 앞부분으로 맞춘다', () => {
-    const p = buildVoicePrompt([
-      { expr: 'How about ~?', sentence: 'How about Friday?', ko: '금요일 어때?', drills: [
-        { en: 'How about next Friday afternoon?', ko: '다음 주 금요일 오후 어때?' },
-        { en: 'How about tomorrow?', ko: '내일 어때?' },
-      ] },
-    ]);
-    expect(p).toContain('short "How about tomorrow?" = 내일 어때?');
   });
 
   it('첫 줄이 ChatGPT 안내이고 텍스트 답장 뒤 음성이라고 말한다', () => {

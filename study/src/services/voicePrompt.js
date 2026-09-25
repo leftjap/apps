@@ -13,8 +13,10 @@
  *   슬롯 한 개씩 바꾸기 → 응용 질문에 답하기 → 답을 받아 질문 만들기.
  * · 끝내는 조건은 횟수가 아니라 통과다. 힌트 없이 연속 두 번 맞으면 그 단계를 통과하고, D·E·F 를 통과하면
  *   그 패턴은 오늘 끝. 같은 단계에서 세 번 막히면 접고 다음 패턴으로 간다(끝나지 않는 세션 방지).
- * · 재료는 짧은 형태(구문을 포함하는 드릴 중 최단, 단어 경계까지 본다)와 목표 문장과 나머지 드릴 전부다.
- *   슬롯 바꾸기와 응용 질문에 쓸 재료가 필요하다. 미니대화는 넣지 않는다.
+ * · 재료는 기본 문장(앱에서 배운 목표 문장)과 드릴 전부다. 드릴은 슬롯 바꾸기와 응용 질문의 재료다.
+ *   2026-09-19 부터 '구문을 담은 드릴 중 최단' 을 기본 문장으로 골랐는데, 그러면 구문을 담은 드릴이 하나라도 있을 때
+ *   목표 문장이 쓰이지 않는다. 2026-09-25 실사용에서 네 패턴 모두 배운 문장 대신 응용 문장으로 연습돼 되돌렸다.
+ *   미니대화는 넣지 않는다.
  * · 규칙 줄을 늘리지 말고 기존 줄을 정확하게 만들어야 지켜진다(2026-09-19 실측 5회).
  *   횟수로 적은 규칙은 세션이 짧은 날 안 지켜졌고, 조건과 시점을 박은 뒤에야 안정됐다.
  * · 미니대화는 이 프롬프트에서 쓰지 않는다. 대본 대화를 태우면 구간 전체가 따라 말하기로 무너졌다(2026-09-14 실기).
@@ -40,40 +42,19 @@ export function normalizeVoiceItems(items) {
 }
 
 const sentenceOf = (it) => it.sentence || it.expr;
-const wordCount = (s) => str(s).split(/\s+/).filter(Boolean).length;
 
-/* 구문의 앞머리 — "Do you want to ~" 는 물론 "How about ~?", "pick ~ up" 처럼 ~ 가 중간에 있는 키도
- * 앞부분으로 맞춘다(실제 시드 313개 중 8개). */
-const headOf = (expr) => expr.split('~')[0].trim() || expr.replace(/~/g, ' ').trim();
+/** 기본 문장 — 앱 세션에서 배운 목표 문장. 문장 없이 구문만 준 옛 호출이면 구문. */
+const baseOf = (it) => ({ en: sentenceOf(it), ko: it.ko });
 
-/* 단어 경계까지 본다. 그냥 부분 문자열로 찾으면 "I keep" 이 "Nani keeps" 안에 걸려,
- * 학습자가 배운 형태가 아닌 문장이 기본 문장으로 뽑힌다(en-personal-2026-09-17 카드 2에서 실제로 발생). */
-function headMatcher(head) {
-  const esc = head.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(^|[^\\p{L}\\p{N}])${esc}($|[^\\p{L}\\p{N}])`, 'iu');
-}
-
-/** 기본 문장 — 구문을 포함하는 드릴 중 가장 짧은 것. 없으면 가장 짧은 드릴, 드릴도 없으면 목표 문장. */
-function baseOf(it) {
-  const head = headOf(it.expr);
-  const re = head ? headMatcher(head) : null;
-  const withHead = re ? it.drills.filter((d) => re.test(d.en)) : [];
-  const pool = withHead.length ? withHead : it.drills;
-  if (!pool.length) return { en: sentenceOf(it), ko: it.ko };
-  return pool.reduce((a, b) => (wordCount(b.en) < wordCount(a.en) ? b : a));
-}
-
-/* 패턴 한 덩이 — 짧은 형태·목표 문장·이미 연습한 드릴.
- * 구문은 짧은 형태에도 목표 문장에도 없을 때만 괄호로 따로 적는다(시드 88%가 문장형 키라 대개 목표 문장과 같다). */
+/* 패턴 한 덩이 — 기본 문장과 이미 연습한 드릴.
+ * 구문은 기본 문장과 다를 때만 괄호로 따로 적는다(시드 88%가 문장형 키라 대개 같다). */
 function patternBlock(it, n) {
   const b = baseOf(it);
-  const goal = sentenceOf(it);
-  const named = it.expr && it.expr !== b.en && it.expr !== goal && it.expr !== goal.replace(/[.?!]$/, '');
+  const named = it.expr && it.expr !== b.en && it.expr !== b.en.replace(/[.?!]$/, '');
   const shortPart = `short "${b.en}"${b.ko ? ` = ${b.ko}` : ''}`;
-  const goalPart = goal && goal !== b.en ? `  ·  goal "${goal}"${it.ko ? ` = ${it.ko}` : ''}` : '';
   const rest = it.drills.filter((d) => d.en !== b.en).map((d) => `"${d.en}"`);
   const practiced = rest.length ? `\n   practiced: ${rest.join(' · ')}` : '';
-  return `P${n}${named ? ` (${it.expr})` : ''}  ${shortPart}${goalPart}${practiced}`;
+  return `P${n}${named ? ` (${it.expr})` : ''}  ${shortPart}${practiced}`;
 }
 
 /** 교사가 질문을 만들 소재 — 카드마다 적힌 상황을 중복 없이 한 줄로. */
@@ -111,7 +92,7 @@ This session should run about fifteen minutes. I speak about ${total} times in t
 Work in three stages, in this order, and never mix them. Announce each one in Korean before you start it.
 
 A. 복습 — say "복습부터 합니다". Go through the sentences in order, one per turn: say the short form once in English, I repeat it once, then say its Korean meaning and I say the English from meaning. Nothing changed yet. One pass over every sentence.
-B. 바꿔 말하기 — say "이제 바꿔 말하기입니다". Work in passes, one slot per pass, and in each pass go through every sentence in order before you change slot: pass one the subject, pass two the thing or activity, pass three the time. Never take the same sentence twice in a row. A change cue is two Korean words: the slot, then the new word — "주어를 소연으로", "동작을 운동으로", "시간을 이번 주로". Take the new word from my day or from the practiced lines, never from outside my life. Name the new word; never describe it and never leave the slot out. Every change starts from that sentence's short form, never from my last answer, so I only ever hold one sentence in my head. Three passes in all, so ${sentences * 3} answers from me.
+B. 바꿔 말하기 — say "이제 바꿔 말하기입니다". Work in passes, one slot per pass, and in each pass go through every sentence in order before you change slot: pass one the subject, pass two the thing or activity, pass three the time. If changing a sentence's subject would break the pattern — "It looks like ~", or a command like "Don't forget to ~" — change its thing or activity in the subject pass instead. Never take the same sentence twice in a row. A change cue is two Korean words: the slot, then the new word — "주어를 소연으로", "동작을 운동으로", "시간을 이번 주로". Take the new word from my day or from the practiced lines, never from outside my life. Name the new word; never describe it and never leave the slot out. Every change starts from that sentence's short form, never from my last answer, so I only ever hold one sentence in my head. Three passes in all, so ${sentences * 3} answers from me.
 C. 질문과 답 — say "이제 질문과 답입니다". Now mix the sentences. Ask me a question in English that one of them answers, and I answer in English with something changed. Then say "이번엔 질문을 만드세요", give an answer in Korean, and I build the English question that gets it. Keep alternating those two for ${sentences * 6} answers from me. In this stage a slot cue is wrong: when my answer misses, say in Korean which sentence answers it in three words or fewer ("먹는 얘기요"), never "주어를 …으로".
 
 Before each new sentence in A and B, say in Korean which sentence it is, using the Korean of its short form, like "이번엔 잘 못 먹고 있어입니다". Then I always know what the cues change.
