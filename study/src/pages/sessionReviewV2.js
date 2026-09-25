@@ -540,6 +540,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     foldBd.style.display = '';
   }
 
+  let dotsKey = null;
   const refreshDots = () => {
     const todayScores = dayScores[todayISO] || [];
     /* 과거 발화 점수도 표시 (2026-08-31 사용자 결정 — "과거 기록이 학습에 도움") — 이전 날들의
@@ -548,10 +549,16 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       .flatMap((d) => (Array.isArray(dayScores[d]) ? dayScores[d] : []));
     const shown = [...pastScores, ...todayScores].slice(-5);
     const slots = Math.max(prevTries - todayScores.length, 0);
-    dotsEl.replaceChildren(
-      ...shown.map((v, i) => scoreDot(v, { size: 30, fresh: todayScores.length > 0 && i === shown.length - 1 })),
-      ...Array.from({ length: slots }, () => emptyDot({ size: 30 })),
-    );
+    /* 본 문장 점수가 그대로면 원을 다시 만들지 않는다 (2026-09-25, sessionExprV2 refreshDots 와 같은 원인) —
+     * 최신 원(.fresh)의 v-settle 이 대화 줄·응용을 채점할 때마다 다시 재생돼 점수가 깜빡였다. */
+    const key = `${pastScores.join(',')}|${todayScores.join(',')}|${slots}`;
+    if (key !== dotsKey) {
+      dotsKey = key;
+      dotsEl.replaceChildren(
+        ...shown.map((v, i) => scoreDot(v, { size: 30, fresh: todayScores.length > 0 && i === shown.length - 1 })),
+        ...Array.from({ length: slots }, () => emptyDot({ size: 30 })),
+      );
+    }
     sayLine.textContent = prevTries > 0 ? `${todayScores.length} / ${prevTries}` : `${todayScores.length}회`;
   };
   const refreshRec = () => {

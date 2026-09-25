@@ -973,6 +973,50 @@ describe('renderSessionReviewV2 — 미니대화 녹음 (2026-09-12)', () => {
   });
 });
 
+/* 대화 줄·응용을 채점하면 refreshDots 가 본 문장 점수 열을 통째로 다시 만들었다. 오늘 점수가 있으면 마지막 원이
+ * .fresh(v-settle) 라 채점할 때마다 0.5초 동안 사라졌다가 나타났다 (2026-09-25, 신규 세션과 같은 원인). */
+describe('renderSessionReviewV2 — 다른 줄 채점이 본 문장 점수 원을 다시 만들지 않는다', () => {
+  const MD = [
+    { speaker: 'A', en: 'Did you sleep?', ko: '잠은 잤어?' },
+    { speaker: 'B', en: EN, ko: KO },
+    { speaker: 'A', en: 'Good.', ko: '다행이다.' },
+  ];
+  const sentence = () => ({ id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: `${EN} = ${KO}`, chunks: CHUNKS, miniDialogue: MD,
+    drills: [{ en: 'Thanks for coming.', kr: '땡스 포 커밍', ko: '와 줘서 고마워.' }] } });
+  const mainDots = (host) => [...host.querySelectorAll('.vr-meta .v-dot')];
+
+  it.each([
+    ['대화 줄', (host) => host.querySelector('.vs-mini button[aria-label="녹음"]')],
+    ['응용', (host) => host.querySelector('.vr-drills button[aria-label="녹음"]')],
+  ])('%s 채점 뒤에도 최신 점수 원이 같은 노드로 남는다', (_, pick) => {
+    vi.useFakeTimers();
+    try {
+      const host = mountCard({ interval: 1, demo: true, state: { sentence: sentence() } });
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100); // 본 녹음(데모) → 채점 → 정답 공개
+      const before = mainDots(host);
+      expect(before.some((d) => d.classList.contains('fresh'))).toBe(true);
+      pick(host).click();
+      vi.advanceTimersByTime(900);
+      const after = mainDots(host);
+      expect(after).toHaveLength(before.length);
+      after.forEach((d, k) => expect(d).toBe(before[k]));
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('본 문장을 다시 채점하면 원이 하나 늘고 새 원만 최신 강조를 받는다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountCard({ interval: 1, demo: true, state: { sentence: sentence() } });
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(mainDots(host).map((d) => d.classList.contains('fresh'))).toEqual([false, true]);
+    } finally { vi.useRealTimers(); }
+  });
+});
+
 describe('renderSessionReviewV2 — 상대 줄 단서 (2026-09-12)', () => {
   const MD = [
     { speaker: 'A', name: '소연', en: 'Did you sleep?', ko: '잠은 잤어?' },
