@@ -3,12 +3,18 @@
  * 매번 Dexie 에서 표현을 다시 고른다(services/speakPicks.js). 영어 전용. 마운트 구조는 listen.js 와 같다. */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
-import { loadSpeakItems, SPEAK_SCOPES, SPEAK_MAX } from '../services/speakPicks.js';
+import { loadSpeakItems, loadSpeakSessions, SPEAK_SCOPES, SPEAK_MAX } from '../services/speakPicks.js';
 import { buildVoicePrompt } from '../services/voicePrompt.js';
 import { localISODate } from '../utils/today.js';
 
-export const SCOPE_LABELS = { today: '오늘 배운 표현', hard: '최근 어려웠던 표현', random: '랜덤 복습' };
-const EMPTY_TEXT = { today: '오늘 학습한 표현이 없어요', hard: '최근 어려웠다고 판정한 표현이 없어요', random: '복습 카드가 없어요' };
+export const SCOPE_LABELS = { session: '세션', hard: '최근 어려웠던 표현', random: '랜덤 복습' };
+const EMPTY_TEXT = { session: '공부한 세션이 없어요', hard: '최근 어려웠다고 판정한 표현이 없어요', random: '복습 카드가 없어요' };
+/* 세션 목록 항목 — "9월 20일 · 첫 문장 외 3". 2026-09-25 부터 오늘 세션뿐 아니라 지난 세션도 고른다. */
+const sessionLabel = (s) => {
+  const [, m, d] = s.date.split('-');
+  const first = s.items[0];
+  return `${Number(m)}월 ${Number(d)}일 · ${first.sentence || first.expr}${s.items.length > 1 ? ` 외 ${s.items.length - 1}` : ''}`;
+};
 const getTodayISO = () => window.studyDay?.TODAY_ISO || localISODate();
 function getLang() { try { return sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en'; } catch { return 'en'; } }
 
@@ -25,6 +31,7 @@ const CSS = `
 .sp-scopes{display:flex;gap:8px;flex-wrap:wrap}
 .sp-scope{font-size:13px;font-weight:700;padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:var(--ink)}
 .sp-scope.on{background:var(--teal);border-color:var(--teal);color:var(--card)}
+.sp-sess{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:16px;font-family:inherit}
 .sp-list{display:flex;flex-direction:column;gap:6px}
 .sp-item{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:12px;background:var(--card);border:1px solid var(--line);cursor:pointer}
 .sp-item input{width:18px;height:18px;margin-top:2px;accent-color:var(--teal)}
@@ -41,11 +48,14 @@ export function mountSpeak(host) {
   host.innerHTML = '';
   const lang = getLang();
   const todayISO = getTodayISO();
-  let scope = 'today';
+  let scope = 'session';
   let items = [];
+  let sessions = [];
   const checked = new Set();
 
   const scopeBtns = SPEAK_SCOPES.map((s) => h('button', { class: 'sp-scope', type: 'button', 'data-scope': s, onClick: () => load(s, false) }, SCOPE_LABELS[s]));
+  const sessSel = h('select', { class: 'sp-sess', 'data-role': 'session', 'aria-label': '세션' });
+  sessSel.addEventListener('change', () => show(sessions.find((s) => s.key === sessSel.value)?.items || []));
   const listEl = h('div', { class: 'sp-list', 'data-role': 'list' });
   const ta = h('textarea', { class: 'sp-ta', readonly: 'readonly', rows: '10' });
   const COPY_LABEL = '프롬프트 복사';
@@ -74,17 +84,28 @@ export function mountSpeak(host) {
     paintPrompt();
   };
 
-  /* fallback=true(진입 시): 오늘 → 어려웠던 → 랜덤 순으로 비어 있지 않은 첫 범위를 연다. */
+  const show = (list) => { items = list; checked.clear(); items.forEach((it) => checked.add(it.id)); paintList(); };
+
+  /* fallback=true(진입 시): 세션(가장 최근) → 어려웠던 → 랜덤 순으로 비어 있지 않은 첫 범위를 연다.
+   * 세션 범위로 돌아오면 목록을 다시 읽되, 고른 세션이 아직 있으면 그대로 둔다. */
   async function load(s, fallback) {
     scope = s; paintScopes();
     let got = [];
-    try { got = await loadSpeakItems(window.studyDB, lang, s, todayISO); } catch (e) { console.error('[speak] load', e); got = []; }
+    try {
+      if (s === 'session') {
+        const prev = sessSel.value;
+        sessions = await loadSpeakSessions(window.studyDB, lang);
+        sessSel.replaceChildren(...sessions.map((x) => h('option', { value: x.key }, sessionLabel(x))));
+        if (sessions.some((x) => x.key === prev)) sessSel.value = prev;
+        got = sessions.find((x) => x.key === sessSel.value)?.items || [];
+      } else got = await loadSpeakItems(window.studyDB, lang, s, todayISO);
+    } catch (e) { console.error('[speak] load', e); got = []; }
+    sessSel.hidden = s !== 'session' || !sessions.length;
     if (!got.length && fallback) {
       const next = SPEAK_SCOPES[SPEAK_SCOPES.indexOf(s) + 1];
       if (next) return load(next, true);
     }
-    items = got; checked.clear(); items.forEach((it) => checked.add(it.id));
-    paintList();
+    show(got);
   }
 
   const root = h('div', { class: 'sp' }, v2Style(CSS),
@@ -95,9 +116,10 @@ export function mountSpeak(host) {
       h('h1', { class: 'sp-h1' }, '말하기 연습'),
       h('div', { class: 'sp-sub' }, `배운 표현 최대 ${SPEAK_MAX}개로 ChatGPT 음성 연습 프롬프트를 만듭니다. 상대가 질문을 던지면 그 답으로 오늘 문장을 꺼내 말하고, 한 번은 사람·시간·사물을 바꿔 말하게 됩니다.`),
       h('div', { class: 'sp-scopes' }, scopeBtns),
+      sessSel,
       listEl,
       h('div', { class: 'sp-steps' }, '1 복사 → 2 ChatGPT 새 대화에 붙여 넣어 보내기 → 3 같은 대화에서 음성 모드 시작 → 4 약 10분 대화 → 5 끝나면 못 한 표현을 문장 모아보기에서 확인'),
       ta, copyBtn));
   host.appendChild(root);
-  load('today', true);
+  load('session', true);
 }

@@ -723,7 +723,9 @@ ja explanation 스키마 요약 (상세는 위 ja 가이드):
 
 **진입**: 영어 홈 CTA 카드의 보조 버튼 "말하기 연습"(연속 듣기 옆, `homeDesktopV2.js` ctaCard — 데스크톱·모바일 공통) → `#/speak` (`src/pages/speak.js`, mocks 스텁 `mocks/speak.html`, `?demo=1` 은 시드로 가짜 DB). 세션 요약(summaryV2)의 프롬프트 블록에도 "말하기 연습 열기".
 
-**범위 3개**(`services/speakPicks.js`): 오늘 배운 표현(오늘 세션 로그의 `newSentenceIds ∪ sentenceIds` 카드) / 최근 어려웠던 표현(14일 안 X 판정 `resultHistory`, 없으면 `lastResult=X`, 최근 실패 순) / 랜덤 복습. 상한 5. 오늘 카드가 넘치면 오늘 판정 X > △ > 나머지, 같으면 신규 > 복습, 같으면 나중에 배운 순(`promotedAt`). 진입 시 비어 있으면 다음 범위로 자동 전환. 표현은 체크로 뺄 수 있다. 저장된 프롬프트는 없고 매번 Dexie(`reviewQueue`·`sessionLogs`)에서 다시 읽는다. soft-delete·장면 카드 제외.
+**범위 3개**(`services/speakPicks.js`): 세션 / 최근 어려웠던 표현(14일 안 X 판정 `resultHistory`, 없으면 `lastResult=X`, 최근 실패 순) / 랜덤 복습. 상한 5. 진입 시 비어 있으면 다음 범위로 자동 전환. 표현은 체크로 뺄 수 있다. 저장된 프롬프트는 없고 매번 Dexie(`reviewQueue`·`sessionLogs`)에서 다시 읽는다. soft-delete·장면 카드 제외.
+
+**세션 범위**(2026-09-25, `listSessions`): 오늘 세션만 고를 수 있던 것을 지난 세션 전부로 넓혔다. 세션 로그 한 건(`newSentenceIds ∪ sentenceIds`)이 세션 하나이고, 드롭다운에 최신순(`date` → `createdAt`)으로 "9월 20일 · 첫 문장 외 3" 처럼 보인다. 진입 시 가장 최근 세션을 연다(오늘 공부하지 않은 날엔 직전 세션). 다른 로그에 문장이 모두 들어 있는 로그(중간에 끊긴 뒤 다시 한 세션)는 빼고, 문장이 같으면 최신 한 건만 남긴다. 문장은 로그에 적힌 순서(배운 순서)대로다. 종전 '오늘 판정 X > △ > 나머지' 정렬은 없앴다: 배우는 세션은 판정을 남기지 않고 복습 세션은 로그에 문장 id 를 남기지 않아 실제로 작동하지 않았다. 활성 카드가 남지 않은 세션은 목록에서 뺀다. 영어 트랙 리셋(2026-09-13·09-20)으로 그 전 세션 카드는 전부 삭제 표시라, 목록은 9/20 세션부터 시작한다. 같은 날 세션이 두 번이면 각각 따로 나온다.
 
 **프롬프트**(`services/voicePrompt.js`, 문자열·객체 입력 공용): 2026-09-19 재설계 3판(실측 루프 9회전). ChatGPT 한 경로(클로드 토글 없음).
 

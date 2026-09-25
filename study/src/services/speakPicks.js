@@ -1,17 +1,15 @@
-/* speakPicks.js — 말하기 연습(#/speak) 표현 선별 (2026-09-08 작업지시서 §6).
+/* speakPicks.js — 말하기 연습(#/speak) 표현 선별 (2026-09-08 작업지시서 §6, 2026-09-25 지난 세션 선택).
  * 저장된 프롬프트를 쓰지 않고 매번 Dexie 에서 다시 읽는다. 범위 3개:
- *   today  = 오늘 세션 로그(newSentenceIds ∪ sentenceIds)에 있는 카드
- *   hard   = 최근 HARD_WINDOW_DAYS 안에 X 판정(resultHistory) 또는 lastResult X 인 카드, 최근 실패 순
- *   random = 활성 카드에서 무작위
- * 상한 SPEAK_MAX — 오늘 카드가 6~7장이면 오늘 판정 X > △ > 나머지, 같으면 신규 > 복습, 같으면 나중에 배운 순으로 남긴다
- * (2026-09-08 사용자 확정 권장안). soft-delete(explanation._deleted)·장면 카드(explanation.dialogue)는 뺀다. */
+ *   session = 세션 로그 한 건(newSentenceIds ∪ sentenceIds)의 카드. 오늘 세션뿐 아니라 지난 세션도 고른다(listSessions)
+ *   hard    = 최근 HARD_WINDOW_DAYS 안에 X 판정(resultHistory) 또는 lastResult X 인 카드, 최근 실패 순
+ *   random  = 활성 카드에서 무작위
+ * 상한 SPEAK_MAX. soft-delete(explanation._deleted)·장면 카드(explanation.dialogue)는 뺀다. */
 import { todayPlusDays } from './srs.js';
 
 export const SPEAK_MAX = 5;
 export const HARD_WINDOW_DAYS = 14;
-export const SPEAK_SCOPES = ['today', 'hard', 'random'];
+export const SPEAK_SCOPES = ['session', 'hard', 'random'];
 
-const RESULT_RANK = { X: 3, '△': 2, O: 1 };
 const str = (v) => String(v ?? '');
 const isActive = (c) => Boolean(c && str(c.sentence).trim() && !c.explanation?._deleted && !Array.isArray(c.explanation?.dialogue));
 const learnedAt = (c) => str(c?.promotedAt || c?.createdAt);
@@ -32,26 +30,21 @@ export function toSpeakItem(card) {
   };
 }
 
-/* 오늘 판정 — resultHistory 의 오늘 항목(마지막) 우선, 없으면 lastResultAt 이 오늘인 lastResult. */
-function todayResult(card, todayISO) {
-  const hist = Array.isArray(card?.resultHistory) ? card.resultHistory : [];
-  const t = hist.filter((x) => x?.date === todayISO).pop();
-  if (t?.result) return t.result;
-  if (card?.lastResultAt && str(card.lastResultAt).slice(0, 10) === todayISO) return card.lastResult ?? null;
-  return null;
-}
+/* 세션 목록 — 로그 한 건이 세션 하나, 최신순(date → createdAt). 다른 로그에 문장이 모두 들어 있는 로그(중간에 끊긴 뒤
+ * 다시 한 세션)는 빼고, 문장이 같으면 최신 한 건만 남긴다. 문장은 로그에 적힌 순서(배운 순서) 그대로 둔다 — 배우는 세션은
+ * 판정을 남기지 않아 종전 '오늘 판정 X > △' 정렬이 실제로는 작동하지 않았다. 남은 활성 카드가 없는 세션(영어 트랙 리셋
+ * 2026-09-13·09-20 로 삭제 표시된 세션 등)은 목록에 넣지 않는다. */
+const logIds = (l) => [...new Set([...(Array.isArray(l?.newSentenceIds) ? l.newSentenceIds : []), ...(Array.isArray(l?.sentenceIds) ? l.sentenceIds : [])])];
 
-export function pickToday(cards, logs, todayISO) {
-  const todayLogs = (Array.isArray(logs) ? logs : []).filter((l) => l?.date === todayISO);
-  const newIds = new Set(todayLogs.flatMap((l) => (Array.isArray(l.newSentenceIds) ? l.newSentenceIds : [])));
-  const ids = new Set([...newIds, ...todayLogs.flatMap((l) => (Array.isArray(l.sentenceIds) ? l.sentenceIds : []))]);
-  const pool = (Array.isArray(cards) ? cards : []).filter((c) => isActive(c) && ids.has(c.id));
-  const key = (c) => [RESULT_RANK[todayResult(c, todayISO)] || 0, newIds.has(c.id) ? 1 : 0, learnedAt(c)];
-  pool.sort((a, b) => {
-    const ka = key(a), kb = key(b);
-    return (kb[0] - ka[0]) || (kb[1] - ka[1]) || kb[2].localeCompare(ka[2]);
-  });
-  return pool.slice(0, SPEAK_MAX).map(toSpeakItem);
+export function listSessions(cards, logs) {
+  const byId = new Map((Array.isArray(cards) ? cards : []).filter(isActive).map((c) => [c.id, c]));
+  const rows = (Array.isArray(logs) ? logs : []).map((l) => ({ l, ids: logIds(l) })).filter((r) => r.ids.length)
+    .sort((a, b) => str(b.l.date).localeCompare(str(a.l.date)) || str(b.l.createdAt).localeCompare(str(a.l.createdAt)));
+  // 정렬 뒤라 앞선 행이 더 최신이다 — 문장이 같은 행끼리는 앞선 행만 남는다.
+  const covered = (r, i) => rows.some((o, j) => j !== i && r.ids.every((id) => o.ids.includes(id)) && (o.ids.length > r.ids.length || j < i));
+  return rows.filter((r, i) => !covered(r, i))
+    .map(({ l, ids }) => ({ key: str(l.id), date: str(l.date), items: ids.map((id) => byId.get(id)).filter(Boolean).slice(0, SPEAK_MAX).map(toSpeakItem) }))
+    .filter((s) => s.items.length);
 }
 
 export function pickHard(cards, todayISO) {
@@ -83,6 +76,14 @@ export async function loadSpeakItems(db, lang, scope, todayISO, rng = Math.rando
   const cards = await db.reviewQueue.where('lang').equals(lang).toArray();
   if (scope === 'random') return pickRandom(cards, rng);
   if (scope === 'hard') return pickHard(cards, todayISO);
-  const logs = db.sessionLogs?.where ? await db.sessionLogs.where('date').equals(todayISO).toArray() : [];
-  return pickToday(cards, logs.filter((l) => !l?.lang || l.lang === lang), todayISO);
+  return [];
+}
+
+export async function loadSpeakSessions(db, lang) {
+  if (!db?.reviewQueue?.where || !db?.sessionLogs?.where) return [];
+  const [cards, logs] = await Promise.all([
+    db.reviewQueue.where('lang').equals(lang).toArray(),
+    db.sessionLogs.where('lang').equals(lang).toArray(),
+  ]);
+  return listSessions(cards, logs);
 }

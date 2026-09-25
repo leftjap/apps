@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toSpeakItem, pickToday, pickHard, pickRandom, loadSpeakItems, SPEAK_MAX } from './speakPicks.js';
+import { toSpeakItem, listSessions, pickHard, pickRandom, loadSpeakItems, loadSpeakSessions, SPEAK_MAX } from './speakPicks.js';
 
 const T = '2026-09-08';
 const card = (id, over = {}) => ({
@@ -19,26 +19,41 @@ describe('toSpeakItem', () => {
   });
 });
 
-describe('pickToday — 오늘 세션 로그의 카드, 어려웠던 순 → 신규 우선 → 나중에 배운 순, 상한 5', () => {
-  const cards = ['n1', 'n2', 'n3', 'r1', 'r2', 'r3', 'r4'].map((id) => card(id));
-  cards[3].resultHistory = [{ date: T, result: 'X', source: 'review' }];
-  cards[4].resultHistory = [{ date: T, result: '△', source: 'review' }];
-  cards[5].resultHistory = [{ date: '2026-09-01', result: 'X', source: 'review' }]; // 오늘 아님 → 가중치 없음
-  cards[1].promotedAt = '2026-09-08T10:00:00Z'; cards[0].promotedAt = '2026-09-08T09:00:00Z'; cards[2].promotedAt = '2026-09-08T08:00:00Z';
-  const logs = [
-    { date: T, lang: 'en', mode: 'new', newSentenceIds: ['n1', 'n2', 'n3'], sentenceIds: ['n1', 'n2', 'n3'] },
-    { date: T, lang: 'en', mode: 'review', newSentenceIds: [], sentenceIds: ['r1', 'r2', 'r3', 'r4'] },
-    { date: '2026-09-07', lang: 'en', mode: 'new', newSentenceIds: ['old'], sentenceIds: ['old'] },
-  ];
-  it('7장 중 5장 — X, △, 신규 3장(나중에 배운 순)', () => {
-    expect(pickToday(cards, logs, T).map((i) => i.id)).toEqual(['r1', 'r2', 'n2', 'n1', 'n3']);
+describe('listSessions — 세션 로그 한 건이 세션 하나, 최신순, 문장은 로그에 적힌 순서(배운 순서)', () => {
+  const log = (id, date, ids, createdAt = `${date}T09:00:00Z`) => ({ id, date, lang: 'en', mode: 'new', newSentenceIds: ids, sentenceIds: ids, createdAt });
+  const cards = ['a1', 'a2', 'a3', 'a4', 'b1', 'b2', 'b3', 'b4', 'c1'].map((id) => card(id));
+
+  it('날짜 → 기록 시각 순으로 최신이 먼저, 세션 안 문장은 로그 순서 그대로', () => {
+    const out = listSessions(cards, [
+      log('L-a', '2026-09-05', ['a2', 'a1', 'a3', 'a4']),
+      log('L-c', T, ['c1'], `${T}T08:00:00Z`),
+      log('L-b', T, ['b1', 'b2', 'b3', 'b4'], `${T}T10:00:00Z`),
+    ]);
+    expect(out.map((s) => s.key)).toEqual(['L-b', 'L-c', 'L-a']);
+    expect(out[2]).toMatchObject({ key: 'L-a', date: '2026-09-05' });
+    expect(out[2].items.map((i) => i.id)).toEqual(['a2', 'a1', 'a3', 'a4']);
   });
-  it('오늘 로그가 없으면 빈 배열', () => {
-    expect(pickToday(cards, [logs[2]], T)).toEqual([]);
+
+  it('다른 로그에 문장이 모두 들어 있는 로그는 뺀다 — 중간에 끊긴 뒤 다시 한 세션. 문장이 같으면 최신 한 건만', () => {
+    const out = listSessions(cards, [
+      log('part', '2026-09-13', ['a1', 'a2', 'a3']),
+      log('full', '2026-09-14', ['a1', 'a2', 'a3', 'a4']),
+      log('again-old', '2026-09-15', ['b1', 'b2', 'b3', 'b4'], '2026-09-15T08:00:00Z'),
+      log('again-new', '2026-09-15', ['b1', 'b2', 'b3', 'b4'], '2026-09-15T09:00:00Z'),
+    ]);
+    expect(out.map((s) => s.key)).toEqual(['again-new', 'full']);
   });
-  it('soft-delete·장면 카드는 뺀다', () => {
-    const c = [card('n1', { explanation: { _deleted: true } }), card('n2', { explanation: { dialogue: [] } }), card('n3')];
-    expect(pickToday(c, [logs[0]], T).map((i) => i.id)).toEqual(['n3']);
+
+  it('삭제 표시·장면 카드는 빼고, 남은 문장이 없는 세션과 빈 로그는 목록에 없다', () => {
+    const c = [card('a1', { explanation: { _deleted: true } }), card('a2'), card('b1', { explanation: { _deleted: true } }), card('b2', { explanation: { dialogue: [] } })];
+    const out = listSessions(c, [log('A', '2026-09-20', ['a1', 'a2']), log('B', '2026-09-25', ['b1', 'b2']), log('E', '2026-09-26', [])]);
+    expect(out.map((s) => s.key)).toEqual(['A']);
+    expect(out[0].items.map((i) => i.id)).toEqual(['a2']);
+  });
+
+  it('상한 5 — 문장이 더 많은 세션은 앞의 5개', () => {
+    const ids = ['a1', 'a2', 'a3', 'a4', 'b1', 'b2'];
+    expect(listSessions(cards, [log('L', T, ids)])[0].items.map((i) => i.id)).toEqual(ids.slice(0, SPEAK_MAX));
   });
 });
 
@@ -64,19 +79,25 @@ describe('pickRandom — 상한 5, 주입한 난수로 결정적', () => {
   });
 });
 
-describe('loadSpeakItems — Dexie 에서 매번 다시 읽는다', () => {
-  const cards = [card('n1'), card('h1', { lastResult: 'X' })];
-  const logs = [{ date: T, lang: 'en', mode: 'new', newSentenceIds: ['n1'], sentenceIds: ['n1'] }];
-  const db = {
-    reviewQueue: { where: () => ({ equals: () => ({ toArray: async () => cards }) }) },
-    sessionLogs: { where: () => ({ equals: () => ({ toArray: async () => logs }) }) },
-  };
-  it('today / hard / random 범위별로 고른다', async () => {
-    expect((await loadSpeakItems(db, 'en', 'today', T)).map((i) => i.id)).toEqual(['n1']);
+describe('loadSpeakItems·loadSpeakSessions — Dexie 에서 매번 다시 읽는다', () => {
+  const cards = [card('n1'), card('h1', { lastResult: 'X' }), card('j1', { lang: 'ja' })];
+  const logs = [
+    { id: 'L1', date: T, lang: 'en', mode: 'new', newSentenceIds: ['n1'], sentenceIds: ['n1'], createdAt: `${T}T09:00:00Z` },
+    { id: 'L0', date: '2026-09-01', lang: 'en', mode: 'new', newSentenceIds: ['h1'], sentenceIds: ['h1'], createdAt: '2026-09-01T09:00:00Z' },
+    { id: 'J1', date: T, lang: 'ja', mode: 'new', newSentenceIds: ['j1'], sentenceIds: ['j1'], createdAt: `${T}T10:00:00Z` },
+  ];
+  // where(필드).equals(값) 을 실제로 거르는 가짜 — 세션 목록을 날짜가 아니라 언어로 읽는지 확인한다.
+  const table = (rows) => ({ where: (f) => ({ equals: (v) => ({ toArray: async () => rows.filter((r) => r[f] === v) }) }) });
+  const db = { reviewQueue: table(cards), sessionLogs: table(logs) };
+  it('hard / random 범위별로 고른다', async () => {
     expect((await loadSpeakItems(db, 'en', 'hard', T)).map((i) => i.id)).toEqual(['h1']);
     expect((await loadSpeakItems(db, 'en', 'random', T, () => 0))).toHaveLength(2);
   });
+  it('세션 목록은 날짜와 상관없이 그 언어의 로그 전부로 만든다', async () => {
+    expect((await loadSpeakSessions(db, 'en')).map((s) => s.key)).toEqual(['L1', 'L0']);
+  });
   it('db 없으면 빈 배열', async () => {
-    expect(await loadSpeakItems(null, 'en', 'today', T)).toEqual([]);
+    expect(await loadSpeakItems(null, 'en', 'hard', T)).toEqual([]);
+    expect(await loadSpeakSessions(null, 'en')).toEqual([]);
   });
 });
