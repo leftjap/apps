@@ -2745,6 +2745,64 @@ describe('sessionExprV2 — 상대 줄 채점이 기본 문장을 다시 그리�
   });
 });
 
+/* 상대 줄·응용을 채점하면 refreshDots 가 본 문장 점수 열을 통째로 다시 만들었다. 최신 원(.v-dot.fresh)에는
+ * v-settle 이 걸려 있어 새로 만들 때마다 0.5초 동안 사라졌다가 다시 나타났다 (2026-09-25 사용자 보고:
+ * 상대 줄을 녹음하면 기본 문장의 최종 점수가 깜빡인다). 본 문장 점수가 그대로면 원도 그대로 둔다. */
+describe('sessionExprV2 — 다른 줄 채점이 본 문장 점수 원을 다시 만들지 않는다', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+    { speaker: 'A', name: '소연', en: 'Take your time.', ko: '천천히 와.', kr: '테이켜r 타임' },
+  ];
+  function mount() {
+    const state = makeState();
+    state.cards = [{ id: 'c1', lang: 'en', sentence: "I'm on my way.", ko: '가는 중이야.', pron: '아이몬 마이 웨이',
+      explanation: { key: "I'm on my way = 가는 중이야.", miniDialogue: MD,
+        drills: [{ en: 'Are you on your way?', ko: '오는 중이야?', kr: '아r 여 온 여r 웨이' }] } }];
+    state.step = 1; state.sentence = state.cards[0];
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, {});
+    return host;
+  }
+  const mainDots = (host) => [...host.querySelectorAll('.vs-ln.sel .vs-meta .v-dot')];
+  const recMain = async (host) => {
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+  };
+  const recBtn = async (btn) => { btn.click(); await tick(); btn.click(); await tick(); await tick(); };
+
+  it('바로 아래 상대 줄을 채점해도 최신 점수 원이 같은 노드로 남는다', async () => {
+    const host = mount();
+    await recMain(host);
+    const before = mainDots(host);
+    expect(before.map((d) => d.className)).toEqual(['v-dot fresh']);
+    const below = [...host.querySelectorAll('.vs-ln')][2];
+    await recBtn(below.querySelector('button[aria-label="녹음"]'));
+    expect(below.querySelectorAll('.vs-ln-trace .v-dot')).toHaveLength(1); // 상대 줄 채점은 됐다
+    const after = mainDots(host);
+    expect(after).toHaveLength(before.length);
+    after.forEach((d, k) => expect(d).toBe(before[k]));
+  });
+
+  it('응용을 채점해도 최신 점수 원이 같은 노드로 남는다', async () => {
+    const host = mount();
+    await recMain(host);
+    const before = mainDots(host);
+    await recBtn(host.querySelector('.vs-drills-list button[aria-label="녹음"]'));
+    const after = mainDots(host);
+    expect(after).toHaveLength(before.length);
+    after.forEach((d, k) => expect(d).toBe(before[k]));
+  });
+
+  it('본 문장을 다시 채점하면 원이 하나 늘고 새 원만 최신 강조를 받는다', async () => {
+    const host = mount();
+    await recMain(host);
+    await recMain(host);
+    expect(mainDots(host).map((d) => d.classList.contains('fresh'))).toEqual([false, true]);
+  });
+});
+
 /* 폰 대화 접기에서는 줄 index 가 재색인된다(keepIdx). 상대 줄 채점 뒤 흔적을 제자리에서 고칠 때
  * 원래 index 를 화면 index 로 되돌리지 않으면 엉뚱한 줄이 갱신된다 (2026-09-15). */
 describe('sessionExprV2 — 대화 접기 상태에서도 그 줄의 흔적만 제자리 갱신', () => {

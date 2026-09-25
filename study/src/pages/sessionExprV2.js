@@ -1309,10 +1309,17 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     navHost.replaceChildren(sentenceNavEl(exprCards, { selCardId: s?.id, utterOf, drillProgOf, onSelect: jumpToCard }));
   };
 
+  let dotsKey = null;
   const refreshDots = () => {
     const all = utterScores();
     const shown = all.slice(-MAIN_DOTS_MAX);
-    dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
+    /* 본 문장 점수가 그대로면 원을 다시 만들지 않는다 (2026-09-25 사용자 보고) — 최신 원(.fresh)에는 v-settle 이
+     * 걸려 있어, 상대 줄·응용을 채점할 때마다 새로 만들면 기본 문장의 최종 점수가 0.5초 동안 사라졌다가 나타났다. */
+    const key = all.join(',');
+    if (key !== dotsKey) {
+      dotsKey = key;
+      dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
+    }
     totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 버튼 라벨용 recCount 와 별개
     meta.style.display = all.length ? '' : 'none'; // 결과가 없으면 결과 자리도 없다 (시안 12a §2-2)
     // 캡션은 링을 다시 그리지 않고 글자만 맞춘다 — 응용·상대 줄 채점이 끼어들면 '지난 점수' 로 내려간다.
