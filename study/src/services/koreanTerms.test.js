@@ -17,8 +17,8 @@ describe('splitKoreanTerms — 영문 문장에서 한국어 고유명사 자리
   });
 
   it('문장 맨 앞·맨 뒤 고유명사도 구간이 된다 — 문장부호는 영어 구간에 남는다', () => {
-    expect(plain(splitKoreanTerms('Soyeon wants to go to Hyundae-eumryul.', 'en-US')))
-      .toBe('[Soyeon=soʊ.jʌn] wants to go to [Hyundae-eumryul=hjʌn.dɛ.ʌm.njul].');
+    expect(plain(splitKoreanTerms('Bongsu wants to go to Hyundae-eumryul.', 'en-US')))
+      .toBe('[Bongsu=bɔŋ.su] wants to go to [Hyundae-eumryul=hjʌn.dɛ.um.njul].');
     expect(plain(splitKoreanTerms('How about Cheonggiwa? The galbi is amazing.', 'en-US')))
       .toBe('How about [Cheonggiwa=tʃʌŋ.gi.wɑ]? The galbi is amazing.');
   });
@@ -36,7 +36,7 @@ describe('splitKoreanTerms — 영문 문장에서 한국어 고유명사 자리
   });
 
   it('부분 일치는 가르지 않는다 (단어 경계)', () => {
-    const s = 'Nanisaurus and Soyeonium';
+    const s = 'Nanisaurus and Bongsuium';
     expect(splitKoreanTerms(s, 'en-US')).toEqual([{ ipa: null, text: s }]);
   });
 
@@ -51,13 +51,13 @@ describe('splitKoreanTerms — 영문 문장에서 한국어 고유명사 자리
   });
 
   it('en 이 아닌 언어·빈 입력은 가르지 않는다', () => {
-    expect(splitKoreanTerms('Soyeon', 'ja-JP')).toEqual([{ ipa: null, text: 'Soyeon' }]);
+    expect(splitKoreanTerms('Nani', 'ja-JP')).toEqual([{ ipa: null, text: 'Nani' }]);
     expect(splitKoreanTerms('', 'en-US')).toEqual([{ ipa: null, text: '' }]);
     expect(splitKoreanTerms(null, 'en-US')).toEqual([{ ipa: null, text: '' }]);
   });
 
   it('두 번 불러도 같은 결과 (정규식 lastIndex 초기화)', () => {
-    const s = 'Soyeon and Bongsu.';
+    const s = 'Nani and Bongsu.';
     expect(splitKoreanTerms(s, 'en-US')).toEqual(splitKoreanTerms(s, 'en-US'));
   });
 
@@ -65,6 +65,12 @@ describe('splitKoreanTerms — 영문 문장에서 한국어 고유명사 자리
    * 읽힐지 예측이 안 된다). 사전의 IPA 는 en-US 표의
    * 기호(모음 i ɪ eɪ ɛ æ ɑ ɔ ʊ oʊ u ʌ ə ɝ ɚ aɪ aʊ ɔɪ ju · 자음 p b t d k g m n ŋ f v θ ð s z ʃ ʒ tʃ dʒ l ɹ j w h)
    * 와 음절 경계 '.' 만 쓴다. 따옴표(')·쉼표(,)·콜론(:) 을 강세·장음 기호로 잘못 넣는 실수도 여기서 걸린다. */
+  /* 로마자 읽기가 이미 한국어에 가깝게 들리는 이름(Soyeon·Yonggu·Mangwon)은 사전에 없다 — 2026-09-26 앱 경로
+   * 반복 실측(ko-KR 발음 평가, 3회×2목소리)에서 로마자 ≥ IPA 였다. 넣으면 오히려 나빠지거나 같다. */
+  it('로마자 읽기가 이미 맞는 이름은 사전에 없다', () => {
+    for (const w of ['Soyeon', 'Yonggu', 'Mangwon', 'galbi', 'Gorilla']) expect(KOREAN_TERMS[w], w).toBeUndefined();
+  });
+
   it('사전 값은 en-US IPA 기호와 음절 경계로만 이루어진다', () => {
     const EN_US_IPA = /^(?:[pbtdkgmnŋfvθðszʃʒljwh]|tʃ|dʒ|ɹ|eɪ|oʊ|aɪ|aʊ|ɔɪ|ju|[iɪɛæɑɔʊuʌəɝɚ]|\.)+$/u;
     for (const [roman, entry] of Object.entries(KOREAN_TERMS)) {

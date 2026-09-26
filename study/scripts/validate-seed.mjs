@@ -249,13 +249,15 @@ export function loadSourceEnLines(seedsDir, source) {
  *   ① 문장 첫 낱말이 아닌 대문자 낱말(붙임표 포함) — 영어 고유명사·요일·호칭은 PROPER_NOUN_ALLOW 로 거른다.
  *   ② 한국어 로마자 꼴 소문자 낱말(eo·eu·ae·kk·jj·tt) — 영어 낱말은 LOWER_ALLOW 로 거른다.
  * 못 잡는 것: 문장 첫 낱말, 로마자 꼴이 아닌 소문자(galbi·bulgogi). 초안을 쓸 때 직접 센다(스킬 study-dialogue-batch §5).
- * 허용 목록의 한국어 이름(Suki·Honshitsu·Gorilla·Minsu)은 2026-09-26 실측에서 로마자 읽기가 이미 맞아 사전에 넣지 않은 것. */
+ * 허용 목록의 한국어 이름(Suki·Honshitsu·Gorilla·Minsu·Soyeon·Yonggu·Mangwon)은 2026-09-26 실측에서 로마자 읽기가 이미
+ * 맞아 사전에 넣지 않은 것. */
 const PROPER_NOUN_ALLOW = new Set([
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
   'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
   'Christmas', 'Thanksgiving', 'English', 'Korean', 'Korea', 'Japanese', 'Japan', 'Seoul', 'London', 'Bangkok', 'Paris', 'Singapore',
   'City', 'Hall', 'Center', 'Terminal', 'Street', 'Station', 'Airport', 'Mom', 'Dad', 'Grandma', 'Grandpa', 'Mr', 'Mrs', 'Ms', 'Dr',
   'Suki', 'Honshitsu', 'Gorilla', 'Minsu',
+  'Soyeon', 'Yonggu', 'Mangwon', // 2026-09-26 앱 경로 반복 실측: 로마자 읽기의 ko-KR 발음 평가가 IPA 와 같거나 높다
 ]);
 const LOWER_ALLOW = new Set(['someone', 'anyone', 'everyone', 'people', 'gotta', 'bottom', 'lettuce', 'kitty', 'pretty', 'museum', 'motto', 'video', 'videos', 'meow', 'meowing', 'attack', 'attitude']);
 const KOREAN_LOWER_RE = /eo|eu|ae|kk|jj|tt(?![lei])/;

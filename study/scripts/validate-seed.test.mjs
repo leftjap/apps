@@ -1368,9 +1368,13 @@ describe('validateSeedContent — 한국어 고유명사 사전 게이트 (perso
     expect(errs[0]).toContain('src/services/koreanTerms.js');
   });
 
-  it('사전에 있는 이름은 통과한다 (Mangwon·Hyundae-eumryul 처럼 붙임표 포함)', () => {
-    expect(termErrs(personal("There's a place in Mangwon.", '데어r저 플레이씬 망원'))).toHaveLength(0);
+  it('사전에 있는 이름은 통과한다 (Nani·Hyundae-eumryul 처럼 붙임표 포함)', () => {
+    expect(termErrs(personal('Did Nani throw up again?', '디드 나니 쓰로우 어퍼겐'))).toHaveLength(0);
     expect(termErrs(personal('Okay. And then Hyundae-eumryul?', '오케이 앤 덴 현대음률'))).toHaveLength(0);
+  });
+
+  it('로마자 읽기가 맞아 사전에서 뺀 이름(Soyeon·Yonggu·Mangwon)은 허용 목록으로 통과한다', () => {
+    expect(termErrs(personal("Soyeon met Yonggu in Mangwon.", '소연 멧 용구 인 망원'))).toHaveLength(0);
   });
 
   it('문장 첫 낱말·영어 허용 목록(요일·City Hall·Mom)·전부 대문자(MK)는 후보가 아니다', () => {

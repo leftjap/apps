@@ -30,25 +30,32 @@
  * 대신 어떤 소리로 읽힐지 예측이 안 되므로 표 안 기호만 쓴다). 영어 철자 읽기가 이미 맞는 낱말은 넣지 않는다 — 2026-09-26
  * 서버 세션 전수 실측에서 galbi·gopchang·gondre·Honshitsu·Suki·Minsu 가 그랬고, galbi·Gorilla 는
  * IPA 가 오히려 나빴다 ("Golby", "Goreal Law").
+ *
+ * 판정 기준 (2026-09-26 확정): 앱과 같은 SDK(웹소켓) 경로로 합성한 소리에서 이름 구간만 잘라 **ko-KR 발음 평가**
+ * (참조 = 한글 이름) 정확도를 잰다 — 한국어 청자 모델이 "얼마나 한글 이름답게 들리는가" 를 매기는 값이다.
+ * 로마자 그대로 읽은 소리(하한)와 같은 목소리가 한글만 한국어로 읽은 소리(상한, 9/15 블록 방식의 소리) 사이에서
+ * IPA 후보를 고른다. 합성은 같은 SSML 이어도 매번 조금 다르므로(6/6 해시 상이) 3회×2목소리(Ava·Andrew) 평균으로 본다.
+ * 실측(ko-KR 정확도 평균): Nani 로마자 62→IPA 78 (상한 92) · makgeolli 68→87 (96) · Silbi 58→71 (89) ·
+ * Gwanghwamun 66→77 (94) · Cheonggiwa 79→84 (90) · Seochon 52→75 (92) · Bongsu 62→68 (95) ·
+ * cheonggukjang 73→75 (93) · Hyundae-eumryul 61→72 (88) · bossam 59→66 (80) · Sanggu 63→66 (87).
+ * Soyeon 은 로마자 83 > IPA 80, Yonggu 70 = 70, Mangwon 82 = 81 이라 사전에서 뺐다.
+ * 결과는 "한글 이름답게 들리는 정도" 가 로마자보다 오르되 상한에는 못 미친다 — 한 목소리·한 호흡을 지키는 대가다.
  */
 
 export const KOREAN_TERMS = {
-  // 사람
+  // 사람 — Soyeon·Yonggu 는 로마자 읽기가 이미 같거나 나아 넣지 않는다(아래 실측)
   Nani: { ko: '나니', ipa: 'nɑ.ni' },
-  Soyeon: { ko: '소연', ipa: 'soʊ.jʌn' },
-  Bongsu: { ko: '봉수', ipa: 'boʊŋ.su' },
-  Yonggu: { ko: '용구', ipa: 'joʊŋ.gu' },
+  Bongsu: { ko: '봉수', ipa: 'bɔŋ.su' },
   Sanggu: { ko: '상구', ipa: 'sɑŋ.gu' },
-  // 가게·동네
+  // 가게·동네 — Mangwon 은 로마자 읽기가 이미 맞아 넣지 않는다
   Cheonggiwa: { ko: '청기와', ipa: 'tʃʌŋ.gi.wɑ' },
-  'Hyundae-eumryul': { ko: '현대음률', ipa: 'hjʌn.dɛ.ʌm.njul' },
-  Seochon: { ko: '서촌', ipa: 'sʌ.tʃoʊn' },
+  'Hyundae-eumryul': { ko: '현대음률', ipa: 'hjʌn.dɛ.um.njul' },
+  Seochon: { ko: '서촌', ipa: 'sʌ.tʃɔn' },
   Andong: { ko: '안동', ipa: 'ɑn.doʊŋ' },
-  Mangwon: { ko: '망원', ipa: 'mɑŋ.wʌn' },
   Gwanghwamun: { ko: '광화문', ipa: 'kwɑŋ.hwɑ.mun' },
   Silbi: { ko: '실비', ipa: 'sil.bi' },
   // 음식 — 영어 철자 읽기가 틀리는 것만 (makgeolli → "makjiali", bossam → "Boss Sam")
-  cheonggukjang: { ko: '청국장', ipa: 'tʃʌŋ.guk.tʃɑŋ' },
+  cheonggukjang: { ko: '청국장', ipa: 'tʃʌŋ.gʊk.dʒɑŋ' },
   makgeolli: { ko: '막걸리', ipa: 'mɑk.gʌl.li' },
   bossam: { ko: '보쌈', ipa: 'boʊ.sɑm' },
 };

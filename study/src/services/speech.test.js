@@ -2350,12 +2350,12 @@ describe('buildAzureSSML — 한국어 고유명사는 같은 블록에서 IPA �
 
   it('고유명사 여러 개도 각자 IPA 로, 문장부호·소유격은 영어 글자 그대로', async () => {
     const { buildAzureSSML } = await import('./speech.js');
-    const ssml = buildAzureSSML("Soyeon put in Nani's eye drops at Hyundae-eumryul?", 'en-US', 1, V, null);
+    const ssml = buildAzureSSML("Bongsu put in Nani's eye drops at Hyundae-eumryul?", 'en-US', 1, V, null);
     expect(ssml.match(/<voice /g)).toHaveLength(1);
     expect(ssml.match(/<phoneme /g)).toHaveLength(3);
-    expect(ssml).toContain('<phoneme alphabet="ipa" ph="soʊ.jʌn">Soyeon</phoneme> put in ');
+    expect(ssml).toContain('<phoneme alphabet="ipa" ph="bɔŋ.su">Bongsu</phoneme> put in ');
     expect(ssml).toContain('<phoneme alphabet="ipa" ph="nɑ.ni">Nani</phoneme>&apos;s eye drops at '); // 소유격은 영어 글자(이스케이프)
-    expect(ssml).toContain('<phoneme alphabet="ipa" ph="hjʌn.dɛ.ʌm.njul">Hyundae-eumryul</phoneme>?<');
+    expect(ssml).toContain('<phoneme alphabet="ipa" ph="hjʌn.dɛ.um.njul">Hyundae-eumryul</phoneme>?<');
   });
 
   it('style 이 있으면 express-as 안에서도 IPA 가 붙는다', async () => {
@@ -2366,7 +2366,7 @@ describe('buildAzureSSML — 한국어 고유명사는 같은 블록에서 IPA �
 
   it('영어 구간의 XML 특수문자는 여전히 이스케이프한다', async () => {
     const { buildAzureSSML } = await import('./speech.js');
-    const ssml = buildAzureSSML('Nani & Soyeon <3', 'en-US', 1, V, null);
+    const ssml = buildAzureSSML('Nani & Bongsu <3', 'en-US', 1, V, null);
     expect(ssml).toContain('</phoneme> &amp; <phoneme');
     expect(ssml).toContain('</phoneme> &lt;3<');
   });
@@ -2414,14 +2414,14 @@ describe('speak — 한국어 고유명사가 있어도 고른 음성·style 을
   it('Guy 는 Guy 그대로, voice 블록 하나, 이름은 IPA', async () => {
     const m = setupSDK();
     const { Speech } = await import('./speech.js');
-    const shown = 'Soyeon wants to go to Hyundae-eumryul.';
+    const shown = 'Bongsu wants to go to Hyundae-eumryul.';
     Speech.speak(shown, { lang: 'en-US', voice: 'en-US-GuyNeural' });
     await new Promise((r) => setTimeout(r, 30));
     expect(m.ssml[0].match(/<voice /g)).toHaveLength(1);
     expect(m.ssml[0]).toContain('<voice name="en-US-GuyNeural">');
     expect(m.ssml[0]).not.toContain('Multilingual');
-    expect(m.ssml[0]).toContain('<phoneme alphabet="ipa" ph="soʊ.jʌn">Soyeon</phoneme> wants to go to <phoneme');
-    expect(shown).toBe('Soyeon wants to go to Hyundae-eumryul.'); // 입력 문자열 불변
+    expect(m.ssml[0]).toContain('<phoneme alphabet="ipa" ph="bɔŋ.su">Bongsu</phoneme> wants to go to <phoneme');
+    expect(shown).toBe('Bongsu wants to go to Hyundae-eumryul.'); // 입력 문자열 불변
   });
 
   it('화자 style 도 버리지 않는다', async () => {
