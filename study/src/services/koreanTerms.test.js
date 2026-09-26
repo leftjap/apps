@@ -61,7 +61,8 @@ describe('splitKoreanTerms — 영문 문장에서 한국어 고유명사 자리
     expect(splitKoreanTerms(s, 'en-US')).toEqual(splitKoreanTerms(s, 'en-US'));
   });
 
-  /* Azure 는 en-US 음소표에 없는 기호가 들어가면 400 을 낸다 (SSML 문서). 사전의 IPA 는 en-US 표의
+  /* SSML 문서는 en-US 음소표에 없는 기호에 400 을 낸다고 한다 (실측에서는 a·ɯ·tɕʰ 도 합성됐지만 어떻게
+   * 읽힐지 예측이 안 된다). 사전의 IPA 는 en-US 표의
    * 기호(모음 i ɪ eɪ ɛ æ ɑ ɔ ʊ oʊ u ʌ ə ɝ ɚ aɪ aʊ ɔɪ ju · 자음 p b t d k g m n ŋ f v θ ð s z ʃ ʒ tʃ dʒ l ɹ j w h)
    * 와 음절 경계 '.' 만 쓴다. 따옴표(')·쉼표(,)·콜론(:) 을 강세·장음 기호로 잘못 넣는 실수도 여기서 걸린다. */
   it('사전 값은 en-US IPA 기호와 음절 경계로만 이루어진다', () => {
