@@ -399,50 +399,18 @@ export const SPEAKER_VOICES = {
   },
 };
 
-/* 한국어 고유명사가 든 문장은 Multilingual 계열만 읽는다 (2026-09-15 Azure 실측) — Aria·Guy·Eric 은
- * 한글 구간을 통째로 건너뛰어 "OK. And then ?" 이 된다 (<lang xml:lang="ko-KR"> 를 둘러도 같다).
- * 그래서 화자는 성별을 지키며 Multilingual 로 바꾼다 (en-US 전용 — ja 문장엔 이 고유명사가 없다). */
-export const KOREAN_CAPABLE_VOICE = {
-  'en-US-AriaNeural': 'en-US-AvaMultilingualNeural',
-  'en-US-JaneNeural': 'en-US-AvaMultilingualNeural',
-  'en-US-GuyNeural': 'en-US-AndrewMultilingualNeural',
-  'en-US-EricNeural': 'en-US-AndrewMultilingualNeural',
-  'en-US-DavisNeural': 'en-US-AndrewMultilingualNeural',
-  'en-US-RogerNeural': 'en-US-AndrewMultilingualNeural',
-  'en-US-ChristopherNeural': 'en-US-AndrewMultilingualNeural',
-  'en-US-TonyNeural': 'en-US-AndrewMultilingualNeural',
-};
-
-/** 이 문장을 읽을 수 있는 voice. 한국어 고유명사가 없거나 이미 Multilingual 이면 그대로 둔다. */
-export function voiceForText(voiceName, text, lang) {
-  if (lang !== 'en-US' || splitKoreanTerms(text, lang).length < 2) return voiceName;
-  if (voiceName && /Multilingual/i.test(voiceName)) return voiceName;
-  return KOREAN_CAPABLE_VOICE[voiceName] || 'en-US-AvaMultilingualNeural';
-}
-
-/* 블록 경계의 기본 묵음 제거 — 이걸 안 주면 voice 를 나눌 때마다 앞뒤로 쉼이 붙어 한 문장이
- * 토막토막 들린다 (실측: 3.5초 문장이 6.8초로 늘었다 → 0ms 지정 후 3.5초 유지). */
-const SILENCE_0 = '<mstts:silence type="Leading-exact" value="0ms"/><mstts:silence type="Tailing-exact" value="0ms"/>';
-
-/** Azure SSML 생성 — style 있으면 express-as 래핑. 한국어 고유명사는 제 voice 블록으로 떼어 낸다. */
+/** Azure SSML 생성 — style 있으면 express-as 래핑. 한국어 고유명사는 같은 블록 안에서 IPA 로 읽는다. */
 export function buildAzureSSML(text, lang, rate, voiceName, style) {
   const ns = 'xmlns="http://www.w3.org/2001/10/synthesis"';
   const nsM = `${ns} xmlns:mstts="https://www.w3.org/2001/mstts"`;
   const wrap = (inner) => (style ? `<mstts:express-as style="${style}">${inner}</mstts:express-as>` : inner);
-  /* 한 문장 안에 한글을 섞으면 문장 전체가 한국어 음운으로 넘어간다 (2026-09-15 사용자 청취 보고 +
-   * 실측). voice 블록을 나누면 언어가 서로 번지지 않는다 — 같은 음성이라 음색은 그대로다.
-   * 블록에 붙일 음성 이름이 없으면 나누지 못하므로 로마자를 그대로 둔다 — 한 블록 안의 <lang> 은
-   * 영어까지 한국어 말투로 만들어 오히려 나쁘다. 실경로에서는 voiceForText 가 늘 이름을 준다. */
-  const segs = voiceName ? splitKoreanTerms(text, lang) : [{ ko: false, text }];
-  if (segs.length > 1) {
-    const body = segs.map((sg) => {
-      const t = escapeXml(sg.text);
-      const spoken = sg.ko ? `<lang xml:lang="ko-KR">${t}</lang>` : t;
-      return `<voice name="${voiceName}">${SILENCE_0}${wrap(`<prosody rate="${rate}">${spoken}</prosody>`)}</voice>`;
-    }).join('');
-    return `<speak version="1.0" ${nsM} xml:lang="${lang}">${body}</speak>`;
-  }
-  const inner = wrap(`<prosody rate="${rate}">${escapeXml(text)}</prosody>`);
+  /* 로마자 고유명사(Nani·Gwanghwamun…)에만 <phoneme> 을 붙인다 — 문장은 한 voice·한 prosody 그대로라
+   * 한 사람이 한 호흡으로 읽는다. 9/15 의 '한글 구간을 제 voice 블록으로' 방식은 블록마다 억양이 새로
+   * 시작해 세 사람이 나눠 읽는 것처럼 들렸다 (2026-09-26 사용자 보고). 근거·실측은 koreanTerms.js. */
+  const body = splitKoreanTerms(text, lang)
+    .map((sg) => (sg.ipa ? `<phoneme alphabet="ipa" ph="${sg.ipa}">${escapeXml(sg.text)}</phoneme>` : escapeXml(sg.text)))
+    .join('');
+  const inner = wrap(`<prosody rate="${rate}">${body}</prosody>`);
   const voiceTag = voiceName ? `<voice name="${voiceName}">${inner}</voice>` : inner;
   return `<speak version="1.0" ${style ? nsM : ns} xml:lang="${lang}">${voiceTag}</speak>`;
 }
@@ -582,11 +550,8 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     _dbg('speak synthesizer 준비', { elapsedMs: Date.now() - t0 });
     const cfg = VOICE_DEFAULTS[lang] || {};
     const speakerCfg = (speaker && SPEAKER_VOICES[lang]) ? SPEAKER_VOICES[lang][speaker] : null;
-    const askedVoice = voice ?? speakerCfg?.voice ?? cfg.voice ?? null;
-    const voiceName = voiceForText(askedVoice, text, lang);
-    // 화자를 바꿨으면 style 은 버린다 — 원 화자용 style 은 새 voice 가 지원하지 않는 경우가 많다.
-    const styleName = voiceName !== askedVoice ? null
-      : (style !== undefined ? style : (speakerCfg?.style ?? cfg.style ?? null));
+    const voiceName = voice ?? speakerCfg?.voice ?? cfg.voice ?? null;
+    const styleName = style !== undefined ? style : (speakerCfg?.style ?? cfg.style ?? null);
     const effRate = rate ?? speakerCfg?.rate ?? 0.85;
     _dbg('speak 매핑 결과', { speaker, voiceName, styleName, effRate });
     const ssml = buildAzureSSML(text, lang, effRate, voiceName, styleName);

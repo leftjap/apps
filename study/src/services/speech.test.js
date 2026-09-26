@@ -2320,58 +2320,74 @@ describe('speech — analyzeWavRest 가 NBest[0].Lexical 을 recognizedLexical �
   });
 });
 
-/* ── 한국어 고유명사 낭독 (2026-09-15 사용자 보고 ③) ──────────────────────────
- * 로마자로 적힌 한국어 고유명사를 영어 음성이 영어 철자로 읽었다. 그렇다고 한 문장 안에 한글을 섞으면
- * 문장 전체가 한국어 음운으로 넘어간다(사용자 청취 보고). 그래서 한국어 구간을 **제 voice 블록**으로
- * 떼어 합성한다 — 같은 음성이라 음색은 그대로고, 블록이 나뉘어 언어가 서로 번지지 않는다. */
-describe('buildAzureSSML — 한국어 고유명사는 제 블록에서 읽는다', () => {
+/* ── 한국어 고유명사 낭독 (2026-09-15 사용자 보고 ③ → 2026-09-26 재설계) ──────────────
+ * 로마자로 적힌 한국어 고유명사를 영어 음성이 영어 철자로 읽었다 (Nani → "Nanny", Gwanghwamun → "Guangwamen").
+ * 9/15 엔 한글 구간을 제 <voice> 블록으로 떼어 냈는데, 블록마다 억양이 새로 시작해 한 문장을 세 사람이
+ * 나눠 읽는 것처럼 들렸다 (2026-09-26 사용자 보고 — "Did / 나니 / throw up again?"). Azure 실측으로
+ * 한 블록 안에서는 <lang xml:lang="ko-KR"> 이 문장 중간 낱말에 듣지 않고(<s> 로 문장을 끊어야만 듣고,
+ * 그러면 쉼이 0.8~1.2초 붙는다) IPA <phoneme> 만 자리에서 듣는다. 그래서 문장은 **한 voice 블록**
+ * 그대로 두고 고유명사에만 IPA 를 붙인다 — 같은 사람이 한 호흡으로 읽고, 이름만 한국어 소리로 낸다. */
+describe('buildAzureSSML — 한국어 고유명사는 같은 블록에서 IPA 로 읽는다', () => {
   const V = 'en-US-AvaMultilingualNeural';
   it('고유명사가 없으면 종전 그대로 블록 하나 (회귀 방지)', async () => {
     const { buildAzureSSML } = await import('./speech.js');
     const ssml = buildAzureSSML('I have to go with you next time.', 'en-US', 1, V, null);
     expect(ssml.match(/<voice /g)).toHaveLength(1);
     expect(ssml).not.toContain('mstts');
+    expect(ssml).not.toContain('<phoneme');
     expect(ssml).toContain('I have to go with you next time.');
   });
 
-  it('영어 구간과 한국어 구간이 각각 제 voice 블록이 된다 — 음성 이름은 같다', async () => {
+  it('고유명사가 있어도 voice 블록은 하나 — 한 사람이 문장 전체를 읽는다', async () => {
     const { buildAzureSSML } = await import('./speech.js');
-    const ssml = buildAzureSSML('Okay. And then Hyundae-eumryul?', 'en-US', 1, V, null);
-    expect(ssml.match(/<voice /g)).toHaveLength(2);
-    expect(ssml.match(new RegExp(`name="${V}"`, 'g'))).toHaveLength(2); // 음색 유지
-    expect(ssml).toContain('>Okay. And then <');            // 영어는 영어 블록에 그대로
-    expect(ssml).toContain('<lang xml:lang="ko-KR">현대음률?</lang>'); // 물음표는 이름에 붙는다
-    expect(ssml).not.toContain('Hyundae-eumryul');
+    const ssml = buildAzureSSML('Did Nani throw up again?', 'en-US', 1, V, null);
+    expect(ssml.match(/<voice /g)).toHaveLength(1);
+    expect(ssml.match(/<prosody /g)).toHaveLength(1);
+    expect(ssml).not.toContain('mstts:silence');
+    expect(ssml).not.toContain('xml:lang="ko-KR"');
+    expect(ssml).toContain('>Did <phoneme alphabet="ipa" ph="nɑ.ni">Nani</phoneme> throw up again?<');
   });
 
-  it('블록 사이 무음을 0 으로 지정한다 (문장이 끊겨 들리지 않게)', async () => {
+  it('고유명사 여러 개도 각자 IPA 로, 문장부호·소유격은 영어 글자 그대로', async () => {
     const { buildAzureSSML } = await import('./speech.js');
-    const ssml = buildAzureSSML('How about Cheonggiwa? The galbi is amazing.', 'en-US', 1, V, null);
-    expect(ssml).toContain('xmlns:mstts');
-    expect(ssml.match(/Leading-exact/g)).toHaveLength(5); // 영3 + 한2 블록
-    expect(ssml.match(/Tailing-exact/g)).toHaveLength(5);
-    expect(ssml.match(/<lang xml:lang="ko-KR">/g)).toHaveLength(2);
+    const ssml = buildAzureSSML("Soyeon put in Nani's eye drops at Hyundae-eumryul?", 'en-US', 1, V, null);
+    expect(ssml.match(/<voice /g)).toHaveLength(1);
+    expect(ssml.match(/<phoneme /g)).toHaveLength(3);
+    expect(ssml).toContain('<phoneme alphabet="ipa" ph="soʊ.jʌn">Soyeon</phoneme> put in ');
+    expect(ssml).toContain('<phoneme alphabet="ipa" ph="nɑ.ni">Nani</phoneme>&apos;s eye drops at '); // 소유격은 영어 글자(이스케이프)
+    expect(ssml).toContain('<phoneme alphabet="ipa" ph="hjʌn.dɛ.ʌm.njul">Hyundae-eumryul</phoneme>?<');
   });
 
-  /* 나눌 음성 이름이 없으면 로마자를 그대로 둔다 — 한 블록 안에서 <lang> 만 두르면 문장 전체가
-   * 한국어 음운으로 넘어가(실측) 영어가 더 나빠진다. 실경로에서는 voiceForText 가 늘 이름을 준다. */
-  it('음성 이름이 없으면 나누지 않고 로마자를 그대로 둔다', async () => {
+  it('style 이 있으면 express-as 안에서도 IPA 가 붙는다', async () => {
     const { buildAzureSSML } = await import('./speech.js');
-    const ssml = buildAzureSSML('Okay. And then Hyundae-eumryul?', 'en-US', 1, null, null);
+    const ssml = buildAzureSSML('Did Nani throw up again?', 'en-US', 1.05, 'en-US-JaneNeural', 'cheerful');
+    expect(ssml).toContain('<mstts:express-as style="cheerful"><prosody rate="1.05">Did <phoneme alphabet="ipa" ph="nɑ.ni">Nani</phoneme> throw up again?</prosody></mstts:express-as>');
+  });
+
+  it('영어 구간의 XML 특수문자는 여전히 이스케이프한다', async () => {
+    const { buildAzureSSML } = await import('./speech.js');
+    const ssml = buildAzureSSML('Nani & Soyeon <3', 'en-US', 1, V, null);
+    expect(ssml).toContain('</phoneme> &amp; <phoneme');
+    expect(ssml).toContain('</phoneme> &lt;3<');
+  });
+
+  it('음성 이름이 없어도 IPA 는 붙는다 (블록을 나누지 않으므로 이름이 필요 없다)', async () => {
+    const { buildAzureSSML } = await import('./speech.js');
+    const ssml = buildAzureSSML('Did Nani throw up again?', 'en-US', 1, null, null);
     expect(ssml).not.toContain('<voice');
-    expect(ssml).not.toContain('lang xml:lang="ko-KR"');
-    expect(ssml).toContain('Hyundae-eumryul');
+    expect(ssml).toContain('<phoneme alphabet="ipa" ph="nɑ.ni">Nani</phoneme>');
   });
 
   it('ja 문장은 가르지 않는다', async () => {
     const { buildAzureSSML } = await import('./speech.js');
     const ssml = buildAzureSSML('Soyeon', 'ja-JP', 1, 'ja-JP-AoiNeural', null);
     expect(ssml.match(/<voice /g)).toHaveLength(1);
+    expect(ssml).not.toContain('<phoneme');
     expect(ssml).toContain('Soyeon');
   });
 });
 
-describe('speak — 한국어 고유명사가 있으면 Multilingual 음성으로 읽는다', () => {
+describe('speak — 한국어 고유명사가 있어도 고른 음성·style 을 그대로 쓴다', () => {
   function setupSDK() {
     const state = { ssml: [] };
     class FakePlayer { constructor() { this.privIsPaused = false; } pause() { this.privIsPaused = true; } close() {} }
@@ -2392,40 +2408,39 @@ describe('speak — 한국어 고유명사가 있으면 Multilingual 음성으�
     return state;
   }
 
-  it('한글을 못 읽는 음성은 같은 성별 Multilingual 로 바꾼다', async () => {
+  /* 9/15 엔 한글 블록을 못 읽는 Guy·Eric 을 Multilingual 로 바꿨다. IPA 는 en-US 음성이면 다 읽으므로
+   * (Azure 실측 2026-09-26: Ava·Emma·Andrew·Guy·Eric·Jane+cheerful 전부 400 없이 합성) 바꾸지 않는다 —
+   * 대화 줄 목소리 순환(Guy·Eric)이 고유명사 줄에서만 Andrew 로 새던 것도 이걸로 사라진다. */
+  it('Guy 는 Guy 그대로, voice 블록 하나, 이름은 IPA', async () => {
     const m = setupSDK();
     const { Speech } = await import('./speech.js');
     const shown = 'Soyeon wants to go to Hyundae-eumryul.';
     Speech.speak(shown, { lang: 'en-US', voice: 'en-US-GuyNeural' });
     await new Promise((r) => setTimeout(r, 30));
-    expect(m.ssml[0]).toContain('en-US-AndrewMultilingualNeural');
-    expect(m.ssml[0]).not.toContain('en-US-GuyNeural');
-    expect(m.ssml[0]).toContain('<lang xml:lang="ko-KR">소연</lang>');
-    expect(m.ssml[0]).toContain('> wants to go to <'); // 영어 구간은 영어 그대로
+    expect(m.ssml[0].match(/<voice /g)).toHaveLength(1);
+    expect(m.ssml[0]).toContain('<voice name="en-US-GuyNeural">');
+    expect(m.ssml[0]).not.toContain('Multilingual');
+    expect(m.ssml[0]).toContain('<phoneme alphabet="ipa" ph="soʊ.jʌn">Soyeon</phoneme> wants to go to <phoneme');
     expect(shown).toBe('Soyeon wants to go to Hyundae-eumryul.'); // 입력 문자열 불변
   });
 
-  it('고유명사가 없으면 음성을 바꾸지 않는다 (회귀 방지)', async () => {
+  it('화자 style 도 버리지 않는다', async () => {
+    const m = setupSDK();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('Did Nani throw up again?', { lang: 'en-US', speaker: '우희' });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(m.ssml[0]).toContain('<voice name="en-US-JaneNeural">');
+    expect(m.ssml[0]).toContain('<mstts:express-as style="cheerful">');
+    expect(m.ssml[0]).toContain('ph="nɑ.ni"');
+  });
+
+  it('고유명사가 없으면 종전 그대로 (회귀 방지)', async () => {
     const m = setupSDK();
     const { Speech } = await import('./speech.js');
     Speech.speak('I have to go with you next time.', { lang: 'en-US', voice: 'en-US-GuyNeural' });
     await new Promise((r) => setTimeout(r, 30));
     expect(m.ssml[0]).toContain('en-US-GuyNeural');
-  });
-});
-
-describe('voiceForText — 한국어 고유명사를 읽을 수 있는 음성 고르기', () => {
-  it('고유명사가 있고 음성이 비-Multilingual 이면 같은 성별 Multilingual', async () => {
-    const { voiceForText } = await import('./speech.js');
-    expect(voiceForText('en-US-AriaNeural', 'And then Hyundae-eumryul?', 'en-US')).toBe('en-US-AvaMultilingualNeural');
-    expect(voiceForText('en-US-EricNeural', 'And then Hyundae-eumryul?', 'en-US')).toBe('en-US-AndrewMultilingualNeural');
-    expect(voiceForText(null, 'And then Hyundae-eumryul?', 'en-US')).toBe('en-US-AvaMultilingualNeural');
-  });
-  it('이미 Multilingual 이거나 고유명사가 없으면 그대로', async () => {
-    const { voiceForText } = await import('./speech.js');
-    expect(voiceForText('en-US-AvaMultilingualNeural', 'Hyundae-eumryul', 'en-US')).toBe('en-US-AvaMultilingualNeural');
-    expect(voiceForText('en-US-GuyNeural', 'plain english', 'en-US')).toBe('en-US-GuyNeural');
-    expect(voiceForText('ja-JP-AoiNeural', 'Soyeon', 'ja-JP')).toBe('ja-JP-AoiNeural');
+    expect(m.ssml[0]).not.toContain('<phoneme');
   });
 });
 

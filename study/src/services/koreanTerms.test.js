@@ -1,66 +1,52 @@
 import { describe, it, expect } from 'vitest';
-import { splitKoreanTerms, hasHangul, KOREAN_TERMS } from './koreanTerms.js';
+import { splitKoreanTerms, KOREAN_TERMS } from './koreanTerms.js';
 
-const plain = (segs) => segs.map((s) => (s.ko ? `[${s.text}]` : s.text)).join('');
+const plain = (segs) => segs.map((s) => (s.ipa ? `[${s.text}=${s.ipa}]` : s.text)).join('');
 
-describe('splitKoreanTerms — 영문 문장을 영어 구간과 한국어 고유명사 구간으로 가른다', () => {
-  it('로마자 고유명사 자리를 한글 구간으로 끊어 낸다', () => {
-    expect(splitKoreanTerms('Okay. And then Hyundae-eumryul?', 'en-US')).toEqual([
-      { ko: false, text: 'Okay. And then ' },
-      { ko: true, text: '현대음률?' },
+/* 한국어 고유명사는 **같은 문장·같은 음성 안에서** IPA 로만 발음을 바꾼다 (2026-09-26 사용자 보고).
+ * 종전(2026-09-15)엔 한글 구간을 제 <voice> 블록으로 떼어 냈는데, 블록마다 억양이 새로 시작해
+ * "Did / 나니 / throw up again?" 이 세 사람이 나눠 읽는 것처럼 들렸다. 그래서 구간은 로마자 그대로 두고
+ * 발음 기호만 붙인다 — 화면 글자·채점 레퍼런스와 같은 철자다. */
+describe('splitKoreanTerms — 영문 문장에서 한국어 고유명사 자리에 IPA 를 붙인다', () => {
+  it('고유명사 자리를 IPA 구간으로 끊어 낸다 — 글자는 로마자 그대로', () => {
+    expect(splitKoreanTerms('Did Nani throw up again?', 'en-US')).toEqual([
+      { ipa: null, text: 'Did ' },
+      { ipa: 'nɑ.ni', text: 'Nani' },
+      { ipa: null, text: ' throw up again?' },
     ]);
+  });
+
+  it('문장 맨 앞·맨 뒤 고유명사도 구간이 된다 — 문장부호는 영어 구간에 남는다', () => {
+    expect(plain(splitKoreanTerms('Soyeon wants to go to Hyundae-eumryul.', 'en-US')))
+      .toBe('[Soyeon=soʊ.jʌn] wants to go to [Hyundae-eumryul=hjʌn.dɛ.ʌm.njul].');
     expect(plain(splitKoreanTerms('How about Cheonggiwa? The galbi is amazing.', 'en-US')))
-      .toBe('How about [청기와?] The [갈비] is amazing.');
-  });
-
-  it('문장 맨 앞·맨 뒤 고유명사도 구간이 된다', () => {
-    expect(splitKoreanTerms('Soyeon wants to go to Hyundae-eumryul.', 'en-US')).toEqual([
-      { ko: true, text: '소연' },
-      { ko: false, text: ' wants to go to ' },
-      { ko: true, text: '현대음률.' },
-    ]);
-  });
-
-  /* 한국어 뒤에 붙은 문장부호는 한국어 구간에 붙인다 — 부호만 든 구간은 빈 발화가 되고,
-   * 물음표는 그 이름에 걸려야 맞다. */
-  it('한국어 바로 뒤의 문장부호는 한국어 구간에 붙는다', () => {
-    const segs = splitKoreanTerms('How about Gorilla?', 'en-US');
-    expect(segs).toEqual([{ ko: false, text: 'How about ' }, { ko: true, text: '고릴라?' }]);
+      .toBe('How about [Cheonggiwa=tʃʌŋ.gi.wɑ]? The galbi is amazing.');
   });
 
   it('소유격 \'s 는 영어 구간으로 남는다', () => {
-    expect(splitKoreanTerms("I put in Nani's eye drops at noon.", 'en-US')).toEqual([
-      { ko: false, text: 'I put in ' },
-      { ko: true, text: '나니' },
-      { ko: false, text: "'s eye drops at noon." },
-    ]);
-  });
-
-  it('문장 첫머리 대문자 변형도 같은 항목으로 본다', () => {
-    expect(plain(splitKoreanTerms('Galbi is amazing.', 'en-US'))).toBe('[갈비] is amazing.');
-  });
-
-  /* 영어 보통명사와 철자가 겹치는 항목(Gorilla=가게 이름)은 대문자일 때만 바꾼다 —
-   * 소문자 gorilla 는 동물이라 한국어로 읽으면 오히려 틀린다. */
-  it('영어 보통명사와 겹치는 항목은 대문자일 때만 바꾼다', () => {
-    expect(splitKoreanTerms('I saw a gorilla at the zoo.', 'en-US'))
-      .toEqual([{ ko: false, text: 'I saw a gorilla at the zoo.' }]);
+    expect(plain(splitKoreanTerms("I put in Nani's eye drops at noon.", 'en-US')))
+      .toBe("I put in [Nani=nɑ.ni]'s eye drops at noon.");
   });
 
   it('부분 일치는 가르지 않는다 (단어 경계)', () => {
-    expect(splitKoreanTerms('Nanisaurus and Soyeonium', 'en-US'))
-      .toEqual([{ ko: false, text: 'Nanisaurus and Soyeonium' }]);
+    const s = 'Nanisaurus and Soyeonium';
+    expect(splitKoreanTerms(s, 'en-US')).toEqual([{ ipa: null, text: s }]);
+  });
+
+  it('철자는 사전 그대로만 본다 — 소문자 nani 는 이름이 아니다', () => {
+    const s = 'the nani of it';
+    expect(splitKoreanTerms(s, 'en-US')).toEqual([{ ipa: null, text: s }]);
   });
 
   it('고유명사가 없으면 구간 하나 — 원문 그대로', () => {
     const s = 'I have to go with you next time.';
-    expect(splitKoreanTerms(s, 'en-US')).toEqual([{ ko: false, text: s }]);
+    expect(splitKoreanTerms(s, 'en-US')).toEqual([{ ipa: null, text: s }]);
   });
 
   it('en 이 아닌 언어·빈 입력은 가르지 않는다', () => {
-    expect(splitKoreanTerms('Soyeon', 'ja-JP')).toEqual([{ ko: false, text: 'Soyeon' }]);
-    expect(splitKoreanTerms('', 'en-US')).toEqual([{ ko: false, text: '' }]);
-    expect(splitKoreanTerms(null, 'en-US')).toEqual([{ ko: false, text: '' }]);
+    expect(splitKoreanTerms('Soyeon', 'ja-JP')).toEqual([{ ipa: null, text: 'Soyeon' }]);
+    expect(splitKoreanTerms('', 'en-US')).toEqual([{ ipa: null, text: '' }]);
+    expect(splitKoreanTerms(null, 'en-US')).toEqual([{ ipa: null, text: '' }]);
   });
 
   it('두 번 불러도 같은 결과 (정규식 lastIndex 초기화)', () => {
@@ -68,18 +54,15 @@ describe('splitKoreanTerms — 영문 문장을 영어 구간과 한국어 고�
     expect(splitKoreanTerms(s, 'en-US')).toEqual(splitKoreanTerms(s, 'en-US'));
   });
 
-  it('사전 값은 모두 한글이다', () => {
-    for (const [roman, hangul] of Object.entries(KOREAN_TERMS)) {
-      expect(hasHangul(hangul), roman).toBe(true);
-      expect(hasHangul(roman), roman).toBe(false);
+  /* Azure 는 en-US 음소표에 없는 기호가 들어가면 400 을 낸다 (SSML 문서). 사전의 IPA 는 en-US 표의
+   * 기호(모음 i ɪ eɪ ɛ æ ɑ ɔ ʊ oʊ u ʌ ə ɝ ɚ aɪ aʊ ɔɪ ju · 자음 p b t d k g m n ŋ f v θ ð s z ʃ ʒ tʃ dʒ l ɹ j w h)
+   * 와 음절 경계 '.' 만 쓴다. 따옴표(')·쉼표(,)·콜론(:) 을 강세·장음 기호로 잘못 넣는 실수도 여기서 걸린다. */
+  it('사전 값은 en-US IPA 기호와 음절 경계로만 이루어진다', () => {
+    const EN_US_IPA = /^(?:[pbtdkgmnŋfvθðszʃʒljwh]|tʃ|dʒ|ɹ|eɪ|oʊ|aɪ|aʊ|ɔɪ|ju|[iɪɛæɑɔʊuʌəɝɚ]|\.)+$/u;
+    for (const [roman, entry] of Object.entries(KOREAN_TERMS)) {
+      expect(entry.ipa, roman).toMatch(EN_US_IPA);
+      expect(entry.ipa, roman).not.toMatch(/^\.|\.$|\.\./);
+      expect(entry.ko, roman).toMatch(/^[가-힣]+$/);
     }
-  });
-});
-
-describe('hasHangul', () => {
-  it('한글 음절이 하나라도 있으면 참', () => {
-    expect(hasHangul('And then 현대음률?')).toBe(true);
-    expect(hasHangul('And then Hyundae-eumryul?')).toBe(false);
-    expect(hasHangul(null)).toBe(false);
   });
 });
