@@ -252,6 +252,7 @@ export function loadSourceEnLines(seedsDir, source) {
  * 허용 목록의 한국어 이름(Suki·Honshitsu·Gorilla·Minsu·Soyeon·Yonggu·Mangwon)은 2026-09-26 실측에서 로마자 읽기가 이미
  * 맞아 사전에 넣지 않은 것. */
 const PROPER_NOUN_ALLOW = new Set([
+  'Sarah', 'Liam', 'Emma', 'Tom', // personal 트랙 반복 인물 (2026-09-26 배정표 §2-2) — 영어 이름이라 TTS 가 그대로 읽는다
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
   'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
   'Christmas', 'Thanksgiving', 'English', 'Korean', 'Korea', 'Japanese', 'Japan', 'Seoul', 'London', 'Bangkok', 'Paris', 'Singapore',
