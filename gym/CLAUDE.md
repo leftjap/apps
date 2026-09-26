@@ -42,6 +42,11 @@
   `xcrun simctl spawn <DEV> defaults write com.apple.Accessibility ReduceMotionEnabled -bool true`.
   2026-09-17 실측 — 히스토리 카드 커밋 전환을 연속 스크린샷으로 찍어 비교하니 끄면 중간색
   `(211,140,101)`, 켜면 곧바로 최종색 `(207,126,78)` 이었다.
+- **날짜 넘김 재현** (`scripts/sim-faketime/`): 앱이 살아 있는 채로 자정을 넘기는 상황은 기기 시계를 못 바꿔도
+  시뮬 앱의 벽시계만 옮겨 재현한다. `build.sh` 로 dylib 을 만들고 `SIMCTL_CHILD_DYLD_INSERT_LIBRARIES` +
+  `SIMCTL_CHILD_FAKE_OFFSET_SEC=-86400` 으로 띄운 뒤 `kill -USR1 <pid>` → 하루 앞당김. XCUITest 는
+  `launchEnvironment` 에 같은 키 + `FAKE_ADVANCE_ON_BACKGROUND=1`. 2026-09-26 "토요일 운동이 금요일로" 를
+  수정 전 빌드에서 재현(25 고정)·수정 후 26 으로 확인할 때 썼다.
 - UI 테스트 스크린샷 회수: `-resultBundlePath <out.xcresult>` 로 돌린 뒤
   `xcrun xcresulttool export attachments --path <out.xcresult> --output-path <dir>`.
   `manifest.json` 의 `suggestedHumanReadableName` 이 `XCTAttachment.name` 이다.
