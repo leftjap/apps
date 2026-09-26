@@ -23,6 +23,13 @@ describe('splitKoreanTerms — 영문 문장에서 한국어 고유명사 자리
       .toBe('How about [Cheonggiwa=tʃʌŋ.gi.wɑ]? The galbi is amazing.');
   });
 
+  it('소문자 음식 이름도 사전 철자 그대로 맞춘다 (기존 세션 전수 실측 2026-09-26)', () => {
+    expect(plain(splitKoreanTerms('Can I get us some makgeolli?', 'en-US')))
+      .toBe('Can I get us some [makgeolli=mɑk.gʌl.li]?');
+    expect(plain(splitKoreanTerms('How about Andong Silbi? It\'s a taxi ride away.', 'en-US')))
+      .toBe("How about [Andong=ɑn.doʊŋ] [Silbi=sil.bi]? It's a taxi ride away.");
+  });
+
   it('소유격 \'s 는 영어 구간으로 남는다', () => {
     expect(plain(splitKoreanTerms("I put in Nani's eye drops at noon.", 'en-US')))
       .toBe("I put in [Nani=nɑ.ni]'s eye drops at noon.");
