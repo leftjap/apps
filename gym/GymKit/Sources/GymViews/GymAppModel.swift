@@ -37,6 +37,13 @@ public final class GymAppModel: ObservableObject {
         get { pinnedToday ?? Date() }
         set { pinnedToday = newValue }
     }
+    // 세션 화면의 "오늘" = 진행 중 세션이 기록될 날. finalize 가 시작 시각(첫 종목 추가)의 날짜로
+    // 기록하므로 같은 규칙을 쓴다 — 벽시계를 쓰면 자정을 넘긴 세션의 세트가 다음 날 원에 찍히고
+    // 기록은 전날로 들어간다. 첫 종목 전이거나 고정 주입(스냅샷)이면 referenceToday.
+    public var sessionDay: Date {
+        guard pinnedToday == nil, let st = session.startTime else { return referenceToday }
+        return Date(timeIntervalSince1970: Double(st) / 1000)
+    }
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
     public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
     public let cloud = CloudStore()   // 클라우드 sync (local-first — 로그인은 선택)

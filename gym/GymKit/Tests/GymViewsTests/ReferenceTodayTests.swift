@@ -16,6 +16,24 @@ import GymCore
         #expect(abs(m.referenceToday.timeIntervalSinceNow) < 0.5)
     }
 
+    // 세션 화면의 "오늘" = 이 세션이 기록될 날. finalize 가 시작 시각의 날짜로 기록하므로,
+    // 자정을 넘겨 이어지는 세션은 시작한 날로 보여야 한다 — 벽시계를 쓰면 진행 중 세트가 다음 날
+    // 원에 찍히고 기록은 전날로 들어간다 (시뮬 날짜 넘김 실측 2026-09-26).
+    @Test func sessionDayIsTheDayTheSessionWillBeRecorded() {
+        let start = Date().addingTimeInterval(-86_400)   // 어제 이 시각에 시작
+        let s = GymSession(id: "s", date: GymAppModel.dayFmt.string(from: start),
+                           startTime: Int64(start.timeIntervalSince1970 * 1000), status: .active)
+        let m = GymAppModel(snapshotSession: s)
+        let recorded = GymSessionLogic.finalize(s, endTime: Int64(Date().timeIntervalSince1970 * 1000)).date
+        #expect(GymAppModel.dayFmt.string(from: m.sessionDay) == recorded)
+    }
+
+    // 첫 종목 전(시작 시각 없음)이면 기록될 날은 첫 종목을 넣는 날 = 오늘이다.
+    @Test func sessionDayBeforeFirstExerciseIsToday() {
+        let m = GymAppModel(snapshotSession: GymSession(id: "s", date: "2026-09-25", status: .active))
+        #expect(abs(m.sessionDay.timeIntervalSinceNow) < 1)
+    }
+
     // 스냅샷·테스트의 고정 주입은 그대로 유지돼야 한다.
     @Test func pinnedValueStaysPinned() async throws {
         let m = GymAppModel(snapshotSession: GymSession(id: "s", date: "2026-09-25", status: .active))

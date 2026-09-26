@@ -399,27 +399,27 @@ public struct SessionScreenView: View {
             // 세트바와 사이에 구분선을 두지 않는다. 수평 24 는 홈 카드·세트바와 같은 인셋.
             // SE(375×667)는 812 보다 145pt 짧아 카드를 넣으면 히어로가 겹친다 — 숨긴다 (§9).
             if showHistoryCard && !Self.isCompactScreen {
-                let thisCells = model.weekCells(around: model.referenceToday)
-                let prevCells = model.weekCells(around: model.referenceToday, weekOffset: -1)
+                let thisCells = model.weekCells(around: model.sessionDay)
+                let prevCells = model.weekCells(around: model.sessionDay, weekOffset: -1)
                 // 유산소도 같은 카드를 쓴다 (사용자 2026-09-17). 색만 teal 계열이고, 원 안은
                 // 두 경우 모두 날짜다. 유산소 원의 채움은 지표와 무관하게 '그날 뛰었나' 이므로
                 // 지표는 실앱 기본값(.distance)으로 고정해 읽는다.
                 let cardio = kind == .cardio
                     ? GymSessionLogic.cardioMetricWeek(history: model.history, todaySets: sets,
                                                        exerciseId: exId, metric: .distance,
-                                                       now: model.referenceToday)
+                                                       now: model.sessionDay)
                     : nil
                 let lift = kind == .cardio ? nil
                     : GymSessionLogic.liftMetricWeek(history: model.history, todaySets: sets,
                                                      exerciseId: exId, kind: kind,
-                                                     now: model.referenceToday)
+                                                     now: model.sessionDay)
                 SessionLiftHistoryCard(
                     palette: cardio != nil ? .cardio : .lift,
                     days: cardio.map {
                         SessionLiftHistoryCard.days(cardioWeek: $0, thisCells: thisCells,
-                                                    prevCells: prevCells, refToday: model.referenceToday)
+                                                    prevCells: prevCells, refToday: model.sessionDay)
                     } ?? SessionLiftHistoryCard.days(week: lift!, thisCells: thisCells,
-                                                     prevCells: prevCells, refToday: model.referenceToday),
+                                                     prevCells: prevCells, refToday: model.sessionDay),
                     weekdayLabels: cardio?.days.map(\.label) ?? lift!.days.map(\.label),
                     todayIndex: cardio?.days.firstIndex(where: \.isToday)
                         ?? lift!.days.firstIndex(where: \.isToday),
@@ -456,7 +456,7 @@ public struct SessionScreenView: View {
                 // 주간 캘린더가 헤더 바로 아래에 붙고 나머지 높이를 카드가 전부 쓴다.
                 CardioPanel(history: model.history, set: dispSet,
                             todaySets: model.currentBlock?.sets ?? [],
-                            exerciseId: exId, now: model.referenceToday, locked: locked,
+                            exerciseId: exId, now: model.sessionDay, locked: locked,
                             initialMetric: initialCardioMetric,
                             onKeypad: { m in openKeypad(Self.keypadField(m)) },
                             onSetValue: { m, v in model.applyKeypad(Self.keypadField(m), value: v) })
