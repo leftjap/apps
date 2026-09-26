@@ -694,6 +694,12 @@ public struct SessionScreenView: View {
     }
     func switchKeypadMode(_ field: GymAppModel.KeypadField) {
         guard var kp = keypad, kp.field != field else { return }
+        // 손으로 친 값은 전환 전에 저장한다. 버퍼를 새 필드 프리필로 덮어쓰기만 하면 앞 필드 입력이
+        // 사라진다 (실기기 9/24: 거리 입력 → [시간] → 완료 에서 거리 소실, 무게↔횟수도 같음).
+        // 프리필을 건드리지 않았으면(fresh) 저장하지 않는다 — 직전 기록이 오늘 값으로 들어가지 않게.
+        if !kp.fresh, let v = Double(kp.buffer), v >= 0 {
+            model.applyKeypad(kp.field, value: v, setIdx: kp.setIdx)
+        }
         let pre = prefillValue(field, setIdx: kp.setIdx)
         kp.field = field
         kp.buffer = pre.map { Self.fmtW($0) } ?? ""
