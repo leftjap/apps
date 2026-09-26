@@ -12,6 +12,8 @@
 5. **2026년에 사람과 말이 오가는 자리만 쓴다.** 환전소·유심 카운터·택시 요금 흥정·전화 예약·배달 전화·카드 분실 전화·종이 티켓 수령은 앱과 키오스크로 넘어갔으므로 쓰지 않는다. 텍스 리펀은 나라에 따라 다르다 — 유럽·한국은 키오스크·즉시 환급이 흔하지만 태국은 세관 창구에서 사람이 확인하므로 방콕 시리즈에는 넣을 수 있다. 남은 자리는 프런트에서 문제 풀기, 기내, 입국심사(미국·태국은 대면), 식당 주문의 세부, 약국, 스몰토크, 한국에서 길 묻는 외국인(구글맵이 한국에서 도보 안내를 못 한다 — 2026년 중반 지식 기준이고, 지도 반출 허가로 바뀌었으면 장면 89 만 고친다), 그랩 기사가 픽업 위치를 못 찾아 걸어 오는 전화다.
 6. **재미는 인물과 사건에서 나온다.** 반복 인물(§2-2)과 시리즈로 묶어, 복습 때 장면이 떠오르게 한다. 모두영어는 아는 사이의 말이 대부분이라 반복 인물이 있어야 자연스럽게 들어간다.
 
+7. **관계사·삽입절을 편마다 두 줄 이상, 지오 줄에 최소 한 줄 넣는다.** 사용자가 약한 부분이다(2026-09-26). 상대 질문에도(`Is this the bus that goes to Siam?` `Do you know where I can top up?`), 지오 답에도(`That's the hotel I'm staying at.` `The seat I picked online isn't showing.` `I'm not sure if I heard that right.`). `verify-draft` 가 어림으로 세어 경고하고, 접촉절(`the room I booked`)은 어림으로 못 잡으니 줄에 `rel: true` 를 붙인다.
+
 배정표는 **장면 유형에 닻 문형 1~2개**를 붙인 것이다. 2026-09-19 에 실패한 "패턴 배정표" 는 대화 한 편의 줄마다 패턴을 먼저 박은 것이었고, 그건 여전히 금지다. 대화는 한 가닥으로 먼저 쓰고, 닻 문형이 자연스럽게 들어갈 자리가 없으면 바꾼다.
 
 ## 2. 인물 시트 (일기에서 확인된 사실만)
@@ -34,31 +36,45 @@
 | 이름 | 누구 | TTS | 편수 | 살리는 시트 항목 |
 |---|---|---|---:|---|
 | Liam | 홍대 헬스장 트레드밀 옆자리, 캐나다인 영어 강사, 30대 | B(남) | 12 | 러닝 5→30분 · 허리 부상 · 50세 · 맥주 한 병 규칙 · 운동앱 · 운동 안 가면 기분 가라앉음 |
-| Priya | 위층으로 이사 온 영국인 디자이너, 고양이 두 마리 | A(여) | 10 | 나니 시력·소리 민감 · 화재경보기 3시간 · 택배 · 워커힐 김치 · 새 세탁기 · 천호 이사 계획 |
-| Mateo | 공항철도 역 앞 카페의 스페인 출신 바리스타 | B(남) | 8 | 커피 줄이기 · 앱 개발 · 동네 맛집(보쌈·감자탕) · 아내 비행 주말 · 늦잠 |
-| Anna | 소연의 외국인 동료 승무원(대한항공 현지 채용) | A(여) | 8 + 해외 2 | 소연 새벽 출근 · 기내에서 "소연 남편" · 맥주 한 병 · 나니 소개 · 기념일 아이폰 |
-| Nok | 방콕 호텔 프런트 | A(여) | 5 | 크루 요금 예약 · 늦잠 조식 · 에어컨 · 시암센터 길 · 체크아웃 |
+| Emma | 위층으로 이사 온 영국인 디자이너, 고양이 두 마리 | A(여) | 10 | 나니 시력·소리 민감 · 화재경보기 3시간 · 택배 · 워커힐 김치 · 새 세탁기 · 천호 이사 계획 |
+| Tom | 공항철도 역 앞 카페에서 일하는 호주인 바리스타(워킹홀리데이) | B(남) | 8 | 커피 줄이기 · 앱 개발 · 동네 맛집(보쌈·감자탕) · 아내 비행 주말 · 늦잠 |
+| Sarah | 소연의 외국인 동료 승무원(대한항공 현지 채용) | A(여) | 8 + 해외 2 | 소연 새벽 출근 · 기내에서 "소연 남편" · 맥주 한 병 · 나니 소개 · 기념일 아이폰 |
+| May | 방콕 호텔 프런트(태국에서 흔한 영어식 애칭) | A(여) | 5 | 크루 요금 예약 · 늦잠 조식 · 에어컨 · 시암센터 길 · 체크아웃 |
 | 여행객·직원·승객 | 일회성 | 상황별 | 나머지 | — |
 
-남성 인물(Liam·Mateo)은 지오와 같은 B 음성이다(1묶음 정경섭 장면과 같은 처리).
+남성 인물(Liam·Tom)은 지오와 같은 B 음성이다(1묶음 정경섭 장면과 같은 처리). 이름은 흔하고 서로 구분되는 것으로 골랐다 — 첫소리 L·E·T·S·M (2026-09-26 지적으로 Emma·Tom·Sarah·May 에서 바꿈).
 
 ## 3. 배정표 (100편 — 2차, 2026-09-26)
 
 열 뜻: **사건** = 그 편의 한 줄 줄거리(재미가 여기서 난다). **닻** = 자연스러운 30패턴 1~2개. **모두영어** = 뜻이 그대로 맞는 문장 후보. (사용) = 이미 카드로 쓴 문장.
+
+### 3-0. 긴장 장면은 겹쳐서 만든다 (한 번만 만들지 않는다)
+
+검색(2026-09-26)에서 영어가 약한 여행자가 가장 힘들다고 꼽힌 자리는 입국심사(심사관과 1:1, 틀리면 2차 검사), 공항 절차(안내방송·보안 지시·시간 압박이 겹침), 교통(기사와의 소통), 호텔 체크인, 식당 주문, 긴급 상황이었다. 사용자가 지목한 그랩·택시·호텔·입국심사·티케팅을 더해 여덟 유형으로 묶고, 유형마다 서로 다른 변주로 세 편 이상 나오게 했다. 마지막 줄은 같은 상황을 한국에서 도와주는 쪽에서 겪는 것이다 — 심사관·직원이 하는 질문이 귀에 익는다.
+
+| 유형 | 겹 (행 · 변주) |
+|---|---|
+| 입국심사 | 4 방콕(기본 질문) · 21 미국(아내 직업까지 묻는 추가 질문) · 36 런던(전자게이트 실패 뒤 대면) · 50 베트남(부모님 대신 답하기) |
+| 공항 카운터·탑승 | 1 좌석 변경 · 20 짐 초과 · 33 보안검색 · 34 게이트 변경·지연 · 45 안내방송 못 알아듣고 확인 |
+| 호텔 | 6 크루 요금 예약 확인 · 7 조식 마감 뒤 · 8 방 전화로 고장 신고 · 19 체크아웃 정산 · 23 동반자 등록 · 49 부모님 방 층 |
+| 교통·기사 전화 | 5 그랩 기사 전화(픽업 층) · 22 우버 기사 전화(픽업 존) · 10 BTS 기계 오류 · 16 길 잃음 · 29 우버에 둔 가방 · 37 컨택리스 |
+| 식당·계산 | 13 매운 정도 · 38 한 잔 규칙 · 40 잘못 나온 음식과 계산 착오 · 47 부모님 못 먹는 것 · 12 디카페인 |
+| 아플 때·분실 | 14 약국(소연 감기) · 43 약국(안약) · 15 마사지(허리) · 29 분실 신고 |
+| 한국에서 거꾸로 | 89 공항철도 · 90 환승 · 94 교통카드 · 98 공항 가는 법 · 95 약국 안내 |
 
 ### 해외 I — 방콕 5일 (20편, 소연 근무 중 지오 혼자)
 
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
 | 1 | 인천 카운터. 앱 체크인은 됐는데 좌석이 소연 담당 구역과 딴 칸 | 직원 | #20 I was wondering if · #7 Can I get | |
-| 2 | 기내. 소연 동료 Anna: "소연 남편이죠? 맥주는 한 병만이라던데요" | Anna | #2 I'm supposed to · #3 I was about to | I was just about to ~ (1편 #45 사용) |
+| 2 | 기내. 소연 동료 Sarah: "소연 남편이죠? 맥주는 한 병만이라던데요" | Sarah | #2 I'm supposed to · #3 I was about to | I was just about to ~ (1편 #45 사용) |
 | 3 | 기내 옆자리 태국 출장객. "아내가 지금 저 뒤에서 일해요" → "승객이 아니라 근무 중" 오해 풀기 | 승객 | #29 That's why · #30 That's what I mean | How did you two meet? (1편 #27) |
 | 4 | 수완나품 입국심사(대면). 목적·일수·호텔 | 심사관 | #4 I'm here to · #2 I'm supposed to | |
 | 5 | 그랩 기사 전화. 앱 위치가 다른 층, 세븐일레븐 보이냐 | 기사 | #16 There's · #8 Can you | I'm on my way. (사용) |
-| 6 | 호텔 체크인. 예약이 소연 이름·크루 요금 | Nok | #4 I'm here to · #10 I'm not sure if | |
-| 7 | 첫 아침. 늦잠으로 조식 마감 10분 뒤 | Nok | #7 Can I get · #27 I didn't mean to | I overslept. (사용) |
-| 8 | 에어컨 소음, 리모컨 먹통. 사람 보내 달라기 | Nok | #18 I need you to · #8 Can you | It's not working. (1편 #175) |
-| 9 | 시암센터 가는 법. BTS 냐 그랩이냐, 비 예보 | Nok | #25 It depends on · #24 You might want to | |
+| 6 | 호텔 체크인. 예약이 소연 이름·크루 요금 | May | #4 I'm here to · #10 I'm not sure if | |
+| 7 | 첫 아침. 늦잠으로 조식 마감 10분 뒤 | May | #7 Can I get · #27 I didn't mean to | I overslept. (사용) |
+| 8 | 방 전화로 프런트에. 에어컨 소음·리모컨 먹통, 사람 보내 달라기 | May | #18 I need you to · #8 Can you | It's not working. (1편 #175) |
+| 9 | 시암센터 가는 법. BTS 냐 그랩이냐, 비 예보 | May | #25 It depends on · #24 You might want to | |
 | 10 | BTS 창구. 카드 기계 오류 → 현금 | 직원 | #1 I'm trying to · #11 I don't think | |
 | 11 | 시암센터 점원. 미감 까다로운 아내 선물 | 점원 | #10 I'm not sure if · #21 The thing is | |
 | 12 | 카페. 디카페인 있나, 커피 줄이는 중 | 바리스타 | #7 Can I get · #1 I'm trying to | Can I get a coffee? (2편 #74) · I'm trying to cut down. (사용) |
@@ -68,7 +84,7 @@
 | 16 | 길 잃음. 구글맵 오프라인, 행인에게 | 행인 | #20 I was wondering if · #14 It looks like | |
 | 17 | 호텔 라운지. 은퇴한 호주 부부 "왜 혼자?" | 여행자 | #5 I've been · #29 That's why | |
 | 18 | 시암 앞. 소연과 사진 부탁(좋은 추억) | 행인 | #9 Do you mind · #19 I just wanted to | |
-| 19 | 체크아웃. 미니바 맥주 한 병 = 규칙 지킴 | Nok | #11 I don't think · #28 I can't wait to | It's been a long day. (1편 #330) |
+| 19 | 체크아웃. 미니바 맥주 한 병 = 규칙 지킴 | May | #11 I don't think · #28 I can't wait to | It's been a long day. (1편 #330) |
 | 20 | 귀국 카운터. 소연 쇼핑으로 짐 초과 | 직원 | #25 It depends on · #23 You don't have to | |
 
 ### 해외 II — 라스베가스 레이오버 (15편)
@@ -76,9 +92,9 @@
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
 | 21 | 미국 입국심사. "아내가 승무원인데 왜 혼자?" | 심사관 | #4 I'm here to · #29 That's why | |
-| 22 | 우버. 스트립 호텔, 팁 문화 확인 | 기사 | #8 Can you · #22 As far as I know | Can you give me a ride? (2편 #129) |
+| 22 | 우버 기사 전화. 픽업 존을 못 찾음, 팁은 앱으로 되나 | 기사 | #8 Can you · #22 As far as I know | Can you give me a ride? (2편 #129) |
 | 23 | 크루 호텔 프런트. 소연 방에 합류 등록 | 직원 | #4 I'm here to · #18 I need you to | |
-| 24 | 소연 동료들과 저녁. Anna 가 맥주 한 병 규칙으로 놀림 | Anna | #23 You don't have to · #27 I didn't mean to | I'll buy you a drink. (1편 #113) · Don't make a habit of it. (1편 #283) |
+| 24 | 소연 동료들과 저녁. Sarah 가 맥주 한 병 규칙으로 놀림 | Sarah | #23 You don't have to · #27 I didn't mean to | I'll buy you a drink. (1편 #113) · Don't make a habit of it. (1편 #283) |
 | 25 | 뷔페 줄. 옆 사람과 | 손님 | #16 There's · #14 It looks like | Are you in line? (1편 #8) · Who's next? (1편 #9) |
 | 26 | 카지노 안 하는 이유. "안 좋아해서?" "돈 문제가 아니라 그게 내 말이야" | 동료 | #21 The thing is · #30 That's what I mean | I'm not in the mood. (1편 #187) |
 | 27 | 아울렛. 사이즈·환불 정책 | 점원 | #25 It depends on · #10 I'm not sure if | |
@@ -99,12 +115,12 @@
 | 37 | 컨택리스로 지하철 되나 | 직원 | #8 Can you · #25 It depends on | |
 | 38 | 펍. 현지 에일 한 잔만(규칙) | 바텐더 | #7 Can I get · #17 I'd like to | |
 | 39 | 비 날씨 스몰토크 | 손님 | #14 It looks like · #15 It sounds like | |
-| 40 | 박물관 안내. 짐 보관·무료 여부 | 직원 | #9 Do you mind · #16 There's | |
+| 40 | 식당. 주문과 다른 음식이 나오고 계산에 한 잔 더 찍힘 | 직원 | #11 I don't think · #27 I didn't mean to | |
 | 41 | 크루 호텔 조식. 소연 새벽 브리핑 | 직원 | #7 Can I get · #6 Let me | |
 | 42 | 소연의 영국인 동료와 산책. 서울 얘기 | 동료 | #5 I've been · #28 I can't wait to | It's been ages. (사용) · I've heard a lot about you. (1편 #296) |
 | 43 | 약국. 소연 안약이 떨어짐 | 약사 | #4 I'm here to · #18 I need you to | |
 | 44 | 시차·수면 스몰토크 | 동료 | #13 It feels like · #1 I'm trying to | I haven't been sleeping. (사용) |
-| 45 | 귀국 기내. 영국 노선 승무원 | 승무원 | #3 I was about to · #26 I'll let you know | |
+| 45 | 게이트 안내방송을 못 알아들음. 직원에게 다시 확인 | 직원 | #10 I'm not sure if · #3 I was about to | |
 
 ### 해외 IV — 베트남 가족 여행 (5편, 부모님 모시고)
 
@@ -114,7 +130,7 @@
 | 47 | 식당. 부모님 못 먹는 것 | 직원 | #23 You don't have to · #11 I don't think | |
 | 48 | 시장. 아버지 선물 | 상인 | #12 I think you should · #10 I'm not sure if | |
 | 49 | 호텔. 부모님 방을 같은 층으로 | 직원 | #18 I need you to · #8 Can you | |
-| 50 | 공항. 우선탑승 문의 | 직원 | #4 I'm here to · #9 Do you mind | |
+| 50 | 베트남 입국심사. 부모님 대신 답하기 | 심사관 | #4 I'm here to · #9 Do you mind | |
 
 ### 한국 I — 헬스장 Liam (12편)
 
@@ -133,46 +149,46 @@
 | 61 | 주말. 아내 비행 → 혼자 | Liam | #2 I'm supposed to · #23 You don't have to | I don't have any plans. (1편 #154) |
 | 62 | 며칠 빠진 지오. 운동 안 가면 기분 가라앉음 | Liam | #15 It sounds like · #29 That's why | You look a little down. (1편 #261) |
 
-### 한국 II — 이웃 Priya (10편)
+### 한국 II — 이웃 Emma (10편)
 
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
-| 63 | 이사 인사. 위층, 고양이 둘 | Priya | #16 There's · #19 I just wanted to | It's nice to finally meet you. (1편 #295) |
-| 64 | 화재경보기 3시간. 아래층 공사 | Priya | #22 As far as I know · #9 Do you mind | I'm sick of it. (사용) |
-| 65 | 나니 얘기. 시력, 소리에 민감 | Priya | #29 That's why · #13 It feels like | |
-| 66 | 택배 대신 받아 주기 | Priya | #6 Let me · #26 I'll let you know | Leave it to me. (사용) |
-| 67 | 위층 세탁기 소음 사과 | Priya | #27 I didn't mean to · #11 I don't think | No harm done. (사용) · It's no big deal. (1편 #6) |
-| 68 | 워커힐 김치 나눔 | Priya | #24 You might want to · #17 I'd like to | I thought you'd like it. (1편 #186) |
-| 69 | 고양이 병원 추천 | Priya | #12 I think you should · #10 I'm not sure if | |
-| 70 | 엘리베이터. 새벽 출근 소연 마주친 얘기 | Priya | #2 I'm supposed to · #5 I've been | You must be tired. (사용) |
-| 71 | 집 보여주기. 새 세탁기·캣타워 | Priya | #16 There's · #28 I can't wait to | I can't get enough of it. (사용) |
-| 72 | 천호 이사 계획 | Priya | #21 The thing is · #25 It depends on | I haven't decided yet. (사용) |
+| 63 | 이사 인사. 위층, 고양이 둘 | Emma | #16 There's · #19 I just wanted to | It's nice to finally meet you. (1편 #295) |
+| 64 | 화재경보기 3시간. 아래층 공사 | Emma | #22 As far as I know · #9 Do you mind | I'm sick of it. (사용) |
+| 65 | 나니 얘기. 시력, 소리에 민감 | Emma | #29 That's why · #13 It feels like | |
+| 66 | 택배 대신 받아 주기 | Emma | #6 Let me · #26 I'll let you know | Leave it to me. (사용) |
+| 67 | 위층 세탁기 소음 사과 | Emma | #27 I didn't mean to · #11 I don't think | No harm done. (사용) · It's no big deal. (1편 #6) |
+| 68 | 워커힐 김치 나눔 | Emma | #24 You might want to · #17 I'd like to | I thought you'd like it. (1편 #186) |
+| 69 | 고양이 병원 추천 | Emma | #12 I think you should · #10 I'm not sure if | |
+| 70 | 엘리베이터. 새벽 출근 소연 마주친 얘기 | Emma | #2 I'm supposed to · #5 I've been | You must be tired. (사용) |
+| 71 | 집 보여주기. 새 세탁기·캣타워 | Emma | #16 There's · #28 I can't wait to | I can't get enough of it. (사용) |
+| 72 | 천호 이사 계획 | Emma | #21 The thing is · #25 It depends on | I haven't decided yet. (사용) |
 
-### 한국 III — 카페 Mateo (8편)
-
-| # | 사건 | 상대 | 닻 | 모두영어 |
-|---|---|---|---|---|
-| 73 | 아침 커피. 디카페인, 줄이는 중 | Mateo | #7 Can I get · #1 I'm trying to | Can I get a coffee? (2편 #74) |
-| 74 | 비 오는 날 | Mateo | #14 It looks like · #15 It sounds like | |
-| 75 | 동네 맛집 추천(보쌈·감자탕) | Mateo | #12 I think you should · #29 That's why | I highly recommend it. (2편 #40) |
-| 76 | 노트북. 뭐 만드냐 → 앱 | Mateo | #16 There's · #21 The thing is | |
-| 77 | 주말. 아내 비행 | Mateo | #2 I'm supposed to · #3 I was about to | I'm off today. (1편 #152) |
-| 78 | Mateo 스페인 휴가 | Mateo | #28 I can't wait to · #26 I'll let you know | Are you all set? (2편 #153) |
-| 79 | 계산 착오 | Mateo | #11 I don't think · #27 I didn't mean to | It's no big deal. (1편 #6) |
-| 80 | 방콕 다녀와 오랜만에 | Mateo | #5 I've been · #20 I was wondering if | It's been a while. (사용) · Where have you been? (2편 #51) |
-
-### 한국 IV — 소연 동료 Anna (8편, 집 방문·시내)
+### 한국 III — 카페 Tom (8편)
 
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
-| 81 | 집 방문. 소연 요리 기다리며 | Anna | #7 Can I get · #16 There's | |
-| 82 | 소연 새벽 출근, 지오 못 잠 | Anna | #5 I've been · #13 It feels like | I haven't been sleeping. (사용) |
-| 83 | 라스베가스 노선 얘기 | Anna | #22 As far as I know · #25 It depends on | |
-| 84 | 나니 소개 | Anna | #29 That's why · #23 You don't have to | |
-| 85 | 소연 감기 걱정 | Anna | #15 It sounds like · #12 I think you should | I hope everything's okay. (1편 #108) |
-| 86 | 앱 보여주기 → 써 보기 | Anna | #20 I was wondering if · #26 I'll let you know | Let me know what you think. (2편 #104) |
-| 87 | 결혼기념일 선물 상담 | Anna | #10 I'm not sure if · #28 I can't wait to | It means a lot to me. (사용) |
-| 88 | Anna 전근 송별 | Anna | #19 I just wanted to · #3 I was about to | Let's keep in touch. (사용) · I'll miss you? → I've missed you. (1편 #18) |
+| 73 | 아침 커피. 디카페인, 줄이는 중 | Tom | #7 Can I get · #1 I'm trying to | Can I get a coffee? (2편 #74) |
+| 74 | 비 오는 날 | Tom | #14 It looks like · #15 It sounds like | |
+| 75 | 동네 맛집 추천(보쌈·감자탕) | Tom | #12 I think you should · #29 That's why | I highly recommend it. (2편 #40) |
+| 76 | 노트북. 뭐 만드냐 → 앱 | Tom | #16 There's · #21 The thing is | |
+| 77 | 주말. 아내 비행 | Tom | #2 I'm supposed to · #3 I was about to | I'm off today. (1편 #152) |
+| 78 | Tom 호주 귀향 휴가 | Tom | #28 I can't wait to · #26 I'll let you know | Are you all set? (2편 #153) |
+| 79 | 계산 착오 | Tom | #11 I don't think · #27 I didn't mean to | It's no big deal. (1편 #6) |
+| 80 | 방콕 다녀와 오랜만에 | Tom | #5 I've been · #20 I was wondering if | It's been a while. (사용) · Where have you been? (2편 #51) |
+
+### 한국 IV — 소연 동료 Sarah (8편, 집 방문·시내)
+
+| # | 사건 | 상대 | 닻 | 모두영어 |
+|---|---|---|---|---|
+| 81 | 집 방문. 소연 요리 기다리며 | Sarah | #7 Can I get · #16 There's | |
+| 82 | 소연 새벽 출근, 지오 못 잠 | Sarah | #5 I've been · #13 It feels like | I haven't been sleeping. (사용) |
+| 83 | 라스베가스 노선 얘기 | Sarah | #22 As far as I know · #25 It depends on | |
+| 84 | 나니 소개 | Sarah | #29 That's why · #23 You don't have to | |
+| 85 | 소연 감기 걱정 | Sarah | #15 It sounds like · #12 I think you should | I hope everything's okay. (1편 #108) |
+| 86 | 앱 보여주기 → 써 보기 | Sarah | #20 I was wondering if · #26 I'll let you know | Let me know what you think. (2편 #104) |
+| 87 | 결혼기념일 선물 상담 | Sarah | #10 I'm not sure if · #28 I can't wait to | It means a lot to me. (사용) |
+| 88 | Sarah 전근 송별 | Sarah | #19 I just wanted to · #3 I was about to | Let's keep in touch. (사용) · I'll miss you? → I've missed you. (1편 #18) |
 
 ### 한국 V — 여행객 (12편, 일회성)
 
@@ -193,26 +209,26 @@
 
 ## 4. 닻 문형 분포
 
-§3 표의 닻 200개(장면 100 × 2). 30패턴 전부 3회 이상.
+§3 표의 닻 200개(장면 100 × 2). 30패턴 30종 전부 3회 이상. (아래 §6 명령으로 다시 셀 수 있다.)
 
 | 회수 | 문형 |
 |---|---|
-| 12 | #16 There's |
-| 9 | #7 Can I get · #25 It depends on |
-| 8 | #4 I'm here to · #5 I've been · #10 I'm not sure if · #12 I think you should · #14 It looks like · #23 You don't have to · #26 I'll let you know · #29 That's why |
-| 7 | #1 I'm trying to · #2 I'm supposed to · #3 I was about to · #6 Let me · #9 Do you mind |
-| 6 | #11 I don't think · #13 It feels like · #15 It sounds like · #20 I was wondering if · #24 You might want to · #27 I didn't mean to · #28 I can't wait to |
+| 11 | #16 There's |
+| 9 | #7 Can I get · #10 I'm not sure if · #25 It depends on |
+| 8 | #4 I'm here to · #5 I've been · #12 I think you should · #14 It looks like · #23 You don't have to · #29 That's why |
+| 7 | #1 I'm trying to · #2 I'm supposed to · #3 I was about to · #6 Let me · #11 I don't think · #26 I'll let you know · #27 I didn't mean to |
+| 6 | #9 Do you mind · #13 It feels like · #15 It sounds like · #20 I was wondering if · #24 You might want to · #28 I can't wait to |
 | 5 | #8 Can you · #21 The thing is · #22 As far as I know |
 | 4 | #17 I'd like to · #18 I need you to |
 | 3 | #19 I just wanted to · #30 That's what I mean |
 
-1·2묶음에서 못 쓴 #2·#4·#18·#20·#30 은 7·8·4·6·3회. 모두영어 후보가 적힌 행은 50편이고, 그중 35편이 반복 인물(Liam·Priya·Mateo·Anna·Nok) 장면이다 — 아는 사이의 말이 대부분인 모두영어가 들어갈 자리는 반복 인물이 만든다.
+1·2묶음에서 못 쓴 #2·#4·#18·#20·#30 은 7·8·4·6·3회. 모두영어 후보가 적힌 행은 50편이고, 그중 35편이 반복 인물(Liam·Emma·Tom·Sarah·May) 장면이다 — 아는 사이의 말이 대부분인 모두영어가 들어갈 자리는 반복 인물이 만든다.
 
 ## 5. 시행 순서
 
 1. **도구 수정 (test-first)**: `verify-draft.mjs` 의 src 게이트는 장면에 `date` 가 있을 때만 날짜 접두를 검사하고, 없으면 `src` 존재만 검사한다. `check-sources.mjs` 의 등급을 새 순위로 다시 매긴다 — a = 30패턴이 든 모두영어 그대로, b = 30패턴 자작, c = 모두영어 그대로(30패턴 아님), d = 233. 지오 줄 중 반응형 문장 수를 세어 편당 2를 넘으면 경고한다. 초안 JSON 에 `cast`(상대 이름·TTS 화자)와 `series`(시리즈·회차) 필드를 둔다.
-2. **3묶음 = 2묶음 교체.** 시작하지 않은 `en-personal-2026-09-30..10-09` 10편을 이 표로 다시 써서 같은 날짜로 올린다(로더 순서 유지, 옛 카드 id 삭제). 구성은 방콕 1~6편(출발 카운터 → 기내 Anna → 옆자리 → 입국심사 → 그랩 → Nok 체크인)에 한국 인물 첫 만남 4편(51 Liam · 63 Priya · 73 Mateo · 89 여행객)을 섞어, 열 편 안에서 시리즈 연속성과 인물 소개가 함께 되게 한다. 1묶음 미시작 8편(소연 대화)은 그대로 둔다.
-3. 3묶음을 휴대폰에서 써 본 뒤 4묶음부터 10~20편씩. 방콕 나머지 → Liam·Priya 초반 → 라스베가스 → … 순으로 시리즈를 번갈아 진행한다. 표는 계획이므로 쓰면서 장면을 바꿔도 되고, 바뀐 것은 여기에 반영한다.
+2. **3묶음 = 2묶음 교체.** 시작하지 않은 `en-personal-2026-09-30..10-09` 10편을 이 표로 다시 써서 같은 날짜로 올린다(로더 순서 유지, 옛 카드 id 삭제). 구성은 방콕 1~6편(출발 카운터 → 기내 Sarah → 옆자리 → 입국심사 → 그랩 → May 체크인)에 한국 인물 첫 만남 4편(51 Liam · 63 Emma · 73 Tom · 89 여행객)을 섞어, 열 편 안에서 시리즈 연속성과 인물 소개가 함께 되게 한다. 1묶음 미시작 8편(소연 대화)은 그대로 둔다.
+3. 3묶음을 휴대폰에서 써 본 뒤 4묶음부터 10~20편씩. 방콕 나머지 → Liam·Emma 초반 → 라스베가스 → … 순으로 시리즈를 번갈아 진행한다. 표는 계획이므로 쓰면서 장면을 바꿔도 되고, 바뀐 것은 여기에 반영한다.
 
 ## 6. 분포 세는 법
 
