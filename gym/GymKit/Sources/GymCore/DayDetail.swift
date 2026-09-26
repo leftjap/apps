@@ -29,7 +29,6 @@ public enum GymDayDetailLogic {
         let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f
     }()
     public static func loc(_ v: Double) -> String { nf.string(from: NSNumber(value: v.rounded())) ?? "\(Int(v))" }
-    static func num(_ v: Double) -> String { String(format: "%g", v) }
 
     // 세션 → 상세 entry. done 0 종목 제외, cardio 는 시간·거리 표기 (stats.js formatExEntrySpec).
     public static func entry(for session: GymSession, custom: [GymCustomExercise]) -> GymDayEntry {
@@ -41,20 +40,13 @@ public enum GymDayDetailLogic {
             prCount += doneSets.filter(\.pr).count
             let name = GymExercises.resolveName(b.exerciseId, custom: custom)
             let first = doneSets[0]
-            if let dur = first.duration {
-                // 거리 먼저 (사용자 2026-09-17). 거리를 안 적은 날은 시간만 — km 0 을 지어내지 않는다.
-                let distKm = first.distance ?? 0
-                let mins = "\(Int((dur / 60).rounded()))분"
-                let label = distKm > 0 ? "\(num(distKm))km · \(mins)" : mins
-                ex.append(GymDayEntryEx(n: name, s: label,
+            // 유산소 — 있는 값만 쓴다 (거리 먼저, 사용자 2026-09-17). 거리만 받게 된 뒤(2026-09-26)
+            // 시간 없는 기록이 정상이라, 시간 유무가 아니라 장비로 가른다. 값이 전혀 없으면 "—".
+            if first.duration != nil || GymExercises.def(b.exerciseId, custom: custom)?.equipment == "cardio" {
+                ex.append(GymDayEntryEx(n: name, s: GymSessionLogic.cardioSummary(distanceKm: first.distance,
+                                                                                   durationSec: first.duration),
                                         key: b.exerciseId, kind: "cardio", setCount: doneSets.count,
-                                        vol: 0, durSec: dur, distKm: distKm))
-                continue
-            }
-            // cardio 인데 duration 미입력(구버그 데이터) — 세트·kg 표기 부적절 → "—"
-            if GymExercises.def(b.exerciseId, custom: custom)?.equipment == "cardio" {
-                ex.append(GymDayEntryEx(n: name, s: "—", key: b.exerciseId, kind: "cardio",
-                                        setCount: doneSets.count, vol: 0, durSec: 0, distKm: 0))
+                                        vol: 0, durSec: first.duration ?? 0, distKm: first.distance ?? 0))
                 continue
             }
             let total = doneSets.reduce(0.0) { $0 + $1.volume }
@@ -90,8 +82,8 @@ public enum GymDayDetailLogic {
                 if item.kind == "cardio" {
                     existing.durSec += item.durSec
                     existing.distKm += item.distKm
-                    let km = existing.distKm > 0 ? " · \(num(existing.distKm))km" : ""
-                    existing.s = "\(Int((existing.durSec / 60).rounded()))분\(km)"
+                    existing.s = GymSessionLogic.cardioSummary(distanceKm: existing.distKm,
+                                                               durationSec: existing.durSec)
                 } else {
                     existing.setCount += item.setCount
                     existing.vol += item.vol

@@ -1,7 +1,16 @@
 > **원본 export**: 같은 이름의 `.html` (dc 문서). 픽셀 정본 스크린샷:
 > `2026-08-18-cardio-7a-time.png` (시간 지표) · `2026-08-18-cardio-7a-kcal.png` (칼로리 지표).
-> **구현**: `GymCore/CardioMetricWeek.swift` (집계·제스처·치수) + `GymViews/CardioPanel.swift`.
-> **스냅샷 대조**: `gymshot cardio-7a` / `cardio-7a-kcal` / `cardio-7a-max`(430pt).
+> **구현**: `GymCore/CardioMetricWeek.swift` (집계·치수) + `GymViews/CardioPanel.swift`.
+> **스냅샷 대조**: `gymshot cardio-7a` / `cardio-7a-max`(430pt).
+>
+> **2026-09-26 개정 (사용자 결정) — 아래 §2·§4 의 지표 로테이션과 시간·칼로리 입력은 폐지.**
+> 트레드밀은 **거리 하나만** 입력한다(좌우 여백 탭 ±0.1km, 숫자 탭 = 거리 키패드, 세그 없음).
+> 스와이프는 로테이션이 아니라 **좌 = 저장(done), 우 = 되돌리기** — 근력 히어로와 같은 판정
+> (`GymSwipeMath` ±60pt). 입력 없이 밀면 직전 기록 거리가 저장된다(`GymSessionLogic.commitCardio`).
+> 밀지 않고 종료해도 입력한 거리는 cardioEntered + 종료/마감이 보존한다. 계기: 키패드 시간↔거리
+> 세그 전환이 입력값을 버려 거리가 빠진 기록이 반복됐다(9/8·9/11·9/24). 시간·칼로리 필드는 옛
+> 기록 표기·집계를 위해 모델에 남는다. 세션 칼로리(요약 화면, 0 이면 숨김)는 콘솔 kcal·유산소
+> 시간이 없어져 경과 시간 전체를 근력 세트에 MET 로 배분하고, 트레드밀만 한 세션은 0 이 된다.
 >
 > **구현 시 벗어난 곳 1건** — §6-1 히어로 축소 임계:
 > 지시서는 `W−(탭 영역×2)` 지만 그 식은 확정 시안 자신의 데이터에서도 발동한다

@@ -400,7 +400,6 @@ public enum GymScreens {
         case "session-cardio": return AnyView(SessionScreenView(model: demoCardioModel()).frame(width: 390, height: 844))
         case "cardio-7a":    return AnyView(SessionScreenView(model: demoCardio7aModel()).frame(width: 375, height: 812))
         case "cardio-7a-max": return AnyView(SessionScreenView(model: demoCardio7aModel()).frame(width: 430, height: 932))
-        case "cardio-7a-kcal": return AnyView(SessionScreenView(model: demoCardio7aModel(), initialCardioMetric: .calories).frame(width: 375, height: 812))
         case "session-bodyweight": return AnyView(SessionScreenView(model: demoBodyweightModel()).frame(width: 390, height: 844))
         // 근력 히스토리 카드 (작업지시서 2026-09-17) — 375×812(11 Pro) 기준으로 비교한다.
         // `-base` 는 카드만 뺀 대조군이다. gymshot 은 safe area 가 없어 히어로 여백이 실기기보다

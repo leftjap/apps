@@ -222,11 +222,10 @@ public enum GymHomeLogic {
         func g(_ v: Double) -> String { String(format: "%g", v) }
         switch equipment {
         case "cardio":
-            // 거리 먼저 (사용자 2026-09-17). 거리를 안 적었으면 시간만 — km 0 을 지어내지 않는다.
-            let mins = Int(((first?.duration ?? 0) / 60).rounded())
-            let dist = first?.distance ?? 0
+            // 거리 먼저 (사용자 2026-09-17). 있는 값만 쓴다 — 거리만 받게 된 뒤(2026-09-26) "· 0분" 이 붙었다.
             return GymNextBlockPreview(name: name,
-                                       summary: dist > 0 ? "\(g(dist))km · \(mins)분" : "\(mins)분")
+                                       summary: GymSessionLogic.cardioSummary(distanceKm: first?.distance,
+                                                                              durationSec: first?.duration))
         case "bodyweight":
             return GymNextBlockPreview(name: name,
                                        summary: "맨몸 \(first?.reps ?? 0)회 · \(b.sets.count)세트")

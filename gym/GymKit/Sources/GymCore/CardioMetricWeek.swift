@@ -7,10 +7,8 @@ import Foundation
 //   여기 = **종목 하나**(트레드밀 등), 3지표        → 세션 화면 유산소 카드
 // 같은 주 경계(월~일 KST)를 쓰지만 집계 범위가 달라 수치가 서로 다를 수 있다 — 의도된 것이다(§5).
 
-/// 카드가 보여주는 세 지표. 스와이프로 이 순서를 돈다 (순환 없음).
-/// **거리가 첫 지표 = 카드 진입 화면** (사용자 2026-09-17 — 트레드밀의 주 지표를 시간에서 거리로).
-/// 시간은 두 번째로 내려갔을 뿐 없어지지 않는다: 스와이프 한 번이면 보이고, 칼로리 추정
-/// (MET × 시간)의 입력으로도 계속 쓰인다.
+/// 유산소 세 지표. 트레드밀 카드는 **거리만 입력**한다 (사용자 2026-09-26 — 시간·칼로리 입력과
+/// 지표 로테이션 폐지). 시간·칼로리는 옛 기록 표기와 주간 집계를 위해 타입에 남는다.
 public enum GymCardioMetric: String, CaseIterable, Sendable {
     case distance, duration, calories
 
@@ -25,20 +23,6 @@ public enum GymCardioMetric: String, CaseIterable, Sendable {
     /// 10 단위로는 실제 값에 맞출 수가 없었다. 큰 폭 조정은 키패드가 담당한다.
     public var step: Double {
         switch self { case .distance: 0.1; case .duration: 1; case .calories: 1 }
-    }
-    /// 키패드·저장 경로는 기존 필드를 그대로 쓴다 (§5-1 applyCardio 경유).
-    public var field: GymSessionLogic.GymCardioField {
-        switch self { case .distance: .distance; case .duration: .duration; case .calories: .calories }
-    }
-    public var next: GymCardioMetric? {
-        let a = Self.allCases
-        let i = a.firstIndex(of: self)!
-        return i + 1 < a.count ? a[i + 1] : nil
-    }
-    public var prev: GymCardioMetric? {
-        let a = Self.allCases
-        let i = a.firstIndex(of: self)!
-        return i > 0 ? a[i - 1] : nil
     }
     /// 증감 후 값 — 하한 0. 거리만 0.1 단위 반올림, 나머지는 정수 (§5-1).
     public func stepped(from base: Double, dir: Int) -> Double {
@@ -211,33 +195,13 @@ extension GymSessionLogic {
     }
 }
 
-// MARK: - 제스처·치수 (§4 · §6-1) — 뷰에서 분리해 테스트 가능하게 둔다
-
-public enum GymCardioGesture {
-    /// 끝단 저항 — 첫 지표에서 오른쪽, 마지막에서 왼쪽으로 밀면 0.28배. 순환(wrap) 없음 (§4).
-    public static let edgeResistance = 0.28
-
-    public static func translate(_ dx: Double, from m: GymCardioMetric) -> Double {
-        let atStart = m.prev == nil && dx > 0
-        let atEnd = m.next == nil && dx < 0
-        return (atStart || atEnd) ? dx * edgeResistance : dx
-    }
-
-    /// 드래그 종료 — 이동량 임계 이상이면 다음/이전 지표, 미달이면 원위치(같은 지표).
-    /// 화면 위치는 항상 커밋된 지표에서 계산한다 — 중간 값으로 얼어붙을 여지를 없앤다.
-    public static func commit(_ dx: Double, from m: GymCardioMetric, threshold: Double) -> GymCardioMetric {
-        if dx <= -threshold, let n = m.next { return n }
-        if dx >= threshold, let p = m.prev { return p }
-        return m
-    }
-}
+// MARK: - 치수 (§6-1) — 뷰에서 분리해 테스트 가능하게 둔다
 
 /// 치수는 기기 폭에서 유도한다 — 리터럴로 박으면 320~430pt 기기에서 하나씩 어긋난다 (§6-1).
 /// 괄호 안은 시안 목업(카드 폭 360) 기준 결과값.
 public struct GymCardioLayout: Equatable, Sendable {
     public let contentWidth: CGFloat     // W = 카드 폭 − 좌우 패딩 22×2   (316)
     public let tapZone: CGFloat          // 양변 각 W×0.33, 하한 44        (105)
-    public let swipeThreshold: CGFloat   // W×0.18                        (56)
     public let circleDiameter: CGFloat   // 37 고정, 간격 4 미만이면 32
 
     public static let horizontalPadding: CGFloat = 22
@@ -248,9 +212,6 @@ public struct GymCardioLayout: Equatable, Sendable {
         let w = Swift.max(0, cardWidth - Self.horizontalPadding * 2)
         contentWidth = w
         tapZone = Swift.max(44, w * 0.33)
-        swipeThreshold = w * 0.18
         circleDiameter = (w - 37 * 7) / 6 >= 4 ? 37 : 32
     }
-    /// 트랙 스냅 오프셋 — 셀 폭 = W, 오프셋 = −index×W.
-    public func trackOffset(index: Int) -> CGFloat { -CGFloat(index) * contentWidth }
 }

@@ -164,6 +164,28 @@ public enum GymSessionLogic {
         return s
     }
 
+    /// 유산소 저장 (좌 스와이프, 사용자 2026-09-26) — 트레드밀은 거리 하나만 받는다.
+    /// 입력한 거리가 없으면 직전 기록 거리를 확정한다: 근력 스와이프가 미리 채운 무게·횟수를
+    /// 그대로 확정하는 것과 같은 규칙이다. 둘 다 없으면 저장할 값이 없으므로 nil.
+    public static func commitCardio(_ set: GymSet, refDistance: Double?) -> GymSet? {
+        guard let km = (set.distance ?? 0) > 0 ? set.distance : refDistance, km > 0 else { return nil }
+        var s = set
+        s.distance = km
+        s.done = true
+        s.preset = false
+        return s
+    }
+
+    /// 유산소 한 줄 표기 — 있는 값만 쓴다 ("2.2km" · "3km · 25분" · "30분" · "—").
+    /// 요약·날짜 상세·홈 미리보기가 시간이 늘 있다고 가정해 거리만 있는 기록을 "0kg"·"—"·
+    /// "2.2km · 0분" 으로 그리던 것을 한곳에서 정한다.
+    public static func cardioSummary(distanceKm: Double?, durationSec: Double?) -> String {
+        var parts: [String] = []
+        if let km = distanceKm, km > 0 { parts.append("\(num(km))km") }
+        if let sec = durationSec, sec > 0 { parts.append("\(Int((sec / 60).rounded()))분") }
+        return parts.isEmpty ? "—" : parts.joined(separator: " · ")
+    }
+
     // MARK: - 최근 러닝 추출 (설계 §2 — 회 단위 축, 과거→최신)
 
     public struct GymCardioRun: Sendable, Equatable {

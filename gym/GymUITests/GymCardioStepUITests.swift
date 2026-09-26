@@ -1,6 +1,6 @@
 import XCTest
 
-// 유산소 칼로리 증분 — 10 → 1 (사용자 2026-08-28: 콘솔이 46·88 처럼 1 단위라 10 단위로는 못 맞춤).
+// 유산소 거리 증분 0.1km — 트레드밀은 거리만 받는다 (사용자 2026-09-26, 종전 칼로리 1 단위 검증을 대체).
 // 실제 앱에서 탭 존을 눌러 검증한다 (수식 단위테스트만으로는 화면 경로가 안 덮인다).
 //
 // 카드 전체에 `.accessibilityIdentifier("cardio-card")` 가 걸려 자식 식별자가 전부 덮이므로
@@ -19,7 +19,7 @@ final class GymCardioStepUITests: XCTestCase {
         return best
     }
 
-    func testCalorieStepIsOne() {
+    func testDistanceStepIsPointOne() {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]
         app.launch()
@@ -33,14 +33,11 @@ final class GymCardioStepUITests: XCTestCase {
 
         let card = app.otherElements["cardio-card"].firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 5), "유산소 카드가 떠야")
-        // 시간 → 거리 → 칼로리
-        for _ in 0..<2 { card.swipeLeft(); Thread.sleep(forTimeInterval: 0.7) }
 
         let sz = app.windows.firstMatch.frame
         let h0 = heroValue(app)
         XCTAssertGreaterThan(h0.frame.height, 40, "히어로 숫자를 찾아야 (실측 높이 \(h0.frame.height))")
-        let before = Int(h0.label) ?? -1
-        XCTAssertGreaterThanOrEqual(before, 0, "칼로리 값 파싱 (실측 '\(h0.label)')")
+        XCTAssertEqual(h0.label, "0.0", "이력 없는 첫 러닝 — 거리 0.0 (실측 '\(h0.label)')")
 
         let y = h0.frame.midY / sz.height
         let plus = CGVector(dx: (sz.width - 24) / sz.width, dy: y)
@@ -48,17 +45,17 @@ final class GymCardioStepUITests: XCTestCase {
 
         app.coordinate(withNormalizedOffset: plus).tap()
         Thread.sleep(forTimeInterval: 0.7)
-        XCTAssertEqual(Int(heroValue(app).label) ?? -1, before + 1, "+ 존 탭 = 1kcal 증가 (종전 10)")
+        XCTAssertEqual(heroValue(app).label, "0.1", "+ 존 탭 = 0.1km 증가")
 
         app.coordinate(withNormalizedOffset: plus).tap()
         Thread.sleep(forTimeInterval: 0.7)
-        XCTAssertEqual(Int(heroValue(app).label) ?? -1, before + 2, "연타도 1씩")
+        XCTAssertEqual(heroValue(app).label, "0.2", "연타도 0.1씩")
 
         app.coordinate(withNormalizedOffset: minus).tap()
         Thread.sleep(forTimeInterval: 0.7)
-        XCTAssertEqual(Int(heroValue(app).label) ?? -1, before + 1, "− 존 탭 = 1kcal 감소")
+        XCTAssertEqual(heroValue(app).label, "0.1", "− 존 탭 = 0.1km 감소")
 
-        let a = XCTAttachment(screenshot: app.screenshot()); a.name = "cardio-calories"
+        let a = XCTAttachment(screenshot: app.screenshot()); a.name = "cardio-distance-step"
         a.lifetime = .keepAlways; add(a)
     }
 }

@@ -136,13 +136,6 @@ import Testing
         #expect(GymCardioMetric.allCases.map(\.unit) == ["km", "분", "kcal"])
         #expect(GymCardioMetric.allCases.map(\.step) == [0.1, 1, 1])
     }
-    // 로테이션 — 순환 없음 (§4 끝단에서 더 못 간다).
-    @Test func rotationDoesNotWrap() {
-        #expect(GymCardioMetric.distance.next == .duration)
-        #expect(GymCardioMetric.calories.next == nil)
-        #expect(GymCardioMetric.distance.prev == nil)
-        #expect(GymCardioMetric.calories.prev == .duration)
-    }
     // 빈 공간 탭 증감 — 현재값(없으면 직전값) ± step, 하한 0 (§5-1).
     @Test func stepValueClampsAtZero() {
         #expect(GymCardioMetric.duration.stepped(from: 32, dir: 1) == 33)
@@ -153,44 +146,13 @@ import Testing
     }
 }
 
-// 제스처 — 끝단 저항 0.28 · 순환 없음 · 임계 커밋 (§4).
-@Suite struct CardioGestureTests {
-    @Test func edgeResistanceOnlyAtEnds() {
-        #expect(abs(GymCardioGesture.translate(100, from: .distance) - 28) < 1e-9)   // 첫 지표에서 오른쪽
-        #expect(GymCardioGesture.translate(-100, from: .distance) == -100)  // 안쪽은 그대로
-        #expect(abs(GymCardioGesture.translate(-100, from: .calories) + 28) < 1e-9)  // 마지막에서 왼쪽
-        #expect(GymCardioGesture.translate(100, from: .calories) == 100)
-        #expect(GymCardioGesture.translate(100, from: .duration) == 100)    // 가운데는 양쪽 다 자유
-        #expect(GymCardioGesture.translate(-100, from: .duration) == -100)
-    }
-    @Test func commitCrossesThresholdOnly() {
-        #expect(GymCardioGesture.commit(-56, from: .distance, threshold: 56) == .duration)
-        #expect(GymCardioGesture.commit(-55, from: .distance, threshold: 56) == .distance)
-        #expect(GymCardioGesture.commit(56, from: .duration, threshold: 56) == .distance)
-        #expect(GymCardioGesture.commit(55, from: .duration, threshold: 56) == .duration)
-    }
-    @Test func commitNeverWraps() {
-        #expect(GymCardioGesture.commit(999, from: .distance, threshold: 56) == .distance)
-        #expect(GymCardioGesture.commit(-999, from: .calories, threshold: 56) == .calories)
-    }
-}
-
 // 치수 — 시안 목업(360) 결과값 재현 + 기기 폭 유도 (§6-1).
 @Suite struct CardioLayoutTests {
     @Test func mockWidthReproducesSpecNumbers() {
         let l = GymCardioLayout(cardWidth: 360)
         #expect(l.contentWidth == 316)
         #expect(abs(l.tapZone - 104.28) < 0.01)      // W×0.33 (시안 표기 105)
-        #expect(abs(l.swipeThreshold - 56.88) < 0.01) // W×0.18 (시안 표기 56)
         #expect(l.circleDiameter == 37)
-        #expect(l.trackOffset(index: 0) == 0)
-        #expect(l.trackOffset(index: 1) == -316)
-        #expect(l.trackOffset(index: 2) == -632)
-    }
-    // 스냅 오프셋을 316 으로 고정하면 다른 폭에서 하나씩 어긋난다 — 폭에서 유도돼야 한다.
-    @Test func offsetsDeriveFromDeviceWidth() {
-        #expect(GymCardioLayout(cardWidth: 375).trackOffset(index: 1) == -331)
-        #expect(GymCardioLayout(cardWidth: 430).trackOffset(index: 1) == -386)
     }
     // 탭 영역 하한 44 — 아주 좁은 기기에서 W×0.33 이 44 미만이 되어도 44 를 지킨다.
     @Test func tapZoneHasFloor() {

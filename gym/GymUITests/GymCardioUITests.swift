@@ -130,8 +130,8 @@ final class GymCardioUITests: XCTestCase {
     // 유산소 히어로가 직전 기록을 회색 숫자로 보여줄 때, 그 값이 이번 기록으로 오인되면
     // 시간을 안 넣고 넘어가 기록이 0분이 된다 (2026-09-10 실데이터: 8/21·9/8 두 번).
     // 라벨이 고스트임을 밝혀야 하고, 값을 넣으면 그 표시는 사라져야 한다.
-    // 진입 지표가 거리로 바뀌었다 (사용자 2026-09-17) — 히어로·라벨·스와이프 순서가 모두
-    // 거리 → 시간 → 칼로리 를 따른다. 검증 의도(고스트가 직전 기록임을 라벨이 밝힌다)는 그대로.
+    // 트레드밀은 거리만 받는다 (사용자 2026-09-26) — 지표 넘기기가 없어져 시간·칼로리 라벨 검사는 뺐다.
+    // 검증 의도(고스트가 직전 기록임을 라벨이 밝힌다)는 그대로.
     func testCardioGhostHeroIsLabeledNotRecorded() {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]
@@ -163,16 +163,5 @@ final class GymCardioUITests: XCTestCase {
         XCTAssertEqual(heroValue(app).label, "15.0", "직전 러닝이 고스트로 보인다")
         XCTAssertTrue(cardioLabel(app, startsWith: "거리").contains("직전"),
                       "고스트는 직전 기록임이 라벨에 드러나야 (실측 '\(cardioLabel(app, startsWith: "거리"))')")
-
-        // ④ 지표를 넘겨도 라벨이 값의 출처를 밝힌다. 직전 세션은 거리만 넣었으므로
-        //    시간·칼로리는 직전 기록이 없어 "미입력" 이어야 한다 (고스트와 구별되는 증거).
-        let card = app.otherElements["cardio-card"].firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 5))
-        card.swipeLeft(); Thread.sleep(forTimeInterval: 0.8)
-        XCTAssertTrue(cardioLabel(app, startsWith: "시간").contains("미입력"),
-                      "직전 시간 기록이 없으면 미입력 (실측 '\(cardioLabel(app, startsWith: "시간"))')")
-        card.swipeLeft(); Thread.sleep(forTimeInterval: 0.8)
-        XCTAssertTrue(cardioLabel(app, startsWith: "칼로리").contains("미입력"),
-                      "직전 칼로리 기록이 없으면 미입력 (실측 '\(cardioLabel(app, startsWith: "칼로리"))')")
     }
 }

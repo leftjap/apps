@@ -13,12 +13,11 @@ struct KeypadContext: Equatable {
     var digitLimit: Int = 6           // 버퍼 최대 자릿수 (생년월일 8)
     var asDate: Bool = false          // YYYYMMDD 버퍼 → "YYYY.MM.DD" 점진 표시
 
-    // 모드 세그 페어 — weight↔reps / duration↔distance. 유산소 단독 필드(속도·경사·칼로리)는 세그 없음.
+    // 모드 세그 페어 — weight↔reps. 유산소 필드는 세그 없음: 트레드밀은 거리만 받는다 (사용자 2026-09-26).
     var pair: [(GymAppModel.KeypadField, String)] {
         switch field {
-        case .duration, .distance: return [(.duration, "시간"), (.distance, "거리")]
-        case .weight, .reps:       return [(.weight, "무게"), (.reps, "횟수")]
-        case .speed, .incline, .calories: return []
+        case .weight, .reps: return [(.weight, "무게"), (.reps, "횟수")]
+        case .duration, .distance, .speed, .incline, .calories: return []
         }
     }
     var unit: String {

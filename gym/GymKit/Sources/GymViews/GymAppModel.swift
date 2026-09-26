@@ -880,6 +880,23 @@ public final class GymAppModel: ObservableObject {
         }
         impact(.heavy)
     }
+    // 유산소 저장 (좌 스와이프, 사용자 2026-09-26) — 트레드밀은 거리만 받는다. 입력이 없으면 직전
+    // 기록 거리를 확정한다 (GymSessionLogic.commitCardio). 저장할 값이 없으면 false — 호출부가 되돌린다.
+    @discardableResult
+    public func commitCardio() -> Bool {
+        let bi = currentBlockIdx, si = currentSetIdx
+        guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si),
+              !GymSessionLogic.isBlockLocked(session.blocks[bi]) else { return false }
+        let ref = GymSessionLogic.recentCardioRuns(history: history, exerciseId: session.blocks[bi].exerciseId,
+                                                   limit: 1).last?.distanceKm
+        guard let saved = GymSessionLogic.commitCardio(session.blocks[bi].sets[si], refDistance: ref) else {
+            impact(.light)
+            return false
+        }
+        session.blocks[bi].sets[si] = saved
+        impact(.heavy)
+        return true
+    }
     // 이전 세트로 되돌리기 (우 스와이프 — 마지막 완료 세트를 미완료로, spec §6-3-1).
     public func revertToPreviousSet() {
         let bi = currentBlockIdx

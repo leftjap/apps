@@ -211,15 +211,13 @@ public struct SessionScreenView: View {
     static var isCompactScreen: Bool {
         HomeScreenView.screenHeight < HomeScreenView.compactScreenHeight
     }
-    let initialCardioMetric: GymCardioMetric   // 스냅샷 검증 훅 (실앱은 항상 .distance)
     let showHistoryCard: Bool   // 히스토리 카드 노출 — 시안 대조용 렌더 훅 (실앱은 항상 true)
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .distance,
+                initialDragX: CGFloat = 0,
                 showHistoryCard: Bool = true) {
         self.model = model; self.onHome = onHome
-        self.initialCardioMetric = initialCardioMetric
         self.showHistoryCard = showHistoryCard
         _prPopVisible = State(initialValue: initialPRPop)
         _addexOpen = State(initialValue: initialAddex)
@@ -247,12 +245,12 @@ public struct SessionScreenView: View {
     public init(onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .distance,
+                initialDragX: CGFloat = 0,
                 showHistoryCard: Bool = true) {
         self.init(model: GymAppModel(), onHome: onHome,
                   initialKeypadField: initialKeypadField, initialPRPop: initialPRPop,
                   initialAddex: initialAddex, initialAction: initialAction,
-                  initialDragX: initialDragX, initialCardioMetric: initialCardioMetric,
+                  initialDragX: initialDragX,
                   showHistoryCard: showHistoryCard)
     }
 
@@ -442,7 +440,8 @@ public struct SessionScreenView: View {
             // 지난 기록이 하나도 없으면 오늘 칸 하나뿐이라 그리지 않는다.
             if kind == .cardio, case let bar = GymSessionLogic.cardioRecordBar(
                 history: model.history, exerciseId: exId, todaySet: dispSet), !bar.past.isEmpty {
-                let cells = bar.past.map { ($0, BarState.done) } + [(bar.today, BarState.now)]
+                // 오늘 칸은 저장(좌 스와이프) 전엔 진행, 후엔 완료 — 근력 세트바의 현재/완료 세트와 같다.
+                let cells = bar.past.map { ($0, BarState.done) } + [(bar.today, bar.todaySaved ? .done : .now)]
                 PrevRecordBars(slots: cells.enumerated().map { i, c in
                                    SetBarSlot(id: i, top: c.0.top, bottom: c.0.bottom, isPreview: false,
                                               state: c.1, pr: false, volume: c.0.distanceKm)
@@ -452,14 +451,15 @@ public struct SessionScreenView: View {
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             if kind == .cardio {
-                // 유산소 — 히어로·스와이프 대신 지표 로테이션 카드 (작업지시서 2026-08-18 §2).
-                // 주간 캘린더가 헤더 바로 아래에 붙고 나머지 높이를 카드가 전부 쓴다.
+                // 유산소 — 거리 하나만, 좌 스와이프 저장·우 스와이프 되돌리기 (사용자 2026-09-26).
+                // 기록 줄 아래 남은 높이를 카드가 전부 쓴다.
                 CardioPanel(history: model.history, set: dispSet,
                             todaySets: model.currentBlock?.sets ?? [],
                             exerciseId: exId, now: model.sessionDay, locked: locked,
-                            initialMetric: initialCardioMetric,
-                            onKeypad: { m in openKeypad(Self.keypadField(m)) },
-                            onSetValue: { m, v in model.applyKeypad(Self.keypadField(m), value: v) })
+                            onKeypad: { openKeypad(.distance) },
+                            onSetValue: { v in model.applyKeypad(.distance, value: v) },
+                            onCommit: { model.commitCardio() },
+                            onRevert: { model.revertToPreviousSet() })
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             } else {
             ZStack {
@@ -558,11 +558,6 @@ public struct SessionScreenView: View {
                onLongPressItem: { actionTarget = .block($0) },
                onAdd: { addexOpen = true })
         }
-    }
-
-    // 유산소 지표 → 키패드/저장 필드 (§5-1 — 쓰기는 전부 applyCardio 경유).
-    static func keypadField(_ m: GymCardioMetric) -> GymAppModel.KeypadField {
-        GymAppModel.KeypadField(rawValue: m.field.rawValue) ?? .duration
     }
 
     // MARK: - 드래그 커밋 (§6-3-1 — 카운트업·햅틱 링·스프링백)
@@ -742,8 +737,9 @@ public struct SessionScreenView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { keypadDone() }   // 배경 탭 = 적용 (PWA backdrop apply)
                     .transition(.opacity)
-                // 유산소 단독 필드(속도·경사·칼로리) — 세그 대신 타이틀 (bare, 체중 키패드 패턴)
+                // 유산소 필드 — 세그 대신 타이틀 (bare, 체중 키패드 패턴). 트레드밀은 거리만 받는다 (2026-09-26)
                 let bareTitle: String? = switch keypad!.field {
+                case .distance: "거리"; case .duration: "시간"
                 case .speed: "평균 속도"; case .incline: "평균 경사"; case .calories: "칼로리"
                 default: nil
                 }
