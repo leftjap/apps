@@ -79,7 +79,10 @@ struct GymApp: App {
                 // 포그라운드 복귀마다 재동기화 — 백그라운드 전환으로 죽은 sync 를 복구한다.
                 // (콜드런치의 .task 만으로는, 로그인 직후 앱을 닫으면 백업이 영영 안 올라간다)
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .active { Task { await model.syncOnForeground() } }
+                    guard phase == .active else { return }
+                    // 날짜를 넘겨 돌아왔으면 "오늘" 을 다시 읽게 한다 (referenceToday 는 매번 현재 시각).
+                    model.objectWillChange.send()
+                    Task { await model.syncOnForeground() }
                 }
         }
     }

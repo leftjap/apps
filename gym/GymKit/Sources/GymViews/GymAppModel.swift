@@ -29,7 +29,14 @@ public final class GymAppModel: ObservableObject {
     @Published public var settings: GymUserSettings      // 사용자 설정 (관리 편집 → 반응형)
     // 동기화 상태 — 실패를 화면에 드러내고, 기기 진단(컨테이너 덤프)으로도 읽을 수 있게 영속한다.
     @Published public var syncState: GymSyncState { didSet { LocalStore.saveSyncState(syncState) } }
-    public var referenceToday: Date = Date()             // 홈/통계 "오늘" 기준 (스냅샷은 고정 주입)
+    // 홈/통계/세션 "오늘" 기준. 실앱은 읽을 때마다 현재 시각이다 — 생성 시점 값을 저장해 두면
+    // 백그라운드에 남은 앱이 날짜를 넘겨도 전날에 머문다 (실기기 2026-09-26: 토요일 세션 화면이
+    // 금요일을 오늘로 표시). 스냅샷·테스트만 고정값을 주입한다.
+    private var pinnedToday: Date? = nil
+    public var referenceToday: Date {
+        get { pinnedToday ?? Date() }
+        set { pinnedToday = newValue }
+    }
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
     public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
     public let cloud = CloudStore()   // 클라우드 sync (local-first — 로그인은 선택)
