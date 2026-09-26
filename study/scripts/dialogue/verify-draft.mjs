@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { validateSeedContent } from '../validate-seed.mjs';
 
 // 2묶음(2026-09-20)에서 카드를 채웠던 반응 문장들. 상황을 말하지 않고 앞 줄에 맞장구만 치는 줄.
-const REACTIVE = /^(that sounds\b|sounds (good|great)|i feel the same|you might be right|i didn't expect that|i couldn't agree more|no harm done|it's (not that bad|worth (a try|it)|finally over|better than nothing|up to you)|i'm not sure yet|let me think about it|that's (great|a relief|okay|fine|true)|i see\b|okay\b|sure\b|fair enough|don't worry about it|leave it to me|i'm up for anything|it was worth the wait|i can't get enough of it|i owe you|thanks?\b|thank you\b|good idea|no problem)/i;
+const REACTIVE = /^(yes\b|no\b|yeah\b|yep\b|right\b|exactly\b|absolutely\b|of course\b|me too\b|same here\b|i agree\b|got it\b|i understand\b|makes sense\b|that's it\b|that sounds\b|sounds (good|great)|i feel the same|you might be right|i didn't expect that|i couldn't agree more|no harm done|it's (not that bad|worth (a try|it)|finally over|better than nothing|up to you)|i'm not sure yet|let me think about it|that's (great|a relief|okay|fine|true)|i see\b|okay\b|sure\b|fair enough|don't worry about it|leave it to me|i'm up for anything|it was worth the wait|i can't get enough of it|i owe you|thanks?\b|thank you\b|good idea|no problem)/i;
 export const isReactive = (en) => REACTIVE.test(String(en || '').trim());
 
 // 관계사·삽입절 어림. 문두 Where/What 의문문은 세지 않는다. 접촉절(the room I booked)은 못 잡으므로 rel:true 로 표시한다.
@@ -23,6 +23,7 @@ const REL = [
   /\b(what|whatever)\s+(i|you|we|they|he|she|it)\b/i,                               // "what I mean"
   /\b(the|this|that|a|an|any|every|some|no)\s+\w+\s+(that|who|which)\s+\w+/i,       // "the bus that goes"
   /\b(know|sure|tell me|ask|wonder(ing)?|remember|find out|see|check|heard?)\s+(if|whether|where|when|what|which|who|how)\b/i, // 삽입 의문절
+  /\b(the|this|that|these|those|my|our|your|his|her|their|a|an|any|every|some|no)\s+\w+\s+(i|you|we|they|he|she|i'm|you're|we're|they're|he's|she's)\b/i, // 접촉절 "the seat I picked", "the hotel I'm staying at" (2026-09-26 보강)
 ];
 export const hasRelClause = (en) => { const s = String(en || '').trim(); return REL.some((re) => re.test(s)); };
 

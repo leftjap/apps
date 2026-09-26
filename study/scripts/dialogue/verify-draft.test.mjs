@@ -31,7 +31,9 @@ describe('관계사·삽입절 어림 판정', () => {
     ['Do you know where I can buy a card?', true],
     ["That's what I mean.", true],
     ["I'm not sure if I heard that right.", true],
-    ["The seat I picked online isn't showing.", false], // 접촉절은 어림으로 못 잡는다 → rel:true 로 표시
+    ["The seat I picked online isn't showing.", true],   // 접촉절 (2026-09-26 보강)
+    ["That's the hotel I'm staying at.", true],          // 접촉절 + 전치사 잔류
+    ['This is fine.', false],
     ['I want something spicy tonight.', false],
     ['Where is the counter?', false],
   ])('%s → %s', (en, want) => expect(hasRelClause(en)).toBe(want));
@@ -49,7 +51,7 @@ describe('관계사·삽입절 어림 판정', () => {
 });
 
 describe('지오 반응형 줄', () => {
-  it.each([["That sounds great.", true], ["You might be right.", true], ["I'm here to check in.", false], ["No harm done.", true]])('%s → %s', (en, want) => expect(isReactive(en)).toBe(want));
+  it.each([["That sounds great.", true], ["You might be right.", true], ["I'm here to check in.", false], ["No harm done.", true], ['Exactly.', true], ['Same here.', true], ['Yes, two nights.', true]])('%s → %s', (en, want) => expect(isReactive(en)).toBe(want));
   it('반응형이 편당 2줄을 넘으면 경고한다', () => {
     const s = scene(); s.lines[1].en = 'I feel the same way.'; s.lines[3].en = "You might be right."; // + That sounds great. = 3
     expect(checkDraft([s]).extraWarnings.some((x) => /반응형.*3/.test(x))).toBe(true);
