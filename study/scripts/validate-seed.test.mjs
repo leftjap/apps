@@ -1343,3 +1343,63 @@ describe('validateSeedContent — personal 꼬리확장 허용 (2026-09-13)', ()
     expect(r.errors.some((e) => e.includes('en-personal-'))).toBe(true);
   });
 });
+
+/* 한국어 고유명사 사전 게이트 (2026-09-26) — personal 트랙 문장에 사전(src/services/koreanTerms.js)에 없는 고유명사
+ * 후보가 있으면 차단한다. 없으면 TTS 가 영어 철자로 읽는다(Nani → "Nanny"). 9/15 이후 사전은 사람이 기억해서 채우는
+ * 규칙뿐이었고, 2026-09-26 서버 전수 대조에서 4개(청국장·막걸리·보쌈·실비)가 빠져 있었다. */
+describe('validateSeedContent — 한국어 고유명사 사전 게이트 (personal 트랙)', () => {
+  const termErrs = (p) => validateSeedContent(p, okOpts).errors.filter((e) => e.includes('koreanTerms.js'));
+  const personal = (en, kr, expl = {}, track = 'personal') => ({
+    track, lang: 'en', date: '2026-12-01',
+    cards: [{
+      id: 'en-personal-gate-01', sentence: en, meaning: '뜻', reading: null, phonetic_kr: kr, order_index: 1,
+      explanation: {
+        key: `${en} = 뜻.`, situation: '상황', drills: poolDrills(5), grammar: [{ struct: '구조', body: '설명' }],
+        chunks: [[en, kr]], phonemes: [['/ð/', 'that']], mistake: '함정', similar: '대체', category: 'c/t', frequency: 7,
+        ...expl,
+      },
+    }],
+  });
+
+  it('사전에 없는 대문자 고유명사 후보는 차단하고 낱말과 사전 경로를 지목한다', () => {
+    const errs = termErrs(personal("Let's meet at Hongdae.", '레츠 밋 앳 홍대'));
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toContain('"Hongdae"');
+    expect(errs[0]).toContain('src/services/koreanTerms.js');
+  });
+
+  it('사전에 있는 이름은 통과한다 (Mangwon·Hyundae-eumryul 처럼 붙임표 포함)', () => {
+    expect(termErrs(personal("There's a place in Mangwon.", '데어r저 플레이씬 망원'))).toHaveLength(0);
+    expect(termErrs(personal('Okay. And then Hyundae-eumryul?', '오케이 앤 덴 현대음률'))).toHaveLength(0);
+  });
+
+  it('문장 첫 낱말·영어 허용 목록(요일·City Hall·Mom)·전부 대문자(MK)는 후보가 아니다', () => {
+    expect(termErrs(personal('Hongdae is far. We drove on Friday to City Hall with Mom at MK.', '홍대 이z 파r'))).toHaveLength(0);
+  });
+
+  it('한국어 로마자 꼴 소문자 낱말도 잡고(tteokbokki), 영어 낱말(someone·people)은 잡지 않는다', () => {
+    const errs = termErrs(personal('Someone bought people some tteokbokki.', '썸원 밧 피플 썸 떡볶이'));
+    expect(errs).toHaveLength(1);
+    expect(errs[0]).toContain('"tteokbokki"');
+  });
+
+  it('miniDialogue 줄과 drills 의 en 도 본다', () => {
+    const md = [{ speaker: 'A', name: '소연', en: "Let's go to Hongdae.", ko: '홍대 가자.', kr: '레츠 고우 투 홍대' }];
+    expect(termErrs(personal("It's worth a try.", '잇츠 워r써 트라이', { miniDialogue: md }))).toHaveLength(1);
+    const drills = [...poolDrills(4), { en: 'Bring some bulgogi.', ko: '뜻', kr: '브링 썸 불고기' }];
+    // bulgogi 는 로마자 꼴 검사에 안 걸린다(digraph 없음) — 대문자 후보로만 잡히는 한계를 드러내는 기준선
+    expect(termErrs(personal("It's worth a try.", '잇츠 워r써 트라이', { drills }))).toHaveLength(0);
+    const drills2 = [...poolDrills(4), { en: 'Bring some to Hongdae.', ko: '뜻', kr: '브링 썸 투 홍대' }];
+    expect(termErrs(personal("It's worth a try.", '잇츠 워r써 트라이', { drills: drills2 }))).toHaveLength(1);
+  });
+
+  it('같은 낱말은 카드 안에서 한 번만 지목한다', () => {
+    const md = [{ speaker: 'A', name: '소연', en: 'Hongdae? Hongdae is far.', ko: '홍대? 멀어.', kr: '홍대 홍대 이z 파r' }];
+    expect(termErrs(personal("Let's meet at Hongdae.", '레츠 밋 앳 홍대', { miniDialogue: md }))).toHaveLength(1);
+  });
+
+  it('personal 트랙이 아니면 검사하지 않는다 (RealClass 장면의 영어 이름은 대상 밖)', () => {
+    expect(termErrs(personal("Let's meet at Hongdae.", '레츠 밋 앳 홍대', {}, 'core100'))).toHaveLength(0);
+  });
+});
+

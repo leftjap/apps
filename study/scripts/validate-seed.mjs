@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import { argv, exit } from 'node:process';
 import { nearDupDrills, exprMatch, isPersonalCard } from '../src/components/session/applied.js';
+import { KOREAN_TERMS } from '../src/services/koreanTerms.js';
 
 // session-new.js deriveDialogue 와 동일 정규화 (매칭 계약 시뮬레이션용 — 로직 변경 시 양쪽 동기화)
 // ⚠️ 근접중복 판정엔 쓰지 말 것 — 아포스트로피를 지워 `it's` 를 2단어로 세므로 렌더(applied.js)와 결과가 갈린다.
@@ -240,6 +241,54 @@ export function loadSourceEnLines(seedsDir, source) {
   return out;
 }
 
+
+/* ── 한국어 고유명사 사전 게이트 (2026-09-26) ──────────────────────────────────────────
+ * personal 트랙 문장의 로마자 고유명사(Nani·Mangwon·makgeolli)는 src/services/koreanTerms.js 에 IPA 가 있어야
+ * TTS 가 제 소리로 읽는다(없으면 "Nanny"·"makjiali"). 9/15 이후 사전은 사람이 기억해서 채우는 규칙뿐이었고,
+ * 2026-09-26 서버 세션 전수 대조에서 4개가 빠져 있었다. 후보는 두 갈래로 잡는다:
+ *   ① 문장 첫 낱말이 아닌 대문자 낱말(붙임표 포함) — 영어 고유명사·요일·호칭은 PROPER_NOUN_ALLOW 로 거른다.
+ *   ② 한국어 로마자 꼴 소문자 낱말(eo·eu·ae·kk·jj·tt) — 영어 낱말은 LOWER_ALLOW 로 거른다.
+ * 못 잡는 것: 문장 첫 낱말, 로마자 꼴이 아닌 소문자(galbi·bulgogi). 초안을 쓸 때 직접 센다(스킬 study-dialogue-batch §5).
+ * 허용 목록의 한국어 이름(Suki·Honshitsu·Gorilla·Minsu)은 2026-09-26 실측에서 로마자 읽기가 이미 맞아 사전에 넣지 않은 것. */
+const PROPER_NOUN_ALLOW = new Set([
+  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
+  'Christmas', 'Thanksgiving', 'English', 'Korean', 'Korea', 'Japanese', 'Japan', 'Seoul', 'London', 'Bangkok', 'Paris', 'Singapore',
+  'City', 'Hall', 'Center', 'Terminal', 'Street', 'Station', 'Airport', 'Mom', 'Dad', 'Grandma', 'Grandpa', 'Mr', 'Mrs', 'Ms', 'Dr',
+  'Suki', 'Honshitsu', 'Gorilla', 'Minsu',
+]);
+const LOWER_ALLOW = new Set(['someone', 'anyone', 'everyone', 'people', 'gotta', 'bottom', 'lettuce', 'kitty', 'pretty', 'museum', 'motto', 'video', 'videos', 'meow', 'meowing', 'attack', 'attitude']);
+const KOREAN_LOWER_RE = /eo|eu|ae|kk|jj|tt(?![lei])/;
+const WORD_RE = /[A-Za-z][A-Za-z'-]*/g;
+
+/** 문장에서 사전에 없는 고유명사 후보를 낸다 (중복 제거, 원문 철자 그대로). */
+export function koreanTermCandidates(text) {
+  const s = String(text ?? '');
+  const out = new Set();
+  for (const m of s.matchAll(WORD_RE)) {
+    const w = m[0].replace(/'s$/, '').replace(/^'+|'+$/g, '');
+    if (!w || w in KOREAN_TERMS) continue;
+    if (/^[A-Z][a-z]/.test(w)) {
+      const before = s.slice(0, m.index).trimEnd();
+      const sentenceInitial = before === '' || /[.!?]$|["'(]$/.test(before);
+      if (sentenceInitial || PROPER_NOUN_ALLOW.has(w) || w.includes("'")) continue;
+      out.add(w);
+    } else if (/^[a-z]+$/.test(w) && KOREAN_LOWER_RE.test(w) && !LOWER_ALLOW.has(w)) {
+      out.add(w);
+    }
+  }
+  return [...out];
+}
+const enTextsOf = (card) => {
+  const acc = [card?.sentence];
+  const walk = (o) => {
+    if (Array.isArray(o)) o.forEach(walk);
+    else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) (k === 'en' && typeof v === 'string') ? acc.push(v) : walk(v);
+  };
+  walk(card?.explanation);
+  return acc.filter(Boolean);
+};
+
 /**
  * 콘텐츠 검증 본체. 반환 { ok, errors[], warnings[] }.
  * RealClass 분기: lang==='en' && 첫 정렬 카드에 dialogue 존재. 그 외(ja 등)는 generic 만.
@@ -322,6 +371,10 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   for (const c of exprs) {
     const ex = c.explanation || {};
     if (payload?.track === 'personal' && !isPersonalCard(c.id)) errors.push(`${c.id}: personal 트랙 카드 id 는 'en-personal-' 로 시작해야 함 — 렌더의 꼬리확장 면제 판정(applied.js isPersonalCard)이 id 접두를 본다`);
+    if (payload?.track === 'personal') {
+      const missing = [...new Set(enTextsOf(c).flatMap(koreanTermCandidates))];
+      for (const w of missing) errors.push(`${c.id}: 고유명사 후보 "${w}" 가 src/services/koreanTerms.js 에 없음 — TTS 가 영어 철자로 읽는다. 한국어 이름·가게·음식이면 { ko, ipa } 를 넣고(발음은 scripts/tts-probe-terms.mjs 로 실측), 영어 낱말이면 validate-seed.mjs 의 PROPER_NOUN_ALLOW/LOWER_ALLOW 에 넣는다`);
+    }
     for (const f of EXPL_REQUIRED) {
       if (ex[f] === undefined || ex[f] === null || ex[f] === '') errors.push(`${c.id}: explanation.${f} 누락 (8필드 의무)`);
     }
