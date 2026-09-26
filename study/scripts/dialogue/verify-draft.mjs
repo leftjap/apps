@@ -19,11 +19,11 @@ export const isReactive = (en) => REACTIVE.test(String(en || '').trim());
 
 // 관계사·삽입절 어림. 문두 Where/What 의문문은 세지 않는다. 접촉절(the room I booked)은 못 잡으므로 rel:true 로 표시한다.
 const REL = [
-  /\b\w+['’]?\w*\s+(who|whom|whose|which|where|when)\b/i,                          // "the bus which…", "know where…"
+  /\b\w+['’]?\w*,?\s+(who|whom|whose|which|where|when)\b/i,                        // "the bus which…", "know where…", "my wife, who's…"
   /\b(what|whatever)\s+(i|you|we|they|he|she|it)\b/i,                               // "what I mean"
   /\b(the|this|that|a|an|any|every|some|no)\s+\w+\s+(that|who|which)\s+\w+/i,       // "the bus that goes"
   /\b(know|sure|tell me|ask|wonder(ing)?|remember|find out|see|check|heard?)\s+(if|whether|where|when|what|which|who|how)\b/i, // 삽입 의문절
-  /\b(the|this|that|these|those|my|our|your|his|her|their|a|an|any|every|some|no)\s+\w+\s+(i|you|we|they|he|she|i'm|you're|we're|they're|he's|she's)\b/i, // 접촉절 "the seat I picked", "the hotel I'm staying at" (2026-09-26 보강)
+  /\b(the|this|that|these|those|my|our|your|his|her|their|a|an|any|every|some|no)\s+\w+(\s+\w+)?\s+(i|you|we|they|he|she|i'm|you're|we're|they're|he's|she's)\b/i, // 접촉절(명사구 1~2단어) "the seat I picked", "the hotel I'm staying at" (2026-09-26 보강)
 ];
 export const hasRelClause = (en) => { const s = String(en || '').trim(); return REL.some((re) => re.test(s)); };
 

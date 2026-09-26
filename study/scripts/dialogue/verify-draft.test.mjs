@@ -34,6 +34,8 @@ describe('관계사·삽입절 어림 판정', () => {
     ["The seat I picked online isn't showing.", true],   // 접촉절 (2026-09-26 보강)
     ["That's the hotel I'm staying at.", true],          // 접촉절 + 전치사 잔류
     ['This is fine.', false],
+    ["I'm here with my wife, who's working this flight.", true],   // 쉼표 뒤 관계사
+    ['Do you have a return ticket I can see?', true],              // 두 단어 명사구 접촉절
     ['I want something spicy tonight.', false],
     ['Where is the counter?', false],
   ])('%s → %s', (en, want) => expect(hasRelClause(en)).toBe(want));
