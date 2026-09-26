@@ -4,492 +4,517 @@
  "date": "2026-10-03",
  "cards": [
   {
-   "id": "en-personal-overslept-01-overslept",
-   "sentence": "I overslept.",
-   "meaning": "늦잠 잤어.",
+   "id": "en-personal-bkk-immigration-01-here-to-join",
+   "sentence": "I'm here to join my wife, who's working this flight.",
+   "meaning": "이 비행기에서 일하는 아내와 함께 지내러 왔어요.",
    "reading": null,
-   "phonetic_kr": "아이 오우버r슬렙트",
+   "phonetic_kr": "아임 히어r 터 조인 마이 와이f 후우z 워r킹 디스 f플라잇",
    "order_index": 1,
    "explanation": {
-    "key": "I overslept = 늦잠 잤어. 모두영어 #259 그대로",
-    "anchor": "늦잠",
-    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
+    "key": "I'm here to ~ = ~하러 왔어요 (목적을 말하는 첫마디, 영상 #4)",
+    "anchor": "왔어요",
+    "situation": "수완나품 공항 입국심사. 심사관이 목적·기간·숙소를 묻는다. 소연은 승무원 통로로 먼저 들어갔다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "You slept until noon.",
-      "ko": "정오까지 잤어.",
-      "kr": "유 슬렙 틸 누운"
+      "name": "심사관",
+      "en": "What's the purpose of your visit?",
+      "ko": "방문 목적이 무엇입니까?",
+      "kr": "왓츠 더 퍼r퍼서v 여r v이짓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I overslept.",
-      "ko": "늦잠 잤어.",
-      "kr": "아이 오우버r슬렙트"
+      "en": "I'm here to join my wife, who's working this flight.",
+      "ko": "이 비행기에서 일하는 아내와 함께 지내러 왔어요.",
+      "kr": "아임 히어r 터 조인 마이 와이f 후우z 워r킹 디스 f플라잇"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Let's get sashimi tonight.",
-      "ko": "오늘 저녁엔 회 먹자.",
-      "kr": "렛츠 겟 싸시미 터나잇"
+      "name": "심사관",
+      "en": "How long will you be staying?",
+      "ko": "얼마나 머무르십니까?",
+      "kr": "하우 롱 윌 여 비 스테이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That sounds great.",
-      "ko": "그거 좋다.",
-      "kr": "댓 사운즈 그뤠잇"
+      "en": "I'm supposed to leave on Sunday, so five days.",
+      "ko": "일요일에 떠나기로 되어 있어서, 닷새요.",
+      "kr": "아임 써포우스터 리이v 온 썬데이 쏘우 f파이v 데이z"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Are you moving that file again?",
-      "ko": "그 파일 또 옮기는 거야?",
-      "kr": "아r 여 무우v잉 댓 f파일 어겐"
+      "name": "심사관",
+      "en": "Where will you be staying?",
+      "ko": "어디에 묵으십니까?",
+      "kr": "웨어r 윌 여 비 스테이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I haven't decided yet.",
-      "ko": "아직 못 정했어.",
-      "kr": "아이 해븐 디싸이리드 옛"
+      "en": "I'm staying at the hotel where the crew stays.",
+      "ko": "승무원들이 묵는 호텔에 있을 거예요.",
+      "kr": "아임 스테이잉 엇 더 호우텔 웨어r 더 크루우 스테이z"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Just leave it where it is.",
-      "ko": "그냥 그 자리에 둬.",
-      "kr": "저스 리이v 잇 웨어r 이리z"
+      "name": "심사관",
+      "en": "Do you have a return ticket I can see?",
+      "ko": "보여 주실 귀국 항공권 있습니까?",
+      "kr": "더여 해버 리터r언 티킷 아이 컨 씨이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You might be right.",
-      "ko": "네 말이 맞을지도.",
-      "kr": "유 마잇 비 라잇"
+      "en": "Let me show you the one on my phone.",
+      "ko": "제 휴대폰에 있는 걸 보여 드릴게요.",
+      "kr": "렛 미 쇼우 여 더 워논 마이 f포운"
      }
     ],
     "drills": [
      {
-      "en": "She overslept this morning.",
-      "ko": "소연이 오늘 아침 늦잠 잤어.",
-      "kr": "쉬 오우버r슬렙 디스 모어r닝"
+      "en": "I'm here to check in.",
+      "ko": "체크인하러 왔어요.",
+      "kr": "아임 히어r 터 체킨"
      },
      {
-      "en": "Did you oversleep?",
-      "ko": "늦잠 잤어?",
-      "kr": "디저 오우버r슬리입"
+      "en": "I'm here for a check-up.",
+      "ko": "검진 받으러 왔어요.",
+      "kr": "아임 히어r f퍼r 어 체컵"
      },
      {
-      "en": "I overslept, so I skipped lunch.",
-      "ko": "늦잠 자서 점심을 걸렀어.",
-      "kr": "아이 오우버r슬렙트 쏘우 아이 스킵트 런치"
+      "en": "We're here to visit her parents.",
+      "ko": "아내 부모님 뵈러 왔어요.",
+      "kr": "위어r 히어r 터 v이짓 허r 페어런츠"
      },
      {
-      "en": "I don't want to oversleep tomorrow.",
-      "ko": "내일은 늦잠 자기 싫어.",
-      "kr": "아이 돈 워너 오우버r슬리입 터마로우"
+      "en": "Are you here on business?",
+      "ko": "출장이세요?",
+      "kr": "아r 여 히어r 온 비z니스"
+     },
+     {
+      "en": "She's here to work, not to travel.",
+      "ko": "아내는 여행이 아니라 일하러 온 거예요.",
+      "kr": "쉬z 히어r 터 워r크 낫 터 트래v얼"
      }
     ],
     "grammar": [
      {
-      "struct": "I overslept",
-      "body": "늦잠 잤어. 모두영어 #259 그대로"
+      "struct": "I'm here to ~",
+      "body": "~하러 왔어요 (목적을 말하는 첫마디, 영상 #4)"
      }
     ],
     "chunks": [
      [
-      "I",
-      "아이",
-      "나는"
+      "I'm here to",
+      "아임 히어r 터",
+      "~하러 왔다"
      ],
      [
-      "overslept.",
-      "오우버r슬렙트",
-      "늦잠 잤다"
+      "join my wife,",
+      "조인 마이 와이f",
+      "아내와 함께하다"
+     ],
+     [
+      "who's working",
+      "후우z 워r킹",
+      "일하는"
+     ],
+     [
+      "this flight.",
+      "디스 f플라잇",
+      "이 비행기에서"
      ]
     ],
     "phonemes": [
      [
-      "/oʊ/ over",
-      "over 의 o 는 오우 — 오우버r, '오버' 가 아니다"
+      "/h/ here",
+      "here 의 h 를 살리고 r 로 맺는다 — 히어r"
      ]
     ],
-    "mistake": "oversleep-overslept. I was overslept (X) — 수동태가 아니다",
-    "similar": "I slept in.",
-    "category": "일상/아침",
-    "frequency": 8
-   }
-  },
-  {
-   "id": "en-personal-overslept-02-sounds-great",
-   "sentence": "That sounds great.",
-   "meaning": "그거 좋다.",
-   "reading": null,
-   "phonetic_kr": "댓 사운즈 그뤠잇",
-   "order_index": 2,
-   "explanation": {
-    "key": "That sounds ~ = 그거 ~하게 들린다 / 좋다. 모두영어 #41 That sounds great. 그대로",
-    "anchor": "좋다",
-    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "You slept until noon.",
-      "ko": "정오까지 잤어.",
-      "kr": "유 슬렙 틸 누운"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I overslept.",
-      "ko": "늦잠 잤어.",
-      "kr": "아이 오우버r슬렙트"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Let's get sashimi tonight.",
-      "ko": "오늘 저녁엔 회 먹자.",
-      "kr": "렛츠 겟 싸시미 터나잇"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That sounds great.",
-      "ko": "그거 좋다.",
-      "kr": "댓 사운즈 그뤠잇"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Are you moving that file again?",
-      "ko": "그 파일 또 옮기는 거야?",
-      "kr": "아r 여 무우v잉 댓 f파일 어겐"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I haven't decided yet.",
-      "ko": "아직 못 정했어.",
-      "kr": "아이 해븐 디싸이리드 옛"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Just leave it where it is.",
-      "ko": "그냥 그 자리에 둬.",
-      "kr": "저스 리이v 잇 웨어r 이리z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You might be right.",
-      "ko": "네 말이 맞을지도.",
-      "kr": "유 마잇 비 라잇"
-     }
-    ],
-    "drills": [
-     {
-      "en": "That sounds easy.",
-      "ko": "그거 쉽겠다.",
-      "kr": "댓 사운지이지"
-     },
-     {
-      "en": "It sounds too late.",
-      "ko": "너무 늦은 것 같은데.",
-      "kr": "잇 사운즈 투우 레잇"
-     },
-     {
-      "en": "Does that sound okay?",
-      "ko": "그렇게 해도 괜찮아?",
-      "kr": "더즈 댓 사운도우케이"
-     },
-     {
-      "en": "Your plan sounds better.",
-      "ko": "네 계획이 더 낫겠다.",
-      "kr": "여r 플랜 사운즈 베러r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "That sounds ~",
-      "body": "그거 ~하게 들린다 / 좋다. 모두영어 #41 That sounds great. 그대로"
-     }
-    ],
-    "chunks": [
-     [
-      "That sounds",
-      "댓 사운즈",
-      "그거 ~하게 들린다"
-     ],
-     [
-      "great.",
-      "그뤠잇",
-      "좋다"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/gr/ great",
-      "great 의 gr 은 한 번에 — 그뤠잇, '그레이트' 로 늘이지 않는다"
-     ]
-    ],
-    "mistake": "sounds 뒤에는 형용사. That sounds greatly (X)",
-    "similar": "Sounds good to me.",
-    "category": "일상/반응",
-    "frequency": 10
-   }
-  },
-  {
-   "id": "en-personal-overslept-03-havent-decided",
-   "sentence": "I haven't decided yet.",
-   "meaning": "아직 못 정했어.",
-   "reading": null,
-   "phonetic_kr": "아이 해븐 디싸이리드 옛",
-   "order_index": 3,
-   "explanation": {
-    "key": "I haven't ~ = 아직 ~하지 않았어. 모두영어 2편 #86 I haven't decided yet. 그대로",
-    "anchor": "못 정했어",
-    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "You slept until noon.",
-      "ko": "정오까지 잤어.",
-      "kr": "유 슬렙 틸 누운"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I overslept.",
-      "ko": "늦잠 잤어.",
-      "kr": "아이 오우버r슬렙트"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Let's get sashimi tonight.",
-      "ko": "오늘 저녁엔 회 먹자.",
-      "kr": "렛츠 겟 싸시미 터나잇"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That sounds great.",
-      "ko": "그거 좋다.",
-      "kr": "댓 사운즈 그뤠잇"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Are you moving that file again?",
-      "ko": "그 파일 또 옮기는 거야?",
-      "kr": "아r 여 무우v잉 댓 f파일 어겐"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I haven't decided yet.",
-      "ko": "아직 못 정했어.",
-      "kr": "아이 해븐 디싸이리드 옛"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Just leave it where it is.",
-      "ko": "그냥 그 자리에 둬.",
-      "kr": "저스 리이v 잇 웨어r 이리z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You might be right.",
-      "ko": "네 말이 맞을지도.",
-      "kr": "유 마잇 비 라잇"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I haven't called him back.",
-      "ko": "아직 답전화 안 했어.",
-      "kr": "아이 해븐 커얼드 힘 백"
-     },
-     {
-      "en": "We haven't eaten yet.",
-      "ko": "우린 아직 안 먹었어.",
-      "kr": "위 해브니이튼 옛"
-     },
-     {
-      "en": "Have you decided yet?",
-      "ko": "정했어?",
-      "kr": "해v 여 디싸이리드 옛"
-     },
-     {
-      "en": "She decided last night.",
-      "ko": "소연은 어젯밤에 정했어.",
-      "kr": "쉬 디싸이리드 라스 나잇"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I haven't ~",
-      "body": "아직 ~하지 않았어. 모두영어 2편 #86 I haven't decided yet. 그대로"
-     }
-    ],
-    "chunks": [
-     [
-      "I haven't",
-      "아이 해븐",
-      "나는 아직 ~하지 않았다"
-     ],
-     [
-      "decided",
-      "디싸이리드",
-      "정하다"
-     ],
-     [
-      "yet.",
-      "옛",
-      "아직"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/d/ decided",
-      "decided 의 가운데 d 는 모음 사이에서 ㄹ 처럼 굴러 — 디싸이리드"
-     ]
-    ],
-    "mistake": "haven't + 과거분사. I didn't decided yet (X)",
-    "similar": "I'm still thinking about it.",
-    "category": "일상/결정",
+    "mistake": "I'm here to + 동사 / I'm here for + 명사 (I'm here for a check-up)",
+    "similar": "I came to see my wife.",
+    "category": "여행/입국",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-overslept-04-might-be-right",
-   "sentence": "You might be right.",
-   "meaning": "네 말이 맞을지도.",
+   "id": "en-personal-bkk-immigration-02-supposed-to-leave",
+   "sentence": "I'm supposed to leave on Sunday, so five days.",
+   "meaning": "일요일에 떠나기로 되어 있어서, 닷새요.",
    "reading": null,
-   "phonetic_kr": "유 마잇 비 라잇",
-   "order_index": 4,
+   "phonetic_kr": "아임 써포우스터 리이v 온 썬데이 쏘우 f파이v 데이z",
+   "order_index": 2,
    "explanation": {
-    "key": "You might be ~ = 네가 ~일지도 몰라. 모두영어 #169 You might be right. 그대로",
-    "anchor": "맞을지도",
-    "situation": "열한 시간을 자고 정오에 일어났다. 저녁에는 회를 먹으러 가기로 했다.",
+    "key": "I'm supposed to ~ = ~하기로 되어 있어요 (예정, 영상 #2)",
+    "anchor": "닷새",
+    "situation": "수완나품 공항 입국심사. 심사관이 목적·기간·숙소를 묻는다. 소연은 승무원 통로로 먼저 들어갔다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "You slept until noon.",
-      "ko": "정오까지 잤어.",
-      "kr": "유 슬렙 틸 누운"
+      "name": "심사관",
+      "en": "What's the purpose of your visit?",
+      "ko": "방문 목적이 무엇입니까?",
+      "kr": "왓츠 더 퍼r퍼서v 여r v이짓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I overslept.",
-      "ko": "늦잠 잤어.",
-      "kr": "아이 오우버r슬렙트"
+      "en": "I'm here to join my wife, who's working this flight.",
+      "ko": "이 비행기에서 일하는 아내와 함께 지내러 왔어요.",
+      "kr": "아임 히어r 터 조인 마이 와이f 후우z 워r킹 디스 f플라잇"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Let's get sashimi tonight.",
-      "ko": "오늘 저녁엔 회 먹자.",
-      "kr": "렛츠 겟 싸시미 터나잇"
+      "name": "심사관",
+      "en": "How long will you be staying?",
+      "ko": "얼마나 머무르십니까?",
+      "kr": "하우 롱 윌 여 비 스테이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That sounds great.",
-      "ko": "그거 좋다.",
-      "kr": "댓 사운즈 그뤠잇"
+      "en": "I'm supposed to leave on Sunday, so five days.",
+      "ko": "일요일에 떠나기로 되어 있어서, 닷새요.",
+      "kr": "아임 써포우스터 리이v 온 썬데이 쏘우 f파이v 데이z"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Are you moving that file again?",
-      "ko": "그 파일 또 옮기는 거야?",
-      "kr": "아r 여 무우v잉 댓 f파일 어겐"
+      "name": "심사관",
+      "en": "Where will you be staying?",
+      "ko": "어디에 묵으십니까?",
+      "kr": "웨어r 윌 여 비 스테이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I haven't decided yet.",
-      "ko": "아직 못 정했어.",
-      "kr": "아이 해븐 디싸이리드 옛"
+      "en": "I'm staying at the hotel where the crew stays.",
+      "ko": "승무원들이 묵는 호텔에 있을 거예요.",
+      "kr": "아임 스테이잉 엇 더 호우텔 웨어r 더 크루우 스테이z"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Just leave it where it is.",
-      "ko": "그냥 그 자리에 둬.",
-      "kr": "저스 리이v 잇 웨어r 이리z"
+      "name": "심사관",
+      "en": "Do you have a return ticket I can see?",
+      "ko": "보여 주실 귀국 항공권 있습니까?",
+      "kr": "더여 해버 리터r언 티킷 아이 컨 씨이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You might be right.",
-      "ko": "네 말이 맞을지도.",
-      "kr": "유 마잇 비 라잇"
+      "en": "Let me show you the one on my phone.",
+      "ko": "제 휴대폰에 있는 걸 보여 드릴게요.",
+      "kr": "렛 미 쇼우 여 더 워논 마이 f포운"
      }
     ],
     "drills": [
      {
-      "en": "You might be late.",
-      "ko": "너 늦을지도 몰라.",
-      "kr": "유 마잇 비 레잇"
+      "en": "I'm supposed to be back by Friday.",
+      "ko": "금요일까지 돌아가기로 돼 있어요.",
+      "kr": "아임 써포우스터 비 백 바이 f라이데이"
      },
      {
-      "en": "I might be wrong.",
-      "ko": "내가 틀렸을 수도 있어.",
-      "kr": "아이 마잇 비 롱"
+      "en": "We're supposed to check out at noon.",
+      "ko": "정오에 체크아웃하기로 돼 있어요.",
+      "kr": "위어r 써포우스터 체카웃 엇 누운"
      },
      {
-      "en": "She might be asleep.",
-      "ko": "소연은 자고 있을지도.",
-      "kr": "쉬 마잇 비 어슬리입"
+      "en": "How long am I supposed to wait?",
+      "ko": "얼마나 기다려야 하죠?",
+      "kr": "하우 롱 애마이 써포우스터 웨잇"
      },
      {
-      "en": "We might be out late.",
-      "ko": "우리 늦게까지 밖에 있을지도.",
-      "kr": "위 마잇 비 아웃 레잇"
+      "en": "She's supposed to land at six.",
+      "ko": "아내는 여섯 시에 착륙 예정이에요.",
+      "kr": "쉬z 써포우스터 랜드 엇 씩스"
      }
     ],
     "grammar": [
      {
-      "struct": "You might be ~",
-      "body": "네가 ~일지도 몰라. 모두영어 #169 You might be right. 그대로"
+      "struct": "I'm supposed to ~",
+      "body": "~하기로 되어 있어요 (예정, 영상 #2)"
      }
     ],
     "chunks": [
      [
-      "You might be",
-      "유 마잇 비",
-      "너는 ~일지도 모른다"
+      "I'm supposed to",
+      "아임 써포우스터",
+      "나는 ~하기로 되어 있다"
      ],
      [
-      "right.",
-      "라잇",
-      "맞다"
+      "leave on Sunday,",
+      "리이v 온 썬데이",
+      "일요일에 떠나다"
+     ],
+     [
+      "so five days.",
+      "쏘우 f파이v 데이z",
+      "그러니 닷새"
      ]
     ],
     "phonemes": [
      [
-      "/t/ might be",
-      "might 의 끝 t 는 뒤 자음 앞에서 거의 안 들린다 — 마잇 비"
+      "/iː/ leave",
+      "leave 의 ea 는 길게 — 리이v"
      ]
     ],
-    "mistake": "might + 동사원형. You might are right (X)",
-    "similar": "Maybe you're right.",
-    "category": "일상/동의",
-    "frequency": 8
+    "mistake": "supposed to 는 예정·규칙. 확정이면 I leave on Sunday 도 된다",
+    "similar": "My flight back is on Sunday.",
+    "category": "여행/입국",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-immigration-03-hotel-where",
+   "sentence": "I'm staying at the hotel where the crew stays.",
+   "meaning": "승무원들이 묵는 호텔에 있을 거예요.",
+   "reading": null,
+   "phonetic_kr": "아임 스테이잉 엇 더 호우텔 웨어r 더 크루우 스테이z",
+   "order_index": 3,
+   "explanation": {
+    "key": "the hotel where ~ = ~하는 호텔 (관계부사 where 로 장소 설명)",
+    "anchor": "호텔에",
+    "situation": "수완나품 공항 입국심사. 심사관이 목적·기간·숙소를 묻는다. 소연은 승무원 통로로 먼저 들어갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "What's the purpose of your visit?",
+      "ko": "방문 목적이 무엇입니까?",
+      "kr": "왓츠 더 퍼r퍼서v 여r v이짓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm here to join my wife, who's working this flight.",
+      "ko": "이 비행기에서 일하는 아내와 함께 지내러 왔어요.",
+      "kr": "아임 히어r 터 조인 마이 와이f 후우z 워r킹 디스 f플라잇"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "How long will you be staying?",
+      "ko": "얼마나 머무르십니까?",
+      "kr": "하우 롱 윌 여 비 스테이잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm supposed to leave on Sunday, so five days.",
+      "ko": "일요일에 떠나기로 되어 있어서, 닷새요.",
+      "kr": "아임 써포우스터 리이v 온 썬데이 쏘우 f파이v 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Where will you be staying?",
+      "ko": "어디에 묵으십니까?",
+      "kr": "웨어r 윌 여 비 스테이잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm staying at the hotel where the crew stays.",
+      "ko": "승무원들이 묵는 호텔에 있을 거예요.",
+      "kr": "아임 스테이잉 엇 더 호우텔 웨어r 더 크루우 스테이z"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Do you have a return ticket I can see?",
+      "ko": "보여 주실 귀국 항공권 있습니까?",
+      "kr": "더여 해버 리터r언 티킷 아이 컨 씨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me show you the one on my phone.",
+      "ko": "제 휴대폰에 있는 걸 보여 드릴게요.",
+      "kr": "렛 미 쇼우 여 더 워논 마이 f포운"
+     }
+    ],
+    "drills": [
+     {
+      "en": "This is the hotel where we stayed last time.",
+      "ko": "지난번에 묵었던 호텔이에요.",
+      "kr": "디스 이z 더 호우텔 웨어r 위 스테이드 라스 타임"
+     },
+     {
+      "en": "Is that the gate where we board?",
+      "ko": "저기가 탑승하는 게이트예요?",
+      "kr": "이z 댓 더 게잇 웨어r 위 보어r드"
+     },
+     {
+      "en": "I know a place where the food is cheap.",
+      "ko": "음식 싼 데를 알아요.",
+      "kr": "아이 노우 어 플레이스 웨어r 더 f푸우드 이z 치입"
+     },
+     {
+      "en": "She works at the airport where we landed.",
+      "ko": "아내는 우리가 내린 공항에서 일해요.",
+      "kr": "쉬 워r크스 엇 디 에어r포어r트 웨어r 위 랜디드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "the hotel where ~",
+      "body": "~하는 호텔 (관계부사 where 로 장소 설명)"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm staying at",
+      "아임 스테이잉 엇",
+      "나는 ~에 묵는다"
+     ],
+     [
+      "the hotel where",
+      "더 호우텔 웨어r",
+      "~하는 호텔"
+     ],
+     [
+      "the crew stays.",
+      "더 크루우 스테이z",
+      "승무원이 묵는"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/eɪ/ staying",
+      "stay 의 ay 는 에이 — 스테이잉"
+     ]
+    ],
+    "mistake": "장소 뒤에는 where. the hotel which the crew stays (X)",
+    "similar": "I'm at the crew hotel near Siam.",
+    "category": "여행/입국",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-bkk-immigration-04-let-me-show",
+   "sentence": "Let me show you the one on my phone.",
+   "meaning": "제 휴대폰에 있는 걸 보여 드릴게요.",
+   "reading": null,
+   "phonetic_kr": "렛 미 쇼우 여 더 워논 마이 f포운",
+   "order_index": 4,
+   "explanation": {
+    "key": "Let me ~ = 제가 ~할게요 / ~해 드릴게요 (영상 #6)",
+    "anchor": "보여",
+    "situation": "수완나품 공항 입국심사. 심사관이 목적·기간·숙소를 묻는다. 소연은 승무원 통로로 먼저 들어갔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "What's the purpose of your visit?",
+      "ko": "방문 목적이 무엇입니까?",
+      "kr": "왓츠 더 퍼r퍼서v 여r v이짓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm here to join my wife, who's working this flight.",
+      "ko": "이 비행기에서 일하는 아내와 함께 지내러 왔어요.",
+      "kr": "아임 히어r 터 조인 마이 와이f 후우z 워r킹 디스 f플라잇"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "How long will you be staying?",
+      "ko": "얼마나 머무르십니까?",
+      "kr": "하우 롱 윌 여 비 스테이잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm supposed to leave on Sunday, so five days.",
+      "ko": "일요일에 떠나기로 되어 있어서, 닷새요.",
+      "kr": "아임 써포우스터 리이v 온 썬데이 쏘우 f파이v 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Where will you be staying?",
+      "ko": "어디에 묵으십니까?",
+      "kr": "웨어r 윌 여 비 스테이잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm staying at the hotel where the crew stays.",
+      "ko": "승무원들이 묵는 호텔에 있을 거예요.",
+      "kr": "아임 스테이잉 엇 더 호우텔 웨어r 더 크루우 스테이z"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Do you have a return ticket I can see?",
+      "ko": "보여 주실 귀국 항공권 있습니까?",
+      "kr": "더여 해버 리터r언 티킷 아이 컨 씨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me show you the one on my phone.",
+      "ko": "제 휴대폰에 있는 걸 보여 드릴게요.",
+      "kr": "렛 미 쇼우 여 더 워논 마이 f포운"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let me check my phone.",
+      "ko": "휴대폰 확인해 볼게요.",
+      "kr": "렛 미 첵 마이 f포운"
+     },
+     {
+      "en": "Let me find the booking.",
+      "ko": "예약 내역 찾아볼게요.",
+      "kr": "렛 미 f파인 더 부킹"
+     },
+     {
+      "en": "Can you let me through?",
+      "ko": "지나가게 해 주실래요?",
+      "kr": "컨 여 렛 미 쓰루우"
+     },
+     {
+      "en": "I'll let you see the ticket.",
+      "ko": "티켓 보여 드릴게요.",
+      "kr": "아일 레처 씨이 더 티킷"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "제가 ~할게요 / ~해 드릴게요 (영상 #6)"
+     }
+    ],
+    "chunks": [
+     [
+      "Let me show you",
+      "렛 미 쇼우 여",
+      "내가 당신에게 보여 주겠다"
+     ],
+     [
+      "the one on",
+      "더 워논",
+      "~에 있는 그것"
+     ],
+     [
+      "my phone.",
+      "마이 f포운",
+      "내 휴대폰"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃ/ show",
+      "show 의 sh 는 입술을 둥글게 — 쇼우"
+     ]
+    ],
+    "mistake": "Let me + 동사원형. Let me to show (X)",
+    "similar": "Here, it's on my phone.",
+    "category": "여행/입국",
+    "frequency": 10
    }
   }
  ]

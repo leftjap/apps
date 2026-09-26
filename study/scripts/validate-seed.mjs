@@ -253,6 +253,7 @@ export function loadSourceEnLines(seedsDir, source) {
  * 맞아 사전에 넣지 않은 것. */
 const PROPER_NOUN_ALLOW = new Set([
   'Sarah', 'Liam', 'Emma', 'Tom', // personal 트랙 반복 인물 (2026-09-26 배정표 §2-2) — 영어 이름이라 TTS 가 그대로 읽는다
+  'Eleven', 'Google', 'Naver', 'Maps', 'Map', // personal 트랙 장면의 영어 상표(7-Eleven·Google Maps·Naver Map) — TTS 가 영어로 읽어도 맞다
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
   'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
   'Christmas', 'Thanksgiving', 'English', 'Korean', 'Korea', 'Japanese', 'Japan', 'Seoul', 'London', 'Bangkok', 'Paris', 'Singapore',

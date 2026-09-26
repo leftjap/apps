@@ -4,496 +4,521 @@
  "date": "2026-10-06",
  "cards": [
   {
-   "id": "en-personal-bossam-01-can-i-get",
-   "sentence": "Can I get us some makgeolli?",
-   "meaning": "막걸리 좀 시킬까?",
+   "id": "en-personal-gym-liam-01-trying-to-run",
+   "sentence": "Not new. I'm trying to get back into running.",
+   "meaning": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
    "reading": null,
-   "phonetic_kr": "커나이 게러스 썸 막걸리",
+   "phonetic_kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝",
    "order_index": 1,
    "explanation": {
-    "key": "Can I get ~ = ~ 시켜도 될까? / ~ 갖다 줄까? (영상 #7). 모두영어 2편 #74 Can I get a coffee?",
-    "anchor": "시킬까",
-    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "key": "I'm trying to ~ = ~하려고 하는 중이에요 (영상 #1). get back into = 다시 시작하다",
+    "anchor": "시작하려는",
+    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'm glad we came here after shopping.",
-      "ko": "장 보고 여기 오길 잘했다.",
-      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I see you here every morning. Are you new here?",
+      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
+      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I get us some makgeolli?",
-      "ko": "막걸리 좀 시킬까?",
-      "kr": "커나이 게러스 썸 막걸리"
+      "en": "Not new. I'm trying to get back into running.",
+      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
+      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Please. This is the best bossam ever.",
-      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
-      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I saw you stop at five minutes. Is that it?",
+      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
+      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I feel the same way.",
-      "ko": "나도 그래.",
-      "kr": "아이 f피일 더 쎄임 웨이"
+      "en": "I've been adding a minute every day since five.",
+      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "The fat is barely there.",
-      "ko": "비계가 거의 없네.",
-      "kr": "더 f패리z 베어r리 데어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Smart. What's the goal you're going for?",
+      "ko": "현명하네요. 목표가 뭐예요?",
+      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why the texture is so good.",
-      "ko": "그래서 식감이 좋은 거야.",
-      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
+      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
+      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Oh, it's my mother's birthday today.",
-      "ko": "아 참, 오늘 우리 엄마 생신이야.",
-      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Go easy on squats, then. That's how I got hurt.",
+      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
+      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if we call her now?",
-      "ko": "지금 전화드려도 될까?",
-      "kr": "더여 마인디f 위 커얼 허r 나우"
+      "en": "Do you mind if I ask what you were lifting?",
+      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
+      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
      }
     ],
     "drills": [
      {
-      "en": "Can I get a refill?",
-      "ko": "리필 좀 될까요?",
-      "kr": "커나이 게러 리이f필"
+      "en": "I'm trying to run every morning.",
+      "ko": "매일 아침 뛰려고 해요.",
+      "kr": "아임 트라잉 터 런 에v리 모어r닝"
      },
      {
-      "en": "Can you get me some water?",
-      "ko": "물 좀 갖다 줄래?",
-      "kr": "컨 여 겟 미 썸 워러r"
+      "en": "We're trying to get back into walking.",
+      "ko": "우린 다시 산책을 시작하려고요.",
+      "kr": "위어r 트라잉 터 겟 배킨투 워킹"
      },
      {
-      "en": "I'll get the check.",
-      "ko": "계산은 내가 할게.",
-      "kr": "아일 겟 더 첵"
+      "en": "Are you trying to lose weight?",
+      "ko": "살 빼려는 거예요?",
+      "kr": "아r 여 트라잉 터 루우z 웨잇"
      },
      {
-      "en": "Let me get one more bottle.",
-      "ko": "한 병 더 시킬게.",
-      "kr": "렛 미 겟 원 모어r 바를"
+      "en": "I tried to run longer, but my back hurt.",
+      "ko": "더 뛰어 보려 했는데 허리가 아팠어요.",
+      "kr": "아이 트라이드 터 런 롱거r 벗 마이 백 허r트"
      }
     ],
     "grammar": [
      {
-      "struct": "Can I get ~",
-      "body": "~ 시켜도 될까? / ~ 갖다 줄까? (영상 #7). 모두영어 2편 #74 Can I get a coffee?"
+      "struct": "I'm trying to ~",
+      "body": "~하려고 하는 중이에요 (영상 #1). get back into = 다시 시작하다"
      }
     ],
     "chunks": [
      [
-      "Can I get us",
-      "커나이 게러스",
-      "우리 ~ 시킬까"
+      "Not new.",
+      "낫 누우",
+      "새로 온 건 아니다"
      ],
      [
-      "some makgeolli?",
-      "썸 막걸리",
-      "막걸리 좀"
+      "I'm trying to",
+      "아임 트라잉 터",
+      "~하려고 애쓰는 중"
+     ],
+     [
+      "get back into",
+      "겟 배킨투",
+      "다시 시작하다"
+     ],
+     [
+      "running.",
+      "러닝",
+      "러닝"
      ]
     ],
     "phonemes": [
      [
-      "/n/ Can I",
-      "can 의 n 이 I 와 붙는다 — 커나이"
+      "/k/ back into",
+      "back 의 k 가 into 와 붙는다 — 배킨투"
      ]
     ],
-    "mistake": "Can I get ~? 은 주문할 때 가장 흔한 틀. Can I have ~? 도 같다",
-    "similar": "Should I order ~?",
-    "category": "일상/주문",
+    "mistake": "get back into + 명사/-ing",
+    "similar": "I'm starting to run again.",
+    "category": "운동/헬스장",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-bossam-02-same-way",
-   "sentence": "I feel the same way.",
-   "meaning": "나도 그래.",
+   "id": "en-personal-gym-liam-02-been-adding",
+   "sentence": "I've been adding a minute every day since five.",
+   "meaning": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
    "reading": null,
-   "phonetic_kr": "아이 f피일 더 쎄임 웨이",
+   "phonetic_kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v",
    "order_index": 2,
    "explanation": {
-    "key": "I feel the same ~ = 나도 같은 마음이야. 모두영어 #128 I feel the same way. 그대로",
-    "anchor": "나도 그래",
-    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "key": "I've been ~ = (요즘 계속) ~해 왔어요 (영상 #5). since + 시작점",
+    "anchor": "늘리고",
+    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'm glad we came here after shopping.",
-      "ko": "장 보고 여기 오길 잘했다.",
-      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I see you here every morning. Are you new here?",
+      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
+      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I get us some makgeolli?",
-      "ko": "막걸리 좀 시킬까?",
-      "kr": "커나이 게러스 썸 막걸리"
+      "en": "Not new. I'm trying to get back into running.",
+      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
+      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Please. This is the best bossam ever.",
-      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
-      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I saw you stop at five minutes. Is that it?",
+      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
+      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I feel the same way.",
-      "ko": "나도 그래.",
-      "kr": "아이 f피일 더 쎄임 웨이"
+      "en": "I've been adding a minute every day since five.",
+      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "The fat is barely there.",
-      "ko": "비계가 거의 없네.",
-      "kr": "더 f패리z 베어r리 데어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Smart. What's the goal you're going for?",
+      "ko": "현명하네요. 목표가 뭐예요?",
+      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why the texture is so good.",
-      "ko": "그래서 식감이 좋은 거야.",
-      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
+      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
+      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Oh, it's my mother's birthday today.",
-      "ko": "아 참, 오늘 우리 엄마 생신이야.",
-      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Go easy on squats, then. That's how I got hurt.",
+      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
+      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if we call her now?",
-      "ko": "지금 전화드려도 될까?",
-      "kr": "더여 마인디f 위 커얼 허r 나우"
+      "en": "Do you mind if I ask what you were lifting?",
+      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
+      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
      }
     ],
     "drills": [
      {
-      "en": "I feel the same about this place.",
-      "ko": "이 집도 나도 그래.",
-      "kr": "아이 f피일 더 쎄이머바웃 디스 플레이스"
+      "en": "I've been running for two weeks.",
+      "ko": "2주째 뛰고 있어요.",
+      "kr": "아이v 빈 러닝 f퍼r 투우 위익스"
      },
      {
-      "en": "Do you feel the same way?",
-      "ko": "너도 그래?",
-      "kr": "더여 f피일 더 쎄임 웨이"
+      "en": "She's been flying that route for years.",
+      "ko": "아내는 몇 년째 그 노선을 타요.",
+      "kr": "쉬z 빈 f플라잉 댓 루웃 f퍼r 이어r즈"
      },
      {
-      "en": "She felt the same way.",
-      "ko": "소연도 똑같이 느꼈대.",
-      "kr": "쉬 f펠트 더 쎄임 웨이"
+      "en": "How long have you been coming here?",
+      "ko": "여기 얼마나 다녔어요?",
+      "kr": "하우 롱 해v 여 빈 커밍 히어r"
      },
      {
-      "en": "We don't feel the same about it.",
-      "ko": "우린 생각이 달라.",
-      "kr": "위 돈 f피일 더 쎄이머바우릿"
+      "en": "We've been walking almost every day.",
+      "ko": "우린 거의 매일 산책해요.",
+      "kr": "위v 빈 워킹 올모우스 에v리 데이"
      }
     ],
     "grammar": [
      {
-      "struct": "I feel the same ~",
-      "body": "나도 같은 마음이야. 모두영어 #128 I feel the same way. 그대로"
+      "struct": "I've been ~",
+      "body": "(요즘 계속) ~해 왔어요 (영상 #5). since + 시작점"
      }
     ],
     "chunks": [
      [
-      "I feel",
-      "아이 f피일",
-      "나는 느낀다"
+      "I've been adding",
+      "아이v 빈 애딩",
+      "계속 더해 왔다"
      ],
      [
-      "the same way.",
-      "더 쎄임 웨이",
-      "똑같이"
+      "a minute",
+      "어 미닛",
+      "1분씩"
+     ],
+     [
+      "every day",
+      "에v리 데이",
+      "매일"
+     ],
+     [
+      "since five.",
+      "씬스 f파이v",
+      "5분에서 시작해"
      ]
     ],
     "phonemes": [
      [
-      "/iː/ feel",
-      "feel 의 ee 는 길게 — f피일, '필' 로 짧게 끊지 않는다"
+      "/v/ I've",
+      "I've 의 v 는 입술을 떨어 — 아이v"
      ]
     ],
-    "mistake": "feel the same way 는 통째로 쓰는 표현. feel same (X)",
-    "similar": "Same here.",
-    "category": "일상/공감",
+    "mistake": "have been + -ing = 지금까지 이어지는 일",
+    "similar": "I add a minute each day.",
+    "category": "운동/헬스장",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-bossam-03-thats-why",
-   "sentence": "That's why the texture is so good.",
-   "meaning": "그래서 식감이 좋은 거야.",
+   "id": "en-personal-gym-liam-03-hurt-my-back",
+   "sentence": "Thirty minutes. I hurt my back doing deadlifts last spring.",
+   "meaning": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
    "reading": null,
-   "phonetic_kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿",
+   "phonetic_kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링",
    "order_index": 3,
    "explanation": {
-    "key": "That's why ~ = 그래서 ~인 거야 (앞말이 이유, 영상 #29)",
-    "anchor": "그래서",
-    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "key": "I hurt my ~ = ~를 다쳤어요 (233 뱅크 042 My ~ hurts 의 사건형). doing + 운동 = ~하다가",
+    "anchor": "다쳐서",
+    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'm glad we came here after shopping.",
-      "ko": "장 보고 여기 오길 잘했다.",
-      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I see you here every morning. Are you new here?",
+      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
+      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I get us some makgeolli?",
-      "ko": "막걸리 좀 시킬까?",
-      "kr": "커나이 게러스 썸 막걸리"
+      "en": "Not new. I'm trying to get back into running.",
+      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
+      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Please. This is the best bossam ever.",
-      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
-      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I saw you stop at five minutes. Is that it?",
+      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
+      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I feel the same way.",
-      "ko": "나도 그래.",
-      "kr": "아이 f피일 더 쎄임 웨이"
+      "en": "I've been adding a minute every day since five.",
+      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "The fat is barely there.",
-      "ko": "비계가 거의 없네.",
-      "kr": "더 f패리z 베어r리 데어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Smart. What's the goal you're going for?",
+      "ko": "현명하네요. 목표가 뭐예요?",
+      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why the texture is so good.",
-      "ko": "그래서 식감이 좋은 거야.",
-      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
+      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
+      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Oh, it's my mother's birthday today.",
-      "ko": "아 참, 오늘 우리 엄마 생신이야.",
-      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Go easy on squats, then. That's how I got hurt.",
+      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
+      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if we call her now?",
-      "ko": "지금 전화드려도 될까?",
-      "kr": "더여 마인디f 위 커얼 허r 나우"
+      "en": "Do you mind if I ask what you were lifting?",
+      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
+      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
      }
     ],
     "drills": [
      {
-      "en": "That's why I like this place.",
-      "ko": "그래서 이 집이 좋아.",
-      "kr": "댓츠 와이 아이 라익 디스 플레이스"
+      "en": "I hurt my back doing squats too.",
+      "ko": "스쿼트 하다가도 허리를 다쳤어요.",
+      "kr": "아이 허r트 마이 백 두잉 스콰츠 투우"
      },
      {
-      "en": "That's because they slice it thin.",
-      "ko": "얇게 썰어서 그래.",
-      "kr": "댓츠 비커z 데이 슬라이씻 씬"
+      "en": "Did you hurt yourself lifting?",
+      "ko": "들다가 다쳤어요?",
+      "kr": "디저 허r트 여r쎌f 리f팅"
      },
      {
-      "en": "Is that why you came?",
-      "ko": "그래서 온 거야?",
-      "kr": "이z 댓 와이 여 케임"
+      "en": "My back still hurts a little.",
+      "ko": "허리가 아직 조금 아파요.",
+      "kr": "마이 백 스틸 허r츠 어 리를"
      },
      {
-      "en": "We left early. That's why we got a table.",
-      "ko": "일찍 나왔어. 그래서 자리가 있었지.",
-      "kr": "위 레f트 어r리 댓츠 와이 위 가러 테이블"
+      "en": "She never got hurt at work.",
+      "ko": "아내는 일하다 다친 적이 없어요.",
+      "kr": "쉬 네버r 갓 허r트 엇 워r크"
      }
     ],
     "grammar": [
      {
-      "struct": "That's why ~",
-      "body": "그래서 ~인 거야 (앞말이 이유, 영상 #29)"
+      "struct": "I hurt my ~",
+      "body": "~를 다쳤어요 (233 뱅크 042 My ~ hurts 의 사건형). doing + 운동 = ~하다가"
      }
     ],
     "chunks": [
      [
-      "That's why",
-      "댓츠 와이",
-      "그래서 ~인 거야"
+      "Thirty minutes.",
+      "써r리 미닛츠",
+      "30분"
      ],
      [
-      "the texture",
-      "더 텍스처r",
-      "식감이"
+      "I hurt my back",
+      "아이 허r트 마이 백",
+      "허리를 다쳤다"
      ],
      [
-      "is so good.",
-      "이z 쏘우 굿",
-      "이렇게 좋다"
+      "doing deadlifts",
+      "두잉 데들리f츠",
+      "데드리프트를 하다가"
+     ],
+     [
+      "last spring.",
+      "라스 스프링",
+      "지난봄에"
      ]
     ],
     "phonemes": [
      [
-      "/w/ why",
-      "why 의 w 는 입술을 둥글게 — 와이"
+      "/θ/ thirty",
+      "thirty 의 th 는 혀끝을 이 사이에, 가운데 t 는 ㄹ — 써r리"
      ]
     ],
-    "mistake": "That's why + 결과, That's because + 이유. 순서를 바꾸면 뜻이 뒤집힌다",
-    "similar": "That's how it stays so light.",
-    "category": "일상/설명",
-    "frequency": 9
+    "mistake": "hurt 는 과거형도 hurt. I hurted (X)",
+    "similar": "My back gave out doing deadlifts.",
+    "category": "운동/헬스장",
+    "frequency": 7
    }
   },
   {
-   "id": "en-personal-bossam-04-do-you-mind",
-   "sentence": "Do you mind if we call her now?",
-   "meaning": "지금 전화드려도 될까?",
+   "id": "en-personal-gym-liam-04-mind-if-i-ask",
+   "sentence": "Do you mind if I ask what you were lifting?",
+   "meaning": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
    "reading": null,
-   "phonetic_kr": "더여 마인디f 위 커얼 허r 나우",
+   "phonetic_kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅",
    "order_index": 4,
    "explanation": {
-    "key": "Do you mind if ~ = ~해도 될까? (정중히 묻기, 영상 #9)",
-    "anchor": "될까",
-    "situation": "저녁. 장을 보고 버스를 타고 연희동 보쌈집에 갔다.",
+    "key": "Do you mind if ~ = ~해도 될까요 (정중히 묻기, 영상 #9). 뒤의 ask what ~ 는 삽입 의문절",
+    "anchor": "될까요",
+    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'm glad we came here after shopping.",
-      "ko": "장 보고 여기 오길 잘했다.",
-      "kr": "아임 글래드 위 케임 히어r 애f터r 샤핑"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I see you here every morning. Are you new here?",
+      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
+      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I get us some makgeolli?",
-      "ko": "막걸리 좀 시킬까?",
-      "kr": "커나이 게러스 썸 막걸리"
+      "en": "Not new. I'm trying to get back into running.",
+      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
+      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Please. This is the best bossam ever.",
-      "ko": "좋지. 이거 먹어본 보쌈 중에 최고야.",
-      "kr": "플리이z 디스 이z 더 베스 보쌈 에v어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "I saw you stop at five minutes. Is that it?",
+      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
+      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I feel the same way.",
-      "ko": "나도 그래.",
-      "kr": "아이 f피일 더 쎄임 웨이"
+      "en": "I've been adding a minute every day since five.",
+      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "The fat is barely there.",
-      "ko": "비계가 거의 없네.",
-      "kr": "더 f패리z 베어r리 데어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Smart. What's the goal you're going for?",
+      "ko": "현명하네요. 목표가 뭐예요?",
+      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why the texture is so good.",
-      "ko": "그래서 식감이 좋은 거야.",
-      "kr": "댓츠 와이 더 텍스처r 이z 쏘우 굿"
+      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
+      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
+      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Oh, it's my mother's birthday today.",
-      "ko": "아 참, 오늘 우리 엄마 생신이야.",
-      "kr": "오우 잇츠 마이 마더r즈 버r쓰데이 터데이"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Go easy on squats, then. That's how I got hurt.",
+      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
+      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if we call her now?",
-      "ko": "지금 전화드려도 될까?",
-      "kr": "더여 마인디f 위 커얼 허r 나우"
+      "en": "Do you mind if I ask what you were lifting?",
+      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
+      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
      }
     ],
     "drills": [
      {
-      "en": "Do you mind if I sit here?",
-      "ko": "여기 앉아도 될까요?",
-      "kr": "더여 마인디f 아이 씻 히어r"
+      "en": "Do you mind if I use this one?",
+      "ko": "이거 써도 될까요?",
+      "kr": "더여 마인디f 아이 유우z 디스 원"
      },
      {
-      "en": "I don't mind waiting.",
-      "ko": "기다려도 괜찮아.",
-      "kr": "아이 돈 마인드 웨이링"
+      "en": "Mind if I join you for a run?",
+      "ko": "같이 뛰어도 될까요?",
+      "kr": "마인디f 아이 조인 여 f퍼r 어 런"
      },
      {
-      "en": "Would you mind closing the door?",
-      "ko": "문 좀 닫아주시겠어요?",
-      "kr": "워저 마인드 클로우징 더 도어r"
+      "en": "I don't mind sharing the rack.",
+      "ko": "랙 같이 써도 괜찬아요.",
+      "kr": "아이 돈 마인드 셰어링 더 랙"
      },
      {
-      "en": "She didn't mind at all.",
-      "ko": "소연은 전혀 개의치 않았어.",
-      "kr": "쉬 디든 마인더롤"
+      "en": "Would you mind showing me the form?",
+      "ko": "자세를 보여 주실래요?",
+      "kr": "워저 마인드 쇼우잉 미 더 f포어r엄"
      }
     ],
     "grammar": [
      {
       "struct": "Do you mind if ~",
-      "body": "~해도 될까? (정중히 묻기, 영상 #9)"
+      "body": "~해도 될까요 (정중히 묻기, 영상 #9). 뒤의 ask what ~ 는 삽입 의문절"
      }
     ],
     "chunks": [
      [
       "Do you mind if",
       "더여 마인디f",
-      "~해도 괜찮을까"
+      "~해도 괜찮을까요"
      ],
      [
-      "we call her",
-      "위 커얼 허r",
-      "우리가 전화하면"
+      "I ask",
+      "아이 애스크",
+      "내가 묻다"
      ],
      [
-      "now?",
-      "나우",
-      "지금"
+      "what you were lifting?",
+      "왓처 워r 리f팅",
+      "당신이 얼마를 들고 있었는지"
      ]
     ],
     "phonemes": [
      [
-      "/aɪ/ mind",
-      "mind 의 i 는 아이 — 마인드, '민드' 가 아니다"
+      "/tʃ/ what you",
+      "what 의 t 와 you 가 붙어 '처' — 왓처"
      ]
     ],
-    "mistake": "Do you mind ~? 에 '괜찮다' 고 답할 때는 No 가 맞다. Yes 는 싫다는 뜻",
-    "similar": "Would it be okay if ~?",
-    "category": "일상/부탁",
+    "mistake": "Do you mind if 에 '괜찮다' 는 No 로 답한다",
+    "similar": "Can I ask how you got hurt?",
+    "category": "운동/헬스장",
     "frequency": 8
    }
   }

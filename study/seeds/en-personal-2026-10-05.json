@@ -4,512 +4,512 @@
  "date": "2026-10-05",
  "cards": [
   {
-   "id": "en-personal-roadside-lunch-01-want-something",
-   "sentence": "Do you want something to eat?",
-   "meaning": "뭐 좀 먹을래?",
+   "id": "en-personal-bkk-hotel-may-01-here-to-checkin",
+   "sentence": "I'm here to check in under my wife's name.",
+   "meaning": "아내 이름으로 체크인하러 왔어요.",
    "reading": null,
-   "phonetic_kr": "더여 원 썸씽 터 이잇",
+   "phonetic_kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임",
    "order_index": 1,
    "explanation": {
-    "key": "Do you want ~ = ~할래? / ~ 먹을래? 모두영어 #51 Do you want something to eat? 그대로",
-    "anchor": "먹을래",
-    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
+    "key": "I'm here to ~ = ~하러 왔어요 (영상 #4). 호텔 프런트 첫마디",
+    "anchor": "체크인",
+    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "We've been driving for two hours.",
-      "ko": "두 시간째 운전 중이야.",
-      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
+      "name": "May",
+      "en": "Welcome to the hotel. Do you have a booking?",
+      "ko": "어서 오세요. 예약하셨어요?",
+      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you want something to eat?",
-      "ko": "뭐 좀 먹을래?",
-      "kr": "더여 원 썸씽 터 이잇"
+      "en": "I'm here to check in under my wife's name.",
+      "ko": "아내 이름으로 체크인하러 왔어요.",
+      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "What's good around here?",
-      "ko": "이 근처에 뭐가 맛있어?",
-      "kr": "왓츠 구더라운 히어r"
+      "name": "May",
+      "en": "Her name, please? And is she a crew member?",
+      "ko": "성함이요? 그리고 승무원이세요?",
+      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should get the cheonggukjang.",
-      "ko": "청국장 먹어보는 게 좋겠어.",
-      "kr": "아이 씽켜 슈드 겟 더 청국장"
+      "en": "Soyeon. I'm not sure if the crew rate covers me.",
+      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
+      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "I'll get the gondre set instead.",
-      "ko": "난 곤드레 정식으로 할래.",
-      "kr": "아일 겟 더 곤드레 쎄틴스테드"
+      "name": "May",
+      "en": "It does, if she added you to the booking.",
+      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
+      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You might want to add the tofu.",
-      "ko": "두부도 같이 시키는 게 좋아.",
-      "kr": "유 마잇 워너 애드 더 토우f푸"
+      "en": "She said she did. Can you check the name I gave?",
+      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
+      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "By the way, your father won the election?",
-      "ko": "그나저나 아버님 회장 되신 거야?",
-      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
+      "name": "May",
+      "en": "Yes, you're both here. Two nights, one king bed.",
+      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
+      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I can't wait to hear about it.",
-      "ko": "얼른 얘기 듣고 싶어.",
-      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
+      "en": "What time is the breakfast that's included?",
+      "ko": "포함된 조식은 몇 시예요?",
+      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
      }
     ],
     "drills": [
      {
-      "en": "Do you want to stop here?",
-      "ko": "여기서 쉴래?",
-      "kr": "더여 워너 스탑 히어r"
+      "en": "I'm here to pick up a key.",
+      "ko": "키 받으러 왔어요.",
+      "kr": "아임 히어r 터 피커퍼 키이"
      },
      {
-      "en": "I want something warm.",
-      "ko": "따뜻한 게 먹고 싶어.",
-      "kr": "아이 원 썸씽 워r엄"
+      "en": "We're here to check out.",
+      "ko": "체크아웃하러 왔어요.",
+      "kr": "위어r 히어r 터 체카웃"
      },
      {
-      "en": "Does she want anything?",
-      "ko": "소연은 뭐 먹고 싶대?",
-      "kr": "더z 쉬 워네니씽"
+      "en": "Is the booking under your name?",
+      "ko": "예약이 본인 이름이세요?",
+      "kr": "이z 더 부킹 언더r 여r 네임"
      },
      {
-      "en": "Do you want to drive?",
-      "ko": "운전할래?",
-      "kr": "더여 워너 드라이v"
-     },
-     {
-      "en": "We wanted something quick.",
-      "ko": "우린 빨리 되는 게 좋았어.",
-      "kr": "위 워니드 썸씽 퀵"
+      "en": "I'm here to see the manager.",
+      "ko": "매니저 만나러 왔어요.",
+      "kr": "아임 히어r 터 씨이 더 매니저r"
      }
     ],
     "grammar": [
      {
-      "struct": "Do you want ~",
-      "body": "~할래? / ~ 먹을래? 모두영어 #51 Do you want something to eat? 그대로"
+      "struct": "I'm here to ~",
+      "body": "~하러 왔어요 (영상 #4). 호텔 프런트 첫마디"
      }
     ],
     "chunks": [
      [
-      "Do you want",
-      "더여 원",
-      "~을 원하니"
+      "I'm here to",
+      "아임 히어r 터",
+      "~하러 왔다"
      ],
      [
-      "something",
-      "썸씽",
-      "뭔가"
+      "check in",
+      "체킨",
+      "체크인하다"
      ],
      [
-      "to eat?",
-      "터 이잇",
-      "먹을"
+      "under my wife's name.",
+      "언더r 마이 와이f스 네임",
+      "아내 이름으로"
      ]
     ],
     "phonemes": [
      [
-      "/d/ Do you",
-      "do 와 you 가 약해져 붙는다 — 더여, '두 유' 가 아니다"
+      "/k/ check in",
+      "check 의 k 가 in 과 붙는다 — 체킨"
      ]
     ],
-    "mistake": "something to eat 처럼 to + 동사원형이 뒤에서 꾸민다",
-    "similar": "Are you hungry?",
-    "category": "일상/식사",
-    "frequency": 10
-   }
-  },
-  {
-   "id": "en-personal-roadside-lunch-02-think-you-should",
-   "sentence": "I think you should get the cheonggukjang.",
-   "meaning": "청국장 먹어보는 게 좋겠어.",
-   "reading": null,
-   "phonetic_kr": "아이 씽켜 슈드 겟 더 청국장",
-   "order_index": 2,
-   "explanation": {
-    "key": "I think you should ~ = ~하는 게 좋겠어 (부드러운 권유, 영상 #12)",
-    "anchor": "좋겠어",
-    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "We've been driving for two hours.",
-      "ko": "두 시간째 운전 중이야.",
-      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Do you want something to eat?",
-      "ko": "뭐 좀 먹을래?",
-      "kr": "더여 원 썸씽 터 이잇"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "What's good around here?",
-      "ko": "이 근처에 뭐가 맛있어?",
-      "kr": "왓츠 구더라운 히어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I think you should get the cheonggukjang.",
-      "ko": "청국장 먹어보는 게 좋겠어.",
-      "kr": "아이 씽켜 슈드 겟 더 청국장"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'll get the gondre set instead.",
-      "ko": "난 곤드레 정식으로 할래.",
-      "kr": "아일 겟 더 곤드레 쎄틴스테드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You might want to add the tofu.",
-      "ko": "두부도 같이 시키는 게 좋아.",
-      "kr": "유 마잇 워너 애드 더 토우f푸"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "By the way, your father won the election?",
-      "ko": "그나저나 아버님 회장 되신 거야?",
-      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I can't wait to hear about it.",
-      "ko": "얼른 얘기 듣고 싶어.",
-      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I think you should call her.",
-      "ko": "전화해 보는 게 좋겠어.",
-      "kr": "아이 씽켜 슈드 커얼 허r"
-     },
-     {
-      "en": "You should try the tofu.",
-      "ko": "두부 한번 먹어봐.",
-      "kr": "유 슈드 트라이 더 토우f푸"
-     },
-     {
-      "en": "Do you think I should go?",
-      "ko": "내가 가는 게 좋을까?",
-      "kr": "더여 씽카이 슈드 고우"
-     },
-     {
-      "en": "I don't think you should drive.",
-      "ko": "운전은 안 하는 게 좋겠어.",
-      "kr": "아이 돈 씽켜 슈드 드라이v"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I think you should ~",
-      "body": "~하는 게 좋겠어 (부드러운 권유, 영상 #12)"
-     }
-    ],
-    "chunks": [
-     [
-      "I think you should",
-      "아이 씽켜 슈드",
-      "~하는 게 좋겠어"
-     ],
-     [
-      "get",
-      "겟",
-      "시키다"
-     ],
-     [
-      "the cheonggukjang.",
-      "더 청국장",
-      "청국장을"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/tʃ/ think you",
-      "think 의 k 와 you 가 붙어 '켜' 로 난다 — 씽켜"
-     ]
-    ],
-    "mistake": "should + 동사원형. I think you should to get (X)",
-    "similar": "You'd better get ~",
-    "category": "일상/권유",
+    "mistake": "under + 이름 = ~ 이름으로 (예약). in my wife's name 도 쓴다",
+    "similar": "Checking in. The booking's under Soyeon.",
+    "category": "여행/호텔",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-roadside-lunch-03-might-want-to",
-   "sentence": "You might want to add the tofu.",
-   "meaning": "두부도 같이 시키는 게 좋아.",
+   "id": "en-personal-bkk-hotel-may-02-not-sure-if-rate",
+   "sentence": "Soyeon. I'm not sure if the crew rate covers me.",
+   "meaning": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
    "reading": null,
-   "phonetic_kr": "유 마잇 워너 애드 더 토우f푸",
-   "order_index": 3,
+   "phonetic_kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미",
+   "order_index": 2,
    "explanation": {
-    "key": "You might want to ~ = ~하는 게 좋을걸 (가볍게 권할 때, 영상 #24)",
-    "anchor": "좋아",
-    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
+    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요 (영상 #10)",
+    "anchor": "모르겠어요",
+    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "We've been driving for two hours.",
-      "ko": "두 시간째 운전 중이야.",
-      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
+      "name": "May",
+      "en": "Welcome to the hotel. Do you have a booking?",
+      "ko": "어서 오세요. 예약하셨어요?",
+      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you want something to eat?",
-      "ko": "뭐 좀 먹을래?",
-      "kr": "더여 원 썸씽 터 이잇"
+      "en": "I'm here to check in under my wife's name.",
+      "ko": "아내 이름으로 체크인하러 왔어요.",
+      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "What's good around here?",
-      "ko": "이 근처에 뭐가 맛있어?",
-      "kr": "왓츠 구더라운 히어r"
+      "name": "May",
+      "en": "Her name, please? And is she a crew member?",
+      "ko": "성함이요? 그리고 승무원이세요?",
+      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should get the cheonggukjang.",
-      "ko": "청국장 먹어보는 게 좋겠어.",
-      "kr": "아이 씽켜 슈드 겟 더 청국장"
+      "en": "Soyeon. I'm not sure if the crew rate covers me.",
+      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
+      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "I'll get the gondre set instead.",
-      "ko": "난 곤드레 정식으로 할래.",
-      "kr": "아일 겟 더 곤드레 쎄틴스테드"
+      "name": "May",
+      "en": "It does, if she added you to the booking.",
+      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
+      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You might want to add the tofu.",
-      "ko": "두부도 같이 시키는 게 좋아.",
-      "kr": "유 마잇 워너 애드 더 토우f푸"
+      "en": "She said she did. Can you check the name I gave?",
+      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
+      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "By the way, your father won the election?",
-      "ko": "그나저나 아버님 회장 되신 거야?",
-      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
+      "name": "May",
+      "en": "Yes, you're both here. Two nights, one king bed.",
+      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
+      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I can't wait to hear about it.",
-      "ko": "얼른 얘기 듣고 싶어.",
-      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
+      "en": "What time is the breakfast that's included?",
+      "ko": "포함된 조식은 몇 시예요?",
+      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
      }
     ],
     "drills": [
      {
-      "en": "You might want to sit inside.",
-      "ko": "안쪽에 앉는 게 좋을걸.",
-      "kr": "유 마잇 워너 씨린싸이드"
+      "en": "I'm not sure if breakfast is included.",
+      "ko": "조식이 포함인지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 브렉f퍼스트 이z 인클루우디드"
      },
      {
-      "en": "We might want to leave early.",
-      "ko": "우리 일찍 나서는 게 좋겠어.",
-      "kr": "위 마잇 워너 리이v 어r리"
+      "en": "We're not sure if this is our room.",
+      "ko": "여기가 우리 방인지 모르겠어요.",
+      "kr": "위어r 낫 슈어r 이f 디스 이z 아워r 루움"
      },
      {
-      "en": "She might want to rest.",
-      "ko": "소연은 좀 쉬는 게 좋을 거야.",
-      "kr": "쉬 마잇 워너 레스트"
+      "en": "Are you sure it's under her name?",
+      "ko": "아내 이름으로 된 게 확실해요?",
+      "kr": "아r 여 슈어r 잇츠 언더r 허r 네임"
      },
      {
-      "en": "You might not want to drive.",
-      "ko": "운전은 안 하는 게 좋을걸.",
-      "kr": "유 마잇 낫 워너 드라이v"
+      "en": "I'm not sure which floor it's on.",
+      "ko": "몇 층인지 잘 모르겠어요.",
+      "kr": "아임 낫 슈어r 위치 f플로어r 잇츠 온"
      }
     ],
     "grammar": [
      {
-      "struct": "You might want to ~",
-      "body": "~하는 게 좋을걸 (가볍게 권할 때, 영상 #24)"
+      "struct": "I'm not sure if ~",
+      "body": "~인지 잘 모르겠어요 (영상 #10)"
      }
     ],
     "chunks": [
      [
-      "You might want to",
-      "유 마잇 워너",
-      "~하는 게 좋을걸"
+      "Soyeon.",
+      "소연",
+      "소연"
      ],
      [
-      "add",
-      "애드",
-      "추가하다"
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~인지 확실치 않다"
      ],
      [
-      "the tofu.",
-      "더 토우f푸",
-      "두부를"
+      "the crew rate",
+      "더 크루우 레잇",
+      "크루 요금이"
+     ],
+     [
+      "covers me.",
+      "커v어r즈 미",
+      "나까지 적용된다"
      ]
     ],
     "phonemes": [
      [
-      "/wɑ/ want to",
-      "want to 는 붙어 '워너' 로 난다 — 마잇 워너"
+      "/ʃ/ sure",
+      "sure 의 s 는 쉬 소리 — 슈어r"
      ]
     ],
-    "mistake": "might want to 는 명령이 아니라 가벼운 권유. 상대가 부담 없이 듣는다",
-    "similar": "You may want to ~",
-    "category": "일상/권유",
-    "frequency": 8
+    "mistake": "not sure if + 절(평서 어순). not sure if does it cover (X)",
+    "similar": "Does the crew rate apply to me too?",
+    "category": "여행/호텔",
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-roadside-lunch-04-cant-wait-to",
-   "sentence": "I can't wait to hear about it.",
-   "meaning": "얼른 얘기 듣고 싶어.",
+   "id": "en-personal-bkk-hotel-may-03-can-you-check",
+   "sentence": "She said she did. Can you check the name I gave?",
+   "meaning": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
    "reading": null,
-   "phonetic_kr": "아이 캔트 웨잇 터 히어r 어바우릿",
-   "order_index": 4,
+   "phonetic_kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v",
+   "order_index": 3,
    "explanation": {
-    "key": "I can't wait to ~ = 빨리 ~하고 싶다 (영상 #28)",
-    "anchor": "듣고 싶어",
-    "situation": "낮. 부모님을 뵈러 가는 길이다. 왕복 여덟 시간 운전이라 중간에 점심을 먹기로 했다.",
+    "key": "Can you check ~ = ~ 확인해 주실래요 (영상 #8). 뒤의 the name I gave 는 접촉절",
+    "anchor": "확인",
+    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "We've been driving for two hours.",
-      "ko": "두 시간째 운전 중이야.",
-      "kr": "위v 빈 드라이v잉 f퍼r 투우 아워r즈"
+      "name": "May",
+      "en": "Welcome to the hotel. Do you have a booking?",
+      "ko": "어서 오세요. 예약하셨어요?",
+      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you want something to eat?",
-      "ko": "뭐 좀 먹을래?",
-      "kr": "더여 원 썸씽 터 이잇"
+      "en": "I'm here to check in under my wife's name.",
+      "ko": "아내 이름으로 체크인하러 왔어요.",
+      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "What's good around here?",
-      "ko": "이 근처에 뭐가 맛있어?",
-      "kr": "왓츠 구더라운 히어r"
+      "name": "May",
+      "en": "Her name, please? And is she a crew member?",
+      "ko": "성함이요? 그리고 승무원이세요?",
+      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should get the cheonggukjang.",
-      "ko": "청국장 먹어보는 게 좋겠어.",
-      "kr": "아이 씽켜 슈드 겟 더 청국장"
+      "en": "Soyeon. I'm not sure if the crew rate covers me.",
+      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
+      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "I'll get the gondre set instead.",
-      "ko": "난 곤드레 정식으로 할래.",
-      "kr": "아일 겟 더 곤드레 쎄틴스테드"
+      "name": "May",
+      "en": "It does, if she added you to the booking.",
+      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
+      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You might want to add the tofu.",
-      "ko": "두부도 같이 시키는 게 좋아.",
-      "kr": "유 마잇 워너 애드 더 토우f푸"
+      "en": "She said she did. Can you check the name I gave?",
+      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
+      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "By the way, your father won the election?",
-      "ko": "그나저나 아버님 회장 되신 거야?",
-      "kr": "바이 더 웨이 여r f파더r 원 디 일렉션"
+      "name": "May",
+      "en": "Yes, you're both here. Two nights, one king bed.",
+      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
+      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I can't wait to hear about it.",
-      "ko": "얼른 얘기 듣고 싶어.",
-      "kr": "아이 캔트 웨잇 터 히어r 어바우릿"
+      "en": "What time is the breakfast that's included?",
+      "ko": "포함된 조식은 몇 시예요?",
+      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
      }
     ],
     "drills": [
      {
-      "en": "I can't wait to get home.",
-      "ko": "얼른 집에 가고 싶다.",
-      "kr": "아이 캔트 웨잇 터 겟 호움"
+      "en": "Can you check the booking again?",
+      "ko": "예약을 다시 확인해 주실래요?",
+      "kr": "컨 여 첵 더 부킹 어겐"
      },
      {
-      "en": "She can't wait for dinner.",
-      "ko": "소연이 저녁을 기다리고 있어.",
-      "kr": "쉬 캔트 웨잇 f퍼r 디너r"
+      "en": "Can you check if she's on it?",
+      "ko": "아내가 들어 있는지 확인해 주실래요?",
+      "kr": "컨 여 첵 이f 쉬z 오닛"
      },
      {
-      "en": "We couldn't wait any longer.",
-      "ko": "더는 못 기다렸어.",
-      "kr": "위 커든 웨이레니 롱거r"
+      "en": "Could you check the room I booked?",
+      "ko": "제가 예약한 방을 확인해 주시겠어요?",
+      "kr": "커저 첵 더 루움 아이 북트"
      },
      {
-      "en": "Can't you wait a minute?",
-      "ko": "잠깐 못 기다려?",
-      "kr": "캔처 웨이러 미닛"
+      "en": "I'll check the email she sent.",
+      "ko": "아내가 보낸 이메일을 볼게요.",
+      "kr": "아일 첵 디 이이메일 쉬 쎈트"
      }
     ],
     "grammar": [
      {
-      "struct": "I can't wait to ~",
-      "body": "빨리 ~하고 싶다 (영상 #28)"
+      "struct": "Can you check ~",
+      "body": "~ 확인해 주실래요 (영상 #8). 뒤의 the name I gave 는 접촉절"
      }
     ],
     "chunks": [
      [
-      "I can't wait to",
-      "아이 캔트 웨잇 터",
-      "빨리 ~하고 싶다"
+      "She said she did.",
+      "쉬 쎄드 쉬 딧",
+      "그녀가 했다고 말했다"
      ],
      [
-      "hear",
-      "히어r",
-      "듣다"
+      "Can you check",
+      "컨 여 첵",
+      "확인해 줄 수 있나요"
      ],
      [
-      "about it.",
-      "어바우릿",
-      "그 얘기를"
+      "the name I gave?",
+      "더 네이마이 게이v",
+      "내가 말한 이름"
      ]
     ],
     "phonemes": [
      [
-      "/eɪ/ wait",
-      "wait 의 ai 는 에이 — 웨잇, '왓' 으로 줄지 않는다"
+      "/m/ name I",
+      "name 의 m 이 I 와 붙는다 — 네이마이"
      ]
     ],
-    "mistake": "can't wait to + 동사원형 / can't wait for + 명사",
-    "similar": "I'm looking forward to it.",
-    "category": "일상/기대",
-    "frequency": 8
+    "mistake": "접촉절: the name (that) I gave — that 을 빼고 붙여 말한다",
+    "similar": "Could you look it up again?",
+    "category": "여행/호텔",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-hotel-may-04-thats-included",
+   "sentence": "What time is the breakfast that's included?",
+   "meaning": "포함된 조식은 몇 시예요?",
+   "reading": null,
+   "phonetic_kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드",
+   "order_index": 4,
+   "explanation": {
+    "key": "~ that's included = 포함된 ~ (관계사 that's + 과거분사 로 조건 설명)",
+    "anchor": "포함된",
+    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Welcome to the hotel. Do you have a booking?",
+      "ko": "어서 오세요. 예약하셨어요?",
+      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm here to check in under my wife's name.",
+      "ko": "아내 이름으로 체크인하러 왔어요.",
+      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Her name, please? And is she a crew member?",
+      "ko": "성함이요? 그리고 승무원이세요?",
+      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Soyeon. I'm not sure if the crew rate covers me.",
+      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
+      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "It does, if she added you to the booking.",
+      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
+      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "She said she did. Can you check the name I gave?",
+      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
+      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Yes, you're both here. Two nights, one king bed.",
+      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
+      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "What time is the breakfast that's included?",
+      "ko": "포함된 조식은 몇 시예요?",
+      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Is that the breakfast that's included?",
+      "ko": "저게 포함된 조식이에요?",
+      "kr": "이z 댓 더 브렉f퍼스 댓츠 인클루우디드"
+     },
+     {
+      "en": "What's the tax that's added here?",
+      "ko": "여기 붙는 세금은 뭐예요?",
+      "kr": "왓츠 더 택스 댓츠 애디드 히어r"
+     },
+     {
+      "en": "This is the room that's booked for us.",
+      "ko": "이게 우리 예약된 방이에요.",
+      "kr": "디스 이z 더 루움 댓츠 북트 f퍼r 어스"
+     },
+     {
+      "en": "Which one is the pool that's open late?",
+      "ko": "늦게까지 여는 수영장은 어느 거예요?",
+      "kr": "위치 원 이z 더 푸울 댓츠 오우픈 레잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "~ that's included",
+      "body": "포함된 ~ (관계사 that's + 과거분사 로 조건 설명)"
+     }
+    ],
+    "chunks": [
+     [
+      "What time is",
+      "왓 타임 이z",
+      "몇 시인가"
+     ],
+     [
+      "the breakfast",
+      "더 브렉f퍼스",
+      "조식"
+     ],
+     [
+      "that's included?",
+      "댓츠 인클루우디드",
+      "포함된"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ breakfast",
+      "breakfast 의 f 는 윗니를 아랫입술에 — 브렉f퍼스트"
+     ]
+    ],
+    "mistake": "that's + 과거분사 = ~된. the breakfast that's included / the tax that's added",
+    "similar": "Is breakfast included, and when?",
+    "category": "여행/호텔",
+    "frequency": 7
    }
   }
  ]

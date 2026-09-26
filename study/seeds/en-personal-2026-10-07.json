@@ -4,492 +4,512 @@
  "date": "2026-10-07",
  "cards": [
   {
-   "id": "en-personal-new-washer-01-worth-the-wait",
-   "sentence": "It was worth the wait.",
-   "meaning": "기다린 보람이 있네.",
+   "id": "en-personal-neighbor-emma-01-theres-one-who",
+   "sentence": "There's only one who minds, and that's our cat.",
+   "meaning": "신경 쓰는 건 저희 고양이 하나 정도예요.",
    "reading": null,
-   "phonetic_kr": "잇 워z 워r쓰 더 웨잇",
+   "phonetic_kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣",
    "order_index": 1,
    "explanation": {
-    "key": "It was worth ~ = ~할 값어치가 있었다. 모두영어 2편 #5 It was worth the wait. 그대로",
-    "anchor": "보람이 있네",
-    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "key": "There's ~ = ~가 있어요 (영상 #16). 뒤의 one who ~ = ~하는 사람·동물",
+    "anchor": "정도예요",
+    "situation": "지오 집 현관. 위층으로 이사 온 Emma 가 인사하러 내려왔다. 집에는 시력을 잃은 나니가 있다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "The new washer arrived today.",
-      "ko": "새 세탁기 오늘 왔어.",
-      "kr": "더 누우 와셔r 어라이v드 터데이"
+      "name": "Emma",
+      "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
+      "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
+      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It was worth the wait.",
-      "ko": "기다린 보람이 있네.",
-      "kr": "잇 워z 워r쓰 더 웨잇"
+      "en": "There's only one who minds, and that's our cat.",
+      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "I picked it without asking you.",
-      "ko": "내가 그냥 골랐어.",
-      "kr": "아이 픽팃 위다우래스킹 유"
+      "name": "Emma",
+      "en": "You have a cat? I brought two with me.",
+      "ko": "고양이가 있어요? 저도 둘 데려왔어요.",
+      "kr": "유 해버 캣 아이 브로옷 투우 위드 미"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No harm done.",
-      "ko": "괜찮아, 별일 아니야.",
-      "kr": "노우 하r암 던"
+      "en": "Ours is Nani, who can't see, so noise gets to her.",
+      "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
+      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "We put it off because of the leak.",
-      "ko": "누수 때문에 미뤄뒀잖아.",
-      "kr": "위 푸리로f 비커z 어v 더 리익"
+      "name": "Emma",
+      "en": "Got it. No washer at night, then.",
+      "ko": "알겠어요. 밤엔 세탁기 안 돌릴게요.",
+      "kr": "가릿 노우 와셔r 엇 나잇 덴"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's finally over.",
-      "ko": "드디어 끝났네.",
-      "kr": "잇츠 f파이널리 오우버r"
+      "en": "I just wanted to say you don't have to worry.",
+      "ko": "걱정 안 하셔도 된다고 말씀드리고 싶었어요.",
+      "kr": "아이 저스 워니드 터 쎄이 여 돈 해f터 워리"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Do you want to try it now?",
-      "ko": "지금 한번 돌려볼래?",
-      "kr": "더여 워너 트라잇 나우"
+      "name": "Emma",
+      "en": "Thanks. Could I meet Nani sometime?",
+      "ko": "고마워요. 나니를 언제 한번 볼 수 있을까요?",
+      "kr": "쌩스 커라이 미잇 나니 썸타임"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can you show me?",
-      "ko": "어떻게 하는지 보여줄래?",
-      "kr": "컨 여 쇼우 미"
+      "en": "Anytime, but you might want to move slowly around her.",
+      "ko": "언제든요, 다만 나니 곁에선 천천히 움직이는 게 좋을 거예요.",
+      "kr": "에니타임 벗 여 마잇 워너 무우v 슬로울리 어라운더r"
      }
     ],
     "drills": [
      {
-      "en": "It was worth the money.",
-      "ko": "돈 값은 했어.",
-      "kr": "잇 워z 워r쓰 더 머니"
+      "en": "There's no one home right now.",
+      "ko": "지금 집에 아무도 없어요.",
+      "kr": "데어r즈 노우 원 호움 라잇 나우"
      },
      {
-      "en": "The trip was worth it.",
-      "ko": "그 여행은 갈 만했어.",
-      "kr": "더 트립 워z 워r씨릿"
+      "en": "There's a cat upstairs that never stops meowing.",
+      "ko": "위층에 계속 우는 고양이가 있어요.",
+      "kr": "데어r저 캣 업스테어r즈 댓 네버r 스탑스 미아우잉"
      },
      {
-      "en": "Was it worth the trouble?",
-      "ko": "그 고생할 만했어?",
-      "kr": "워z 잇 워r쓰 더 트러블"
+      "en": "Is there anyone who can help me carry this?",
+      "ko": "이거 같이 들어 줄 사람 있어요?",
+      "kr": "이z 데어r 에니원 후 컨 헬프 미 캐리 디스"
      },
      {
-      "en": "It wasn't worth the wait.",
-      "ko": "기다린 보람이 없었어.",
-      "kr": "잇 워즌 워r쓰 더 웨잇"
+      "en": "She has two cats, and both are loud.",
+      "ko": "그분은 고양이가 둘인데 둘 다 시끄러워요.",
+      "kr": "쉬 해z 투우 캣츠 언 보우쓰 아r 라우드"
      }
     ],
     "grammar": [
      {
-      "struct": "It was worth ~",
-      "body": "~할 값어치가 있었다. 모두영어 2편 #5 It was worth the wait. 그대로"
+      "struct": "There's ~",
+      "body": "~가 있어요 (영상 #16). 뒤의 one who ~ = ~하는 사람·동물"
      }
     ],
     "chunks": [
      [
-      "It was worth",
-      "잇 워z 워r쓰",
-      "~할 값어치가 있었다"
+      "There's only one",
+      "데어r즈 오운리 원",
+      "하나뿐이다"
      ],
      [
-      "the wait.",
-      "더 웨잇",
-      "기다림"
+      "who minds,",
+      "후 마인즈",
+      "신경 쓰는"
+     ],
+     [
+      "and that's our cat.",
+      "언 댓츠 아워r 캣",
+      "그게 우리 고양이다"
      ]
     ],
     "phonemes": [
      [
-      "/z/ was",
-      "was 의 s 는 z 소리 — 워z"
+      "/z/ minds",
+      "minds 의 s 는 z 소리 — 마인즈"
      ]
     ],
-    "mistake": "worth 뒤에는 명사. worth to wait (X)",
-    "similar": "It paid off.",
-    "category": "일상/평가",
+    "mistake": "mind = 신경 쓰다·싫어하다",
+    "similar": "Only our cat minds the noise.",
+    "category": "일상/이웃",
     "frequency": 8
    }
   },
   {
-   "id": "en-personal-new-washer-02-no-harm-done",
-   "sentence": "No harm done.",
-   "meaning": "괜찮아, 별일 아니야.",
+   "id": "en-personal-neighbor-emma-02-nani-who",
+   "sentence": "Ours is Nani, who can't see, so noise gets to her.",
+   "meaning": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
    "reading": null,
-   "phonetic_kr": "노우 하r암 던",
+   "phonetic_kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r",
    "order_index": 2,
    "explanation": {
-    "key": "No harm done = 별 탈 없어 / 괜찮아. 모두영어 #251 그대로",
-    "anchor": "괜찮아",
-    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "key": "who can't ~ = …, who can't ~ = 사람·동물을 덧붙여 설명하는 관계사(쉼표 뒤 who)",
+    "anchor": "앞을 못 봐서",
+    "situation": "지오 집 현관. 위층으로 이사 온 Emma 가 인사하러 내려왔다. 집에는 시력을 잃은 나니가 있다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "The new washer arrived today.",
-      "ko": "새 세탁기 오늘 왔어.",
-      "kr": "더 누우 와셔r 어라이v드 터데이"
+      "name": "Emma",
+      "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
+      "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
+      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It was worth the wait.",
-      "ko": "기다린 보람이 있네.",
-      "kr": "잇 워z 워r쓰 더 웨잇"
+      "en": "There's only one who minds, and that's our cat.",
+      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "I picked it without asking you.",
-      "ko": "내가 그냥 골랐어.",
-      "kr": "아이 픽팃 위다우래스킹 유"
+      "name": "Emma",
+      "en": "You have a cat? I brought two with me.",
+      "ko": "고양이가 있어요? 저도 둘 데려왔어요.",
+      "kr": "유 해버 캣 아이 브로옷 투우 위드 미"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No harm done.",
-      "ko": "괜찮아, 별일 아니야.",
-      "kr": "노우 하r암 던"
+      "en": "Ours is Nani, who can't see, so noise gets to her.",
+      "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
+      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "We put it off because of the leak.",
-      "ko": "누수 때문에 미뤄뒀잖아.",
-      "kr": "위 푸리로f 비커z 어v 더 리익"
+      "name": "Emma",
+      "en": "Got it. No washer at night, then.",
+      "ko": "알겠어요. 밤엔 세탁기 안 돌릴게요.",
+      "kr": "가릿 노우 와셔r 엇 나잇 덴"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's finally over.",
-      "ko": "드디어 끝났네.",
-      "kr": "잇츠 f파이널리 오우버r"
+      "en": "I just wanted to say you don't have to worry.",
+      "ko": "걱정 안 하셔도 된다고 말씀드리고 싶었어요.",
+      "kr": "아이 저스 워니드 터 쎄이 여 돈 해f터 워리"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Do you want to try it now?",
-      "ko": "지금 한번 돌려볼래?",
-      "kr": "더여 워너 트라잇 나우"
+      "name": "Emma",
+      "en": "Thanks. Could I meet Nani sometime?",
+      "ko": "고마워요. 나니를 언제 한번 볼 수 있을까요?",
+      "kr": "쌩스 커라이 미잇 나니 썸타임"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can you show me?",
-      "ko": "어떻게 하는지 보여줄래?",
-      "kr": "컨 여 쇼우 미"
+      "en": "Anytime, but you might want to move slowly around her.",
+      "ko": "언제든요, 다만 나니 곁에선 천천히 움직이는 게 좋을 거예요.",
+      "kr": "에니타임 벗 여 마잇 워너 무우v 슬로울리 어라운더r"
      }
     ],
     "drills": [
      {
-      "en": "There's no harm done.",
-      "ko": "잘못된 건 하나도 없어.",
-      "kr": "데어r즈 노우 하r암 던"
+      "en": "This is my wife, who works for an airline.",
+      "ko": "제 아내인데 항공사에서 일해요.",
+      "kr": "디스 이z 마이 와이f 후 워r크스 f퍼r 언 에어r라인"
      },
      {
-      "en": "It's fine, really.",
-      "ko": "진짜 괜찮아.",
-      "kr": "잇츠 f파인 리얼리"
+      "en": "That's Liam, who runs next to me at the gym.",
+      "ko": "저 사람이 Liam 인데 헬스장에서 제 옆에서 뛰어요.",
+      "kr": "댓츠 리엄 후 런즈 넥스 터 미 엇 더 짐"
      },
      {
-      "en": "Don't feel bad about it.",
-      "ko": "미안해하지 마.",
-      "kr": "돈 f피일 배더바우릿"
+      "en": "I have a friend who's moving to another city.",
+      "ko": "다른 도시로 이사하는 친구가 있어요.",
+      "kr": "아이 해버 f렌드 후우z 무우v잉 터 어나더r 씨리"
      },
      {
-      "en": "You did the right thing.",
-      "ko": "잘한 거야.",
-      "kr": "유 딧 더 라잇 씽"
-     },
-     {
-      "en": "No one got hurt.",
-      "ko": "다친 사람 없잖아.",
-      "kr": "노우 원 갓 허r트"
+      "en": "She has a cat who can't hear well.",
+      "ko": "그분 고양이 하나는 귀가 잘 안 들려요.",
+      "kr": "쉬 해z 어 캣 후 캔트 히어r 웰"
      }
     ],
     "grammar": [
      {
-      "struct": "No harm done",
-      "body": "별 탈 없어 / 괜찮아. 모두영어 #251 그대로"
+      "struct": "who can't ~",
+      "body": "…, who can't ~ = 사람·동물을 덧붙여 설명하는 관계사(쉼표 뒤 who)"
      }
     ],
     "chunks": [
      [
-      "No harm",
-      "노우 하r암",
-      "해를 입은 것 없다"
+      "Ours is Nani,",
+      "아워r즈 이z 나니",
+      "우리 고양이는 나니다"
      ],
      [
-      "done.",
-      "던",
-      "생긴"
+      "who can't see,",
+      "후 캔트 씨이",
+      "앞을 못 보는"
+     ],
+     [
+      "so noise gets to her.",
+      "쏘우 노이z 겟츠 터 허r",
+      "그래서 소리에 예민하다"
      ]
     ],
     "phonemes": [
      [
-      "/ɑr/ harm",
-      "harm 의 ar 은 입을 크게 벌려 하r암 — r 을 끝까지 살린다"
+      "/h/ who",
+      "who 의 h 는 약하게 — 후"
      ]
     ],
-    "mistake": "No harm done. 은 통째로 쓰는 관용구. No harm is done (X)",
-    "similar": "It's fine. / Don't worry about it.",
-    "category": "일상/배려",
+    "mistake": "쉼표 뒤 who. that 은 쉼표 뒤에 못 쓴다",
+    "similar": "Nani is blind, so she's sensitive to sound.",
+    "category": "일상/이웃",
     "frequency": 7
    }
   },
   {
-   "id": "en-personal-new-washer-03-finally-over",
-   "sentence": "It's finally over.",
-   "meaning": "드디어 끝났네.",
+   "id": "en-personal-neighbor-emma-03-just-wanted-to-say",
+   "sentence": "I just wanted to say you don't have to worry.",
+   "meaning": "걱정 안 하셔도 된다고 말씀드리고 싶었어요.",
    "reading": null,
-   "phonetic_kr": "잇츠 f파이널리 오우버r",
+   "phonetic_kr": "아이 저스 워니드 터 쎄이 여 돈 해f터 워리",
    "order_index": 3,
    "explanation": {
-    "key": "It's finally ~ = 드디어 ~다. 모두영어 2편 #7 It's finally over. 그대로",
-    "anchor": "끝났네",
-    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "key": "I just wanted to ~ = 그냥 ~하고 싶었어요 (말을 부드럽게, 영상 #19)",
+    "anchor": "말씀드리고",
+    "situation": "지오 집 현관. 위층으로 이사 온 Emma 가 인사하러 내려왔다. 집에는 시력을 잃은 나니가 있다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "The new washer arrived today.",
-      "ko": "새 세탁기 오늘 왔어.",
-      "kr": "더 누우 와셔r 어라이v드 터데이"
+      "name": "Emma",
+      "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
+      "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
+      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It was worth the wait.",
-      "ko": "기다린 보람이 있네.",
-      "kr": "잇 워z 워r쓰 더 웨잇"
+      "en": "There's only one who minds, and that's our cat.",
+      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "I picked it without asking you.",
-      "ko": "내가 그냥 골랐어.",
-      "kr": "아이 픽팃 위다우래스킹 유"
+      "name": "Emma",
+      "en": "You have a cat? I brought two with me.",
+      "ko": "고양이가 있어요? 저도 둘 데려왔어요.",
+      "kr": "유 해버 캣 아이 브로옷 투우 위드 미"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No harm done.",
-      "ko": "괜찮아, 별일 아니야.",
-      "kr": "노우 하r암 던"
+      "en": "Ours is Nani, who can't see, so noise gets to her.",
+      "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
+      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "We put it off because of the leak.",
-      "ko": "누수 때문에 미뤄뒀잖아.",
-      "kr": "위 푸리로f 비커z 어v 더 리익"
+      "name": "Emma",
+      "en": "Got it. No washer at night, then.",
+      "ko": "알겠어요. 밤엔 세탁기 안 돌릴게요.",
+      "kr": "가릿 노우 와셔r 엇 나잇 덴"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's finally over.",
-      "ko": "드디어 끝났네.",
-      "kr": "잇츠 f파이널리 오우버r"
+      "en": "I just wanted to say you don't have to worry.",
+      "ko": "걱정 안 하셔도 된다고 말씀드리고 싶었어요.",
+      "kr": "아이 저스 워니드 터 쎄이 여 돈 해f터 워리"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Do you want to try it now?",
-      "ko": "지금 한번 돌려볼래?",
-      "kr": "더여 워너 트라잇 나우"
+      "name": "Emma",
+      "en": "Thanks. Could I meet Nani sometime?",
+      "ko": "고마워요. 나니를 언제 한번 볼 수 있을까요?",
+      "kr": "쌩스 커라이 미잇 나니 썸타임"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can you show me?",
-      "ko": "어떻게 하는지 보여줄래?",
-      "kr": "컨 여 쇼우 미"
+      "en": "Anytime, but you might want to move slowly around her.",
+      "ko": "언제든요, 다만 나니 곁에선 천천히 움직이는 게 좋을 거예요.",
+      "kr": "에니타임 벗 여 마잇 워너 무우v 슬로울리 어라운더r"
      }
     ],
     "drills": [
      {
-      "en": "It's finally warm today.",
-      "ko": "오늘 드디어 따뜻하네.",
-      "kr": "잇츠 f파이널리 워r엄 터데이"
+      "en": "I just wanted to say hello.",
+      "ko": "그냥 인사드리고 싶었어요.",
+      "kr": "아이 저스 워니드 터 쎄이 헬로우"
      },
      {
-      "en": "The work is over.",
-      "ko": "공사가 끝났어.",
-      "kr": "더 워r키z 오우버r"
+      "en": "We just wanted to check on you.",
+      "ko": "그냥 잘 있나 보러 왔어요.",
+      "kr": "위 저스 워니드 터 첵 온 유"
      },
      {
-      "en": "Are we finally done?",
-      "ko": "이제 다 끝난 거야?",
-      "kr": "아r 위 f파이널리 던"
+      "en": "She just wanted to thank you.",
+      "ko": "아내가 그냥 고맙다고 하고 싶었대요.",
+      "kr": "쉬 저스 워니드 터 쌩크 유"
      },
      {
-      "en": "We finally got it done.",
-      "ko": "드디어 다 했다.",
-      "kr": "위 f파이널리 가릿 던"
+      "en": "Did you just want to say hi?",
+      "ko": "그냥 인사하러 온 거예요?",
+      "kr": "디저 저스 워너 쎄이 하이"
      }
     ],
     "grammar": [
      {
-      "struct": "It's finally ~",
-      "body": "드디어 ~다. 모두영어 2편 #7 It's finally over. 그대로"
+      "struct": "I just wanted to ~",
+      "body": "그냥 ~하고 싶었어요 (말을 부드럽게, 영상 #19)"
      }
     ],
     "chunks": [
      [
-      "It's finally",
-      "잇츠 f파이널리",
-      "드디어"
+      "I just wanted to say",
+      "아이 저스 워니드 터 쎄이",
+      "그냥 ~라고 말하고 싶었다"
      ],
      [
-      "over.",
-      "오우버r",
-      "끝난"
+      "you don't have to",
+      "여 돈 해f터",
+      "당신은 ~할 필요 없다"
+     ],
+     [
+      "worry.",
+      "워리",
+      "걱정하다"
      ]
     ],
     "phonemes": [
      [
-      "/f/ finally",
-      "finally 의 f 는 윗니를 아랫입술에 — f파이널리"
+      "/w/ wanted",
+      "wanted 의 t 는 약해져 워니드"
      ]
     ],
-    "mistake": "over 는 '위' 가 아니라 '끝난' 이라는 뜻으로 쓰였다",
-    "similar": "It's done.",
-    "category": "일상/마무리",
+    "mistake": "just wanted to 는 부담을 덜어 주는 서두. 뒤에 동사원형",
+    "similar": "No need to worry, really.",
+    "category": "일상/이웃",
     "frequency": 8
    }
   },
   {
-   "id": "en-personal-new-washer-04-can-you-show",
-   "sentence": "Can you show me?",
-   "meaning": "어떻게 하는지 보여줄래?",
+   "id": "en-personal-neighbor-emma-04-might-want-slowly",
+   "sentence": "Anytime, but you might want to move slowly around her.",
+   "meaning": "언제든요, 다만 나니 곁에선 천천히 움직이는 게 좋을 거예요.",
    "reading": null,
-   "phonetic_kr": "컨 여 쇼우 미",
+   "phonetic_kr": "에니타임 벗 여 마잇 워너 무우v 슬로울리 어라운더r",
    "order_index": 4,
    "explanation": {
-    "key": "Can you ~ = ~해줄래? (부탁의 기본 틀, 영상 #8). 모두영어 2편 #136 Can you show me? 그대로",
-    "anchor": "보여줄래",
-    "situation": "낮. 베란다 누수 때문에 미루던 세탁기를 드디어 들였다. 고른 사람은 소연이다.",
+    "key": "You might want to ~ = ~하는 게 좋을 거예요 (가벼운 권유, 영상 #24)",
+    "anchor": "좋을",
+    "situation": "지오 집 현관. 위층으로 이사 온 Emma 가 인사하러 내려왔다. 집에는 시력을 잃은 나니가 있다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "The new washer arrived today.",
-      "ko": "새 세탁기 오늘 왔어.",
-      "kr": "더 누우 와셔r 어라이v드 터데이"
+      "name": "Emma",
+      "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
+      "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
+      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It was worth the wait.",
-      "ko": "기다린 보람이 있네.",
-      "kr": "잇 워z 워r쓰 더 웨잇"
+      "en": "There's only one who minds, and that's our cat.",
+      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "I picked it without asking you.",
-      "ko": "내가 그냥 골랐어.",
-      "kr": "아이 픽팃 위다우래스킹 유"
+      "name": "Emma",
+      "en": "You have a cat? I brought two with me.",
+      "ko": "고양이가 있어요? 저도 둘 데려왔어요.",
+      "kr": "유 해버 캣 아이 브로옷 투우 위드 미"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No harm done.",
-      "ko": "괜찮아, 별일 아니야.",
-      "kr": "노우 하r암 던"
+      "en": "Ours is Nani, who can't see, so noise gets to her.",
+      "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
+      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "We put it off because of the leak.",
-      "ko": "누수 때문에 미뤄뒀잖아.",
-      "kr": "위 푸리로f 비커z 어v 더 리익"
+      "name": "Emma",
+      "en": "Got it. No washer at night, then.",
+      "ko": "알겠어요. 밤엔 세탁기 안 돌릴게요.",
+      "kr": "가릿 노우 와셔r 엇 나잇 덴"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's finally over.",
-      "ko": "드디어 끝났네.",
-      "kr": "잇츠 f파이널리 오우버r"
+      "en": "I just wanted to say you don't have to worry.",
+      "ko": "걱정 안 하셔도 된다고 말씀드리고 싶었어요.",
+      "kr": "아이 저스 워니드 터 쎄이 여 돈 해f터 워리"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Do you want to try it now?",
-      "ko": "지금 한번 돌려볼래?",
-      "kr": "더여 워너 트라잇 나우"
+      "name": "Emma",
+      "en": "Thanks. Could I meet Nani sometime?",
+      "ko": "고마워요. 나니를 언제 한번 볼 수 있을까요?",
+      "kr": "쌩스 커라이 미잇 나니 썸타임"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can you show me?",
-      "ko": "어떻게 하는지 보여줄래?",
-      "kr": "컨 여 쇼우 미"
+      "en": "Anytime, but you might want to move slowly around her.",
+      "ko": "언제든요, 다만 나니 곁에선 천천히 움직이는 게 좋을 거예요.",
+      "kr": "에니타임 벗 여 마잇 워너 무우v 슬로울리 어라운더r"
      }
     ],
     "drills": [
      {
-      "en": "Can you help me with this?",
-      "ko": "이것 좀 도와줄래?",
-      "kr": "컨 여 헬프 미 위드 디스"
+      "en": "You might want to call before you come.",
+      "ko": "오기 전에 전화하는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 커얼 비f포어r 여 컴"
      },
      {
-      "en": "Could you show me again?",
-      "ko": "한 번 더 보여줄래?",
-      "kr": "커저 쇼우 미 어겐"
+      "en": "We might want to keep the door closed.",
+      "ko": "문은 닫아 두는 게 좋겠어요.",
+      "kr": "위 마잇 워너 키입 더 도어r 클로우z드"
      },
      {
-      "en": "I'll show you tomorrow.",
-      "ko": "내일 보여줄게.",
-      "kr": "아일 쇼우 여 터마로우"
+      "en": "She might want to meet your cats first.",
+      "ko": "나니가 댁 고양이들 먼저 만나 보고 싶어 할지도요.",
+      "kr": "쉬 마잇 워너 미잇 여r 캣츠 f퍼r스트"
      },
      {
-      "en": "Can't you show her?",
-      "ko": "소연한테 보여주면 안 돼?",
-      "kr": "캔처 쇼우 허r"
+      "en": "You may want to sit; she comes to you.",
+      "ko": "앉아 계시는 게 좋아요, 나니가 다가와요.",
+      "kr": "유 메이 워너 씻 쉬 컴z 터 유"
      }
     ],
     "grammar": [
      {
-      "struct": "Can you ~",
-      "body": "~해줄래? (부탁의 기본 틀, 영상 #8). 모두영어 2편 #136 Can you show me? 그대로"
+      "struct": "You might want to ~",
+      "body": "~하는 게 좋을 거예요 (가벼운 권유, 영상 #24)"
      }
     ],
     "chunks": [
      [
-      "Can you",
-      "컨 여",
-      "~해줄래"
+      "Anytime, but",
+      "에니타임 벗",
+      "언제든, 다만"
      ],
      [
-      "show me?",
-      "쇼우 미",
-      "나한테 보여주다"
+      "you might want to",
+      "여 마잇 워너",
+      "~하는 게 좋을 거다"
+     ],
+     [
+      "move slowly",
+      "무우v 슬로울리",
+      "천천히 움직이다"
+     ],
+     [
+      "around her.",
+      "어라운더r",
+      "그녀 곁에서"
      ]
     ],
     "phonemes": [
      [
-      "/ʃ/ show",
-      "show 의 sh 는 '쉬' 에 가깝게, 입술을 둥글게 — 쇼우"
+      "/uː/ move",
+      "move 의 o 는 길게 우 — 무우v"
      ]
     ],
-    "mistake": "Can you ~? 는 부탁, Could you ~? 는 더 정중한 부탁",
-    "similar": "Would you show me?",
-    "category": "일상/부탁",
-    "frequency": 10
+    "mistake": "might want to 는 명령이 아니라 권유",
+    "similar": "Just move slowly so she hears you.",
+    "category": "일상/이웃",
+    "frequency": 8
    }
   }
  ]

@@ -4,502 +4,517 @@
  "date": "2026-10-04",
  "cards": [
   {
-   "id": "en-personal-desk-cat-01-ive-been-sitting",
-   "sentence": "I've been sitting here all day.",
-   "meaning": "하루 종일 여기 앉아 있었거든.",
+   "id": "en-personal-bkk-grab-01-can-you-say-again",
+   "sentence": "Sorry, can you say that again a bit slower?",
+   "meaning": "죄송한데 조금 천천히 다시 말해 주실래요?",
    "reading": null,
-   "phonetic_kr": "아이v 빈 씨링 히어r 올 데이",
+   "phonetic_kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r",
    "order_index": 1,
    "explanation": {
-    "key": "I've been ~ = (지금까지 계속) ~해 왔다 (영상 #5)",
-    "anchor": "앉아 있었거든",
-    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
+    "key": "Can you ~ = ~해 주실래요 (부탁, 영상 #8). 못 알아들었을 때 되묻는 말",
+    "anchor": "다시",
+    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Nani moved to your desk.",
-      "ko": "나니가 네 책상으로 옮겼네.",
-      "kr": "나니 무우v드 터 여r 데스크"
+      "speaker": "B",
+      "name": "기사",
+      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
+      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
+      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been sitting here all day.",
-      "ko": "하루 종일 여기 앉아 있었거든.",
-      "kr": "아이v 빈 씨링 히어r 올 데이"
+      "en": "Sorry, can you say that again a bit slower?",
+      "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
+      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "She's lying in front of your keyboard.",
-      "ko": "키보드 앞에 누워 있어.",
-      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
+      "speaker": "B",
+      "name": "기사",
+      "en": "Gate 4, level 1. You know which gate you're at?",
+      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
+      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I can't concentrate.",
-      "ko": "집중이 안 돼.",
-      "kr": "아이 캔트 칸쓴트레잇"
+      "en": "I'm at the gate that's by the taxi sign.",
+      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
+      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Then move her somewhere else.",
-      "ko": "그럼 다른 데로 옮겨.",
-      "kr": "덴 무우v 허r 썸웨어r 엘스"
+      "speaker": "B",
+      "name": "기사",
+      "en": "That's level 2. What do you see near you?",
+      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
+      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me finish this first.",
-      "ko": "이것만 먼저 끝낼게.",
-      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
+      "en": "There's a 7-Eleven right next to me.",
+      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
+      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Is the new monitor better?",
-      "ko": "새 모니터는 좀 나아?",
-      "kr": "이z 더 누우 마니러r 베러r"
+      "speaker": "B",
+      "name": "기사",
+      "en": "Take the stairs by it. I'm at the bottom.",
+      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
+      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I can't get enough of it.",
-      "ko": "아무리 봐도 좋아.",
-      "kr": "아이 캔트 게리너f 어v잇"
+      "en": "I'll let you know when I'm down there.",
+      "ko": "내려가면 알려 드릴게요.",
+      "kr": "아일 레처 노우 웨나임 다운 데어r"
      }
     ],
     "drills": [
      {
-      "en": "I've been reading all morning.",
-      "ko": "아침 내내 책 읽었어.",
-      "kr": "아이v 빈 리이딩 올 모어r닝"
+      "en": "Can you say that one more time?",
+      "ko": "한 번 더 말해 주실래요?",
+      "kr": "컨 여 쎄이 댓 원 모어r 타임"
      },
      {
-      "en": "She's been sleeping all day.",
-      "ko": "나니는 하루 종일 자고 있어.",
-      "kr": "쉬z 빈 슬리이핑 올 데이"
+      "en": "Can you speak a little slower?",
+      "ko": "조금 천천히 말해 주실래요?",
+      "kr": "컨 여 스피익 어 리를 슬로우어r"
      },
      {
-      "en": "Have you been waiting long?",
-      "ko": "오래 기다렸어?",
-      "kr": "해v 여 빈 웨이링 롱"
+      "en": "Could you spell that for me?",
+      "ko": "철자를 말해 주시겠어요?",
+      "kr": "커저 스펠 댓 f퍼r 미"
      },
      {
-      "en": "We've been talking for an hour.",
-      "ko": "우리 한 시간째 얘기 중이야.",
-      "kr": "위v 빈 토킹 f퍼r 어나워r"
+      "en": "Sorry, I didn't catch that.",
+      "ko": "죄송해요, 못 알아들었어요.",
+      "kr": "쏘리 아이 디든 캐치 댓"
+     },
+     {
+      "en": "Do you mean the taxi stand?",
+      "ko": "택시 승강장 말씀이세요?",
+      "kr": "더여 미인 더 택씨 스탠드"
      }
     ],
     "grammar": [
      {
-      "struct": "I've been ~",
-      "body": "(지금까지 계속) ~해 왔다 (영상 #5)"
+      "struct": "Can you ~",
+      "body": "~해 주실래요 (부탁, 영상 #8). 못 알아들었을 때 되묻는 말"
      }
     ],
     "chunks": [
      [
-      "I've been",
-      "아이v 빈",
-      "계속 ~해 왔다"
+      "Sorry,",
+      "쏘리",
+      "죄송한데"
      ],
      [
-      "sitting here",
-      "씨링 히어r",
-      "여기 앉아"
+      "can you",
+      "컨 여",
+      "~해 줄 수 있나요"
      ],
      [
-      "all day.",
-      "올 데이",
-      "하루 종일"
+      "say that again",
+      "쎄이 대러겐",
+      "그걸 다시 말하다"
+     ],
+     [
+      "a bit slower?",
+      "어 빗 슬로우어r",
+      "조금 천천히"
      ]
     ],
     "phonemes": [
      [
-      "/t/ sitting",
-      "sitting 의 t 는 모음 사이에서 ㄹ 로 굴러 — 씨링"
+      "/t/ that again",
+      "that 의 t 가 again 과 붙어 ㄹ 로 굴러 — 대러겐"
      ]
     ],
-    "mistake": "have been + -ing. I've been sit (X)",
-    "similar": "I've been at this desk all day.",
-    "category": "일상/집",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-desk-cat-02-cant-concentrate",
-   "sentence": "I can't concentrate.",
-   "meaning": "집중이 안 돼.",
-   "reading": null,
-   "phonetic_kr": "아이 캔트 칸쓴트레잇",
-   "order_index": 2,
-   "explanation": {
-    "key": "I can't concentrate = 집중이 안 돼. 모두영어 #263 그대로",
-    "anchor": "안 돼",
-    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Nani moved to your desk.",
-      "ko": "나니가 네 책상으로 옮겼네.",
-      "kr": "나니 무우v드 터 여r 데스크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I've been sitting here all day.",
-      "ko": "하루 종일 여기 앉아 있었거든.",
-      "kr": "아이v 빈 씨링 히어r 올 데이"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "She's lying in front of your keyboard.",
-      "ko": "키보드 앞에 누워 있어.",
-      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I can't concentrate.",
-      "ko": "집중이 안 돼.",
-      "kr": "아이 캔트 칸쓴트레잇"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Then move her somewhere else.",
-      "ko": "그럼 다른 데로 옮겨.",
-      "kr": "덴 무우v 허r 썸웨어r 엘스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me finish this first.",
-      "ko": "이것만 먼저 끝낼게.",
-      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Is the new monitor better?",
-      "ko": "새 모니터는 좀 나아?",
-      "kr": "이z 더 누우 마니러r 베러r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I can't get enough of it.",
-      "ko": "아무리 봐도 좋아.",
-      "kr": "아이 캔트 게리너f 어v잇"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I can't concentrate when she stares.",
-      "ko": "쳐다보면 집중이 안 돼.",
-      "kr": "아이 캔트 칸쓴트레잇 웬 쉬 스테어r즈"
-     },
-     {
-      "en": "She can't work from home.",
-      "ko": "소연은 집에서 일을 못 해.",
-      "kr": "쉬 캔트 워r크 f럼 호움"
-     },
-     {
-      "en": "Can't you move her?",
-      "ko": "나니 좀 못 옮겨?",
-      "kr": "캔처 무우v 허r"
-     },
-     {
-      "en": "I couldn't concentrate last night.",
-      "ko": "어젯밤엔 집중이 안 됐어.",
-      "kr": "아이 커든 칸쓴트레잇 라스 나잇"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I can't concentrate",
-      "body": "집중이 안 돼. 모두영어 #263 그대로"
-     }
-    ],
-    "chunks": [
-     [
-      "I can't",
-      "아이 캔트",
-      "나는 ~할 수 없다"
-     ],
-     [
-      "concentrate.",
-      "칸쓴트레잇",
-      "집중하다"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/s/ concentrate",
-      "concentrate 의 가운데 c 는 s 소리 — 칸쓴트레잇"
-     ]
-    ],
-    "mistake": "can't + 동사원형. I can't to concentrate (X)",
-    "similar": "I can't focus.",
-    "category": "일상/집중",
-    "frequency": 8
-   }
-  },
-  {
-   "id": "en-personal-desk-cat-03-let-me-finish",
-   "sentence": "Let me finish this first.",
-   "meaning": "이것만 먼저 끝낼게.",
-   "reading": null,
-   "phonetic_kr": "렛 미 f피니쉬 디스 f퍼r스트",
-   "order_index": 3,
-   "explanation": {
-    "key": "Let me ~ = 내가 ~할게 / ~해 볼게 (영상 #6)",
-    "anchor": "끝낼게",
-    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Nani moved to your desk.",
-      "ko": "나니가 네 책상으로 옮겼네.",
-      "kr": "나니 무우v드 터 여r 데스크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I've been sitting here all day.",
-      "ko": "하루 종일 여기 앉아 있었거든.",
-      "kr": "아이v 빈 씨링 히어r 올 데이"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "She's lying in front of your keyboard.",
-      "ko": "키보드 앞에 누워 있어.",
-      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I can't concentrate.",
-      "ko": "집중이 안 돼.",
-      "kr": "아이 캔트 칸쓴트레잇"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Then move her somewhere else.",
-      "ko": "그럼 다른 데로 옮겨.",
-      "kr": "덴 무우v 허r 썸웨어r 엘스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me finish this first.",
-      "ko": "이것만 먼저 끝낼게.",
-      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Is the new monitor better?",
-      "ko": "새 모니터는 좀 나아?",
-      "kr": "이z 더 누우 마니러r 베러r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I can't get enough of it.",
-      "ko": "아무리 봐도 좋아.",
-      "kr": "아이 캔트 게리너f 어v잇"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Let me call her first.",
-      "ko": "내가 먼저 전화해 볼게.",
-      "kr": "렛 미 커얼 허r f퍼r스트"
-     },
-     {
-      "en": "Let me help you with that.",
-      "ko": "그거 내가 도와줄게.",
-      "kr": "렛 미 헬프 여 위드 댓"
-     },
-     {
-      "en": "Can you let me finish?",
-      "ko": "나 마저 하게 둘래?",
-      "kr": "컨 여 렛 미 f피니쉬"
-     },
-     {
-      "en": "I'll finish this after dinner.",
-      "ko": "저녁 먹고 끝낼게.",
-      "kr": "아일 f피니쉬 디새f터r 디너r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "Let me ~",
-      "body": "내가 ~할게 / ~해 볼게 (영상 #6)"
-     }
-    ],
-    "chunks": [
-     [
-      "Let me",
-      "렛 미",
-      "내가 ~할게"
-     ],
-     [
-      "finish this",
-      "f피니쉬 디스",
-      "이것을 끝내다"
-     ],
-     [
-      "first.",
-      "f퍼r스트",
-      "먼저"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/f/ finish",
-      "finish 의 f 는 윗니를 아랫입술에 — f피니쉬"
-     ]
-    ],
-    "mistake": "Let me + 동사원형. Let me to finish (X)",
-    "similar": "Give me a minute.",
-    "category": "일상/집",
+    "mistake": "코어100 1번 Sorry, could you say that again more slowly? 와 같은 자리. can 은 조금 덜 정중하다",
+    "similar": "Could you repeat that, please?",
+    "category": "여행/교통",
     "frequency": 10
    }
   },
   {
-   "id": "en-personal-desk-cat-04-cant-get-enough",
-   "sentence": "I can't get enough of it.",
-   "meaning": "아무리 봐도 좋아.",
+   "id": "en-personal-bkk-grab-02-gate-thats-by",
+   "sentence": "I'm at the gate that's by the taxi sign.",
+   "meaning": "택시 표지판 옆에 있는 게이트에 있어요.",
    "reading": null,
-   "phonetic_kr": "아이 캔트 게리너f 어v잇",
-   "order_index": 4,
+   "phonetic_kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인",
+   "order_index": 2,
    "explanation": {
-    "key": "I can't get enough of ~ = 아무리 해도 좋아 / 질리지 않아. 모두영어 2편 #44 I can't get enough of it. 그대로",
-    "anchor": "아무리 봐도 좋아",
-    "situation": "오후. 하루 종일 책상에 앉아 있었더니 나니가 책상으로 거처를 옮겼다.",
+    "key": "~ that's by ~ = ~ 옆에 있는 (관계사 that's 로 위치 설명)",
+    "anchor": "옆에 있는",
+    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Nani moved to your desk.",
-      "ko": "나니가 네 책상으로 옮겼네.",
-      "kr": "나니 무우v드 터 여r 데스크"
+      "speaker": "B",
+      "name": "기사",
+      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
+      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
+      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been sitting here all day.",
-      "ko": "하루 종일 여기 앉아 있었거든.",
-      "kr": "아이v 빈 씨링 히어r 올 데이"
+      "en": "Sorry, can you say that again a bit slower?",
+      "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
+      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "She's lying in front of your keyboard.",
-      "ko": "키보드 앞에 누워 있어.",
-      "kr": "쉬z 라잉 인 f런러v 여r 키이보어r드"
+      "speaker": "B",
+      "name": "기사",
+      "en": "Gate 4, level 1. You know which gate you're at?",
+      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
+      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I can't concentrate.",
-      "ko": "집중이 안 돼.",
-      "kr": "아이 캔트 칸쓴트레잇"
+      "en": "I'm at the gate that's by the taxi sign.",
+      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
+      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Then move her somewhere else.",
-      "ko": "그럼 다른 데로 옮겨.",
-      "kr": "덴 무우v 허r 썸웨어r 엘스"
+      "speaker": "B",
+      "name": "기사",
+      "en": "That's level 2. What do you see near you?",
+      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
+      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me finish this first.",
-      "ko": "이것만 먼저 끝낼게.",
-      "kr": "렛 미 f피니쉬 디스 f퍼r스트"
+      "en": "There's a 7-Eleven right next to me.",
+      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
+      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Is the new monitor better?",
-      "ko": "새 모니터는 좀 나아?",
-      "kr": "이z 더 누우 마니러r 베러r"
+      "speaker": "B",
+      "name": "기사",
+      "en": "Take the stairs by it. I'm at the bottom.",
+      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
+      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I can't get enough of it.",
-      "ko": "아무리 봐도 좋아.",
-      "kr": "아이 캔트 게리너f 어v잇"
+      "en": "I'll let you know when I'm down there.",
+      "ko": "내려가면 알려 드릴게요.",
+      "kr": "아일 레처 노우 웨나임 다운 데어r"
      }
     ],
     "drills": [
      {
-      "en": "I can't get enough of this monitor.",
-      "ko": "이 모니터가 아주 마음에 들어.",
-      "kr": "아이 캔트 게리너f 어v 디스 마니러r"
+      "en": "I'm at the exit that's by the pharmacy.",
+      "ko": "약국 옆에 있는 출구에 있어요.",
+      "kr": "아임 엇 디 엑씻 댓츠 바이 더 f파r머씨"
      },
      {
-      "en": "She can't get enough of the desk.",
-      "ko": "나니가 책상을 아주 좋아해.",
-      "kr": "쉬 캔트 게리너f 어v 더 데스크"
+      "en": "It's the door that's by the escalator.",
+      "ko": "에스컬레이터 옆에 있는 문이에요.",
+      "kr": "잇츠 더 도어r 댓츠 바이 디 에스컬레이러r"
      },
      {
-      "en": "I got enough sleep last night.",
-      "ko": "어젯밤엔 잠을 푹 잤어.",
-      "kr": "아이 가리너f 슬리입 라스 나잇"
+      "en": "Is this the stop that's by the mall?",
+      "ko": "여기가 쇼핑몰 옆 정류장이에요?",
+      "kr": "이z 디스 더 스탑 댓츠 바이 더 몰"
      },
      {
-      "en": "Do we have enough time?",
-      "ko": "시간이 충분해?",
-      "kr": "두 위 해v 이너f 타임"
+      "en": "We're at the cafe that's near gate 4.",
+      "ko": "4번 게이트 근처 카페에 있어요.",
+      "kr": "위어r 엇 더 캐f페이 댓츠 니어r 게잇 f포어r"
      }
     ],
     "grammar": [
      {
-      "struct": "I can't get enough of ~",
-      "body": "아무리 해도 좋아 / 질리지 않아. 모두영어 2편 #44 I can't get enough of it. 그대로"
+      "struct": "~ that's by ~",
+      "body": "~ 옆에 있는 (관계사 that's 로 위치 설명)"
      }
     ],
     "chunks": [
      [
-      "I can't",
-      "아이 캔트",
-      "나는 ~할 수 없다"
+      "I'm at the gate",
+      "아임 엇 더 게잇",
+      "나는 그 게이트에 있다"
      ],
      [
-      "get enough",
-      "게리너f",
-      "충분히 얻다"
+      "that's by",
+      "댓츠 바이",
+      "~옆에 있는"
      ],
      [
-      "of it.",
-      "어v잇",
-      "그것을"
+      "the taxi sign.",
+      "더 택씨 싸인",
+      "택시 표지판"
      ]
     ],
     "phonemes": [
      [
-      "/t/ get enough",
-      "get 의 t 가 enough 의 모음과 붙어 ㄹ 로 흐른다 — 게리너f"
+      "/æ/ at",
+      "비강세 at 은 약하게 엇 — '앳' 으로 세게 내지 않는다"
      ]
     ],
-    "mistake": "부정문이지만 칭찬이다 — '아무리 가져도 충분하지 않다' = 너무 좋다",
-    "similar": "I love it.",
-    "category": "일상/취향",
-    "frequency": 7
+    "mistake": "that's = that is. 사물·장소는 that, 사람은 who",
+    "similar": "I'm by the taxi sign.",
+    "category": "여행/교통",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bkk-grab-03-theres-7eleven",
+   "sentence": "There's a 7-Eleven right next to me.",
+   "meaning": "제 바로 옆에 세븐일레븐이 있어요.",
+   "reading": null,
+   "phonetic_kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미",
+   "order_index": 3,
+   "explanation": {
+    "key": "There's ~ = ~가 있어요 (전화로 내 주변을 말할 때, 영상 #16)",
+    "anchor": "있어요",
+    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
+      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
+      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry, can you say that again a bit slower?",
+      "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
+      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
+     },
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "Gate 4, level 1. You know which gate you're at?",
+      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
+      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm at the gate that's by the taxi sign.",
+      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
+      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
+     },
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "That's level 2. What do you see near you?",
+      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
+      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a 7-Eleven right next to me.",
+      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
+      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
+     },
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "Take the stairs by it. I'm at the bottom.",
+      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
+      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll let you know when I'm down there.",
+      "ko": "내려가면 알려 드릴게요.",
+      "kr": "아일 레처 노우 웨나임 다운 데어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "There's a taxi sign above me.",
+      "ko": "제 위에 택시 표지판이 있어요.",
+      "kr": "데어r저 택씨 싸인 어버v 미"
+     },
+     {
+      "en": "The stairs are on my left.",
+      "ko": "계단이 제 왼쪽에 있어요.",
+      "kr": "더 스테어r즈 아r 온 마이 레f트"
+     },
+     {
+      "en": "Is there a pickup point on this level?",
+      "ko": "이 층에 픽업 지점이 있나요?",
+      "kr": "이z 데어r 어 피컵 포인트 온 디스 레v얼"
+     },
+     {
+      "en": "There's no pickup sign here.",
+      "ko": "여기 픽업 표시가 없어요.",
+      "kr": "데어r즈 노우 피컵 싸인 히어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "There's ~",
+      "body": "~가 있어요 (전화로 내 주변을 말할 때, 영상 #16)"
+     }
+    ],
+    "chunks": [
+     [
+      "There's a",
+      "데어r저",
+      "~가 하나 있다"
+     ],
+     [
+      "7-Eleven",
+      "쎄v은 일레v은",
+      "세븐일레븐"
+     ],
+     [
+      "right next to me.",
+      "라잇 넥스 터 미",
+      "내 바로 옆에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ There's",
+      "there's 의 s 는 z — 데어r즈, a 와 이어져 데어r저"
+     ]
+    ],
+    "mistake": "위치 설명은 There's + 물건 + 위치. 전화로 내 자리를 말하는 기본 틀",
+    "similar": "I'm right next to a 7-Eleven.",
+    "category": "여행/교통",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-grab-04-let-you-know-down",
+   "sentence": "I'll let you know when I'm down there.",
+   "meaning": "내려가면 알려 드릴게요.",
+   "reading": null,
+   "phonetic_kr": "아일 레처 노우 웨나임 다운 데어r",
+   "order_index": 4,
+   "explanation": {
+    "key": "I'll let you know ~ = ~하면 알려 드릴게요 (영상 #26)",
+    "anchor": "알려",
+    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
+      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
+      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry, can you say that again a bit slower?",
+      "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
+      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
+     },
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "Gate 4, level 1. You know which gate you're at?",
+      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
+      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm at the gate that's by the taxi sign.",
+      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
+      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
+     },
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "That's level 2. What do you see near you?",
+      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
+      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a 7-Eleven right next to me.",
+      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
+      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
+     },
+     {
+      "speaker": "B",
+      "name": "기사",
+      "en": "Take the stairs by it. I'm at the bottom.",
+      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
+      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll let you know when I'm down there.",
+      "ko": "내려가면 알려 드릴게요.",
+      "kr": "아일 레처 노우 웨나임 다운 데어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'll let you know when I see you.",
+      "ko": "보이면 알려 드릴게요.",
+      "kr": "아일 레처 노우 웨나이 씨이 유"
+     },
+     {
+      "en": "Let me know if you can't find me.",
+      "ko": "저 못 찾으면 알려 주세요.",
+      "kr": "렛 미 노우 이f 여 캔트 f파인드 미"
+     },
+     {
+      "en": "She'll let us know the gate.",
+      "ko": "아내가 게이트를 알려 줄 거예요.",
+      "kr": "쉴 레러스 노우 더 게잇"
+     },
+     {
+      "en": "I'll text you when I'm outside.",
+      "ko": "밖에 나가면 문자할게요.",
+      "kr": "아일 텍스트 여 웨나임 아웃싸이드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'll let you know ~",
+      "body": "~하면 알려 드릴게요 (영상 #26)"
+     }
+    ],
+    "chunks": [
+     [
+      "I'll let you know",
+      "아일 레처 노우",
+      "알려 주겠다"
+     ],
+     [
+      "when I'm",
+      "웨나임",
+      "내가 ~할 때"
+     ],
+     [
+      "down there.",
+      "다운 데어r",
+      "거기 아래에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/tʃ/ let you",
+      "let 의 t 와 you 가 붙어 '처' — 레처"
+     ]
+    ],
+    "mistake": "when 절은 현재형 — when I'm down (O) when I'll be down (X)",
+    "similar": "I'll call you when I get there.",
+    "category": "여행/교통",
+    "frequency": 9
    }
   }
  ]

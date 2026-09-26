@@ -4,517 +4,517 @@
  "date": "2026-10-01",
  "cards": [
   {
-   "id": "en-personal-haircut-01-how-old",
-   "sentence": "How old do I look?",
-   "meaning": "나 몇 살로 보여?",
+   "id": "en-personal-bkk-cabin-01-about-to-ask",
+   "sentence": "I was just about to ask where she is.",
+   "meaning": "어디 있는지 막 물어보려던 참이었어요.",
    "reading": null,
-   "phonetic_kr": "하우 오울드 두 아이 룩",
+   "phonetic_kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z",
    "order_index": 1,
    "explanation": {
-    "key": "How ~ do I look? = 내가 얼마나 ~해 보여? 모두영어 #320 How old do I look? 그대로",
-    "anchor": "몇 살로",
-    "situation": "저녁. 한 달 반 만에 머리를 잘랐다. 늘 가던 곳 대신 집에서 가깝고 싼 미용실에 가 봤다.",
+    "key": "I was about to ~ = 막 ~하려던 참이었어요 (영상 #3). 뒤의 ask where ~ 는 삽입 의문절",
+    "anchor": "참이었어요",
+    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "You got your hair cut.",
-      "ko": "머리 잘랐네.",
-      "kr": "유 가처r 헤어r 컷"
+      "name": "Sarah",
+      "en": "You must be Soyeon's husband. I'm Sarah.",
+      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
+      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "How old do I look?",
-      "ko": "나 몇 살로 보여?",
-      "kr": "하우 오울드 두 아이 룩"
+      "en": "I was just about to ask where she is.",
+      "ko": "어디 있는지 막 물어보려던 참이었어요.",
+      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Younger. Where did you go?",
-      "ko": "더 어려 보여. 어디서 잘랐어?",
-      "kr": "영거r 웨어r 디저 고우"
+      "name": "Sarah",
+      "en": "She's in the back galley. She mentioned you.",
+      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
+      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a place right by our house.",
-      "ko": "집 바로 옆에 한 곳 있어.",
-      "kr": "데어r저 플레이스 라잇 바이 아워r 하우스"
+      "en": "She said I'm supposed to have one beer, right?",
+      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
+      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Was it any good?",
-      "ko": "괜찮았어?",
-      "kr": "워z 이레니 굿"
+      "name": "Sarah",
+      "en": "Exactly. One beer, and water after that.",
+      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
+      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure yet.",
-      "ko": "아직 잘 모르겠어.",
-      "kr": "아임 낫 슈어r 옛"
+      "en": "I don't think she can see me from there.",
+      "ko": "거기서는 저를 못 볼 것 같은데요.",
+      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Will you go there again?",
-      "ko": "또 거기 갈 거야?",
-      "kr": "윌 여 고우 데어r 어겐"
+      "name": "Sarah",
+      "en": "She can't, but I'm the one who reports.",
+      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
+      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It depends on how it looks tomorrow.",
-      "ko": "내일 어때 보이는지에 따라 다르지.",
-      "kr": "잇 디펜존 하우 잇 룩스 터마로우"
+      "en": "Water is fine, and please tell her I behaved.",
+      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
+      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
      }
     ],
     "drills": [
      {
-      "en": "How tired do I look?",
-      "ko": "나 얼마나 피곤해 보여?",
-      "kr": "하우 타이어r드 두 아이 룩"
+      "en": "I was about to ask for water.",
+      "ko": "물 달라고 하려던 참이었어요.",
+      "kr": "아이 워z 어바우러 애스크 f퍼r 워러r"
      },
      {
-      "en": "Do I look okay?",
-      "ko": "나 괜찮아 보여?",
-      "kr": "두 아이 루코우케이"
+      "en": "She was about to come find you.",
+      "ko": "소연이 당신 찾아오려던 참이었어요.",
+      "kr": "쉬 워z 어바우러 컴 f파인드 유"
      },
      {
-      "en": "You look younger than me.",
-      "ko": "넌 나보다 어려 보여.",
-      "kr": "유 룩 영거r 던 미"
+      "en": "Were you about to order?",
+      "ko": "주문하려던 거예요?",
+      "kr": "워r 여 어바우러 오어r더r"
      },
      {
-      "en": "She looked happy today.",
-      "ko": "소연이 오늘 좋아 보였어.",
-      "kr": "쉬 룩트 해피 터데이"
-     },
-     {
-      "en": "How old is this place?",
-      "ko": "이 집 얼마나 된 거야?",
-      "kr": "하우 오울디z 디스 플레이스"
+      "en": "I was just about to ask which gate it is.",
+      "ko": "어느 게이트인지 물어보려던 참이었어요.",
+      "kr": "아이 워z 저스터바우러 애스크 위치 게이릿 이z"
      }
     ],
     "grammar": [
      {
-      "struct": "How ~ do I look?",
-      "body": "내가 얼마나 ~해 보여? 모두영어 #320 How old do I look? 그대로"
+      "struct": "I was about to ~",
+      "body": "막 ~하려던 참이었어요 (영상 #3). 뒤의 ask where ~ 는 삽입 의문절"
      }
     ],
     "chunks": [
      [
-      "How old",
-      "하우 오울드",
-      "몇 살로"
+      "I was just about to",
+      "아이 워z 저스터바우러",
+      "막 ~하려던 참이었다"
      ],
      [
-      "do I look?",
-      "두 아이 룩",
-      "내가 보이니"
+      "ask",
+      "애스크",
+      "묻다"
+     ],
+     [
+      "where she is.",
+      "웨어r 쉬 이z",
+      "그녀가 어디 있는지"
      ]
     ],
     "phonemes": [
      [
-      "/l/ old",
-      "old 의 l 은 혀끝을 올려 '오울' 처럼 — 오울드"
+      "/t/ about to",
+      "about to 의 t 가 뒤 모음과 붙어 ㄹ 로 흐른다 — 저스터바우러"
      ]
     ],
-    "mistake": "How old are you? 는 나이를 묻는 말, How old do I look? 은 보이는 나이를 묻는 말",
-    "similar": "Do I look older?",
-    "category": "일상/가족",
-    "frequency": 6
-   }
-  },
-  {
-   "id": "en-personal-haircut-02-theres-by-house",
-   "sentence": "There's a place right by our house.",
-   "meaning": "집 바로 옆에 한 곳 있어.",
-   "reading": null,
-   "phonetic_kr": "데어r저 플레이스 라잇 바이 아워r 하우스",
-   "order_index": 2,
-   "explanation": {
-    "key": "There's ~ = ~가 있다 (There is 의 축약, 영상 #16). right by = 바로 옆에",
-    "anchor": "있어",
-    "situation": "저녁. 한 달 반 만에 머리를 잘랐다. 늘 가던 곳 대신 집에서 가깝고 싼 미용실에 가 봤다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "You got your hair cut.",
-      "ko": "머리 잘랐네.",
-      "kr": "유 가처r 헤어r 컷"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "How old do I look?",
-      "ko": "나 몇 살로 보여?",
-      "kr": "하우 오울드 두 아이 룩"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Younger. Where did you go?",
-      "ko": "더 어려 보여. 어디서 잘랐어?",
-      "kr": "영거r 웨어r 디저 고우"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "There's a place right by our house.",
-      "ko": "집 바로 옆에 한 곳 있어.",
-      "kr": "데어r저 플레이스 라잇 바이 아워r 하우스"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Was it any good?",
-      "ko": "괜찮았어?",
-      "kr": "워z 이레니 굿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm not sure yet.",
-      "ko": "아직 잘 모르겠어.",
-      "kr": "아임 낫 슈어r 옛"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Will you go there again?",
-      "ko": "또 거기 갈 거야?",
-      "kr": "윌 여 고우 데어r 어겐"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It depends on how it looks tomorrow.",
-      "ko": "내일 어때 보이는지에 따라 다르지.",
-      "kr": "잇 디펜존 하우 잇 룩스 터마로우"
-     }
-    ],
-    "drills": [
-     {
-      "en": "There's a gym right by us.",
-      "ko": "바로 옆에 헬스장이 있어.",
-      "kr": "데어r저 짐 라잇 바이 어스"
-     },
-     {
-      "en": "Is there a bus stop near here?",
-      "ko": "이 근처에 버스 정류장 있어?",
-      "kr": "이z 데어r 어 버스 스탑 니어r 히어r"
-     },
-     {
-      "en": "My old place was far.",
-      "ko": "전에 가던 데는 멀었어.",
-      "kr": "마이 오울드 플레이스 워z f파r"
-     },
-     {
-      "en": "There isn't a seat left.",
-      "ko": "남은 자리가 없어.",
-      "kr": "데어r 이즈너 씨잇 레f트"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "There's ~",
-      "body": "~가 있다 (There is 의 축약, 영상 #16). right by = 바로 옆에"
-     }
-    ],
-    "chunks": [
-     [
-      "There's a",
-      "데어r저",
-      "~가 하나 있다"
-     ],
-     [
-      "place",
-      "플레이스",
-      "곳"
-     ],
-     [
-      "right by",
-      "라잇 바이",
-      "바로 옆에"
-     ],
-     [
-      "our house.",
-      "아워r 하우스",
-      "우리 집"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/r/ right",
-      "right 의 r 은 혀를 말되 입천장에 닿지 않게 — 라잇"
-     ]
-    ],
-    "mistake": "right by = 바로 옆에. right 는 '오른쪽' 이 아니라 '바로' 를 강조한다",
-    "similar": "It's right next to our place.",
-    "category": "일상/동네",
+    "mistake": "삽입 의문절은 평서 어순 — where she is (O) where is she (X)",
+    "similar": "I was going to ask about her.",
+    "category": "여행/기내",
     "frequency": 8
    }
   },
   {
-   "id": "en-personal-haircut-03-not-sure-yet",
-   "sentence": "I'm not sure yet.",
-   "meaning": "아직 잘 모르겠어.",
+   "id": "en-personal-bkk-cabin-02-supposed-to",
+   "sentence": "She said I'm supposed to have one beer, right?",
+   "meaning": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
    "reading": null,
-   "phonetic_kr": "아임 낫 슈어r 옛",
-   "order_index": 3,
+   "phonetic_kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇",
+   "order_index": 2,
    "explanation": {
-    "key": "I'm not sure ~ = 아직 ~인지 모르겠어. 모두영어 2편 #85 I'm not sure yet. 그대로",
-    "anchor": "모르겠어",
-    "situation": "저녁. 한 달 반 만에 머리를 잘랐다. 늘 가던 곳 대신 집에서 가깝고 싼 미용실에 가 봤다.",
+    "key": "I'm supposed to ~ = ~하기로 되어 있어요 / ~해야 해요 (규칙·약속·예정, 영상 #2)",
+    "anchor": "한 잔만",
+    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "You got your hair cut.",
-      "ko": "머리 잘랐네.",
-      "kr": "유 가처r 헤어r 컷"
+      "name": "Sarah",
+      "en": "You must be Soyeon's husband. I'm Sarah.",
+      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
+      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "How old do I look?",
-      "ko": "나 몇 살로 보여?",
-      "kr": "하우 오울드 두 아이 룩"
+      "en": "I was just about to ask where she is.",
+      "ko": "어디 있는지 막 물어보려던 참이었어요.",
+      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Younger. Where did you go?",
-      "ko": "더 어려 보여. 어디서 잘랐어?",
-      "kr": "영거r 웨어r 디저 고우"
+      "name": "Sarah",
+      "en": "She's in the back galley. She mentioned you.",
+      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
+      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a place right by our house.",
-      "ko": "집 바로 옆에 한 곳 있어.",
-      "kr": "데어r저 플레이스 라잇 바이 아워r 하우스"
+      "en": "She said I'm supposed to have one beer, right?",
+      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
+      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Was it any good?",
-      "ko": "괜찮았어?",
-      "kr": "워z 이레니 굿"
+      "name": "Sarah",
+      "en": "Exactly. One beer, and water after that.",
+      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
+      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure yet.",
-      "ko": "아직 잘 모르겠어.",
-      "kr": "아임 낫 슈어r 옛"
+      "en": "I don't think she can see me from there.",
+      "ko": "거기서는 저를 못 볼 것 같은데요.",
+      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Will you go there again?",
-      "ko": "또 거기 갈 거야?",
-      "kr": "윌 여 고우 데어r 어겐"
+      "name": "Sarah",
+      "en": "She can't, but I'm the one who reports.",
+      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
+      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It depends on how it looks tomorrow.",
-      "ko": "내일 어때 보이는지에 따라 다르지.",
-      "kr": "잇 디펜존 하우 잇 룩스 터마로우"
+      "en": "Water is fine, and please tell her I behaved.",
+      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
+      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
      }
     ],
     "drills": [
      {
-      "en": "I'm not sure about the price.",
-      "ko": "값은 잘 모르겠어.",
-      "kr": "아임 낫 슈어r 어바웃 더 프라이스"
+      "en": "I'm supposed to meet her at the gate.",
+      "ko": "게이트에서 아내를 만나기로 했어요.",
+      "kr": "아임 써포우스터 미잇 허r 엇 더 게잇"
      },
      {
-      "en": "Are you sure about that?",
-      "ko": "그거 확실해?",
-      "kr": "아r 여 슈어r 어바웃 댓"
+      "en": "We're supposed to land at nine.",
+      "ko": "아홉 시에 착륙하기로 돼 있어요.",
+      "kr": "위어r 써포우스터 랜드 엇 나인"
      },
      {
-      "en": "She's not sure either.",
-      "ko": "소연도 잘 모르겠대.",
-      "kr": "쉬z 낫 슈어r 이이더r"
+      "en": "Am I supposed to fill this out?",
+      "ko": "이거 작성해야 하나요?",
+      "kr": "애마이 써포우스터 f필 디스 아웃"
      },
      {
-      "en": "I'm not sure if I'll go back.",
-      "ko": "또 갈지 모르겠어.",
-      "kr": "아임 낫 슈어r 이f 아일 고우 백"
-     },
-     {
-      "en": "We weren't sure where to sit.",
-      "ko": "어디 앉을지 몰랐어.",
-      "kr": "위 워r언 슈어r 웨어r 터 씻"
+      "en": "You're not supposed to stand here.",
+      "ko": "여기 서 있으면 안 돼요.",
+      "kr": "여r 낫 써포우스터 스탠드 히어r"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm not sure ~",
-      "body": "아직 ~인지 모르겠어. 모두영어 2편 #85 I'm not sure yet. 그대로"
+      "struct": "I'm supposed to ~",
+      "body": "~하기로 되어 있어요 / ~해야 해요 (규칙·약속·예정, 영상 #2)"
      }
     ],
     "chunks": [
      [
-      "I'm not sure",
-      "아임 낫 슈어r",
-      "잘 모르겠다"
+      "She said",
+      "쉬 쎄드",
+      "그녀가 말했다"
      ],
      [
-      "yet.",
-      "옛",
-      "아직"
+      "I'm supposed to",
+      "아임 써포우스터",
+      "나는 ~하기로 되어 있다"
+     ],
+     [
+      "have one beer,",
+      "해v 원 비어r",
+      "맥주 한 잔 마시다"
+     ],
+     [
+      "right?",
+      "라잇",
+      "맞죠"
      ]
     ],
     "phonemes": [
      [
-      "/ʃ/ sure",
-      "sure 의 s 는 '쉬' 소리 — 슈어r, '수어' 가 아니다"
+      "/s/ supposed to",
+      "supposed to 는 붙어 써포우스터 — d 가 t 앞에서 사라진다"
      ]
     ],
-    "mistake": "I'm not sure 뒤에 if·what·where 절이 붙는다 — I'm not sure if I'll go back.",
-    "similar": "I haven't decided yet.",
-    "category": "일상/판단",
+    "mistake": "be supposed to + 동사원형",
+    "similar": "I promised her just one.",
+    "category": "여행/기내",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-haircut-04-depends-on",
-   "sentence": "It depends on how it looks tomorrow.",
-   "meaning": "내일 어때 보이는지에 따라 다르지.",
+   "id": "en-personal-bkk-cabin-03-dont-think-see",
+   "sentence": "I don't think she can see me from there.",
+   "meaning": "거기서는 저를 못 볼 것 같은데요.",
    "reading": null,
-   "phonetic_kr": "잇 디펜존 하우 잇 룩스 터마로우",
-   "order_index": 4,
+   "phonetic_kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r",
+   "order_index": 3,
    "explanation": {
-    "key": "It depends on ~ = ~에 따라 다르다 (영상 #25)",
-    "anchor": "따라 다르지",
-    "situation": "저녁. 한 달 반 만에 머리를 잘랐다. 늘 가던 곳 대신 집에서 가깝고 싼 미용실에 가 봤다.",
+    "key": "I don't think ~ = ~은 아닌 것 같아요 (부드러운 부정, 영상 #11)",
+    "anchor": "못 볼",
+    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "You got your hair cut.",
-      "ko": "머리 잘랐네.",
-      "kr": "유 가처r 헤어r 컷"
+      "name": "Sarah",
+      "en": "You must be Soyeon's husband. I'm Sarah.",
+      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
+      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "How old do I look?",
-      "ko": "나 몇 살로 보여?",
-      "kr": "하우 오울드 두 아이 룩"
+      "en": "I was just about to ask where she is.",
+      "ko": "어디 있는지 막 물어보려던 참이었어요.",
+      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Younger. Where did you go?",
-      "ko": "더 어려 보여. 어디서 잘랐어?",
-      "kr": "영거r 웨어r 디저 고우"
+      "name": "Sarah",
+      "en": "She's in the back galley. She mentioned you.",
+      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
+      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a place right by our house.",
-      "ko": "집 바로 옆에 한 곳 있어.",
-      "kr": "데어r저 플레이스 라잇 바이 아워r 하우스"
+      "en": "She said I'm supposed to have one beer, right?",
+      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
+      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Was it any good?",
-      "ko": "괜찮았어?",
-      "kr": "워z 이레니 굿"
+      "name": "Sarah",
+      "en": "Exactly. One beer, and water after that.",
+      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
+      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure yet.",
-      "ko": "아직 잘 모르겠어.",
-      "kr": "아임 낫 슈어r 옛"
+      "en": "I don't think she can see me from there.",
+      "ko": "거기서는 저를 못 볼 것 같은데요.",
+      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Will you go there again?",
-      "ko": "또 거기 갈 거야?",
-      "kr": "윌 여 고우 데어r 어겐"
+      "name": "Sarah",
+      "en": "She can't, but I'm the one who reports.",
+      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
+      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It depends on how it looks tomorrow.",
-      "ko": "내일 어때 보이는지에 따라 다르지.",
-      "kr": "잇 디펜존 하우 잇 룩스 터마로우"
+      "en": "Water is fine, and please tell her I behaved.",
+      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
+      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
      }
     ],
     "drills": [
      {
-      "en": "It depends on the weather.",
-      "ko": "날씨에 따라 다르지.",
-      "kr": "잇 디펜존 더 웨더r"
+      "en": "I don't think we've met.",
+      "ko": "우리 처음 보는 것 같은데요.",
+      "kr": "아이 돈 씽 퀴v 멧"
      },
      {
-      "en": "That depends on you.",
-      "ko": "그건 너한테 달렸어.",
-      "kr": "댓 디펜존 유"
+      "en": "I don't think that's my bag.",
+      "ko": "그건 제 가방이 아닌 것 같아요.",
+      "kr": "아이 돈 씽크 댓츠 마이 백"
      },
      {
-      "en": "Will it depend on the day?",
-      "ko": "요일에 따라 달라져?",
-      "kr": "윌 잇 디펜돈 더 데이"
+      "en": "Do you think she saw us?",
+      "ko": "소연이 우리 봤을까요?",
+      "kr": "더여 씽크 쉬 쏘오 어스"
      },
      {
-      "en": "It doesn't depend on me.",
-      "ko": "나한테 달린 게 아니야.",
-      "kr": "잇 더즌 디펜돈 미"
-     },
-     {
-      "en": "It depends on the time.",
-      "ko": "시간에 따라 다르지.",
-      "kr": "잇 디펜존 더 타임"
+      "en": "She doesn't think it's a problem.",
+      "ko": "소연은 문제 아니라고 봐요.",
+      "kr": "쉬 더즌 씽킷처 프라블럼"
      }
     ],
     "grammar": [
      {
-      "struct": "It depends on ~",
-      "body": "~에 따라 다르다 (영상 #25)"
+      "struct": "I don't think ~",
+      "body": "~은 아닌 것 같아요 (부드러운 부정, 영상 #11)"
      }
     ],
     "chunks": [
      [
-      "It depends on",
-      "잇 디펜존",
-      "~에 따라 다르다"
+      "I don't think",
+      "아이 돈 씽크",
+      "~은 아닌 것 같다"
      ],
      [
-      "how it looks",
-      "하우 잇 룩스",
-      "어떻게 보이는지"
+      "she can see me",
+      "쉬 컨 씨이 미",
+      "그녀가 나를 볼 수 있다"
      ],
      [
-      "tomorrow.",
-      "터마로우",
-      "내일"
+      "from there.",
+      "f럼 데어r",
+      "거기서"
      ]
     ],
     "phonemes": [
      [
-      "/z/ depends",
-      "depends 의 s 는 z 소리 — 디펜즈. 뒤 on 과 이어져 디펜존"
+      "/θ/ think",
+      "think 의 th 는 혀끝을 이 사이에 — 씽크"
      ]
     ],
-    "mistake": "depends 뒤에는 on 이 붙는다. It depends the price (X)",
-    "similar": "That's up to the price.",
-    "category": "일상/판단",
-    "frequency": 8
+    "mistake": "영어는 앞에서 부정한다 — I don't think she can (O) I think she can't (어색)",
+    "similar": "She probably can't see me.",
+    "category": "여행/기내",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-cabin-04-tell-her",
+   "sentence": "Water is fine, and please tell her I behaved.",
+   "meaning": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
+   "reading": null,
+   "phonetic_kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드",
+   "order_index": 4,
+   "explanation": {
+    "key": "tell her ~ = 그녀에게 ~라고 전해 주세요 (233 뱅크 081 Tell me ~ 의 3인칭)",
+    "anchor": "전해 주세요",
+    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Sarah",
+      "en": "You must be Soyeon's husband. I'm Sarah.",
+      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
+      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I was just about to ask where she is.",
+      "ko": "어디 있는지 막 물어보려던 참이었어요.",
+      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
+     },
+     {
+      "speaker": "A",
+      "name": "Sarah",
+      "en": "She's in the back galley. She mentioned you.",
+      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
+      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "She said I'm supposed to have one beer, right?",
+      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
+      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
+     },
+     {
+      "speaker": "A",
+      "name": "Sarah",
+      "en": "Exactly. One beer, and water after that.",
+      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
+      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think she can see me from there.",
+      "ko": "거기서는 저를 못 볼 것 같은데요.",
+      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
+     },
+     {
+      "speaker": "A",
+      "name": "Sarah",
+      "en": "She can't, but I'm the one who reports.",
+      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
+      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Water is fine, and please tell her I behaved.",
+      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
+      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Please tell her I said hi.",
+      "ko": "제가 안부 전한다고 해 주세요.",
+      "kr": "플리이z 텔 허r 아이 쎄드 하이"
+     },
+     {
+      "en": "Tell him we're on our way.",
+      "ko": "우리 가는 중이라고 전해요.",
+      "kr": "텔 힘 위어r 오나워r 웨이"
+     },
+     {
+      "en": "Can you tell her I'm in 34C?",
+      "ko": "제가 34C 에 있다고 전해 줄래요?",
+      "kr": "컨 여 텔 허r 아임 인 써r리 f포어r 씨이"
+     },
+     {
+      "en": "I told her you'd be here.",
+      "ko": "당신이 여기 있을 거라고 말했어요.",
+      "kr": "아이 톨드 허r 유드 비 히어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "tell her ~",
+      "body": "그녀에게 ~라고 전해 주세요 (233 뱅크 081 Tell me ~ 의 3인칭)"
+     }
+    ],
+    "chunks": [
+     [
+      "Water is fine,",
+      "워러r 이z f파인",
+      "물이면 된다"
+     ],
+     [
+      "and please",
+      "언 플리이z",
+      "그리고 부탁해요"
+     ],
+     [
+      "tell her",
+      "텔 허r",
+      "그녀에게 전하다"
+     ],
+     [
+      "I behaved.",
+      "아이 비헤이v드",
+      "내가 잘 있었다고"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ water",
+      "water 의 t 는 모음 사이에서 ㄹ 로 굴러 — 워러r"
+     ]
+    ],
+    "mistake": "tell + 사람 + (that) 절. tell to her (X)",
+    "similar": "Let her know I was good.",
+    "category": "여행/기내",
+    "frequency": 7
    }
   }
  ]

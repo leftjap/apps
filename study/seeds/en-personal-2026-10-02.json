@@ -4,502 +4,517 @@
  "date": "2026-10-02",
  "cards": [
   {
-   "id": "en-personal-gym-signup-01-still-thinking",
-   "sentence": "I'm still thinking about it.",
-   "meaning": "아직 생각 중이야.",
+   "id": "en-personal-bkk-seatmate-01-the-one-who",
+   "sentence": "My wife. She's the one who's working in the back.",
+   "meaning": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
    "reading": null,
-   "phonetic_kr": "아임 스틸 씽킹 어바우릿",
+   "phonetic_kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백",
    "order_index": 1,
    "explanation": {
-    "key": "I'm still thinking about ~ = 아직 ~을 생각 중이야. 모두영어 2편 #87 I'm still thinking about it. 그대로",
-    "anchor": "생각 중이야",
-    "situation": "저녁. 헬스장을 다시 끊을지 이야기했다. 러닝은 아직 십 분이다.",
+    "key": "the one who ~ = ~하는 사람 (관계사 who 로 사람을 짚어 말하기)",
+    "anchor": "일하는 사람",
+    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Are you going back to the gym?",
-      "ko": "헬스장 다시 다닐 거야?",
-      "kr": "아r 여 고잉 백 터 더 짐"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Are you travelling alone, or with family?",
+      "ko": "혼자 여행하세요, 가족과 함께세요?",
+      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm still thinking about it.",
-      "ko": "아직 생각 중이야.",
-      "kr": "아임 스틸 씽킹 어바우릿"
+      "en": "My wife. She's the one who's working in the back.",
+      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
+      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'll pay for the year.",
-      "ko": "일 년치는 내가 낼게.",
-      "kr": "아일 페이 f퍼r 더 이어r"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Working? So she's a flight attendant?",
+      "ko": "일한다고요? 그럼 승무원이세요?",
+      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I owe you big time.",
-      "ko": "크게 신세 졌네.",
-      "kr": "아이 오우 여 빅 타임"
+      "en": "That's what I mean. She's the crew.",
+      "ko": "제 말이 그거예요. 승무원이에요.",
+      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "You only run ten minutes, though.",
-      "ko": "근데 십 분밖에 안 뛰잖아.",
-      "kr": "유 오운리 런 텐 미닛츠 도우"
+      "speaker": "B",
+      "name": "승객",
+      "en": "That must be handy. Cheap tickets?",
+      "ko": "편하겠네요. 표가 싸죠?",
+      "kr": "댓 머스 비 핸디 치입 티킷츠"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to get to thirty.",
-      "ko": "삼십 분까지 늘려보려고.",
-      "kr": "아임 트라잉 터 겟 터 써r리"
+      "en": "That's why I follow her to Bangkok sometimes.",
+      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
+      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Don't push yourself too hard.",
-      "ko": "너무 무리하지 마.",
-      "kr": "돈 푸쉬 여r쎌f 투우 하r드"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Nice. And what do you do while she works?",
+      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
+      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'll let you know how it goes.",
-      "ko": "어떻게 되는지 알려줄게.",
-      "kr": "아일 레처 노우 하우 잇 고우z"
+      "en": "It feels like a solo trip most of the day.",
+      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
+      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
      }
     ],
     "drills": [
      {
-      "en": "I'm still thinking about the gym.",
-      "ko": "헬스장은 아직 생각 중이야.",
-      "kr": "아임 스틸 씽킹 어바웃 더 짐"
+      "en": "She's the one who booked the hotel.",
+      "ko": "호텔 예약한 사람이 아내예요.",
+      "kr": "쉬z 더 원 후 북트 더 호우텔"
      },
      {
-      "en": "She's still thinking about it.",
-      "ko": "소연은 아직 생각 중이야.",
-      "kr": "쉬z 스틸 씽킹 어바우릿"
+      "en": "I'm the one who's travelling alone.",
+      "ko": "혼자 다니는 쪽은 저예요.",
+      "kr": "아임 더 원 후우z 트래v얼링 얼로운"
      },
      {
-      "en": "Are you still thinking about it?",
-      "ko": "아직 생각 중이야?",
-      "kr": "아r 여 스틸 씽킹 어바우릿"
+      "en": "Are you the one who called?",
+      "ko": "전화하신 분이세요?",
+      "kr": "아r 여 더 원 후 커얼드"
      },
      {
-      "en": "I stopped thinking about it.",
-      "ko": "그 생각은 접었어.",
-      "kr": "아이 스탑트 씽킹 어바우릿"
-     },
-     {
-      "en": "We're still not sure.",
-      "ko": "우린 아직 모르겠어.",
-      "kr": "위어r 스틸 낫 슈어r"
+      "en": "He's the one that sat next to me.",
+      "ko": "제 옆에 앉았던 사람이 저 분이에요.",
+      "kr": "히z 더 원 댓 쌧 넥스 터 미"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm still thinking about ~",
-      "body": "아직 ~을 생각 중이야. 모두영어 2편 #87 I'm still thinking about it. 그대로"
+      "struct": "the one who ~",
+      "body": "~하는 사람 (관계사 who 로 사람을 짚어 말하기)"
      }
     ],
     "chunks": [
      [
-      "I'm still",
-      "아임 스틸",
-      "나는 아직"
+      "My wife.",
+      "마이 와이f",
+      "내 아내"
      ],
      [
-      "thinking",
-      "씽킹",
-      "생각하고 있다"
+      "She's the one",
+      "쉬z 더 원",
+      "그녀가 그 사람이다"
      ],
      [
-      "about it.",
-      "어바우릿",
-      "그것에 대해"
+      "who's working",
+      "후우z 워r킹",
+      "일하고 있는"
+     ],
+     [
+      "in the back.",
+      "인 더 백",
+      "뒤에서"
      ]
     ],
     "phonemes": [
      [
-      "/θ/ thinking",
-      "think 의 th 는 혀끝을 이 사이에 — 씽킹, '씬킹' 이 아니다"
+      "/w/ who's working",
+      "who's 의 h 는 약하게, working 의 w 는 입술을 둥글게 — 후우z 워r킹"
      ]
     ],
-    "mistake": "still 은 be 동사와 -ing 사이. I still am thinking (X)",
-    "similar": "I haven't decided yet.",
-    "category": "일상/결정",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-gym-signup-02-owe-you",
-   "sentence": "I owe you big time.",
-   "meaning": "크게 신세 졌네.",
-   "reading": null,
-   "phonetic_kr": "아이 오우 여 빅 타임",
-   "order_index": 2,
-   "explanation": {
-    "key": "I owe you ~ = ~ 신세 졌어. 모두영어 #90 I owe you big time. 그대로",
-    "anchor": "신세 졌네",
-    "situation": "저녁. 헬스장을 다시 끊을지 이야기했다. 러닝은 아직 십 분이다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Are you going back to the gym?",
-      "ko": "헬스장 다시 다닐 거야?",
-      "kr": "아r 여 고잉 백 터 더 짐"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm still thinking about it.",
-      "ko": "아직 생각 중이야.",
-      "kr": "아임 스틸 씽킹 어바우릿"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'll pay for the year.",
-      "ko": "일 년치는 내가 낼게.",
-      "kr": "아일 페이 f퍼r 더 이어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I owe you big time.",
-      "ko": "크게 신세 졌네.",
-      "kr": "아이 오우 여 빅 타임"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "You only run ten minutes, though.",
-      "ko": "근데 십 분밖에 안 뛰잖아.",
-      "kr": "유 오운리 런 텐 미닛츠 도우"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm trying to get to thirty.",
-      "ko": "삼십 분까지 늘려보려고.",
-      "kr": "아임 트라잉 터 겟 터 써r리"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Don't push yourself too hard.",
-      "ko": "너무 무리하지 마.",
-      "kr": "돈 푸쉬 여r쎌f 투우 하r드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'll let you know how it goes.",
-      "ko": "어떻게 되는지 알려줄게.",
-      "kr": "아일 레처 노우 하우 잇 고우z"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I owe you a dinner.",
-      "ko": "저녁 한 끼 살게.",
-      "kr": "아이 오우 여 어 디너r"
-     },
-     {
-      "en": "You don't owe me anything.",
-      "ko": "나한테 갚을 거 없어.",
-      "kr": "유 도노우 미 에니씽"
-     },
-     {
-      "en": "She owes me one.",
-      "ko": "소연이 나한테 하나 빚졌지.",
-      "kr": "쉬 오우z 미 원"
-     },
-     {
-      "en": "Do I owe you money?",
-      "ko": "내가 너한테 빚진 게 있어?",
-      "kr": "두 아이 오우 여 머니"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I owe you ~",
-      "body": "~ 신세 졌어. 모두영어 #90 I owe you big time. 그대로"
-     }
-    ],
-    "chunks": [
-     [
-      "I owe you",
-      "아이 오우 여",
-      "너한테 신세 졌다"
-     ],
-     [
-      "big time.",
-      "빅 타임",
-      "크게"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/oʊ/ owe",
-      "owe 는 입을 둥글게 오우 — '오' 로 짧게 끊지 않는다"
-     ]
-    ],
-    "mistake": "big time 은 '크게' 라는 부사. a big time (X)",
-    "similar": "I can't thank you enough.",
-    "category": "일상/고마움",
+    "mistake": "the one who + 동사. 사물은 the one that/which",
+    "similar": "That's my wife working back there.",
+    "category": "여행/기내",
     "frequency": 7
    }
   },
   {
-   "id": "en-personal-gym-signup-03-trying-to-get",
-   "sentence": "I'm trying to get to thirty.",
-   "meaning": "삼십 분까지 늘려보려고.",
+   "id": "en-personal-bkk-seatmate-02-thats-what-i-mean",
+   "sentence": "That's what I mean. She's the crew.",
+   "meaning": "제 말이 그거예요. 승무원이에요.",
    "reading": null,
-   "phonetic_kr": "아임 트라잉 터 겟 터 써r리",
-   "order_index": 3,
+   "phonetic_kr": "댓츠 와라이 미인 쉬z 더 크루우",
+   "order_index": 2,
    "explanation": {
-    "key": "I'm trying to ~ = 지금 ~하려고 애쓰는 중 (영상 #1)",
-    "anchor": "늘려보려고",
-    "situation": "저녁. 헬스장을 다시 끊을지 이야기했다. 러닝은 아직 십 분이다.",
+    "key": "That's what I mean = 제 말이 그거예요 (상대가 맞게 이해했을 때 확인, 영상 #30)",
+    "anchor": "제 말이",
+    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Are you going back to the gym?",
-      "ko": "헬스장 다시 다닐 거야?",
-      "kr": "아r 여 고잉 백 터 더 짐"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Are you travelling alone, or with family?",
+      "ko": "혼자 여행하세요, 가족과 함께세요?",
+      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm still thinking about it.",
-      "ko": "아직 생각 중이야.",
-      "kr": "아임 스틸 씽킹 어바우릿"
+      "en": "My wife. She's the one who's working in the back.",
+      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
+      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'll pay for the year.",
-      "ko": "일 년치는 내가 낼게.",
-      "kr": "아일 페이 f퍼r 더 이어r"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Working? So she's a flight attendant?",
+      "ko": "일한다고요? 그럼 승무원이세요?",
+      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I owe you big time.",
-      "ko": "크게 신세 졌네.",
-      "kr": "아이 오우 여 빅 타임"
+      "en": "That's what I mean. She's the crew.",
+      "ko": "제 말이 그거예요. 승무원이에요.",
+      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "You only run ten minutes, though.",
-      "ko": "근데 십 분밖에 안 뛰잖아.",
-      "kr": "유 오운리 런 텐 미닛츠 도우"
+      "speaker": "B",
+      "name": "승객",
+      "en": "That must be handy. Cheap tickets?",
+      "ko": "편하겠네요. 표가 싸죠?",
+      "kr": "댓 머스 비 핸디 치입 티킷츠"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to get to thirty.",
-      "ko": "삼십 분까지 늘려보려고.",
-      "kr": "아임 트라잉 터 겟 터 써r리"
+      "en": "That's why I follow her to Bangkok sometimes.",
+      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
+      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Don't push yourself too hard.",
-      "ko": "너무 무리하지 마.",
-      "kr": "돈 푸쉬 여r쎌f 투우 하r드"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Nice. And what do you do while she works?",
+      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
+      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'll let you know how it goes.",
-      "ko": "어떻게 되는지 알려줄게.",
-      "kr": "아일 레처 노우 하우 잇 고우z"
+      "en": "It feels like a solo trip most of the day.",
+      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
+      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
      }
     ],
     "drills": [
      {
-      "en": "I'm trying to run longer.",
-      "ko": "더 오래 뛰어보려고.",
-      "kr": "아임 트라잉 터 런 롱거r"
+      "en": "That's what I mean — one beer only.",
+      "ko": "제 말이 그거예요, 맥주 한 잔만.",
+      "kr": "댓츠 와라이 미인 원 비어r 오운리"
      },
      {
-      "en": "We're trying to eat less.",
-      "ko": "우리 좀 덜 먹어보려고.",
-      "kr": "위어r 트라잉 터 이잇 레스"
+      "en": "That's not what I mean.",
+      "ko": "그 말이 아니에요.",
+      "kr": "댓츠 낫 와라이 미인"
      },
      {
-      "en": "Are you trying to lose weight?",
-      "ko": "살 빼려는 거야?",
-      "kr": "아r 여 트라잉 터 루우z 웨잇"
+      "en": "Is that what you mean?",
+      "ko": "그 말씀이세요?",
+      "kr": "이z 댓 왓처 미인"
      },
      {
-      "en": "She tried to get up early.",
-      "ko": "소연은 일찍 일어나보려 했어.",
-      "kr": "쉬 트라이드 터 게러버r리"
+      "en": "I know what you mean.",
+      "ko": "무슨 말인지 알아요.",
+      "kr": "아이 노우 왓처 미인"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm trying to ~",
-      "body": "지금 ~하려고 애쓰는 중 (영상 #1)"
+      "struct": "That's what I mean",
+      "body": "제 말이 그거예요 (상대가 맞게 이해했을 때 확인, 영상 #30)"
      }
     ],
     "chunks": [
      [
-      "I'm trying to",
-      "아임 트라잉 터",
-      "~하려고 애쓰는 중"
+      "That's what I mean.",
+      "댓츠 와라이 미인",
+      "내 말이 그것이다"
      ],
      [
-      "get to",
-      "겟 터",
-      "~까지 가다"
-     ],
-     [
-      "thirty.",
-      "써r리",
-      "삼십"
+      "She's the crew.",
+      "쉬z 더 크루우",
+      "그녀가 승무원이다"
      ]
     ],
     "phonemes": [
      [
-      "/θ/ thirty",
-      "thirty 의 th 는 혀끝을 이 사이에, 가운데 t 는 ㄹ 로 굴러 — 써r리"
+      "/t/ what I",
+      "what 의 t 가 I 와 붙어 ㄹ 로 굴러 — 와라이"
      ]
     ],
-    "mistake": "trying to + 동사원형. trying to getting (X)",
-    "similar": "I want to work up to ~",
-    "category": "운동/목표",
+    "mistake": "맞게 알아들었을 때 쓴다. 틀렸을 때는 That's not what I mean",
+    "similar": "Exactly. She's crew.",
+    "category": "여행/기내",
     "frequency": 8
    }
   },
   {
-   "id": "en-personal-gym-signup-04-let-you-know",
-   "sentence": "I'll let you know how it goes.",
-   "meaning": "어떻게 되는지 알려줄게.",
+   "id": "en-personal-bkk-seatmate-03-thats-why-follow",
+   "sentence": "That's why I follow her to Bangkok sometimes.",
+   "meaning": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
    "reading": null,
-   "phonetic_kr": "아일 레처 노우 하우 잇 고우z",
-   "order_index": 4,
+   "phonetic_kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z",
+   "order_index": 3,
    "explanation": {
-    "key": "I'll let you know ~ = ~을 알려줄게 (영상 #26)",
-    "anchor": "알려줄게",
-    "situation": "저녁. 헬스장을 다시 끊을지 이야기했다. 러닝은 아직 십 분이다.",
+    "key": "That's why ~ = 그래서 ~하는 거예요 (앞말이 이유, 영상 #29)",
+    "anchor": "그래서",
+    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Are you going back to the gym?",
-      "ko": "헬스장 다시 다닐 거야?",
-      "kr": "아r 여 고잉 백 터 더 짐"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Are you travelling alone, or with family?",
+      "ko": "혼자 여행하세요, 가족과 함께세요?",
+      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm still thinking about it.",
-      "ko": "아직 생각 중이야.",
-      "kr": "아임 스틸 씽킹 어바우릿"
+      "en": "My wife. She's the one who's working in the back.",
+      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
+      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "I'll pay for the year.",
-      "ko": "일 년치는 내가 낼게.",
-      "kr": "아일 페이 f퍼r 더 이어r"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Working? So she's a flight attendant?",
+      "ko": "일한다고요? 그럼 승무원이세요?",
+      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I owe you big time.",
-      "ko": "크게 신세 졌네.",
-      "kr": "아이 오우 여 빅 타임"
+      "en": "That's what I mean. She's the crew.",
+      "ko": "제 말이 그거예요. 승무원이에요.",
+      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "You only run ten minutes, though.",
-      "ko": "근데 십 분밖에 안 뛰잖아.",
-      "kr": "유 오운리 런 텐 미닛츠 도우"
+      "speaker": "B",
+      "name": "승객",
+      "en": "That must be handy. Cheap tickets?",
+      "ko": "편하겠네요. 표가 싸죠?",
+      "kr": "댓 머스 비 핸디 치입 티킷츠"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to get to thirty.",
-      "ko": "삼십 분까지 늘려보려고.",
-      "kr": "아임 트라잉 터 겟 터 써r리"
+      "en": "That's why I follow her to Bangkok sometimes.",
+      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
+      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
      },
      {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Don't push yourself too hard.",
-      "ko": "너무 무리하지 마.",
-      "kr": "돈 푸쉬 여r쎌f 투우 하r드"
+      "speaker": "B",
+      "name": "승객",
+      "en": "Nice. And what do you do while she works?",
+      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
+      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'll let you know how it goes.",
-      "ko": "어떻게 되는지 알려줄게.",
-      "kr": "아일 레처 노우 하우 잇 고우z"
+      "en": "It feels like a solo trip most of the day.",
+      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
+      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
      }
     ],
     "drills": [
      {
-      "en": "I'll let you know tonight.",
-      "ko": "오늘 밤에 알려줄게.",
-      "kr": "아일 레처 노우 터나잇"
+      "en": "That's why I'm here alone today.",
+      "ko": "그래서 오늘 혼자인 거예요.",
+      "kr": "댓츠 와이 아임 히어r 얼로운 터데이"
      },
      {
-      "en": "Let me know when you get there.",
-      "ko": "도착하면 알려줘.",
-      "kr": "렛 미 노우 웬 여 겟 데어r"
+      "en": "That's because she works this route.",
+      "ko": "아내가 이 노선을 타서 그래요.",
+      "kr": "댓츠 비커z 쉬 워r크스 디스 루웃"
      },
      {
-      "en": "She'll let us know later.",
-      "ko": "소연이 이따 알려줄 거야.",
-      "kr": "쉴 레러스 노우 레이러r"
+      "en": "Is that why you fly so often?",
+      "ko": "그래서 그렇게 자주 타시는 거예요?",
+      "kr": "이z 댓 와이 여 f플라이 쏘우 오f픈"
      },
      {
-      "en": "Will you let me know?",
-      "ko": "나한테 알려줄래?",
-      "kr": "윌 여 렛 미 노우"
+      "en": "We met in college. That's why we're so close.",
+      "ko": "대학에서 만났어요. 그래서 이렇게 친해요.",
+      "kr": "위 멧 인 칼리지 댓츠 와이 위어r 쏘우 클로우스"
+     },
+     {
+      "en": "That's why I'm learning English.",
+      "ko": "그래서 영어를 배우는 거예요.",
+      "kr": "댓츠 와이 아임 러r닝 잉글리쉬"
      }
     ],
     "grammar": [
      {
-      "struct": "I'll let you know ~",
-      "body": "~을 알려줄게 (영상 #26)"
+      "struct": "That's why ~",
+      "body": "그래서 ~하는 거예요 (앞말이 이유, 영상 #29)"
      }
     ],
     "chunks": [
      [
-      "I'll let you know",
-      "아일 레처 노우",
-      "알려줄게"
+      "That's why",
+      "댓츠 와이",
+      "그래서 ~인 것이다"
      ],
      [
-      "how it goes.",
-      "하우 잇 고우z",
-      "어떻게 되는지"
+      "I follow her",
+      "아이 f팔로우 허r",
+      "나는 그녀를 따라간다"
+     ],
+     [
+      "to Bangkok",
+      "터 뱅콕",
+      "방콕으로"
+     ],
+     [
+      "sometimes.",
+      "썸타임z",
+      "가끔"
      ]
     ],
     "phonemes": [
      [
-      "/tʃ/ let you",
-      "let 의 t 와 you 가 붙어 '처' 로 난다 — 레처"
+      "/n/ when I",
+      "when 의 n 이 I 와 붙는다 — 웨나이"
      ]
     ],
-    "mistake": "let + 목적어 + 동사원형. let you to know (X)",
-    "similar": "I'll tell you how it turns out.",
-    "category": "일상/약속",
+    "mistake": "That's why + 결과. 이유를 말할 때는 That's because",
+    "similar": "So I tag along when I can.",
+    "category": "여행/기내",
     "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-seatmate-04-feels-like-solo",
+   "sentence": "It feels like a solo trip most of the day.",
+   "meaning": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
+   "reading": null,
+   "phonetic_kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이",
+   "order_index": 4,
+   "explanation": {
+    "key": "It feels like ~ = ~처럼 느껴져요 (몸·기분으로 느끼는 판단, 영상 #13)",
+    "anchor": "느껴져요",
+    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "승객",
+      "en": "Are you travelling alone, or with family?",
+      "ko": "혼자 여행하세요, 가족과 함께세요?",
+      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife. She's the one who's working in the back.",
+      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
+      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
+     },
+     {
+      "speaker": "B",
+      "name": "승객",
+      "en": "Working? So she's a flight attendant?",
+      "ko": "일한다고요? 그럼 승무원이세요?",
+      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's what I mean. She's the crew.",
+      "ko": "제 말이 그거예요. 승무원이에요.",
+      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
+     },
+     {
+      "speaker": "B",
+      "name": "승객",
+      "en": "That must be handy. Cheap tickets?",
+      "ko": "편하겠네요. 표가 싸죠?",
+      "kr": "댓 머스 비 핸디 치입 티킷츠"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I follow her to Bangkok sometimes.",
+      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
+      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
+     },
+     {
+      "speaker": "B",
+      "name": "승객",
+      "en": "Nice. And what do you do while she works?",
+      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
+      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like a solo trip most of the day.",
+      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
+      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It feels like a long day already.",
+      "ko": "벌써 긴 하루 같아요.",
+      "kr": "잇 f피일z 라이커 롱 데이 올레디"
+     },
+     {
+      "en": "It felt like a short flight.",
+      "ko": "짧은 비행처럼 느껴졌어요.",
+      "kr": "잇 f펠트 라이커 쇼어r트 f플라잇"
+     },
+     {
+      "en": "Do you feel like a tourist here?",
+      "ko": "여기서 관광객 같아요?",
+      "kr": "더여 f피일 라이커 투어리스 히어r"
+     },
+     {
+      "en": "This feels like my second home.",
+      "ko": "여기가 두 번째 집 같아요.",
+      "kr": "디스 f피일z 라이크 마이 쎄컨드 호움"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It feels like ~",
+      "body": "~처럼 느껴져요 (몸·기분으로 느끼는 판단, 영상 #13)"
+     }
+    ],
+    "chunks": [
+     [
+      "It feels like a",
+      "잇 f피일z 라이커",
+      "~처럼 느껴진다"
+     ],
+     [
+      "solo trip",
+      "쏘울로우 트립",
+      "혼자 여행"
+     ],
+     [
+      "most of the day.",
+      "모우스터v 더 데이",
+      "하루 대부분"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/l/ solo",
+      "solo 의 l 은 혀끝을 올려 — 쏘울로우"
+     ]
+    ],
+    "mistake": "feels like + 명사/절. It feels like alone (X)",
+    "similar": "I'm on my own most of the day.",
+    "category": "여행/감상",
+    "frequency": 8
    }
   }
  ]

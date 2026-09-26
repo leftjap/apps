@@ -4,221 +4,100 @@
  "date": "2026-10-09",
  "cards": [
   {
-   "id": "en-personal-false-alarm-01-sick-of-it",
-   "sentence": "I'm sick of it.",
-   "meaning": "지긋지긋해.",
+   "id": "en-personal-tourist-hongdae-01-as-far-as-google",
+   "sentence": "As far as I know, Google Maps can't do walking here.",
+   "meaning": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
    "reading": null,
-   "phonetic_kr": "아임 씨커v잇",
+   "phonetic_kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r",
    "order_index": 1,
    "explanation": {
-    "key": "I'm sick of ~ = ~에 질렸어 / 지긋지긋해. 모두영어 2편 #6 I'm sick of it. 그대로",
-    "anchor": "지긋지긋해",
-    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
+    "key": "As far as I know, ~ = 제가 아는 한 ~예요 (단정을 피할 때, 영상 #22)",
+    "anchor": "아는 한",
+    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Is the alarm still going off?",
-      "ko": "경보기 아직도 울려?",
-      "kr": "이z 디 얼라r암 스틸 고잉 오f"
+      "name": "여행객",
+      "en": "Excuse me, do you know where this hostel is?",
+      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm sick of it.",
-      "ko": "지긋지긋해.",
-      "kr": "아임 씨커v잇"
+      "en": "As far as I know, Google Maps can't do walking here.",
+      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
+      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "What's setting it off?",
-      "ko": "왜 울리는 건데?",
-      "kr": "왓츠 쎄링 이로f"
+      "name": "여행객",
+      "en": "That explains it. What should I use instead?",
+      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
+      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, it's the work downstairs.",
-      "ko": "내가 아는 한 아래층 공사 때문이야.",
-      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
+      "en": "You might want to try Naver Map. It has English.",
+      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
+      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Nani must be scared.",
-      "ko": "나니가 무섭겠다.",
-      "kr": "나니 머스 비 스케어r드"
+      "name": "여행객",
+      "en": "Got it. But which exit do I take from here?",
+      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
+      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I taped the speaker.",
-      "ko": "그래서 스피커에 테이프를 붙였어.",
-      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
+      "en": "The exit you're at is right. Two blocks that way.",
+      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
+      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Does the tape help?",
-      "ko": "테이프가 효과가 있어?",
-      "kr": "더즈 더 테입 헬프"
+      "name": "여행객",
+      "en": "And after two blocks? Is there a sign?",
+      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
+      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's better than nothing.",
-      "ko": "없는 것보단 낫지.",
-      "kr": "잇츠 베러r 던 낫씽"
+      "en": "There's a cafe I go to. It's right upstairs.",
+      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
+      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
      }
     ],
     "drills": [
      {
-      "en": "I'm sick of the noise.",
-      "ko": "이 소리 지긋지긋해.",
-      "kr": "아임 씨커v 더 노이z"
+      "en": "As far as I know, it's two stops away.",
+      "ko": "제가 알기론 두 정거장이에요.",
+      "kr": "애z f파r 애자이 노우 잇츠 투우 스탑스 어웨이"
      },
      {
-      "en": "She's sick of waiting.",
-      "ko": "소연은 기다리는 데 질렸어.",
-      "kr": "쉬z 씨커v 웨이링"
+      "en": "As far as I know, the last train is at midnight.",
+      "ko": "제가 알기론 막차가 자정이에요.",
+      "kr": "애z f파r 애자이 노우 더 라스 트레인 이z 엇 미드나잇"
      },
      {
-      "en": "Aren't you sick of it?",
-      "ko": "너도 질리지 않아?",
-      "kr": "아r언 여 씨커v잇"
+      "en": "I'm not sure, but I think it's this way.",
+      "ko": "확실치 않지만 이쪽인 것 같아요.",
+      "kr": "아임 낫 슈어r 벗 아이 씽킷츠 디스 웨이"
      },
      {
-      "en": "We got sick of the smell.",
-      "ko": "냄새에 질려버렸어.",
-      "kr": "위 갓 씨커v 더 스멜"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I'm sick of ~",
-      "body": "~에 질렸어 / 지긋지긋해. 모두영어 2편 #6 I'm sick of it. 그대로"
-     }
-    ],
-    "chunks": [
-     [
-      "I'm",
-      "아임",
-      "나는"
-     ],
-     [
-      "sick of it.",
-      "씨커v잇",
-      "그것에 질렸다"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/k/ sick of",
-      "sick 의 k 가 of 와 붙는다 — 씨커v"
-     ]
-    ],
-    "mistake": "sick of = 질리다. be sick(아프다)과 구별한다",
-    "similar": "I've had enough of it.",
-    "category": "일상/짜증",
-    "frequency": 8
-   }
-  },
-  {
-   "id": "en-personal-false-alarm-02-as-far-as-i-know",
-   "sentence": "As far as I know, it's the work downstairs.",
-   "meaning": "내가 아는 한 아래층 공사 때문이야.",
-   "reading": null,
-   "phonetic_kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈",
-   "order_index": 2,
-   "explanation": {
-    "key": "As far as I know, ~ = 내가 아는 한 ~야 (단정을 피할 때, 영상 #22)",
-    "anchor": "내가 아는 한",
-    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Is the alarm still going off?",
-      "ko": "경보기 아직도 울려?",
-      "kr": "이z 디 얼라r암 스틸 고잉 오f"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm sick of it.",
-      "ko": "지긋지긋해.",
-      "kr": "아임 씨커v잇"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "What's setting it off?",
-      "ko": "왜 울리는 건데?",
-      "kr": "왓츠 쎄링 이로f"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "As far as I know, it's the work downstairs.",
-      "ko": "내가 아는 한 아래층 공사 때문이야.",
-      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Nani must be scared.",
-      "ko": "나니가 무섭겠다.",
-      "kr": "나니 머스 비 스케어r드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's why I taped the speaker.",
-      "ko": "그래서 스피커에 테이프를 붙였어.",
-      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
-     },
-     {
-      "speaker": "A",
-      "name": "소연",
-      "en": "Does the tape help?",
-      "ko": "테이프가 효과가 있어?",
-      "kr": "더즈 더 테입 헬프"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It's better than nothing.",
-      "ko": "없는 것보단 낫지.",
-      "kr": "잇츠 베러r 던 낫씽"
-     }
-    ],
-    "drills": [
-     {
-      "en": "As far as I know, she's home.",
-      "ko": "내가 알기론 소연은 집에 있어.",
-      "kr": "애z f파r 애자이 노우 쉬z 호움"
-     },
-     {
-      "en": "I know the alarm is broken.",
-      "ko": "경보기가 고장 난 건 알아.",
-      "kr": "아이 노우 디 얼라r아미z 브로우큰"
-     },
-     {
-      "en": "Do you know what happened?",
-      "ko": "무슨 일인지 알아?",
-      "kr": "더여 노우 왓 해픈드"
-     },
-     {
-      "en": "As far as we know, it's over.",
-      "ko": "우리가 아는 한은 끝났어.",
-      "kr": "애z f파r 애z 위 노우 잇츠 오우버r"
+      "en": "Do you know if this bus goes to the airport?",
+      "ko": "이 버스 공항 가는지 아세요?",
+      "kr": "더여 노우 이f 디스 버스 고우z 터 디 에어r포어r트"
      }
     ],
     "grammar": [
      {
       "struct": "As far as I know, ~",
-      "body": "내가 아는 한 ~야 (단정을 피할 때, 영상 #22)"
+      "body": "제가 아는 한 ~예요 (단정을 피할 때, 영상 #22)"
      }
     ],
     "chunks": [
@@ -228,273 +107,404 @@
       "내가 아는 한"
      ],
      [
-      "it's the work",
-      "잇츠 더 워r크",
-      "그건 공사"
+      "Google Maps",
+      "구우글 맵스",
+      "구글맵은"
      ],
      [
-      "downstairs.",
-      "다운스테어r즈",
-      "아래층"
+      "can't do walking here.",
+      "캔트 두 워킹 히어r",
+      "여기서 도보 안내를 못 한다"
      ]
     ],
     "phonemes": [
      [
       "/z/ as I",
-      "as 의 s 는 z 소리이고 I 와 붙는다 — 애자이"
+      "as 의 s 는 z 소리, I 와 붙는다 — 애자이"
      ]
     ],
-    "mistake": "as far as I know 는 확신을 낮추는 말. 확실할 때는 붙이지 않는다",
-    "similar": "Not that I know of.",
-    "category": "일상/추측",
+    "mistake": "확신이 없을 때 앞에 붙인다. 확실하면 그냥 말한다",
+    "similar": "I think Google Maps doesn't do walking here.",
+    "category": "일상/길 안내",
     "frequency": 7
    }
   },
   {
-   "id": "en-personal-false-alarm-03-thats-why-taped",
-   "sentence": "That's why I taped the speaker.",
-   "meaning": "그래서 스피커에 테이프를 붙였어.",
+   "id": "en-personal-tourist-hongdae-02-might-want-naver",
+   "sentence": "You might want to try Naver Map. It has English.",
+   "meaning": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
    "reading": null,
-   "phonetic_kr": "댓츠 와이 아이 테입트 더 스피이커r",
-   "order_index": 3,
+   "phonetic_kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬",
+   "order_index": 2,
    "explanation": {
-    "key": "That's why ~ = 그래서 ~한 거야 (앞말이 이유, 영상 #29)",
-    "anchor": "그래서",
-    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
+    "key": "You might want to ~ = ~하는 게 좋을 거예요 (영상 #24)",
+    "anchor": "좋아요",
+    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Is the alarm still going off?",
-      "ko": "경보기 아직도 울려?",
-      "kr": "이z 디 얼라r암 스틸 고잉 오f"
+      "name": "여행객",
+      "en": "Excuse me, do you know where this hostel is?",
+      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm sick of it.",
-      "ko": "지긋지긋해.",
-      "kr": "아임 씨커v잇"
+      "en": "As far as I know, Google Maps can't do walking here.",
+      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
+      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "What's setting it off?",
-      "ko": "왜 울리는 건데?",
-      "kr": "왓츠 쎄링 이로f"
+      "name": "여행객",
+      "en": "That explains it. What should I use instead?",
+      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
+      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, it's the work downstairs.",
-      "ko": "내가 아는 한 아래층 공사 때문이야.",
-      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
+      "en": "You might want to try Naver Map. It has English.",
+      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
+      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Nani must be scared.",
-      "ko": "나니가 무섭겠다.",
-      "kr": "나니 머스 비 스케어r드"
+      "name": "여행객",
+      "en": "Got it. But which exit do I take from here?",
+      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
+      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I taped the speaker.",
-      "ko": "그래서 스피커에 테이프를 붙였어.",
-      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
+      "en": "The exit you're at is right. Two blocks that way.",
+      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
+      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Does the tape help?",
-      "ko": "테이프가 효과가 있어?",
-      "kr": "더즈 더 테입 헬프"
+      "name": "여행객",
+      "en": "And after two blocks? Is there a sign?",
+      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
+      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's better than nothing.",
-      "ko": "없는 것보단 낫지.",
-      "kr": "잇츠 베러r 던 낫씽"
+      "en": "There's a cafe I go to. It's right upstairs.",
+      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
+      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
      }
     ],
     "drills": [
      {
-      "en": "That's why she stayed home.",
-      "ko": "그래서 소연이 집에 있었어.",
-      "kr": "댓츠 와이 쉬 스테이드 호움"
+      "en": "You might want to take the airport line.",
+      "ko": "공항철도를 타는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 테익 디 에어r포어r트 라인"
      },
      {
-      "en": "That's because the work started.",
-      "ko": "공사가 시작돼서 그래.",
-      "kr": "댓츠 비커z 더 워r크 스타r리드"
+      "en": "You might want to buy a transit card.",
+      "ko": "교통카드를 사는 게 좋아요.",
+      "kr": "유 마잇 워너 바이 어 트랜짓 카r드"
      },
      {
-      "en": "Is that why you covered it?",
-      "ko": "그래서 덮어놓은 거야?",
-      "kr": "이z 댓 와이 여 커버r딧"
+      "en": "We might want to take a taxi at this hour.",
+      "ko": "이 시간엔 택시가 낫겟어요.",
+      "kr": "위 마잇 워너 테이커 택씨 엇 디스 아워r"
      },
      {
-      "en": "She can't see it coming. That's why.",
-      "ko": "나니는 볼 수가 없잖아. 그래서야.",
-      "kr": "쉬 캔트 씨잇 커밍 댓츠 와이"
+      "en": "He might want to switch apps.",
+      "ko": "그분은 앱을 바꾸는 게 좋을 거예요.",
+      "kr": "히 마잇 워너 스위치 앱스"
      }
     ],
     "grammar": [
      {
-      "struct": "That's why ~",
-      "body": "그래서 ~한 거야 (앞말이 이유, 영상 #29)"
+      "struct": "You might want to ~",
+      "body": "~하는 게 좋을 거예요 (영상 #24)"
      }
     ],
     "chunks": [
      [
-      "That's why",
-      "댓츠 와이",
-      "그래서 ~한 거야"
+      "You might want to",
+      "유 마잇 워너",
+      "~하는 게 좋을 거다"
      ],
      [
-      "I taped",
-      "아이 테입트",
-      "내가 테이프를 붙였다"
+      "try Naver Map.",
+      "트라이 네이버r 맵",
+      "네이버맵을 써 보다"
      ],
      [
-      "the speaker.",
-      "더 스피이커r",
-      "스피커에"
+      "It has English.",
+      "잇 해z 잉글리쉬",
+      "영어가 된다"
      ]
     ],
     "phonemes": [
      [
-      "/t/ taped",
-      "taped 의 -ed 는 t 소리 — 테입트, '테이프드' 가 아니다"
+      "/w/ want to",
+      "want to 는 붙어 워너"
      ]
     ],
-    "mistake": "That's why + 결과. 이유를 말할 때는 That's because",
-    "similar": "So I taped it.",
-    "category": "일상/집",
-    "frequency": 9
+    "mistake": "might want to 뒤 동사원형. 상대에게 부담 없이 권할 때",
+    "similar": "Try Naver Map — it works in English.",
+    "category": "일상/길 안내",
+    "frequency": 8
    }
   },
   {
-   "id": "en-personal-false-alarm-04-better-than-nothing",
-   "sentence": "It's better than nothing.",
-   "meaning": "없는 것보단 낫지.",
+   "id": "en-personal-tourist-hongdae-03-exit-youre-at",
+   "sentence": "The exit you're at is right. Two blocks that way.",
+   "meaning": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
    "reading": null,
-   "phonetic_kr": "잇츠 베러r 던 낫씽",
-   "order_index": 4,
+   "phonetic_kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이",
+   "order_index": 3,
    "explanation": {
-    "key": "It's better than ~ = ~보다는 낫다. 모두영어 2편 #172 It's better than nothing. 그대로",
-    "anchor": "낫지",
-    "situation": "낮. 아래층 공사 때문인지 아침부터 화재경보기가 세 시간 동안 오작동했다. 앞이 보이지 않는 나니가 불안해했다.",
+    "key": "the exit you're at = 당신이 있는 출구 (접촉절 — the exit (that) you're at, 전치사가 뒤에 남는다)",
+    "anchor": "출구가 맞아요",
+    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Is the alarm still going off?",
-      "ko": "경보기 아직도 울려?",
-      "kr": "이z 디 얼라r암 스틸 고잉 오f"
+      "name": "여행객",
+      "en": "Excuse me, do you know where this hostel is?",
+      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm sick of it.",
-      "ko": "지긋지긋해.",
-      "kr": "아임 씨커v잇"
+      "en": "As far as I know, Google Maps can't do walking here.",
+      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
+      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "What's setting it off?",
-      "ko": "왜 울리는 건데?",
-      "kr": "왓츠 쎄링 이로f"
+      "name": "여행객",
+      "en": "That explains it. What should I use instead?",
+      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
+      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, it's the work downstairs.",
-      "ko": "내가 아는 한 아래층 공사 때문이야.",
-      "kr": "애z f파r 애자이 노우 잇츠 더 워r크 다운스테어r즈"
+      "en": "You might want to try Naver Map. It has English.",
+      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
+      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Nani must be scared.",
-      "ko": "나니가 무섭겠다.",
-      "kr": "나니 머스 비 스케어r드"
+      "name": "여행객",
+      "en": "Got it. But which exit do I take from here?",
+      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
+      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I taped the speaker.",
-      "ko": "그래서 스피커에 테이프를 붙였어.",
-      "kr": "댓츠 와이 아이 테입트 더 스피이커r"
+      "en": "The exit you're at is right. Two blocks that way.",
+      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
+      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
      },
      {
       "speaker": "A",
-      "name": "소연",
-      "en": "Does the tape help?",
-      "ko": "테이프가 효과가 있어?",
-      "kr": "더즈 더 테입 헬프"
+      "name": "여행객",
+      "en": "And after two blocks? Is there a sign?",
+      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
+      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's better than nothing.",
-      "ko": "없는 것보단 낫지.",
-      "kr": "잇츠 베러r 던 낫씽"
+      "en": "There's a cafe I go to. It's right upstairs.",
+      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
+      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
      }
     ],
     "drills": [
      {
-      "en": "It's better than waiting.",
-      "ko": "기다리는 것보단 낫지.",
-      "kr": "잇츠 베러r 던 웨이링"
+      "en": "The exit you're at leads to the main street.",
+      "ko": "지금 계신 출구가 큰길로 나가요.",
+      "kr": "디 엑씻 여r 엇 리이z 터 더 메인 스트리잇"
      },
      {
-      "en": "This is better than yesterday.",
-      "ko": "어제보단 낫네.",
-      "kr": "디씨z 베러r 던 예스터r데이"
+      "en": "The stop you want is the next one.",
+      "ko": "원하시는 정류장은 다음이에요.",
+      "kr": "더 스탑 여 원 이z 더 넥스 원"
      },
      {
-      "en": "Is it any better now?",
-      "ko": "좀 나아졌어?",
-      "kr": "이z 이레니 베러r 나우"
+      "en": "Is this the line I take to the airport?",
+      "ko": "이게 공항 가는 노선이에요?",
+      "kr": "이z 디스 더 라인 아이 테익 터 디 에어r포어r트"
      },
      {
-      "en": "She feels better today.",
-      "ko": "소연이 오늘은 좀 나아.",
-      "kr": "쉬 f피일z 베러r 터데이"
+      "en": "That's the cafe I told you about.",
+      "ko": "저게 제가 말한 카페예요.",
+      "kr": "댓츠 더 캐f페이 아이 톨저 어바웃"
      }
     ],
     "grammar": [
      {
-      "struct": "It's better than ~",
-      "body": "~보다는 낫다. 모두영어 2편 #172 It's better than nothing. 그대로"
+      "struct": "the exit you're at",
+      "body": "당신이 있는 출구 (접촉절 — the exit (that) you're at, 전치사가 뒤에 남는다)"
      }
     ],
     "chunks": [
      [
-      "It's better",
-      "잇츠 베러r",
-      "그게 더 낫다"
+      "The exit you're at",
+      "디 엑씻 여r 엇",
+      "당신이 있는 출구가"
      ],
      [
-      "than nothing.",
-      "던 낫씽",
-      "아무것도 없는 것보다"
+      "is right.",
+      "이z 라잇",
+      "맞다"
+     ],
+     [
+      "Two blocks that way.",
+      "투우 블락스 댓 웨이",
+      "저쪽으로 두 블록"
      ]
     ],
     "phonemes": [
      [
-      "/t/ better",
-      "better 의 t 는 모음 사이에서 ㄹ 로 굴러 — 베러r"
+      "/t/ at is",
+      "at 의 t 가 is 와 이어져 실제로는 에리z 처럼 굴러 들린다"
      ]
     ],
-    "mistake": "better than + 명사. more better (X)",
-    "similar": "At least it helps.",
-    "category": "일상/위로",
-    "frequency": 9
+    "mistake": "관계사 that 을 빼고 붙여 말한다. at 이 끝에 남아도 된다",
+    "similar": "You're already at the right exit.",
+    "category": "일상/길 안내",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-tourist-hongdae-04-theres-cafe",
+   "sentence": "There's a cafe I go to. It's right upstairs.",
+   "meaning": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
+   "reading": null,
+   "phonetic_kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈",
+   "order_index": 4,
+   "explanation": {
+    "key": "There's ~ = ~가 있어요 (영상 #16). 뒤의 a cafe I go to 는 접촉절",
+    "anchor": "카페가",
+    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me, do you know where this hostel is?",
+      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "As far as I know, Google Maps can't do walking here.",
+      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
+      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "That explains it. What should I use instead?",
+      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
+      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to try Naver Map. It has English.",
+      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
+      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Got it. But which exit do I take from here?",
+      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
+      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The exit you're at is right. Two blocks that way.",
+      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
+      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "And after two blocks? Is there a sign?",
+      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
+      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a cafe I go to. It's right upstairs.",
+      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
+      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
+     }
+    ],
+    "drills": [
+     {
+      "en": "There's a cafe I like near the station.",
+      "ko": "역 근처에 제가 좋아하는 카페가 있어요.",
+      "kr": "데어r저 캐f페이 아이 라익 니어r 더 스테이션"
+     },
+     {
+      "en": "There's a gym I go to every morning.",
+      "ko": "매일 아침 가는 헬스장이 있어요.",
+      "kr": "데어r저 짐 아이 고우 투 에v리 모어r닝"
+     },
+     {
+      "en": "Is there a place you'd recommend?",
+      "ko": "추천하실 곳 있어요?",
+      "kr": "이z 데어r 어 플레이스 유드 레커멘드"
+     },
+     {
+      "en": "That's the bakery my wife likes.",
+      "ko": "저게 아내가 좋아하는 빵집이에요.",
+      "kr": "댓츠 더 베이커리 마이 와이f 라익스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "There's ~",
+      "body": "~가 있어요 (영상 #16). 뒤의 a cafe I go to 는 접촉절"
+     }
+    ],
+    "chunks": [
+     [
+      "There's a cafe",
+      "데어r저 캐f페이",
+      "카페가 하나 있다"
+     ],
+     [
+      "I go to.",
+      "아이 고우 투",
+      "내가 다니는"
+     ],
+     [
+      "It's right upstairs.",
+      "잇츠 라잇 업스테어r즈",
+      "바로 위층이다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ cafe",
+      "cafe 의 f 는 윗니를 아랫입술에 — 캐f페이"
+     ]
+    ],
+    "mistake": "a cafe (that) I go to — 접촉절, 전치사 to 가 끝에 남는다",
+    "similar": "The hostel is above my usual cafe.",
+    "category": "일상/길 안내",
+    "frequency": 8
    }
   }
  ]
