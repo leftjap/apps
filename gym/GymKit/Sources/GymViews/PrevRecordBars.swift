@@ -4,6 +4,7 @@ import GymCore
 // 세트바 (mocks #cardSetDots, 작업지시서 §3·§B). 슬롯 = 현재 세션 세트,
 // 값 = GymSessionLogic.dotDisplay (done/current 실값, 미입력은 직전 세션 per-set 타깃 preview).
 // 막대 높이 = 볼륨 비례 (무게 종목만) — working 상한 20px, 최고 슬롯 고정 24px (사용자 결정 B안).
+// 유산소도 같은 줄을 쓴다 — 슬롯 = 최근 세션(러닝)들 + 오늘, 높이 = 거리 (GymSessionLogic.cardioRecordBar).
 struct SetBarSlot: Identifiable {
     let id: Int                 // set index
     let top: String             // 중량(굵게) — dotDisplay.top
@@ -17,8 +18,8 @@ enum BarState { case done, now, upcoming }
 
 struct PrevRecordBars: View {
     let slots: [SetBarSlot]
-    let best: (weight: Int, reps: Int)?   // 역대 최고(e1RM) 슬롯 — 무게 종목 + 존재 시만 (§3-5)
-    var encodeHeight: Bool = true          // 볼륨 → 높이 인코딩 (무게 종목만)
+    let best: (top: String, bottom: String)?   // ▲최고 슬롯 — 무게 종목은 역대 e1RM(§3-5), 유산소는 최장 거리
+    var encodeHeight: Bool = true          // 값 → 높이 인코딩 (무게 = 볼륨, 유산소 = 거리. 맨몸은 끔)
     var dragP: CGFloat = 0                 // 좌드래그 진행도 — now 세그 미세 부풀림 scaleY(1+p·0.28)
     var onLongPressSlot: ((Int) -> Void)? = nil   // 세트 행 꾹누르기 → 수정/삭제 (§6-9)
     // 헤더 줄("직전 세션 기록") 표시 여부. 히스토리 카드가 바로 위에 붙는 화면에서는 끈다
@@ -83,8 +84,8 @@ struct PrevRecordBars: View {
                             .overlay(RoundedRectangle(cornerRadius: 5)
                                 .strokeBorder(GY.crailBase, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2])))
                         VStack(spacing: 2) {
-                            Text("\(best.weight)").font(.mono(12.5, 700)).tracking(-0.25).foregroundStyle(GY.crailDeep)
-                            Text("×\(best.reps)").font(.mono(10, 500)).foregroundStyle(GY.crailDeep)
+                            Text(best.top).font(.mono(12.5, 700)).tracking(-0.25).foregroundStyle(GY.crailDeep)
+                            Text(best.bottom).font(.mono(10, 500)).foregroundStyle(GY.crailDeep)
                         }
                     }
                 }

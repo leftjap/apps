@@ -368,8 +368,8 @@ public struct SessionScreenView: View {
                               pr: sets[i].pr, volume: sets[i].volume)
         }
         let bestPR = model.prs.first { $0.exerciseId == exId && $0.type == .e1rm }
-        let best: (weight: Int, reps: Int)? = kind == .weight
-            ? bestPR.map { (Int($0.weight.rounded()), $0.reps) } : nil
+        let best: (top: String, bottom: String)? = kind == .weight
+            ? bestPR.map { ("\(Int($0.weight.rounded()))", "×\($0.reps)") } : nil
 
         // 히어로 표시 세트 — 커서 세트, 전부 done 이면 마지막 세트.
         let dispSet = model.currentSet ?? sets.last
@@ -438,6 +438,19 @@ public struct SessionScreenView: View {
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             if kind != .cardio { Spacer() }
+            // 유산소 직전 기록 줄 — 근력 세트바 자리에 최근 러닝 4회 + 오늘 + 최장 거리 (사용자 2026-09-26).
+            // 지난 기록이 하나도 없으면 오늘 칸 하나뿐이라 그리지 않는다.
+            if kind == .cardio, case let bar = GymSessionLogic.cardioRecordBar(
+                history: model.history, exerciseId: exId, todaySet: dispSet), !bar.past.isEmpty {
+                let cells = bar.past.map { ($0, BarState.done) } + [(bar.today, BarState.now)]
+                PrevRecordBars(slots: cells.enumerated().map { i, c in
+                                   SetBarSlot(id: i, top: c.0.top, bottom: c.0.bottom, isPreview: false,
+                                              state: c.1, pr: false, volume: c.0.distanceKm)
+                               },
+                               best: bar.best.map { ($0.top, $0.bottom) },
+                               showHeader: false)
+                    .modifier(ExSwitchDip(trigger: exSwapMoment))
+            }
             if kind == .cardio {
                 // 유산소 — 히어로·스와이프 대신 지표 로테이션 카드 (작업지시서 2026-08-18 §2).
                 // 주간 캘린더가 헤더 바로 아래에 붙고 나머지 높이를 카드가 전부 쓴다.
