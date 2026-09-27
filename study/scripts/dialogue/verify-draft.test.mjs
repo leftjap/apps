@@ -5,7 +5,8 @@ const line = (sp, en, extra = {}) => ({ sp, name: sp === 'B' ? '지오' : '상�
 const card = (idx, key) => ({ idx, slug: `c${idx}`, key, gloss: '뜻', anchor: '뜻', mistake: '-', similar: '-', category: '일상', frequency: 5,
   chunks: [['x', '음차', '뜻']], phonemes: [['/x/', '설명']],
   drills: [{ en: 'A one.', ko: '1', kr: '1' }, { en: 'B two.', ko: '2', kr: '2' }, { en: 'C three.', ko: '3', kr: '3' }, { en: 'D four.', ko: '4', kr: '4' }] });
-const scene = (over = {}) => ({ slug: 's', title: 't', situation: '장면',
+const REVIEW_OK = { spoken: '지오는 좌석을 복도로 바꾸자고만 한다. 아내 얘기는 안 꺼낸다.', facts: '시트 밖 사실 없음 — 좌석 선호는 말하지 않고 복도만 요청', english: '방콕 현지 카운터라 직원과 영어로 말한다' };
+const scene = (over = {}) => ({ slug: 's', title: 't', situation: '장면', review: REVIEW_OK,
   lines: [line('A', 'Is this the bus that goes to Siam?'), line('B', "I'm here to check in."), line('A', 'Q2'), line('B', 'Do you know where I can buy a card?'),
     line('A', 'Q3'), line('B', 'That sounds great.'), line('A', 'Q4'), line('B', "I'm supposed to meet her at four.")],
   cards: [card(1, "I'm here to ~"), card(3, 'Do you know where ~'), card(5, 'That sounds ~'), card(7, "I'm supposed to ~")], ...over });
@@ -71,7 +72,7 @@ describe('셀프 검증 review 필수 (2026-09-27 — 지오가 안 할 말·시
     expect(checkDraft([s]).srcErrors.some((e) => /review/.test(e))).toBe(false);
   });
   it('review 가 없으면 에러', () => {
-    expect(checkDraft([scene()]).srcErrors.some((e) => /review/.test(e))).toBe(true);
+    expect(checkDraft([scene({ review: undefined })]).srcErrors.some((e) => /review/.test(e))).toBe(true);
   });
   it('항목이 비거나 짧으면 에러 (형식적으로 채우기 금지)', () => {
     const s = scene({ review: { ...REVIEW, facts: '없음' } });
