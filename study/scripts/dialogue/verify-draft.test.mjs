@@ -63,3 +63,22 @@ describe('지오 반응형 줄', () => {
     expect(checkDraft([s]).extraWarnings.some((x) => /반응형/.test(x))).toBe(false);
   });
 });
+
+describe('셀프 검증 review 필수 (2026-09-27 — 지오가 안 할 말·시트 밖 사실·한국어 상황을 쓴 3묶음 뒤)', () => {
+  const REVIEW = { spoken: '지오는 좌석을 복도로 바꾸자고만 한다. 아내 얘기는 안 꺼낸다.', facts: '시트 밖 사실 없음 — 좌석 선호는 말하지 않고 복도만 요청', english: '인천 카운터 직원과의 대화는 한국어지만 방콕 현지 카운터로 설정했다' };
+  it('review 세 항목이 다 있으면 에러 없음', () => {
+    const s = scene({ review: REVIEW });
+    expect(checkDraft([s]).srcErrors.some((e) => /review/.test(e))).toBe(false);
+  });
+  it('review 가 없으면 에러', () => {
+    expect(checkDraft([scene()]).srcErrors.some((e) => /review/.test(e))).toBe(true);
+  });
+  it('항목이 비거나 짧으면 에러 (형식적으로 채우기 금지)', () => {
+    const s = scene({ review: { ...REVIEW, facts: '없음' } });
+    expect(checkDraft([s]).srcErrors.some((e) => /review\.facts/.test(e))).toBe(true);
+  });
+  it('지오 줄에 아내 직업 언급이 있으면 경고', () => {
+    const s = scene({ review: REVIEW }); s.lines[1].en = "I'm here to join my wife, who's crew on this flight.";
+    expect(checkDraft([s]).extraWarnings.some((w) => /아내|wife/.test(w))).toBe(true);
+  });
+});

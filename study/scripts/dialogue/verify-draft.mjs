@@ -27,9 +27,19 @@ const REL = [
 ];
 export const hasRelClause = (en) => { const s = String(en || '').trim(); return REL.some((re) => re.test(s)); };
 
+// 2026-09-27 — 3묶음이 지오가 안 할 말(아내 직업 떠벌림)·시트 밖 사실(디카페인·크루 호텔)·한국어로 벌어질 상황(동료 승무원 인사)을 썼다.
+// 편마다 쓴 사람이 세 질문에 글로 답해야 통과한다. 형식적으로 채우지 못하게 15자 이상.
+const REVIEW_KEYS = { spoken: '지오가 실제로 이렇게 말하는가', facts: '시트 밖 사실을 지오에 대해 넣지 않았는가', english: '이 대화가 왜 영어로 벌어지는가(상대가 한국인이면 영어 장면이 아니다)' };
+const WIFE = /\b(my wife|she's (the )?crew|flight attendant|works? (for|as) (the |an? )?(airline|crew)|her (flight|section|route))\b/i;
+
 export function checkDraft(scenes) {
   const srcErrors = []; const extraWarnings = [];
   for (const s of scenes) {
+    if (!s.review || typeof s.review !== 'object') srcErrors.push(`${s.slug}: review 없음 — 편마다 spoken·facts·english 세 항목을 글로 적어야 한다(셀프 검증)`);
+    else for (const [k, q] of Object.entries(REVIEW_KEYS)) {
+      if (typeof s.review[k] !== 'string' || s.review[k].trim().length < 15) srcErrors.push(`${s.slug}: review.${k} 가 비었거나 너무 짧다 — "${q}" 에 답을 적을 것`);
+    }
+    s.lines.forEach((l, i) => { if (l.sp === 'B' && WIFE.test(l.en)) extraWarnings.push(`${s.slug} ${i + 1}줄: 지오 줄에 아내(wife) 직업·동선 언급 — 지오는 아내 얘기를 스스로 꺼내지 않는다(2026-09-27). 상대가 묻거나 절차상 필요할 때만: "${l.en}"`); });
     s.lines.forEach((l, i) => {
       if (!l.src || !String(l.src).trim()) srcErrors.push(`${s.slug} ${i + 1}줄 "${l.en}": src 없음 → 근거 없는 줄`);
       else if (s.date && !String(l.src).startsWith(s.date)) srcErrors.push(`${s.slug} ${i + 1}줄: src 날짜(${String(l.src).slice(0, 5)}) ≠ 장면 날짜(${s.date}) → 다른 날 사건 혼합`);
