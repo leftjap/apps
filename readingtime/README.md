@@ -19,6 +19,7 @@
 | `prototype/` | 웹 프로토타입 = 픽셀 정본 (+`_compare.html` 스펙 대조 하네스) |
 | `design-ref/v3/` | v8 시안 정본 (SCREENS·MOTION + mockups/frames) |
 | `design-ref/design_handoff_record_stats/` | **기록 화면(주·월·지도) 시안 정본** — README(작업지시서) + 동작 목업 `mockups/RTRecord.dc.html` + `screens/` |
+| `design-ref/design_handoff_tap_mode/` | **탭 모드(05) 시안 J 정본** — README(작업지시서 + 구현 결정) + 동작 목업 `mockups/RTTapMode.dc.html`. 05 는 프로토타입(`app.js` `handleTapZone`·`frames/05.html`) 대신 이 문서를 따른다 |
 | `.oracle/` + `scripts/record-verify.sh` | 기록 화면 픽셀 오라클(목업 Chrome 렌더) + rtshot 대조 파이프라인 |
 | `ReadingTime.xcodeproj` | iOS 앱 프로젝트 (target ReadingTime, iOS 17+, 폴더 동기화) |
 | `ReadingTime/` | 앱 소스 — `ReadingTimeApp.swift`(진입+배선)·`FlipEngine.swift`(엎기 감지+wall-clock)·`KeepAlive.swift`(잠금 유지)·`Info.plist` |

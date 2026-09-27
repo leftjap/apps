@@ -653,24 +653,42 @@ struct RTResumePop: ViewModifier {
     }
 }
 
-// ── v7Tap: 존 링 scale .55→1.9 + fade, 2.4s ease-out ∞ — 모션 전용(정적 렌더엔 없음) ──
-public struct RTZoneTapRing: View {
+// ── glyphPop(.6→1.12→1, .35s) · badgePop(.7→1.1→1, .4s) — opacity 0→1 동시, 등장할 때 1회 (시안 J 05) ──
+// CSS 처럼 구간마다 ease-out. 정적 렌더(모션 off)·Reduce Motion = 최종 상태.
+public extension View {
+    func rtPopIn(from: CGFloat, peak: CGFloat, peakAt: Double, duration: Double) -> some View {
+        modifier(RTPopIn(from: from, peak: peak, peakAt: peakAt, duration: duration))
+    }
+}
+
+struct RTPopIn: ViewModifier {
     @Environment(\.rtMotionEnabled) private var enabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var animating = false
-    public init() {}
+    let from: CGFloat
+    let peak: CGFloat
+    let peakAt: Double
+    let duration: Double
+    @State private var run = false
 
-    public var body: some View {
+    struct Pose { var sc: CGFloat; var op: Double }
+
+    func body(content: Content) -> some View {
         if enabled && !reduceMotion {
-            Circle().stroke(Color(hex: 0xE2CF9E, alpha: 0.55), lineWidth: 2)
-                .frame(width: 56, height: 56)
-                .scaleEffect(animating ? 1.9 : 0.55)
-                .opacity(animating ? 0 : 0.7)
-                .onAppear {
-                    withAnimation(.easeOut(duration: 2.4).repeatForever(autoreverses: false)) {
-                        animating = true
+            content
+                .keyframeAnimator(initialValue: Pose(sc: from, op: 0), trigger: run) { v, p in
+                    v.scaleEffect(p.sc).opacity(p.op)
+                } keyframes: { _ in
+                    KeyframeTrack(\.sc) {
+                        LinearKeyframe(peak, duration: duration * peakAt, timingCurve: .easeOut)
+                        LinearKeyframe(1, duration: duration * (1 - peakAt), timingCurve: .easeOut)
+                    }
+                    KeyframeTrack(\.op) {
+                        LinearKeyframe(1, duration: duration * peakAt, timingCurve: .easeOut)
                     }
                 }
+                .onAppear { run = true }
+        } else {
+            content
         }
     }
 }

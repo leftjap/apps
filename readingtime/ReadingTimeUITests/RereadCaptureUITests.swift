@@ -61,12 +61,13 @@ final class RereadCaptureUITests: XCTestCase {
         shot("A3-flipwait-session-chip")
         switchTap.tap()
 
-        // 05 탭 기록 — 서브타이틀 = 세션 책
-        XCTAssertTrue(app.staticTexts["모건 하우절, 《돈의 심리학》"].waitForExistence(timeout: 5),
-                      "05 서브타이틀이 세션 책이 아님")
-        shot("A4-tap-recording-subtitle")
+        // 05 탭 기록 — 상단 책 칩 = 세션 책 (시안 J: 부제 대신 04 와 같은 책 칩)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "tap.ring").firstMatch
+            .waitForExistence(timeout: 5), "05 미진입")
+        XCTAssertTrue(app.staticTexts["돈의 심리학"].exists, "05 책 칩이 세션 책이 아님")
+        shot("A4-tap-recording-chip")
         sleep(2)
-        app.staticTexts["여기까지 읽기"].tap()
+        app.descendants(matching: .any).matching(identifier: "tap.end").firstMatch.tap()
 
         // 06 완료 — 책 칩 = 세션 책
         XCTAssertTrue(app.staticTexts["기록됐어요"].waitForExistence(timeout: 5), "06 미진입")

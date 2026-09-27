@@ -3,22 +3,7 @@ import Foundation
 @testable import RTViews
 
 // RTAppModel — prototype/app.js 인터랙션 정본과의 정합 테스트.
-// 시간 의존은 ManualTapScheduler 로 결정적 실행.
-
-// 테스트 편의: 동기 등록 스케줄러 (Task 홉 없이 즉시 pending 설정)
-final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
-    var pending: (@MainActor () -> Void)?
-    var cancelCount = 0
-    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> () -> Void {
-        pending = work
-        return { [self] in cancelCount += 1; pending = nil }
-    }
-    @MainActor func fire() {
-        let w = pending
-        pending = nil
-        w?()
-    }
-}
+// 05 탭 처리만은 시안 J(design-ref/design_handoff_tap_mode)가 정본 — 디바운스·더블탭 종료 없음.
 
 @MainActor
 @Suite struct RTAppModelRoutingTests {
@@ -205,42 +190,16 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
         #expect(RTAppModel.hms(RTAppModel.demoElapsed) == ("00", "26", "14"))
     }
 
-    @Test func singleTapPauses() {
-        let sched = SyncTapScheduler()
-        let m = RTAppModel(tapScheduler: sched)
+    // 05 링·버튼 탭 = togglePause 즉시 (시안 J). 두 번 탭해도 종료(06)로 가지 않는다 — 종료는 CTA 뿐
+    @Test func tapModeToggleIsImmediateAndDoubleTapStays() {
+        let m = RTAppModel()
         m.setMode(.tap)
         m.start()
-        m.tapZone()
-        #expect(m.session?.status == .recording)  // 디바운스 대기 중 아직 그대로
-        sched.fire()                               // 250ms 경과
+        m.togglePause()
         #expect(m.session?.status == .paused)
-    }
-
-    @Test func doubleTapEndsSession() {
-        let sched = SyncTapScheduler()
-        let m = RTAppModel(tapScheduler: sched)
-        m.setMode(.tap)
-        m.start()
-        m.tapZone()
-        m.tapZone()                                // 250ms 안 두 번째 탭
-        #expect(sched.cancelCount == 1)            // 단일탭 예약 취소
-        #expect(m.route == .done)
-        #expect(m.session?.status == .paused)
-        sched.fire()                               // 잔여 예약 없음 — no-op
-        #expect(m.route == .done)
-    }
-
-    @Test func tapZoneResetsAfterFire() {
-        let sched = SyncTapScheduler()
-        let m = RTAppModel(tapScheduler: sched)
-        m.setMode(.tap)
-        m.start()
-        m.tapZone()
-        sched.fire()                               // 일시정지
-        m.tapZone()
-        sched.fire()                               // 재개 (새 단일탭 사이클)
+        m.togglePause()
         #expect(m.session?.status == .recording)
-        #expect(m.justResumed)
+        #expect(m.route == .tapTimer)
     }
 }
 

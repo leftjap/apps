@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>리딩타임 탭 모드 · 시안 J</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<style>
+@keyframes v4Blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes v5Tick{0%,54%{opacity:1}55%,100%{opacity:.15}}
+@keyframes v8Dim{0%,100%{opacity:.85}50%{opacity:.58}}
+@keyframes ringPulse{0%{transform:translate(-50%,-50%) scale(1);opacity:.7}100%{transform:translate(-50%,-50%) scale(1.12);opacity:0}}
+@keyframes glyphPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes badgePop{0%{transform:scale(.7);opacity:0}65%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+*{box-sizing:border-box}
+body{margin:0;background:#0E1712}
+button{font-family:inherit}
+a{color:#E2CF9E}a:hover{color:#F2EEDD}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:linear-gradient(175deg,#15211A 0%,#0E1712 50%,#0A100C 100%);font-family:'Noto Sans KR',system-ui,sans-serif;color:#F2EEDD;word-break:keep-all;-webkit-font-smoothing:antialiased">
+
+  <sc-if value="{{ pulse }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;top:318px;left:195px;width:300px;height:300px;border-radius:50%;border:3px solid rgba(242,238,221,.6);transform:translate(-50%,-50%);animation:ringPulse .9s ease-out forwards;pointer-events:none"></div>
+  </sc-if>
+
+  <div style="position:absolute;top:56px;left:0;right:0;padding:0 20px;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:9px;padding:7px 12px 7px 8px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)">
+      <span style="position:relative;display:block;width:22px;height:31px;border-radius:2.5px;overflow:hidden;background:linear-gradient(168deg,#EEE1BC,#E3D09E)"><span style="position:absolute;left:0;top:0;bottom:0;width:2px;background:rgba(0,0,0,.18)"></span></span>
+      <span style="font-size:12.5px;font-weight:600;color:#DDD8C2;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">몰입</span>
+    </div>
+    <sc-if value="{{ recording }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:99px;background:rgba(226,207,158,.1);border:1px solid rgba(226,207,158,.22)">
+        <span style="width:7px;height:7px;border-radius:50%;background:#E2CF9E;animation:v4Blink 1.6s ease-in-out infinite"></span>
+        <span style="font-size:12.5px;font-weight:600;letter-spacing:.06em;color:#E2CF9E">기록 중</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ paused }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:99px;background:rgba(232,190,120,.1);border:1px solid rgba(232,190,120,.28)">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="#E8BE78" aria-hidden="true"><rect x="3.3" y="2.5" width="1.7" height="7" rx=".65"></rect><rect x="7" y="2.5" width="1.7" height="7" rx=".65"></rect></svg>
+        <span style="font-size:12px;font-weight:700;letter-spacing:.04em;color:#E8BE78">일시정지됨</span>
+      </div>
+    </sc-if>
+  </div>
+
+  <button onClick="{{ toggle }}" aria-label="{{ btnLabel }}" style="position:absolute;top:168px;left:45px;width:300px;height:300px;border:0;border-radius:50%;background:transparent;padding:0;cursor:pointer;color:#F2EEDD">
+    <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0;overflow:visible;transform:rotate(-90deg)" aria-hidden="true">
+      <defs>
+        <linearGradient id="jgold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E2CF9E"></stop><stop offset="1" stop-color="#C9973B"></stop></linearGradient>
+      </defs>
+      <circle cx="150" cy="150" r="141" fill="none" stroke="rgba(226,207,158,.1)" stroke-width="10"></circle>
+      <circle cx="150" cy="150" r="122" fill="none" stroke="rgba(242,238,221,.38)" stroke-width="6" stroke-linecap="round" stroke-dasharray="766.55" style="stroke-dashoffset:{{ ghostDash }}px;transition:stroke-dashoffset 1s linear"></circle>
+      <path d="{{ gapPath }}" fill="none" stroke="rgba(242,238,221,.35)" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 7"></path>
+      <g style="transform:rotate({{ ghostDeg }}deg);transform-origin:150px 150px;transition:transform 1s linear">
+        <rect x="260" y="149" width="24" height="2" rx="1" fill="rgba(242,238,221,.75)"></rect>
+      </g>
+      <circle cx="150" cy="150" r="141" fill="none" stroke="{{ liveStroke }}" stroke-width="10" stroke-linecap="round" stroke-dasharray="885.93" style="stroke-dashoffset:{{ liveDash }}px;transition:stroke .4s,stroke-dashoffset 1s linear"></circle>
+      <g style="transform:rotate({{ liveDeg }}deg);transform-origin:150px 150px;transition:transform 1s linear">
+        <circle cx="291" cy="150" r="8" fill="{{ headColor }}"></circle>
+      </g>
+    </svg>
+    <span style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+      <span style="display:flex;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:{{ digitSize }}px;font-weight:600;letter-spacing:-.04em;line-height:1;color:#F2EEDD;animation:{{ digitsAnim }}">
+        <sc-if value="{{ hasHour }}" hint-placeholder-val="{{ false }}">
+          <span>{{ hh }}</span><span style="animation:{{ colonAnim }}">:</span>
+        </sc-if>
+        <span>{{ mm }}</span><span style="animation:{{ colonAnim }}">:</span><span>{{ ss }}</span>
+      </span>
+      <sc-if value="{{ showRecordLine }}" hint-placeholder-val="{{ true }}">
+        <span style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.14em;color:rgba(242,238,221,.42)">최장</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:17px;font-weight:500;letter-spacing:.02em;color:rgba(242,238,221,.5)">{{ recordTime }}</span>
+        </span>
+      </sc-if>
+      <sc-if value="{{ isTie }}" hint-placeholder-val="{{ false }}">
+        <span style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#E8BE78">최장</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:17px;font-weight:500;letter-spacing:.02em;color:#E8BE78">{{ recordTime }}</span>
+        </span>
+      </sc-if>
+      <sc-if value="{{ isRecord }}" hint-placeholder-val="{{ false }}">
+        <span style="display:flex;align-items:baseline;gap:9px;white-space:nowrap;animation:badgePop .4s ease-out">
+          <span style="display:flex;align-items:center;gap:4px"><svg width="8" height="7" viewBox="0 0 8 7" fill="#E8BE78" aria-hidden="true"><path d="M4 0 8 7H0z"></path></svg><span style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#E8BE78">신기록</span></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:500;letter-spacing:.02em;color:rgba(242,238,221,.35);text-decoration:line-through;text-decoration-color:rgba(242,238,221,.45)">{{ recordTime }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:16px;font-weight:700;color:#E8BE78">{{ overLabel }}</span>
+        </span>
+      </sc-if>
+    </span>
+  </button>
+
+  <button onClick="{{ toggle }}" aria-label="{{ btnLabel }}" style="position:absolute;top:508px;left:147px;width:96px;height:96px;border-radius:50%;border:1px solid {{ btnBorder }};padding:0;cursor:pointer;background:{{ btnBg }};box-shadow:0 8px 20px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;transition:background .3s,border-color .3s">
+    <sc-if value="{{ paused }}" hint-placeholder-val="{{ false }}">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="#26413A" style="margin-left:5px;animation:glyphPop .35s ease-out" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"></path></svg>
+    </sc-if>
+    <sc-if value="{{ recording }}" hint-placeholder-val="{{ true }}">
+      <span style="display:flex;gap:8px;animation:glyphPop .35s ease-out"><span style="display:block;width:9px;height:32px;border-radius:3px;background:#F2EEDD"></span><span style="display:block;width:9px;height:32px;border-radius:3px;background:#F2EEDD"></span></span>
+    </sc-if>
+  </button>
+
+  <div style="position:absolute;left:22px;right:22px;bottom:44px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)">
+      <span style="font-size:12.5px;font-weight:500;color:#8FA393">오늘 누적</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;color:#DDD8C2">{{ todayMin }}분</span>
+      <span style="width:1px;height:16px;background:rgba(255,255,255,.12)"></span>
+      <span style="font-size:12.5px;font-weight:500;color:#8FA393">연속</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;color:#DDD8C2">9일</span>
+    </div>
+    <button style="height:54px;border-radius:16px;border:1px solid rgba(242,238,221,.28);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;gap:9px;padding:0;cursor:pointer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DDD8C2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
+      <span style="font-size:15px;font-weight:700;color:#DDD8C2">여기까지 읽기</span>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startElapsed":{"editor":"int","default":1574,"min":0,"max":14400,"unit":"s","section":"데모"},"bestMin":{"editor":"int","default":47,"min":1,"max":300,"unit":"분","section":"기준"},"startPaused":{"editor":"boolean","default":false,"section":"데모"},"speed":{"editor":"int","default":1,"min":1,"max":60,"unit":"x","section":"데모"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const p = props || {};
+    this.state = { paused: !!p.startPaused, elapsed: this.num(p.startElapsed, 1574), pulseUntil: 0 };
+  }
+  num(v, d) { const n = Number(v); return Number.isFinite(n) ? n : d; }
+  bestSec() { return this.num(this.props.bestMin, 47) * 60; }
+  componentDidMount() {
+    this.iv = setInterval(() => {
+      if (this.state.paused) return;
+      const sp = Math.max(1, Math.min(60, this.num(this.props.speed, 1)));
+      const best = this.bestSec();
+      const e0 = this.state.elapsed, e1 = e0 + sp;
+      let pulseUntil = this.state.pulseUntil;
+      if (e0 < best && e1 >= best) pulseUntil = Date.now() + 1200;
+      this.setState({ elapsed: e1, pulseUntil: pulseUntil });
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.iv); }
+  arcPath(fromDeg, toDeg, r) {
+    if (toDeg - fromDeg < 1) return 'M0 0';
+    const a0 = fromDeg * Math.PI / 180, a1 = toDeg * Math.PI / 180;
+    const x0 = 150 + r * Math.cos(a0), y0 = 150 + r * Math.sin(a0);
+    const x1 = 150 + r * Math.cos(a1), y1 = 150 + r * Math.sin(a1);
+    const large = (toDeg - fromDeg) > 180 ? 1 : 0;
+    return 'M' + x0.toFixed(2) + ' ' + y0.toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x1.toFixed(2) + ' ' + y1.toFixed(2);
+  }
+  fmt(sec) {
+    const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return (h > 0 ? h + ':' : '') + pad(m) + ':' + pad(s);
+  }
+  renderVals() {
+    const paused = this.state.paused;
+    const e = this.state.elapsed;
+    const best = this.bestSec();
+    const bestMin = best / 60;
+    const h = Math.floor(e / 3600), m = Math.floor(e / 60) % 60, s = e % 60;
+    const sessionMin = Math.floor(e / 60);
+    const pad = (n) => String(n).padStart(2, '0');
+    const gold = '#E2CF9E', amber = '#E8BE78';
+    const isRecord = sessionMin > bestMin;
+    const isTie = !isRecord && sessionMin === bestMin;
+    const scaleMin = Math.max(30, Math.ceil((Math.max(best, e) / 60) * 1.2 / 15) * 15);
+    const scaleSec = scaleMin * 60;
+    const ghostFrac = best / scaleSec, liveFrac = Math.min(1, e / scaleSec);
+    const Cin = 2 * Math.PI * 122, Cout = 2 * Math.PI * 141;
+    const ghostDeg = 360 * ghostFrac, liveDeg = 360 * liveFrac;
+    return {
+      paused: paused,
+      recording: !paused,
+      pulse: Date.now() < this.state.pulseUntil,
+      hasHour: h > 0,
+      hh: String(h), mm: pad(m), ss: pad(s),
+      digitSize: h > 0 ? 46 : 58,
+      digitsAnim: paused ? 'v8Dim 3s ease-in-out infinite' : 'none',
+      colonAnim: paused ? 'none' : 'v5Tick 1s steps(1,end) infinite',
+      liveStroke: paused ? amber : (isRecord ? 'url(#jgold)' : gold),
+      headColor: paused ? amber : (isRecord ? '#C9973B' : gold),
+      ghostDash: (Cin * (1 - ghostFrac)).toFixed(2),
+      liveDash: (Cout * (1 - liveFrac)).toFixed(2),
+      gapPath: (e < best) ? this.arcPath(liveDeg + 3, ghostDeg - 2, 141) : 'M0 0',
+      ghostDeg: ghostDeg, liveDeg: liveDeg,
+      recordTime: this.fmt(best),
+      showRecordLine: !isRecord && !isTie,
+      isTie: isTie,
+      isRecord: isRecord,
+      overLabel: '+' + (sessionMin - bestMin) + '분',
+      btnBg: paused ? '#F2EEDD' : 'rgba(255,255,255,.08)',
+      btnBorder: paused ? '#F2EEDD' : 'rgba(255,255,255,.14)',
+      btnLabel: paused ? '이어 읽기' : '일시정지',
+      todayMin: 32 + sessionMin,
+      toggle: () => this.setState({ paused: !this.state.paused })
+    };
+  }
+}
+</script>
+</body>
+</html>

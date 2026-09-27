@@ -149,8 +149,8 @@ public struct RTRootView: View {
 // rtshot --app <NN> 은 이 시드로 RTRootView 를 렌더 → 정적 RTScreens.view(id:) 와 픽셀 대조.
 public extension RTAppModel {
     @MainActor
-    static func seeded(_ id: String, tapScheduler: RTTapScheduler = RTDispatchTapScheduler()) -> RTAppModel? {
-        let m = RTAppModel(tapScheduler: tapScheduler)
+    static func seeded(_ id: String) -> RTAppModel? {
+        let m = RTAppModel()
         switch id {
         case "01": break
         case "02": m.login()

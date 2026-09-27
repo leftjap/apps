@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 
 // 앱 상태 머신 — 인터랙션 정본 prototype/app.js 이식.
 // 라우트·모드·세션·시트·데모 상태 전부 여기서 관리. 화면은 이 모델을 주입받아 렌더만 한다.
-// 시간 의존(탭존 250ms 디바운스·초 틱)은 주입 가능하게 분리 — 테스트는 수동 스케줄러 사용.
+// 05 탭 처리만은 시안 J(design-ref/design_handoff_tap_mode)가 정본 — 디바운스·더블탭 종료 없이 togglePause 즉시.
 
 public enum RTRoute: String, Sendable {
     case login = "01"
@@ -77,6 +77,41 @@ public struct RTStreakGauge: Equatable, Sendable {
         } else {
             remainLabel = "\(best - streak)일 남음"
         }
+    }
+}
+
+/// 탭 모드(05) 링 — 시안 J(design-ref/design_handoff_tap_mode) §1. 바깥 줄 = 이 세션, 안쪽 줄 = 역대 최장.
+/// 뷰에서 분리한 이유: 타이·신기록·최장 0 상태는 데모 시드로 렌더에 도달하지 않아 로직 검증이 기준이다
+/// (RTStreakGauge 와 같은 이유). 각도는 12시 = 0°, 시계 방향.
+public struct RTTapRing: Equatable, Sendable {
+    public enum State: Equatable, Sendable { case normal, tie, record }
+    /// 링 한 바퀴(분) — 15분 단위, 최장·경과 중 큰 값의 1.2배 이상, 최소 30분
+    public let scaleMinutes: Int
+    /// 최장 줄 끝 (최장 0 이면 0 — 그리지 않는다)
+    public let ghostDeg: Double
+    /// 이 세션 줄 끝
+    public let liveDeg: Double
+    /// 남은 거리 점선 (liveDeg + 3° → ghostDeg − 2°). 경과 < 최장이고 1° 이상 남았을 때만
+    public let gap: ClosedRange<Double>?
+    /// 분 단위 정수 비교(홈 RTStreakGauge 와 같은 규칙) — 같은 분 = 타이, 넘은 분 = 신기록
+    public let state: State
+    /// 최장 줄·결승 눈금·점선·기록 줄 노출. 과거 세션이 없으면(최장 0) 숨긴다
+    public let hasBest: Bool
+    /// 신기록 "+N분" — 이 세션 분 − 최장 분
+    public let overMinutes: Int
+
+    public init(elapsed: Int, best: Int) {
+        // 시안 식 max(30, ceil(max(best, elapsed)/60 × 1.2 / 15) × 15) 을 정수로 — ×1.2/60/15 = ÷750
+        scaleMinutes = max(30, (max(best, elapsed) + 749) / 750 * 15)
+        let scaleSec = Double(scaleMinutes * 60)
+        hasBest = best > 0
+        ghostDeg = hasBest ? 360 * Double(best) / scaleSec : 0
+        liveDeg = 360 * min(1, Double(elapsed) / scaleSec)
+        let from = liveDeg + 3, to = ghostDeg - 2
+        gap = elapsed < best && to - from >= 1 ? from...to : nil
+        let sessionMin = elapsed / 60, bestMin = best / 60
+        state = !hasBest ? .normal : sessionMin > bestMin ? .record : sessionMin == bestMin ? .tie : .normal
+        overMinutes = max(0, sessionMin - bestMin)
     }
 }
 
@@ -166,21 +201,6 @@ public struct RTHomeCard: Identifiable, Equatable, Sendable {
         self.isbn = isbn
         self.isEbook = isEbook
         self.lastReadAt = lastReadAt
-    }
-}
-
-// 탭존 디바운스용 스케줄러 — 테스트에서 수동 발화 가능하게 주입
-public protocol RTTapScheduler {
-    /// work 를 delay 후 실행 예약. 반환값 = 취소 클로저.
-    func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> () -> Void
-}
-
-public struct RTDispatchTapScheduler: RTTapScheduler {
-    public init() {}
-    public func schedule(after delay: TimeInterval, _ work: @escaping @MainActor () -> Void) -> () -> Void {
-        let item = DispatchWorkItem { Task { @MainActor in work() } }
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
-        return { item.cancel() }
     }
 }
 
@@ -336,6 +356,8 @@ public final class RTAppModel: ObservableObject {
 
     // 데모 시드: 시안 데모 값(00:26:14)과 일치 — 세션 시작 시 26:14 경과로 시작
     public static let demoElapsed = 26 * 60 + 14
+    /// 05 링 데모 최장 — 시안 J 데모 값 47:00 (userData nil 경로)
+    public static let demoBest = 47 * 60
 
     /// 세션 시작 경과 시드 — 데모(rtshot·rtapp)는 26:14, iOS 실앱은 0 으로 설정
     public var sessionSeed = RTAppModel.demoElapsed
@@ -991,12 +1013,7 @@ public final class RTAppModel: ObservableObject {
     /// 검색 세대 — 늦게 도착한 이전 검색의 결과·실패가 최신 검색을 덮어쓰지 않도록 판별.
     private var searchGeneration = 0
 
-    private let tapScheduler: RTTapScheduler
-    private var cancelPendingTap: (() -> Void)?
-
-    public init(tapScheduler: RTTapScheduler = RTDispatchTapScheduler()) {
-        self.tapScheduler = tapScheduler
-    }
+    public init() {}
 
     public func search(_ q: String) async {
         searchQuery = q
@@ -1204,21 +1221,6 @@ public final class RTAppModel: ObservableObject {
             return
         }
         start(isbn: b.isbn)
-    }
-
-    // 탭 존: 단일 탭 = 일시정지/재개, 더블 탭 = 종료 (~250ms 디바운스, app.js handleTapZone)
-    public func tapZone() {
-        if let cancel = cancelPendingTap {
-            cancel()
-            cancelPendingTap = nil
-            endSession()
-            return
-        }
-        cancelPendingTap = tapScheduler.schedule(after: 0.25) { [weak self] in
-            guard let self else { return }
-            self.cancelPendingTap = nil
-            self.togglePause()
-        }
     }
 
     // ── 07 시간 직접 추가 ──
@@ -1636,7 +1638,6 @@ public final class RTAppModel: ObservableObject {
         case "switchTap": switchTap()
         case "togglePause": togglePause()
         case "endSession": endSession()
-        case "tapZone": tapZone()
         case "save": saveSession()
         case "delete": deleteSession()
         case "continueReading": continueReading()
@@ -1651,6 +1652,7 @@ public final class RTAppModel: ObservableObject {
         case "filter": RTLibraryFilter(rawValue: arg).map { setLibraryFilter($0) }
         case "sort": RTLibrarySort(rawValue: arg).map { setLibrarySort($0) }
         case "tick": tick()
+        case "elapsed": Int(arg).map { syncElapsed($0) }   // 경과 주입(검증 — 05 타이·신기록 상태 렌더)
         case "seedLoc":   // 기존 세션 위치 백필 (실기기 1회 실행) — "lat|lng|placeId|placeName|country"
             // ("|" 구분: --seq 가 ","로 액션을 쪼개므로 콤마 사용 불가)
             let p = arg.split(separator: "|").map(String.init)
@@ -1694,5 +1696,25 @@ public final class RTAppModel: ObservableObject {
     public static func hms(_ sec: Int) -> (h: String, m: String, s: String) {
         func f(_ n: Int) -> String { String(format: "%02d", n) }
         return (f(sec / 3600), f(sec / 60 % 60), f(sec % 60))
+    }
+
+    /// 05 타이머·기록 줄 — 1시간 미만 "mm:ss", 이상 "h:mm:ss"(시 한 자리, 시안 J §1).
+    /// hms 는 04·Live Activity 가 쓰므로 그대로 둔다.
+    public static func clockParts(_ sec: Int) -> (h: String?, m: String, s: String) {
+        func f(_ n: Int) -> String { String(format: "%02d", n) }
+        return (sec >= 3600 ? String(sec / 3600) : nil, f(sec / 60 % 60), f(sec % 60))
+    }
+
+    public static func clock(_ sec: Int) -> String {
+        let p = clockParts(sec)
+        return (p.h.map { $0 + ":" } ?? "") + p.m + ":" + p.s
+    }
+
+    /// 05 링의 '최장' — 타이머로 잰(엎기·탭) 세션 중 최장(초). 직접 추가는 한 번에 잰 시간이 아니라 뺀다.
+    /// 진행 중 세션은 저장 전이라 자동 제외. 데모(userData nil)는 시안 값 47분.
+    public var bestSessionSeconds: Int {
+        guard let d = userData else { return Self.demoBest }
+        return d.sessions.filter { $0.mode == RTMode.flip.rawValue || $0.mode == RTMode.tap.rawValue }
+            .map(\.seconds).max() ?? 0
     }
 }
