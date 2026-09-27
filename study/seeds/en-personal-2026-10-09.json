@@ -4,507 +4,543 @@
  "date": "2026-10-09",
  "cards": [
   {
-   "id": "en-personal-tourist-hongdae-01-as-far-as-google",
-   "sentence": "As far as I know, Google Maps can't do walking here.",
-   "meaning": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
+   "id": "en-personal-tourist-hostel-01-five-minute-walk",
+   "sentence": "It's about a five-minute walk from here.",
+   "meaning": "여기서 걸어서 5분쯤이에요.",
    "reading": null,
-   "phonetic_kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r",
+   "phonetic_kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r",
    "order_index": 1,
    "explanation": {
-    "key": "As far as I know, ~ = 제가 아는 한 ~예요 (단정을 피할 때, 영상 #22)",
-    "anchor": "아는 한",
-    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
+    "key": "a ~ walk = 걸어서 ~ (숫자-minute 를 붙임표로 이어 walk 앞에 둔다)",
+    "anchor": "걸어서 5분",
+    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
     "miniDialogue": [
      {
       "speaker": "A",
       "name": "여행객",
       "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
+      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
       "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, Google Maps can't do walking here.",
-      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
-      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
+      "en": "It's about a five-minute walk from here.",
+      "ko": "여기서 걸어서 5분쯤이에요.",
+      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "That explains it. What should I use instead?",
-      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
-      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
+      "en": "Oh, good. Which way do I go?",
+      "ko": "잘됐네요. 어느 쪽으로 가요?",
+      "kr": "오우 굿 위치 웨이 두 아이 고우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You might want to try Naver Map. It has English.",
-      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
-      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
+      "en": "There's a park at the end of this street.",
+      "ko": "이 길 끝에 공원이 있어요.",
+      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "Got it. But which exit do I take from here?",
-      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
-      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
+      "en": "Okay. Do I walk through the park?",
+      "ko": "네. 공원 안으로 지나가요?",
+      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The exit you're at is right. Two blocks that way.",
-      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
-      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
+      "en": "You don't have to go in. Just turn left.",
+      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
+      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "And after two blocks? Is there a sign?",
-      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
-      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
+      "en": "How will I know which building it is?",
+      "ko": "어느 건물인지 어떻게 알아요?",
+      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a cafe I go to. It's right upstairs.",
-      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
-      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
+      "en": "It's the one that's next to the bakery.",
+      "ko": "빵집 옆에 있는 거예요.",
+      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
      }
     ],
     "drills": [
      {
-      "en": "As far as I know, it's two stops away.",
-      "ko": "제가 알기론 두 정거장이에요.",
-      "kr": "애z f파r 애자이 노우 잇츠 투우 스탑스 어웨이"
+      "en": "It's a ten-minute walk to the station.",
+      "ko": "역까지 걸어서 10분이에요.",
+      "kr": "잇서 텐 미닛 워크 터 더 스테이션"
      },
      {
-      "en": "As far as I know, the last train is at midnight.",
-      "ko": "제가 알기론 막차가 자정이에요.",
-      "kr": "애z f파r 애자이 노우 더 라스 트레인 이z 엇 미드나잇"
+      "en": "The hotel is a short walk from here.",
+      "ko": "호텔은 여기서 걸어서 금방이에요.",
+      "kr": "더 호우텔 이z 어 쇼r트 워크 f럼 히어r"
      },
      {
-      "en": "I'm not sure, but I think it's this way.",
-      "ko": "확실치 않지만 이쪽인 것 같아요.",
-      "kr": "아임 낫 슈어r 벗 아이 씽킷츠 디스 웨이"
+      "en": "Is it far from here?",
+      "ko": "여기서 멀어요?",
+      "kr": "이짓 f파r f럼 히어r"
      },
      {
-      "en": "Do you know if this bus goes to the airport?",
-      "ko": "이 버스 공항 가는지 아세요?",
-      "kr": "더여 노우 이f 디스 버스 고우z 터 디 에어r포어r트"
+      "en": "It's about twenty minutes by bus.",
+      "ko": "버스로 20분쯤이에요.",
+      "kr": "잇서바웃 트웨니 미닛츠 바이 버스"
+     },
+     {
+      "en": "We walked for about an hour.",
+      "ko": "한 시간쯤 걸었어요.",
+      "kr": "위 워크트 f퍼r 어바우러나워r"
      }
     ],
     "grammar": [
      {
-      "struct": "As far as I know, ~",
-      "body": "제가 아는 한 ~예요 (단정을 피할 때, 영상 #22)"
+      "struct": "a ~ walk",
+      "body": "걸어서 ~ (숫자-minute 를 붙임표로 이어 walk 앞에 둔다)"
      }
     ],
     "chunks": [
      [
-      "As far as I know,",
-      "애z f파r 애자이 노우",
-      "내가 아는 한"
+      "It's about a",
+      "잇서바우러",
+      "대략 ~이다"
      ],
      [
-      "Google Maps",
-      "구우글 맵스",
-      "구글맵은"
+      "five-minute walk",
+      "f파이v 미닛 워크",
+      "걸어서 5분"
      ],
      [
-      "can't do walking here.",
-      "캔트 두 워킹 히어r",
-      "여기서 도보 안내를 못 한다"
+      "from here.",
+      "f럼 히어r",
+      "여기서"
      ]
     ],
     "phonemes": [
      [
-      "/z/ as I",
-      "as 의 s 는 z 소리, I 와 붙는다 — 애자이"
+      "/t/ about a",
+      "about 의 t 가 굴러 어바우러"
+     ],
+     [
+      "/ɔː/ walk",
+      "walk 의 l 은 소리 나지 않는다 — 워크"
      ]
     ],
-    "mistake": "확신이 없을 때 앞에 붙인다. 확실하면 그냥 말한다",
-    "similar": "I think Google Maps doesn't do walking here.",
+    "mistake": "붙임표로 이은 말 안에서는 단수 — a five-minutes walk ✗",
+    "similar": "It's five minutes from here on foot.",
     "category": "일상/길 안내",
-    "frequency": 7
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-tourist-hongdae-02-might-want-naver",
-   "sentence": "You might want to try Naver Map. It has English.",
-   "meaning": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
+   "id": "en-personal-tourist-hostel-02-theres-a-park",
+   "sentence": "There's a park at the end of this street.",
+   "meaning": "이 길 끝에 공원이 있어요.",
    "reading": null,
-   "phonetic_kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬",
+   "phonetic_kr": "데어r저 파r컷 디 엔더v 디스 스트리잇",
    "order_index": 2,
    "explanation": {
-    "key": "You might want to ~ = ~하는 게 좋을 거예요 (영상 #24)",
-    "anchor": "좋아요",
-    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
+    "key": "There's ~ = ~이 있어요 (길을 알려 줄 때 지표를 짚는 말, 영상 #16)",
+    "anchor": "공원이 있어요",
+    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
     "miniDialogue": [
      {
       "speaker": "A",
       "name": "여행객",
       "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
+      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
       "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, Google Maps can't do walking here.",
-      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
-      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
+      "en": "It's about a five-minute walk from here.",
+      "ko": "여기서 걸어서 5분쯤이에요.",
+      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "That explains it. What should I use instead?",
-      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
-      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
+      "en": "Oh, good. Which way do I go?",
+      "ko": "잘됐네요. 어느 쪽으로 가요?",
+      "kr": "오우 굿 위치 웨이 두 아이 고우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You might want to try Naver Map. It has English.",
-      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
-      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
+      "en": "There's a park at the end of this street.",
+      "ko": "이 길 끝에 공원이 있어요.",
+      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "Got it. But which exit do I take from here?",
-      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
-      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
+      "en": "Okay. Do I walk through the park?",
+      "ko": "네. 공원 안으로 지나가요?",
+      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The exit you're at is right. Two blocks that way.",
-      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
-      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
+      "en": "You don't have to go in. Just turn left.",
+      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
+      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "And after two blocks? Is there a sign?",
-      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
-      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
+      "en": "How will I know which building it is?",
+      "ko": "어느 건물인지 어떻게 알아요?",
+      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a cafe I go to. It's right upstairs.",
-      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
-      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
+      "en": "It's the one that's next to the bakery.",
+      "ko": "빵집 옆에 있는 거예요.",
+      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
      }
     ],
     "drills": [
      {
-      "en": "You might want to take the airport line.",
-      "ko": "공항철도를 타는 게 좋을 거예요.",
-      "kr": "유 마잇 워너 테익 디 에어r포어r트 라인"
+      "en": "There's a bakery on the corner.",
+      "ko": "모퉁이에 빵집이 있어요.",
+      "kr": "데어r저 베이커리 온 더 코어r너r"
      },
      {
-      "en": "You might want to buy a transit card.",
-      "ko": "교통카드를 사는 게 좋아요.",
-      "kr": "유 마잇 워너 바이 어 트랜짓 카r드"
+      "en": "There's a bus stop right there.",
+      "ko": "바로 저기 버스 정류장이 있어요.",
+      "kr": "데어r저 버스 스탑 라잇 데어r"
      },
      {
-      "en": "We might want to take a taxi at this hour.",
-      "ko": "이 시간엔 택시가 낫겟어요.",
-      "kr": "위 마잇 워너 테이커 택씨 엇 디스 아워r"
+      "en": "Is there a pharmacy near here?",
+      "ko": "이 근처에 약국 있어요?",
+      "kr": "이z 데어r 어 f파r머씨 니어r 히어r"
      },
      {
-      "en": "He might want to switch apps.",
-      "ko": "그분은 앱을 바꾸는 게 좋을 거예요.",
-      "kr": "히 마잇 워너 스위치 앱스"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "You might want to ~",
-      "body": "~하는 게 좋을 거예요 (영상 #24)"
-     }
-    ],
-    "chunks": [
-     [
-      "You might want to",
-      "유 마잇 워너",
-      "~하는 게 좋을 거다"
-     ],
-     [
-      "try Naver Map.",
-      "트라이 네이버r 맵",
-      "네이버맵을 써 보다"
-     ],
-     [
-      "It has English.",
-      "잇 해z 잉글리쉬",
-      "영어가 된다"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/w/ want to",
-      "want to 는 붙어 워너"
-     ]
-    ],
-    "mistake": "might want to 뒤 동사원형. 상대에게 부담 없이 권할 때",
-    "similar": "Try Naver Map — it works in English.",
-    "category": "일상/길 안내",
-    "frequency": 8
-   }
-  },
-  {
-   "id": "en-personal-tourist-hongdae-03-exit-youre-at",
-   "sentence": "The exit you're at is right. Two blocks that way.",
-   "meaning": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
-   "reading": null,
-   "phonetic_kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이",
-   "order_index": 3,
-   "explanation": {
-    "key": "the exit you're at = 당신이 있는 출구 (접촉절 — the exit (that) you're at, 전치사가 뒤에 남는다)",
-    "anchor": "출구가 맞아요",
-    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
+      "en": "There are two exits near here.",
+      "ko": "이 근처에 출구가 두 개 있어요.",
+      "kr": "데어r 아r 투우 엑씻츠 니어r 히어r"
      },
      {
-      "speaker": "B",
-      "name": "지오",
-      "en": "As far as I know, Google Maps can't do walking here.",
-      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
-      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "That explains it. What should I use instead?",
-      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
-      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You might want to try Naver Map. It has English.",
-      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
-      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Got it. But which exit do I take from here?",
-      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
-      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The exit you're at is right. Two blocks that way.",
-      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
-      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "And after two blocks? Is there a sign?",
-      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
-      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "There's a cafe I go to. It's right upstairs.",
-      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
-      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
-     }
-    ],
-    "drills": [
-     {
-      "en": "The exit you're at leads to the main street.",
-      "ko": "지금 계신 출구가 큰길로 나가요.",
-      "kr": "디 엑씻 여r 엇 리이z 터 더 메인 스트리잇"
-     },
-     {
-      "en": "The stop you want is the next one.",
-      "ko": "원하시는 정류장은 다음이에요.",
-      "kr": "더 스탑 여 원 이z 더 넥스 원"
-     },
-     {
-      "en": "Is this the line I take to the airport?",
-      "ko": "이게 공항 가는 노선이에요?",
-      "kr": "이z 디스 더 라인 아이 테익 터 디 에어r포어r트"
-     },
-     {
-      "en": "That's the cafe I told you about.",
-      "ko": "저게 제가 말한 카페예요.",
-      "kr": "댓츠 더 캐f페이 아이 톨저 어바웃"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "the exit you're at",
-      "body": "당신이 있는 출구 (접촉절 — the exit (that) you're at, 전치사가 뒤에 남는다)"
-     }
-    ],
-    "chunks": [
-     [
-      "The exit you're at",
-      "디 엑씻 여r 엇",
-      "당신이 있는 출구가"
-     ],
-     [
-      "is right.",
-      "이z 라잇",
-      "맞다"
-     ],
-     [
-      "Two blocks that way.",
-      "투우 블락스 댓 웨이",
-      "저쪽으로 두 블록"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/t/ at is",
-      "at 의 t 가 is 와 이어져 실제로는 에리z 처럼 굴러 들린다"
-     ]
-    ],
-    "mistake": "관계사 that 을 빼고 붙여 말한다. at 이 끝에 남아도 된다",
-    "similar": "You're already at the right exit.",
-    "category": "일상/길 안내",
-    "frequency": 7
-   }
-  },
-  {
-   "id": "en-personal-tourist-hongdae-04-theres-cafe",
-   "sentence": "There's a cafe I go to. It's right upstairs.",
-   "meaning": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
-   "reading": null,
-   "phonetic_kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈",
-   "order_index": 4,
-   "explanation": {
-    "key": "There's ~ = ~가 있어요 (영상 #16). 뒤의 a cafe I go to 는 접촉절",
-    "anchor": "카페가",
-    "situation": "홍대입구역 공항철도 출구 앞. 여행객이 구글맵을 들고 헤맨다. 지오 집이 바로 근처다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디인지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "As far as I know, Google Maps can't do walking here.",
-      "ko": "제가 아는 한 구글맵은 여기서 도보 안내가 안 돼요.",
-      "kr": "애z f파r 애자이 노우 구우글 맵스 캔트 두 워킹 히어r"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "That explains it. What should I use instead?",
-      "ko": "그래서 그랬군요. 그럼 뭘 써야 해요?",
-      "kr": "대릭스플레인짓 왓 셔라이 유우z 인스테드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You might want to try Naver Map. It has English.",
-      "ko": "네이버맵을 써 보는 게 좋아요. 영어도 돼요.",
-      "kr": "유 마잇 워너 트라이 네이버r 맵 잇 해z 잉글리쉬"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Got it. But which exit do I take from here?",
-      "ko": "알겠어요. 그런데 여기서 어느 출구로 나가요?",
-      "kr": "가릿 벗 위치 엑씻 두 아이 테익 f럼 히어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The exit you're at is right. Two blocks that way.",
-      "ko": "지금 계신 출구가 맞아요. 저쪽으로 두 블록이요.",
-      "kr": "디 엑씻 여r 엇 이z 라잇 투우 블락스 댓 웨이"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "And after two blocks? Is there a sign?",
-      "ko": "두 블록 뒤엔요? 표지판이 있나요?",
-      "kr": "언 애f터r 투우 블락스 이z 데어r 어 싸인"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "There's a cafe I go to. It's right upstairs.",
-      "ko": "제가 다니는 카페가 있어요. 바로 그 위층이에요.",
-      "kr": "데어r저 캐f페이 아이 고우 투 잇츠 라잇 업스테어r즈"
-     }
-    ],
-    "drills": [
-     {
-      "en": "There's a cafe I like near the station.",
-      "ko": "역 근처에 제가 좋아하는 카페가 있어요.",
-      "kr": "데어r저 캐f페이 아이 라익 니어r 더 스테이션"
-     },
-     {
-      "en": "There's a gym I go to every morning.",
-      "ko": "매일 아침 가는 헬스장이 있어요.",
-      "kr": "데어r저 짐 아이 고우 투 에v리 모어r닝"
-     },
-     {
-      "en": "Is there a place you'd recommend?",
-      "ko": "추천하실 곳 있어요?",
-      "kr": "이z 데어r 어 플레이스 유드 레커멘드"
-     },
-     {
-      "en": "That's the bakery my wife likes.",
-      "ko": "저게 아내가 좋아하는 빵집이에요.",
-      "kr": "댓츠 더 베이커리 마이 와이f 라익스"
+      "en": "You'll see a big crosswalk.",
+      "ko": "큰 횡단보도가 보일 거예요.",
+      "kr": "유일 씨이 어 빅 크로오스워크"
      }
     ],
     "grammar": [
      {
       "struct": "There's ~",
-      "body": "~가 있어요 (영상 #16). 뒤의 a cafe I go to 는 접촉절"
+      "body": "~이 있어요 (길을 알려 줄 때 지표를 짚는 말, 영상 #16)"
      }
     ],
     "chunks": [
      [
-      "There's a cafe",
-      "데어r저 캐f페이",
-      "카페가 하나 있다"
+      "There's a",
+      "데어r저",
+      "~이 있다"
      ],
      [
-      "I go to.",
-      "아이 고우 투",
-      "내가 다니는"
+      "park at the end of",
+      "파r컷 디 엔더v",
+      "~ 끝에 공원"
      ],
      [
-      "It's right upstairs.",
-      "잇츠 라잇 업스테어r즈",
-      "바로 위층이다"
+      "this street.",
+      "디스 스트리잇",
+      "이 길"
      ]
     ],
     "phonemes": [
      [
-      "/f/ cafe",
-      "cafe 의 f 는 윗니를 아랫입술에 — 캐f페이"
+      "/k/ park at",
+      "park 의 k 가 at 에 붙어 파r컷"
+     ],
+     [
+      "/d/ end of",
+      "end 의 d 가 of 에 붙어 엔더v"
      ]
     ],
-    "mistake": "a cafe (that) I go to — 접촉절, 전치사 to 가 끝에 남는다",
-    "similar": "The hostel is above my usual cafe.",
+    "mistake": "뒤에 오는 것이 여럿이면 There are — There's two parks ✗",
+    "similar": "You'll see a park at the end of this street.",
     "category": "일상/길 안내",
-    "frequency": 8
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-tourist-hostel-03-dont-have-to-go-in",
+   "sentence": "You don't have to go in. Just turn left.",
+   "meaning": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
+   "reading": null,
+   "phonetic_kr": "유 돈 해프터 고우 인 저스 터r언 레f트",
+   "order_index": 3,
+   "explanation": {
+    "key": "You don't have to ~ = ~하지 않아도 돼요 (영상 #23)",
+    "anchor": "안 들어가도 돼요",
+    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me, do you know where this hostel is?",
+      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's about a five-minute walk from here.",
+      "ko": "여기서 걸어서 5분쯤이에요.",
+      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Oh, good. Which way do I go?",
+      "ko": "잘됐네요. 어느 쪽으로 가요?",
+      "kr": "오우 굿 위치 웨이 두 아이 고우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a park at the end of this street.",
+      "ko": "이 길 끝에 공원이 있어요.",
+      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Okay. Do I walk through the park?",
+      "ko": "네. 공원 안으로 지나가요?",
+      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to go in. Just turn left.",
+      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
+      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "How will I know which building it is?",
+      "ko": "어느 건물인지 어떻게 알아요?",
+      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's the one that's next to the bakery.",
+      "ko": "빵집 옆에 있는 거예요.",
+      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You don't have to cross the street.",
+      "ko": "길 건너지 않아도 돼요.",
+      "kr": "유 돈 해프터 크로오스 더 스트리잇"
+     },
+     {
+      "en": "You don't have to pay for it.",
+      "ko": "돈 안 내도 돼요.",
+      "kr": "유 돈 해프터 페이 f퍼r 잇"
+     },
+     {
+      "en": "We don't have to hurry.",
+      "ko": "서두르지 않아도 돼요.",
+      "kr": "위 돈 해프터 허리"
+     },
+     {
+      "en": "Do I have to take a taxi?",
+      "ko": "택시 타야 해요?",
+      "kr": "두 아이 해프터 테이커 택씨"
+     },
+     {
+      "en": "Turn right at the bakery.",
+      "ko": "빵집에서 오른쪽으로 가세요.",
+      "kr": "터r언 라이럿 더 베이커리"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You don't have to ~",
+      "body": "~하지 않아도 돼요 (영상 #23)"
+     }
+    ],
+    "chunks": [
+     [
+      "You don't have to",
+      "유 돈 해프터",
+      "~하지 않아도 된다"
+     ],
+     [
+      "go in.",
+      "고우 인",
+      "들어가다"
+     ],
+     [
+      "Just turn left.",
+      "저스 터r언 레f트",
+      "그냥 왼쪽으로 가세요"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ have to",
+      "have to 는 해프터 — v 가 t 앞에서 f 처럼 된다"
+     ],
+     [
+      "/ɝ/ turn",
+      "turn 은 혀를 말아 터r언"
+     ]
+    ],
+    "mistake": "You don't have to 는 '안 해도 된다', You must not 은 '하면 안 된다'",
+    "similar": "No need to go through the park.",
+    "category": "일상/길 안내",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-tourist-hostel-04-one-next-to-bakery",
+   "sentence": "It's the one that's next to the bakery.",
+   "meaning": "빵집 옆에 있는 거예요.",
+   "reading": null,
+   "phonetic_kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리",
+   "order_index": 4,
+   "explanation": {
+    "key": "that's next to ~ = ~ 옆에 있는 것 (the one = 앞에서 말한 건물. that's 로 위치를 설명한다)",
+    "anchor": "빵집 옆에 있는 거",
+    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me, do you know where this hostel is?",
+      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's about a five-minute walk from here.",
+      "ko": "여기서 걸어서 5분쯤이에요.",
+      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Oh, good. Which way do I go?",
+      "ko": "잘됐네요. 어느 쪽으로 가요?",
+      "kr": "오우 굿 위치 웨이 두 아이 고우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's a park at the end of this street.",
+      "ko": "이 길 끝에 공원이 있어요.",
+      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Okay. Do I walk through the park?",
+      "ko": "네. 공원 안으로 지나가요?",
+      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to go in. Just turn left.",
+      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
+      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "How will I know which building it is?",
+      "ko": "어느 건물인지 어떻게 알아요?",
+      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's the one that's next to the bakery.",
+      "ko": "빵집 옆에 있는 거예요.",
+      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
+     }
+    ],
+    "drills": [
+     {
+      "en": "The hostel is the one that's next to the bank.",
+      "ko": "호스텔은 은행 옆에 있는 거예요.",
+      "kr": "더 하스텔 이z 더 원 댓츠 넥스 터 더 뱅크"
+     },
+     {
+      "en": "Is it the one that's next to the cafe?",
+      "ko": "카페 옆에 있는 거예요?",
+      "kr": "이짓 더 원 댓츠 넥스 터 더 캐f페이"
+     },
+     {
+      "en": "The bakery is across from the park.",
+      "ko": "빵집은 공원 건너편에 있어요.",
+      "kr": "더 베이커리 이z 어크로오스 f럼 더 파r크"
+     },
+     {
+      "en": "Which building is it?",
+      "ko": "어느 건물이에요?",
+      "kr": "위치 빌딩 이짓"
+     },
+     {
+      "en": "It's the tall one on the left.",
+      "ko": "왼쪽에 있는 높은 거예요.",
+      "kr": "잇츠 더 톨 워논 더 레f트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "that's next to ~",
+      "body": "~ 옆에 있는 것 (the one = 앞에서 말한 건물. that's 로 위치를 설명한다)"
+     }
+    ],
+    "chunks": [
+     [
+      "It's the one",
+      "잇츠 더 원",
+      "그건 ~인 것"
+     ],
+     [
+      "that's next to",
+      "댓츠 넥스 터",
+      "~ 옆에 있는"
+     ],
+     [
+      "the bakery.",
+      "더 베이커리",
+      "빵집"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ next to",
+      "next 의 t 와 to 의 t 가 겹쳐 넥스 터"
+     ],
+     [
+      "/eɪ/ bakery",
+      "bakery 는 이중모음 — 베이커리"
+     ]
+    ],
+    "mistake": "next to 뒤에는 바로 명사 — next the bakery ✗",
+    "similar": "It's the building beside the bakery.",
+    "category": "일상/길 안내",
+    "frequency": 7
    }
   }
  ]

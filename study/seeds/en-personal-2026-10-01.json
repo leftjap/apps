@@ -4,516 +4,531 @@
  "date": "2026-10-01",
  "cards": [
   {
-   "id": "en-personal-bkk-cabin-01-about-to-ask",
-   "sentence": "I was just about to ask where she is.",
-   "meaning": "어디 있는지 막 물어보려던 참이었어요.",
+   "id": "en-personal-bkk-entry-01-here-to-sightseeing",
+   "sentence": "I'm here to do some sightseeing.",
+   "meaning": "관광하러 왔어요.",
    "reading": null,
-   "phonetic_kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z",
+   "phonetic_kr": "아임 히어r 터 두 썸 싸잇씨잉",
    "order_index": 1,
    "explanation": {
-    "key": "I was about to ~ = 막 ~하려던 참이었어요 (영상 #3). 뒤의 ask where ~ 는 삽입 의문절",
-    "anchor": "참이었어요",
-    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
+    "key": "I'm here to ~ = ~하러 왔어요 (방문 목적, 영상 #4)",
+    "anchor": "관광하러 왔어요",
+    "situation": "수완나품 공항 입국심사. 심사관이 방문 목적·기간·숙소를 묻는다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "You must be Soyeon's husband. I'm Sarah.",
-      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
-      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
+      "name": "심사관",
+      "en": "Hello. What's the purpose of your visit?",
+      "ko": "안녕하세요. 방문 목적이 뭔가요?",
+      "kr": "헬로우 왓츠 더 퍼r퍼서v 여r v이짓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was just about to ask where she is.",
-      "ko": "어디 있는지 막 물어보려던 참이었어요.",
-      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
+      "en": "I'm here to do some sightseeing.",
+      "ko": "관광하러 왔어요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉"
      },
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "She's in the back galley. She mentioned you.",
-      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
-      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
+      "name": "심사관",
+      "en": "First time in Thailand?",
+      "ko": "태국은 처음이세요?",
+      "kr": "f퍼r스 타이민 타일랜드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "She said I'm supposed to have one beer, right?",
-      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
-      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
+      "en": "I've been here before.",
+      "ko": "전에 와 본 적 있어요.",
+      "kr": "아이v 빈 히어r 비f포어r"
      },
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "Exactly. One beer, and water after that.",
-      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
-      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
+      "name": "심사관",
+      "en": "How many days will you stay?",
+      "ko": "며칠 머무르세요?",
+      "kr": "하우 메니 데이z 윌 여 스테이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I don't think she can see me from there.",
-      "ko": "거기서는 저를 못 볼 것 같은데요.",
-      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
+      "en": "Five days. I'm flying back on Sunday.",
+      "ko": "5일이요. 일요일에 돌아가요.",
+      "kr": "f파이v 데이z 아임 f플라잉 배콘 썬데이"
      },
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "She can't, but I'm the one who reports.",
-      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
-      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
+      "name": "심사관",
+      "en": "Can you tell me where you're staying?",
+      "ko": "어디에 묵으시는지 말씀해 주시겠어요?",
+      "kr": "컨 여 텔 미 웨어r 여r 스테이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Water is fine, and please tell her I behaved.",
-      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
-      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
+      "en": "The hotel I booked is near Siam Center.",
+      "ko": "제가 예약한 호텔은 시암센터 근처예요.",
+      "kr": "더 호우텔 아이 북티z 니어r 싸이앰 쎄너r"
      }
     ],
     "drills": [
      {
-      "en": "I was about to ask for water.",
-      "ko": "물 달라고 하려던 참이었어요.",
-      "kr": "아이 워z 어바우러 애스크 f퍼r 워러r"
+      "en": "I'm here to see a friend.",
+      "ko": "친구 만나러 왔어요.",
+      "kr": "아임 히어r 터 씨이 어 f렌드"
      },
      {
-      "en": "She was about to come find you.",
-      "ko": "소연이 당신 찾아오려던 참이었어요.",
-      "kr": "쉬 워z 어바우러 컴 f파인드 유"
+      "en": "I'm here to pick up my bag.",
+      "ko": "가방 찾으러 왔어요.",
+      "kr": "아임 히어r 터 피컵 마이 백"
      },
      {
-      "en": "Were you about to order?",
-      "ko": "주문하려던 거예요?",
-      "kr": "워r 여 어바우러 오어r더r"
+      "en": "We're here to visit family.",
+      "ko": "가족 보러 왔어요.",
+      "kr": "위어r 히어r 터 v이짓 f패멀리"
      },
      {
-      "en": "I was just about to ask which gate it is.",
-      "ko": "어느 게이트인지 물어보려던 참이었어요.",
-      "kr": "아이 워z 저스터바우러 애스크 위치 게이릿 이z"
+      "en": "Are you here on business?",
+      "ko": "출장 오셨어요?",
+      "kr": "아r 여 히어r 온 비즈니스"
+     },
+     {
+      "en": "What brings you to Bangkok?",
+      "ko": "방콕엔 무슨 일로 오셨어요?",
+      "kr": "왓 브링져 터 뱅콕"
      }
     ],
     "grammar": [
      {
-      "struct": "I was about to ~",
-      "body": "막 ~하려던 참이었어요 (영상 #3). 뒤의 ask where ~ 는 삽입 의문절"
+      "struct": "I'm here to ~",
+      "body": "~하러 왔어요 (방문 목적, 영상 #4)"
      }
     ],
     "chunks": [
      [
-      "I was just about to",
-      "아이 워z 저스터바우러",
-      "막 ~하려던 참이었다"
+      "I'm here to",
+      "아임 히어r 터",
+      "~하러 왔다"
      ],
      [
-      "ask",
-      "애스크",
-      "묻다"
-     ],
-     [
-      "where she is.",
-      "웨어r 쉬 이z",
-      "그녀가 어디 있는지"
+      "do some sightseeing.",
+      "두 썸 싸잇씨잉",
+      "관광을 좀 하다"
      ]
     ],
     "phonemes": [
      [
-      "/t/ about to",
-      "about to 의 t 가 뒤 모음과 붙어 ㄹ 로 흐른다 — 저스터바우러"
+      "/ɪər/ here",
+      "here 는 히어r — 끝을 혀를 말아 닫는다"
+     ],
+     [
+      "/s/ sightseeing",
+      "sightseeing 은 두 s 모두 ㅆ — 싸잇씨잉"
      ]
     ],
-    "mistake": "삽입 의문절은 평서 어순 — where she is (O) where is she (X)",
-    "similar": "I was going to ask about her.",
-    "category": "여행/기내",
+    "mistake": "to 뒤는 동사, for 뒤는 명사 — I'm here for sightseeing 도 된다",
+    "similar": "I'm here on vacation.",
+    "category": "여행/입국",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-bkk-entry-02-been-here-before",
+   "sentence": "I've been here before.",
+   "meaning": "전에 와 본 적 있어요.",
+   "reading": null,
+   "phonetic_kr": "아이v 빈 히어r 비f포어r",
+   "order_index": 2,
+   "explanation": {
+    "key": "I've been ~ = ~에 와 본 적 있어요 (영상 #5). 여기서는 경험을 말한다",
+    "anchor": "와 본 적 있어요",
+    "situation": "수완나품 공항 입국심사. 심사관이 방문 목적·기간·숙소를 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Hello. What's the purpose of your visit?",
+      "ko": "안녕하세요. 방문 목적이 뭔가요?",
+      "kr": "헬로우 왓츠 더 퍼r퍼서v 여r v이짓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm here to do some sightseeing.",
+      "ko": "관광하러 왔어요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "First time in Thailand?",
+      "ko": "태국은 처음이세요?",
+      "kr": "f퍼r스 타이민 타일랜드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been here before.",
+      "ko": "전에 와 본 적 있어요.",
+      "kr": "아이v 빈 히어r 비f포어r"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "How many days will you stay?",
+      "ko": "며칠 머무르세요?",
+      "kr": "하우 메니 데이z 윌 여 스테이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Five days. I'm flying back on Sunday.",
+      "ko": "5일이요. 일요일에 돌아가요.",
+      "kr": "f파이v 데이z 아임 f플라잉 배콘 썬데이"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Can you tell me where you're staying?",
+      "ko": "어디에 묵으시는지 말씀해 주시겠어요?",
+      "kr": "컨 여 텔 미 웨어r 여r 스테이잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The hotel I booked is near Siam Center.",
+      "ko": "제가 예약한 호텔은 시암센터 근처예요.",
+      "kr": "더 호우텔 아이 북티z 니어r 싸이앰 쎄너r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been to Bangkok twice.",
+      "ko": "방콕에 두 번 가 봤어요.",
+      "kr": "아이v 빈 터 뱅콕 트와이스"
+     },
+     {
+      "en": "Have you been here before?",
+      "ko": "여기 와 본 적 있으세요?",
+      "kr": "해v 여 빈 히어r 비f포어r"
+     },
+     {
+      "en": "She's been here many times.",
+      "ko": "그녀는 여기 여러 번 와 봤어요.",
+      "kr": "쉬z 빈 히어r 메니 타임z"
+     },
+     {
+      "en": "It's my first time here.",
+      "ko": "여기는 처음이에요.",
+      "kr": "잇츠 마이 f퍼r스 타임 히어r"
+     },
+     {
+      "en": "I've never been to London.",
+      "ko": "런던엔 가 본 적 없어요.",
+      "kr": "아이v 네버r 빈 터 런던"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "~에 와 본 적 있어요 (영상 #5). 여기서는 경험을 말한다"
+     }
+    ],
+    "chunks": [
+     [
+      "I've been",
+      "아이v 빈",
+      "~에 있었던 적 있다"
+     ],
+     [
+      "here before.",
+      "히어r 비f포어r",
+      "전에 여기"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ I've",
+      "I've 의 v 는 윗니를 아랫입술에 — 아이v"
+     ],
+     [
+      "/ɪ/ been",
+      "been 은 짧게 빈 — 비인으로 늘이지 않는다"
+     ]
+    ],
+    "mistake": "'가 본 적 있다' 는 have been — I have gone here ✗",
+    "similar": "This isn't my first time.",
+    "category": "여행/입국",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-entry-03-flying-back",
+   "sentence": "Five days. I'm flying back on Sunday.",
+   "meaning": "5일이요. 일요일에 돌아가요.",
+   "reading": null,
+   "phonetic_kr": "f파이v 데이z 아임 f플라잉 배콘 썬데이",
+   "order_index": 3,
+   "explanation": {
+    "key": "I'm flying back ~ = (비행기로) ~에 돌아가요. 표를 끊어 둔 일정은 현재진행형으로 말한다",
+    "anchor": "일요일에 돌아가요",
+    "situation": "수완나품 공항 입국심사. 심사관이 방문 목적·기간·숙소를 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Hello. What's the purpose of your visit?",
+      "ko": "안녕하세요. 방문 목적이 뭔가요?",
+      "kr": "헬로우 왓츠 더 퍼r퍼서v 여r v이짓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm here to do some sightseeing.",
+      "ko": "관광하러 왔어요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "First time in Thailand?",
+      "ko": "태국은 처음이세요?",
+      "kr": "f퍼r스 타이민 타일랜드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been here before.",
+      "ko": "전에 와 본 적 있어요.",
+      "kr": "아이v 빈 히어r 비f포어r"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "How many days will you stay?",
+      "ko": "며칠 머무르세요?",
+      "kr": "하우 메니 데이z 윌 여 스테이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Five days. I'm flying back on Sunday.",
+      "ko": "5일이요. 일요일에 돌아가요.",
+      "kr": "f파이v 데이z 아임 f플라잉 배콘 썬데이"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Can you tell me where you're staying?",
+      "ko": "어디에 묵으시는지 말씀해 주시겠어요?",
+      "kr": "컨 여 텔 미 웨어r 여r 스테이잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The hotel I booked is near Siam Center.",
+      "ko": "제가 예약한 호텔은 시암센터 근처예요.",
+      "kr": "더 호우텔 아이 북티z 니어r 싸이앰 쎄너r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm flying back to Seoul tomorrow.",
+      "ko": "내일 서울로 돌아가요.",
+      "kr": "아임 f플라잉 백 터 쏘울 터마로우"
+     },
+     {
+      "en": "We're flying back tomorrow morning.",
+      "ko": "내일 아침에 돌아가요.",
+      "kr": "위어r f플라잉 백 터마로우 모어r닝"
+     },
+     {
+      "en": "She's flying to London tonight.",
+      "ko": "그녀는 오늘 밤 런던으로 가요.",
+      "kr": "쉬z f플라잉 터 런던 터나잇"
+     },
+     {
+      "en": "When are you flying back?",
+      "ko": "언제 돌아가세요?",
+      "kr": "웨너r여 f플라잉 백"
+     },
+     {
+      "en": "I'm staying for three nights.",
+      "ko": "3박 해요.",
+      "kr": "아임 스테이잉 f퍼r 쓰리이 나잇츠"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm flying back ~",
+      "body": "(비행기로) ~에 돌아가요. 표를 끊어 둔 일정은 현재진행형으로 말한다"
+     }
+    ],
+    "chunks": [
+     [
+      "Five days.",
+      "f파이v 데이z",
+      "5일이요"
+     ],
+     [
+      "I'm flying",
+      "아임 f플라잉",
+      "비행기로 간다(정해진 일정)"
+     ],
+     [
+      "back on Sunday.",
+      "배콘 썬데이",
+      "일요일에 돌아"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ flying",
+      "flying 의 f 는 윗니를 아랫입술에 — f플라잉"
+     ],
+     [
+      "/k/ back on",
+      "back 의 k 가 on 에 붙어 배콘"
+     ]
+    ],
+    "mistake": "I fly back on Sunday 도 되지만, 이미 정해진 일정은 I'm flying back 이 자연스럽다",
+    "similar": "My flight home is on Sunday.",
+    "category": "여행/입국",
     "frequency": 8
    }
   },
   {
-   "id": "en-personal-bkk-cabin-02-supposed-to",
-   "sentence": "She said I'm supposed to have one beer, right?",
-   "meaning": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
+   "id": "en-personal-bkk-entry-04-hotel-i-booked",
+   "sentence": "The hotel I booked is near Siam Center.",
+   "meaning": "제가 예약한 호텔은 시암센터 근처예요.",
    "reading": null,
-   "phonetic_kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇",
-   "order_index": 2,
-   "explanation": {
-    "key": "I'm supposed to ~ = ~하기로 되어 있어요 / ~해야 해요 (규칙·약속·예정, 영상 #2)",
-    "anchor": "한 잔만",
-    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "You must be Soyeon's husband. I'm Sarah.",
-      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
-      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I was just about to ask where she is.",
-      "ko": "어디 있는지 막 물어보려던 참이었어요.",
-      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
-     },
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "She's in the back galley. She mentioned you.",
-      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
-      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "She said I'm supposed to have one beer, right?",
-      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
-      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
-     },
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "Exactly. One beer, and water after that.",
-      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
-      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't think she can see me from there.",
-      "ko": "거기서는 저를 못 볼 것 같은데요.",
-      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
-     },
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "She can't, but I'm the one who reports.",
-      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
-      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Water is fine, and please tell her I behaved.",
-      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
-      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I'm supposed to meet her at the gate.",
-      "ko": "게이트에서 아내를 만나기로 했어요.",
-      "kr": "아임 써포우스터 미잇 허r 엇 더 게잇"
-     },
-     {
-      "en": "We're supposed to land at nine.",
-      "ko": "아홉 시에 착륙하기로 돼 있어요.",
-      "kr": "위어r 써포우스터 랜드 엇 나인"
-     },
-     {
-      "en": "Am I supposed to fill this out?",
-      "ko": "이거 작성해야 하나요?",
-      "kr": "애마이 써포우스터 f필 디스 아웃"
-     },
-     {
-      "en": "You're not supposed to stand here.",
-      "ko": "여기 서 있으면 안 돼요.",
-      "kr": "여r 낫 써포우스터 스탠드 히어r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I'm supposed to ~",
-      "body": "~하기로 되어 있어요 / ~해야 해요 (규칙·약속·예정, 영상 #2)"
-     }
-    ],
-    "chunks": [
-     [
-      "She said",
-      "쉬 쎄드",
-      "그녀가 말했다"
-     ],
-     [
-      "I'm supposed to",
-      "아임 써포우스터",
-      "나는 ~하기로 되어 있다"
-     ],
-     [
-      "have one beer,",
-      "해v 원 비어r",
-      "맥주 한 잔 마시다"
-     ],
-     [
-      "right?",
-      "라잇",
-      "맞죠"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/s/ supposed to",
-      "supposed to 는 붙어 써포우스터 — d 가 t 앞에서 사라진다"
-     ]
-    ],
-    "mistake": "be supposed to + 동사원형",
-    "similar": "I promised her just one.",
-    "category": "여행/기내",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-bkk-cabin-03-dont-think-see",
-   "sentence": "I don't think she can see me from there.",
-   "meaning": "거기서는 저를 못 볼 것 같은데요.",
-   "reading": null,
-   "phonetic_kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r",
-   "order_index": 3,
-   "explanation": {
-    "key": "I don't think ~ = ~은 아닌 것 같아요 (부드러운 부정, 영상 #11)",
-    "anchor": "못 볼",
-    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "You must be Soyeon's husband. I'm Sarah.",
-      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
-      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I was just about to ask where she is.",
-      "ko": "어디 있는지 막 물어보려던 참이었어요.",
-      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
-     },
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "She's in the back galley. She mentioned you.",
-      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
-      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "She said I'm supposed to have one beer, right?",
-      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
-      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
-     },
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "Exactly. One beer, and water after that.",
-      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
-      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't think she can see me from there.",
-      "ko": "거기서는 저를 못 볼 것 같은데요.",
-      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
-     },
-     {
-      "speaker": "A",
-      "name": "Sarah",
-      "en": "She can't, but I'm the one who reports.",
-      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
-      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Water is fine, and please tell her I behaved.",
-      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
-      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I don't think we've met.",
-      "ko": "우리 처음 보는 것 같은데요.",
-      "kr": "아이 돈 씽 퀴v 멧"
-     },
-     {
-      "en": "I don't think that's my bag.",
-      "ko": "그건 제 가방이 아닌 것 같아요.",
-      "kr": "아이 돈 씽크 댓츠 마이 백"
-     },
-     {
-      "en": "Do you think she saw us?",
-      "ko": "소연이 우리 봤을까요?",
-      "kr": "더여 씽크 쉬 쏘오 어스"
-     },
-     {
-      "en": "She doesn't think it's a problem.",
-      "ko": "소연은 문제 아니라고 봐요.",
-      "kr": "쉬 더즌 씽킷처 프라블럼"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I don't think ~",
-      "body": "~은 아닌 것 같아요 (부드러운 부정, 영상 #11)"
-     }
-    ],
-    "chunks": [
-     [
-      "I don't think",
-      "아이 돈 씽크",
-      "~은 아닌 것 같다"
-     ],
-     [
-      "she can see me",
-      "쉬 컨 씨이 미",
-      "그녀가 나를 볼 수 있다"
-     ],
-     [
-      "from there.",
-      "f럼 데어r",
-      "거기서"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/θ/ think",
-      "think 의 th 는 혀끝을 이 사이에 — 씽크"
-     ]
-    ],
-    "mistake": "영어는 앞에서 부정한다 — I don't think she can (O) I think she can't (어색)",
-    "similar": "She probably can't see me.",
-    "category": "여행/기내",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-bkk-cabin-04-tell-her",
-   "sentence": "Water is fine, and please tell her I behaved.",
-   "meaning": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
-   "reading": null,
-   "phonetic_kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드",
+   "phonetic_kr": "더 호우텔 아이 북티z 니어r 싸이앰 쎄너r",
    "order_index": 4,
    "explanation": {
-    "key": "tell her ~ = 그녀에게 ~라고 전해 주세요 (233 뱅크 081 Tell me ~ 의 3인칭)",
-    "anchor": "전해 주세요",
-    "situation": "방콕행 기내. 소연은 뒤쪽 갤리에서 근무 중이고, 소연의 동료 Sarah 가 지오 자리를 담당한다.",
+    "key": "the ~ I booked = 제가 예약한 ~ (접촉절 — 명사 뒤에 '주어+동사' 를 바로 붙여 설명한다)",
+    "anchor": "제가 예약한 호텔",
+    "situation": "수완나품 공항 입국심사. 심사관이 방문 목적·기간·숙소를 묻는다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "You must be Soyeon's husband. I'm Sarah.",
-      "ko": "소연 남편분이시죠? 저는 Sarah 예요.",
-      "kr": "유 머스 비 소연z 허z번드 아임 쎄라"
+      "name": "심사관",
+      "en": "Hello. What's the purpose of your visit?",
+      "ko": "안녕하세요. 방문 목적이 뭔가요?",
+      "kr": "헬로우 왓츠 더 퍼r퍼서v 여r v이짓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was just about to ask where she is.",
-      "ko": "어디 있는지 막 물어보려던 참이었어요.",
-      "kr": "아이 워z 저스터바우러 애스크 웨어r 쉬 이z"
+      "en": "I'm here to do some sightseeing.",
+      "ko": "관광하러 왔어요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉"
      },
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "She's in the back galley. She mentioned you.",
-      "ko": "뒤쪽 갤리에 있어요. 당신 얘기 했어요.",
-      "kr": "쉬z 인 더 백 갤리 쉬 멘션드 유"
+      "name": "심사관",
+      "en": "First time in Thailand?",
+      "ko": "태국은 처음이세요?",
+      "kr": "f퍼r스 타이민 타일랜드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "She said I'm supposed to have one beer, right?",
-      "ko": "제가 맥주 한 잔만 마시기로 했다고 말했죠?",
-      "kr": "쉬 쎄드 아임 써포우스터 해v 원 비어r 라잇"
+      "en": "I've been here before.",
+      "ko": "전에 와 본 적 있어요.",
+      "kr": "아이v 빈 히어r 비f포어r"
      },
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "Exactly. One beer, and water after that.",
-      "ko": "맞아요. 맥주 한 잔, 그다음은 물.",
-      "kr": "이그잭틀리 원 비어r 언 워러r 애f터r 댓"
+      "name": "심사관",
+      "en": "How many days will you stay?",
+      "ko": "며칠 머무르세요?",
+      "kr": "하우 메니 데이z 윌 여 스테이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I don't think she can see me from there.",
-      "ko": "거기서는 저를 못 볼 것 같은데요.",
-      "kr": "아이 돈 씽크 쉬 컨 씨이 미 f럼 데어r"
+      "en": "Five days. I'm flying back on Sunday.",
+      "ko": "5일이요. 일요일에 돌아가요.",
+      "kr": "f파이v 데이z 아임 f플라잉 배콘 썬데이"
      },
      {
       "speaker": "A",
-      "name": "Sarah",
-      "en": "She can't, but I'm the one who reports.",
-      "ko": "못 보죠. 대신 제가 보고하는 사람이에요.",
-      "kr": "쉬 캔트 벗 아임 더 원 후 리포어r츠"
+      "name": "심사관",
+      "en": "Can you tell me where you're staying?",
+      "ko": "어디에 묵으시는지 말씀해 주시겠어요?",
+      "kr": "컨 여 텔 미 웨어r 여r 스테이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Water is fine, and please tell her I behaved.",
-      "ko": "물이면 됩니다. 그리고 제가 잘 있었다고 전해 주세요.",
-      "kr": "워러r 이z f파인 언 플리이z 텔 허r 아이 비헤이v드"
+      "en": "The hotel I booked is near Siam Center.",
+      "ko": "제가 예약한 호텔은 시암센터 근처예요.",
+      "kr": "더 호우텔 아이 북티z 니어r 싸이앰 쎄너r"
      }
     ],
     "drills": [
      {
-      "en": "Please tell her I said hi.",
-      "ko": "제가 안부 전한다고 해 주세요.",
-      "kr": "플리이z 텔 허r 아이 쎄드 하이"
+      "en": "The room I booked has two beds.",
+      "ko": "제가 예약한 방은 침대가 두 개예요.",
+      "kr": "더 루우마이 북트 해z 투우 베즈"
      },
      {
-      "en": "Tell him we're on our way.",
-      "ko": "우리 가는 중이라고 전해요.",
-      "kr": "텔 힘 위어r 오나워r 웨이"
+      "en": "Is this the hotel you booked?",
+      "ko": "이게 예약하신 호텔이에요?",
+      "kr": "이z 디스 더 호우텔 여 북트"
      },
      {
-      "en": "Can you tell her I'm in 34C?",
-      "ko": "제가 34C 에 있다고 전해 줄래요?",
-      "kr": "컨 여 텔 허r 아임 인 써r리 f포어r 씨이"
+      "en": "That's the flight I booked.",
+      "ko": "그게 제가 예약한 비행기예요.",
+      "kr": "댓츠 더 f플라이라이 북트"
      },
      {
-      "en": "I told her you'd be here.",
-      "ko": "당신이 여기 있을 거라고 말했어요.",
-      "kr": "아이 톨드 허r 유드 비 히어r"
+      "en": "The place we stayed was near the river.",
+      "ko": "저희가 묵었던 곳은 강 근처였어요.",
+      "kr": "더 플레이스 위 스테이드 워z 니어r 더 리v어r"
+     },
+     {
+      "en": "I can't find the hotel I booked.",
+      "ko": "예약한 호텔을 못 찾겠어요.",
+      "kr": "아이 캔트 f파인 더 호우텔 아이 북트"
      }
     ],
     "grammar": [
      {
-      "struct": "tell her ~",
-      "body": "그녀에게 ~라고 전해 주세요 (233 뱅크 081 Tell me ~ 의 3인칭)"
+      "struct": "the ~ I booked",
+      "body": "제가 예약한 ~ (접촉절 — 명사 뒤에 '주어+동사' 를 바로 붙여 설명한다)"
      }
     ],
     "chunks": [
      [
-      "Water is fine,",
-      "워러r 이z f파인",
-      "물이면 된다"
+      "The hotel I booked is",
+      "더 호우텔 아이 북티z",
+      "제가 예약한 호텔은"
      ],
      [
-      "and please",
-      "언 플리이z",
-      "그리고 부탁해요"
-     ],
-     [
-      "tell her",
-      "텔 허r",
-      "그녀에게 전하다"
-     ],
-     [
-      "I behaved.",
-      "아이 비헤이v드",
-      "내가 잘 있었다고"
+      "near Siam Center.",
+      "니어r 싸이앰 쎄너r",
+      "시암센터 근처"
      ]
     ],
     "phonemes": [
      [
-      "/t/ water",
-      "water 의 t 는 모음 사이에서 ㄹ 로 굴러 — 워러r"
+      "/ʊ/ booked",
+      "booked 는 짧은 우 — 북트. 부욱트로 늘이지 않는다"
+     ],
+     [
+      "/t/ booked is",
+      "booked 의 t 가 is 에 붙어 북티z"
+     ],
+     [
+      "/n/ Center",
+      "center 의 t 가 약해져 쎄너r 에 가깝다"
      ]
     ],
-    "mistake": "tell + 사람 + (that) 절. tell to her (X)",
-    "similar": "Let her know I was good.",
-    "category": "여행/기내",
+    "mistake": "뒤에 it 을 또 쓰지 않는다 — the hotel I booked it ✗",
+    "similar": "I'm staying at a hotel near Siam Center.",
+    "category": "여행/입국",
     "frequency": 7
    }
   }

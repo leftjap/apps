@@ -4,516 +4,542 @@
  "date": "2026-10-02",
  "cards": [
   {
-   "id": "en-personal-bkk-seatmate-01-the-one-who",
-   "sentence": "My wife. She's the one who's working in the back.",
-   "meaning": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
+   "id": "en-personal-bkk-belt-01-dont-think-working",
+   "sentence": "Excuse me. I don't think this belt is working.",
+   "meaning": "실례합니다. 이 벨트가 고장 난 것 같아요.",
    "reading": null,
-   "phonetic_kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백",
+   "phonetic_kr": "익스큐우z 미 아이 돈 씽크 디스 벨티z 워r킹",
    "order_index": 1,
    "explanation": {
-    "key": "the one who ~ = ~하는 사람 (관계사 who 로 사람을 짚어 말하기)",
-    "anchor": "일하는 사람",
-    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
+    "key": "I don't think ~ = ~인 것 같지 않아요 / 안 되는 것 같아요 (영상 #11). 영어는 not 을 think 쪽에 붙인다",
+    "anchor": "고장 난 것 같아요",
+    "situation": "수완나품 수하물 찾는 곳. 서울편 벨트가 바뀌었다는 방송을 지오가 알아듣지 못하고 원래 벨트 앞에서 기다린다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "승객",
-      "en": "Are you travelling alone, or with family?",
-      "ko": "혼자 여행하세요, 가족과 함께세요?",
-      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
+      "name": "지오",
+      "en": "Excuse me. I don't think this belt is working.",
+      "ko": "실례합니다. 이 벨트가 고장 난 것 같아요.",
+      "kr": "익스큐우z 미 아이 돈 씽크 디스 벨티z 워r킹"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Seoul flight? It moved. They just announced it.",
+      "ko": "서울편이요? 벨트가 바뀌었어요. 방금 방송했어요.",
+      "kr": "쏘울 f플라잇 잇 무우v드 데이 저스터나운스팃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife. She's the one who's working in the back.",
-      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
-      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
+      "en": "Sorry, I'm not sure if I heard that right.",
+      "ko": "죄송한데, 제가 제대로 들었는지 모르겠어요.",
+      "kr": "쏘리 아임 낫 슈어r 이f 아이 허r드 댓 라잇"
      },
      {
       "speaker": "B",
-      "name": "승객",
-      "en": "Working? So she's a flight attendant?",
-      "ko": "일한다고요? 그럼 승무원이세요?",
-      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's what I mean. She's the crew.",
-      "ko": "제 말이 그거예요. 승무원이에요.",
-      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "That must be handy. Cheap tickets?",
-      "ko": "편하겠네요. 표가 싸죠?",
-      "kr": "댓 머스 비 핸디 치입 티킷츠"
+      "name": "직원",
+      "en": "The Seoul bags are on belt fifteen now.",
+      "ko": "서울편 짐은 이제 15번 벨트에서 나와요.",
+      "kr": "더 쏘울 백z 아r 온 벨트 f피프티인 나우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I follow her to Bangkok sometimes.",
-      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
-      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
+      "en": "Did you say fifteen or fifty?",
+      "ko": "15번이라고 하셨어요, 50번이라고 하셨어요?",
+      "kr": "디저 쎄이 f피프티이너r f피프티"
      },
      {
       "speaker": "B",
-      "name": "승객",
-      "en": "Nice. And what do you do while she works?",
-      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
-      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
+      "name": "직원",
+      "en": "One-five. At the other end.",
+      "ko": "일-오요. 저쪽 끝이에요.",
+      "kr": "원 f파이v 엇 디 아더r 엔드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It feels like a solo trip most of the day.",
-      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
-      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
+      "en": "Do you mean the one that's by the exit?",
+      "ko": "출구 옆에 있는 거 말씀이세요?",
+      "kr": "더여 미인 더 원 댓츠 바이 디 엑씻"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Yes, the one that says Seoul on the screen.",
+      "ko": "네, 화면에 서울이라고 나오는 거요.",
+      "kr": "예스 더 원 댓 쎄z 쏘울 온 더 스크리인"
      }
     ],
     "drills": [
      {
-      "en": "She's the one who booked the hotel.",
-      "ko": "호텔 예약한 사람이 아내예요.",
-      "kr": "쉬z 더 원 후 북트 더 호우텔"
+      "en": "I don't think this is our belt.",
+      "ko": "이거 우리 벨트가 아닌 것 같아요.",
+      "kr": "아이 돈 씽크 디시z 아워r 벨트"
      },
      {
-      "en": "I'm the one who's travelling alone.",
-      "ko": "혼자 다니는 쪽은 저예요.",
-      "kr": "아임 더 원 후우z 트래v얼링 얼로운"
+      "en": "I don't think this machine is working.",
+      "ko": "이 기계 안 되는 것 같아요.",
+      "kr": "아이 돈 씽크 디스 머쉬이니z 워r킹"
      },
      {
-      "en": "Are you the one who called?",
-      "ko": "전화하신 분이세요?",
-      "kr": "아r 여 더 원 후 커얼드"
+      "en": "She doesn't think it's broken.",
+      "ko": "그녀는 고장 난 게 아니라고 생각해요.",
+      "kr": "쉬 더즌 씽킷츠 브로우큰"
      },
      {
-      "en": "He's the one that sat next to me.",
-      "ko": "제 옆에 앉았던 사람이 저 분이에요.",
-      "kr": "히z 더 원 댓 쌧 넥스 터 미"
+      "en": "Do you think it's still coming?",
+      "ko": "아직 나올 것 같아요?",
+      "kr": "더여 씽킷츠 스틸 커밍"
+     },
+     {
+      "en": "The belt isn't moving.",
+      "ko": "벨트가 안 움직여요.",
+      "kr": "더 벨티즌 무우v잉"
      }
     ],
     "grammar": [
      {
-      "struct": "the one who ~",
-      "body": "~하는 사람 (관계사 who 로 사람을 짚어 말하기)"
+      "struct": "I don't think ~",
+      "body": "~인 것 같지 않아요 / 안 되는 것 같아요 (영상 #11). 영어는 not 을 think 쪽에 붙인다"
      }
     ],
     "chunks": [
      [
-      "My wife.",
-      "마이 와이f",
-      "내 아내"
+      "Excuse me.",
+      "익스큐우z 미",
+      "실례합니다"
      ],
      [
-      "She's the one",
-      "쉬z 더 원",
-      "그녀가 그 사람이다"
+      "I don't think",
+      "아이 돈 씽크",
+      "~인 것 같지 않다"
      ],
      [
-      "who's working",
-      "후우z 워r킹",
-      "일하고 있는"
-     ],
-     [
-      "in the back.",
-      "인 더 백",
-      "뒤에서"
+      "this belt is working.",
+      "디스 벨티z 워r킹",
+      "이 벨트가 돌아간다"
      ]
     ],
     "phonemes": [
      [
-      "/w/ who's working",
-      "who's 의 h 는 약하게, working 의 w 는 입술을 둥글게 — 후우z 워r킹"
-     ]
-    ],
-    "mistake": "the one who + 동사. 사물은 the one that/which",
-    "similar": "That's my wife working back there.",
-    "category": "여행/기내",
-    "frequency": 7
-   }
-  },
-  {
-   "id": "en-personal-bkk-seatmate-02-thats-what-i-mean",
-   "sentence": "That's what I mean. She's the crew.",
-   "meaning": "제 말이 그거예요. 승무원이에요.",
-   "reading": null,
-   "phonetic_kr": "댓츠 와라이 미인 쉬z 더 크루우",
-   "order_index": 2,
-   "explanation": {
-    "key": "That's what I mean = 제 말이 그거예요 (상대가 맞게 이해했을 때 확인, 영상 #30)",
-    "anchor": "제 말이",
-    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "Are you travelling alone, or with family?",
-      "ko": "혼자 여행하세요, 가족과 함께세요?",
-      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "My wife. She's the one who's working in the back.",
-      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
-      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "Working? So she's a flight attendant?",
-      "ko": "일한다고요? 그럼 승무원이세요?",
-      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's what I mean. She's the crew.",
-      "ko": "제 말이 그거예요. 승무원이에요.",
-      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "That must be handy. Cheap tickets?",
-      "ko": "편하겠네요. 표가 싸죠?",
-      "kr": "댓 머스 비 핸디 치입 티킷츠"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's why I follow her to Bangkok sometimes.",
-      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
-      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "Nice. And what do you do while she works?",
-      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
-      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It feels like a solo trip most of the day.",
-      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
-      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
-     }
-    ],
-    "drills": [
-     {
-      "en": "That's what I mean — one beer only.",
-      "ko": "제 말이 그거예요, 맥주 한 잔만.",
-      "kr": "댓츠 와라이 미인 원 비어r 오운리"
-     },
-     {
-      "en": "That's not what I mean.",
-      "ko": "그 말이 아니에요.",
-      "kr": "댓츠 낫 와라이 미인"
-     },
-     {
-      "en": "Is that what you mean?",
-      "ko": "그 말씀이세요?",
-      "kr": "이z 댓 왓처 미인"
-     },
-     {
-      "en": "I know what you mean.",
-      "ko": "무슨 말인지 알아요.",
-      "kr": "아이 노우 왓처 미인"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "That's what I mean",
-      "body": "제 말이 그거예요 (상대가 맞게 이해했을 때 확인, 영상 #30)"
-     }
-    ],
-    "chunks": [
-     [
-      "That's what I mean.",
-      "댓츠 와라이 미인",
-      "내 말이 그것이다"
+      "/θ/ think",
+      "think 의 th 는 혀끝을 이 사이에 — 씽크. 띵크가 아니다"
      ],
      [
-      "She's the crew.",
-      "쉬z 더 크루우",
-      "그녀가 승무원이다"
+      "/t/ belt is",
+      "belt 의 t 가 is 에 붙어 벨티z"
      ]
     ],
-    "phonemes": [
-     [
-      "/t/ what I",
-      "what 의 t 가 I 와 붙어 ㄹ 로 굴러 — 와라이"
-     ]
-    ],
-    "mistake": "맞게 알아들었을 때 쓴다. 틀렸을 때는 That's not what I mean",
-    "similar": "Exactly. She's crew.",
-    "category": "여행/기내",
-    "frequency": 8
-   }
-  },
-  {
-   "id": "en-personal-bkk-seatmate-03-thats-why-follow",
-   "sentence": "That's why I follow her to Bangkok sometimes.",
-   "meaning": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
-   "reading": null,
-   "phonetic_kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z",
-   "order_index": 3,
-   "explanation": {
-    "key": "That's why ~ = 그래서 ~하는 거예요 (앞말이 이유, 영상 #29)",
-    "anchor": "그래서",
-    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "Are you travelling alone, or with family?",
-      "ko": "혼자 여행하세요, 가족과 함께세요?",
-      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "My wife. She's the one who's working in the back.",
-      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
-      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "Working? So she's a flight attendant?",
-      "ko": "일한다고요? 그럼 승무원이세요?",
-      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's what I mean. She's the crew.",
-      "ko": "제 말이 그거예요. 승무원이에요.",
-      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "That must be handy. Cheap tickets?",
-      "ko": "편하겠네요. 표가 싸죠?",
-      "kr": "댓 머스 비 핸디 치입 티킷츠"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's why I follow her to Bangkok sometimes.",
-      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
-      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "Nice. And what do you do while she works?",
-      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
-      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It feels like a solo trip most of the day.",
-      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
-      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
-     }
-    ],
-    "drills": [
-     {
-      "en": "That's why I'm here alone today.",
-      "ko": "그래서 오늘 혼자인 거예요.",
-      "kr": "댓츠 와이 아임 히어r 얼로운 터데이"
-     },
-     {
-      "en": "That's because she works this route.",
-      "ko": "아내가 이 노선을 타서 그래요.",
-      "kr": "댓츠 비커z 쉬 워r크스 디스 루웃"
-     },
-     {
-      "en": "Is that why you fly so often?",
-      "ko": "그래서 그렇게 자주 타시는 거예요?",
-      "kr": "이z 댓 와이 여 f플라이 쏘우 오f픈"
-     },
-     {
-      "en": "We met in college. That's why we're so close.",
-      "ko": "대학에서 만났어요. 그래서 이렇게 친해요.",
-      "kr": "위 멧 인 칼리지 댓츠 와이 위어r 쏘우 클로우스"
-     },
-     {
-      "en": "That's why I'm learning English.",
-      "ko": "그래서 영어를 배우는 거예요.",
-      "kr": "댓츠 와이 아임 러r닝 잉글리쉬"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "That's why ~",
-      "body": "그래서 ~하는 거예요 (앞말이 이유, 영상 #29)"
-     }
-    ],
-    "chunks": [
-     [
-      "That's why",
-      "댓츠 와이",
-      "그래서 ~인 것이다"
-     ],
-     [
-      "I follow her",
-      "아이 f팔로우 허r",
-      "나는 그녀를 따라간다"
-     ],
-     [
-      "to Bangkok",
-      "터 뱅콕",
-      "방콕으로"
-     ],
-     [
-      "sometimes.",
-      "썸타임z",
-      "가끔"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/n/ when I",
-      "when 의 n 이 I 와 붙는다 — 웨나이"
-     ]
-    ],
-    "mistake": "That's why + 결과. 이유를 말할 때는 That's because",
-    "similar": "So I tag along when I can.",
-    "category": "여행/기내",
+    "mistake": "I think this belt is not working 보다 I don't think this belt is working 이 자연스럽다",
+    "similar": "This belt isn't moving.",
+    "category": "여행/공항",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-bkk-seatmate-04-feels-like-solo",
-   "sentence": "It feels like a solo trip most of the day.",
-   "meaning": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
+   "id": "en-personal-bkk-belt-02-not-sure-heard",
+   "sentence": "Sorry, I'm not sure if I heard that right.",
+   "meaning": "죄송한데, 제가 제대로 들었는지 모르겠어요.",
    "reading": null,
-   "phonetic_kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이",
-   "order_index": 4,
+   "phonetic_kr": "쏘리 아임 낫 슈어r 이f 아이 허r드 댓 라잇",
+   "order_index": 2,
    "explanation": {
-    "key": "It feels like ~ = ~처럼 느껴져요 (몸·기분으로 느끼는 판단, 영상 #13)",
-    "anchor": "느껴져요",
-    "situation": "방콕행 기내. 옆자리 태국 출장객이 말을 건다. 소연은 승무원으로 근무 중이다.",
+    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요 (영상 #10). 못 알아들었을 때 쓰는 되묻기",
+    "anchor": "들었는지 모르겠어요",
+    "situation": "수완나품 수하물 찾는 곳. 서울편 벨트가 바뀌었다는 방송을 지오가 알아듣지 못하고 원래 벨트 앞에서 기다린다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "승객",
-      "en": "Are you travelling alone, or with family?",
-      "ko": "혼자 여행하세요, 가족과 함께세요?",
-      "kr": "아r 여 트래v얼링 얼로운 어r 위드 f패멀리"
+      "name": "지오",
+      "en": "Excuse me. I don't think this belt is working.",
+      "ko": "실례합니다. 이 벨트가 고장 난 것 같아요.",
+      "kr": "익스큐우z 미 아이 돈 씽크 디스 벨티z 워r킹"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Seoul flight? It moved. They just announced it.",
+      "ko": "서울편이요? 벨트가 바뀌었어요. 방금 방송했어요.",
+      "kr": "쏘울 f플라잇 잇 무우v드 데이 저스터나운스팃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife. She's the one who's working in the back.",
-      "ko": "아내와요. 뒤에서 일하는 사람이 제 아내예요.",
-      "kr": "마이 와이f 쉬z 더 원 후우z 워r킹 인 더 백"
+      "en": "Sorry, I'm not sure if I heard that right.",
+      "ko": "죄송한데, 제가 제대로 들었는지 모르겠어요.",
+      "kr": "쏘리 아임 낫 슈어r 이f 아이 허r드 댓 라잇"
      },
      {
       "speaker": "B",
-      "name": "승객",
-      "en": "Working? So she's a flight attendant?",
-      "ko": "일한다고요? 그럼 승무원이세요?",
-      "kr": "워r킹 쏘우 쉬저 f플라잇 어텐던트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's what I mean. She's the crew.",
-      "ko": "제 말이 그거예요. 승무원이에요.",
-      "kr": "댓츠 와라이 미인 쉬z 더 크루우"
-     },
-     {
-      "speaker": "B",
-      "name": "승객",
-      "en": "That must be handy. Cheap tickets?",
-      "ko": "편하겠네요. 표가 싸죠?",
-      "kr": "댓 머스 비 핸디 치입 티킷츠"
+      "name": "직원",
+      "en": "The Seoul bags are on belt fifteen now.",
+      "ko": "서울편 짐은 이제 15번 벨트에서 나와요.",
+      "kr": "더 쏘울 백z 아r 온 벨트 f피프티인 나우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I follow her to Bangkok sometimes.",
-      "ko": "그래서 가끔 아내를 따라 방콕에 오는 거예요.",
-      "kr": "댓츠 와이 아이 f팔로우 허r 터 뱅콕 썸타임z"
+      "en": "Did you say fifteen or fifty?",
+      "ko": "15번이라고 하셨어요, 50번이라고 하셨어요?",
+      "kr": "디저 쎄이 f피프티이너r f피프티"
      },
      {
       "speaker": "B",
-      "name": "승객",
-      "en": "Nice. And what do you do while she works?",
-      "ko": "좋네요. 아내분 일할 땐 뭐 하세요?",
-      "kr": "나이스 언 왓 더여 두 와일 쉬 워r크스"
+      "name": "직원",
+      "en": "One-five. At the other end.",
+      "ko": "일-오요. 저쪽 끝이에요.",
+      "kr": "원 f파이v 엇 디 아더r 엔드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It feels like a solo trip most of the day.",
-      "ko": "하루 대부분은 혼자 여행하는 것처럼 느껴져요.",
-      "kr": "잇 f피일z 라이커 쏘울로우 트립 모우스터v 더 데이"
+      "en": "Do you mean the one that's by the exit?",
+      "ko": "출구 옆에 있는 거 말씀이세요?",
+      "kr": "더여 미인 더 원 댓츠 바이 디 엑씻"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Yes, the one that says Seoul on the screen.",
+      "ko": "네, 화면에 서울이라고 나오는 거요.",
+      "kr": "예스 더 원 댓 쎄z 쏘울 온 더 스크리인"
      }
     ],
     "drills": [
      {
-      "en": "It feels like a long day already.",
-      "ko": "벌써 긴 하루 같아요.",
-      "kr": "잇 f피일z 라이커 롱 데이 올레디"
+      "en": "I'm not sure if this is the right line.",
+      "ko": "여기가 맞는 줄인지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 디시z 더 라잇 라인"
      },
      {
-      "en": "It felt like a short flight.",
-      "ko": "짧은 비행처럼 느껴졌어요.",
-      "kr": "잇 f펠트 라이커 쇼어r트 f플라잇"
+      "en": "I'm not sure if she heard me.",
+      "ko": "그녀가 제 말을 들었는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 쉬 허r드 미"
      },
      {
-      "en": "Do you feel like a tourist here?",
-      "ko": "여기서 관광객 같아요?",
-      "kr": "더여 f피일 라이커 투어리스 히어r"
+      "en": "Did you hear that announcement?",
+      "ko": "방금 그 안내방송 들으셨어요?",
+      "kr": "디저 히어r 대러나운스먼트"
      },
      {
-      "en": "This feels like my second home.",
-      "ko": "여기가 두 번째 집 같아요.",
-      "kr": "디스 f피일z 라이크 마이 쎄컨드 호움"
+      "en": "Could you say that one more time?",
+      "ko": "한 번만 더 말해 주시겠어요?",
+      "kr": "커저 쎄이 댓 원 모어r 타임"
+     },
+     {
+      "en": "We're not sure if it's delayed.",
+      "ko": "지연된 건지 잘 모르겠어요.",
+      "kr": "위어r 낫 슈어r 이f 잇츠 딜레이드"
      }
     ],
     "grammar": [
      {
-      "struct": "It feels like ~",
-      "body": "~처럼 느껴져요 (몸·기분으로 느끼는 판단, 영상 #13)"
+      "struct": "I'm not sure if ~",
+      "body": "~인지 잘 모르겠어요 (영상 #10). 못 알아들었을 때 쓰는 되묻기"
      }
     ],
     "chunks": [
      [
-      "It feels like a",
-      "잇 f피일z 라이커",
-      "~처럼 느껴진다"
+      "Sorry,",
+      "쏘리",
+      "죄송한데"
      ],
      [
-      "solo trip",
-      "쏘울로우 트립",
-      "혼자 여행"
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~인지 잘 모르겠다"
      ],
      [
-      "most of the day.",
-      "모우스터v 더 데이",
-      "하루 대부분"
+      "I heard that right.",
+      "아이 허r드 댓 라잇",
+      "제가 제대로 들었다"
      ]
     ],
     "phonemes": [
      [
-      "/l/ solo",
-      "solo 의 l 은 혀끝을 올려 — 쏘울로우"
+      "/ʃ/ sure",
+      "sure 는 슈어r — 수어가 아니다"
+     ],
+     [
+      "/ɝ/ heard",
+      "heard 는 혀를 말아 허r드 — 하드가 아니다"
      ]
     ],
-    "mistake": "feels like + 명사/절. It feels like alone (X)",
-    "similar": "I'm on my own most of the day.",
-    "category": "여행/감상",
+    "mistake": "if 뒤에는 평서문 어순 — if did I hear ✗, if I heard ✓",
+    "similar": "Sorry, I didn't catch that.",
+    "category": "여행/공항",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-belt-03-fifteen-or-fifty",
+   "sentence": "Did you say fifteen or fifty?",
+   "meaning": "15번이라고 하셨어요, 50번이라고 하셨어요?",
+   "reading": null,
+   "phonetic_kr": "디저 쎄이 f피프티이너r f피프티",
+   "order_index": 3,
+   "explanation": {
+    "key": "Did you say ~ = ~라고 하셨어요? (들은 말을 확인하는 되묻기). -teen 과 -ty 는 강세로 구별한다",
+    "anchor": "15번이라고 하셨어요",
+    "situation": "수완나품 수하물 찾는 곳. 서울편 벨트가 바뀌었다는 방송을 지오가 알아듣지 못하고 원래 벨트 앞에서 기다린다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Excuse me. I don't think this belt is working.",
+      "ko": "실례합니다. 이 벨트가 고장 난 것 같아요.",
+      "kr": "익스큐우z 미 아이 돈 씽크 디스 벨티z 워r킹"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Seoul flight? It moved. They just announced it.",
+      "ko": "서울편이요? 벨트가 바뀌었어요. 방금 방송했어요.",
+      "kr": "쏘울 f플라잇 잇 무우v드 데이 저스터나운스팃"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry, I'm not sure if I heard that right.",
+      "ko": "죄송한데, 제가 제대로 들었는지 모르겠어요.",
+      "kr": "쏘리 아임 낫 슈어r 이f 아이 허r드 댓 라잇"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "The Seoul bags are on belt fifteen now.",
+      "ko": "서울편 짐은 이제 15번 벨트에서 나와요.",
+      "kr": "더 쏘울 백z 아r 온 벨트 f피프티인 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Did you say fifteen or fifty?",
+      "ko": "15번이라고 하셨어요, 50번이라고 하셨어요?",
+      "kr": "디저 쎄이 f피프티이너r f피프티"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "One-five. At the other end.",
+      "ko": "일-오요. 저쪽 끝이에요.",
+      "kr": "원 f파이v 엇 디 아더r 엔드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you mean the one that's by the exit?",
+      "ko": "출구 옆에 있는 거 말씀이세요?",
+      "kr": "더여 미인 더 원 댓츠 바이 디 엑씻"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Yes, the one that says Seoul on the screen.",
+      "ko": "네, 화면에 서울이라고 나오는 거요.",
+      "kr": "예스 더 원 댓 쎄z 쏘울 온 더 스크리인"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Did you say gate thirteen?",
+      "ko": "13번 게이트라고 하셨어요?",
+      "kr": "디저 쎄이 게잇 써r티인"
+     },
+     {
+      "en": "Did she say thirty or thirteen?",
+      "ko": "그녀가 30이라고 했어요, 13이라고 했어요?",
+      "kr": "디드 쉬 쎄이 써r리 어r 써r티인"
+     },
+     {
+      "en": "Was that sixteen or sixty?",
+      "ko": "16이었어요, 60이었어요?",
+      "kr": "워z 댓 씩스티이너r 씩스티"
+     },
+     {
+      "en": "Sorry, which number did you say?",
+      "ko": "죄송한데, 몇 번이라고 하셨어요?",
+      "kr": "쏘리 위치 넘버r 디저 쎄이"
+     },
+     {
+      "en": "It's gate fourteen, not forty.",
+      "ko": "14번 게이트예요, 40번 아니고요.",
+      "kr": "잇츠 게잇 f포어r티인 낫 f포어r리"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Did you say ~",
+      "body": "~라고 하셨어요? (들은 말을 확인하는 되묻기). -teen 과 -ty 는 강세로 구별한다"
+     }
+    ],
+    "chunks": [
+     [
+      "Did you say",
+      "디저 쎄이",
+      "~라고 하셨어요"
+     ],
+     [
+      "fifteen or",
+      "f피프티이너r",
+      "15, 아니면"
+     ],
+     [
+      "fifty?",
+      "f피프티",
+      "50"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ fifteen",
+      "fifteen 은 뒤를 길고 세게 — f피프티인"
+     ],
+     [
+      "/ɪ/ fifty",
+      "fifty 는 앞을 세게, 뒤는 짧게 — f피프티"
+     ]
+    ],
+    "mistake": "fifteen 은 뒤를 세게(f피프티인), fifty 는 앞을 세게(f피프티)",
+    "similar": "Was that fifteen or fifty?",
+    "category": "여행/공항",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bkk-belt-04-do-you-mean",
+   "sentence": "Do you mean the one that's by the exit?",
+   "meaning": "출구 옆에 있는 거 말씀이세요?",
+   "reading": null,
+   "phonetic_kr": "더여 미인 더 원 댓츠 바이 디 엑씻",
+   "order_index": 4,
+   "explanation": {
+    "key": "Do you mean ~ = ~ 말씀이세요? (들은 말을 내 말로 바꿔 확인하는 되묻기). the one that's ~ = ~에 있는 것",
+    "anchor": "말씀이세요",
+    "situation": "수완나품 수하물 찾는 곳. 서울편 벨트가 바뀌었다는 방송을 지오가 알아듣지 못하고 원래 벨트 앞에서 기다린다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Excuse me. I don't think this belt is working.",
+      "ko": "실례합니다. 이 벨트가 고장 난 것 같아요.",
+      "kr": "익스큐우z 미 아이 돈 씽크 디스 벨티z 워r킹"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Seoul flight? It moved. They just announced it.",
+      "ko": "서울편이요? 벨트가 바뀌었어요. 방금 방송했어요.",
+      "kr": "쏘울 f플라잇 잇 무우v드 데이 저스터나운스팃"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry, I'm not sure if I heard that right.",
+      "ko": "죄송한데, 제가 제대로 들었는지 모르겠어요.",
+      "kr": "쏘리 아임 낫 슈어r 이f 아이 허r드 댓 라잇"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "The Seoul bags are on belt fifteen now.",
+      "ko": "서울편 짐은 이제 15번 벨트에서 나와요.",
+      "kr": "더 쏘울 백z 아r 온 벨트 f피프티인 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Did you say fifteen or fifty?",
+      "ko": "15번이라고 하셨어요, 50번이라고 하셨어요?",
+      "kr": "디저 쎄이 f피프티이너r f피프티"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "One-five. At the other end.",
+      "ko": "일-오요. 저쪽 끝이에요.",
+      "kr": "원 f파이v 엇 디 아더r 엔드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you mean the one that's by the exit?",
+      "ko": "출구 옆에 있는 거 말씀이세요?",
+      "kr": "더여 미인 더 원 댓츠 바이 디 엑씻"
+     },
+     {
+      "speaker": "B",
+      "name": "직원",
+      "en": "Yes, the one that says Seoul on the screen.",
+      "ko": "네, 화면에 서울이라고 나오는 거요.",
+      "kr": "예스 더 원 댓 쎄z 쏘울 온 더 스크리인"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Do you mean the hotel?",
+      "ko": "호텔 말씀이세요?",
+      "kr": "더여 미인 더 호우텔"
+     },
+     {
+      "en": "Do you mean this one?",
+      "ko": "이거 말씀이세요?",
+      "kr": "더여 미인 디스 원"
+     },
+     {
+      "en": "Is it the one that's by the stairs?",
+      "ko": "계단 옆에 있는 거예요?",
+      "kr": "이짓 더 원 댓츠 바이 더 스테어r즈"
+     },
+     {
+      "en": "You mean the counter next to belt five?",
+      "ko": "5번 벨트 옆 카운터 말이에요?",
+      "kr": "유 미인 더 카우너r 넥스 터 벨트 f파이v"
+     },
+     {
+      "en": "Which one do you mean?",
+      "ko": "어느 거 말씀이세요?",
+      "kr": "위치 원 더여 미인"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Do you mean ~",
+      "body": "~ 말씀이세요? (들은 말을 내 말로 바꿔 확인하는 되묻기). the one that's ~ = ~에 있는 것"
+     }
+    ],
+    "chunks": [
+     [
+      "Do you mean",
+      "더여 미인",
+      "~ 말씀이세요"
+     ],
+     [
+      "the one that's",
+      "더 원 댓츠",
+      "~에 있는 것"
+     ],
+     [
+      "by the exit?",
+      "바이 디 엑씻",
+      "출구 옆"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ mean",
+      "mean 은 긴 이 — 미인"
+     ],
+     [
+      "/ð/ the exit",
+      "모음 앞의 the 는 디 — 디 엑씻"
+     ]
+    ],
+    "mistake": "Do you mean 뒤에 확인하려는 말을 그대로 붙인다 — Do you mean is ✗",
+    "similar": "You mean the one next to the exit?",
+    "category": "여행/공항",
     "frequency": 8
    }
   }

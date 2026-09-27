@@ -4,79 +4,79 @@
  "date": "2026-10-08",
  "cards": [
   {
-   "id": "en-personal-cafe-tom-01-can-i-get-coffee",
-   "sentence": "Can I get a coffee?",
-   "meaning": "커피 한 잔 주세요.",
+   "id": "en-personal-tom-usual-01-can-i-get-usual",
+   "sentence": "Can I get the usual, please?",
+   "meaning": "늘 마시던 걸로 주세요.",
    "reading": null,
-   "phonetic_kr": "커나이 게러 커f피",
+   "phonetic_kr": "커나이 겟 더 유우쥬얼 플리이z",
    "order_index": 1,
    "explanation": {
-    "key": "Can I get ~ = ~ 주세요 (영상 #7). 모두영어 2편 #74 Can I get a coffee? 그대로",
+    "key": "Can I get ~ = ~ 주세요 (카페·식당 주문 틀, 영상 #7). the usual = 늘 먹던 것",
     "anchor": "주세요",
-    "situation": "공항철도 역 앞 카페. 지오가 아침마다 온다. 바리스타 Tom 은 호주인이다.",
+    "situation": "공항철도 역 앞 카페. 지오는 자주 오는 손님이고, 호주인 바리스타 Tom 이 주문을 받는다.",
     "miniDialogue": [
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Morning. What are you having today?",
-      "ko": "좋은 아침이에요. 오늘은 뭘로 하시겠어요?",
-      "kr": "모어r닝 워러r여 해v잉 터데이"
+      "en": "Hey, welcome back. What'll it be?",
+      "ko": "어서 오세요, 또 오셨네요. 뭐로 드릴까요?",
+      "kr": "헤이 웰컴 백 와를 잇 비"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I get a coffee?",
-      "ko": "커피 한 잔 주세요.",
-      "kr": "커나이 게러 커f피"
+      "en": "Can I get the usual, please?",
+      "ko": "늘 마시던 걸로 주세요.",
+      "kr": "커나이 겟 더 유우쥬얼 플리이z"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Sure. Regular, or the decaf you had yesterday?",
-      "ko": "네. 보통이요, 어제 드신 디카페인이요?",
-      "kr": "슈어r 레귤러r 어r 더 디이캐f 여 해드 예스터r데이"
+      "en": "Sure. Staying for a while today?",
+      "ko": "네. 오늘도 좀 계시다 가세요?",
+      "kr": "슈어r 스테이잉 f퍼r 어 와일 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Decaf. I'm trying to cut back on caffeine.",
-      "ko": "디카페인으로요. 카페인을 줄이려고 하는 중이에요.",
-      "kr": "디이캐f 아임 트라잉 터 컷 배콘 캐f피인"
+      "en": "Do you mind if I stay a couple of hours?",
+      "ko": "두어 시간 있어도 괜찮을까요?",
+      "kr": "더여 마인디f 아이 스테이 어 커플 어v 아워r즈"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "How many were you having before?",
-      "ko": "전엔 몇 잔이나 드셨어요?",
-      "kr": "하우 메니 워r 여 해v잉 비f포어r"
+      "en": "Go ahead. Take the table that's by the outlet.",
+      "ko": "그러세요. 콘센트 옆에 있는 자리 쓰세요.",
+      "kr": "고우 어헤드 테익 더 테이블 댓츠 바이 디 아울렛"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Three a day. That's why I couldn't sleep.",
-      "ko": "하루 세 잔이요. 그래서 잠을 못 잔 거예요.",
-      "kr": "쓰리이 어 데이 댓츠 와이 아이 커든 슬리입"
+      "en": "Is the password the one that's on the receipt?",
+      "ko": "비밀번호는 영수증에 있는 거죠?",
+      "kr": "이z 더 패스워r드 더 원 댓손 더 리씨잇"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Decaf with a splash of milk, then. Staying or to go?",
-      "ko": "그럼 디카페인에 우유 살짝. 마시고 가세요, 포장이요?",
-      "kr": "디이캐f 위더 스플래셔v 밀크 덴 스테이잉 어r 터 고우"
+      "en": "Yep. And it's going to rain all afternoon.",
+      "ko": "네. 그리고 오후 내내 비 온대요.",
+      "kr": "옙 어닛츠 거너 레이놀 애f터r누운"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Staying. This is where I work when my wife's flying.",
-      "ko": "앉아서요. 아내가 비행 가는 날엔 여기서 일해요.",
-      "kr": "스테이잉 디스 이z 웨어r 아이 워r크 웬 마이 와이f스 f플라잉"
+      "en": "That's why I brought an umbrella.",
+      "ko": "그래서 우산 챙겨 왔어요.",
+      "kr": "댓츠 와이 아이 브로오러넘브렐러"
      }
     ],
     "drills": [
      {
-      "en": "Can I get a decaf, please?",
-      "ko": "디카페인 한 잔 주세요.",
-      "kr": "커나이 게러 디이캐f 플리이z"
+      "en": "Can I get a glass of water?",
+      "ko": "물 한 잔 주세요.",
+      "kr": "커나이 게러 글래써v 워러r"
      },
      {
       "en": "Can we get two coffees to go?",
@@ -84,432 +84,458 @@
       "kr": "컨 위 겟 투우 커f피z 터 고우"
      },
      {
-      "en": "Could I get that with oat milk?",
-      "ko": "그거 오트밀크로 될까요?",
-      "kr": "커라이 겟 댓 위드 오웃 밀크"
+      "en": "I'll have the same as always.",
+      "ko": "늘 먹던 거로 할게요.",
+      "kr": "아일 해v 더 쎄이머z 올웨이z"
      },
      {
-      "en": "I'll get the same as yesterday.",
-      "ko": "어제랑 같은 거로 할게요.",
-      "kr": "아일 겟 더 쎄이매z 예스터r데이"
+      "en": "Could I get a receipt?",
+      "ko": "영수증 받을 수 있을까요?",
+      "kr": "커라이 게러 리씨잇"
      },
      {
-      "en": "Can I get a refill?",
-      "ko": "리필 될까요?",
-      "kr": "커나이 게러 리이f필"
+      "en": "Can I get the check, please?",
+      "ko": "계산서 주세요.",
+      "kr": "커나이 겟 더 첵 플리이z"
      }
     ],
     "grammar": [
      {
       "struct": "Can I get ~",
-      "body": "~ 주세요 (영상 #7). 모두영어 2편 #74 Can I get a coffee? 그대로"
+      "body": "~ 주세요 (카페·식당 주문 틀, 영상 #7). the usual = 늘 먹던 것"
      }
     ],
     "chunks": [
      [
-      "Can I get a",
-      "커나이 게러",
-      "~ 하나 받을 수 있을까요"
+      "Can I get",
+      "커나이 겟",
+      "~ 주세요"
      ],
      [
-      "coffee?",
-      "커f피",
-      "커피"
+      "the usual,",
+      "더 유우쥬얼",
+      "늘 먹던 것"
+     ],
+     [
+      "please?",
+      "플리이z",
+      "부탁해요"
      ]
     ],
     "phonemes": [
      [
-      "/t/ get a",
-      "get 의 t 가 a 와 붙어 ㄹ 로 굴러 — 게러"
+      "/n/ Can I",
+      "can 의 n 이 I 에 붙어 커나이"
+     ],
+     [
+      "/ʒ/ usual",
+      "usual 의 s 는 ㅈ 에 가까운 /ʒ/ — 유우쥬얼"
      ]
     ],
-    "mistake": "Can I get a ~ 뒤에는 셀 수 있는 명사 하나. 두 잔은 two coffees",
-    "similar": "I'll have a coffee, please.",
+    "mistake": "Can I get 뒤에는 명사 — Can I get to the usual ✗",
+    "similar": "The usual, please.",
     "category": "일상/카페",
     "frequency": 10
    }
   },
   {
-   "id": "en-personal-cafe-tom-02-trying-to-cut-back",
-   "sentence": "Decaf. I'm trying to cut back on caffeine.",
-   "meaning": "디카페인으로요. 카페인을 줄이려고 하는 중이에요.",
+   "id": "en-personal-tom-usual-02-mind-if-i-stay",
+   "sentence": "Do you mind if I stay a couple of hours?",
+   "meaning": "두어 시간 있어도 괜찮을까요?",
    "reading": null,
-   "phonetic_kr": "디이캐f 아임 트라잉 터 컷 배콘 캐f피인",
+   "phonetic_kr": "더여 마인디f 아이 스테이 어 커플 어v 아워r즈",
    "order_index": 2,
    "explanation": {
-    "key": "I'm trying to ~ = ~하려고 하는 중이에요 (영상 #1). cut back on = 줄이다",
-    "anchor": "줄이려고",
-    "situation": "공항철도 역 앞 카페. 지오가 아침마다 온다. 바리스타 Tom 은 호주인이다.",
+    "key": "Do you mind if ~ = ~해도 괜찮을까요? (허락을 구하는 정중한 말, 영상 #9)",
+    "anchor": "괜찮을까요",
+    "situation": "공항철도 역 앞 카페. 지오는 자주 오는 손님이고, 호주인 바리스타 Tom 이 주문을 받는다.",
     "miniDialogue": [
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Morning. What are you having today?",
-      "ko": "좋은 아침이에요. 오늘은 뭘로 하시겠어요?",
-      "kr": "모어r닝 워러r여 해v잉 터데이"
+      "en": "Hey, welcome back. What'll it be?",
+      "ko": "어서 오세요, 또 오셨네요. 뭐로 드릴까요?",
+      "kr": "헤이 웰컴 백 와를 잇 비"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I get a coffee?",
-      "ko": "커피 한 잔 주세요.",
-      "kr": "커나이 게러 커f피"
+      "en": "Can I get the usual, please?",
+      "ko": "늘 마시던 걸로 주세요.",
+      "kr": "커나이 겟 더 유우쥬얼 플리이z"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Sure. Regular, or the decaf you had yesterday?",
-      "ko": "네. 보통이요, 어제 드신 디카페인이요?",
-      "kr": "슈어r 레귤러r 어r 더 디이캐f 여 해드 예스터r데이"
+      "en": "Sure. Staying for a while today?",
+      "ko": "네. 오늘도 좀 계시다 가세요?",
+      "kr": "슈어r 스테이잉 f퍼r 어 와일 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Decaf. I'm trying to cut back on caffeine.",
-      "ko": "디카페인으로요. 카페인을 줄이려고 하는 중이에요.",
-      "kr": "디이캐f 아임 트라잉 터 컷 배콘 캐f피인"
+      "en": "Do you mind if I stay a couple of hours?",
+      "ko": "두어 시간 있어도 괜찮을까요?",
+      "kr": "더여 마인디f 아이 스테이 어 커플 어v 아워r즈"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "How many were you having before?",
-      "ko": "전엔 몇 잔이나 드셨어요?",
-      "kr": "하우 메니 워r 여 해v잉 비f포어r"
+      "en": "Go ahead. Take the table that's by the outlet.",
+      "ko": "그러세요. 콘센트 옆에 있는 자리 쓰세요.",
+      "kr": "고우 어헤드 테익 더 테이블 댓츠 바이 디 아울렛"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Three a day. That's why I couldn't sleep.",
-      "ko": "하루 세 잔이요. 그래서 잠을 못 잔 거예요.",
-      "kr": "쓰리이 어 데이 댓츠 와이 아이 커든 슬리입"
+      "en": "Is the password the one that's on the receipt?",
+      "ko": "비밀번호는 영수증에 있는 거죠?",
+      "kr": "이z 더 패스워r드 더 원 댓손 더 리씨잇"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Decaf with a splash of milk, then. Staying or to go?",
-      "ko": "그럼 디카페인에 우유 살짝. 마시고 가세요, 포장이요?",
-      "kr": "디이캐f 위더 스플래셔v 밀크 덴 스테이잉 어r 터 고우"
+      "en": "Yep. And it's going to rain all afternoon.",
+      "ko": "네. 그리고 오후 내내 비 온대요.",
+      "kr": "옙 어닛츠 거너 레이놀 애f터r누운"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Staying. This is where I work when my wife's flying.",
-      "ko": "앉아서요. 아내가 비행 가는 날엔 여기서 일해요.",
-      "kr": "스테이잉 디스 이z 웨어r 아이 워r크 웬 마이 와이f스 f플라잉"
+      "en": "That's why I brought an umbrella.",
+      "ko": "그래서 우산 챙겨 왔어요.",
+      "kr": "댓츠 와이 아이 브로오러넘브렐러"
      }
     ],
     "drills": [
      {
-      "en": "I'm trying to cut back on beer.",
-      "ko": "맥주를 줄이려고 해요.",
-      "kr": "아임 트라잉 터 컷 배콘 비어r"
+      "en": "Do you mind if I sit here?",
+      "ko": "여기 앉아도 될까요?",
+      "kr": "더여 마인디f 아이 씻 히어r"
      },
      {
-      "en": "We're trying to eat out less.",
-      "ko": "외식을 줄이려고요.",
-      "kr": "위어r 트라잉 터 이이라웃 레스"
+      "en": "Do you mind if I charge my laptop?",
+      "ko": "노트북 충전해도 될까요?",
+      "kr": "더여 마인디f 아이 차r쥐 마이 랩탑"
      },
      {
-      "en": "Is she trying to quit coffee too?",
-      "ko": "아내도 커피를 끊으려는 거예요?",
-      "kr": "이z 쉬 트라잉 터 큇 커f피 투우"
+      "en": "Would you mind if we moved tables?",
+      "ko": "자리 옮겨도 괜찮을까요?",
+      "kr": "워저 마인디f 위 무우v드 테이블즈"
      },
      {
-      "en": "I tried to cut back, but I couldn't.",
-      "ko": "줄여 보려 했는데 못 했어요.",
-      "kr": "아이 트라이드 터 컷 백 벗 아이 커든"
+      "en": "Is it okay if I stay a little longer?",
+      "ko": "조금 더 있어도 괜찮아요?",
+      "kr": "이지로우케이 이f 아이 스테이 어 리를 롱거r"
+     },
+     {
+      "en": "I don't mind at all.",
+      "ko": "전혀 괜찮아요.",
+      "kr": "아이 돈 마인더롤"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm trying to ~",
-      "body": "~하려고 하는 중이에요 (영상 #1). cut back on = 줄이다"
+      "struct": "Do you mind if ~",
+      "body": "~해도 괜찮을까요? (허락을 구하는 정중한 말, 영상 #9)"
      }
     ],
     "chunks": [
      [
-      "Decaf.",
-      "디이캐f",
-      "디카페인"
+      "Do you mind if",
+      "더여 마인디f",
+      "~해도 괜찮을까요"
      ],
      [
-      "I'm trying to",
-      "아임 트라잉 터",
-      "~하려고 애쓰는 중"
+      "I stay",
+      "아이 스테이",
+      "제가 머물다"
      ],
      [
-      "cut back on",
-      "컷 배콘",
-      "줄이다"
-     ],
-     [
-      "caffeine.",
-      "캐f피인",
-      "카페인을"
+      "a couple of hours?",
+      "어 커플 어v 아워r즈",
+      "두어 시간"
      ]
     ],
     "phonemes": [
      [
-      "/k/ back on",
-      "back 의 k 가 on 과 붙는다 — 배콘"
+      "/d/ mind if",
+      "mind 의 d 가 if 에 붙어 마인디f"
+     ],
+     [
+      "/aʊ/ hours",
+      "hours 의 h 는 소리 나지 않는다 — 아워r즈"
      ]
     ],
-    "mistake": "cut back on / cut down on = 줄이다. 둘 다 on",
-    "similar": "I'm cutting down on coffee.",
+    "mistake": "허락할 때 대답은 Go ahead / Not at all. Yes 라고 하면 '싫다' 가 된다",
+    "similar": "Is it okay if I stay for a while?",
     "category": "일상/카페",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-cafe-tom-03-thats-why-sleep",
-   "sentence": "Three a day. That's why I couldn't sleep.",
-   "meaning": "하루 세 잔이요. 그래서 잠을 못 잔 거예요.",
+   "id": "en-personal-tom-usual-03-one-thats-on-receipt",
+   "sentence": "Is the password the one that's on the receipt?",
+   "meaning": "비밀번호는 영수증에 있는 거죠?",
    "reading": null,
-   "phonetic_kr": "쓰리이 어 데이 댓츠 와이 아이 커든 슬리입",
+   "phonetic_kr": "이z 더 패스워r드 더 원 댓손 더 리씨잇",
    "order_index": 3,
    "explanation": {
-    "key": "That's why ~ = 그래서 ~인 거예요 (영상 #29)",
-    "anchor": "그래서",
-    "situation": "공항철도 역 앞 카페. 지오가 아침마다 온다. 바리스타 Tom 은 호주인이다.",
+    "key": "the one that's ~ = ~에 있는 것 (the one = 앞에서 말한 그것. that's 로 어디 있는지 설명한다)",
+    "anchor": "영수증에 있는 거",
+    "situation": "공항철도 역 앞 카페. 지오는 자주 오는 손님이고, 호주인 바리스타 Tom 이 주문을 받는다.",
     "miniDialogue": [
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Morning. What are you having today?",
-      "ko": "좋은 아침이에요. 오늘은 뭘로 하시겠어요?",
-      "kr": "모어r닝 워러r여 해v잉 터데이"
+      "en": "Hey, welcome back. What'll it be?",
+      "ko": "어서 오세요, 또 오셨네요. 뭐로 드릴까요?",
+      "kr": "헤이 웰컴 백 와를 잇 비"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I get a coffee?",
-      "ko": "커피 한 잔 주세요.",
-      "kr": "커나이 게러 커f피"
+      "en": "Can I get the usual, please?",
+      "ko": "늘 마시던 걸로 주세요.",
+      "kr": "커나이 겟 더 유우쥬얼 플리이z"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Sure. Regular, or the decaf you had yesterday?",
-      "ko": "네. 보통이요, 어제 드신 디카페인이요?",
-      "kr": "슈어r 레귤러r 어r 더 디이캐f 여 해드 예스터r데이"
+      "en": "Sure. Staying for a while today?",
+      "ko": "네. 오늘도 좀 계시다 가세요?",
+      "kr": "슈어r 스테이잉 f퍼r 어 와일 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Decaf. I'm trying to cut back on caffeine.",
-      "ko": "디카페인으로요. 카페인을 줄이려고 하는 중이에요.",
-      "kr": "디이캐f 아임 트라잉 터 컷 배콘 캐f피인"
+      "en": "Do you mind if I stay a couple of hours?",
+      "ko": "두어 시간 있어도 괜찮을까요?",
+      "kr": "더여 마인디f 아이 스테이 어 커플 어v 아워r즈"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "How many were you having before?",
-      "ko": "전엔 몇 잔이나 드셨어요?",
-      "kr": "하우 메니 워r 여 해v잉 비f포어r"
+      "en": "Go ahead. Take the table that's by the outlet.",
+      "ko": "그러세요. 콘센트 옆에 있는 자리 쓰세요.",
+      "kr": "고우 어헤드 테익 더 테이블 댓츠 바이 디 아울렛"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Three a day. That's why I couldn't sleep.",
-      "ko": "하루 세 잔이요. 그래서 잠을 못 잔 거예요.",
-      "kr": "쓰리이 어 데이 댓츠 와이 아이 커든 슬리입"
+      "en": "Is the password the one that's on the receipt?",
+      "ko": "비밀번호는 영수증에 있는 거죠?",
+      "kr": "이z 더 패스워r드 더 원 댓손 더 리씨잇"
      },
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Decaf with a splash of milk, then. Staying or to go?",
-      "ko": "그럼 디카페인에 우유 살짝. 마시고 가세요, 포장이요?",
-      "kr": "디이캐f 위더 스플래셔v 밀크 덴 스테이잉 어r 터 고우"
+      "en": "Yep. And it's going to rain all afternoon.",
+      "ko": "네. 그리고 오후 내내 비 온대요.",
+      "kr": "옙 어닛츠 거너 레이놀 애f터r누운"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Staying. This is where I work when my wife's flying.",
-      "ko": "앉아서요. 아내가 비행 가는 날엔 여기서 일해요.",
-      "kr": "스테이잉 디스 이z 웨어r 아이 워r크 웬 마이 와이f스 f플라잉"
+      "en": "That's why I brought an umbrella.",
+      "ko": "그래서 우산 챙겨 왔어요.",
+      "kr": "댓츠 와이 아이 브로오러넘브렐러"
      }
     ],
     "drills": [
      {
-      "en": "That's why I switched to decaf.",
-      "ko": "그래서 디카페인으로 바꿨어요.",
-      "kr": "댓츠 와이 아이 스위치트 터 디이캐f"
+      "en": "My seat is the one that's by the window.",
+      "ko": "제 자리는 창가 쪽 거예요.",
+      "kr": "마이 씨이리z 더 원 댓츠 바이 더 윈도우"
      },
      {
-      "en": "That's because I get up so late.",
-      "ko": "제가 너무 늦게 일어나서 그래요.",
-      "kr": "댓츠 비커z 아이 게럽 쏘우 레잇"
+      "en": "Is it the one that's on the wall?",
+      "ko": "벽에 있는 거예요?",
+      "kr": "이짓 더 원 댓손 더 월"
      },
      {
-      "en": "Is that why you look tired?",
-      "ko": "그래서 피곤해 보이는 거예요?",
-      "kr": "이z 댓 와이 여 룩 타이어r드"
+      "en": "Which network should I use?",
+      "ko": "어느 네트워크를 써야 해요?",
+      "kr": "위치 넷워r크 셔라이 유우z"
      },
      {
-      "en": "My wife leaves at four. That's why I'm up.",
-      "ko": "아내가 네 시에 나가요. 그래서 깨 있는 거예요.",
-      "kr": "마이 와이f 리이v즈 엇 f포어r 댓츠 와이 아임 업"
+      "en": "The code is at the bottom of the receipt.",
+      "ko": "코드는 영수증 맨 아래에 있어요.",
+      "kr": "더 코우디z 엇 더 바러머v 더 리씨잇"
+     },
+     {
+      "en": "That's the one I wanted.",
+      "ko": "그게 제가 원했던 거예요.",
+      "kr": "댓츠 더 워나이 원티드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "the one that's ~",
+      "body": "~에 있는 것 (the one = 앞에서 말한 그것. that's 로 어디 있는지 설명한다)"
+     }
+    ],
+    "chunks": [
+     [
+      "Is the password",
+      "이z 더 패스워r드",
+      "비밀번호가 ~예요"
+     ],
+     [
+      "the one that's on",
+      "더 원 댓손",
+      "~에 있는 것"
+     ],
+     [
+      "the receipt?",
+      "더 리씨잇",
+      "영수증"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/p/ receipt",
+      "receipt 의 p 는 소리 나지 않는다 — 리씨잇"
+     ],
+     [
+      "/w/ password",
+      "password 의 w 는 소리 나지 않는다 — 패스워r드"
+     ]
+    ],
+    "mistake": "관계사 자리에 it 을 쓰지 않는다 — the one it's on the receipt ✗",
+    "similar": "Is the password on the receipt?",
+    "category": "일상/카페",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-tom-usual-04-thats-why-umbrella",
+   "sentence": "That's why I brought an umbrella.",
+   "meaning": "그래서 우산 챙겨 왔어요.",
+   "reading": null,
+   "phonetic_kr": "댓츠 와이 아이 브로오러넘브렐러",
+   "order_index": 4,
+   "explanation": {
+    "key": "That's why ~ = 그래서 ~한 거예요 (앞사람 말이 이유일 때, 영상 #29)",
+    "anchor": "그래서",
+    "situation": "공항철도 역 앞 카페. 지오는 자주 오는 손님이고, 호주인 바리스타 Tom 이 주문을 받는다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Hey, welcome back. What'll it be?",
+      "ko": "어서 오세요, 또 오셨네요. 뭐로 드릴까요?",
+      "kr": "헤이 웰컴 백 와를 잇 비"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can I get the usual, please?",
+      "ko": "늘 마시던 걸로 주세요.",
+      "kr": "커나이 겟 더 유우쥬얼 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Sure. Staying for a while today?",
+      "ko": "네. 오늘도 좀 계시다 가세요?",
+      "kr": "슈어r 스테이잉 f퍼r 어 와일 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you mind if I stay a couple of hours?",
+      "ko": "두어 시간 있어도 괜찮을까요?",
+      "kr": "더여 마인디f 아이 스테이 어 커플 어v 아워r즈"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Go ahead. Take the table that's by the outlet.",
+      "ko": "그러세요. 콘센트 옆에 있는 자리 쓰세요.",
+      "kr": "고우 어헤드 테익 더 테이블 댓츠 바이 디 아울렛"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is the password the one that's on the receipt?",
+      "ko": "비밀번호는 영수증에 있는 거죠?",
+      "kr": "이z 더 패스워r드 더 원 댓손 더 리씨잇"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Yep. And it's going to rain all afternoon.",
+      "ko": "네. 그리고 오후 내내 비 온대요.",
+      "kr": "옙 어닛츠 거너 레이놀 애f터r누운"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's why I brought an umbrella.",
+      "ko": "그래서 우산 챙겨 왔어요.",
+      "kr": "댓츠 와이 아이 브로오러넘브렐러"
+     }
+    ],
+    "drills": [
+     {
+      "en": "That's why I came early.",
+      "ko": "그래서 일찍 왔어요.",
+      "kr": "댓츠 와이 아이 케이머r리"
+     },
+     {
+      "en": "That's why she's so tired.",
+      "ko": "그래서 그녀가 그렇게 피곤한 거예요.",
+      "kr": "댓츠 와이 쉬z 쏘우 타이어r드"
+     },
+     {
+      "en": "Is that why you're here?",
+      "ko": "그래서 여기 오신 거예요?",
+      "kr": "이z 댓 와이 여r 히어r"
+     },
+     {
+      "en": "I brought my laptop just in case.",
+      "ko": "혹시 몰라서 노트북 가져왔어요.",
+      "kr": "아이 브로옷 마이 랩탑 저스틴 케이스"
+     },
+     {
+      "en": "Did you bring an umbrella?",
+      "ko": "우산 가져왔어요?",
+      "kr": "디저 브링 어넘브렐러"
      }
     ],
     "grammar": [
      {
       "struct": "That's why ~",
-      "body": "그래서 ~인 거예요 (영상 #29)"
+      "body": "그래서 ~한 거예요 (앞사람 말이 이유일 때, 영상 #29)"
      }
     ],
     "chunks": [
-     [
-      "Three a day.",
-      "쓰리이 어 데이",
-      "하루 세 잔"
-     ],
      [
       "That's why",
       "댓츠 와이",
-      "그래서 ~인 것이다"
+      "그래서 ~한 거다"
      ],
      [
-      "I couldn't sleep.",
-      "아이 커든 슬리입",
-      "내가 잠을 못 잤다"
+      "I brought an umbrella.",
+      "아이 브로오러넘브렐러",
+      "우산을 가져왔다"
      ]
     ],
     "phonemes": [
      [
-      "/θ/ three",
-      "three 의 th 는 혀끝을 이 사이에, 모음은 길게 — 쓰리이"
+      "/ɔː/ brought",
+      "brought 의 gh 는 소리 나지 않는다 — 브로옷"
+     ],
+     [
+      "/ʌ/ umbrella",
+      "umbrella 는 가운데 강세 — 엄브렐러"
      ]
     ],
-    "mistake": "That's why 뒤에 결과. 원인은 앞 문장에",
-    "similar": "Three a day — no wonder I couldn't sleep.",
+    "mistake": "That's why 는 이유를 묻는 질문의 답이 아니다 — 앞에서 말한 사실이 이유일 때 쓴다",
+    "similar": "So I brought an umbrella.",
     "category": "일상/카페",
     "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-cafe-tom-04-this-is-where",
-   "sentence": "Staying. This is where I work when my wife's flying.",
-   "meaning": "앉아서요. 아내가 비행 가는 날엔 여기서 일해요.",
-   "reading": null,
-   "phonetic_kr": "스테이잉 디스 이z 웨어r 아이 워r크 웬 마이 와이f스 f플라잉",
-   "order_index": 4,
-   "explanation": {
-    "key": "This is where ~ = 여기가 ~하는 곳이에요 (관계부사 where)",
-    "anchor": "여기서",
-    "situation": "공항철도 역 앞 카페. 지오가 아침마다 온다. 바리스타 Tom 은 호주인이다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Morning. What are you having today?",
-      "ko": "좋은 아침이에요. 오늘은 뭘로 하시겠어요?",
-      "kr": "모어r닝 워러r여 해v잉 터데이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Can I get a coffee?",
-      "ko": "커피 한 잔 주세요.",
-      "kr": "커나이 게러 커f피"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Sure. Regular, or the decaf you had yesterday?",
-      "ko": "네. 보통이요, 어제 드신 디카페인이요?",
-      "kr": "슈어r 레귤러r 어r 더 디이캐f 여 해드 예스터r데이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Decaf. I'm trying to cut back on caffeine.",
-      "ko": "디카페인으로요. 카페인을 줄이려고 하는 중이에요.",
-      "kr": "디이캐f 아임 트라잉 터 컷 배콘 캐f피인"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "How many were you having before?",
-      "ko": "전엔 몇 잔이나 드셨어요?",
-      "kr": "하우 메니 워r 여 해v잉 비f포어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Three a day. That's why I couldn't sleep.",
-      "ko": "하루 세 잔이요. 그래서 잠을 못 잔 거예요.",
-      "kr": "쓰리이 어 데이 댓츠 와이 아이 커든 슬리입"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Decaf with a splash of milk, then. Staying or to go?",
-      "ko": "그럼 디카페인에 우유 살짝. 마시고 가세요, 포장이요?",
-      "kr": "디이캐f 위더 스플래셔v 밀크 덴 스테이잉 어r 터 고우"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Staying. This is where I work when my wife's flying.",
-      "ko": "앉아서요. 아내가 비행 가는 날엔 여기서 일해요.",
-      "kr": "스테이잉 디스 이z 웨어r 아이 워r크 웬 마이 와이f스 f플라잉"
-     }
-    ],
-    "drills": [
-     {
-      "en": "This is where I usually sit.",
-      "ko": "여기가 제가 늘 앉는 자리예요.",
-      "kr": "디스 이z 웨어r 아이 유우주얼리 씻"
-     },
-     {
-      "en": "That's where the airport train stops.",
-      "ko": "저기가 공항철도 서는 곳이에요.",
-      "kr": "댓츠 웨어r 디 에어r포어r트 트레인 스탑스"
-     },
-     {
-      "en": "Is this where you live?",
-      "ko": "여기 사세요?",
-      "kr": "이z 디스 웨어r 여 리v"
-     },
-     {
-      "en": "Home is where Nani is.",
-      "ko": "나니가 있는 곳이 집이죠.",
-      "kr": "호움 이z 웨어r 나니 이z"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "This is where ~",
-      "body": "여기가 ~하는 곳이에요 (관계부사 where)"
-     }
-    ],
-    "chunks": [
-     [
-      "Staying.",
-      "스테이잉",
-      "앉아서 마신다"
-     ],
-     [
-      "This is where I work",
-      "디스 이z 웨어r 아이 워r크",
-      "여기가 내가 일하는 곳이다"
-     ],
-     [
-      "when my wife's flying.",
-      "웬 마이 와이f스 f플라잉",
-      "아내가 비행 갈 때"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/w/ where",
-      "where 의 w 는 입술을 둥글게 — 웨어r"
-     ]
-    ],
-    "mistake": "This is where + 절. This is the place where 와 같다",
-    "similar": "I work from here on her flight days.",
-    "category": "일상/카페",
-    "frequency": 7
    }
   }
  ]

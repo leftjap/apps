@@ -17,7 +17,7 @@
 8. **지오는 자기 얘기를 먼저 꺼내지 않는다 (2026-09-27, 3묶음 지적).** 아내 직업·동선, 자기 직업, 자기 단골집을 직원·심사관·낯선 사람에게 말하지 않는다. 상대가 묻거나 절차상 필요할 때만, 필요한 최소만. 개인화는 **상황을 지오의 삶에서 고르는 것**이지 대사에 프로필을 박는 것이 아니다. 재미는 상황(못 알아들음, 층이 다름, 예약이 안 뜸)에서 낸다.
 9. **지오의 취향·습관을 만들지 않는다.** 시트에 없는 음료·음식·소비 선호(디카페인·우유·커피 줄이기)는 창작이다. 필요하면 물어보고, 모르면 `The usual, please.` 처럼 선호를 말하지 않는 문장을 쓴다.
 10. **말이 자연스러운지 사람이 읽는다.** 좌석은 복도·창가·앞뒤로 말하고, 낯선 상대는 첫 대화에서 지적·평가하지 않으며(`5분 하고 내려오던데 그게 다예요?` ✗), 상대에게 뜻 없는 정보(`제가 다니는 카페`)는 넣지 않는다. 문형·관계사를 넣기 위해 말을 비틀지 않는다 — 안 들어가면 그 편의 닻을 바꾼다.
-11. **영어로 벌어지는 대화인지 확인한다.** 소연 동료가 인사 오는 건 한국인이라 한국어다. 크루 호텔은 아내를 따라 들어가는 곳이라 지오가 체크인하지 않는다 — 지오가 체크인하는 호텔은 혼자 예약한 일반 호텔이다.
+11. **영어로 벌어지는 대화인지 확인한다.** 소연 동료가 인사 오는 건 한국인이라 한국어다. 크루 호텔은 아내를 따라 들어가는 곳이라 지오가 체크인하지 않는다 — 지오가 체크인하는 호텔은 혼자 예약한 일반 호텔이다. 인천공항 카운터·게이트도 같다(2026-09-27 재작성 때 확인) — 직원이 한국인이고 방송도 한국어로 나오므로, 출발 쪽에서 영어가 오가는 자리는 외국인 승객뿐이다. 공항 카운터·안내방송 장면은 외국 공항(방콕 도착·귀국, 런던, 라스베가스)에서 쓴다.
 12. **셀프 검증은 초안 필드다.** 편마다 `review: { spoken, facts, english }` 에 "지오가 실제로 이렇게 말하나", "시트 밖 사실이 없나", "왜 영어인가" 를 글로 적는다. `verify-draft` 가 없으면 에러, 지오 줄에 아내 언급이 있으면 경고를 낸다.
 
 배정표는 **장면 유형에 닻 문형 1~2개**를 붙인 것이다. 2026-09-19 에 실패한 "패턴 배정표" 는 대화 한 편의 줄마다 패턴을 먼저 박은 것이었고, 그건 여전히 금지다. 대화는 한 가닥으로 먼저 쓰고, 닻 문형이 자연스럽게 들어갈 자리가 없으면 바꾼다.
@@ -67,8 +67,8 @@
 
 | 유형 | L1 기본 | L2 되묻기·확인 | L3 문제·협상 | L4 거꾸로 | 상대 핵심 질문 변형(층마다 다르게) |
 |---|---|---|---|---|---|
-| 입국심사 | 4 방콕 | 36 런던(빨리 말해 되묻기) | 21 미국(현금·숙소 추가 질문) · 50 베트남(부모님 대신 답) | — | What's the purpose of your visit? / What brings you to the UK? / Business or pleasure? |
-| 공항 카운터·탑승 | 1 좌석 변경 · 33 보안 | 2·45 안내방송 못 알아듣고 확인 | 20 짐 초과 · 34 게이트 변경·지연 | 98 공항 가는 법 | Any bags to check? / Are you checking anything in today? / Just the one bag? |
+| 입국심사 | 2 방콕 | 36 런던(빨리 말해 되묻기) | 21 미국(현금·숙소 추가 질문) · 50 베트남(부모님 대신 답) | — | What's the purpose of your visit? / What brings you to the UK? / Business or pleasure? |
+| 공항 카운터·탑승 | 20 귀국 카운터(좌석·짐) · 33 보안 | 3 수하물 벨트 변경 방송 · 45 게이트 방송(런던) | 1 기내 좌석 착오 · 4 수하물 분실 · 34 게이트 변경·지연 | 98 공항 가는 법 | Any bags to check? / Are you checking anything in today? / Just the one bag? |
 | 호텔 | 6 일반 호텔 체크인 · 23 연장 문의 · 49 부모님 방 층 | 8 방 전화로 고장 신고(회선 나빠 되묻기) | 7 조식 마감 뒤 · 19 체크아웃 정산 | — | Do you have a reservation? / What name is it under? / Checking in? |
 | 교통·기사 전화 | 10 BTS 표 · 37 컨택리스 | 5 그랩 기사 전화(위치 설명 다시) · 22 우버 기사 전화 | 16 길 잃음 · 29 우버에 둔 가방 | 89 공항철도 · 90 환승 · 94 교통카드 | Where are you exactly? / Which door are you at? / Can you see the taxi sign? |
 | 식당·계산 | 12 카페 · 13 주문 | 38 펍(빠른 질문 되묻기) | 40 잘못 나온 음식·계산 착오 · 47 부모님 못 먹는 것 | 91 식당 추천 | Anything to drink? / What can I get you? / Are you ready to order? |
@@ -80,18 +80,18 @@
 
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
-| 1 | 카운터. 앱 체크인 좌석이 가운데라 복도로 바꾸기, 짐 부치기 | 직원 | #20 I was wondering if · #7 Can I get | |
-| 2 | 게이트 안내방송을 못 알아들음. 직원에게 다시 확인 (되묻기 층) | 직원 | #10 I'm not sure if · #3 I was about to | |
-| 3 | 수하물이 안 나옴. 분실 신고 카운터 | 직원 | #14 It looks like · #18 I need you to | |
-| 4 | 수완나품 입국심사(대면). 목적·일수·호텔 | 심사관 | #4 I'm here to · #2 I'm supposed to | |
+| 1 | 기내. 외국인 승객이 지오 자리에 앉아 있음 — 탑승권 23C 를 32C 로 거꾸로 읽음. 가방 내려 주기 (문제 층) | 승객 | #14 It looks like · #6 Let me · #3 I was about to | |
+| 2 | 수완나품 입국심사(대면). 목적(관광)·일수·숙소 — 아내·크루 호텔 언급 없음 | 심사관 | #4 I'm here to · #5 I've been | |
+| 3 | 수하물 벨트. 벨트 변경 방송을 놓쳐 고장인 줄 알고, 직원 말을 되묻는다(15/50) (되묻기 층) | 직원 | #11 I don't think · #10 I'm not sure if | It's not working. (1편 #175) |
+| 4 | 수하물 분실 신고. 가방이 서울에 남음 → 오늘 밤 호텔로 배송 (직원 줄에 #18) | 직원 | #14 It looks like · #8 Can you | How long will it take? (사용) |
 | 5 | 그랩 기사 전화. 못 알아들어 다시 말해 달라고 하고, 앱 위치가 다른 층이라 세븐일레븐으로 설명 | 기사 | #16 There's · #8 Can you | I'm on my way. (사용) |
-| 6 | 호텔 체크인. 혼자 예약한 일반 호텔, 여권·보증금·조식 시간 | May | #4 I'm here to · #10 I'm not sure if | |
+| 6 | 호텔 체크인. 혼자 예약한 일반 호텔, 가방 없이 도착(4편에서 이어짐)·보증금 카드·조식 포함 여부 | May | #17 I'd like to · #2 I'm supposed to · #10 I'm not sure if | |
 | 7 | 첫 아침. 늦잠으로 조식 마감 10분 뒤 | May | #7 Can I get · #27 I didn't mean to | I overslept. (사용) |
 | 8 | 방 전화로 프런트에. 회선이 나빠 되묻고, 에어컨 소음·리모컨 먹통에 사람 보내 달라기 | May | #18 I need you to · #8 Can you | It's not working. (1편 #175) |
 | 9 | 시암센터 가는 법. BTS 냐 그랩이냐, 비 예보 | May | #25 It depends on · #24 You might want to | |
 | 10 | BTS 창구. 카드 기계 오류 → 현금 | 직원 | #1 I'm trying to · #11 I don't think | |
 | 11 | 시암센터 점원. 미감 까다로운 아내 선물 | 점원 | #10 I'm not sure if · #21 The thing is | |
-| 12 | 카페. 디카페인 있나, 커피 줄이는 중 | 바리스타 | #7 Can I get · #1 I'm trying to | Can I get a coffee? (2편 #74) · I'm trying to cut down. (사용) |
+| 12 | 카페. ~~디카페인 있나, 커피 줄이는 중~~ — 규칙 9 위반(시트에 없는 취향). 4묶음 저작 때 다시 정한다 | 바리스타 | #7 Can I get · #1 I'm trying to | Can I get a coffee? (2편 #74) · I'm trying to cut down. (사용) |
 | 13 | MK수키 주문. 매운 정도, 소연 몫 포장 | 직원 | #17 I'd like to · #30 That's what I mean | |
 | 14 | 약국. 소연 감기(기침·목) | 약사 | #4 I'm here to · #15 It sounds like | |
 | 15 | 마사지. 데드리프트로 다친 허리 조심 | 직원 | #9 Do you mind · #13 It feels like | My back hurts. (사용) |
@@ -99,7 +99,7 @@
 | 17 | 호텔 라운지. 은퇴한 호주 부부와 날씨·일정 얘기 (자기 얘기는 물을 때만) | 여행자 | #5 I've been · #29 That's why | |
 | 18 | 시암 앞. 소연과 사진 부탁(좋은 추억) | 행인 | #9 Do you mind · #19 I just wanted to | |
 | 19 | 체크아웃. 미니바 맥주 한 병 = 규칙 지킴 | May | #11 I don't think · #28 I can't wait to | It's been a long day. (1편 #330) |
-| 20 | 귀국 카운터. 소연 쇼핑으로 짐 초과 | 직원 | #25 It depends on · #23 You don't have to | |
+| 20 | 귀국 카운터(수완나품, 태국 직원). 앱 체크인 좌석이 가운데라 복도로 바꾸기, 짐 무게 초과 (옛 1번 카운터 장면을 여기로 옮김 — 인천 카운터는 한국어) | 직원 | #20 I was wondering if · #25 It depends on | |
 
 ### 해외 II — 라스베가스 레이오버 (15편)
 
@@ -150,7 +150,7 @@
 
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
-| 51 | 첫 만남. 트레드밀 옆, 러닝 5분 | Liam | #1 I'm trying to · #5 I've been | I've been working out. (사용) · Have you lost weight? (1편 #55) |
+| 51 | 첫 만남. 옆 트레드밀이 안 켜져 Liam 이 묻고, 지오가 안전 클립을 알려 준다. 매일 1분씩 늘리는 중(지금 15분, 목표 30분) | Liam | #1 I'm trying to · #5 I've been · #6 Let me | I've been working out. (사용) · Have you lost weight? (1편 #55) |
 | 52 | 나이. 50 → 그래서 러닝 먼저 | Liam | #29 That's why · #22 As far as I know | How old do I look? (사용) · You look so young. (1편 #321) |
 | 53 | 스쿼트 자세 → 허리 다친 얘기 | Liam | #13 It feels like · #24 You might want to | |
 | 54 | 트레드밀 30분 목표 | Liam | #1 I'm trying to · #26 I'll let you know | We have a long way to go. (1편 #181) |
@@ -182,7 +182,7 @@
 
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
-| 73 | 아침 커피 주문. 늘 마시는 것 (취향은 시트에 없어 말하지 않는다) | Tom | #7 Can I get · #16 There's | Can I get a coffee? (2편 #74) |
+| 73 | 늘 마시던 걸로 주문(취향은 시트에 없어 말하지 않는다), 두어 시간 있어도 되는지, 와이파이 비밀번호, 비 예보 | Tom | #7 Can I get · #9 Do you mind · #29 That's why | Can I get a coffee? (2편 #74) |
 | 74 | 비 오는 날 | Tom | #14 It looks like · #15 It sounds like | |
 | 75 | 동네 맛집 추천(보쌈·감자탕) | Tom | #12 I think you should · #29 That's why | I highly recommend it. (2편 #40) |
 | 76 | 노트북. 뭐 만드냐 → 앱 | Tom | #16 There's · #21 The thing is | |
@@ -208,7 +208,7 @@
 
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
-| 89 | 공항철도 홍대입구. 호스텔 가는 길을 지표로 설명 (앱 권유 안 함) | 여행객 | #24 You might want to · #16 There's | |
+| 89 | 공항철도 홍대입구. 호스텔 가는 길을 지표(공원·빵집)로 설명 (앱 권유 안 함) | 여행객 | #16 There's · #23 You don't have to | |
 | 90 | 2호선 환승 | 여행객 | #12 I think you should · #22 As far as I know | |
 | 91 | 홍대 식당 추천, 줄 안 서는 시간 | 여행객 | #12 I think you should · #25 It depends on | |
 | 92 | 길 안내하다 같이 걸어 줌 | 여행객 | #6 Let me · #23 You don't have to | |
@@ -223,17 +223,17 @@
 
 ## 4. 닻 문형 분포
 
-§3 표에서 Sarah 삭제분(10행)을 뺀 90편의 닻 184개. 30패턴 30종 전부 2회 이상. (Sarah 10편 재배정 때 다시 센다.)
+§3 표에서 Sarah 삭제 행(취소선)을 뺀 92편의 닻 188개(2026-09-27 3묶음 재작성 반영 — 행을 다시 세니 92편이라 이전의 '90편' 을 고쳤다). 30패턴 30종 전부 2회 이상. (Sarah 행 재배정 때 다시 센다.)
 
 | 회수 | 문형 |
 |---|---|
-| 11 | #16 There's |
-| 9 | #10 I'm not sure if · #14 It looks like |
-| 8 | #4 I'm here to · #7 Can I get · #25 It depends on |
-| 7 | #2 I'm supposed to · #5 I've been · #6 Let me · #11 I don't think · #12 I think you should · #23 You don't have to · #27 I didn't mean to |
-| 6 | #1 I'm trying to · #3 I was about to · #9 Do you mind · #24 You might want to · #26 I'll let you know |
-| 5 | #8 Can you · #13 It feels like · #15 It sounds like · #18 I need you to · #20 I was wondering if · #21 The thing is · #28 I can't wait to · #29 That's why |
-| 4 | #17 I'd like to · #22 As far as I know |
+| 10 | #14 It looks like · #16 There's |
+| 9 | #6 Let me · #10 I'm not sure if |
+| 8 | #5 I've been · #11 I don't think · #25 It depends on |
+| 7 | #2 I'm supposed to · #4 I'm here to · #7 Can I get · #9 Do you mind · #12 I think you should · #23 You don't have to · #27 I didn't mean to |
+| 6 | #1 I'm trying to · #3 I was about to · #8 Can you · #26 I'll let you know · #29 That's why |
+| 5 | #13 It feels like · #15 It sounds like · #17 I'd like to · #20 I was wondering if · #21 The thing is · #24 You might want to · #28 I can't wait to |
+| 4 | #18 I need you to · #22 As far as I know |
 | 2 | #19 I just wanted to · #30 That's what I mean |
 
 ## 5. 시행 순서
@@ -241,6 +241,7 @@
 1. **도구 수정 (test-first)**: `verify-draft.mjs` 의 src 게이트는 장면에 `date` 가 있을 때만 날짜 접두를 검사하고, 없으면 `src` 존재만 검사한다. `check-sources.mjs` 의 등급을 새 순위로 다시 매긴다 — a = 30패턴이 든 모두영어 그대로, b = 30패턴 자작, c = 모두영어 그대로(30패턴 아님), d = 233. 지오 줄 중 반응형 문장 수를 세어 편당 2를 넘으면 경고한다. 초안 JSON 에 `cast`(상대 이름·TTS 화자)와 `series`(시리즈·회차) 필드를 둔다.
 2. **3묶음 = 2묶음 교체.** 시작하지 않은 `en-personal-2026-09-30..10-09` 10편을 이 표로 다시 써서 같은 날짜로 올린다(로더 순서 유지, 옛 카드 id 삭제). 구성은 방콕 1~6편(출발 카운터 → 기내 Sarah → 옆자리 → 입국심사 → 그랩 → May 체크인)에 한국 인물 첫 만남 4편(51 Liam · 63 Emma · 73 Tom · 89 여행객)을 섞어, 열 편 안에서 시리즈 연속성과 인물 소개가 함께 되게 한다. 1묶음 미시작 8편(소연 대화)은 그대로 둔다.
    **진행(2026-09-26)**: 3묶음 적재 완료 — 장면 1·2·3·4·5·6·51·63·73·89 사용, 시드 `en-personal-2026-09-30..10-09`. 도구 수정도 완료(§5-1).
+   **재작성(2026-09-27)**: 사용자 판정으로 1·2·3·4·6·51·73·89 여덟 편을 다시 써서 같은 날짜로 교체했다(5·63 은 유지, 시드 파일도 그대로). 인천 카운터·게이트는 한국어 장면이라(§1-11) 방콕 1~4 를 기내 좌석 착오 → 입국심사 → 수하물 벨트 되묻기 → 분실 신고 순서로 다시 짰다. 옛 32행은 `~/apps/tmp/2026-09-27-batch3-replaced-rows-backup.json` 에 백업한 뒤 지웠다(완료 0).
 3. 3묶음을 휴대폰에서 써 본 뒤 4묶음부터 10~20편씩. 방콕 나머지 → Liam·Emma 초반 → 라스베가스 → … 순으로 시리즈를 번갈아 진행한다. 표는 계획이므로 쓰면서 장면을 바꿔도 되고, 바뀐 것은 여기에 반영한다.
 
 ## 6. 분포 세는 법

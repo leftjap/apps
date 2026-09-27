@@ -4,522 +4,538 @@
  "date": "2026-10-06",
  "cards": [
   {
-   "id": "en-personal-gym-liam-01-trying-to-run",
-   "sentence": "Not new. I'm trying to get back into running.",
-   "meaning": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
+   "id": "en-personal-liam-treadmill-01-clip-thats-hanging",
+   "sentence": "Do you see the red clip that's hanging there?",
+   "meaning": "거기 매달려 있는 빨간 클립 보이세요?",
    "reading": null,
-   "phonetic_kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝",
+   "phonetic_kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r",
    "order_index": 1,
    "explanation": {
-    "key": "I'm trying to ~ = ~하려고 하는 중이에요 (영상 #1). get back into = 다시 시작하다",
-    "anchor": "시작하려는",
-    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
+    "key": "~ that's ~ = ~하고 있는 / ~에 있는 ~ (that's = that is. 관계사로 가리키는 물건을 설명한다)",
+    "anchor": "매달려 있는",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
     "miniDialogue": [
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "I see you here every morning. Are you new here?",
-      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
-      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
+      "en": "Excuse me, do you know why this won't start?",
+      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Not new. I'm trying to get back into running.",
-      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
-      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
+      "en": "Do you see the red clip that's hanging there?",
+      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
+      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "I saw you stop at five minutes. Is that it?",
-      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
-      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
+      "en": "This one? What do I do with it?",
+      "ko": "이거요? 이걸로 뭘 해요?",
+      "kr": "디스 원 왓 두 아이 두 위딧"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been adding a minute every day since five.",
-      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
+      "en": "Let me show you. It goes on your shirt.",
+      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
+      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "Smart. What's the goal you're going for?",
-      "ko": "현명하네요. 목표가 뭐예요?",
-      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
+      "en": "That did it, thanks. Do you run every day?",
+      "ko": "됐네요, 고마워요. 매일 뛰세요?",
+      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
-      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
-      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
+      "en": "I've been adding a minute every day.",
+      "ko": "매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 미니레v리 데이"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "Go easy on squats, then. That's how I got hurt.",
-      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
-      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
+      "en": "Nice. How long can you go now?",
+      "ko": "좋네요. 지금은 얼마나 뛰어요?",
+      "kr": "나이스 하우 롱 컨 여 고우 나우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if I ask what you were lifting?",
-      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
-      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
+      "en": "Fifteen minutes. I'm trying to get to thirty.",
+      "ko": "15분이요. 30분까지 해 보려고요.",
+      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
      }
     ],
     "drills": [
      {
-      "en": "I'm trying to run every morning.",
-      "ko": "매일 아침 뛰려고 해요.",
-      "kr": "아임 트라잉 터 런 에v리 모어r닝"
+      "en": "Do you see the sign that's on the wall?",
+      "ko": "벽에 붙은 안내문 보이세요?",
+      "kr": "더여 씨이 더 싸인 댓손 더 월"
      },
      {
-      "en": "We're trying to get back into walking.",
-      "ko": "우린 다시 산책을 시작하려고요.",
-      "kr": "위어r 트라잉 터 겟 배킨투 워킹"
+      "en": "It's the switch that's on the left.",
+      "ko": "왼쪽에 있는 스위치예요.",
+      "kr": "잇츠 더 스위치 댓손 더 레f트"
      },
      {
-      "en": "Are you trying to lose weight?",
-      "ko": "살 빼려는 거예요?",
-      "kr": "아r 여 트라잉 터 루우z 웨잇"
+      "en": "Is that the key that's missing?",
+      "ko": "없어진 열쇠가 그거예요?",
+      "kr": "이z 댓 더 키이 댓츠 미씽"
      },
      {
-      "en": "I tried to run longer, but my back hurt.",
-      "ko": "더 뛰어 보려 했는데 허리가 아팠어요.",
-      "kr": "아이 트라이드 터 런 롱거r 벗 마이 백 허r트"
+      "en": "The bike that's by the window is free.",
+      "ko": "창가 쪽 자전거 비었어요.",
+      "kr": "더 바익 댓츠 바이 더 윈도우 이z f리이"
+     },
+     {
+      "en": "Can you see the red one?",
+      "ko": "빨간 거 보여요?",
+      "kr": "컨 여 씨이 더 레드 원"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm trying to ~",
-      "body": "~하려고 하는 중이에요 (영상 #1). get back into = 다시 시작하다"
+      "struct": "~ that's ~",
+      "body": "~하고 있는 / ~에 있는 ~ (that's = that is. 관계사로 가리키는 물건을 설명한다)"
      }
     ],
     "chunks": [
      [
-      "Not new.",
-      "낫 누우",
-      "새로 온 건 아니다"
+      "Do you see",
+      "더여 씨이",
+      "~ 보이세요"
      ],
      [
-      "I'm trying to",
-      "아임 트라잉 터",
-      "~하려고 애쓰는 중"
+      "the red clip",
+      "더 레드 클립",
+      "빨간 클립"
      ],
      [
-      "get back into",
-      "겟 배킨투",
-      "다시 시작하다"
-     ],
-     [
-      "running.",
-      "러닝",
-      "러닝"
+      "that's hanging there?",
+      "댓츠 행잉 데어r",
+      "거기 매달려 있는"
      ]
     ],
     "phonemes": [
      [
-      "/k/ back into",
-      "back 의 k 가 into 와 붙는다 — 배킨투"
+      "/ð/ there",
+      "there 는 혀끝을 이 사이에 — 데어r"
+     ],
+     [
+      "/ŋ/ hanging",
+      "hanging 은 행잉 — ng 를 g 로 터뜨리지 않는다"
      ]
     ],
-    "mistake": "get back into + 명사/-ing",
-    "similar": "I'm starting to run again.",
+    "mistake": "that 만 쓰면 is 가 빠진다 — the clip that hanging ✗, the clip that's hanging ✓",
+    "similar": "Can you see that red clip?",
     "category": "운동/헬스장",
-    "frequency": 9
+    "frequency": 6
    }
   },
   {
-   "id": "en-personal-gym-liam-02-been-adding",
-   "sentence": "I've been adding a minute every day since five.",
-   "meaning": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
+   "id": "en-personal-liam-treadmill-02-let-me-show",
+   "sentence": "Let me show you. It goes on your shirt.",
+   "meaning": "보여 드릴게요. 셔츠에 다는 거예요.",
    "reading": null,
-   "phonetic_kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v",
+   "phonetic_kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트",
    "order_index": 2,
    "explanation": {
-    "key": "I've been ~ = (요즘 계속) ~해 왔어요 (영상 #5). since + 시작점",
-    "anchor": "늘리고",
-    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
+    "key": "Let me ~ = 제가 ~할게요 (도와주겠다고 나설 때, 영상 #6). show you = 보여 드리다",
+    "anchor": "보여 드릴게요",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
     "miniDialogue": [
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "I see you here every morning. Are you new here?",
-      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
-      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
+      "en": "Excuse me, do you know why this won't start?",
+      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Not new. I'm trying to get back into running.",
-      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
-      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
+      "en": "Do you see the red clip that's hanging there?",
+      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
+      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "I saw you stop at five minutes. Is that it?",
-      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
-      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
+      "en": "This one? What do I do with it?",
+      "ko": "이거요? 이걸로 뭘 해요?",
+      "kr": "디스 원 왓 두 아이 두 위딧"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been adding a minute every day since five.",
-      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
+      "en": "Let me show you. It goes on your shirt.",
+      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
+      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "Smart. What's the goal you're going for?",
-      "ko": "현명하네요. 목표가 뭐예요?",
-      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
+      "en": "That did it, thanks. Do you run every day?",
+      "ko": "됐네요, 고마워요. 매일 뛰세요?",
+      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
-      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
-      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
+      "en": "I've been adding a minute every day.",
+      "ko": "매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 미니레v리 데이"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "Go easy on squats, then. That's how I got hurt.",
-      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
-      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
+      "en": "Nice. How long can you go now?",
+      "ko": "좋네요. 지금은 얼마나 뛰어요?",
+      "kr": "나이스 하우 롱 컨 여 고우 나우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if I ask what you were lifting?",
-      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
-      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
+      "en": "Fifteen minutes. I'm trying to get to thirty.",
+      "ko": "15분이요. 30분까지 해 보려고요.",
+      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
      }
     ],
     "drills": [
      {
-      "en": "I've been running for two weeks.",
-      "ko": "2주째 뛰고 있어요.",
-      "kr": "아이v 빈 러닝 f퍼r 투우 위익스"
+      "en": "Let me try it first.",
+      "ko": "제가 먼저 해 볼게요.",
+      "kr": "레미 트라이 잇 f퍼r스트"
      },
      {
-      "en": "She's been flying that route for years.",
-      "ko": "아내는 몇 년째 그 노선을 타요.",
-      "kr": "쉬z 빈 f플라잉 댓 루웃 f퍼r 이어r즈"
+      "en": "Let me check the settings.",
+      "ko": "설정 좀 볼게요.",
+      "kr": "레미 첵 더 쎄링즈"
      },
      {
-      "en": "How long have you been coming here?",
-      "ko": "여기 얼마나 다녔어요?",
-      "kr": "하우 롱 해v 여 빈 커밍 히어r"
+      "en": "Can you show me how?",
+      "ko": "어떻게 하는지 보여 주실래요?",
+      "kr": "컨 여 쇼우 미 하우"
      },
      {
-      "en": "We've been walking almost every day.",
-      "ko": "우린 거의 매일 산책해요.",
-      "kr": "위v 빈 워킹 올모우스 에v리 데이"
+      "en": "I'll show you where it goes.",
+      "ko": "어디에 다는지 보여 드릴게요.",
+      "kr": "아일 쇼우 여 웨어r 잇 고우z"
+     },
+     {
+      "en": "This goes on your belt.",
+      "ko": "이건 벨트에 다는 거예요.",
+      "kr": "디스 고우z 온 여r 벨트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "제가 ~할게요 (도와주겠다고 나설 때, 영상 #6). show you = 보여 드리다"
+     }
+    ],
+    "chunks": [
+     [
+      "Let me show you.",
+      "레미 쇼우 유",
+      "보여 드릴게요"
+     ],
+     [
+      "It goes on",
+      "잇 고우z 온",
+      "그건 ~에 단다"
+     ],
+     [
+      "your shirt.",
+      "여r 셔r트",
+      "셔츠에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/oʊ/ show",
+      "show 는 이중모음 — 쇼우"
+     ],
+     [
+      "/ʃ/ shirt",
+      "shirt 는 혀를 말아 셔r트 — 셔츠가 아니다"
+     ]
+    ],
+    "mistake": "Let me 뒤에는 동사원형 — Let me to show ✗",
+    "similar": "I'll show you how.",
+    "category": "운동/헬스장",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-liam-treadmill-03-been-adding",
+   "sentence": "I've been adding a minute every day.",
+   "meaning": "매일 1분씩 늘리고 있어요.",
+   "reading": null,
+   "phonetic_kr": "아이v 비내딩 어 미니레v리 데이",
+   "order_index": 3,
+   "explanation": {
+    "key": "I've been ~ = (요즘) 계속 ~하고 있어요 (영상 #5). 전부터 지금까지 이어지는 일",
+    "anchor": "늘리고 있어요",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Excuse me, do you know why this won't start?",
+      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Do you see the red clip that's hanging there?",
+      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
+      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "This one? What do I do with it?",
+      "ko": "이거요? 이걸로 뭘 해요?",
+      "kr": "디스 원 왓 두 아이 두 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me show you. It goes on your shirt.",
+      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
+      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That did it, thanks. Do you run every day?",
+      "ko": "됐네요, 고마워요. 매일 뛰세요?",
+      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been adding a minute every day.",
+      "ko": "매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 미니레v리 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Nice. How long can you go now?",
+      "ko": "좋네요. 지금은 얼마나 뛰어요?",
+      "kr": "나이스 하우 롱 컨 여 고우 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Fifteen minutes. I'm trying to get to thirty.",
+      "ko": "15분이요. 30분까지 해 보려고요.",
+      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been sleeping better lately.",
+      "ko": "요즘 잠을 더 잘 자고 있어요.",
+      "kr": "아이v 빈 슬리이핑 베러r 레잇리"
+     },
+     {
+      "en": "She's been working late all week.",
+      "ko": "그녀는 일주일 내내 늦게까지 일하고 있어요.",
+      "kr": "쉬z 빈 워r킹 레이롤 위익"
+     },
+     {
+      "en": "How long have you been running?",
+      "ko": "러닝 한 지 얼마나 됐어요?",
+      "kr": "하우 롱 해v 여 빈 러닝"
+     },
+     {
+      "en": "I've been doing this for a month.",
+      "ko": "한 달째 하고 있어요.",
+      "kr": "아이v 빈 두잉 디스 f퍼r 어 먼쓰"
+     },
+     {
+      "en": "We've been coming here since summer.",
+      "ko": "여름부터 여기 다니고 있어요.",
+      "kr": "위v 빈 커밍 히어r 씬스 써머r"
      }
     ],
     "grammar": [
      {
       "struct": "I've been ~",
-      "body": "(요즘 계속) ~해 왔어요 (영상 #5). since + 시작점"
+      "body": "(요즘) 계속 ~하고 있어요 (영상 #5). 전부터 지금까지 이어지는 일"
      }
     ],
     "chunks": [
      [
       "I've been adding",
-      "아이v 빈 애딩",
-      "계속 더해 왔다"
+      "아이v 비내딩",
+      "계속 늘려 왔다"
      ],
      [
-      "a minute",
-      "어 미닛",
-      "1분씩"
-     ],
-     [
-      "every day",
-      "에v리 데이",
-      "매일"
-     ],
-     [
-      "since five.",
-      "씬스 f파이v",
-      "5분에서 시작해"
+      "a minute every day.",
+      "어 미니레v리 데이",
+      "매일 1분씩"
      ]
     ],
     "phonemes": [
      [
-      "/v/ I've",
-      "I've 의 v 는 입술을 떨어 — 아이v"
+      "/t/ minute every",
+      "minute 의 t 가 굴러 미니레v리"
+     ],
+     [
+      "/n/ been adding",
+      "been 의 n 이 adding 에 붙어 비내딩"
      ]
     ],
-    "mistake": "have been + -ing = 지금까지 이어지는 일",
-    "similar": "I add a minute each day.",
+    "mistake": "been 뒤에는 -ing — I've been add ✗",
+    "similar": "I add a minute every day.",
     "category": "운동/헬스장",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-gym-liam-03-hurt-my-back",
-   "sentence": "Thirty minutes. I hurt my back doing deadlifts last spring.",
-   "meaning": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
+   "id": "en-personal-liam-treadmill-04-trying-to-get-thirty",
+   "sentence": "Fifteen minutes. I'm trying to get to thirty.",
+   "meaning": "15분이요. 30분까지 해 보려고요.",
    "reading": null,
-   "phonetic_kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링",
-   "order_index": 3,
+   "phonetic_kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리",
+   "order_index": 4,
    "explanation": {
-    "key": "I hurt my ~ = ~를 다쳤어요 (233 뱅크 042 My ~ hurts 의 사건형). doing + 운동 = ~하다가",
-    "anchor": "다쳐서",
-    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
+    "key": "I'm trying to ~ = ~하려고 (애쓰는 중이에요) (영상 #1). get to + 숫자 = ~까지 가다",
+    "anchor": "해 보려고요",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
     "miniDialogue": [
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "I see you here every morning. Are you new here?",
-      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
-      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
+      "en": "Excuse me, do you know why this won't start?",
+      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Not new. I'm trying to get back into running.",
-      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
-      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
+      "en": "Do you see the red clip that's hanging there?",
+      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
+      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "I saw you stop at five minutes. Is that it?",
-      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
-      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
+      "en": "This one? What do I do with it?",
+      "ko": "이거요? 이걸로 뭘 해요?",
+      "kr": "디스 원 왓 두 아이 두 위딧"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been adding a minute every day since five.",
-      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
+      "en": "Let me show you. It goes on your shirt.",
+      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
+      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "Smart. What's the goal you're going for?",
-      "ko": "현명하네요. 목표가 뭐예요?",
-      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
+      "en": "That did it, thanks. Do you run every day?",
+      "ko": "됐네요, 고마워요. 매일 뛰세요?",
+      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
-      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
-      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
+      "en": "I've been adding a minute every day.",
+      "ko": "매일 1분씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 미니레v리 데이"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "Go easy on squats, then. That's how I got hurt.",
-      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
-      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
+      "en": "Nice. How long can you go now?",
+      "ko": "좋네요. 지금은 얼마나 뛰어요?",
+      "kr": "나이스 하우 롱 컨 여 고우 나우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if I ask what you were lifting?",
-      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
-      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
+      "en": "Fifteen minutes. I'm trying to get to thirty.",
+      "ko": "15분이요. 30분까지 해 보려고요.",
+      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
      }
     ],
     "drills": [
      {
-      "en": "I hurt my back doing squats too.",
-      "ko": "스쿼트 하다가도 허리를 다쳤어요.",
-      "kr": "아이 허r트 마이 백 두잉 스콰츠 투우"
+      "en": "I'm trying to run every day.",
+      "ko": "매일 뛰려고 하고 있어요.",
+      "kr": "아임 트라잉 터 러네v리 데이"
      },
      {
-      "en": "Did you hurt yourself lifting?",
-      "ko": "들다가 다쳤어요?",
-      "kr": "디저 허r트 여r쎌f 리f팅"
+      "en": "She's trying to sleep earlier.",
+      "ko": "그녀는 더 일찍 자려고 해요.",
+      "kr": "쉬z 트라잉 터 슬리이퍼r리어r"
      },
      {
-      "en": "My back still hurts a little.",
-      "ko": "허리가 아직 조금 아파요.",
-      "kr": "마이 백 스틸 허r츠 어 리를"
+      "en": "What are you trying to do?",
+      "ko": "뭘 하려는 거예요?",
+      "kr": "워러r여 트라잉 터 두"
      },
      {
-      "en": "She never got hurt at work.",
-      "ko": "아내는 일하다 다친 적이 없어요.",
-      "kr": "쉬 네버r 갓 허r트 엇 워r크"
+      "en": "I'm going to get to thirty by next month.",
+      "ko": "다음 달까지 30분까지 갈 거예요.",
+      "kr": "아임 거너 겟 터 써r리 바이 넥스 먼쓰"
+     },
+     {
+      "en": "We tried to finish early.",
+      "ko": "일찍 끝내려고 했어요.",
+      "kr": "위 트라이드 터 f피니쉬 어r리"
      }
     ],
     "grammar": [
      {
-      "struct": "I hurt my ~",
-      "body": "~를 다쳤어요 (233 뱅크 042 My ~ hurts 의 사건형). doing + 운동 = ~하다가"
+      "struct": "I'm trying to ~",
+      "body": "~하려고 (애쓰는 중이에요) (영상 #1). get to + 숫자 = ~까지 가다"
      }
     ],
     "chunks": [
      [
-      "Thirty minutes.",
-      "써r리 미닛츠",
-      "30분"
+      "Fifteen minutes.",
+      "f피프티인 미닛츠",
+      "15분이요"
      ],
      [
-      "I hurt my back",
-      "아이 허r트 마이 백",
-      "허리를 다쳤다"
+      "I'm trying to",
+      "아임 트라잉 터",
+      "~하려고 하는 중이다"
      ],
      [
-      "doing deadlifts",
-      "두잉 데들리f츠",
-      "데드리프트를 하다가"
-     ],
-     [
-      "last spring.",
-      "라스 스프링",
-      "지난봄에"
+      "get to thirty.",
+      "겟 터 써r리",
+      "30까지 가다"
      ]
     ],
     "phonemes": [
      [
       "/θ/ thirty",
-      "thirty 의 th 는 혀끝을 이 사이에, 가운데 t 는 ㄹ — 써r리"
-     ]
-    ],
-    "mistake": "hurt 는 과거형도 hurt. I hurted (X)",
-    "similar": "My back gave out doing deadlifts.",
-    "category": "운동/헬스장",
-    "frequency": 7
-   }
-  },
-  {
-   "id": "en-personal-gym-liam-04-mind-if-i-ask",
-   "sentence": "Do you mind if I ask what you were lifting?",
-   "meaning": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
-   "reading": null,
-   "phonetic_kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅",
-   "order_index": 4,
-   "explanation": {
-    "key": "Do you mind if ~ = ~해도 될까요 (정중히 묻기, 영상 #9). 뒤의 ask what ~ 는 삽입 의문절",
-    "anchor": "될까요",
-    "situation": "홍대 헬스장 아침. 옆 트레드밀의 외국인이 말을 건다. 지오는 러닝을 5분부터 시작해 매일 1분씩 늘리는 중이다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "I see you here every morning. Are you new here?",
-      "ko": "매일 아침 보네요. 여기 새로 오셨어요?",
-      "kr": "아이 씨이 여 히어r 에v리 모어r닝 아r 여 누우 히어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Not new. I'm trying to get back into running.",
-      "ko": "새로 온 건 아니고, 러닝을 다시 시작하려는 중이에요.",
-      "kr": "낫 누우 아임 트라잉 터 겟 배킨투 러닝"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "I saw you stop at five minutes. Is that it?",
-      "ko": "5분 하고 내려오는 걸 봤어요. 그게 다예요?",
-      "kr": "아이 쏘오 여 스탑 엇 f파이v 미닛츠 이z 대릿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I've been adding a minute every day since five.",
-      "ko": "5분에서 시작해서 매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 빈 애딩 어 미닛 에v리 데이 씬스 f파이v"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Smart. What's the goal you're going for?",
-      "ko": "현명하네요. 목표가 뭐예요?",
-      "kr": "스마r트 왓츠 더 고울 여r 고잉 f퍼r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Thirty minutes. I hurt my back doing deadlifts last spring.",
-      "ko": "30분이요. 지난봄에 데드리프트 하다 허리를 다쳐서요.",
-      "kr": "써r리 미닛츠 아이 허r트 마이 백 두잉 데들리f츠 라스 스프링"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Go easy on squats, then. That's how I got hurt.",
-      "ko": "그럼 스쿼트는 조심해요. 저도 그거 하다 다쳤어요.",
-      "kr": "고우 이이지 온 스콰츠 덴 댓츠 하우 아이 갓 허r트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Do you mind if I ask what you were lifting?",
-      "ko": "어떤 무게를 들다 다쳤는지 여쭤봐도 될까요?",
-      "kr": "더여 마인디f 아이 애스크 왓처 워r 리f팅"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Do you mind if I use this one?",
-      "ko": "이거 써도 될까요?",
-      "kr": "더여 마인디f 아이 유우z 디스 원"
-     },
-     {
-      "en": "Mind if I join you for a run?",
-      "ko": "같이 뛰어도 될까요?",
-      "kr": "마인디f 아이 조인 여 f퍼r 어 런"
-     },
-     {
-      "en": "I don't mind sharing the rack.",
-      "ko": "랙 같이 써도 괜찬아요.",
-      "kr": "아이 돈 마인드 셰어링 더 랙"
-     },
-     {
-      "en": "Would you mind showing me the form?",
-      "ko": "자세를 보여 주실래요?",
-      "kr": "워저 마인드 쇼우잉 미 더 f포어r엄"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "Do you mind if ~",
-      "body": "~해도 될까요 (정중히 묻기, 영상 #9). 뒤의 ask what ~ 는 삽입 의문절"
-     }
-    ],
-    "chunks": [
-     [
-      "Do you mind if",
-      "더여 마인디f",
-      "~해도 괜찮을까요"
+      "thirty 의 th 는 혀를 이 사이에, t 는 굴러 써r리"
      ],
      [
-      "I ask",
-      "아이 애스크",
-      "내가 묻다"
-     ],
-     [
-      "what you were lifting?",
-      "왓처 워r 리f팅",
-      "당신이 얼마를 들고 있었는지"
+      "/aɪ/ trying",
+      "trying 은 트라잉 — 추라잉이 아니다"
      ]
     ],
-    "phonemes": [
-     [
-      "/tʃ/ what you",
-      "what 의 t 와 you 가 붙어 '처' — 왓처"
-     ]
-    ],
-    "mistake": "Do you mind if 에 '괜찮다' 는 No 로 답한다",
-    "similar": "Can I ask how you got hurt?",
+    "mistake": "trying to 뒤에는 동사원형 — I'm trying to getting ✗",
+    "similar": "My goal is thirty minutes.",
     "category": "운동/헬스장",
-    "frequency": 8
+    "frequency": 9
    }
   }
  ]

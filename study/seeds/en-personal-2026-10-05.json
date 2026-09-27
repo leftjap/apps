@@ -4,512 +4,538 @@
  "date": "2026-10-05",
  "cards": [
   {
-   "id": "en-personal-bkk-hotel-may-01-here-to-checkin",
-   "sentence": "I'm here to check in under my wife's name.",
-   "meaning": "아내 이름으로 체크인하러 왔어요.",
+   "id": "en-personal-bkk-checkin-01-like-to-check-in",
+   "sentence": "Hi. I'd like to check in, please.",
+   "meaning": "안녕하세요. 체크인하려고요.",
    "reading": null,
-   "phonetic_kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임",
+   "phonetic_kr": "하이 아이드 라익 터 체킨 플리이z",
    "order_index": 1,
    "explanation": {
-    "key": "I'm here to ~ = ~하러 왔어요 (영상 #4). 호텔 프런트 첫마디",
-    "anchor": "체크인",
-    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
+    "key": "I'd like to ~ = ~하고 싶어요 / ~할게요 (정중한 요청, 영상 #17)",
+    "anchor": "체크인하려고요",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "May",
-      "en": "Welcome to the hotel. Do you have a booking?",
-      "ko": "어서 오세요. 예약하셨어요?",
-      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
-     },
-     {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm here to check in under my wife's name.",
-      "ko": "아내 이름으로 체크인하러 왔어요.",
-      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
+      "en": "Hi. I'd like to check in, please.",
+      "ko": "안녕하세요. 체크인하려고요.",
+      "kr": "하이 아이드 라익 터 체킨 플리이z"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Her name, please? And is she a crew member?",
-      "ko": "성함이요? 그리고 승무원이세요?",
-      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
+      "en": "Welcome. Can I see your passport? No luggage?",
+      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Soyeon. I'm not sure if the crew rate covers me.",
-      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
-      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
+      "en": "I'm supposed to get it back tonight.",
+      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
+      "kr": "아임 써포우스터 게릿 백 터나잇"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "It does, if she added you to the booking.",
-      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
-      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
+      "en": "No problem. There's a deposit, which you get back.",
+      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
+      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "She said she did. Can you check the name I gave?",
-      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
-      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
+      "en": "Can I use the card I booked with?",
+      "ko": "예약할 때 쓴 카드로 해도 돼요?",
+      "kr": "커나이 유우z 더 카r다이 북트 위드"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Yes, you're both here. Two nights, one king bed.",
-      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
-      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
+      "en": "Of course. Breakfast is from six to ten.",
+      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
+      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "What time is the breakfast that's included?",
-      "ko": "포함된 조식은 몇 시예요?",
-      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
+      "en": "I'm not sure if breakfast is included.",
+      "ko": "조식이 포함돼 있는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "It is. It's right by the lobby.",
+      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
+      "kr": "이리z 잇츠 라잇 바이 더 라비"
      }
     ],
     "drills": [
      {
-      "en": "I'm here to pick up a key.",
-      "ko": "키 받으러 왔어요.",
-      "kr": "아임 히어r 터 피커퍼 키이"
+      "en": "I'd like to check out, please.",
+      "ko": "체크아웃할게요.",
+      "kr": "아이드 라익 터 체카웃 플리이z"
      },
      {
-      "en": "We're here to check out.",
-      "ko": "체크아웃하러 왔어요.",
-      "kr": "위어r 히어r 터 체카웃"
+      "en": "We'd like to stay one more night.",
+      "ko": "하룻밤 더 묵고 싶어요.",
+      "kr": "위드 라익 터 스테이 원 모어r 나잇"
      },
      {
-      "en": "Is the booking under your name?",
-      "ko": "예약이 본인 이름이세요?",
-      "kr": "이z 더 부킹 언더r 여r 네임"
+      "en": "Would you like to check in now?",
+      "ko": "지금 체크인하시겠어요?",
+      "kr": "워저 라익 터 체킨 나우"
      },
      {
-      "en": "I'm here to see the manager.",
-      "ko": "매니저 만나러 왔어요.",
-      "kr": "아임 히어r 터 씨이 더 매니저r"
+      "en": "I'd like a room with two beds.",
+      "ko": "침대 두 개짜리 방으로 주세요.",
+      "kr": "아이드 라이커 루움 위드 투우 베즈"
+     },
+     {
+      "en": "Can I check in early?",
+      "ko": "일찍 체크인할 수 있어요?",
+      "kr": "커나이 체키너r리"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm here to ~",
-      "body": "~하러 왔어요 (영상 #4). 호텔 프런트 첫마디"
+      "struct": "I'd like to ~",
+      "body": "~하고 싶어요 / ~할게요 (정중한 요청, 영상 #17)"
      }
     ],
     "chunks": [
      [
-      "I'm here to",
-      "아임 히어r 터",
-      "~하러 왔다"
+      "Hi.",
+      "하이",
+      "안녕하세요"
      ],
      [
-      "check in",
-      "체킨",
-      "체크인하다"
+      "I'd like to",
+      "아이드 라익 터",
+      "~하고 싶다"
      ],
      [
-      "under my wife's name.",
-      "언더r 마이 와이f스 네임",
-      "아내 이름으로"
+      "check in, please.",
+      "체킨 플리이z",
+      "체크인 부탁해요"
      ]
     ],
     "phonemes": [
      [
+      "/d/ I'd",
+      "I'd 의 d 는 짧게 — 빠르면 거의 안 들린다"
+     ],
+     [
       "/k/ check in",
-      "check 의 k 가 in 과 붙는다 — 체킨"
+      "check 의 k 가 in 에 붙어 체킨"
      ]
     ],
-    "mistake": "under + 이름 = ~ 이름으로 (예약). in my wife's name 도 쓴다",
-    "similar": "Checking in. The booking's under Soyeon.",
+    "mistake": "I'd like to 뒤에는 동사원형 — I'd like to checking ✗. I'd = I would",
+    "similar": "I'm here to check in.",
+    "category": "여행/호텔",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-bkk-checkin-02-supposed-to-get-back",
+   "sentence": "I'm supposed to get it back tonight.",
+   "meaning": "오늘 밤에 돌려받기로 돼 있어요.",
+   "reading": null,
+   "phonetic_kr": "아임 써포우스터 게릿 백 터나잇",
+   "order_index": 2,
+   "explanation": {
+    "key": "I'm supposed to ~ = ~하기로 되어 있어요 (정해진 일정·약속, 영상 #2). get ~ back = 되돌려 받다",
+    "anchor": "돌려받기로 돼 있어요",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Hi. I'd like to check in, please.",
+      "ko": "안녕하세요. 체크인하려고요.",
+      "kr": "하이 아이드 라익 터 체킨 플리이z"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Welcome. Can I see your passport? No luggage?",
+      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm supposed to get it back tonight.",
+      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
+      "kr": "아임 써포우스터 게릿 백 터나잇"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "No problem. There's a deposit, which you get back.",
+      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
+      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can I use the card I booked with?",
+      "ko": "예약할 때 쓴 카드로 해도 돼요?",
+      "kr": "커나이 유우z 더 카r다이 북트 위드"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Of course. Breakfast is from six to ten.",
+      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
+      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if breakfast is included.",
+      "ko": "조식이 포함돼 있는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "It is. It's right by the lobby.",
+      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
+      "kr": "이리z 잇츠 라잇 바이 더 라비"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm supposed to check out at noon.",
+      "ko": "정오에 체크아웃하기로 돼 있어요.",
+      "kr": "아임 써포우스터 체카우럿 누운"
+     },
+     {
+      "en": "She's supposed to land at six.",
+      "ko": "그녀는 6시에 착륙하기로 돼 있어요.",
+      "kr": "쉬z 써포우스터 랜덧 씩스"
+     },
+     {
+      "en": "When are you supposed to leave?",
+      "ko": "언제 떠나기로 돼 있어요?",
+      "kr": "웨너r여 써포우스터 리이v"
+     },
+     {
+      "en": "We were supposed to meet here.",
+      "ko": "여기서 만나기로 했었어요.",
+      "kr": "위 워r 써포우스터 미잇 히어r"
+     },
+     {
+      "en": "They'll bring it back tomorrow.",
+      "ko": "내일 다시 가져다줄 거예요.",
+      "kr": "데일 브링 잇 백 터마로우"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm supposed to ~",
+      "body": "~하기로 되어 있어요 (정해진 일정·약속, 영상 #2). get ~ back = 되돌려 받다"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm supposed to",
+      "아임 써포우스터",
+      "~하기로 되어 있다"
+     ],
+     [
+      "get it back",
+      "게릿 백",
+      "그걸 돌려받다"
+     ],
+     [
+      "tonight.",
+      "터나잇",
+      "오늘 밤"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ supposed to",
+      "supposed 의 d 와 to 의 t 가 합쳐져 써포우스터"
+     ],
+     [
+      "/t/ get it",
+      "get 의 t 가 굴러 게릿"
+     ]
+    ],
+    "mistake": "supposed 의 d 는 to 와 합쳐져 잘 안 들린다 — 써포우스터. suppose to 로 쓰지 않는다",
+    "similar": "The airline is sending it here tonight.",
     "category": "여행/호텔",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-bkk-hotel-may-02-not-sure-if-rate",
-   "sentence": "Soyeon. I'm not sure if the crew rate covers me.",
-   "meaning": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
+   "id": "en-personal-bkk-checkin-03-card-i-booked-with",
+   "sentence": "Can I use the card I booked with?",
+   "meaning": "예약할 때 쓴 카드로 해도 돼요?",
    "reading": null,
-   "phonetic_kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미",
-   "order_index": 2,
+   "phonetic_kr": "커나이 유우z 더 카r다이 북트 위드",
+   "order_index": 3,
    "explanation": {
-    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요 (영상 #10)",
-    "anchor": "모르겠어요",
-    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
+    "key": "the ~ I booked with = 예약할 때 쓴 ~ (접촉절. with 가 문장 끝에 남는다)",
+    "anchor": "예약할 때 쓴 카드",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
     "miniDialogue": [
      {
-      "speaker": "A",
-      "name": "May",
-      "en": "Welcome to the hotel. Do you have a booking?",
-      "ko": "어서 오세요. 예약하셨어요?",
-      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
-     },
-     {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm here to check in under my wife's name.",
-      "ko": "아내 이름으로 체크인하러 왔어요.",
-      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
+      "en": "Hi. I'd like to check in, please.",
+      "ko": "안녕하세요. 체크인하려고요.",
+      "kr": "하이 아이드 라익 터 체킨 플리이z"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Her name, please? And is she a crew member?",
-      "ko": "성함이요? 그리고 승무원이세요?",
-      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
+      "en": "Welcome. Can I see your passport? No luggage?",
+      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Soyeon. I'm not sure if the crew rate covers me.",
-      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
-      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
+      "en": "I'm supposed to get it back tonight.",
+      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
+      "kr": "아임 써포우스터 게릿 백 터나잇"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "It does, if she added you to the booking.",
-      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
-      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
+      "en": "No problem. There's a deposit, which you get back.",
+      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
+      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "She said she did. Can you check the name I gave?",
-      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
-      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
+      "en": "Can I use the card I booked with?",
+      "ko": "예약할 때 쓴 카드로 해도 돼요?",
+      "kr": "커나이 유우z 더 카r다이 북트 위드"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Yes, you're both here. Two nights, one king bed.",
-      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
-      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
+      "en": "Of course. Breakfast is from six to ten.",
+      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
+      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "What time is the breakfast that's included?",
-      "ko": "포함된 조식은 몇 시예요?",
-      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
+      "en": "I'm not sure if breakfast is included.",
+      "ko": "조식이 포함돼 있는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "It is. It's right by the lobby.",
+      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
+      "kr": "이리z 잇츠 라잇 바이 더 라비"
      }
     ],
     "drills": [
      {
+      "en": "Is this the card you booked with?",
+      "ko": "이게 예약하실 때 쓴 카드예요?",
+      "kr": "이z 디스 더 카r저 북트 위드"
+     },
+     {
+      "en": "That's the phone I paid with.",
+      "ko": "그게 제가 결제한 휴대폰이에요.",
+      "kr": "댓츠 더 f포우나이 페이드 위드"
+     },
+     {
+      "en": "Can I pay the deposit in cash?",
+      "ko": "보증금을 현금으로 내도 돼요?",
+      "kr": "커나이 페이 더 디파지린 캐쉬"
+     },
+     {
+      "en": "Which card did you use?",
+      "ko": "어느 카드 쓰셨어요?",
+      "kr": "위치 카r드 디저 유우z"
+     },
+     {
+      "en": "I don't have the card I booked with.",
+      "ko": "예약할 때 쓴 카드가 없어요.",
+      "kr": "아이 돈 해v 더 카r다이 북트 위드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "the ~ I booked with",
+      "body": "예약할 때 쓴 ~ (접촉절. with 가 문장 끝에 남는다)"
+     }
+    ],
+    "chunks": [
+     [
+      "Can I use",
+      "커나이 유우z",
+      "~를 써도 될까요"
+     ],
+     [
+      "the card I",
+      "더 카r다이",
+      "제가 ~한 카드"
+     ],
+     [
+      "booked with?",
+      "북트 위드",
+      "예약할 때 쓴"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ card I",
+      "card 의 d 가 I 에 붙어 카r다이"
+     ],
+     [
+      "/ð/ with",
+      "with 의 th 는 혀를 이 사이에 살짝 — 위드"
+     ]
+    ],
+    "mistake": "with 를 빼면 뜻이 바뀐다 — the card I booked(카드를 예약함) ✗, the card I booked with ✓",
+    "similar": "Can I pay with the same card?",
+    "category": "여행/호텔",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-bkk-checkin-04-not-sure-breakfast",
+   "sentence": "I'm not sure if breakfast is included.",
+   "meaning": "조식이 포함돼 있는지 모르겠어요.",
+   "reading": null,
+   "phonetic_kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드",
+   "order_index": 4,
+   "explanation": {
+    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요 (영상 #10). 확인해 달라는 뜻을 부드럽게 전한다",
+    "anchor": "포함돼 있는지 모르겠어요",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Hi. I'd like to check in, please.",
+      "ko": "안녕하세요. 체크인하려고요.",
+      "kr": "하이 아이드 라익 터 체킨 플리이z"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Welcome. Can I see your passport? No luggage?",
+      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm supposed to get it back tonight.",
+      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
+      "kr": "아임 써포우스터 게릿 백 터나잇"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "No problem. There's a deposit, which you get back.",
+      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
+      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can I use the card I booked with?",
+      "ko": "예약할 때 쓴 카드로 해도 돼요?",
+      "kr": "커나이 유우z 더 카r다이 북트 위드"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Of course. Breakfast is from six to ten.",
+      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
+      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
       "en": "I'm not sure if breakfast is included.",
-      "ko": "조식이 포함인지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 브렉f퍼스트 이z 인클루우디드"
+      "ko": "조식이 포함돼 있는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
      },
      {
-      "en": "We're not sure if this is our room.",
-      "ko": "여기가 우리 방인지 모르겠어요.",
-      "kr": "위어r 낫 슈어r 이f 디스 이z 아워r 루움"
+      "speaker": "A",
+      "name": "May",
+      "en": "It is. It's right by the lobby.",
+      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
+      "kr": "이리z 잇츠 라잇 바이 더 라비"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm not sure if the room is ready.",
+      "ko": "방이 준비됐는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 더 루우미z 레디"
      },
      {
-      "en": "Are you sure it's under her name?",
-      "ko": "아내 이름으로 된 게 확실해요?",
-      "kr": "아r 여 슈어r 잇츠 언더r 허r 네임"
+      "en": "Does the price include breakfast?",
+      "ko": "요금에 조식이 포함돼요?",
+      "kr": "더즈 더 프라이신클루우드 브렉f퍼스트"
      },
      {
-      "en": "I'm not sure which floor it's on.",
-      "ko": "몇 층인지 잘 모르겠어요.",
-      "kr": "아임 낫 슈어r 위치 f플로어r 잇츠 온"
+      "en": "Could you check if it's free?",
+      "ko": "무료인지 확인해 주시겠어요?",
+      "kr": "커저 체키f 잇츠 f리이"
+     },
+     {
+      "en": "She's not sure if the pool is open.",
+      "ko": "그녀는 수영장이 열려 있는지 잘 몰라요.",
+      "kr": "쉬z 낫 슈어r 이f 더 푸울 이z 오우펀"
+     },
+     {
+      "en": "I'm not sure if I have enough cash.",
+      "ko": "현금이 충분한지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 해v 이너f 캐쉬"
      }
     ],
     "grammar": [
      {
       "struct": "I'm not sure if ~",
-      "body": "~인지 잘 모르겠어요 (영상 #10)"
+      "body": "~인지 잘 모르겠어요 (영상 #10). 확인해 달라는 뜻을 부드럽게 전한다"
      }
     ],
     "chunks": [
-     [
-      "Soyeon.",
-      "소연",
-      "소연"
-     ],
      [
       "I'm not sure if",
       "아임 낫 슈어r 이f",
-      "~인지 확실치 않다"
+      "~인지 잘 모르겠다"
      ],
      [
-      "the crew rate",
-      "더 크루우 레잇",
-      "크루 요금이"
-     ],
-     [
-      "covers me.",
-      "커v어r즈 미",
-      "나까지 적용된다"
+      "breakfast is included.",
+      "브렉f퍼스티z 인클루우디드",
+      "조식이 포함돼 있다"
      ]
     ],
     "phonemes": [
      [
-      "/ʃ/ sure",
-      "sure 의 s 는 쉬 소리 — 슈어r"
+      "/uː/ included",
+      "included 의 u 는 긴 우 — 인클루우디드"
+     ],
+     [
+      "/t/ breakfast is",
+      "breakfast 의 t 가 is 에 붙어 브렉f퍼스티z"
      ]
     ],
-    "mistake": "not sure if + 절(평서 어순). not sure if does it cover (X)",
-    "similar": "Does the crew rate apply to me too?",
+    "mistake": "if 뒤는 평서문 어순 — if is breakfast included ✗",
+    "similar": "Is breakfast included?",
     "category": "여행/호텔",
     "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-bkk-hotel-may-03-can-you-check",
-   "sentence": "She said she did. Can you check the name I gave?",
-   "meaning": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
-   "reading": null,
-   "phonetic_kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v",
-   "order_index": 3,
-   "explanation": {
-    "key": "Can you check ~ = ~ 확인해 주실래요 (영상 #8). 뒤의 the name I gave 는 접촉절",
-    "anchor": "확인",
-    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Welcome to the hotel. Do you have a booking?",
-      "ko": "어서 오세요. 예약하셨어요?",
-      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm here to check in under my wife's name.",
-      "ko": "아내 이름으로 체크인하러 왔어요.",
-      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Her name, please? And is she a crew member?",
-      "ko": "성함이요? 그리고 승무원이세요?",
-      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Soyeon. I'm not sure if the crew rate covers me.",
-      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
-      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "It does, if she added you to the booking.",
-      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
-      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "She said she did. Can you check the name I gave?",
-      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
-      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Yes, you're both here. Two nights, one king bed.",
-      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
-      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "What time is the breakfast that's included?",
-      "ko": "포함된 조식은 몇 시예요?",
-      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Can you check the booking again?",
-      "ko": "예약을 다시 확인해 주실래요?",
-      "kr": "컨 여 첵 더 부킹 어겐"
-     },
-     {
-      "en": "Can you check if she's on it?",
-      "ko": "아내가 들어 있는지 확인해 주실래요?",
-      "kr": "컨 여 첵 이f 쉬z 오닛"
-     },
-     {
-      "en": "Could you check the room I booked?",
-      "ko": "제가 예약한 방을 확인해 주시겠어요?",
-      "kr": "커저 첵 더 루움 아이 북트"
-     },
-     {
-      "en": "I'll check the email she sent.",
-      "ko": "아내가 보낸 이메일을 볼게요.",
-      "kr": "아일 첵 디 이이메일 쉬 쎈트"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "Can you check ~",
-      "body": "~ 확인해 주실래요 (영상 #8). 뒤의 the name I gave 는 접촉절"
-     }
-    ],
-    "chunks": [
-     [
-      "She said she did.",
-      "쉬 쎄드 쉬 딧",
-      "그녀가 했다고 말했다"
-     ],
-     [
-      "Can you check",
-      "컨 여 첵",
-      "확인해 줄 수 있나요"
-     ],
-     [
-      "the name I gave?",
-      "더 네이마이 게이v",
-      "내가 말한 이름"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/m/ name I",
-      "name 의 m 이 I 와 붙는다 — 네이마이"
-     ]
-    ],
-    "mistake": "접촉절: the name (that) I gave — that 을 빼고 붙여 말한다",
-    "similar": "Could you look it up again?",
-    "category": "여행/호텔",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-bkk-hotel-may-04-thats-included",
-   "sentence": "What time is the breakfast that's included?",
-   "meaning": "포함된 조식은 몇 시예요?",
-   "reading": null,
-   "phonetic_kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드",
-   "order_index": 4,
-   "explanation": {
-    "key": "~ that's included = 포함된 ~ (관계사 that's + 과거분사 로 조건 설명)",
-    "anchor": "포함된",
-    "situation": "방콕 호텔 프런트. 예약은 소연 이름으로 크루 요금이라 지오 이름으로는 뜨지 않는다. 프런트는 May.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Welcome to the hotel. Do you have a booking?",
-      "ko": "어서 오세요. 예약하셨어요?",
-      "kr": "웰컴 터 더 호우텔 더여 해버 부킹"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm here to check in under my wife's name.",
-      "ko": "아내 이름으로 체크인하러 왔어요.",
-      "kr": "아임 히어r 터 체킨 언더r 마이 와이f스 네임"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Her name, please? And is she a crew member?",
-      "ko": "성함이요? 그리고 승무원이세요?",
-      "kr": "허r 네임 플리이z 언 이z 쉬 어 크루우 멤버r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Soyeon. I'm not sure if the crew rate covers me.",
-      "ko": "소연이요. 크루 요금이 저한테도 되는지 잘 모르겠어요.",
-      "kr": "소연 아임 낫 슈어r 이f 더 크루우 레잇 커v어r즈 미"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "It does, if she added you to the booking.",
-      "ko": "됩니다, 예약에 남편분을 넣으셨으면요.",
-      "kr": "잇 더즈 이f 쉬 애디저 터 더 부킹"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "She said she did. Can you check the name I gave?",
-      "ko": "아내가 했다고 했어요. 제가 말한 이름으로 확인해 주실래요?",
-      "kr": "쉬 쎄드 쉬 딧 컨 여 첵 더 네이마이 게이v"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Yes, you're both here. Two nights, one king bed.",
-      "ko": "네, 두 분 다 있네요. 2박, 킹 베드 하나요.",
-      "kr": "예스 여r 보우쓰 히어r 투우 나잇츠 원 킹 베드"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "What time is the breakfast that's included?",
-      "ko": "포함된 조식은 몇 시예요?",
-      "kr": "왓 타임 이z 더 브렉f퍼스 댓츠 인클루우디드"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Is that the breakfast that's included?",
-      "ko": "저게 포함된 조식이에요?",
-      "kr": "이z 댓 더 브렉f퍼스 댓츠 인클루우디드"
-     },
-     {
-      "en": "What's the tax that's added here?",
-      "ko": "여기 붙는 세금은 뭐예요?",
-      "kr": "왓츠 더 택스 댓츠 애디드 히어r"
-     },
-     {
-      "en": "This is the room that's booked for us.",
-      "ko": "이게 우리 예약된 방이에요.",
-      "kr": "디스 이z 더 루움 댓츠 북트 f퍼r 어스"
-     },
-     {
-      "en": "Which one is the pool that's open late?",
-      "ko": "늦게까지 여는 수영장은 어느 거예요?",
-      "kr": "위치 원 이z 더 푸울 댓츠 오우픈 레잇"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "~ that's included",
-      "body": "포함된 ~ (관계사 that's + 과거분사 로 조건 설명)"
-     }
-    ],
-    "chunks": [
-     [
-      "What time is",
-      "왓 타임 이z",
-      "몇 시인가"
-     ],
-     [
-      "the breakfast",
-      "더 브렉f퍼스",
-      "조식"
-     ],
-     [
-      "that's included?",
-      "댓츠 인클루우디드",
-      "포함된"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/f/ breakfast",
-      "breakfast 의 f 는 윗니를 아랫입술에 — 브렉f퍼스트"
-     ]
-    ],
-    "mistake": "that's + 과거분사 = ~된. the breakfast that's included / the tax that's added",
-    "similar": "Is breakfast included, and when?",
-    "category": "여행/호텔",
-    "frequency": 7
    }
   }
  ]
