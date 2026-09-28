@@ -237,3 +237,44 @@ import Testing
                 "홈 \(home.thisTotalKm)km vs 카드 \(card.total)km")
     }
 }
+
+// 세션 트레드밀 화면의 이번 주 원 모듈 (작업지시서 2026-09-28 §7·§10). 갱신 칩은 홈과 같은
+// `cardioRenewChip` 을 쓰고, 이 종목의 이번 주·지난주 합계를 수치로 넘긴다.
+// 데이터는 gymshot `cardio-week-*` 와 같다 — 오늘 2026-09-26(토), 이번 주 월 2.0 · 목 거리 없음 · 금 2.1,
+// 지난주 월 1.8 · 금 2.0 · 토 1.8 · 일 1.9.
+@Suite struct CardioWeekTotalValueTests {
+    let today = GymWeightLogic.isoFmt.date(from: "2026-09-26")!
+
+    func run(_ date: String, _ km: Double?) -> GymSession {
+        GymSession(id: "cw-\(date)", date: date,
+                   blocks: [GymBlock(exerciseId: "treadmill", sets: [
+                       GymSet(done: true, duration: 900, distance: km)])],
+                   status: .completed)
+    }
+    var history: [GymSession] {
+        [run("2026-09-25", 2.1), run("2026-09-24", nil), run("2026-09-21", 2.0),
+         run("2026-09-20", 1.9), run("2026-09-19", 1.8), run("2026-09-18", 2.0), run("2026-09-14", 1.8)]
+    }
+    func week(_ todaySets: [GymSet]) -> GymSessionLogic.CardioMetricWeek {
+        GymSessionLogic.cardioMetricWeek(history: history, todaySets: todaySets,
+                                         exerciseId: "treadmill", metric: .distance, now: today)
+    }
+
+    // 저장 전 — 이번 주 4.1km 3일, 지난주 7.5km. 오늘(토)은 직전 기록 참조, 일요일은 지난주 값.
+    @Test func totalsBeforeSaving() {
+        let w = week([])
+        #expect(w.totalValue == 4.1 && w.prevTotalValue == 7.5 && w.dayCount == 3)
+        #expect(w.days[5].style == .todayRef && w.days[5].text == "2.1")
+        #expect(w.days[6].text == "1.9")
+        #expect(w.days[3].text == "—")
+        let chip = GymHomeLogic.cardioRenewChip(thisTotal: 4.1, prevTotal: 7.5)
+        #expect(chip?.value == "3.4km" && chip?.label == "더 하면 갱신" && chip?.isWarn == true)
+    }
+
+    // 저장 후 — 오늘 2.3km 가 합계·일수에 들어가고 오늘 칸이 채움이 된다.
+    @Test func totalsAfterSaving() {
+        let w = week([GymSet(done: true, preset: false, distance: 2.3)])
+        #expect(w.totalValue == 6.4 && w.dayCount == 4)
+        #expect(w.days[5].style == .filled && w.days[5].text == "2.3")
+    }
+}

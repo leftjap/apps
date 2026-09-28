@@ -304,6 +304,38 @@ public enum GymScreens {
         healthySync(m); return m
     }
 
+    // 트레드밀 이번 주 원 모듈 (작업지시서 2026-09-28 §9) — 픽셀 오라클과 같은 데이터, 세 상태.
+    // 오늘 = 2026-09-26(토). 이번 주 월 2.0 · 목 거리 없음 · 금 2.1 = 4.1km 3일,
+    // 지난주 월 1.8 · 금 2.0 · 토 1.8 · 일 1.9 = 7.5km 4일.
+    //   ghost   — 들어온 직후 (입력 없음, 히어로 = 직전 기록 2.1 고스트)
+    //   entered — 2.3 입력, 저장 전 (카드·모듈 변화 없음)
+    //   saved   — 좌 스와이프 저장 (카드·모듈 오늘 칸 채움, 히어로 pine ✓ + "+0.2km 갱신")
+    enum CardioWeekDemoState { case ghost, entered, saved }
+    @MainActor static func demoCardioWeekModel(_ state: CardioWeekDemoState) -> GymAppModel {
+        func run(_ d: String, _ km: Double?) -> GymSession {
+            var set = GymSet(done: true); set.duration = 900; set.distance = km
+            return GymSession(id: "cw-\(d)", date: d, blocks: [GymBlock(exerciseId: "treadmill", sets: [set])],
+                              tags: ["cardio"], status: .completed)
+        }
+        let today: GymSet = switch state {
+        case .ghost:   GymSet(preset: true)
+        case .entered: GymSet(preset: false, distance: 2.3)
+        case .saved:   GymSet(done: true, preset: false, distance: 2.3)
+        }
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let s = GymSession(id: "cardio-week", date: "2026-09-26", startTime: now - 18 * 60 * 1000,
+                           blocks: [GymBlock(exerciseId: "treadmill", sets: [today])],
+                           tags: ["cardio"], status: .active)
+        let m = GymAppModel(snapshotSession: s)
+        if let d = GymAppModel.dayFmt.date(from: "2026-09-26") { m.referenceToday = d }
+        var prev = GymSession(id: "prev", date: "2026-09-25", blocks: [], tags: ["chest"], status: .completed)
+        prev.totalVolume = 5166                                    // 헤더 "0 / 5,166kg" — history 맨 앞이어야 한다
+        m.history = [prev,
+                     run("2026-09-25", 2.1), run("2026-09-24", nil), run("2026-09-21", 2.0),   // 이번 주 4.1 · 3일
+                     run("2026-09-20", 1.9), run("2026-09-19", 1.8), run("2026-09-18", 2.0), run("2026-09-14", 1.8)]  // 지난주 7.5 · 4일
+        healthySync(m); return m
+    }
+
     // 시안 20a 픽셀 대조용 홈 — `specs/2026-08-17-home-redesign-20a.md` 의 예시 데이터를 그대로 재현한다.
     // 오늘 = 2026-08-11(화). 그 주 월요일이 10일이라 캘린더가 시안(1주차 3~9 / 2주차 10~16)과 일치.
     //   근력 3·5·7·8·10·11, 유산소 5·7·8·10·11 (§5 샘플)
@@ -429,6 +461,10 @@ public enum GymScreens {
         case "home-20a":     return AnyView(HomeScreenView(model: demo20aModel()).frame(width: 375, height: 812))
         case "home-cardio-dash": return AnyView(HomeScreenView(model: demoCardioDashModel()).frame(width: 375, height: 812))
         case "session-cardio-dash": return AnyView(SessionScreenView(model: demoCardioDashSessionModel()).frame(width: 375, height: 812))
+        // 트레드밀 이번 주 원 모듈 (작업지시서 2026-09-28) — 오라클 세 화면과 대조한다.
+        case "cardio-week-ghost":   return AnyView(SessionScreenView(model: demoCardioWeekModel(.ghost)).frame(width: 375, height: 812))
+        case "cardio-week-entered": return AnyView(SessionScreenView(model: demoCardioWeekModel(.entered)).frame(width: 375, height: 812))
+        case "cardio-week-saved":   return AnyView(SessionScreenView(model: demoCardioWeekModel(.saved)).frame(width: 375, height: 812))
         case "home-nocardio": return AnyView(HomeScreenView(model: demoNoCardioModel()).frame(width: 375, height: 812))
         case "home-resume":  return AnyView(HomeScreenView(model: demoResumeModel()).frame(width: 375, height: 812))
         // §12 작은 화면(SE 375×667) 컴팩트 레이아웃 — 스크롤 콘텐츠의 자연 높이를 그대로 렌더한다

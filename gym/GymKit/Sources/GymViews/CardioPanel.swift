@@ -13,9 +13,7 @@ import GymCore
 struct CardioPanel: View {
     let history: [GymSession]
     let set: GymSet?              // 히어로가 읽는 현재 세트
-    let todaySets: [GymSet]       // 오늘 블록 전체 — 주간 합계(구데이터 다중 세트 합)
     let exerciseId: String
-    let now: Date
     let locked: Bool
     var onKeypad: (() -> Void)? = nil
     var onSetValue: ((Double) -> Void)? = nil
@@ -34,8 +32,8 @@ struct CardioPanel: View {
     var body: some View {
         GeometryReader { geo in
             let L = GymCardioLayout(cardWidth: geo.size.width)   // §6-1 치수는 기기 폭에서 유도
+            // 이번 주 합계는 SessionScreen 이 이 패널 위에 그리는 이번 주 원 모듈로 옮겼다 (2026-09-28).
             VStack(spacing: 0) {
-                weekModule
                 gestureArea(L)
             }
             .padding(.horizontal, GymCardioLayout.horizontalPadding)
@@ -43,18 +41,6 @@ struct CardioPanel: View {
             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
         .accessibilityIdentifier("cardio-card")
-    }
-
-    // MARK: - 이번 주 합계 (2주 카드는 SessionScreen 이 근력과 공통으로 그린다)
-
-    private var weekModule: some View {
-        let wk = GymSessionLogic.cardioMetricWeek(history: history, todaySets: todaySets,
-                                                  exerciseId: exerciseId, metric: metric, now: now)
-        return HStack(alignment: .firstTextBaseline, spacing: 2) {
-            Spacer(minLength: 0)
-            Text(wk.total).font(.mono(16, 600)).tracking(-0.48).foregroundStyle(GY.ink2)
-            Text(wk.unit).font(.sans(11, 600)).foregroundStyle(GY.ink4)
-        }
     }
 
     // MARK: - 제스처 영역 — 좌우 여백 탭 = ±0.1km, 숫자 탭 = 키패드, 수평 드래그 = 저장/되돌리기
@@ -139,14 +125,39 @@ struct CardioPanel: View {
         let d = display
         let size = heroFontSize(d.text, unit: metric.unit, W: W)
         return VStack(spacing: 0) {
-            Text(Self.heroLabel(metric, source: d.source)).font(.sans(12, 600)).tracking(1.2)
-                .foregroundStyle(Color(oklch: 0.70, 0.006, 60))
-                .lineLimit(1)
+            // 저장되면 라벨이 pine + 체크 — 레일 완료 칩과 같은 글리프 (2026-09-28 §6-2). 문구는 그대로.
+            HStack(spacing: 5) {
+                if d.source == .saved {
+                    CheckGlyph().stroke(GY.pine, style: CheckGlyph.stroke(11)).frame(width: 11, height: 11)
+                }
+                Text(Self.heroLabel(metric, source: d.source)).font(.sans(12, 600)).tracking(1.2)
+                    .foregroundStyle(d.source == .saved ? GY.pine : Color(oklch: 0.70, 0.006, 60))
+                    .lineLimit(1)
+            }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(d.text).font(.mono(size, 300)).tracking(-0.05 * size)
                     .foregroundStyle(d.color)
                     .accessibilityIdentifier("cardio-hero-\(metric.rawValue)")
                 Text(metric.unit).font(.sans(15, 500)).foregroundStyle(Color(oklch: 0.74, 0.006, 60))
+            }
+            // 직전 대비 칩 — 숫자 행 아래 14pt 에 겹쳐 둔다. VStack 에 넣으면 저장 순간 칩 높이만큼
+            // 히어로 전체가 위로 튄다 (§6-3). 레이아웃 높이는 바뀌지 않는다.
+            // alignmentGuide 는 `if` 블록 바깥에 건다 — 안쪽 뷰에 걸면 SwiftUI 가 무시하고 하단 정렬로
+            // 둔다 (2026-09-29 실측, lessons/swiftui-alignment-guide-in-conditional.md).
+            .overlay(alignment: .bottom) {
+                Group {
+                    if let chip = renewChip {
+                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                            if let v = chip.value { Text(v).font(.mono(11.5, 700)) }
+                            Text(chip.label).font(.sans(10.5, 600))
+                        }
+                        .foregroundStyle(GY.pine)
+                        .padding(.horizontal, 9).padding(.vertical, 3)
+                        .background(GY.ghostTint, in: Capsule())
+                    }
+                }
+                .alignmentGuide(.bottom) { $0[.top] - 14 }
+                .allowsHitTesting(false)
             }
             .padding(.top, 12)
             .opacity(flash ? 0.45 : 1)
@@ -184,6 +195,16 @@ struct CardioPanel: View {
         }
         if let r = refValue { return (metric.format(r), GY.ink4, .ghost) }
         return (metric.format(0), GY.ink4, .empty)
+    }
+
+    /// 저장한 거리 − 직전 러닝 거리 (2026-09-28 §6-3). 늘었으면 "+0.2km 갱신", 같으면 "직전과 동률",
+    /// 줄었으면 칩 없음. 저장 전이거나 직전 기록이 없으면 칩 없음.
+    private var renewChip: (value: String?, label: String)? {
+        guard display.source == .saved, let saved = currentValue, let ref = refValue else { return nil }
+        let delta = ((saved - ref) * 10).rounded() / 10
+        if delta > 0 { return ("+\(String(format: "%.1f", delta))km", "갱신") }
+        if delta == 0 { return (nil, "직전과 동률") }
+        return nil
     }
 
     /// 고스트 숫자는 회색이라는 것만으로는 이번 기록과 구별되지 않는다 — 값을 넣지 않고 넘어가

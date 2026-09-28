@@ -48,12 +48,14 @@ final class GymCardioSwipeSaveUITests: XCTestCase {
         app.buttons["keypad-done"].tap()
         Thread.sleep(forTimeInterval: 0.6)
         XCTAssertEqual(distanceLabel(app), "거리", "입력했지만 아직 저장 전")
+        XCTAssertEqual(app.descendants(matching: .any)["cardio-week-title"].label, "이번 주 0.0km, 0일")
 
         // ② 좌 스와이프 = 저장
         card.swipeLeft(); Thread.sleep(forTimeInterval: 0.8)
         shot(app, "swipe-saved")
         XCTAssertEqual(distanceLabel(app), "거리 · 저장됨")
         XCTAssertEqual(heroValue(app).label, "2.2")
+        XCTAssertEqual(app.descendants(matching: .any)["cardio-week-title"].label, "이번 주 2.2km, 1일")
         XCTAssertFalse(app.staticTexts["분"].exists || app.staticTexts["kcal"].exists, "시간·칼로리 칸이 없어야")
 
         app.staticTexts["session-end"].tap()

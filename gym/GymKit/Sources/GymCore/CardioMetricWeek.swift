@@ -66,6 +66,8 @@ extension GymSessionLogic {
         public let unit: String
         public let dayCount: Int
         public let prevWeekRan: [Bool]   // 지난주 월~일, 이 종목 기록 유무 (7). 지표와 무관.
+        public let totalValue: Double       // total 의 수치 (소수 1자리 반올림)
+        public let prevTotalValue: Double   // 지난주 월~일 이 지표 합 (소수 1자리 반올림) — 갱신 칩의 기준
     }
 
     static let cardioWeekdays = ["월", "화", "수", "목", "금", "토", "일"]
@@ -190,8 +192,12 @@ extension GymSessionLogic {
         // 지난주 행(2주 카드) — 이미 구한 lastWeek 을 요일로 편다. 새 조회는 하지 않는다.
         // 근력 `LiftMetricWeek.prevWeekRan` 과 같은 규칙이다.
         let prevRan = (0..<7).map { lastWeek[iso($0 - 7)] != nil }
+        // 갱신 칩(홈과 같은 cardioRenewChip)에 넘길 수치 — 지난주 합도 이미 구한 lastWeek 에서 읽는다.
+        let prevSum = (0..<7).compactMap { lastWeek[iso($0 - 7)]?[metric] }.reduce(0, +)
         return CardioMetricWeek(days: days, total: metric.format(sum),
-                                unit: metric.unit, dayCount: count, prevWeekRan: prevRan)
+                                unit: metric.unit, dayCount: count, prevWeekRan: prevRan,
+                                totalValue: (sum * 10).rounded() / 10,
+                                prevTotalValue: (prevSum * 10).rounded() / 10)
     }
 }
 

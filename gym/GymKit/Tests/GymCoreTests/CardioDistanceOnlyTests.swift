@@ -52,26 +52,4 @@ import Foundation
 
         #expect(GymSessionLogic.commitCardio(GymSet(preset: true), refDistance: nil) == nil)
     }
-
-    // 기록 줄 아래 칸은 시간 대신 날짜다 — 시간을 더 받지 않으므로 새 기록의 아래 칸이 비게 된다.
-    // 오늘 칸은 저장 전이면 진행(now), 저장 후면 완료(done) 상태다.
-    @Test func recordBarShowsDatesAndTodaySavedState() {
-        func run(_ d: String, _ km: Double?) -> GymSession {
-            var set = GymSet(done: true); set.distance = km; set.duration = 900
-            return GymSession(id: d, date: d, startTime: 0,
-                              blocks: [GymBlock(exerciseId: "treadmill", sets: [set])], status: .completed)
-        }
-        let h = [run("2026-09-24", nil), run("2026-09-25", 2.1)]
-        let open = GymSessionLogic.cardioRecordBar(history: h, exerciseId: "treadmill",
-                                                   todaySet: GymSet(preset: true))
-        #expect(open.past.map(\.bottom) == ["9/24", "9/25"])
-        #expect(open.today.bottom == "오늘")
-        #expect(open.todaySaved == false)
-        #expect(open.best?.bottom == "9/25")
-
-        var saved = GymSet(done: true, preset: false); saved.distance = 2.2
-        let done = GymSessionLogic.cardioRecordBar(history: h, exerciseId: "treadmill", todaySet: saved)
-        #expect(done.todaySaved == true)
-        #expect(done.best == .init(top: "2.2", bottom: "오늘", distanceKm: 2.2))
-    }
 }

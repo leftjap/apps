@@ -470,8 +470,8 @@ public struct HomeScreenView: View {
             HStack(spacing: 0) {
                 ForEach(0..<7, id: \.self) { i in
                     if i > 0 { Spacer(minLength: 0) }
-                    cardioDay(label: labels[i], km: cw.cellKm[i], isRef: cw.cellIsRef[i],
-                              isToday: i == cw.todayIndex)
+                    CardioDayCircle(label: labels[i], text: GymHomeLogic.cardioCellText(cw.cellKm[i]),
+                                    ran: cw.cellKm[i] != nil && !cw.cellIsRef[i], isToday: i == cw.todayIndex)
                 }
             }
             .padding(.top, 9)
@@ -505,42 +505,6 @@ public struct HomeScreenView: View {
         .shadow(color: Color(hex: 0x14120E).opacity(0.10), radius: 12, y: 6)
         .padding(.horizontal, 24).padding(.top, 12)
         .accessibilityIdentifier("home-cardio-card")
-    }
-
-    // 네 케이스 모두 원 30×30 · 숫자 13 고정. 크기로 구분하지 않는다 (§8).
-    /// 원 안 숫자는 km (사용자 2026-09-17). 0 은 "뛰었지만 거리를 안 적은 날"이고 nil(안 뛴 날)과
-    /// 구별돼 "—" 로 뜬다. `isRef` 는 이번 주 실기록이 아니라 참조(오늘=직전 기록, 미래=지난주
-    /// 같은 요일)라는 뜻 — 채우지 않고 회색 숫자만 둔다. 세션 트레드밀 카드와 같은 규칙이다.
-    func cardioDay(label: String, km: Double?, isRef: Bool, isToday: Bool) -> some View {
-        let ran = km != nil && !isRef
-        return VStack(spacing: 5) {
-            ZStack {
-                if ran {
-                    Circle().fill(GY.teal).frame(width: 30, height: 30)
-                } else {
-                    Circle().strokeBorder(GY.ring, lineWidth: 1.5).frame(width: 30, height: 30)
-                }
-                if let t = GymHomeLogic.cardioCellText(km) {
-                    Text(t).font(.mono(13, isToday ? 700 : 600))
-                        .foregroundStyle(isRef ? GY.ink3 : .white)
-                }
-            }
-            .frame(width: 30, height: 30)
-            // 오늘 + 뛴 날 — 흰 링 1.5 + pine 링 1 (실질 지름 35 < 원 간격 43.5, §14)
-            .overlay {
-                if isToday && ran {
-                    ZStack {
-                        Circle().stroke(.white, lineWidth: 1.5).frame(width: 31.5, height: 31.5)
-                        Circle().stroke(GY.pine, lineWidth: 1).frame(width: 34, height: 34)
-                    }
-                }
-            }
-            Text(label)
-                .font(.sans(10.5, isToday && ran ? 700 : 500))
-                .foregroundStyle(isToday && ran ? GY.pine : GY.ink4)
-                .frame(height: 10.5)     // line-height: 1
-        }
-        .frame(width: 30)
     }
 
     // MARK: - §9 체중 카드 (30일 sma7 스파크라인)

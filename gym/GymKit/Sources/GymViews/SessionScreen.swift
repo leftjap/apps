@@ -393,6 +393,14 @@ public struct SessionScreenView: View {
                           recordAmt: Int((model.sessionDoneVolume - prevTotal).rounded()),
                           pulseMoment: headerPulseMoment, exSwapMoment: exSwapMoment)
             let revealP = GymSwipeMath.revealProgress(Double(heroDragX))
+            // 유산소 이번 주 값 — 2주 카드와 아래 이번 주 원 모듈이 이 값 하나를 같이 쓴다.
+            // 저장(done) 세트만 넘긴다: 입력만으로는 바뀌지 않고 좌 스와이프 저장 때 함께 바뀐다 —
+            // 근력 카드가 첫 세트 커밋에 채워지는 것과 같은 시점이다 (작업지시서 2026-09-28 §5).
+            // 유산소 원의 채움은 지표와 무관하게 '그날 뛰었나' 이므로 지표는 실앱 기본값(.distance)으로 고정해 읽는다.
+            let cardioWeek: GymSessionLogic.CardioMetricWeek? = kind == .cardio
+                ? GymSessionLogic.cardioMetricWeek(history: model.history, todaySets: sets.filter(\.done),
+                                                   exerciseId: exId, metric: .distance, now: model.sessionDay)
+                : nil
             // 이 종목 히스토리 카드 (작업지시서 2026-09-17). 카드가 자기 표면을 가지므로
             // 세트바와 사이에 구분선을 두지 않는다. 수평 24 는 홈 카드·세트바와 같은 인셋.
             // SE(375×667)는 812 보다 145pt 짧아 카드를 넣으면 히어로가 겹친다 — 숨긴다 (§9).
@@ -400,29 +408,23 @@ public struct SessionScreenView: View {
                 let thisCells = model.weekCells(around: model.sessionDay)
                 let prevCells = model.weekCells(around: model.sessionDay, weekOffset: -1)
                 // 유산소도 같은 카드를 쓴다 (사용자 2026-09-17). 색만 teal 계열이고, 원 안은
-                // 두 경우 모두 날짜다. 유산소 원의 채움은 지표와 무관하게 '그날 뛰었나' 이므로
-                // 지표는 실앱 기본값(.distance)으로 고정해 읽는다.
-                let cardio = kind == .cardio
-                    ? GymSessionLogic.cardioMetricWeek(history: model.history, todaySets: sets,
-                                                       exerciseId: exId, metric: .distance,
-                                                       now: model.sessionDay)
-                    : nil
+                // 두 경우 모두 날짜다.
                 let lift = kind == .cardio ? nil
                     : GymSessionLogic.liftMetricWeek(history: model.history, todaySets: sets,
                                                      exerciseId: exId, kind: kind,
                                                      now: model.sessionDay)
                 SessionLiftHistoryCard(
-                    palette: cardio != nil ? .cardio : .lift,
-                    days: cardio.map {
+                    palette: cardioWeek != nil ? .cardio : .lift,
+                    days: cardioWeek.map {
                         SessionLiftHistoryCard.days(cardioWeek: $0, thisCells: thisCells,
                                                     prevCells: prevCells, refToday: model.sessionDay)
                     } ?? SessionLiftHistoryCard.days(week: lift!, thisCells: thisCells,
                                                      prevCells: prevCells, refToday: model.sessionDay),
-                    weekdayLabels: cardio?.days.map(\.label) ?? lift!.days.map(\.label),
-                    todayIndex: cardio?.days.firstIndex(where: \.isToday)
+                    weekdayLabels: cardioWeek?.days.map(\.label) ?? lift!.days.map(\.label),
+                    todayIndex: cardioWeek?.days.firstIndex(where: \.isToday)
                         ?? lift!.days.firstIndex(where: \.isToday),
-                    prevDayCount: cardio.map { $0.prevWeekRan.filter { $0 }.count } ?? lift!.prevDayCount,
-                    thisDayCount: cardio?.dayCount ?? lift!.dayCount,
+                    prevDayCount: cardioWeek.map { $0.prevWeekRan.filter { $0 }.count } ?? lift!.prevDayCount,
+                    thisDayCount: cardioWeek?.dayCount ?? lift!.dayCount,
                     exName: model.currentExerciseName,
                     onTapDay: { detailISO = $0 })
                     .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 8)
@@ -436,26 +438,20 @@ public struct SessionScreenView: View {
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             if kind != .cardio { Spacer() }
-            // 유산소 직전 기록 줄 — 근력 세트바 자리에 최근 러닝 4회 + 오늘 + 최장 거리 (사용자 2026-09-26).
-            // 지난 기록이 하나도 없으면 오늘 칸 하나뿐이라 그리지 않는다.
-            if kind == .cardio, case let bar = GymSessionLogic.cardioRecordBar(
-                history: model.history, exerciseId: exId, todaySet: dispSet), !bar.past.isEmpty {
-                // 오늘 칸은 저장(좌 스와이프) 전엔 진행, 후엔 완료 — 근력 세트바의 현재/완료 세트와 같다.
-                let cells = bar.past.map { ($0, BarState.done) } + [(bar.today, bar.todaySaved ? .done : .now)]
-                PrevRecordBars(slots: cells.enumerated().map { i, c in
-                                   SetBarSlot(id: i, top: c.0.top, bottom: c.0.bottom, isPreview: false,
-                                              state: c.1, pr: false, volume: c.0.distanceKm)
-                               },
-                               best: bar.best.map { ($0.top, $0.bottom) },
-                               showHeader: false)
+            // 유산소 이번 주 원 — 홈 유산소 카드와 같은 요일 원 + 합계 · 갱신 칩 (작업지시서 2026-09-28).
+            // CardioPanel 전체에 식별자 `cardio-card` 가 걸려 있어 그 안에 두면 모듈 식별자가 덮이므로
+            // 패널 밖에 둔다. 기록이 없어도 항상 그린다 — 저장 순간 나타나며 히어로를 밀지 않도록.
+            // SE 에서는 카드만 숨고 이 모듈은 그린다 (§3).
+            if let wk = cardioWeek {
+                SessionCardioWeek(week: wk, refToday: model.sessionDay)
+                    .padding(.horizontal, 24).padding(.top, 14)
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             if kind == .cardio {
                 // 유산소 — 거리 하나만, 좌 스와이프 저장·우 스와이프 되돌리기 (사용자 2026-09-26).
-                // 기록 줄 아래 남은 높이를 카드가 전부 쓴다.
+                // 이번 주 원 모듈 아래 남은 높이를 카드가 전부 쓴다.
                 CardioPanel(history: model.history, set: dispSet,
-                            todaySets: model.currentBlock?.sets ?? [],
-                            exerciseId: exId, now: model.sessionDay, locked: locked,
+                            exerciseId: exId, locked: locked,
                             onKeypad: { openKeypad(.distance) },
                             onSetValue: { v in model.applyKeypad(.distance, value: v) },
                             onCommit: { model.commitCardio() },

@@ -206,13 +206,19 @@ final class GymCalendarAuditUITests: XCTestCase {
         app.buttons["keypad-key-5"].tap()
         app.buttons["keypad-done"].tap()
 
-        // 거리를 넣으면 오늘이 기록된 날이 되어 카드의 오늘 칸이 찬다.
+        // 입력만으로는 오늘 칸이 차지 않는다 — 저장(좌 스와이프) 때 찬다 (2026-09-28).
+        expectEmpty(app, "트레드밀")
+        app.otherElements["cardio-card"].firstMatch.swipeLeft()
+        Thread.sleep(forTimeInterval: 0.8)
+
+        // 저장하면 오늘이 기록된 날이 되어 카드의 오늘 칸이 찬다.
         let want = "\(dayLabel(iso(todayIdx))), 트레드밀 기록"
         expectation(for: NSPredicate(format: "label == %@", want),
                     evaluatedWith: cell(app, iso(todayIdx)))
         waitForExpectations(timeout: 8)
         XCTAssertEqual(app.descendants(matching: .any)["lift-card-title"].label,
                        "최근 2주, 지난주 0일, 이번 주 1일")
+        XCTAssertEqual(app.descendants(matching: .any)["cardio-week-title"].label, "이번 주 5.0km, 1일")
 
         // 같은 날 근력 종목을 추가하면 그 카드는 비어 있어야 한다 — 유산소가 새면 안 된다.
         app.buttons["rail-add"].tap()
