@@ -11,7 +11,7 @@
    "phonetic_kr": "커나이 겟 와라이 해드 예스터r데이",
    "order_index": 1,
    "explanation": {
-    "key": "Can I get ~ = ~ 주세요 (주문 틀, 영상 #7). what I had = 제가 먹었던 것",
+    "key": "Can I get ~ = ~ 주세요 (주문 틀, 영상 #7). what I had = 제가 마셨던 것(먹은 것에도 쓴다)",
     "anchor": "주세요",
     "situation": "공항철도 역 앞 카페, 12시 반. 호주인 바리스타 Tom 이 주문을 받는다. 지오는 단골이다.",
     "miniDialogue": [
@@ -60,16 +60,16 @@
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Then you need a large. This one's on me.",
-      "ko": "그럼 큰 걸로 드셔야겠네요. 이건 제가 살게요.",
-      "kr": "덴 여 니이러 라r쥐 디스 원z 온 미"
+      "en": "So you slept in today?",
+      "ko": "그럼 오늘 늦잠 주무신 거예요?",
+      "kr": "쏘우 여 슬렙틴 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You read my mind.",
-      "ko": "제 마음을 읽으셨네요.",
-      "kr": "유 레드 마이 마인드"
+      "en": "Not really. It's still morning for me.",
+      "ko": "아뇨. 저한텐 아직 아침이에요.",
+      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
      }
     ],
     "drills": [
@@ -102,7 +102,7 @@
     "grammar": [
      {
       "struct": "Can I get ~",
-      "body": "~ 주세요 (주문 틀, 영상 #7). what I had = 제가 먹었던 것"
+      "body": "~ 주세요 (주문 틀, 영상 #7). what I had = 제가 마셨던 것(먹은 것에도 쓴다)"
      }
     ],
     "chunks": [
@@ -195,16 +195,16 @@
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Then you need a large. This one's on me.",
-      "ko": "그럼 큰 걸로 드셔야겠네요. 이건 제가 살게요.",
-      "kr": "덴 여 니이러 라r쥐 디스 원z 온 미"
+      "en": "So you slept in today?",
+      "ko": "그럼 오늘 늦잠 주무신 거예요?",
+      "kr": "쏘우 여 슬렙틴 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You read my mind.",
-      "ko": "제 마음을 읽으셨네요.",
-      "kr": "유 레드 마이 마인드"
+      "en": "Not really. It's still morning for me.",
+      "ko": "아뇨. 저한텐 아직 아침이에요.",
+      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
      }
     ],
     "drills": [
@@ -325,16 +325,16 @@
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Then you need a large. This one's on me.",
-      "ko": "그럼 큰 걸로 드셔야겠네요. 이건 제가 살게요.",
-      "kr": "덴 여 니이러 라r쥐 디스 원z 온 미"
+      "en": "So you slept in today?",
+      "ko": "그럼 오늘 늦잠 주무신 거예요?",
+      "kr": "쏘우 여 슬렙틴 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You read my mind.",
-      "ko": "제 마음을 읽으셨네요.",
-      "kr": "유 레드 마이 마인드"
+      "en": "Not really. It's still morning for me.",
+      "ko": "아뇨. 저한텐 아직 아침이에요.",
+      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
      }
     ],
     "drills": [
@@ -399,15 +399,15 @@
    }
   },
   {
-   "id": "en-personal-tom-noon-04-read-my-mind",
-   "sentence": "You read my mind.",
-   "meaning": "제 마음을 읽으셨네요.",
+   "id": "en-personal-tom-noon-04-morning-for-me",
+   "sentence": "Not really. It's still morning for me.",
+   "meaning": "아뇨. 저한텐 아직 아침이에요.",
    "reading": null,
-   "phonetic_kr": "유 레드 마이 마인드",
+   "phonetic_kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미",
    "order_index": 4,
    "explanation": {
-    "key": "read my mind = 제 마음을 읽으셨네요 (원하던 걸 상대가 먼저 말할 때, 모두영어 1편 #332). read 는 과거형이라 레드",
-    "anchor": "마음을 읽으셨네요",
+    "key": "~ for me = 저한텐 ~예요 (for me = 나한테는. 사람마다 기준이 다를 때)",
+    "anchor": "저한텐 아직 아침이에요",
     "situation": "공항철도 역 앞 카페, 12시 반. 호주인 바리스타 Tom 이 주문을 받는다. 지오는 단골이다.",
     "miniDialogue": [
      {
@@ -455,75 +455,80 @@
      {
       "speaker": "B",
       "name": "Tom",
-      "en": "Then you need a large. This one's on me.",
-      "ko": "그럼 큰 걸로 드셔야겠네요. 이건 제가 살게요.",
-      "kr": "덴 여 니이러 라r쥐 디스 원z 온 미"
+      "en": "So you slept in today?",
+      "ko": "그럼 오늘 늦잠 주무신 거예요?",
+      "kr": "쏘우 여 슬렙틴 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You read my mind.",
-      "ko": "제 마음을 읽으셨네요.",
-      "kr": "유 레드 마이 마인드"
+      "en": "Not really. It's still morning for me.",
+      "ko": "아뇨. 저한텐 아직 아침이에요.",
+      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
      }
     ],
     "drills": [
      {
-      "en": "How did you read my mind?",
-      "ko": "제 마음을 어떻게 아셨어요?",
-      "kr": "하우 디저 리이드 마이 마인드"
+      "en": "That's too early for me.",
+      "ko": "저한텐 너무 일러요.",
+      "kr": "댓츠 투우 어r리 f퍼r 미"
      },
      {
-      "en": "She always reads my mind.",
-      "ko": "그녀는 늘 제 마음을 알아요.",
-      "kr": "쉬 올웨이z 리이즈 마이 마인드"
+      "en": "Is this too spicy for you?",
+      "ko": "드시기에 너무 매워요?",
+      "kr": "이z 디스 투우 스파이씨 f퍼r 유"
      },
      {
-      "en": "You took the words out of my mouth.",
-      "ko": "제가 하려던 말이에요.",
-      "kr": "유 툭 더 워r자우러v 마이 마우쓰"
+      "en": "This chair is too low for me.",
+      "ko": "이 의자는 저한테 너무 낮아요.",
+      "kr": "디스 체어r 이z 투우 로우 f퍼r 미"
      },
      {
-      "en": "I was just thinking the same thing.",
-      "ko": "저도 똑같은 생각을 하던 참이에요.",
-      "kr": "아이 워z 저스 씽킹 더 쎄임 씽"
+      "en": "It's a little expensive for me.",
+      "ko": "저한텐 좀 비싸요.",
+      "kr": "잇서 리를 익스펜씨v f퍼r 미"
      },
      {
-      "en": "Did I say that out loud?",
-      "ko": "제가 그걸 소리 내서 말했어요?",
-      "kr": "디다이 쎄이 대라웃 라우드"
+      "en": "This size is perfect for me.",
+      "ko": "이 사이즈가 저한테 딱 맞아요.",
+      "kr": "디스 싸이z 이z 퍼r f펙트 f퍼r 미"
      }
     ],
     "grammar": [
      {
-      "struct": "read my mind",
-      "body": "제 마음을 읽으셨네요 (원하던 걸 상대가 먼저 말할 때, 모두영어 1편 #332). read 는 과거형이라 레드"
+      "struct": "~ for me",
+      "body": "저한텐 ~예요 (for me = 나한테는. 사람마다 기준이 다를 때)"
      }
     ],
     "chunks": [
      [
-      "You read",
-      "유 레드",
-      "당신이 읽었다"
+      "Not really.",
+      "낫 리얼리",
+      "아뇨"
      ],
      [
-      "my mind.",
-      "마이 마인드",
-      "내 마음을"
+      "It's still morning",
+      "잇츠 스틸 모r닝",
+      "아직 아침이다"
+     ],
+     [
+      "for me.",
+      "f퍼r 미",
+      "저한테는"
      ]
     ],
     "phonemes": [
      [
-      "/ɛ/ read",
-      "과거형 read 는 레드 — 리이드가 아니다"
+      "/ɔr/ morning",
+      "morning 은 혀를 말아 모r닝 — 모닝이 아니다"
      ],
      [
-      "/aɪ/ mind",
-      "mind 는 마인드 — 이중모음"
+      "/ɪ/ still",
+      "still 의 i 는 짧은 이 — 스틸"
      ]
     ],
-    "mistake": "read 는 현재 리이드, 과거 레드 — 여기서는 과거",
-    "similar": "That's exactly what I wanted.",
+    "mistake": "This is difficult to me ✗ → for me. 나한테 어렵다·이르다·비싸다의 '나한테는' 은 for me, to me 는 '내가 보기엔'",
+    "similar": "My day just started.",
     "category": "일상/카페",
     "frequency": 8
    }

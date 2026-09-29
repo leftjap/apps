@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
-      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
+      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
+      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
      }
     ],
     "drills": [
@@ -197,9 +197,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
-      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
+      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
+      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
      }
     ],
     "drills": [
@@ -262,7 +262,7 @@
       "speaker 는 긴 이 — 스피이커r"
      ]
     ],
-    "mistake": "That's why 앞에 이유를 먼저 말한다 — 이유를 묻는 질문의 답으로 쓰지 않는다",
+    "mistake": "That's why 뒤에는 결과, That's because 뒤에는 이유 — I taped over the speaker. That's why Nani got scared. ✗ (뜻이 거꾸로)",
     "similar": "Nani got scared, so I covered the speaker.",
     "category": "일상/이웃",
     "frequency": 9
@@ -332,9 +332,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
-      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
+      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
+      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
      }
     ],
     "drills": [
@@ -405,10 +405,10 @@
   },
   {
    "id": "en-personal-emma-alarm-04-who-lives-downstairs",
-   "sentence": "The lady who lives downstairs stopped complaining in thirty minutes.",
-   "meaning": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
+   "sentence": "The lady who lives downstairs hated it, too. For thirty minutes.",
+   "meaning": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
    "reading": null,
-   "phonetic_kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠",
+   "phonetic_kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠",
    "order_index": 4,
    "explanation": {
     "key": "~ who lives downstairs = 아래층에 사는 ~ (who 가 사람을 뒤에서 설명한다)",
@@ -467,9 +467,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
-      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
+      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
+      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
      }
     ],
     "drills": [
@@ -512,14 +512,14 @@
       "아래층에 사는 할머니"
      ],
      [
-      "stopped complaining",
-      "스탑트 컴플레이닝",
-      "불평을 멈췄다"
+      "hated it, too.",
+      "헤이리딧 투우",
+      "그분도 질색했다"
      ],
      [
-      "in thirty minutes.",
-      "인 써r리 미닛츠",
-      "30분 만에"
+      "For thirty minutes.",
+      "f퍼r 써r리 미닛츠",
+      "30분 동안만"
      ]
     ],
     "phonemes": [
@@ -532,7 +532,7 @@
       "thirty 의 t 가 굴러 써r리"
      ]
     ],
-    "mistake": "The lady lives downstairs stopped ✗ — 동사가 둘이면 who 로 잇는다",
+    "mistake": "The lady lives downstairs hated it ✗ — 동사가 둘이면 who 로 잇는다",
     "similar": "Even the lady downstairs got used to it.",
     "category": "일상/이웃",
     "frequency": 7

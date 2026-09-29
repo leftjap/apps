@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've said thank you about fifty times.",
-      "ko": "고맙다는 말을 한 쉰 번쯤 했어요.",
-      "kr": "아이v 쎄드 쌩켜 어바웃 f피프티 타임z"
+      "en": "I'm more tired than the crew.",
+      "ko": "승무원들보다 제가 더 피곤해요.",
+      "kr": "아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
@@ -202,16 +202,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've said thank you about fifty times.",
-      "ko": "고맙다는 말을 한 쉰 번쯤 했어요.",
-      "kr": "아이v 쎄드 쌩켜 어바웃 f피프티 타임z"
+      "en": "I'm more tired than the crew.",
+      "ko": "승무원들보다 제가 더 피곤해요.",
+      "kr": "아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
      {
-      "en": "That's the guy my sister works with.",
-      "ko": "저 사람이 제 동생이랑 같이 일하는 사람이에요.",
-      "kr": "댓츠 더 가이 마이 씨스터r 워r크스 위드"
+      "en": "That's the guy my friend works with.",
+      "ko": "저 사람이 제 친구랑 같이 일하는 사람이에요.",
+      "kr": "댓츠 더 가이 마이 f렌드 워r크스 위드"
      },
      {
       "en": "These are the people I live with.",
@@ -332,9 +332,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've said thank you about fifty times.",
-      "ko": "고맙다는 말을 한 쉰 번쯤 했어요.",
-      "kr": "아이v 쎄드 쌩켜 어바웃 f피프티 타임z"
+      "en": "I'm more tired than the crew.",
+      "ko": "승무원들보다 제가 더 피곤해요.",
+      "kr": "아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
@@ -399,15 +399,15 @@
    }
   },
   {
-   "id": "en-personal-bkk-polite-04-about-fifty-times",
-   "sentence": "I've said thank you about fifty times.",
-   "meaning": "고맙다는 말을 한 쉰 번쯤 했어요.",
+   "id": "en-personal-bkk-polite-04-more-tired-than-crew",
+   "sentence": "I'm more tired than the crew.",
+   "meaning": "승무원들보다 제가 더 피곤해요.",
    "reading": null,
-   "phonetic_kr": "아이v 쎄드 쌩켜 어바웃 f피프티 타임z",
+   "phonetic_kr": "아임 모어r 타이어r드 댄 더 크루우",
    "order_index": 4,
    "explanation": {
-    "key": "about ~ times = 대략 ~번 (about + 숫자 + times). I have said = 지금까지 말했다",
-    "anchor": "한 쉰 번쯤",
+    "key": "more tired than ~ = ~보다 더 피곤해요 (more + 형용사 + than = ~보다 더 …한)",
+    "anchor": "더 피곤해요",
     "situation": "방콕행 비즈니스석. 아내 소연이 이 비행기에서 근무 중이라 승무원들이 지오를 계속 챙긴다. 옆자리 외국인 승객이 말을 건다.",
     "miniDialogue": [
      {
@@ -462,73 +462,68 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've said thank you about fifty times.",
-      "ko": "고맙다는 말을 한 쉰 번쯤 했어요.",
-      "kr": "아이v 쎄드 쌩켜 어바웃 f피프티 타임z"
+      "en": "I'm more tired than the crew.",
+      "ko": "승무원들보다 제가 더 피곤해요.",
+      "kr": "아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
      {
-      "en": "I've called her about ten times.",
-      "ko": "그녀한테 열 번쯤 전화했어요.",
-      "kr": "아이v 콜드 허r 어바웃 텐 타임z"
+      "en": "I'm more tired than yesterday.",
+      "ko": "어제보다 더 피곤해요.",
+      "kr": "아임 모어r 타이어r드 댄 예스터r데이"
      },
      {
-      "en": "She's read that book about five times.",
-      "ko": "그녀는 그 책을 다섯 번쯤 읽었어요.",
-      "kr": "쉬z 레드 댓 부커바웃 f파이v 타임z"
+      "en": "You look more tired than me.",
+      "ko": "저보다 더 피곤해 보여요.",
+      "kr": "유 룩 모어r 타이어r드 댄 미"
      },
      {
-      "en": "How many times have you said that?",
-      "ko": "그 말 몇 번이나 했어요?",
-      "kr": "하우 메니 타임z 해v 여 쎄드 댓"
+      "en": "Are you more tired than usual?",
+      "ko": "평소보다 더 피곤해요?",
+      "kr": "아r 여 모어r 타이어r드 댄 유우쥬얼"
      },
      {
-      "en": "I said sorry twice.",
-      "ko": "두 번 사과했어요.",
-      "kr": "아이 쎄드 쏘리 트와이스"
+      "en": "She's busier than anyone on the team.",
+      "ko": "그녀는 팀의 누구보다 더 바빠요.",
+      "kr": "쉬z 비지어r 대내니워논 더 티임"
      },
      {
-      "en": "We've been here about three times.",
-      "ko": "여기 세 번쯤 와 봤어요.",
-      "kr": "위v 빈 히어r 어바웃 쓰리이 타임z"
+      "en": "Sitting all day makes me tired.",
+      "ko": "종일 앉아 있으면 피곤해요.",
+      "kr": "씨링 올 데이 메익스 미 타이어r드"
      }
     ],
     "grammar": [
      {
-      "struct": "about ~ times",
-      "body": "대략 ~번 (about + 숫자 + times). I have said = 지금까지 말했다"
+      "struct": "more tired than ~",
+      "body": "~보다 더 피곤해요 (more + 형용사 + than = ~보다 더 …한)"
      }
     ],
     "chunks": [
      [
-      "I've said",
-      "아이v 쎄드",
-      "지금까지 말했다"
+      "I'm more tired",
+      "아임 모어r 타이어r드",
+      "제가 더 피곤하다"
      ],
      [
-      "thank you",
-      "쌩켜",
-      "고맙다는 말을"
-     ],
-     [
-      "about fifty times.",
-      "어바웃 f피프티 타임z",
-      "한 쉰 번쯤"
+      "than the crew.",
+      "댄 더 크루우",
+      "승무원들보다"
      ]
     ],
     "phonemes": [
      [
-      "/θ/ thank",
-      "thank 의 th 는 혀끝을 이 사이에 — 쌩"
+      "/aɪɚ/ tired",
+      "tired 는 타이어r드 — 끊지 않고 빠르게"
      ],
      [
-      "/ɪ/ fifty",
-      "fifty 는 앞에 강세 — f피프티"
+      "/ð/ than",
+      "than 의 th 는 혀끝을 이 사이에 — 댄"
      ]
     ],
-    "mistake": "fifty time ✗ — 두 번 이상은 times",
-    "similar": "I keep saying thank you.",
+    "mistake": "I'm tired than the crew ✗ — '~보다 더' 는 more 를 빼지 않는다(more tired than)",
+    "similar": "I'm exhausted.",
     "category": "여행/기내",
     "frequency": 7
    }

@@ -67,9 +67,9 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I learned it last week.",
-      "ko": "저도요. 저도 지난주에 배웠어요.",
-      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
+      "en": "Same here. I only learned it last week.",
+      "ko": "저도요. 저도 지난주에야 배웠어요.",
+      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
      }
     ],
     "drills": [
@@ -147,7 +147,7 @@
    "order_index": 2,
    "explanation": {
     "key": "Can you ~ = ~해 주실래요 (부탁, 영상 #8). 못 알아들었을 때 되묻는 말",
-    "anchor": "다시",
+    "anchor": "다시 말해 주실래요",
     "situation": "수완나품 공항 입국장(2층). 그랩을 불렀는데 앱에 기사 대신 4자리 PIN 만 나온다. 공항 직원에게 묻는다.",
     "miniDialogue": [
      {
@@ -202,9 +202,9 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I learned it last week.",
-      "ko": "저도요. 저도 지난주에 배웠어요.",
-      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
+      "en": "Same here. I only learned it last week.",
+      "ko": "저도요. 저도 지난주에야 배웠어요.",
+      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
      }
     ],
     "drills": [
@@ -333,9 +333,9 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I learned it last week.",
-      "ko": "저도요. 저도 지난주에 배웠어요.",
-      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
+      "en": "Same here. I only learned it last week.",
+      "ko": "저도요. 저도 지난주에야 배웠어요.",
+      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
      }
     ],
     "drills": [
@@ -463,9 +463,9 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I learned it last week.",
-      "ko": "저도요. 저도 지난주에 배웠어요.",
-      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
+      "en": "Same here. I only learned it last week.",
+      "ko": "저도요. 저도 지난주에야 배웠어요.",
+      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
      }
     ],
     "drills": [
@@ -491,7 +491,7 @@
      },
      {
       "en": "It felt like a long flight.",
-      "ko": "긴 비행이었던 것 같아요.",
+      "ko": "비행이 길게 느껴졌어요.",
       "kr": "잇 f펠트 라이커 롱 f플라잇"
      }
     ],
@@ -528,7 +528,7 @@
       "changes 의 g 는 ㅈ — 체인쥐z"
      ]
     ],
-    "mistake": "It feels like 뒤에는 문장 — It feels like change fast ✗",
+    "mistake": "문장을 붙이면 주어를 빼지 않는다 — It feels like change fast ✗, It feels like everything changes ✓ (명사도 온다: It feels like yesterday)",
     "similar": "Everything changes so fast now.",
     "category": "여행/교통",
     "frequency": 8

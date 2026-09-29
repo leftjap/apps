@@ -6,13 +6,13 @@
   {
    "id": "en-personal-neighbor-emma-01-theres-one-who",
    "sentence": "There's only one who minds, and that's our cat.",
-   "meaning": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+   "meaning": "신경 쓰는 건 저희 고양이 하나뿐이에요.",
    "reading": null,
    "phonetic_kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣",
    "order_index": 1,
    "explanation": {
     "key": "There's ~ = ~가 있어요 (영상 #16). 뒤의 one who ~ = ~하는 사람·동물",
-    "anchor": "정도예요",
+    "anchor": "하나뿐이에요",
     "situation": "지오 집 현관. 위층으로 이사 온 Emma 가 인사하러 내려왔다. 집에는 시력을 잃은 나니가 있다.",
     "miniDialogue": [
      {
@@ -26,7 +26,7 @@
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
-      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "ko": "신경 쓰는 건 저희 고양이 하나뿐이에요.",
       "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
@@ -123,7 +123,7 @@
       "minds 의 s 는 z 소리 — 마인즈"
      ]
     ],
-    "mistake": "mind = 신경 쓰다·싫어하다",
+    "mistake": "There's only one who mind ✗ — one 은 단수라 minds",
     "similar": "Only our cat minds the noise.",
     "category": "일상/이웃",
     "frequency": 8
@@ -152,7 +152,7 @@
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
-      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "ko": "신경 쓰는 건 저희 고양이 하나뿐이에요.",
       "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
@@ -216,7 +216,7 @@
      },
      {
       "en": "She has a cat who can't hear well.",
-      "ko": "그분 고양이 하나는 귀가 잘 안 들려요.",
+      "ko": "그분은 귀가 잘 안 들리는 고양이를 키워요.",
       "kr": "쉬 해z 어 캣 후 캔트 히어r 웰"
      }
     ],
@@ -264,7 +264,7 @@
    "order_index": 3,
    "explanation": {
     "key": "I just wanted to ~ = 그냥 ~하고 싶었어요 (말을 부드럽게, 영상 #19)",
-    "anchor": "말씀드리고",
+    "anchor": "말씀드리고 싶었어요",
     "situation": "지오 집 현관. 위층으로 이사 온 Emma 가 인사하러 내려왔다. 집에는 시력을 잃은 나니가 있다.",
     "miniDialogue": [
      {
@@ -278,7 +278,7 @@
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
-      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "ko": "신경 쓰는 건 저희 고양이 하나뿐이에요.",
       "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
@@ -337,7 +337,7 @@
      },
      {
       "en": "She just wanted to thank you.",
-      "ko": "아내가 그냥 고맙다고 하고 싶었대요.",
+      "ko": "그분이 그냥 고맙다고 하고 싶었대요.",
       "kr": "쉬 저스 워니드 터 쌩크 유"
      },
      {
@@ -390,7 +390,7 @@
    "order_index": 4,
    "explanation": {
     "key": "You might want to ~ = ~하는 게 좋을 거예요 (가벼운 권유, 영상 #24)",
-    "anchor": "좋을",
+    "anchor": "움직이는 게 좋을 거예요",
     "situation": "지오 집 현관. 위층으로 이사 온 Emma 가 인사하러 내려왔다. 집에는 시력을 잃은 나니가 있다.",
     "miniDialogue": [
      {
@@ -404,7 +404,7 @@
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
-      "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
+      "ko": "신경 쓰는 건 저희 고양이 하나뿐이에요.",
       "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
@@ -462,14 +462,14 @@
       "kr": "위 마잇 워너 키입 더 도어r 클로우z드"
      },
      {
-      "en": "She might want to meet your cats first.",
-      "ko": "나니가 댁 고양이들 먼저 만나 보고 싶어 할지도요.",
-      "kr": "쉬 마잇 워너 미잇 여r 캣츠 f퍼r스트"
+      "en": "Maybe you should knock softly.",
+      "ko": "노크는 살살 하시는 게 좋겠어요.",
+      "kr": "메이비 여 슈드 낙 쏘f틀리"
      },
      {
-      "en": "You may want to sit; she comes to you.",
-      "ko": "앉아 계시는 게 좋아요, 나니가 다가와요.",
-      "kr": "유 메이 워너 씻 쉬 컴z 터 유"
+      "en": "You might want to sit down. She'll come to you.",
+      "ko": "앉아 계시는 게 좋을 거예요. 알아서 다가올 거예요.",
+      "kr": "유 마잇 워너 씻 다운 쉬일 컴 터 유"
      }
     ],
     "grammar": [
@@ -507,7 +507,7 @@
      ]
     ],
     "mistake": "might want to 는 명령이 아니라 권유",
-    "similar": "Just move slowly so she hears you.",
+    "similar": "Just move slowly so you don't startle her.",
     "category": "일상/이웃",
     "frequency": 8
    }

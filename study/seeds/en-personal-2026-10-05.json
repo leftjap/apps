@@ -5,29 +5,36 @@
  "cards": [
   {
    "id": "en-personal-bkk-wakeup-01-like-to-check-in",
-   "sentence": "Hi. I'd like to check in, please.",
-   "meaning": "안녕하세요. 체크인하려고요.",
+   "sentence": "Yes. I'd like to check in, please.",
+   "meaning": "네. 체크인하려고요.",
    "reading": null,
-   "phonetic_kr": "하이 아이드 라익 터 체킨 플리이z",
+   "phonetic_kr": "예스 아이드 라익 터 체킨 플리이z",
    "order_index": 1,
    "explanation": {
     "key": "I'd like to ~ = ~하고 싶어요 / ~할게요 (정중한 요청, 영상 #17)",
     "anchor": "체크인하려고요",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
+    "situation": "방콕 호텔 프런트, 저녁. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
     "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good evening. Do you have a reservation?",
+      "ko": "안녕하세요. 예약하셨어요?",
+      "kr": "구디이v닝 더여 해v 어 레저r베이션"
+     },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Hi. I'd like to check in, please.",
-      "ko": "안녕하세요. 체크인하려고요.",
-      "kr": "하이 아이드 라익 터 체킨 플리이z"
+      "en": "Yes. I'd like to check in, please.",
+      "ko": "네. 체크인하려고요.",
+      "kr": "예스 아이드 라익 터 체킨 플리이z"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Welcome. Can I see your passport, please?",
-      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
+      "en": "Sure. Can I see your passport, please?",
+      "ko": "네. 여권 좀 보여 주시겠어요?",
+      "kr": "슈어r 커나이 씨이 여r 패스포어r트 플리이z"
      },
      {
       "speaker": "B",
@@ -39,9 +46,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "It is. Breakfast is from six to ten.",
-      "ko": "네. 조식은 6시부터 10시까지예요.",
-      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
+      "en": "Yes, from six to ten.",
+      "ko": "네, 6시부터 10시까지예요.",
+      "kr": "예스 f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
@@ -53,9 +60,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Would you like a wake-up call?",
-      "ko": "모닝콜 해 드릴까요?",
-      "kr": "워저 라이커 웨이컵 콜"
+      "en": "Would you like a wake-up call, then?",
+      "ko": "그럼 모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜 덴"
      },
      {
       "speaker": "B",
@@ -63,13 +70,6 @@
       "en": "Can you make it nine fifty?",
       "ko": "9시 50분으로 해 주실 수 있어요?",
       "kr": "컨 여 메이킷 나인 f피프티"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Nine fifty it is.",
-      "ko": "9시 50분으로 해 드릴게요.",
-      "kr": "나인 f피프티 이리z"
      }
     ],
     "drills": [
@@ -107,9 +107,9 @@
     ],
     "chunks": [
      [
-      "Hi.",
-      "하이",
-      "안녕하세요"
+      "Yes.",
+      "예스",
+      "네"
      ],
      [
       "I'd like to",
@@ -148,21 +148,28 @@
    "explanation": {
     "key": "I was wondering if ~ = 혹시 ~인가요? (조심스럽게 묻는 말, 영상 #20)",
     "anchor": "혹시 조식 포함인가요",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
+    "situation": "방콕 호텔 프런트, 저녁. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
     "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good evening. Do you have a reservation?",
+      "ko": "안녕하세요. 예약하셨어요?",
+      "kr": "구디이v닝 더여 해v 어 레저r베이션"
+     },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Hi. I'd like to check in, please.",
-      "ko": "안녕하세요. 체크인하려고요.",
-      "kr": "하이 아이드 라익 터 체킨 플리이z"
+      "en": "Yes. I'd like to check in, please.",
+      "ko": "네. 체크인하려고요.",
+      "kr": "예스 아이드 라익 터 체킨 플리이z"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Welcome. Can I see your passport, please?",
-      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
+      "en": "Sure. Can I see your passport, please?",
+      "ko": "네. 여권 좀 보여 주시겠어요?",
+      "kr": "슈어r 커나이 씨이 여r 패스포어r트 플리이z"
      },
      {
       "speaker": "B",
@@ -174,9 +181,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "It is. Breakfast is from six to ten.",
-      "ko": "네. 조식은 6시부터 10시까지예요.",
-      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
+      "en": "Yes, from six to ten.",
+      "ko": "네, 6시부터 10시까지예요.",
+      "kr": "예스 f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
@@ -188,9 +195,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Would you like a wake-up call?",
-      "ko": "모닝콜 해 드릴까요?",
-      "kr": "워저 라이커 웨이컵 콜"
+      "en": "Would you like a wake-up call, then?",
+      "ko": "그럼 모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜 덴"
      },
      {
       "speaker": "B",
@@ -198,13 +205,6 @@
       "en": "Can you make it nine fifty?",
       "ko": "9시 50분으로 해 주실 수 있어요?",
       "kr": "컨 여 메이킷 나인 f피프티"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Nine fifty it is.",
-      "ko": "9시 50분으로 해 드릴게요.",
-      "kr": "나인 f피프티 이리z"
      }
     ],
     "drills": [
@@ -283,21 +283,28 @@
    "explanation": {
     "key": "I'm not sure if ~ = ~일지 잘 모르겠어요 (영상 #10). be up = 깨어 있다",
     "anchor": "일어날 수 있을지 모르겠어요",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
+    "situation": "방콕 호텔 프런트, 저녁. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
     "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good evening. Do you have a reservation?",
+      "ko": "안녕하세요. 예약하셨어요?",
+      "kr": "구디이v닝 더여 해v 어 레저r베이션"
+     },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Hi. I'd like to check in, please.",
-      "ko": "안녕하세요. 체크인하려고요.",
-      "kr": "하이 아이드 라익 터 체킨 플리이z"
+      "en": "Yes. I'd like to check in, please.",
+      "ko": "네. 체크인하려고요.",
+      "kr": "예스 아이드 라익 터 체킨 플리이z"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Welcome. Can I see your passport, please?",
-      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
+      "en": "Sure. Can I see your passport, please?",
+      "ko": "네. 여권 좀 보여 주시겠어요?",
+      "kr": "슈어r 커나이 씨이 여r 패스포어r트 플리이z"
      },
      {
       "speaker": "B",
@@ -309,9 +316,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "It is. Breakfast is from six to ten.",
-      "ko": "네. 조식은 6시부터 10시까지예요.",
-      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
+      "en": "Yes, from six to ten.",
+      "ko": "네, 6시부터 10시까지예요.",
+      "kr": "예스 f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
@@ -323,9 +330,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Would you like a wake-up call?",
-      "ko": "모닝콜 해 드릴까요?",
-      "kr": "워저 라이커 웨이컵 콜"
+      "en": "Would you like a wake-up call, then?",
+      "ko": "그럼 모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜 덴"
      },
      {
       "speaker": "B",
@@ -333,13 +340,6 @@
       "en": "Can you make it nine fifty?",
       "ko": "9시 50분으로 해 주실 수 있어요?",
       "kr": "컨 여 메이킷 나인 f피프티"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Nine fifty it is.",
-      "ko": "9시 50분으로 해 드릴게요.",
-      "kr": "나인 f피프티 이리z"
      }
     ],
     "drills": [
@@ -418,21 +418,28 @@
    "explanation": {
     "key": "Can you ~ = ~해 주실 수 있어요? (영상 #8). make it + 시간 = ~시로 하다",
     "anchor": "해 주실 수 있어요",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
+    "situation": "방콕 호텔 프런트, 저녁. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
     "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good evening. Do you have a reservation?",
+      "ko": "안녕하세요. 예약하셨어요?",
+      "kr": "구디이v닝 더여 해v 어 레저r베이션"
+     },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Hi. I'd like to check in, please.",
-      "ko": "안녕하세요. 체크인하려고요.",
-      "kr": "하이 아이드 라익 터 체킨 플리이z"
+      "en": "Yes. I'd like to check in, please.",
+      "ko": "네. 체크인하려고요.",
+      "kr": "예스 아이드 라익 터 체킨 플리이z"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Welcome. Can I see your passport, please?",
-      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
+      "en": "Sure. Can I see your passport, please?",
+      "ko": "네. 여권 좀 보여 주시겠어요?",
+      "kr": "슈어r 커나이 씨이 여r 패스포어r트 플리이z"
      },
      {
       "speaker": "B",
@@ -444,9 +451,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "It is. Breakfast is from six to ten.",
-      "ko": "네. 조식은 6시부터 10시까지예요.",
-      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
+      "en": "Yes, from six to ten.",
+      "ko": "네, 6시부터 10시까지예요.",
+      "kr": "예스 f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
@@ -458,9 +465,9 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Would you like a wake-up call?",
-      "ko": "모닝콜 해 드릴까요?",
-      "kr": "워저 라이커 웨이컵 콜"
+      "en": "Would you like a wake-up call, then?",
+      "ko": "그럼 모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜 덴"
      },
      {
       "speaker": "B",
@@ -468,13 +475,6 @@
       "en": "Can you make it nine fifty?",
       "ko": "9시 50분으로 해 주실 수 있어요?",
       "kr": "컨 여 메이킷 나인 f피프티"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Nine fifty it is.",
-      "ko": "9시 50분으로 해 드릴게요.",
-      "kr": "나인 f피프티 이리z"
      }
     ],
     "drills": [
