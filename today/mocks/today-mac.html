@@ -346,7 +346,9 @@
 
   /* recents 영역만 자체 스크롤 (mouse wheel/trackpad). 스크롤바 시각 0 — 사이드바 룩 일정. */
   .sb__top, .sb__footer { flex-shrink: 0; }
-  .sidebar > .sb__group:not(.sb__group--recents) { flex-shrink: 0; }
+  /* 메뉴~리센츠 래퍼 — PC 에선 상자를 만들지 않아 자식이 그대로 .sidebar 의 flex 항목 (배치 무변경) */
+  .sb__scroll { display: contents; }
+  .sb__scroll > .sb__group:not(.sb__group--recents) { flex-shrink: 0; }
   .sb__group--recents {
     flex: 1;
     min-height: 0;
@@ -357,6 +359,21 @@
     scrollbar-width: none;
   }
   .sb__group--recents::-webkit-scrollbar { display: none; }
+  /* 모바일 드로어 — 메뉴·캘린더·리센츠를 한 영역으로 스크롤 (상단 줄·계정 줄은 고정).
+     리센츠만 스크롤하면 폰 높이에선 고정 영역이 커져 리센츠가 ≈149px(글 2개)만 남았다
+     (2026-09-29 실기기 보고, 375×812). PC 는 위 규칙대로 리센츠만 스크롤 (캘린더 작업지시서 §8). */
+  @media (max-width: 768px) {
+    .sb__scroll {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .sb__scroll::-webkit-scrollbar { display: none; }
+    .sb__group--recents { flex: none; overflow: visible; }
+  }
   /* 최근 섹션 라벨 — 활성 카테고리명 + 우측 건수 (작업지시서 §3.4) */
   .sb__label {
     display: flex;
@@ -4921,6 +4938,9 @@
       </button>
     </div>
 
+    <!-- 메뉴~리센츠 래퍼 — PC 에선 상자 없음(display:contents), 모바일 드로어에선 이 영역 전체가 스크롤
+         (상단 줄·계정 줄은 고정). 안쪽 블록 들여쓰기는 래퍼 추가 전 그대로 둠 -->
+    <div class="sb__scroll">
     <!-- Primary nav — 16그리드 · 1.5px 스트로크 · 라운드 캡 (작업지시서 §3.1) -->
     <div class="sb__group">
       <!-- 오늘의 네비 — 나침반 -->
@@ -4995,6 +5015,7 @@
       <div class="sb__label" id="recentsLabel"><span id="recentsLabelText">최근</span><span class="sb__label-count" id="recentsLabelCount"></span></div>
       <div id="recentsList"></div>
     </div>
+    </div><!-- /.sb__scroll -->
 
     <!-- Footer — 좌하단 사용자 카드 + popover -->
     <div class="sb__footer">
