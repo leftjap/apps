@@ -276,7 +276,7 @@
    "phonetic_kr": "유 돈 해프터 풋 더 호울 씽 인",
    "order_index": 3,
    "explanation": {
-    "key": "You don't have to ~ = ~하지 않아도 돼요 (영상 #23). 뒤 동사를 빼고 You don't have to. 로 끝낼 수 있다",
+    "key": "You don't have to = ~하지 않아도 돼요 (영상 #23). 뒤 동사를 빼고 You don't have to. 로 끝낼 수 있다",
     "anchor": "안 잘라도 돼요",
     "situation": "홍대 삼겹살집. 옆 테이블의 외국인 여행객이 상추를 따로 먹다가 지오에게 묻는다.",
     "miniDialogue": [
@@ -366,7 +366,7 @@
     ],
     "grammar": [
      {
-      "struct": "You don't have to ~",
+      "struct": "You don't have to",
       "body": "~하지 않아도 돼요 (영상 #23). 뒤 동사를 빼고 You don't have to. 로 끝낼 수 있다"
      }
     ],

@@ -1,0 +1,547 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-16",
+ "cards": [
+  {
+   "id": "en-personal-liam-skipped-01-not-in-the-mood",
+   "sentence": "I stayed home. I just wasn't in the mood.",
+   "meaning": "집에 있었어요. 그냥 내키지 않았어요.",
+   "reading": null,
+   "phonetic_kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드",
+   "order_index": 1,
+   "explanation": {
+    "key": "in the mood = ~할 기분인 (not in the mood = 내키지 않다, 모두영어 1편 #187 의 과거형)",
+    "anchor": "내키지 않았어요",
+    "situation": "홍대 헬스장. 전날 운동을 빠진 지오에게 Liam 이 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Hey, I didn't see you here yesterday.",
+      "ko": "어제는 안 보이던데요.",
+      "kr": "헤이 아이 디든 씨이 여 히어r 예스터r데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I stayed home. I just wasn't in the mood.",
+      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
+      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Are you okay? Are you getting sick?",
+      "ko": "괜찮아요? 몸살 기운 있어요?",
+      "kr": "아r 여 오우케이 아r 여 게링 씩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think so. I just felt down all day.",
+      "ko": "그건 아닌 것 같아요. 그냥 하루 종일 기분이 처졌어요.",
+      "kr": "아이 돈 씽크 쏘우 아이 저스 f펠 다우놀 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That happens. Do you know what caused it?",
+      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
+      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife says it's the workout I skipped.",
+      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
+      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "And? How do you feel today?",
+      "ko": "그래서요? 오늘은 어때요?",
+      "kr": "언 하우 더여 f피일 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't tell her I said this, but she was right.",
+      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
+      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm not in the mood for pizza.",
+      "ko": "피자 먹을 기분 아니에요.",
+      "kr": "아임 나린 더 무우드 f퍼r 핏짜"
+     },
+     {
+      "en": "Are you in the mood for a walk?",
+      "ko": "산책할 기분 있어요?",
+      "kr": "아r 여 인 더 무우드 f퍼r 어 워크"
+     },
+     {
+      "en": "I just stayed home all day.",
+      "ko": "그냥 하루 종일 집에 있었어요.",
+      "kr": "아이 저스 스테이드 호우몰 데이"
+     },
+     {
+      "en": "She wasn't in the mood to talk.",
+      "ko": "그녀는 얘기할 기분이 아니었어요.",
+      "kr": "쉬 워즈닌 더 무우드 터 토크"
+     },
+     {
+      "en": "What are you in the mood for?",
+      "ko": "뭐가 당겨요?",
+      "kr": "워러r여 인 더 무우드 f퍼r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "in the mood",
+      "body": "~할 기분인 (not in the mood = 내키지 않다, 모두영어 1편 #187 의 과거형)"
+     }
+    ],
+    "chunks": [
+     [
+      "I stayed home.",
+      "아이 스테이드 호움",
+      "집에 있었다"
+     ],
+     [
+      "I just wasn't in",
+      "아이 저스 워즈닌",
+      "그냥 ~가 아니었다"
+     ],
+     [
+      "the mood.",
+      "더 무우드",
+      "기분"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/uː/ mood",
+      "mood 는 긴 우 — 무우드"
+     ],
+     [
+      "/n/ wasn't in",
+      "wasn't 의 n 이 in 에 붙어 워즈닌"
+     ]
+    ],
+    "mistake": "I wasn't in mood ✗ — the 를 빼지 않는다",
+    "similar": "I didn't feel like working out.",
+    "category": "운동/헬스장",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-liam-skipped-02-dont-think-so-felt-down",
+   "sentence": "I don't think so. I just felt down all day.",
+   "meaning": "그건 아닌 것 같아요. 그냥 하루 종일 기분이 처졌어요.",
+   "reading": null,
+   "phonetic_kr": "아이 돈 씽크 쏘우 아이 저스 f펠 다우놀 데이",
+   "order_index": 2,
+   "explanation": {
+    "key": "I don't think ~ = 그런 것 같진 않아요 (I don't think so = 아닌 것 같아요, 영상 #11)",
+    "anchor": "그건 아닌 것 같아요",
+    "situation": "홍대 헬스장. 전날 운동을 빠진 지오에게 Liam 이 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Hey, I didn't see you here yesterday.",
+      "ko": "어제는 안 보이던데요.",
+      "kr": "헤이 아이 디든 씨이 여 히어r 예스터r데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I stayed home. I just wasn't in the mood.",
+      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
+      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Are you okay? Are you getting sick?",
+      "ko": "괜찮아요? 몸살 기운 있어요?",
+      "kr": "아r 여 오우케이 아r 여 게링 씩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think so. I just felt down all day.",
+      "ko": "그건 아닌 것 같아요. 그냥 하루 종일 기분이 처졌어요.",
+      "kr": "아이 돈 씽크 쏘우 아이 저스 f펠 다우놀 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That happens. Do you know what caused it?",
+      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
+      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife says it's the workout I skipped.",
+      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
+      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "And? How do you feel today?",
+      "ko": "그래서요? 오늘은 어때요?",
+      "kr": "언 하우 더여 f피일 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't tell her I said this, but she was right.",
+      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
+      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I don't think I'm getting sick.",
+      "ko": "감기 걸리는 건 아닌 것 같아요.",
+      "kr": "아이 돈 씽카임 게링 씩"
+     },
+     {
+      "en": "I don't think it's a big deal.",
+      "ko": "별일 아닌 것 같아요.",
+      "kr": "아이 돈 씽킷서 빅 디일"
+     },
+     {
+      "en": "Do you feel down today?",
+      "ko": "오늘 기분 처져요?",
+      "kr": "더여 f피일 다운 터데이"
+     },
+     {
+      "en": "She felt down all week.",
+      "ko": "그녀는 한 주 내내 기분이 처졌어요.",
+      "kr": "쉬 f펠 다우놀 위익"
+     },
+     {
+      "en": "I don't think so. I'm just tired.",
+      "ko": "그건 아닌 것 같아요. 그냥 피곤해요.",
+      "kr": "아이 돈 씽크 쏘우 아임 저스 타이어r드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I don't think ~",
+      "body": "그런 것 같진 않아요 (I don't think so = 아닌 것 같아요, 영상 #11)"
+     }
+    ],
+    "chunks": [
+     [
+      "I don't think so.",
+      "아이 돈 씽크 쏘우",
+      "아닌 것 같다"
+     ],
+     [
+      "I just felt",
+      "아이 저스 f펠",
+      "그냥 ~했다"
+     ],
+     [
+      "down all day.",
+      "다우놀 데이",
+      "하루 종일 처져서"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/θ/ think",
+      "think 의 th — 혀끝을 이 사이에"
+     ],
+     [
+      "/aʊ/ down",
+      "down 은 다운, all 과 붙어 다우놀"
+     ]
+    ],
+    "mistake": "I think not 은 딱딱하다 — 말할 땐 I don't think so",
+    "similar": "Probably not.",
+    "category": "운동/헬스장",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-liam-skipped-03-workout-i-skipped",
+   "sentence": "My wife says it's the workout I skipped.",
+   "meaning": "아내 말로는 제가 빼먹은 운동 탓이래요.",
+   "reading": null,
+   "phonetic_kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트",
+   "order_index": 3,
+   "explanation": {
+    "key": "~ I skipped = 제가 빼먹은 ~ (명사 뒤에 '주어+동사' 를 바로 붙인다: the workout I skipped = 제가 빼먹은 운동)",
+    "anchor": "제가 빼먹은 운동 탓이래요",
+    "situation": "홍대 헬스장. 전날 운동을 빠진 지오에게 Liam 이 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Hey, I didn't see you here yesterday.",
+      "ko": "어제는 안 보이던데요.",
+      "kr": "헤이 아이 디든 씨이 여 히어r 예스터r데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I stayed home. I just wasn't in the mood.",
+      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
+      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Are you okay? Are you getting sick?",
+      "ko": "괜찮아요? 몸살 기운 있어요?",
+      "kr": "아r 여 오우케이 아r 여 게링 씩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think so. I just felt down all day.",
+      "ko": "그건 아닌 것 같아요. 그냥 하루 종일 기분이 처졌어요.",
+      "kr": "아이 돈 씽크 쏘우 아이 저스 f펠 다우놀 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That happens. Do you know what caused it?",
+      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
+      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife says it's the workout I skipped.",
+      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
+      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "And? How do you feel today?",
+      "ko": "그래서요? 오늘은 어때요?",
+      "kr": "언 하우 더여 f피일 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't tell her I said this, but she was right.",
+      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
+      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It's the workout you skipped yesterday.",
+      "ko": "어제 빼먹은 운동 때문이에요.",
+      "kr": "잇츠 더 워r카우처 스킵트 예스터r데이"
+     },
+     {
+      "en": "This is the book I finished last night.",
+      "ko": "어젯밤에 다 읽은 책이에요.",
+      "kr": "디시z 더 부카이 f피니쉬트 라스 나잇"
+     },
+     {
+      "en": "Is this the gym you go to?",
+      "ko": "여기가 다니시는 헬스장이에요?",
+      "kr": "이z 디스 더 쥠 여 고우 투우"
+     },
+     {
+      "en": "I skipped my run again.",
+      "ko": "또 러닝을 빼먹었어요.",
+      "kr": "아이 스킵트 마이 러너겐"
+     },
+     {
+      "en": "The run I skipped made me grumpy.",
+      "ko": "빼먹은 러닝 때문에 짜증이 났어요.",
+      "kr": "더 러나이 스킵트 메이드 미 그럼피"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "~ I skipped",
+      "body": "제가 빼먹은 ~ (명사 뒤에 '주어+동사' 를 바로 붙인다: the workout I skipped = 제가 빼먹은 운동)"
+     }
+    ],
+    "chunks": [
+     [
+      "My wife says",
+      "마이 와이f 쎄z",
+      "아내 말로는"
+     ],
+     [
+      "it's the",
+      "잇츠 더",
+      "그건 ~다"
+     ],
+     [
+      "workout I skipped.",
+      "워r카우라이 스킵트",
+      "제가 빼먹은 운동"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ workout I",
+      "workout 의 t 가 굴러 워r카우라이"
+     ],
+     [
+      "/pt/ skipped",
+      "skipped 끝은 트 — 스킵트"
+     ]
+    ],
+    "mistake": "the workout I skipped it ✗ — it 을 또 쓰지 않는다",
+    "similar": "She thinks it's because I didn't work out.",
+    "category": "운동/헬스장",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-liam-skipped-04-dont-tell-her",
+   "sentence": "Don't tell her I said this, but she was right.",
+   "meaning": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
+   "reading": null,
+   "phonetic_kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇",
+   "order_index": 4,
+   "explanation": {
+    "key": "Don't tell her ~ = ~라고 그녀한테 말하지 마세요 (Don't tell her I said this = 제가 이 말 했다고 하지 마세요)",
+    "anchor": "제가 이 말 했다고 하지 마세요",
+    "situation": "홍대 헬스장. 전날 운동을 빠진 지오에게 Liam 이 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Hey, I didn't see you here yesterday.",
+      "ko": "어제는 안 보이던데요.",
+      "kr": "헤이 아이 디든 씨이 여 히어r 예스터r데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I stayed home. I just wasn't in the mood.",
+      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
+      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Are you okay? Are you getting sick?",
+      "ko": "괜찮아요? 몸살 기운 있어요?",
+      "kr": "아r 여 오우케이 아r 여 게링 씩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think so. I just felt down all day.",
+      "ko": "그건 아닌 것 같아요. 그냥 하루 종일 기분이 처졌어요.",
+      "kr": "아이 돈 씽크 쏘우 아이 저스 f펠 다우놀 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That happens. Do you know what caused it?",
+      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
+      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife says it's the workout I skipped.",
+      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
+      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "And? How do you feel today?",
+      "ko": "그래서요? 오늘은 어때요?",
+      "kr": "언 하우 더여 f피일 터데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Don't tell her I said this, but she was right.",
+      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
+      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Don't tell her I told you.",
+      "ko": "제가 말했다고 그녀한테 하지 마세요.",
+      "kr": "돈 텔 허r 아이 톨저"
+     },
+     {
+      "en": "Don't tell anyone, but I'm nervous.",
+      "ko": "아무한테도 말하지 마세요, 사실 떨려요.",
+      "kr": "돈 텔 애니원 버라임 너rv어스"
+     },
+     {
+      "en": "Did she say I was right?",
+      "ko": "그녀가 제 말이 맞다고 했어요?",
+      "kr": "디드 쉬 쎄이 아이 워z 라잇"
+     },
+     {
+      "en": "You were right about the gym.",
+      "ko": "헬스장 얘기는 당신 말이 맞았어요.",
+      "kr": "유 워r 라이러바웃 더 쥠"
+     },
+     {
+      "en": "Please don't tell my wife.",
+      "ko": "제 아내한테는 말하지 마세요.",
+      "kr": "플리이z 돈 텔 마이 와이f"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Don't tell her ~",
+      "body": "~라고 그녀한테 말하지 마세요 (Don't tell her I said this = 제가 이 말 했다고 하지 마세요)"
+     }
+    ],
+    "chunks": [
+     [
+      "Don't tell her",
+      "돈 텔 허r",
+      "그녀에게 말하지 마라"
+     ],
+     [
+      "I said this,",
+      "아이 쎄드 디스",
+      "제가 이 말을 했다고"
+     ],
+     [
+      "but she was right.",
+      "벗 쉬 워z 라잇",
+      "근데 그녀가 맞았다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ɛ/ tell",
+      "tell 은 텔"
+     ],
+     [
+      "/aɪ/ right",
+      "right 는 라잇 — 혀를 말아 시작"
+     ]
+    ],
+    "mistake": "Don't say her ✗ — 사람에게 말하다는 tell her",
+    "similar": "Keep this between us, but she was right.",
+    "category": "운동/헬스장",
+    "frequency": 8
+   }
+  }
+ ]
+}

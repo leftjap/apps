@@ -1,0 +1,542 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-10",
+ "cards": [
+  {
+   "id": "en-personal-bkk-breakfast-01-didnt-mean-to-sleep",
+   "sentence": "I didn't mean to sleep through the wake-up call.",
+   "meaning": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+   "reading": null,
+   "phonetic_kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜",
+   "order_index": 1,
+   "explanation": {
+    "key": "I didn't mean to ~ = ~하려던 건 아니었어요 (의도하지 않은 일을 사과할 때, 영상 #27)",
+    "anchor": "잘 생각은 없었어요",
+    "situation": "방콕 호텔 프런트, 아침 10시 5분. 전날 9시 50분 모닝콜을 부탁했던 지오가 내려온다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good morning. I'm afraid breakfast ended five minutes ago.",
+      "ko": "좋은 아침이에요. 죄송하지만 조식은 5분 전에 끝났어요.",
+      "kr": "굿 모r닝 아이머f레이드 브렉f퍼스텐디드 f파이v 미닛서고우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to sleep through the wake-up call.",
+      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "That's okay. It rang a few times.",
+      "ko": "괜찮아요. 몇 번 울렸는데요.",
+      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like I answered it in my sleep.",
+      "ko": "자면서 받았나 봐요.",
+      "kr": "잇 룩스 라이카이 앤써r디린 마이 슬리입"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Is there anything I can get you?",
+      "ko": "뭐 좀 가져다 드릴까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 게처"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is there a place nearby that still serves breakfast?",
+      "ko": "근처에 아직 아침 파는 데가 있을까요?",
+      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "There's a café next door. Another wake-up call tomorrow?",
+      "ko": "옆에 카페가 있어요. 내일도 모닝콜 해 드릴까요?",
+      "kr": "데어r저 캐f페이 넥스 도어r 어나더r 웨이컵 콜 터마로우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. I need you to come up and knock this time.",
+      "ko": "네. 이번엔 올라와서 문을 두드려 주셔야 해요.",
+      "kr": "예스 아이 니이저 터 커머펀 낙 디스 타임"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I didn't mean to wake you up.",
+      "ko": "깨우려던 건 아니었어요.",
+      "kr": "아이 디든 미인 터 웨이켜 업"
+     },
+     {
+      "en": "She didn't mean to be late.",
+      "ko": "그녀가 일부러 늦은 건 아니에요.",
+      "kr": "쉬 디든 미인 터 비 레잇"
+     },
+     {
+      "en": "Sorry, I didn't mean to interrupt.",
+      "ko": "죄송해요, 끼어들려던 건 아니었어요.",
+      "kr": "쏘리 아이 디든 미인 터 인터럽트"
+     },
+     {
+      "en": "Did you sleep through your alarm?",
+      "ko": "알람 못 듣고 잤어요?",
+      "kr": "디저 슬리입 쓰루우 여r 얼라r암"
+     },
+     {
+      "en": "I slept through the whole movie.",
+      "ko": "영화 내내 잤어요.",
+      "kr": "아이 슬렙 쓰루우 더 호울 무우v이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I didn't mean to ~",
+      "body": "~하려던 건 아니었어요 (의도하지 않은 일을 사과할 때, 영상 #27)"
+     }
+    ],
+    "chunks": [
+     [
+      "I didn't mean to",
+      "아이 디든 미인 터",
+      "~하려던 건 아니었다"
+     ],
+     [
+      "sleep through",
+      "슬리입 쓰루우",
+      "자느라 못 듣다"
+     ],
+     [
+      "the wake-up call.",
+      "더 웨이컵 콜",
+      "모닝콜을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ mean",
+      "mean 은 긴 이 — 미인"
+     ],
+     [
+      "/θ/ through",
+      "through 의 th 는 혀끝을 이 사이에 — 쓰루우"
+     ]
+    ],
+    "mistake": "I didn't mean to 뒤는 동사원형 — I didn't mean to slept ✗",
+    "similar": "I overslept.",
+    "category": "여행/호텔",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-breakfast-02-looks-like-answered",
+   "sentence": "It looks like I answered it in my sleep.",
+   "meaning": "자면서 받았나 봐요.",
+   "reading": null,
+   "phonetic_kr": "잇 룩스 라이카이 앤써r디린 마이 슬리입",
+   "order_index": 2,
+   "explanation": {
+    "key": "It looks like ~ = ~했나 봐요 (보이는 걸 근거로 짐작할 때, 영상 #14)",
+    "anchor": "받았나 봐요",
+    "situation": "방콕 호텔 프런트, 아침 10시 5분. 전날 9시 50분 모닝콜을 부탁했던 지오가 내려온다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good morning. I'm afraid breakfast ended five minutes ago.",
+      "ko": "좋은 아침이에요. 죄송하지만 조식은 5분 전에 끝났어요.",
+      "kr": "굿 모r닝 아이머f레이드 브렉f퍼스텐디드 f파이v 미닛서고우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to sleep through the wake-up call.",
+      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "That's okay. It rang a few times.",
+      "ko": "괜찮아요. 몇 번 울렸는데요.",
+      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like I answered it in my sleep.",
+      "ko": "자면서 받았나 봐요.",
+      "kr": "잇 룩스 라이카이 앤써r디린 마이 슬리입"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Is there anything I can get you?",
+      "ko": "뭐 좀 가져다 드릴까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 게처"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is there a place nearby that still serves breakfast?",
+      "ko": "근처에 아직 아침 파는 데가 있을까요?",
+      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "There's a café next door. Another wake-up call tomorrow?",
+      "ko": "옆에 카페가 있어요. 내일도 모닝콜 해 드릴까요?",
+      "kr": "데어r저 캐f페이 넥스 도어r 어나더r 웨이컵 콜 터마로우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. I need you to come up and knock this time.",
+      "ko": "네. 이번엔 올라와서 문을 두드려 주셔야 해요.",
+      "kr": "예스 아이 니이저 터 커머펀 낙 디스 타임"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It looks like it's going to rain.",
+      "ko": "비가 오려나 봐요.",
+      "kr": "잇 룩스 라이킷츠 고잉 터 레인"
+     },
+     {
+      "en": "It looks like you missed the bus.",
+      "ko": "버스를 놓치셨나 봐요.",
+      "kr": "잇 룩스 라이켜 미스 더 버스"
+     },
+     {
+      "en": "Looks like I forgot my key.",
+      "ko": "열쇠를 깜빡했나 봐요.",
+      "kr": "룩스 라이카이 f퍼r갓 마이 키이"
+     },
+     {
+      "en": "Did I fall asleep again?",
+      "ko": "제가 또 잠들었어요?",
+      "kr": "디다이 f폴 어슬리이퍼겐"
+     },
+     {
+      "en": "It looks like nobody's here.",
+      "ko": "아무도 없나 봐요.",
+      "kr": "잇 룩스 라익 노우바디z 히어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It looks like ~",
+      "body": "~했나 봐요 (보이는 걸 근거로 짐작할 때, 영상 #14)"
+     }
+    ],
+    "chunks": [
+     [
+      "It looks like I",
+      "잇 룩스 라이카이",
+      "제가 ~했나 보다"
+     ],
+     [
+      "answered it in my sleep.",
+      "앤써r디린 마이 슬리입",
+      "자면서 그걸 받았다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʊ/ looks",
+      "looks 의 oo 는 짧은 우 — 룩스"
+     ],
+     [
+      "/iː/ sleep",
+      "sleep 은 긴 이 — 슬리입"
+     ]
+    ],
+    "mistake": "It looks I answered ✗ — 문장 앞에는 like",
+    "similar": "I must have answered it in my sleep.",
+    "category": "여행/호텔",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-breakfast-03-place-still-serves",
+   "sentence": "Is there a place nearby that still serves breakfast?",
+   "meaning": "근처에 아직 아침 파는 데가 있을까요?",
+   "reading": null,
+   "phonetic_kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트",
+   "order_index": 3,
+   "explanation": {
+    "key": "a place nearby that ~ = 근처에 ~하는 곳 (that 이 앞의 명사를 뒤에서 꾸민다: a place nearby that still serves breakfast = 근처에 아직 아침을 파는 곳)",
+    "anchor": "아직 아침 파는 데",
+    "situation": "방콕 호텔 프런트, 아침 10시 5분. 전날 9시 50분 모닝콜을 부탁했던 지오가 내려온다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good morning. I'm afraid breakfast ended five minutes ago.",
+      "ko": "좋은 아침이에요. 죄송하지만 조식은 5분 전에 끝났어요.",
+      "kr": "굿 모r닝 아이머f레이드 브렉f퍼스텐디드 f파이v 미닛서고우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to sleep through the wake-up call.",
+      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "That's okay. It rang a few times.",
+      "ko": "괜찮아요. 몇 번 울렸는데요.",
+      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like I answered it in my sleep.",
+      "ko": "자면서 받았나 봐요.",
+      "kr": "잇 룩스 라이카이 앤써r디린 마이 슬리입"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Is there anything I can get you?",
+      "ko": "뭐 좀 가져다 드릴까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 게처"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is there a place nearby that still serves breakfast?",
+      "ko": "근처에 아직 아침 파는 데가 있을까요?",
+      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "There's a café next door. Another wake-up call tomorrow?",
+      "ko": "옆에 카페가 있어요. 내일도 모닝콜 해 드릴까요?",
+      "kr": "데어r저 캐f페이 넥스 도어r 어나더r 웨이컵 콜 터마로우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. I need you to come up and knock this time.",
+      "ko": "네. 이번엔 올라와서 문을 두드려 주셔야 해요.",
+      "kr": "예스 아이 니이저 터 커머펀 낙 디스 타임"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Is there a café that still serves lunch?",
+      "ko": "아직 점심 파는 카페 있어요?",
+      "kr": "이z 데어r 어 캐f페이 댓 스틸 써rv즈 런치"
+     },
+     {
+      "en": "I know a place that serves great noodles.",
+      "ko": "국수 맛있는 데를 알아요.",
+      "kr": "아이 노우 어 플레이스 댓 써rv즈 그뤠잇 누우들즈"
+     },
+     {
+      "en": "Is there anywhere that's open now?",
+      "ko": "지금 여는 데 있어요?",
+      "kr": "이z 데어r 애니웨어r 댓쏘우펀 나우"
+     },
+     {
+      "en": "Do you know where I can get breakfast?",
+      "ko": "아침 먹을 수 있는 데 아세요?",
+      "kr": "더여 노우 웨어r 아이 컨 겟 브렉f퍼스트"
+     },
+     {
+      "en": "Is there a place nearby that sells umbrellas?",
+      "ko": "근처에 우산 파는 데 있어요?",
+      "kr": "이z 데어r 어 플레이스 니어r바이 댓 쎌점브렐러즈"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "a place nearby that ~",
+      "body": "근처에 ~하는 곳 (that 이 앞의 명사를 뒤에서 꾸민다: a place nearby that still serves breakfast = 근처에 아직 아침을 파는 곳)"
+     }
+    ],
+    "chunks": [
+     [
+      "Is there a place nearby",
+      "이z 데어r 어 플레이스 니어r바이",
+      "근처에 ~ 곳이 있나"
+     ],
+     [
+      "that still serves breakfast?",
+      "댓 스틸 써rv즈 브렉f퍼스트",
+      "아직 아침을 파는"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ɝ/ serves",
+      "serves 는 혀를 말아 써rv즈"
+     ],
+     [
+      "/ɪ/ still",
+      "still 의 i 는 짧은 이 — 스틸"
+     ]
+    ],
+    "mistake": "that 이 뒤 동사의 주어라서 뺄 수 없다 (a rule I made 처럼 뒤에 주어가 따로 있으면 뺀다)",
+    "similar": "Where can I still get breakfast?",
+    "category": "여행/호텔",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-bkk-breakfast-04-need-you-to-knock",
+   "sentence": "Yes. I need you to come up and knock this time.",
+   "meaning": "네. 이번엔 올라와서 문을 두드려 주셔야 해요.",
+   "reading": null,
+   "phonetic_kr": "예스 아이 니이저 터 커머펀 낙 디스 타임",
+   "order_index": 4,
+   "explanation": {
+    "key": "I need you to ~ = ~해 주셔야 해요 (꼭 해 달라고 할 때, 영상 #18)",
+    "anchor": "두드려 주셔야 해요",
+    "situation": "방콕 호텔 프런트, 아침 10시 5분. 전날 9시 50분 모닝콜을 부탁했던 지오가 내려온다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Good morning. I'm afraid breakfast ended five minutes ago.",
+      "ko": "좋은 아침이에요. 죄송하지만 조식은 5분 전에 끝났어요.",
+      "kr": "굿 모r닝 아이머f레이드 브렉f퍼스텐디드 f파이v 미닛서고우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I didn't mean to sleep through the wake-up call.",
+      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "That's okay. It rang a few times.",
+      "ko": "괜찮아요. 몇 번 울렸는데요.",
+      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like I answered it in my sleep.",
+      "ko": "자면서 받았나 봐요.",
+      "kr": "잇 룩스 라이카이 앤써r디린 마이 슬리입"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Is there anything I can get you?",
+      "ko": "뭐 좀 가져다 드릴까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 게처"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is there a place nearby that still serves breakfast?",
+      "ko": "근처에 아직 아침 파는 데가 있을까요?",
+      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "There's a café next door. Another wake-up call tomorrow?",
+      "ko": "옆에 카페가 있어요. 내일도 모닝콜 해 드릴까요?",
+      "kr": "데어r저 캐f페이 넥스 도어r 어나더r 웨이컵 콜 터마로우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. I need you to come up and knock this time.",
+      "ko": "네. 이번엔 올라와서 문을 두드려 주셔야 해요.",
+      "kr": "예스 아이 니이저 터 커머펀 낙 디스 타임"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I need you to call me at nine.",
+      "ko": "9시에 전화해 주셔야 해요.",
+      "kr": "아이 니이저 터 콜 미 엇 나인"
+     },
+     {
+      "en": "We need you to sign here.",
+      "ko": "여기 서명해 주셔야 해요.",
+      "kr": "위 니이저 터 싸인 히어r"
+     },
+     {
+      "en": "Can you knock on my door?",
+      "ko": "제 방문 좀 두드려 주실래요?",
+      "kr": "컨 여 나콘 마이 도어r"
+     },
+     {
+      "en": "Do you need me to wake you up?",
+      "ko": "제가 깨워 드려야 해요?",
+      "kr": "더여 니이드 미 터 웨이켜 업"
+     },
+     {
+      "en": "I need you to be quiet for a minute.",
+      "ko": "잠깐만 조용히 해 주셔야 해요.",
+      "kr": "아이 니이저 터 비 콰이엇 f퍼r 어 미닛"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I need you to ~",
+      "body": "~해 주셔야 해요 (꼭 해 달라고 할 때, 영상 #18)"
+     }
+    ],
+    "chunks": [
+     [
+      "Yes.",
+      "예스",
+      "네"
+     ],
+     [
+      "I need you to",
+      "아이 니이저 터",
+      "~해 주셔야 한다"
+     ],
+     [
+      "come up and knock",
+      "커머펀 낙",
+      "올라와서 문을 두드리다"
+     ],
+     [
+      "this time.",
+      "디스 타임",
+      "이번에는"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/dʒ/ need you",
+      "need 의 d 와 you 가 붙어 니이저"
+     ],
+     [
+      "/n/ knock",
+      "knock 의 k 는 소리 나지 않는다 — 낙"
+     ]
+    ],
+    "mistake": "I need you to 뒤는 동사원형 — I need you coming ✗",
+    "similar": "Please come and knock on my door.",
+    "category": "여행/호텔",
+    "frequency": 8
+   }
+  }
+ ]
+}

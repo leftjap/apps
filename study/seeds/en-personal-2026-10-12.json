@@ -1,0 +1,532 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-12",
+ "cards": [
+  {
+   "id": "en-personal-bkk-suki-01-not-as-good-as-expected",
+   "sentence": "It's not as good as I expected.",
+   "meaning": "기대했던 것만 못하네요.",
+   "reading": null,
+   "phonetic_kr": "잇츠 나래z 구래자이 익스펙티드",
+   "order_index": 1,
+   "explanation": {
+    "key": "not as good as ~ = ~만큼 좋지 않아요 (not as good as I expected = 기대만 못하다)",
+    "anchor": "기대했던 것만 못하네요",
+    "situation": "방콕 쇼핑몰의 태국식 샤부샤부(수키) 식당. 기대하고 온 곳이다. 직원이 맛이 어떤지 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "How is everything? Do you like the hot pot?",
+      "ko": "식사는 어떠세요? 샤부샤부 입에 맞으세요?",
+      "kr": "하우 이z 에v리씽 더여 라익 더 핫 팟"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not as good as I expected.",
+      "ko": "기대했던 것만 못하네요.",
+      "kr": "잇츠 나래z 구래자이 익스펙티드"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Oh no. Is something wrong with it?",
+      "ko": "어머, 뭐가 잘못됐나요?",
+      "kr": "오우 노우 이z 썸씽 롱 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think anything's wrong. It just tastes different.",
+      "ko": "뭐가 잘못된 것 같진 않아요. 그냥 맛이 달라요.",
+      "kr": "아이 돈 씽캐니씽즈 롱 잇 저스 테이스츠 디f퍼런트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Really? It's the one everyone loves.",
+      "ko": "그래요? 다들 좋아하시는 건데요.",
+      "kr": "리얼리 잇츠 더 워네v리원 러v즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like I'm the only one who doesn't.",
+      "ko": "들어 보니 안 좋아하는 사람은 저 하나뿐인가 보네요.",
+      "kr": "잇 싸운즈 라이카임 디 오운리 원 후 더즌트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Would you like to try something else?",
+      "ko": "다른 걸로 드셔 보시겠어요?",
+      "kr": "워저 라익 터 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "No, thanks. Suddenly it tastes great.",
+      "ko": "아뇨, 괜찮아요. 갑자기 맛있어졌어요.",
+      "kr": "노우 쌩스 써든리 잇 테이스츠 그뤠잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It's not as good as it looks.",
+      "ko": "보기만큼 좋진 않아요.",
+      "kr": "잇츠 나래z 구래짓 룩스"
+     },
+     {
+      "en": "The hotel was better than I expected.",
+      "ko": "호텔이 기대보다 좋았어요.",
+      "kr": "더 호우텔 워z 베러r 대나이 익스펙티드"
+     },
+     {
+      "en": "Is it as good as you remember?",
+      "ko": "기억하는 만큼 맛있어요?",
+      "kr": "이지래z 구래z 여 리멤버r"
+     },
+     {
+      "en": "Nothing tastes the way it used to.",
+      "ko": "뭘 먹어도 예전 맛이 안 나요.",
+      "kr": "나씽 테이스츠 더 웨이 잇 유우스터"
+     },
+     {
+      "en": "I expected more, to be honest.",
+      "ko": "솔직히 더 기대했어요.",
+      "kr": "아이 익스펙티드 모어r 터 비 아너스트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "not as good as ~",
+      "body": "~만큼 좋지 않아요 (not as good as I expected = 기대만 못하다)"
+     }
+    ],
+    "chunks": [
+     [
+      "It's not as",
+      "잇츠 나래z",
+      "~만큼 ~하지 않다"
+     ],
+     [
+      "good as I expected.",
+      "구래자이 익스펙티드",
+      "기대했던 만큼 좋은"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ not as",
+      "not 의 t 가 굴러 나래z"
+     ],
+     [
+      "/d/ good as I",
+      "good 의 d 가 굴러 구래자이"
+     ]
+    ],
+    "mistake": "not good as ✗ — as 를 두 번: not as good as",
+    "similar": "It's not what I expected.",
+    "category": "여행/식당",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bkk-suki-02-dont-think-anything-wrong",
+   "sentence": "I don't think anything's wrong. It just tastes different.",
+   "meaning": "뭐가 잘못된 것 같진 않아요. 그냥 맛이 달라요.",
+   "reading": null,
+   "phonetic_kr": "아이 돈 씽캐니씽즈 롱 잇 저스 테이스츠 디f퍼런트",
+   "order_index": 2,
+   "explanation": {
+    "key": "I don't think ~ = ~인 것 같진 않아요 (조심스럽게 부정할 때, 영상 #11)",
+    "anchor": "잘못된 것 같진 않아요",
+    "situation": "방콕 쇼핑몰의 태국식 샤부샤부(수키) 식당. 기대하고 온 곳이다. 직원이 맛이 어떤지 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "How is everything? Do you like the hot pot?",
+      "ko": "식사는 어떠세요? 샤부샤부 입에 맞으세요?",
+      "kr": "하우 이z 에v리씽 더여 라익 더 핫 팟"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not as good as I expected.",
+      "ko": "기대했던 것만 못하네요.",
+      "kr": "잇츠 나래z 구래자이 익스펙티드"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Oh no. Is something wrong with it?",
+      "ko": "어머, 뭐가 잘못됐나요?",
+      "kr": "오우 노우 이z 썸씽 롱 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think anything's wrong. It just tastes different.",
+      "ko": "뭐가 잘못된 것 같진 않아요. 그냥 맛이 달라요.",
+      "kr": "아이 돈 씽캐니씽즈 롱 잇 저스 테이스츠 디f퍼런트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Really? It's the one everyone loves.",
+      "ko": "그래요? 다들 좋아하시는 건데요.",
+      "kr": "리얼리 잇츠 더 워네v리원 러v즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like I'm the only one who doesn't.",
+      "ko": "들어 보니 안 좋아하는 사람은 저 하나뿐인가 보네요.",
+      "kr": "잇 싸운즈 라이카임 디 오운리 원 후 더즌트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Would you like to try something else?",
+      "ko": "다른 걸로 드셔 보시겠어요?",
+      "kr": "워저 라익 터 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "No, thanks. Suddenly it tastes great.",
+      "ko": "아뇨, 괜찮아요. 갑자기 맛있어졌어요.",
+      "kr": "노우 쌩스 써든리 잇 테이스츠 그뤠잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I don't think it's too spicy.",
+      "ko": "그렇게 매운 것 같진 않아요.",
+      "kr": "아이 돈 씽킷츠 투우 스파이씨"
+     },
+     {
+      "en": "I don't think the chef changed.",
+      "ko": "주방장이 바뀐 것 같진 않아요.",
+      "kr": "아이 돈 씽크 더 셰f 체인쥐드"
+     },
+     {
+      "en": "Do you think anything's wrong?",
+      "ko": "뭐가 잘못된 것 같아요?",
+      "kr": "더여 씽캐니씽즈 롱"
+     },
+     {
+      "en": "It just tastes too salty.",
+      "ko": "그냥 너무 짜요.",
+      "kr": "잇 저스 테이스츠 투우 쏠티"
+     },
+     {
+      "en": "I don't think I'll order this again.",
+      "ko": "이걸 또 시킬 것 같진 않아요.",
+      "kr": "아이 돈 씽카일 오어r더r 디서겐"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I don't think ~",
+      "body": "~인 것 같진 않아요 (조심스럽게 부정할 때, 영상 #11)"
+     }
+    ],
+    "chunks": [
+     [
+      "I don't think anything's wrong.",
+      "아이 돈 씽캐니씽즈 롱",
+      "잘못된 게 있는 것 같진 않다"
+     ],
+     [
+      "It just tastes different.",
+      "잇 저스 테이스츠 디f퍼런트",
+      "그냥 맛이 다르다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/θ/ think",
+      "think 의 th 는 혀끝을 이 사이에 — 씽크"
+     ],
+     [
+      "/eɪ/ tastes",
+      "tastes 는 테이스츠 — 끝 sts 를 흐리지 않는다"
+     ]
+    ],
+    "mistake": "I think nothing's wrong 보다 I don't think anything's wrong 이 자연스럽다",
+    "similar": "Nothing's wrong with it.",
+    "category": "여행/식당",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-suki-03-sounds-like-only-one",
+   "sentence": "It sounds like I'm the only one who doesn't.",
+   "meaning": "들어 보니 안 좋아하는 사람은 저 하나뿐인가 보네요.",
+   "reading": null,
+   "phonetic_kr": "잇 싸운즈 라이카임 디 오운리 원 후 더즌트",
+   "order_index": 3,
+   "explanation": {
+    "key": "It sounds like ~ = 들어 보니 ~인가 보네요 (들은 말로 짐작할 때, 영상 #15)",
+    "anchor": "저 하나뿐인가 보네요",
+    "situation": "방콕 쇼핑몰의 태국식 샤부샤부(수키) 식당. 기대하고 온 곳이다. 직원이 맛이 어떤지 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "How is everything? Do you like the hot pot?",
+      "ko": "식사는 어떠세요? 샤부샤부 입에 맞으세요?",
+      "kr": "하우 이z 에v리씽 더여 라익 더 핫 팟"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not as good as I expected.",
+      "ko": "기대했던 것만 못하네요.",
+      "kr": "잇츠 나래z 구래자이 익스펙티드"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Oh no. Is something wrong with it?",
+      "ko": "어머, 뭐가 잘못됐나요?",
+      "kr": "오우 노우 이z 썸씽 롱 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think anything's wrong. It just tastes different.",
+      "ko": "뭐가 잘못된 것 같진 않아요. 그냥 맛이 달라요.",
+      "kr": "아이 돈 씽캐니씽즈 롱 잇 저스 테이스츠 디f퍼런트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Really? It's the one everyone loves.",
+      "ko": "그래요? 다들 좋아하시는 건데요.",
+      "kr": "리얼리 잇츠 더 워네v리원 러v즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like I'm the only one who doesn't.",
+      "ko": "들어 보니 안 좋아하는 사람은 저 하나뿐인가 보네요.",
+      "kr": "잇 싸운즈 라이카임 디 오운리 원 후 더즌트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Would you like to try something else?",
+      "ko": "다른 걸로 드셔 보시겠어요?",
+      "kr": "워저 라익 터 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "No, thanks. Suddenly it tastes great.",
+      "ko": "아뇨, 괜찮아요. 갑자기 맛있어졌어요.",
+      "kr": "노우 쌩스 써든리 잇 테이스츠 그뤠잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It sounds like you had a long day.",
+      "ko": "들어 보니 힘든 하루였나 보네요.",
+      "kr": "잇 싸운즈 라이켜 해더 롱 데이"
+     },
+     {
+      "en": "It sounds like everyone loves it.",
+      "ko": "들어 보니 다들 좋아하나 보네요.",
+      "kr": "잇 싸운즈 라이케v리원 러v짓"
+     },
+     {
+      "en": "Am I the only one who likes it?",
+      "ko": "저만 좋아하는 거예요?",
+      "kr": "애마이 디 오운리 원 후 라익싯"
+     },
+     {
+      "en": "It sounds like a great place.",
+      "ko": "들어 보니 좋은 곳인가 보네요.",
+      "kr": "잇 싸운즈 라이커 그뤠잇 플레이스"
+     },
+     {
+      "en": "You're not the only one who thinks so.",
+      "ko": "그렇게 생각하는 사람이 당신만은 아니에요.",
+      "kr": "유어r 낫 디 오운리 원 후 씽스 쏘우"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It sounds like ~",
+      "body": "들어 보니 ~인가 보네요 (들은 말로 짐작할 때, 영상 #15)"
+     }
+    ],
+    "chunks": [
+     [
+      "It sounds like I'm",
+      "잇 싸운즈 라이카임",
+      "들어 보니 제가 ~인 것 같다"
+     ],
+     [
+      "the only one",
+      "디 오운리 원",
+      "유일한 사람"
+     ],
+     [
+      "who doesn't.",
+      "후 더즌트",
+      "안 그런"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/aʊ/ sounds",
+      "sounds 는 싸운즈 — 강세 있는 s 는 ㅆ"
+     ],
+     [
+      "/oʊ/ only",
+      "only 는 오운리"
+     ]
+    ],
+    "mistake": "It sounds I'm ✗ — 문장 앞에는 like",
+    "similar": "So I'm the only one who doesn't like it?",
+    "category": "여행/식당",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bkk-suki-04-suddenly-tastes-great",
+   "sentence": "No, thanks. Suddenly it tastes great.",
+   "meaning": "아뇨, 괜찮아요. 갑자기 맛있어졌어요.",
+   "reading": null,
+   "phonetic_kr": "노우 쌩스 써든리 잇 테이스츠 그뤠잇",
+   "order_index": 4,
+   "explanation": {
+    "key": "it tastes ~ = 맛이 ~해요 (it tastes + 형용사. suddenly = 갑자기)",
+    "anchor": "갑자기 맛있어졌어요",
+    "situation": "방콕 쇼핑몰의 태국식 샤부샤부(수키) 식당. 기대하고 온 곳이다. 직원이 맛이 어떤지 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "How is everything? Do you like the hot pot?",
+      "ko": "식사는 어떠세요? 샤부샤부 입에 맞으세요?",
+      "kr": "하우 이z 에v리씽 더여 라익 더 핫 팟"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's not as good as I expected.",
+      "ko": "기대했던 것만 못하네요.",
+      "kr": "잇츠 나래z 구래자이 익스펙티드"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Oh no. Is something wrong with it?",
+      "ko": "어머, 뭐가 잘못됐나요?",
+      "kr": "오우 노우 이z 썸씽 롱 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think anything's wrong. It just tastes different.",
+      "ko": "뭐가 잘못된 것 같진 않아요. 그냥 맛이 달라요.",
+      "kr": "아이 돈 씽캐니씽즈 롱 잇 저스 테이스츠 디f퍼런트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Really? It's the one everyone loves.",
+      "ko": "그래요? 다들 좋아하시는 건데요.",
+      "kr": "리얼리 잇츠 더 워네v리원 러v즈"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It sounds like I'm the only one who doesn't.",
+      "ko": "들어 보니 안 좋아하는 사람은 저 하나뿐인가 보네요.",
+      "kr": "잇 싸운즈 라이카임 디 오운리 원 후 더즌트"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Would you like to try something else?",
+      "ko": "다른 걸로 드셔 보시겠어요?",
+      "kr": "워저 라익 터 트라이 썸씽 엘스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "No, thanks. Suddenly it tastes great.",
+      "ko": "아뇨, 괜찮아요. 갑자기 맛있어졌어요.",
+      "kr": "노우 쌩스 써든리 잇 테이스츠 그뤠잇"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Suddenly it all makes sense.",
+      "ko": "갑자기 다 이해가 돼요.",
+      "kr": "써든리 이롤 메익스 쎈스"
+     },
+     {
+      "en": "Suddenly I'm not hungry anymore.",
+      "ko": "갑자기 배가 안 고프네요.",
+      "kr": "써든리 아임 낫 헝그리 애니모어r"
+     },
+     {
+      "en": "Why did it suddenly get cold?",
+      "ko": "왜 갑자기 추워졌어요?",
+      "kr": "와이 디딧 써든리 겟 코울드"
+     },
+     {
+      "en": "This soup tastes great.",
+      "ko": "이 수프 맛있어요.",
+      "kr": "디스 쑤웁 테이스츠 그뤠잇"
+     },
+     {
+      "en": "It tastes better than it looks.",
+      "ko": "보기보다 맛있어요.",
+      "kr": "잇 테이스츠 베러r 대닛 룩스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "it tastes ~",
+      "body": "맛이 ~해요 (it tastes + 형용사. suddenly = 갑자기)"
+     }
+    ],
+    "chunks": [
+     [
+      "No, thanks.",
+      "노우 쌩스",
+      "아뇨, 괜찮아요"
+     ],
+     [
+      "Suddenly it tastes great.",
+      "써든리 잇 테이스츠 그뤠잇",
+      "갑자기 맛있어졌다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʌ/ suddenly",
+      "suddenly 는 써든리 — 앞에 강세"
+     ],
+     [
+      "/eɪ/ great",
+      "great 는 그뤠잇"
+     ]
+    ],
+    "mistake": "it tastes greatly ✗ — taste 뒤에는 형용사(great)",
+    "similar": "Actually, it's pretty good.",
+    "category": "여행/식당",
+    "frequency": 6
+   }
+  }
+ ]
+}

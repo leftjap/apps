@@ -1,0 +1,537 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-13",
+ "cards": [
+  {
+   "id": "en-personal-emma-dawn-01-had-to-leave-early",
+   "sentence": "Sorry. My wife had to leave for work early.",
+   "meaning": "죄송해요. 아내가 일찍 출근해야 했어요.",
+   "reading": null,
+   "phonetic_kr": "쏘리 마이 와이f 해드 터 리이v f퍼r 워r커r리",
+   "order_index": 1,
+   "explanation": {
+    "key": "had to ~ = ~해야 했어요 (had to = have to 의 과거)",
+    "anchor": "일찍 출근해야 했어요",
+    "situation": "오후, 아파트 복도. 위층 Emma 가 새벽에 들은 문소리를 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Was that your door I heard at five this morning?",
+      "ko": "새벽 다섯 시에 들린 게 그 집 문소리였어요?",
+      "kr": "워z 댓 여r 도어r 아이 허r덧 f파이v 디스 모r닝"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry. My wife had to leave for work early.",
+      "ko": "죄송해요. 아내가 일찍 출근해야 했어요.",
+      "kr": "쏘리 마이 와이f 해드 터 리이v f퍼r 워r커r리"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "No problem. But five? That's really early.",
+      "ko": "괜찮아요. 근데 다섯 시요? 정말 이르네요.",
+      "kr": "노우 프라블럼 벗 f파이v 댓츠 리얼리 어r리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's when she's been leaving these past few days.",
+      "ko": "요 며칠은 그게 아내가 나가는 시간이에요.",
+      "kr": "댓츠 웬 쉬z 빈 리이v잉 디이z 패스 f퓨우 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "You must be tired, too.",
+      "ko": "그쪽도 피곤하시겠어요.",
+      "kr": "유 머스 비 타이어r드 투우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been lying awake until she goes.",
+      "ko": "요즘은 아내가 나갈 때까지 계속 깨어 있어요.",
+      "kr": "아이v 빈 라잉 어웨이컨틸 쉬 고우z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So when do you actually sleep?",
+      "ko": "그럼 잠은 언제 자요?",
+      "kr": "쏘우 웬 더여 액츄얼리 슬리입"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Right after she leaves. Until noon.",
+      "ko": "아내가 나가자마자요. 정오까지.",
+      "kr": "라이래f터r 쉬 리이v즈 언틸 누운"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I had to leave early today.",
+      "ko": "오늘 일찍 나가야 했어요.",
+      "kr": "아이 해드 터 리이v 어r리 터데이"
+     },
+     {
+      "en": "She had to get up at four.",
+      "ko": "그녀는 네 시에 일어나야 했어요.",
+      "kr": "쉬 해드 터 게러벗 f포어r"
+     },
+     {
+      "en": "Did you have to work late?",
+      "ko": "늦게까지 일해야 했어요?",
+      "kr": "디저 해v 터 워r크 레잇"
+     },
+     {
+      "en": "We had to leave before sunrise.",
+      "ko": "해 뜨기 전에 나가야 했어요.",
+      "kr": "위 해드 터 리이v 비f포어r 썬라이z"
+     },
+     {
+      "en": "He had to catch an early train.",
+      "ko": "그는 이른 기차를 타야 했어요.",
+      "kr": "히 해드 터 캐처너r리 트레인"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "had to ~",
+      "body": "~해야 했어요 (had to = have to 의 과거)"
+     }
+    ],
+    "chunks": [
+     [
+      "Sorry.",
+      "쏘리",
+      "죄송해요"
+     ],
+     [
+      "My wife had to",
+      "마이 와이f 해드 터",
+      "아내가 ~해야 했다"
+     ],
+     [
+      "leave for work early.",
+      "리이v f퍼r 워r커r리",
+      "일찍 출근하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ leave",
+      "leave 는 긴 이 — 리이v"
+     ],
+     [
+      "/ɝ/ work",
+      "work 는 혀를 말아 워r크, early 와 붙어 워r커r리"
+     ]
+    ],
+    "mistake": "had to 뒤는 동사원형 — had to left ✗",
+    "similar": "She had an early start.",
+    "category": "일상/이웃",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-emma-dawn-02-thats-when-leaving",
+   "sentence": "That's when she's been leaving these past few days.",
+   "meaning": "요 며칠은 그게 아내가 나가는 시간이에요.",
+   "reading": null,
+   "phonetic_kr": "댓츠 웬 쉬z 빈 리이v잉 디이z 패스 f퓨우 데이z",
+   "order_index": 2,
+   "explanation": {
+    "key": "That's when ~ = 그게 ~하는 때예요 (That's when + 문장 = 그때가 바로 ~하는 시간)",
+    "anchor": "그게 아내가 나가는 시간이에요",
+    "situation": "오후, 아파트 복도. 위층 Emma 가 새벽에 들은 문소리를 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Was that your door I heard at five this morning?",
+      "ko": "새벽 다섯 시에 들린 게 그 집 문소리였어요?",
+      "kr": "워z 댓 여r 도어r 아이 허r덧 f파이v 디스 모r닝"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry. My wife had to leave for work early.",
+      "ko": "죄송해요. 아내가 일찍 출근해야 했어요.",
+      "kr": "쏘리 마이 와이f 해드 터 리이v f퍼r 워r커r리"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "No problem. But five? That's really early.",
+      "ko": "괜찮아요. 근데 다섯 시요? 정말 이르네요.",
+      "kr": "노우 프라블럼 벗 f파이v 댓츠 리얼리 어r리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's when she's been leaving these past few days.",
+      "ko": "요 며칠은 그게 아내가 나가는 시간이에요.",
+      "kr": "댓츠 웬 쉬z 빈 리이v잉 디이z 패스 f퓨우 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "You must be tired, too.",
+      "ko": "그쪽도 피곤하시겠어요.",
+      "kr": "유 머스 비 타이어r드 투우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been lying awake until she goes.",
+      "ko": "요즘은 아내가 나갈 때까지 계속 깨어 있어요.",
+      "kr": "아이v 빈 라잉 어웨이컨틸 쉬 고우z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So when do you actually sleep?",
+      "ko": "그럼 잠은 언제 자요?",
+      "kr": "쏘우 웬 더여 액츄얼리 슬리입"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Right after she leaves. Until noon.",
+      "ko": "아내가 나가자마자요. 정오까지.",
+      "kr": "라이래f터r 쉬 리이v즈 언틸 누운"
+     }
+    ],
+    "drills": [
+     {
+      "en": "That's when I usually wake up.",
+      "ko": "그게 제가 보통 일어나는 시간이에요.",
+      "kr": "댓츠 웨나이 유우쥬얼리 웨이컵"
+     },
+     {
+      "en": "That's when the café opens.",
+      "ko": "그게 카페가 문 여는 시간이에요.",
+      "kr": "댓츠 웬 더 캐f페이 오우펀즈"
+     },
+     {
+      "en": "Is that when she usually leaves?",
+      "ko": "그때가 보통 그분이 나가는 시간이에요?",
+      "kr": "이z 댓 웬 쉬 유우쥬얼리 리이v즈"
+     },
+     {
+      "en": "That was when I heard the door.",
+      "ko": "그게 제가 문소리를 들은 때였어요.",
+      "kr": "댓 워z 웨나이 허r드 더 도어r"
+     },
+     {
+      "en": "She's been getting up early these past few days.",
+      "ko": "그녀는 요 며칠 일찍 일어나고 있어요.",
+      "kr": "쉬z 빈 게링 어퍼r리 디이z 패스 f퓨우 데이z"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "That's when ~",
+      "body": "그게 ~하는 때예요 (That's when + 문장 = 그때가 바로 ~하는 시간)"
+     }
+    ],
+    "chunks": [
+     [
+      "That's when",
+      "댓츠 웬",
+      "그게 ~하는 때다"
+     ],
+     [
+      "she's been leaving",
+      "쉬z 빈 리이v잉",
+      "그녀가 나가 왔다"
+     ],
+     [
+      "these past few days.",
+      "디이z 패스 f퓨우 데이z",
+      "요 며칠"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ these",
+      "these 는 긴 이 — 디이z"
+     ],
+     [
+      "/st/ past few",
+      "past 의 t 는 f 앞에서 빠진다 — 패스 f퓨우"
+     ]
+    ],
+    "mistake": "That's the time when she leaves 도 되지만 That's when 이 짧고 자연스럽다",
+    "similar": "She's been leaving at five these days.",
+    "category": "일상/이웃",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-emma-dawn-03-been-lying-awake",
+   "sentence": "I've been lying awake until she goes.",
+   "meaning": "요즘은 아내가 나갈 때까지 계속 깨어 있어요.",
+   "reading": null,
+   "phonetic_kr": "아이v 빈 라잉 어웨이컨틸 쉬 고우z",
+   "order_index": 3,
+   "explanation": {
+    "key": "I've been ~ = 요즘 계속 ~하고 있어요 (영상 #5). lie awake = 깬 채로 누워 있다",
+    "anchor": "계속 깨어 있어요",
+    "situation": "오후, 아파트 복도. 위층 Emma 가 새벽에 들은 문소리를 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Was that your door I heard at five this morning?",
+      "ko": "새벽 다섯 시에 들린 게 그 집 문소리였어요?",
+      "kr": "워z 댓 여r 도어r 아이 허r덧 f파이v 디스 모r닝"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry. My wife had to leave for work early.",
+      "ko": "죄송해요. 아내가 일찍 출근해야 했어요.",
+      "kr": "쏘리 마이 와이f 해드 터 리이v f퍼r 워r커r리"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "No problem. But five? That's really early.",
+      "ko": "괜찮아요. 근데 다섯 시요? 정말 이르네요.",
+      "kr": "노우 프라블럼 벗 f파이v 댓츠 리얼리 어r리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's when she's been leaving these past few days.",
+      "ko": "요 며칠은 그게 아내가 나가는 시간이에요.",
+      "kr": "댓츠 웬 쉬z 빈 리이v잉 디이z 패스 f퓨우 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "You must be tired, too.",
+      "ko": "그쪽도 피곤하시겠어요.",
+      "kr": "유 머스 비 타이어r드 투우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been lying awake until she goes.",
+      "ko": "요즘은 아내가 나갈 때까지 계속 깨어 있어요.",
+      "kr": "아이v 빈 라잉 어웨이컨틸 쉬 고우z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So when do you actually sleep?",
+      "ko": "그럼 잠은 언제 자요?",
+      "kr": "쏘우 웬 더여 액츄얼리 슬리입"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Right after she leaves. Until noon.",
+      "ko": "아내가 나가자마자요. 정오까지.",
+      "kr": "라이래f터r 쉬 리이v즈 언틸 누운"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been lying awake all night.",
+      "ko": "밤새 잠이 안 와서 누워 있었어요.",
+      "kr": "아이v 빈 라잉 어웨이콜 나잇"
+     },
+     {
+      "en": "He's been working late all week.",
+      "ko": "그는 한 주 내내 늦게까지 일했어요.",
+      "kr": "히z 빈 워r킹 레이롤 위익"
+     },
+     {
+      "en": "How long have you been awake?",
+      "ko": "깨어 있은 지 얼마나 됐어요?",
+      "kr": "하우 롱 해v 여 비너웨익"
+     },
+     {
+      "en": "I can't sleep until she comes home.",
+      "ko": "그녀가 집에 올 때까지 잠이 안 와요.",
+      "kr": "아이 캔트 슬리이펀틸 쉬 컴z 호움"
+     },
+     {
+      "en": "I've been waiting for her call.",
+      "ko": "그녀 전화를 기다리고 있었어요.",
+      "kr": "아이v 빈 웨이링 f퍼r 허r 콜"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "요즘 계속 ~하고 있어요 (영상 #5). lie awake = 깬 채로 누워 있다"
+     }
+    ],
+    "chunks": [
+     [
+      "I've been lying",
+      "아이v 빈 라잉",
+      "계속 누워 있다"
+     ],
+     [
+      "awake until she goes.",
+      "어웨이컨틸 쉬 고우z",
+      "그녀가 갈 때까지 깬 채로"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/aɪ/ lying",
+      "lying 은 라잉 — 누워 있는"
+     ],
+     [
+      "/eɪ/ awake",
+      "awake 는 어웨익 — until 과 붙어 어웨이컨틸"
+     ]
+    ],
+    "mistake": "been 뒤에는 -ing — I've been lie awake ✗",
+    "similar": "I can't sleep until she leaves.",
+    "category": "일상/이웃",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-emma-dawn-04-right-after-she-leaves",
+   "sentence": "Right after she leaves. Until noon.",
+   "meaning": "아내가 나가자마자요. 정오까지.",
+   "reading": null,
+   "phonetic_kr": "라이래f터r 쉬 리이v즈 언틸 누운",
+   "order_index": 4,
+   "explanation": {
+    "key": "Right after ~ = ~하자마자 (right after = 바로 뒤에)",
+    "anchor": "나가자마자요",
+    "situation": "오후, 아파트 복도. 위층 Emma 가 새벽에 들은 문소리를 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Was that your door I heard at five this morning?",
+      "ko": "새벽 다섯 시에 들린 게 그 집 문소리였어요?",
+      "kr": "워z 댓 여r 도어r 아이 허r덧 f파이v 디스 모r닝"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry. My wife had to leave for work early.",
+      "ko": "죄송해요. 아내가 일찍 출근해야 했어요.",
+      "kr": "쏘리 마이 와이f 해드 터 리이v f퍼r 워r커r리"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "No problem. But five? That's really early.",
+      "ko": "괜찮아요. 근데 다섯 시요? 정말 이르네요.",
+      "kr": "노우 프라블럼 벗 f파이v 댓츠 리얼리 어r리"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "That's when she's been leaving these past few days.",
+      "ko": "요 며칠은 그게 아내가 나가는 시간이에요.",
+      "kr": "댓츠 웬 쉬z 빈 리이v잉 디이z 패스 f퓨우 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "You must be tired, too.",
+      "ko": "그쪽도 피곤하시겠어요.",
+      "kr": "유 머스 비 타이어r드 투우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been lying awake until she goes.",
+      "ko": "요즘은 아내가 나갈 때까지 계속 깨어 있어요.",
+      "kr": "아이v 빈 라잉 어웨이컨틸 쉬 고우z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So when do you actually sleep?",
+      "ko": "그럼 잠은 언제 자요?",
+      "kr": "쏘우 웬 더여 액츄얼리 슬리입"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Right after she leaves. Until noon.",
+      "ko": "아내가 나가자마자요. 정오까지.",
+      "kr": "라이래f터r 쉬 리이v즈 언틸 누운"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Right after lunch, I get sleepy.",
+      "ko": "점심 먹자마자 졸려요.",
+      "kr": "라이래f터r 런치 아이 겟 슬리이피"
+     },
+     {
+      "en": "Call me right after you land.",
+      "ko": "착륙하자마자 전화해요.",
+      "kr": "콜 미 라이래f터r 여 랜드"
+     },
+     {
+      "en": "What do you do right after work?",
+      "ko": "퇴근하자마자 뭐 해요?",
+      "kr": "왓 더여 두 라이래f터r 워r크"
+     },
+     {
+      "en": "I slept until noon again.",
+      "ko": "또 정오까지 잤어요.",
+      "kr": "아이 슬렙턴틸 누우너겐"
+     },
+     {
+      "en": "She left right after five.",
+      "ko": "그녀는 다섯 시 되자마자 나갔어요.",
+      "kr": "쉬 레f 라이래f터r f파이v"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Right after ~",
+      "body": "~하자마자 (right after = 바로 뒤에)"
+     }
+    ],
+    "chunks": [
+     [
+      "Right after she leaves.",
+      "라이래f터r 쉬 리이v즈",
+      "그녀가 나가자마자"
+     ],
+     [
+      "Until noon.",
+      "언틸 누운",
+      "정오까지"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ Right after",
+      "right 의 t 가 굴러 라이래f터r"
+     ],
+     [
+      "/uː/ noon",
+      "noon 은 긴 우 — 누운"
+     ]
+    ],
+    "mistake": "Right after she will leave ✗ — after 뒤는 현재형",
+    "similar": "As soon as she leaves.",
+    "category": "일상/이웃",
+    "frequency": 7
+   }
+  }
+ ]
+}

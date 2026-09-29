@@ -1,0 +1,537 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-15",
+ "cards": [
+  {
+   "id": "en-personal-tourist-noline-01-used-to-like",
+   "sentence": "I have. We used to like this place.",
+   "meaning": "네. 예전엔 좋아하던 곳이에요.",
+   "reading": null,
+   "phonetic_kr": "아이 해v 위 유우스터 라익 디스 플레이스",
+   "order_index": 1,
+   "explanation": {
+    "key": "used to ~ = 예전엔 ~했어요 (지금은 아니다)",
+    "anchor": "예전엔 좋아하던 곳이에요",
+    "situation": "저녁, 서촌 골목의 식당 앞. 외국인 여행객이 줄이 없는 식당을 보고 지나가던 지오에게 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Have you eaten here? There's no line.",
+      "ko": "실례지만, 여기서 드셔 보셨어요? 줄이 없네요.",
+      "kr": "익스큐우z 미 해v 여 이이른 히어r 데어r즈 노우 라인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I have. We used to like this place.",
+      "ko": "네. 예전엔 좋아하던 곳이에요.",
+      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Great! We won't have to wait.",
+      "ko": "잘됐다! 안 기다려도 되겠네요.",
+      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife said that was a bad sign.",
+      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
+      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Oh. So is it a place you'd recommend?",
+      "ko": "아. 그럼 추천하실 만한 곳이에요?",
+      "kr": "오우 쏘우 이지러 플레이스 여드 레커멘드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me put it this way.",
+      "ko": "이렇게 말씀드릴게요.",
+      "kr": "레미 푸릿 디스 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Uh-oh. That bad?",
+      "ko": "어머, 그렇게 별로예요?",
+      "kr": "어오우 댓 배드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Even the glass I drank from smelled fishy.",
+      "ko": "제가 마신 잔에서도 비린내가 났어요.",
+      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+     }
+    ],
+    "drills": [
+     {
+      "en": "We used to come here a lot.",
+      "ko": "여기 자주 왔었어요.",
+      "kr": "위 유우스터 컴 히어r 어 랏"
+     },
+     {
+      "en": "I used to love this place.",
+      "ko": "예전엔 여기 정말 좋아했어요.",
+      "kr": "아이 유우스터 러v 디스 플레이스"
+     },
+     {
+      "en": "Did you use to live here?",
+      "ko": "예전에 여기 사셨어요?",
+      "kr": "디저 유우스터 리v 히어r"
+     },
+     {
+      "en": "It's not what it used to be.",
+      "ko": "예전 같지 않아요.",
+      "kr": "잇츠 낫 와릿 유우스터 비"
+     },
+     {
+      "en": "They used to have better food.",
+      "ko": "예전엔 음식이 더 좋았어요.",
+      "kr": "데이 유우스터 해v 베러r f푸우드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "used to ~",
+      "body": "예전엔 ~했어요 (지금은 아니다)"
+     }
+    ],
+    "chunks": [
+     [
+      "I have.",
+      "아이 해v",
+      "네, 먹어 봤어요"
+     ],
+     [
+      "We used to",
+      "위 유우스터",
+      "우리는 예전엔 ~했다"
+     ],
+     [
+      "like this place.",
+      "라익 디스 플레이스",
+      "이곳을 좋아하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/s/ used to",
+      "used to 는 유우스터 — d 가 안 들린다"
+     ],
+     [
+      "/aɪ/ like",
+      "like 는 라익 — 끝 k 는 짧게"
+     ]
+    ],
+    "mistake": "use to like ✗ — 예전 습관·상태는 used to",
+    "similar": "We liked it before.",
+    "category": "일상/외식",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-tourist-noline-02-a-bad-sign",
+   "sentence": "My wife said that was a bad sign.",
+   "meaning": "아내는 그게 안 좋은 징조라고 했어요.",
+   "reading": null,
+   "phonetic_kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인",
+   "order_index": 2,
+   "explanation": {
+    "key": "a bad sign = 안 좋은 징조 (sign = 징조·신호)",
+    "anchor": "안 좋은 징조라고 했어요",
+    "situation": "저녁, 서촌 골목의 식당 앞. 외국인 여행객이 줄이 없는 식당을 보고 지나가던 지오에게 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Have you eaten here? There's no line.",
+      "ko": "실례지만, 여기서 드셔 보셨어요? 줄이 없네요.",
+      "kr": "익스큐우z 미 해v 여 이이른 히어r 데어r즈 노우 라인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I have. We used to like this place.",
+      "ko": "네. 예전엔 좋아하던 곳이에요.",
+      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Great! We won't have to wait.",
+      "ko": "잘됐다! 안 기다려도 되겠네요.",
+      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife said that was a bad sign.",
+      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
+      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Oh. So is it a place you'd recommend?",
+      "ko": "아. 그럼 추천하실 만한 곳이에요?",
+      "kr": "오우 쏘우 이지러 플레이스 여드 레커멘드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me put it this way.",
+      "ko": "이렇게 말씀드릴게요.",
+      "kr": "레미 푸릿 디스 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Uh-oh. That bad?",
+      "ko": "어머, 그렇게 별로예요?",
+      "kr": "어오우 댓 배드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Even the glass I drank from smelled fishy.",
+      "ko": "제가 마신 잔에서도 비린내가 났어요.",
+      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+     }
+    ],
+    "drills": [
+     {
+      "en": "An empty restaurant is a bad sign.",
+      "ko": "빈 식당은 안 좋은 징조예요.",
+      "kr": "어넴티 레스터런티z 어 배드 싸인"
+     },
+     {
+      "en": "Is that a good sign?",
+      "ko": "그거 좋은 징조예요?",
+      "kr": "이z 대러 굿 싸인"
+     },
+     {
+      "en": "She said it was too quiet.",
+      "ko": "너무 조용하다고 했어요.",
+      "kr": "쉬 쎄딧 워z 투우 콰이엇"
+     },
+     {
+      "en": "A long line is a good sign.",
+      "ko": "줄이 길면 좋은 징조예요.",
+      "kr": "어 롱 라이니z 어 굿 싸인"
+     },
+     {
+      "en": "My wife noticed it first.",
+      "ko": "아내가 먼저 알아챘어요.",
+      "kr": "마이 와이f 노우티스팃 f퍼r스트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "a bad sign",
+      "body": "안 좋은 징조 (sign = 징조·신호)"
+     }
+    ],
+    "chunks": [
+     [
+      "My wife said",
+      "마이 와이f 쎄드",
+      "아내가 말했다"
+     ],
+     [
+      "that was a bad sign.",
+      "댓 워z 어 배드 싸인",
+      "그게 안 좋은 징조라고"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/aɪ/ sign",
+      "sign 의 g 는 소리 나지 않는다 — 싸인"
+     ],
+     [
+      "/ɛ/ said",
+      "said 는 쎄드 — 세이드가 아니다"
+     ]
+    ],
+    "mistake": "a bad signal ✗ — 징조는 sign",
+    "similar": "My wife had a bad feeling about it.",
+    "category": "일상/외식",
+    "frequency": 7
+   }
+  },
+  {
+   "id": "en-personal-tourist-noline-03-let-me-put-it",
+   "sentence": "Let me put it this way.",
+   "meaning": "이렇게 말씀드릴게요.",
+   "reading": null,
+   "phonetic_kr": "레미 푸릿 디스 웨이",
+   "order_index": 3,
+   "explanation": {
+    "key": "Let me ~ = 제가 ~할게요 (영상 #6). put it this way = 이렇게 말해 볼게요(돌려 말할 때)",
+    "anchor": "이렇게 말씀드릴게요",
+    "situation": "저녁, 서촌 골목의 식당 앞. 외국인 여행객이 줄이 없는 식당을 보고 지나가던 지오에게 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Have you eaten here? There's no line.",
+      "ko": "실례지만, 여기서 드셔 보셨어요? 줄이 없네요.",
+      "kr": "익스큐우z 미 해v 여 이이른 히어r 데어r즈 노우 라인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I have. We used to like this place.",
+      "ko": "네. 예전엔 좋아하던 곳이에요.",
+      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Great! We won't have to wait.",
+      "ko": "잘됐다! 안 기다려도 되겠네요.",
+      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife said that was a bad sign.",
+      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
+      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Oh. So is it a place you'd recommend?",
+      "ko": "아. 그럼 추천하실 만한 곳이에요?",
+      "kr": "오우 쏘우 이지러 플레이스 여드 레커멘드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me put it this way.",
+      "ko": "이렇게 말씀드릴게요.",
+      "kr": "레미 푸릿 디스 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Uh-oh. That bad?",
+      "ko": "어머, 그렇게 별로예요?",
+      "kr": "어오우 댓 배드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Even the glass I drank from smelled fishy.",
+      "ko": "제가 마신 잔에서도 비린내가 났어요.",
+      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let me check the menu first.",
+      "ko": "메뉴 먼저 볼게요.",
+      "kr": "레미 첵 더 메뉴우 f퍼r스트"
+     },
+     {
+      "en": "Let me put it another way.",
+      "ko": "다르게 말해 볼게요.",
+      "kr": "레미 푸리러나더r 웨이"
+     },
+     {
+      "en": "How should I put it?",
+      "ko": "뭐라고 해야 할까요?",
+      "kr": "하우 셔라이 푸릿"
+     },
+     {
+      "en": "Let me show you a better place.",
+      "ko": "더 좋은 데 알려 드릴게요.",
+      "kr": "레미 쇼우 여 어 베러r 플레이스"
+     },
+     {
+      "en": "Can I be honest with you?",
+      "ko": "솔직하게 말해도 돼요?",
+      "kr": "커나이 비 아너스 위드 유"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "제가 ~할게요 (영상 #6). put it this way = 이렇게 말해 볼게요(돌려 말할 때)"
+     }
+    ],
+    "chunks": [
+     [
+      "Let me",
+      "레미",
+      "제가 ~할게요"
+     ],
+     [
+      "put it this way.",
+      "푸릿 디스 웨이",
+      "이렇게 말해 보다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ put it",
+      "put 의 t 가 굴러 푸릿"
+     ],
+     [
+      "/ð/ this",
+      "this 의 th 는 혀끝을 이 사이에 — 디스"
+     ]
+    ],
+    "mistake": "Let me to put ✗ — Let me 뒤는 동사원형",
+    "similar": "How should I put it?",
+    "category": "일상/외식",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-tourist-noline-04-even-the-glass",
+   "sentence": "Even the glass I drank from smelled fishy.",
+   "meaning": "제가 마신 잔에서도 비린내가 났어요.",
+   "reading": null,
+   "phonetic_kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬",
+   "order_index": 4,
+   "explanation": {
+    "key": "Even the ~ = ~조차도 (even = ~까지도. the glass I drank from = 제가 마신 잔)",
+    "anchor": "마신 잔에서도 비린내가 났어요",
+    "situation": "저녁, 서촌 골목의 식당 앞. 외국인 여행객이 줄이 없는 식당을 보고 지나가던 지오에게 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Have you eaten here? There's no line.",
+      "ko": "실례지만, 여기서 드셔 보셨어요? 줄이 없네요.",
+      "kr": "익스큐우z 미 해v 여 이이른 히어r 데어r즈 노우 라인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I have. We used to like this place.",
+      "ko": "네. 예전엔 좋아하던 곳이에요.",
+      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Great! We won't have to wait.",
+      "ko": "잘됐다! 안 기다려도 되겠네요.",
+      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife said that was a bad sign.",
+      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
+      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Oh. So is it a place you'd recommend?",
+      "ko": "아. 그럼 추천하실 만한 곳이에요?",
+      "kr": "오우 쏘우 이지러 플레이스 여드 레커멘드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me put it this way.",
+      "ko": "이렇게 말씀드릴게요.",
+      "kr": "레미 푸릿 디스 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Uh-oh. That bad?",
+      "ko": "어머, 그렇게 별로예요?",
+      "kr": "어오우 댓 배드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Even the glass I drank from smelled fishy.",
+      "ko": "제가 마신 잔에서도 비린내가 났어요.",
+      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Even the soup was cold.",
+      "ko": "수프까지 식어 있었어요.",
+      "kr": "이이v은 더 쑤웁 워z 코울드"
+     },
+     {
+      "en": "Even the staff looked tired.",
+      "ko": "직원들까지 피곤해 보였어요.",
+      "kr": "이이v은 더 스태f 룩트 타이어r드"
+     },
+     {
+      "en": "Was the cup you drank from clean?",
+      "ko": "마신 컵은 깨끗했어요?",
+      "kr": "워z 더 컵 여 드랭크 f럼 클리인"
+     },
+     {
+      "en": "The fish smelled a little off.",
+      "ko": "생선에서 좀 상한 냄새가 났어요.",
+      "kr": "더 f피쉬 스멜더 리를 오f"
+     },
+     {
+      "en": "This is the place I told you about.",
+      "ko": "제가 말한 데가 여기예요.",
+      "kr": "디시z 더 플레이사이 톨저 어바웃"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Even the ~",
+      "body": "~조차도 (even = ~까지도. the glass I drank from = 제가 마신 잔)"
+     }
+    ],
+    "chunks": [
+     [
+      "Even the",
+      "이이v은 더",
+      "~조차"
+     ],
+     [
+      "glass I drank from",
+      "글래사이 드랭크 f럼",
+      "제가 마신 잔"
+     ],
+     [
+      "smelled fishy.",
+      "스멜드 f피쉬",
+      "비린내가 났다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/æ/ glass",
+      "glass 는 입을 크게 — I 와 붙어 글래사이"
+     ],
+     [
+      "/ɪ/ fishy",
+      "fishy 는 f피쉬 — 비린"
+     ]
+    ],
+    "mistake": "the glass I drank ✗ — 전치사 from 까지: the glass I drank from",
+    "similar": "Even my glass smelled like fish.",
+    "category": "일상/외식",
+    "frequency": 7
+   }
+  }
+ ]
+}

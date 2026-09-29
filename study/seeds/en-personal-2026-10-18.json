@@ -1,0 +1,542 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-18",
+ "cards": [
+  {
+   "id": "en-personal-tourist-english-01-let-me-walk-you",
+   "sentence": "Yes. Let me walk you there. It's on my way.",
+   "meaning": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
+   "reading": null,
+   "phonetic_kr": "예스 레미 워켜 데어r 잇손 마이 웨이",
+   "order_index": 1,
+   "explanation": {
+    "key": "Let me ~ = 제가 ~해 드릴게요 (영상 #6). walk you there = 거기까지 같이 걸어 주다",
+    "anchor": "모셔다 드릴게요",
+    "situation": "역 근처. 외국인 여행객이 지하철역이 어디냐고 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Do you know where the subway station is?",
+      "ko": "실례지만, 지하철역이 어디 있는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 더 썹웨이 스테이셔니z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. Let me walk you there. It's on my way.",
+      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
+      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thank you! Your English is really good.",
+      "ko": "고마워요! 영어 정말 잘하시네요.",
+      "kr": "쌩켜 여r 잉글리쉬 이z 리얼리 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Thanks. I'm trying to study it every day.",
+      "ko": "고마워요. 매일 하려고 노력 중이에요.",
+      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Every day? How long have you been studying?",
+      "ko": "매일요? 공부한 지 얼마나 됐어요?",
+      "kr": "에v리 데이 하우 롱 해v 여 빈 스터디잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like forever.",
+      "ko": "영원처럼 느껴져요.",
+      "kr": "잇 f피일z 라익 f퍼레v어r"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Do you think you'll ever stop?",
+      "ko": "언젠가 그만두실 것 같아요?",
+      "kr": "더여 씽켤 에v어r 스탑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Here lies a man who studied English all his life.",
+      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
+      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let me walk you to the station.",
+      "ko": "역까지 같이 가 드릴게요.",
+      "kr": "레미 워켜 터 더 스테이션"
+     },
+     {
+      "en": "Let me take you to the exit.",
+      "ko": "출구까지 데려다 드릴게요.",
+      "kr": "레미 테이켜 터 디 에그짓"
+     },
+     {
+      "en": "Is it on your way?",
+      "ko": "가시는 길이에요?",
+      "kr": "이지론 여r 웨이"
+     },
+     {
+      "en": "It's on my way home.",
+      "ko": "집에 가는 길이에요.",
+      "kr": "잇손 마이 웨이 호움"
+     },
+     {
+      "en": "Can I walk with you?",
+      "ko": "같이 걸어가도 돼요?",
+      "kr": "커나이 워크 위드 유"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "제가 ~해 드릴게요 (영상 #6). walk you there = 거기까지 같이 걸어 주다"
+     }
+    ],
+    "chunks": [
+     [
+      "Yes.",
+      "예스",
+      "네"
+     ],
+     [
+      "Let me walk you there.",
+      "레미 워켜 데어r",
+      "제가 거기까지 같이 가 드릴게요"
+     ],
+     [
+      "It's on my way.",
+      "잇손 마이 웨이",
+      "가는 길이에요"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ walk you",
+      "walk 의 l 은 소리 나지 않고 k 가 you 와 붙어 워켜"
+     ],
+     [
+      "/ɔ/ walk",
+      "walk 는 워크 — 월크가 아니다"
+     ]
+    ],
+    "mistake": "Let me to walk ✗ — Let me 뒤는 동사원형",
+    "similar": "I'll take you there.",
+    "category": "일상/길 안내",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-tourist-english-02-trying-to-study",
+   "sentence": "Thanks. I'm trying to study it every day.",
+   "meaning": "고마워요. 매일 하려고 노력 중이에요.",
+   "reading": null,
+   "phonetic_kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이",
+   "order_index": 2,
+   "explanation": {
+    "key": "I'm trying to ~ = ~하려고 노력 중이에요 (영상 #1)",
+    "anchor": "매일 하려고 노력 중이에요",
+    "situation": "역 근처. 외국인 여행객이 지하철역이 어디냐고 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Do you know where the subway station is?",
+      "ko": "실례지만, 지하철역이 어디 있는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 더 썹웨이 스테이셔니z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. Let me walk you there. It's on my way.",
+      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
+      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thank you! Your English is really good.",
+      "ko": "고마워요! 영어 정말 잘하시네요.",
+      "kr": "쌩켜 여r 잉글리쉬 이z 리얼리 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Thanks. I'm trying to study it every day.",
+      "ko": "고마워요. 매일 하려고 노력 중이에요.",
+      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Every day? How long have you been studying?",
+      "ko": "매일요? 공부한 지 얼마나 됐어요?",
+      "kr": "에v리 데이 하우 롱 해v 여 빈 스터디잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like forever.",
+      "ko": "영원처럼 느껴져요.",
+      "kr": "잇 f피일z 라익 f퍼레v어r"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Do you think you'll ever stop?",
+      "ko": "언젠가 그만두실 것 같아요?",
+      "kr": "더여 씽켤 에v어r 스탑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Here lies a man who studied English all his life.",
+      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
+      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm trying to read every day.",
+      "ko": "매일 읽으려고 노력해요.",
+      "kr": "아임 트라잉 터 리이데v리 데이"
+     },
+     {
+      "en": "She's trying to learn Korean.",
+      "ko": "그녀는 한국어를 배우려고 해요.",
+      "kr": "쉬z 트라잉 터 러r언 커리이언"
+     },
+     {
+      "en": "How do you study English?",
+      "ko": "영어 어떻게 공부하세요?",
+      "kr": "하우 더여 스터디 잉글리쉬"
+     },
+     {
+      "en": "I'm trying to speak more.",
+      "ko": "더 많이 말하려고 해요.",
+      "kr": "아임 트라잉 터 스피익 모어r"
+     },
+     {
+      "en": "We're trying to walk every day.",
+      "ko": "매일 걸으려고 해요.",
+      "kr": "위어r 트라잉 터 워케v리 데이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm trying to ~",
+      "body": "~하려고 노력 중이에요 (영상 #1)"
+     }
+    ],
+    "chunks": [
+     [
+      "Thanks.",
+      "쌩스",
+      "고마워요"
+     ],
+     [
+      "I'm trying to",
+      "아임 트라잉 터",
+      "~하려고 노력 중이다"
+     ],
+     [
+      "study it every day.",
+      "스터디 이레v리 데이",
+      "매일 그걸 공부하다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/aɪ/ trying",
+      "trying 은 트라잉"
+     ],
+     [
+      "/t/ it every",
+      "it 의 t 가 굴러 이레v리"
+     ]
+    ],
+    "mistake": "I'm trying to studying ✗ — to 뒤는 동사원형",
+    "similar": "I try to study every day.",
+    "category": "일상/길 안내",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-tourist-english-03-feels-like-forever",
+   "sentence": "It feels like forever.",
+   "meaning": "영원처럼 느껴져요.",
+   "reading": null,
+   "phonetic_kr": "잇 f피일z 라익 f퍼레v어r",
+   "order_index": 3,
+   "explanation": {
+    "key": "It feels like ~ = ~처럼 느껴져요 (영상 #13). forever = 영원히",
+    "anchor": "영원처럼 느껴져요",
+    "situation": "역 근처. 외국인 여행객이 지하철역이 어디냐고 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Do you know where the subway station is?",
+      "ko": "실례지만, 지하철역이 어디 있는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 더 썹웨이 스테이셔니z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. Let me walk you there. It's on my way.",
+      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
+      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thank you! Your English is really good.",
+      "ko": "고마워요! 영어 정말 잘하시네요.",
+      "kr": "쌩켜 여r 잉글리쉬 이z 리얼리 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Thanks. I'm trying to study it every day.",
+      "ko": "고마워요. 매일 하려고 노력 중이에요.",
+      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Every day? How long have you been studying?",
+      "ko": "매일요? 공부한 지 얼마나 됐어요?",
+      "kr": "에v리 데이 하우 롱 해v 여 빈 스터디잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like forever.",
+      "ko": "영원처럼 느껴져요.",
+      "kr": "잇 f피일z 라익 f퍼레v어r"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Do you think you'll ever stop?",
+      "ko": "언젠가 그만두실 것 같아요?",
+      "kr": "더여 씽켤 에v어r 스탑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Here lies a man who studied English all his life.",
+      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
+      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It feels like forever since I saw you.",
+      "ko": "본 지 한참 된 느낌이에요.",
+      "kr": "잇 f피일z 라익 f퍼레v어r 씬싸이 쏘오 유"
+     },
+     {
+      "en": "It feels like I've been waiting all day.",
+      "ko": "하루 종일 기다린 느낌이에요.",
+      "kr": "잇 f피일z 라이카이v 빈 웨이링 올 데이"
+     },
+     {
+      "en": "Does it feel like a long time?",
+      "ko": "오래된 느낌이에요?",
+      "kr": "더짓 f피일 라이커 롱 타임"
+     },
+     {
+      "en": "Studying English takes forever.",
+      "ko": "영어 공부는 한참 걸려요.",
+      "kr": "스터디잉 잉글리쉬 테익스 f퍼레v어r"
+     },
+     {
+      "en": "It feels like it's never going to end.",
+      "ko": "끝이 없을 것 같은 느낌이에요.",
+      "kr": "잇 f피일z 라이킷츠 네v어r 고잉 터 엔드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It feels like ~",
+      "body": "~처럼 느껴져요 (영상 #13). forever = 영원히"
+     }
+    ],
+    "chunks": [
+     [
+      "It feels like",
+      "잇 f피일z 라익",
+      "~인 느낌이다"
+     ],
+     [
+      "forever.",
+      "f퍼레v어r",
+      "영원히"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ feels",
+      "feels 는 긴 이 — f피일z"
+     ],
+     [
+      "/ɛ/ forever",
+      "forever 는 가운데 강세 — f퍼레v어r"
+     ]
+    ],
+    "mistake": "It feels forever ✗ — 명사 앞에는 like",
+    "similar": "It's been a long time.",
+    "category": "일상/길 안내",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-tourist-english-04-here-lies-a-man",
+   "sentence": "Here lies a man who studied English all his life.",
+   "meaning": "평생 영어 공부하다 간 사람, 여기 잠들다.",
+   "reading": null,
+   "phonetic_kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f",
+   "order_index": 4,
+   "explanation": {
+    "key": "a man who ~ = ~한 사람 (a man who + 동사. Here lies = 여기 잠들다, 묘비 문구)",
+    "anchor": "평생 영어 공부하다 간 사람",
+    "situation": "역 근처. 외국인 여행객이 지하철역이 어디냐고 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Do you know where the subway station is?",
+      "ko": "실례지만, 지하철역이 어디 있는지 아세요?",
+      "kr": "익스큐우z 미 더여 노우 웨어r 더 썹웨이 스테이셔니z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. Let me walk you there. It's on my way.",
+      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
+      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thank you! Your English is really good.",
+      "ko": "고마워요! 영어 정말 잘하시네요.",
+      "kr": "쌩켜 여r 잉글리쉬 이z 리얼리 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Thanks. I'm trying to study it every day.",
+      "ko": "고마워요. 매일 하려고 노력 중이에요.",
+      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Every day? How long have you been studying?",
+      "ko": "매일요? 공부한 지 얼마나 됐어요?",
+      "kr": "에v리 데이 하우 롱 해v 여 빈 스터디잉"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like forever.",
+      "ko": "영원처럼 느껴져요.",
+      "kr": "잇 f피일z 라익 f퍼레v어r"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Do you think you'll ever stop?",
+      "ko": "언젠가 그만두실 것 같아요?",
+      "kr": "더여 씽켤 에v어r 스탑"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Here lies a man who studied English all his life.",
+      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
+      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Here lies a man who loved cats.",
+      "ko": "고양이를 사랑한 사람, 여기 잠들다.",
+      "kr": "히어r 라이저 맨 후 러v드 캣츠"
+     },
+     {
+      "en": "He studied English all his life.",
+      "ko": "그는 평생 영어를 공부했어요.",
+      "kr": "히 스터디딩글리쉬 올 히z 라이f"
+     },
+     {
+      "en": "Who's the man who wrote this?",
+      "ko": "이거 쓴 사람이 누구예요?",
+      "kr": "후우z 더 맨 후 로웃 디스"
+     },
+     {
+      "en": "I've studied it all my life.",
+      "ko": "평생 그걸 공부했어요.",
+      "kr": "아이v 스터디디롤 마이 라이f"
+     },
+     {
+      "en": "She's a teacher who never gives up.",
+      "ko": "그녀는 절대 포기하지 않는 선생님이에요.",
+      "kr": "쉬z 어 티이처r 후 네v어r 기v접"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "a man who ~",
+      "body": "~한 사람 (a man who + 동사. Here lies = 여기 잠들다, 묘비 문구)"
+     }
+    ],
+    "chunks": [
+     [
+      "Here lies a man",
+      "히어r 라이저 맨",
+      "여기 한 남자가 잠들다"
+     ],
+     [
+      "who studied English",
+      "후 스터디딩글리쉬",
+      "영어를 공부한"
+     ],
+     [
+      "all his life.",
+      "올 히z 라이f",
+      "평생"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/aɪ/ lies",
+      "lies 는 라이z — a 와 붙어 라이저"
+     ],
+     [
+      "/d/ studied English",
+      "studied 의 d 가 English 와 붙어 스터디딩글리쉬"
+     ]
+    ],
+    "mistake": "Here lays ✗ — 눕다는 lie(lies)",
+    "similar": "It'll be on my tombstone.",
+    "category": "일상/길 안내",
+    "frequency": 5
+   }
+  }
+ ]
+}

@@ -46,7 +46,7 @@
 | Emma | 위층으로 이사 온 영국인 디자이너, 고양이 두 마리 | A(여) | 10 | 나니 시력·소리 민감 · 화재경보기 3시간 · 택배 · 워커힐 김치 · 새 세탁기 · 천호 이사 계획 |
 | Tom | 공항철도 역 앞 카페에서 일하는 호주인 바리스타(워킹홀리데이) | B(남) | 8 | 동네 맛집(보쌈·감자탕) · 늦잠 · 날씨 · 자리·와이파이 같은 카페 일 (커피 취향은 시트에 없다 — 만들지 않는다) |
 | ~~Sarah~~ | **삭제(2026-09-27)** — 소연 동료가 지오에게 인사 오는 상황은 한국인 동료라 한국어다. 영어 장면이 아니다 | — | 0 | 이 인물의 10편은 4묶음 저작 때 여행객·Liam·Emma·Tom 에 다시 배정한다 |
-| May | 방콕 호텔 프런트(태국에서 흔한 영어식 애칭) | A(여) | 5 | 지오가 혼자 예약한 일반 호텔 · 늦잠 조식 · 에어컨 · 시암센터 길 · 체크아웃 (크루 호텔은 아내를 따라 들어가므로 체크인 장면이 없다) |
+| May | 방콕 호텔 프런트(태국에서 흔한 영어식 애칭) | A(여) | 2 (2026-09-29: 방콕 시리즈를 6편에서 끝내 5 → 2) | 지오가 혼자 예약한 일반 호텔 · 늦잠 조식 · 에어컨 · 시암센터 길 · 체크아웃 (크루 호텔은 아내를 따라 들어가므로 체크인 장면이 없다) |
 | 여행객·직원·승객 | 일회성 | 상황별 | 나머지 | — |
 
 남성 인물(Liam·Tom)은 지오와 같은 B 음성이다(1묶음 정경섭 장면과 같은 처리). 이름은 흔하고 서로 구분되는 것으로 골랐다 — 첫소리 L·E·T·S·M (2026-09-26 지적으로 Emma·Tom·Sarah·May 에서 바꿈).
@@ -79,6 +79,8 @@
 
 ### 해외 I — 방콕 (20편, 소연 근무 중 지오 혼자 · 일정 날수는 일기에 없어 대사에 쓰지 않는다 — 2026-09-29 확인)
 
+**2026-09-29**: 일기 근거가 08-11 한 편뿐이라 방콕 시리즈는 6편(3묶음 4편 + 4묶음 2편)으로 끝냈다. 아래 행 가운데 쓰지 않은 것은 일기 사실을 붙일 수 있을 때만 쓴다.
+
 | # | 사건 | 상대 | 닻 | 모두영어 |
 |---|---|---|---|---|
 | 1 | 기내. 외국인 승객이 지오 자리에 앉아 있음 — 탑승권 23C 를 32C 로 거꾸로 읽음. 가방 내려 주기 (문제 층) | 승객 | #14 It looks like · #6 Let me · #3 I was about to | |
@@ -87,13 +89,13 @@
 | 4 | 수하물 분실 신고. 가방이 서울에 남음 → 오늘 밤 호텔로 배송 (직원 줄에 #18) | 직원 | #14 It looks like · #8 Can you | How long will it take? (사용) |
 | 5 | 수완나품 그랩. 앱에 기사 대신 PIN 만 나와 공항 직원에게 묻고 되묻는다(2026-09 PIN 줄 방식, 기사 전화 없음 — §1-5). 기사 전화 장면은 시내 픽업에서 쓴다 | 직원 | #16 There's · #8 Can you · #13 It feels like | |
 | 6 | 호텔 체크인. 혼자 예약한 일반 호텔, 조식 포함 여부 → 10시까지 못 일어날까 봐 모닝콜을 9시 50분으로(정오 기상) | May | #17 I'd like to · #20 I was wondering if · #10 I'm not sure if · #8 Can you | |
-| 7 | 첫 아침. 9시 50분 모닝콜(6편)에도 늦잠으로 조식 마감 10분 뒤 | May | #7 Can I get · #27 I didn't mean to | I overslept. (사용) |
+| 7 | 첫 아침. 9시 50분 모닝콜에도 조식 마감 5분 뒤 — 모닝콜을 자면서 받음, 내일은 올라와서 문을 두드려 달라(4묶음 10-10) | May | #27 I didn't mean to · #14 It looks like · #18 I need you to | |
 | 8 | 방 전화로 프런트에. 회선이 나빠 되묻고, 에어컨 소음·리모컨 먹통에 사람 보내 달라기 | May | #18 I need you to · #8 Can you | It's not working. (1편 #175) |
 | 9 | 시암센터 가는 법. BTS 냐 그랩이냐, 비 예보 | May | #25 It depends on · #24 You might want to | |
 | 10 | BTS 창구. 카드 기계 오류 → 현금 | 직원 | #1 I'm trying to · #11 I don't think | |
 | 11 | 시암센터 점원. 미감 까다로운 아내 선물 | 점원 | #10 I'm not sure if · #21 The thing is | |
 | 12 | 카페. ~~디카페인 있나, 커피 줄이는 중~~ — 규칙 9 위반(시트에 없는 취향). 4묶음 저작 때 다시 정한다 | 바리스타 | #7 Can I get · #1 I'm trying to | Can I get a coffee? (2편 #74) · I'm trying to cut down. (사용) |
-| 13 | MK수키 주문. 매운 정도, 소연 몫 포장 | 직원 | #17 I'd like to · #30 That's what I mean | |
+| 13 | 수키 식당. 기대만 못하다고 했다가 혼자만 불만인 손님이 될 처지가 되자 "갑자기 맛있어졌다"(일기 08-11, 4묶음 10-12) | 직원 | #11 I don't think · #15 It sounds like | |
 | 14 | 약국. 소연 감기(기침·목) | 약사 | #4 I'm here to · #15 It sounds like | |
 | 15 | 마사지. 데드리프트로 다친 허리 조심 | 직원 | #9 Do you mind · #13 It feels like | My back hurts. (사용) |
 | 16 | 길 잃음. 구글맵 오프라인, 행인에게 | 행인 | #20 I was wondering if · #14 It looks like | |
@@ -155,14 +157,14 @@
 | 52 | 나이. 50 → 그래서 러닝 먼저 | Liam | #29 That's why · #22 As far as I know | How old do I look? (사용) · You look so young. (1편 #321) |
 | 53 | 스쿼트 자세 → 허리 다친 얘기 | Liam | #13 It feels like · #24 You might want to | |
 | 54 | 트레드밀 30분 목표 | Liam | #1 I'm trying to · #26 I'll let you know | We have a long way to go. (1편 #181) |
-| 55 | 맥주 한 병 규칙 vs Liam 의 소주 | Liam | #21 The thing is · #11 I don't think | Do you want to grab a drink? (사용) · I'm on a diet. (1편 #52) |
+| 55 | 맥주 한 병 규칙 — 규칙은 맥주에만 해당한다며 위스키에 낌(일기 03-14·2023-10-23, 4묶음 10-11) | Liam | #2 I'm supposed to · #21 The thing is | Do you want to grab a drink? (1편 #5) · Count me in. (2편 #164) |
 | 56 | 과음 다음 날 결석 | Liam | #27 I didn't mean to · #3 I was about to | Why didn't you call me? (1편 #93) |
 | 57 | ~~Liam 이 운동앱 물어봄~~ 51 에 합침(2026-09-29). 대신: 짜장면 때문에 러닝을 빼먹은 다음 날, 오늘은 꼼수 없느냐는 말에 벌써 2km 로 정해 뒀다고 답함(일기 09-26) | Liam | #11 I don't think · #2 I'm supposed to | |
 | 58 | Liam 부상 → 병원 추천 | Liam | #12 I think you should · #14 It looks like | You should get some rest. (1편 #148) |
 | 59 | 재등록 70만원 얘기 | Liam | #25 It depends on · #10 I'm not sure if | It's up to you. (1편 #178) |
 | 60 | Liam 휴가 다녀옴 | Liam | #28 I can't wait to · #20 I was wondering if | How did it go? (사용) · Where have you been? (2편 #51) |
 | 61 | 주말 계획 (아내 얘기는 Liam 이 물을 때만) | Liam | #2 I'm supposed to · #23 You don't have to | I don't have any plans. (1편 #154) |
-| 62 | 며칠 빠진 지오. 운동 안 가면 기분 가라앉음 | Liam | #15 It sounds like · #29 That's why | You look a little down. (1편 #261) |
+| 62 | 하루 빠진 지오. 기분이 처졌는데 아내가 빼먹은 운동 탓이라 했고 그 말이 맞았다(일기 09-18, 4묶음 10-16) | Liam | #11 I don't think | I'm not in the mood. (1편 #187) |
 
 ### 한국 II — 이웃 Emma (10편)
 
@@ -175,7 +177,7 @@
 | 67 | 위층 세탁기 소음 사과 | Emma | #27 I didn't mean to · #11 I don't think | No harm done. (사용) · It's no big deal. (1편 #6) |
 | 68 | 워커힐 김치 나눔 | Emma | #24 You might want to · #17 I'd like to | I thought you'd like it. (1편 #186) |
 | 69 | 고양이 병원 추천 | Emma | #12 I think you should · #10 I'm not sure if | |
-| 70 | 엘리베이터. 새벽에 나는 소리를 Emma 가 먼저 묻는다 | Emma | #2 I'm supposed to · #5 I've been | You must be tired. (사용) |
+| 70 | 새벽 다섯 시 문소리를 Emma 가 묻는다 — 아내가 나갈 때까지 깨어 있다가 나가자마자 정오까지 잠(일기 08-18, 4묶음 10-13) | Emma | #5 I've been | You must be tired. (1편 #147) |
 | 71 | 집 보여주기. 새 세탁기·캣타워 | Emma | #16 There's · #28 I can't wait to | I can't get enough of it. (사용) |
 | 72 | 천호 이사 계획 | Emma | #21 The thing is · #25 It depends on | I haven't decided yet. (사용) |
 
@@ -186,11 +188,11 @@
 | 73 | 12시 반에 와서 어제 마신 걸로 주문(취향은 말하지 않는다). 일어난 지 10분(정오 기상), 늦잠이냐는 말에 "저한텐 아직 아침" | Tom | #7 Can I get · #1 I'm trying to · #5 I've been | Do you know what time it is? (1편 #273) |
 | 74 | 비 오는 날 | Tom | #14 It looks like · #15 It sounds like | |
 | 75 | 동네 맛집 추천(보쌈·감자탕) | Tom | #12 I think you should · #29 That's why | I highly recommend it. (2편 #40) |
-| 76 | 노트북. 뭐 만드냐 → 앱 | Tom | #16 There's · #21 The thing is | |
+| 76 | 카페에서 일기 쓰기 — 아침마다 쓰기로 돼 있다, 아내는 책 추천이 더 낫다고 한다(일기 01-01·02-06, 4묶음 10-19) | Tom | #2 I'm supposed to · #5 I've been · #10 I'm not sure if | |
 | 77 | 주말 계획 (Tom 이 물을 때만) | Tom | #2 I'm supposed to · #3 I was about to | I'm off today. (1편 #152) |
 | 78 | Tom 호주 귀향 휴가 | Tom | #28 I can't wait to · #26 I'll let you know | Are you all set? (2편 #153) |
 | 79 | 계산 착오 | Tom | #11 I don't think · #27 I didn't mean to | It's no big deal. (1편 #6) |
-| 80 | 방콕 다녀와 오랜만에 | Tom | #5 I've been · #20 I was wondering if | It's been a while. (사용) · Where have you been? (2편 #51) |
+| 80 | 방콕 다녀와 오랜만에 — 제일 좋았던 건 비행기(무선 충전)(일기 08-11, 4묶음 10-14) | Tom | #13 It feels like · #10 I'm not sure if | It's been a while. (1편 #16) · Where have you been? (2편 #51) |
 
 ### 한국 IV — ~~소연 동료 Sarah~~ (8편 · 2026-09-27 삭제 — 아래 행은 4묶음 때 여행객·Liam·Emma·Tom 으로 재배정)
 
@@ -219,23 +221,25 @@
 | 96 | 계단에서 짐 | 여행객 | #6 Let me · #3 I was about to | |
 | 97 | 비 오는 날 우산 | 여행객 | #23 You don't have to · #26 I'll let you know | |
 | 98 | 공항 가는 법(첫차·직통) | 여행객 | #25 It depends on · #2 I'm supposed to | |
-| 99 | 여행객이 영어 칭찬 → 공부 중 | 여행객 | #5 I've been · #1 I'm trying to | You're really good at this. (1편 #223) |
+| 99 | 길 안내하다 영어 칭찬 — 매일 하려고 노력 중, 묘비명 농담(일기 01-03, 4묶음 10-18) | 여행객 | #6 Let me · #1 I'm trying to · #13 It feels like | |
 | 100 | 헬스장 앞에서 길 묻는 여행객, Liam 도 나옴 | 여행객 | #14 It looks like · #16 There's | |
 
 ## 4. 닻 문형 분포
 
-§3 표에서 Sarah 삭제 행(취소선)을 뺀 92편의 닻 189개(2026-09-29 3묶음 재작성 2차 반영 — 행 5·6·51·57·64·73 을 고쳤다). 30패턴 30종 전부 2회 이상. (Sarah 행 재배정 때 다시 센다.)
+§3 표에서 Sarah 삭제 행(취소선)을 뺀 92편의 닻 190개(2026-09-29 4묶음 반영 — 쓴 행 7·13·55·62·70·76·80·99 를 실제 대사대로 고쳤다). #30 That's what I mean 은 행 13 을 고치며 1회(행 26)로 줄었다. 나머지 29종은 2회 이상. (Sarah 행 재배정 때 다시 센다.)
 
 | 회수 | 문형 |
 |---|---|
-| 10 | #14 It looks like |
-| 9 | #5 I've been · #10 I'm not sure if · #11 I don't think · #16 There's |
-| 8 | #25 It depends on |
-| 7 | #2 I'm supposed to · #4 I'm here to · #6 Let me · #7 Can I get · #8 Can you · #12 I think you should · #13 It feels like · #23 You don't have to · #27 I didn't mean to |
-| 6 | #1 I'm trying to · #3 I was about to · #20 I was wondering if · #26 I'll let you know · #29 That's why |
-| 5 | #9 Do you mind · #15 It sounds like · #17 I'd like to · #21 The thing is · #24 You might want to · #28 I can't wait to |
-| 4 | #18 I need you to · #22 As far as I know |
-| 2 | #19 I just wanted to · #30 That's what I mean |
+| 11 | #10 I'm not sure if · #14 It looks like |
+| 10 | #11 I don't think |
+| 9 | #13 It feels like |
+| 8 | #2 I'm supposed to · #5 I've been · #6 Let me · #16 There's · #25 It depends on |
+| 7 | #4 I'm here to · #8 Can you · #12 I think you should · #23 You don't have to · #27 I didn't mean to |
+| 6 | #1 I'm trying to · #3 I was about to · #7 Can I get · #26 I'll let you know |
+| 5 | #9 Do you mind · #15 It sounds like · #18 I need you to · #20 I was wondering if · #24 You might want to · #28 I can't wait to · #29 That's why |
+| 4 | #17 I'd like to · #21 The thing is · #22 As far as I know |
+| 2 | #19 I just wanted to |
+| 1 | #30 That's what I mean |
 
 ## 5. 시행 순서
 
@@ -245,6 +249,7 @@
    **재작성(2026-09-27)**: 사용자 판정으로 1·2·3·4·6·51·73·89 여덟 편을 다시 써서 같은 날짜로 교체했다(5·63 은 유지, 시드 파일도 그대로). 인천 카운터·게이트는 한국어 장면이라(§1-11) 방콕 1~4 를 기내 좌석 착오 → 입국심사 → 수하물 벨트 되묻기 → 분실 신고 순서로 다시 짰다. 옛 32행은 `~/apps/tmp/2026-09-27-batch3-replaced-rows-backup.json` 에 백업한 뒤 지웠다(완료 0).
    **재작성 2차(2026-09-29)**: 사용자 지적(규칙 13 — 개인화가 빠짐)으로 열 편을 다시 짜서 같은 날짜로 교체했다. 09-30 Liam 첫 만남(51) · 10-01 Tom(73) · 10-02 기내 모범 승객(표 밖 새 장면, 일기 08-11) · 10-03 입국심사(2) · 10-04 그랩 PIN(5) · 10-05 호텔 체크인·모닝콜(6) · 10-06 삼겹살 쌈을 싸 먹는 법을 묻는 여행객(표 밖 새 장면, 일기 05-17 · 지오 50세) · 10-07 Emma 첫 인사(63, 대사 유지·발음 표기만 가이드 §7 로 고침) · 10-08 Liam 짜장면(57) · 10-09 Emma 화재경보기(64). 벨트(3)·분실 신고(4)·기내 좌석 착오(1)·호스텔 길 안내(89)는 빠져 표로 돌아갔고, 1·3·4 는 일기 근거가 없어 쓰려면 일기 사실을 붙인다. 비평 에이전트 검토를 3회 돌려 결함 0 에서 멈췄다(재미 있음 8 · 약함 1 = 되묻기 연습용 그랩 편). 옛 40행은 `~/apps/tmp/2026-09-29-batch3r2-replaced-rows-backup.json` 에 백업한 뒤 지웠다(완료 0, 복습 큐 0).
    **재작성 2차 보강(2026-09-29 오후)**: 사용자 "이게 최선이야? 루프 진행". 앞 판정에 끌려가지 않게 새 비평 에이전트 둘(재미·자연스러움 / 가이드·사실)로 루프를 세 번 더 돌려 여덟 날짜를 다시 교체했다. Tom 끝줄은 늦잠이냐는 말에 "It's still morning for me."("This is early for me." 는 평소 더 늦게 일어난다는 없는 습관이라 탈락), 기내 끝줄은 "I'm more tired than the crew."(일기의 여독), 입국심사는 근거 없는 여행 날수(Five days)를 빼고 "I have a return ticket." 과 심사 종료 신호를 넣었다. 호텔은 지오의 펀치로 끝나게 순서를 바꿨고, 그랩·화재경보기 끝줄, 카드 설명·드릴, Emma 편 번역의 오류를 고쳤다. 마지막 판정은 두 비평 모두 고칠 결함 0 이다(재미 약함은 그랩·쌈 두 편, 더 나은 안 없음). 옛 32행은 `~/apps/tmp/2026-09-29-batch3r3-replaced-rows-backup.json`.
+   **4묶음(2026-09-29)**: `en-personal-2026-10-10..19` 열 편을 같은 루프 방식으로 새로 적재했다. 10-10 방콕 호텔 아침(7) · 10-11 Liam 맥주 한 병(55) · 10-12 수키 식당(13) · 10-13 Emma 새벽 다섯 시(70) · 10-14 Tom 방콕에서 돌아와서(80) · 10-15 서촌 줄 없는 식당(표 밖 새 장면, 일기 06-24) · 10-16 Liam 빠진 날(62) · 10-17 Emma 여행과 고양이(표 밖 새 장면, 일기 02-15) · 10-18 여행객 영어 칭찬(99) · 10-19 Tom 일기(76). 새 비평 에이전트 둘(재미·자연스러움 / 가이드·사실)로 네 차례 돌려 대사·카드·드릴 결함 0 에서 멈췄다. 방콕 시리즈는 여기서 끝낸다(§3 해외 I 머리말).
 3. 3묶음을 휴대폰에서 써 본 뒤 4묶음부터 10~20편씩. 방콕 나머지 → Liam·Emma 초반 → 라스베가스 → … 순으로 시리즈를 번갈아 진행한다. 표는 계획이므로 쓰면서 장면을 바꿔도 되고, 바뀐 것은 여기에 반영한다.
 
 ## 6. 분포 세는 법
