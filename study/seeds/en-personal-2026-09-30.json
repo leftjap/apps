@@ -4,547 +4,532 @@
  "date": "2026-09-30",
  "cards": [
   {
-   "id": "en-personal-bkk-seat-01-looks-like-my-seat",
-   "sentence": "Excuse me, it looks like you're in my seat.",
-   "meaning": "실례합니다, 제 자리에 앉으신 것 같아요.",
+   "id": "en-personal-liam-app-01-made-it-myself",
+   "sentence": "I made it myself.",
+   "meaning": "제가 직접 만든 거예요.",
    "reading": null,
-   "phonetic_kr": "익스큐우z 미 잇 룩스 라익 여r 인 마이 씨잇",
+   "phonetic_kr": "아이 메이릿 마이쎌f",
    "order_index": 1,
    "explanation": {
-    "key": "It looks like ~ = ~인 것 같아요 (눈에 보이는 걸 근거로 말할 때, 영상 #14). 남의 실수를 부드럽게 짚는다",
-    "anchor": "앉으신 것 같아요",
-    "situation": "방콕행 기내. 탑승권에 적힌 자리로 가 보니 외국인 승객이 앉아 있다.",
+    "key": "~ myself = 직접 (남의 손 빌리지 않고). I made it myself = 제가 직접 만들었어요 (모두영어 2편 #60)",
+    "anchor": "직접 만든",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인(Liam)이 지오가 러닝 기록을 적는 앱을 보고 말을 건다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "지오",
-      "en": "Excuse me, it looks like you're in my seat.",
-      "ko": "실례합니다, 제 자리에 앉으신 것 같아요.",
-      "kr": "익스큐우z 미 잇 룩스 라익 여r 인 마이 씨잇"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Really? Isn't this 32C?",
-      "ko": "정말요? 여기 32C 아니에요?",
-      "kr": "리얼리 이즌 디스 써r리투우 씨이"
+      "name": "Liam",
+      "en": "Sorry, what's that app you're using?",
+      "ko": "실례지만, 지금 쓰시는 그 앱 뭐예요?",
+      "kr": "쏘리 왓츠 대랩 여r 유우징"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's what mine says, too.",
-      "ko": "제 표에도 그렇게 적혀 있어요.",
-      "kr": "댓츠 왓 마인 쎄z 투우"
+      "en": "I made it myself.",
+      "ko": "제가 직접 만든 거예요.",
+      "kr": "아이 메이릿 마이쎌f"
      },
      {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Wait, mine says 23C. I read it backwards.",
-      "ko": "잠깐만요, 제 건 23C네요. 거꾸로 읽었어요.",
-      "kr": "웨잇 마인 쎄z 트웨니쓰리이 씨이 아이 레딧 백워r즈"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "No way. What does it do?",
+      "ko": "설마요. 뭘 하는 앱이에요?",
+      "kr": "노우 웨이 왓 더짓 두"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me get your bag down for you.",
-      "ko": "가방 내려 드릴게요.",
-      "kr": "레미 게처r 백 다운 f퍼r 유"
+      "en": "It shows how far I ran last time.",
+      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
+      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
      },
      {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thanks! It's the black one that's up there.",
-      "ko": "고마워요! 저 위에 있는 검은 거예요.",
-      "kr": "쌩스 잇츠 더 블랙 원 댓썹 데어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "So you try to beat it every day?",
+      "ko": "그럼 매일 그걸 넘으려고 하세요?",
+      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was about to put my bag up there anyway.",
-      "ko": "어차피 저도 거기에 가방을 올리려던 참이었어요.",
-      "kr": "아이 워z 어바우러 풋 마이 배겁 데어r 애니웨이"
+      "en": "I've been adding a hundred meters a day.",
+      "ko": "매일 100미터씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 헌드레드 미이러r저 데이"
      },
      {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thank you so much. Sorry about the mix-up!",
-      "ko": "정말 고마워요. 헷갈리게 해서 죄송해요!",
-      "kr": "쌩켜 쏘우 머치 쏘리 어바웃 더 믹썹"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Every day? That's impressive.",
+      "ko": "매일요? 대단한데요.",
+      "kr": "에v리 데이 댓심프레씨v"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I also try to cheat every single day.",
+      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
+      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
      }
     ],
     "drills": [
      {
-      "en": "It looks like this is your seat.",
-      "ko": "이게 그쪽 자리인 것 같네요.",
-      "kr": "잇 룩스 라익 디시z 여r 씨잇"
+      "en": "She made it herself.",
+      "ko": "그녀가 직접 만들었어요.",
+      "kr": "쉬 메이릿 허r쎌f"
      },
      {
-      "en": "It looks like we have the same seat.",
-      "ko": "같은 자리가 나온 것 같아요.",
-      "kr": "잇 룩스 라익 위 해v 더 쎄임 씨잇"
+      "en": "Did you make it yourself?",
+      "ko": "직접 만드셨어요?",
+      "kr": "디저 메이킷 여r쎌f"
      },
      {
-      "en": "Excuse me, I think you're in my seat.",
-      "ko": "실례합니다, 제 자리에 앉으신 것 같은데요.",
-      "kr": "익스큐우z 미 아이 씽켜r 인 마이 씨잇"
+      "en": "I fixed it myself.",
+      "ko": "제가 직접 고쳤어요.",
+      "kr": "아이 f픽스팃 마이쎌f"
      },
      {
-      "en": "Is this seat taken?",
-      "ko": "이 자리 주인 있어요?",
-      "kr": "이z 디스 씨잇 테이큰"
+      "en": "We painted the room ourselves.",
+      "ko": "저희가 직접 방을 칠했어요.",
+      "kr": "위 페이니드 더 루우마워r쎌v즈"
      },
      {
-      "en": "Sorry, I think I'm in your seat.",
-      "ko": "죄송해요, 제가 그쪽 자리에 앉은 것 같아요.",
-      "kr": "쏘리 아이 씽카이민 여r 씨잇"
+      "en": "I made this app for myself.",
+      "ko": "이 앱은 저 쓰려고 만들었어요.",
+      "kr": "아이 메이드 디쌥 f퍼r 마이쎌f"
      }
     ],
     "grammar": [
      {
-      "struct": "It looks like ~",
-      "body": "~인 것 같아요 (눈에 보이는 걸 근거로 말할 때, 영상 #14). 남의 실수를 부드럽게 짚는다"
+      "struct": "~ myself",
+      "body": "직접 (남의 손 빌리지 않고). I made it myself = 제가 직접 만들었어요 (모두영어 2편 #60)"
      }
     ],
     "chunks": [
      [
-      "Excuse me,",
-      "익스큐우z 미",
-      "실례합니다"
+      "I made it",
+      "아이 메이릿",
+      "제가 그걸 만들었다"
      ],
      [
-      "it looks like",
-      "잇 룩스 라익",
-      "~인 것 같다"
-     ],
-     [
-      "you're in",
-      "여r 인",
-      "당신이 ~에 있다"
-     ],
-     [
-      "my seat.",
-      "마이 씨잇",
-      "제 자리"
+      "myself.",
+      "마이쎌f",
+      "직접"
      ]
     ],
     "phonemes": [
      [
-      "/ʊ/ looks",
-      "looks 의 oo 는 짧은 우 — 룩스. 루욱스로 늘이지 않는다"
+      "/t/ made it",
+      "made 의 d 가 굴러 메이릿"
      ],
      [
-      "/iː/ seat",
-      "seat 는 긴 이 — 씨잇. sit(씻)과 다른 단어다"
+      "/f/ myself",
+      "myself 의 f 는 윗니를 아랫입술에 — 마이쎌f"
      ]
     ],
-    "mistake": "You're in my seat. 만 하면 딱딱하다 — It looks like 를 앞에 두면 '제가 보기엔' 이 붙어 부드러워진다",
-    "similar": "I think you're in my seat.",
-    "category": "여행/기내",
+    "mistake": "I made it by me ✗ — '직접' 은 myself",
+    "similar": "It's my own app.",
+    "category": "운동/헬스장",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-liam-app-02-how-far-i-ran",
+   "sentence": "It shows how far I ran last time.",
+   "meaning": "지난번에 얼마나 뛰었는지 보여 줘요.",
+   "reading": null,
+   "phonetic_kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임",
+   "order_index": 2,
+   "explanation": {
+    "key": "how far ~ = 얼마나 멀리 ~했는지 (how far 뒤에 주어+동사가 오는 삽입절)",
+    "anchor": "얼마나 뛰었는지",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인(Liam)이 지오가 러닝 기록을 적는 앱을 보고 말을 건다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Sorry, what's that app you're using?",
+      "ko": "실례지만, 지금 쓰시는 그 앱 뭐예요?",
+      "kr": "쏘리 왓츠 대랩 여r 유우징"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I made it myself.",
+      "ko": "제가 직접 만든 거예요.",
+      "kr": "아이 메이릿 마이쎌f"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "No way. What does it do?",
+      "ko": "설마요. 뭘 하는 앱이에요?",
+      "kr": "노우 웨이 왓 더짓 두"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It shows how far I ran last time.",
+      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
+      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "So you try to beat it every day?",
+      "ko": "그럼 매일 그걸 넘으려고 하세요?",
+      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been adding a hundred meters a day.",
+      "ko": "매일 100미터씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 헌드레드 미이러r저 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Every day? That's impressive.",
+      "ko": "매일요? 대단한데요.",
+      "kr": "에v리 데이 댓심프레씨v"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I also try to cheat every single day.",
+      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
+      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Do you know how far it is?",
+      "ko": "얼마나 먼지 아세요?",
+      "kr": "더여 노우 하우 f파r 이리z"
+     },
+     {
+      "en": "Tell me how far you ran today.",
+      "ko": "오늘 얼마나 뛰었는지 말해 줘요.",
+      "kr": "텔 미 하우 f파r 여 랜 터데이"
+     },
+     {
+      "en": "I can't remember how far we walked.",
+      "ko": "얼마나 걸었는지 기억이 안 나요.",
+      "kr": "아이 캔트 리멤버r 하우 f파r 위 워크트"
+     },
+     {
+      "en": "The app shows how long I slept.",
+      "ko": "앱이 제가 얼마나 잤는지 보여 줘요.",
+      "kr": "디 앱 쇼우z 하우 롱 아이 슬렙트"
+     },
+     {
+      "en": "It shows how many steps I took.",
+      "ko": "제가 몇 걸음 걸었는지 보여 줘요.",
+      "kr": "잇 쇼우z 하우 메니 스텝사이 툭"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "how far ~",
+      "body": "얼마나 멀리 ~했는지 (how far 뒤에 주어+동사가 오는 삽입절)"
+     }
+    ],
+    "chunks": [
+     [
+      "It shows",
+      "잇 쇼우z",
+      "그게 보여 준다"
+     ],
+     [
+      "how far I ran",
+      "하우 f파r 아이 랜",
+      "제가 얼마나 뛰었는지"
+     ],
+     [
+      "last time.",
+      "라스 타임",
+      "지난번에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/aʊ/ how",
+      "how 는 하우 — 이중모음"
+     ],
+     [
+      "/t/ last time",
+      "last 의 t 가 time 의 t 와 겹쳐 라스 타임"
+     ]
+    ],
+    "mistake": "문장 속에서는 평서문 어순 — how far did I run ✗, how far I ran ✓",
+    "similar": "It shows my last distance.",
+    "category": "운동/헬스장",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-liam-app-03-been-adding-meters",
+   "sentence": "I've been adding a hundred meters a day.",
+   "meaning": "매일 100미터씩 늘리고 있어요.",
+   "reading": null,
+   "phonetic_kr": "아이v 비내딩 어 헌드레드 미이러r저 데이",
+   "order_index": 3,
+   "explanation": {
+    "key": "I've been ~ = (요즘) 계속 ~하고 있어요 (영상 #5). a day = 하루에",
+    "anchor": "늘리고 있어요",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인(Liam)이 지오가 러닝 기록을 적는 앱을 보고 말을 건다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Sorry, what's that app you're using?",
+      "ko": "실례지만, 지금 쓰시는 그 앱 뭐예요?",
+      "kr": "쏘리 왓츠 대랩 여r 유우징"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I made it myself.",
+      "ko": "제가 직접 만든 거예요.",
+      "kr": "아이 메이릿 마이쎌f"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "No way. What does it do?",
+      "ko": "설마요. 뭘 하는 앱이에요?",
+      "kr": "노우 웨이 왓 더짓 두"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It shows how far I ran last time.",
+      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
+      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "So you try to beat it every day?",
+      "ko": "그럼 매일 그걸 넘으려고 하세요?",
+      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been adding a hundred meters a day.",
+      "ko": "매일 100미터씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 헌드레드 미이러r저 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Every day? That's impressive.",
+      "ko": "매일요? 대단한데요.",
+      "kr": "에v리 데이 댓심프레씨v"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I also try to cheat every single day.",
+      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
+      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been walking to the gym.",
+      "ko": "헬스장까지 걸어가고 있어요.",
+      "kr": "아이v 빈 워킹 터 더 쥠"
+     },
+     {
+      "en": "She's been sleeping better lately.",
+      "ko": "그녀는 요즘 잠을 더 잘 자요.",
+      "kr": "쉬z 빈 슬리이핑 베러r 레잇리"
+     },
+     {
+      "en": "How long have you been coming here?",
+      "ko": "여기 다닌 지 얼마나 됐어요?",
+      "kr": "하우 롱 해v 여 빈 커밍 히어r"
+     },
+     {
+      "en": "I've been adding weight every week.",
+      "ko": "매주 무게를 늘리고 있어요.",
+      "kr": "아이v 비내딩 웨이레v리 위익"
+     },
+     {
+      "en": "We've been saving a little every month.",
+      "ko": "매달 조금씩 모으고 있어요.",
+      "kr": "위v 빈 쎄이v잉 어 리를 에v리 먼쓰"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "(요즘) 계속 ~하고 있어요 (영상 #5). a day = 하루에"
+     }
+    ],
+    "chunks": [
+     [
+      "I've been adding",
+      "아이v 비내딩",
+      "계속 늘려 왔다"
+     ],
+     [
+      "a hundred",
+      "어 헌드레드",
+      "100"
+     ],
+     [
+      "meters a day.",
+      "미이러r저 데이",
+      "하루에 ~미터씩"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/n/ been adding",
+      "been 의 n 이 adding 에 붙어 비내딩"
+     ],
+     [
+      "/t/ meters",
+      "meters 의 t 가 굴러 미이러r즈"
+     ]
+    ],
+    "mistake": "been 뒤에는 -ing — I've been add ✗",
+    "similar": "I add a hundred meters every day.",
+    "category": "운동/헬스장",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-bkk-seat-02-what-mine-says",
-   "sentence": "That's what mine says, too.",
-   "meaning": "제 표에도 그렇게 적혀 있어요.",
+   "id": "en-personal-liam-app-04-cheat-every-single-day",
+   "sentence": "I also try to cheat every single day.",
+   "meaning": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
    "reading": null,
-   "phonetic_kr": "댓츠 왓 마인 쎄z 투우",
-   "order_index": 2,
-   "explanation": {
-    "key": "That's what ~ says = 제 것에도 그렇게 적혀 있어요 (what + 주어 + says = ~에 적힌 것). mine = my boarding pass",
-    "anchor": "그렇게 적혀 있어요",
-    "situation": "방콕행 기내. 탑승권에 적힌 자리로 가 보니 외국인 승객이 앉아 있다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Excuse me, it looks like you're in my seat.",
-      "ko": "실례합니다, 제 자리에 앉으신 것 같아요.",
-      "kr": "익스큐우z 미 잇 룩스 라익 여r 인 마이 씨잇"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Really? Isn't this 32C?",
-      "ko": "정말요? 여기 32C 아니에요?",
-      "kr": "리얼리 이즌 디스 써r리투우 씨이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's what mine says, too.",
-      "ko": "제 표에도 그렇게 적혀 있어요.",
-      "kr": "댓츠 왓 마인 쎄z 투우"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Wait, mine says 23C. I read it backwards.",
-      "ko": "잠깐만요, 제 건 23C네요. 거꾸로 읽었어요.",
-      "kr": "웨잇 마인 쎄z 트웨니쓰리이 씨이 아이 레딧 백워r즈"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me get your bag down for you.",
-      "ko": "가방 내려 드릴게요.",
-      "kr": "레미 게처r 백 다운 f퍼r 유"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thanks! It's the black one that's up there.",
-      "ko": "고마워요! 저 위에 있는 검은 거예요.",
-      "kr": "쌩스 잇츠 더 블랙 원 댓썹 데어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I was about to put my bag up there anyway.",
-      "ko": "어차피 저도 거기에 가방을 올리려던 참이었어요.",
-      "kr": "아이 워z 어바우러 풋 마이 배겁 데어r 애니웨이"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thank you so much. Sorry about the mix-up!",
-      "ko": "정말 고마워요. 헷갈리게 해서 죄송해요!",
-      "kr": "쌩켜 쏘우 머치 쏘리 어바웃 더 믹썹"
-     }
-    ],
-    "drills": [
-     {
-      "en": "That's what it says on the screen.",
-      "ko": "화면에도 그렇게 나와요.",
-      "kr": "댓츠 와릿 쎄z 온 더 스크리인"
-     },
-     {
-      "en": "That's not what my ticket says.",
-      "ko": "제 표에는 그렇게 안 적혀 있어요.",
-      "kr": "댓츠 낫 왓 마이 티킷 쎄z"
-     },
-     {
-      "en": "What does your boarding pass say?",
-      "ko": "탑승권에 뭐라고 적혀 있어요?",
-      "kr": "왓 더즈 여r 보어r딩 패스 쎄이"
-     },
-     {
-      "en": "The sign says gate fifteen.",
-      "ko": "표지판에 15번 게이트라고 적혀 있어요.",
-      "kr": "더 싸인 쎄z 게잇 f피프티인"
-     },
-     {
-      "en": "Is that what it says here?",
-      "ko": "여기 그렇게 적혀 있는 거예요?",
-      "kr": "이z 댓 와릿 쎄z 히어r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "That's what ~ says",
-      "body": "제 것에도 그렇게 적혀 있어요 (what + 주어 + says = ~에 적힌 것). mine = my boarding pass"
-     }
-    ],
-    "chunks": [
-     [
-      "That's what",
-      "댓츠 왓",
-      "그게 바로 ~인 것"
-     ],
-     [
-      "mine says,",
-      "마인 쎄z",
-      "제 것에 적힌"
-     ],
-     [
-      "too.",
-      "투우",
-      "~도"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/z/ says",
-      "says 는 쎄z — 쎄이즈로 늘이지 않는다"
-     ],
-     [
-      "/aɪ/ mine",
-      "mine 은 이중모음을 살려 마인"
-     ]
-    ],
-    "mistake": "mine 은 표 한 장이라 단수 — mine say ✗, mine says ✓",
-    "similar": "Mine says the same thing.",
-    "category": "여행/기내",
-    "frequency": 7
-   }
-  },
-  {
-   "id": "en-personal-bkk-seat-03-let-me-get-bag",
-   "sentence": "Let me get your bag down for you.",
-   "meaning": "가방 내려 드릴게요.",
-   "reading": null,
-   "phonetic_kr": "레미 게처r 백 다운 f퍼r 유",
-   "order_index": 3,
-   "explanation": {
-    "key": "Let me ~ = 제가 ~할게요 (도와주겠다고 나설 때, 영상 #6)",
-    "anchor": "내려 드릴게요",
-    "situation": "방콕행 기내. 탑승권에 적힌 자리로 가 보니 외국인 승객이 앉아 있다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Excuse me, it looks like you're in my seat.",
-      "ko": "실례합니다, 제 자리에 앉으신 것 같아요.",
-      "kr": "익스큐우z 미 잇 룩스 라익 여r 인 마이 씨잇"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Really? Isn't this 32C?",
-      "ko": "정말요? 여기 32C 아니에요?",
-      "kr": "리얼리 이즌 디스 써r리투우 씨이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "That's what mine says, too.",
-      "ko": "제 표에도 그렇게 적혀 있어요.",
-      "kr": "댓츠 왓 마인 쎄z 투우"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Wait, mine says 23C. I read it backwards.",
-      "ko": "잠깐만요, 제 건 23C네요. 거꾸로 읽었어요.",
-      "kr": "웨잇 마인 쎄z 트웨니쓰리이 씨이 아이 레딧 백워r즈"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me get your bag down for you.",
-      "ko": "가방 내려 드릴게요.",
-      "kr": "레미 게처r 백 다운 f퍼r 유"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thanks! It's the black one that's up there.",
-      "ko": "고마워요! 저 위에 있는 검은 거예요.",
-      "kr": "쌩스 잇츠 더 블랙 원 댓썹 데어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I was about to put my bag up there anyway.",
-      "ko": "어차피 저도 거기에 가방을 올리려던 참이었어요.",
-      "kr": "아이 워z 어바우러 풋 마이 배겁 데어r 애니웨이"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thank you so much. Sorry about the mix-up!",
-      "ko": "정말 고마워요. 헷갈리게 해서 죄송해요!",
-      "kr": "쌩켜 쏘우 머치 쏘리 어바웃 더 믹썹"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Let me carry that for you.",
-      "ko": "그거 들어 드릴게요.",
-      "kr": "레미 캐리 댓 f퍼r 유"
-     },
-     {
-      "en": "Let me put my bag up first.",
-      "ko": "먼저 제 가방부터 올릴게요.",
-      "kr": "레미 풋 마이 배겁 f퍼r스트"
-     },
-     {
-      "en": "Can you get my bag down?",
-      "ko": "제 가방 좀 내려 주실래요?",
-      "kr": "컨 여 겟 마이 백 다운"
-     },
-     {
-      "en": "I'll take it down for you.",
-      "ko": "제가 내려 드릴게요.",
-      "kr": "아일 테이킷 다운 f퍼r 유"
-     },
-     {
-      "en": "Should I put it up there?",
-      "ko": "저 위에 올릴까요?",
-      "kr": "셔라이 푸리럽 데어r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "Let me ~",
-      "body": "제가 ~할게요 (도와주겠다고 나설 때, 영상 #6)"
-     }
-    ],
-    "chunks": [
-     [
-      "Let me",
-      "레미",
-      "제가 ~할게요"
-     ],
-     [
-      "get your bag down",
-      "게처r 백 다운",
-      "당신 가방을 내리다"
-     ],
-     [
-      "for you.",
-      "f퍼r 유",
-      "당신을 위해"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/t/ get your",
-      "get 의 t 와 your 가 붙어 게처r — 겟 유어r 로 끊지 않는다"
-     ],
-     [
-      "/æ/ bag",
-      "bag 은 입을 크게 벌린 애 — 백"
-     ]
-    ],
-    "mistake": "Let me 뒤에는 동사원형 — Let me getting ✗. get ~ down = ~를 내리다",
-    "similar": "I'll get your bag down.",
-    "category": "여행/기내",
-    "frequency": 10
-   }
-  },
-  {
-   "id": "en-personal-bkk-seat-04-was-about-to",
-   "sentence": "I was about to put my bag up there anyway.",
-   "meaning": "어차피 저도 거기에 가방을 올리려던 참이었어요.",
-   "reading": null,
-   "phonetic_kr": "아이 워z 어바우러 풋 마이 배겁 데어r 애니웨이",
+   "phonetic_kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이",
    "order_index": 4,
    "explanation": {
-    "key": "I was about to ~ = 막 ~하려던 참이었어요 (영상 #3). anyway = 어차피",
-    "anchor": "올리려던 참이었어요",
-    "situation": "방콕행 기내. 탑승권에 적힌 자리로 가 보니 외국인 승객이 앉아 있다.",
+    "key": "every single ~ = 하루도 빠짐없이 (every single day 는 every day 를 힘주어 말한 것)",
+    "anchor": "매일 빼먹지 않아요",
+    "situation": "홍대 헬스장. 옆 트레드밀의 외국인(Liam)이 지오가 러닝 기록을 적는 앱을 보고 말을 건다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "지오",
-      "en": "Excuse me, it looks like you're in my seat.",
-      "ko": "실례합니다, 제 자리에 앉으신 것 같아요.",
-      "kr": "익스큐우z 미 잇 룩스 라익 여r 인 마이 씨잇"
-     },
-     {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Really? Isn't this 32C?",
-      "ko": "정말요? 여기 32C 아니에요?",
-      "kr": "리얼리 이즌 디스 써r리투우 씨이"
+      "name": "Liam",
+      "en": "Sorry, what's that app you're using?",
+      "ko": "실례지만, 지금 쓰시는 그 앱 뭐예요?",
+      "kr": "쏘리 왓츠 대랩 여r 유우징"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's what mine says, too.",
-      "ko": "제 표에도 그렇게 적혀 있어요.",
-      "kr": "댓츠 왓 마인 쎄z 투우"
+      "en": "I made it myself.",
+      "ko": "제가 직접 만든 거예요.",
+      "kr": "아이 메이릿 마이쎌f"
      },
      {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Wait, mine says 23C. I read it backwards.",
-      "ko": "잠깐만요, 제 건 23C네요. 거꾸로 읽었어요.",
-      "kr": "웨잇 마인 쎄z 트웨니쓰리이 씨이 아이 레딧 백워r즈"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "No way. What does it do?",
+      "ko": "설마요. 뭘 하는 앱이에요?",
+      "kr": "노우 웨이 왓 더짓 두"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me get your bag down for you.",
-      "ko": "가방 내려 드릴게요.",
-      "kr": "레미 게처r 백 다운 f퍼r 유"
+      "en": "It shows how far I ran last time.",
+      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
+      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
      },
      {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thanks! It's the black one that's up there.",
-      "ko": "고마워요! 저 위에 있는 검은 거예요.",
-      "kr": "쌩스 잇츠 더 블랙 원 댓썹 데어r"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "So you try to beat it every day?",
+      "ko": "그럼 매일 그걸 넘으려고 하세요?",
+      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was about to put my bag up there anyway.",
-      "ko": "어차피 저도 거기에 가방을 올리려던 참이었어요.",
-      "kr": "아이 워z 어바우러 풋 마이 배겁 데어r 애니웨이"
+      "en": "I've been adding a hundred meters a day.",
+      "ko": "매일 100미터씩 늘리고 있어요.",
+      "kr": "아이v 비내딩 어 헌드레드 미이러r저 데이"
      },
      {
-      "speaker": "A",
-      "name": "승객",
-      "en": "Thank you so much. Sorry about the mix-up!",
-      "ko": "정말 고마워요. 헷갈리게 해서 죄송해요!",
-      "kr": "쌩켜 쏘우 머치 쏘리 어바웃 더 믹썹"
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Every day? That's impressive.",
+      "ko": "매일요? 대단한데요.",
+      "kr": "에v리 데이 댓심프레씨v"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I also try to cheat every single day.",
+      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
+      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
      }
     ],
     "drills": [
      {
-      "en": "I was just about to call you.",
-      "ko": "막 전화하려던 참이었어요.",
-      "kr": "아이 워z 저스터바우러 콜 유"
+      "en": "I check my phone every single day.",
+      "ko": "하루도 빠짐없이 휴대폰을 확인해요.",
+      "kr": "아이 첵 마이 f포우네v리 씽글 데이"
      },
      {
-      "en": "She was about to leave.",
-      "ko": "그녀는 막 나가려던 참이었어요.",
-      "kr": "쉬 워z 어바우러 리이v"
+      "en": "She calls me every single night.",
+      "ko": "그녀는 매일 밤 빠짐없이 전화해요.",
+      "kr": "쉬 콜즈 미 에v리 씽글 나잇"
      },
      {
-      "en": "We were about to board.",
-      "ko": "막 탑승하려던 참이었어요.",
-      "kr": "위 워r 어바우러 보어r드"
+      "en": "Do you really run every single day?",
+      "ko": "정말 하루도 안 빼고 뛰어요?",
+      "kr": "더여 리얼리 러네v리 씽글 데이"
      },
      {
-      "en": "Were you about to sit here?",
-      "ko": "여기 앉으시려던 참이었어요?",
-      "kr": "워r 여 어바우러 씻 히어r"
+      "en": "Every single seat was taken.",
+      "ko": "자리가 하나도 없었어요.",
+      "kr": "에v리 씽글 씨잇 워z 테이큰"
      },
      {
-      "en": "I was about to ask you the same thing.",
-      "ko": "저도 똑같은 걸 물어보려던 참이었어요.",
-      "kr": "아이 워z 어바우러 애스켜 더 쎄임 씽"
+      "en": "I try to quit early every time.",
+      "ko": "매번 일찍 그만두려고 해요.",
+      "kr": "아이 트라이 터 크위러r리 에v리 타임"
      }
     ],
     "grammar": [
      {
-      "struct": "I was about to ~",
-      "body": "막 ~하려던 참이었어요 (영상 #3). anyway = 어차피"
+      "struct": "every single ~",
+      "body": "하루도 빠짐없이 (every single day 는 every day 를 힘주어 말한 것)"
      }
     ],
     "chunks": [
      [
-      "I was about to",
-      "아이 워z 어바우러",
-      "막 ~하려던 참이었다"
+      "I also try to",
+      "아이 올쏘우 트라이 터",
+      "저는 ~하려고도 한다"
      ],
      [
-      "put my bag up there",
-      "풋 마이 배겁 데어r",
-      "제 가방을 저 위에 올리다"
-     ],
-     [
-      "anyway.",
-      "애니웨이",
-      "어차피"
+      "cheat every single day.",
+      "치이레v리 씽글 데이",
+      "매일 꼼수를 부리다"
      ]
     ],
     "phonemes": [
      [
-      "/t/ about to",
-      "about 의 t 가 굴러 어바우러 — 어바웃 투 로 끊지 않는다"
+      "/iː/ cheat",
+      "cheat 는 긴 이 — 치잇. chit 이 아니다"
      ],
      [
-      "/g/ bag up",
-      "bag 의 g 가 up 에 붙어 배겁"
+      "/t/ cheat every",
+      "cheat 의 t 가 굴러 치이레v리"
      ]
     ],
-    "mistake": "about to 뒤에는 동사원형 — about to putting ✗",
-    "similar": "I was going to put mine up there, too.",
-    "category": "여행/기내",
+    "mistake": "every 뒤는 단수 — every single days ✗",
+    "similar": "I try to cheat every day, too.",
+    "category": "운동/헬스장",
     "frequency": 8
    }
   }

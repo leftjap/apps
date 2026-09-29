@@ -4,542 +4,537 @@
  "date": "2026-10-09",
  "cards": [
   {
-   "id": "en-personal-tourist-hostel-01-five-minute-walk",
-   "sentence": "It's about a five-minute walk from here.",
-   "meaning": "여기서 걸어서 5분쯤이에요.",
+   "id": "en-personal-emma-alarm-01-far-as-i-know-false-alarm",
+   "sentence": "As far as I know, it's a false alarm.",
+   "meaning": "제가 알기로는 오작동이에요.",
    "reading": null,
-   "phonetic_kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r",
+   "phonetic_kr": "애z f파r 애자이 노우 잇서 f폴서라r암",
    "order_index": 1,
    "explanation": {
-    "key": "a ~ walk = 걸어서 ~ (숫자-minute 를 붙임표로 이어 walk 앞에 둔다)",
-    "anchor": "걸어서 5분",
-    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
+    "key": "As far as I know = 제가 알기로는 (영상 #22). false alarm = 오작동 경보",
+    "anchor": "제가 알기로는",
+    "situation": "아파트 복도. 아침부터 화재경보기가 울렸다 그쳤다 하는 날, 위층 Emma 와 마주친다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
+      "name": "Emma",
+      "en": "Do you know why the alarm keeps going off?",
+      "ko": "경보기가 왜 계속 울리는지 아세요?",
+      "kr": "더여 노우 와이 디 얼라r암 키입스 고잉 오f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's about a five-minute walk from here.",
-      "ko": "여기서 걸어서 5분쯤이에요.",
-      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
+      "en": "As far as I know, it's a false alarm.",
+      "ko": "제가 알기로는 오작동이에요.",
+      "kr": "애z f파r 애자이 노우 잇서 f폴서라r암"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Oh, good. Which way do I go?",
-      "ko": "잘됐네요. 어느 쪽으로 가요?",
-      "kr": "오우 굿 위치 웨이 두 아이 고우"
+      "name": "Emma",
+      "en": "For three hours? My cats are still hiding.",
+      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
+      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a park at the end of this street.",
-      "ko": "이 길 끝에 공원이 있어요.",
-      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
+      "en": "Nani got scared. That's why I taped over the speaker.",
+      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Okay. Do I walk through the park?",
-      "ko": "네. 공원 안으로 지나가요?",
-      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
+      "name": "Emma",
+      "en": "Did that help?",
+      "ko": "효과 있었어요?",
+      "kr": "디드 댓 헬프"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to go in. Just turn left.",
-      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
-      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
+      "en": "Not much. It feels like background noise now.",
+      "ko": "별로요. 이젠 배경 소음 같아요.",
+      "kr": "낫 머치 잇 f피일z 라익 백그라운드 노이z 나우"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "How will I know which building it is?",
-      "ko": "어느 건물인지 어떻게 알아요?",
-      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
+      "name": "Emma",
+      "en": "How can anyone get used to that?",
+      "ko": "저런 소리에 어떻게 익숙해져요?",
+      "kr": "하우 커내니원 겟 유우스터 댓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's the one that's next to the bakery.",
-      "ko": "빵집 옆에 있는 거예요.",
-      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
+      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
+      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
      }
     ],
     "drills": [
      {
-      "en": "It's a ten-minute walk to the station.",
-      "ko": "역까지 걸어서 10분이에요.",
-      "kr": "잇서 텐 미닛 워크 터 더 스테이션"
+      "en": "As far as I know, the store is open.",
+      "ko": "제가 알기로는 가게 열었어요.",
+      "kr": "애z f파r 애자이 노우 더 스토어r 이z 오우펀"
      },
      {
-      "en": "The hotel is a short walk from here.",
-      "ko": "호텔은 여기서 걸어서 금방이에요.",
-      "kr": "더 호우텔 이z 어 쇼r트 워크 f럼 히어r"
+      "en": "As far as I know, nobody got hurt.",
+      "ko": "제가 알기로는 다친 사람 없어요.",
+      "kr": "애z f파r 애자이 노우 노우바디 갓 허r트"
      },
      {
-      "en": "Is it far from here?",
-      "ko": "여기서 멀어요?",
-      "kr": "이짓 f파r f럼 히어r"
+      "en": "Was it a false alarm?",
+      "ko": "오작동이었어요?",
+      "kr": "워z 이러 f폴서라r암"
      },
      {
-      "en": "It's about twenty minutes by bus.",
-      "ko": "버스로 20분쯤이에요.",
-      "kr": "잇서바웃 트웨니 미닛츠 바이 버스"
+      "en": "Do you know why it went off?",
+      "ko": "왜 울렸는지 아세요?",
+      "kr": "더여 노우 와이 잇 웨노f"
      },
      {
-      "en": "We walked for about an hour.",
-      "ko": "한 시간쯤 걸었어요.",
-      "kr": "위 워크트 f퍼r 어바우러나워r"
+      "en": "I heard it was just a test.",
+      "ko": "그냥 테스트였대요.",
+      "kr": "아이 허r딧 워z 저스터 테스트"
      }
     ],
     "grammar": [
      {
-      "struct": "a ~ walk",
-      "body": "걸어서 ~ (숫자-minute 를 붙임표로 이어 walk 앞에 둔다)"
+      "struct": "As far as I know",
+      "body": "제가 알기로는 (영상 #22). false alarm = 오작동 경보"
      }
     ],
     "chunks": [
      [
-      "It's about a",
-      "잇서바우러",
-      "대략 ~이다"
+      "As far as I know,",
+      "애z f파r 애자이 노우",
+      "제가 알기로는"
      ],
      [
-      "five-minute walk",
-      "f파이v 미닛 워크",
-      "걸어서 5분"
-     ],
-     [
-      "from here.",
-      "f럼 히어r",
-      "여기서"
+      "it's a false alarm.",
+      "잇서 f폴서라r암",
+      "오작동이다"
      ]
     ],
     "phonemes": [
      [
-      "/t/ about a",
-      "about 의 t 가 굴러 어바우러"
+      "/z/ as I",
+      "as 의 s 가 I 에 붙어 애자이"
      ],
      [
-      "/ɔː/ walk",
-      "walk 의 l 은 소리 나지 않는다 — 워크"
+      "/ɑr/ alarm",
+      "alarm 은 뒤에 강세 — 얼라r암"
      ]
     ],
-    "mistake": "붙임표로 이은 말 안에서는 단수 — a five-minutes walk ✗",
-    "similar": "It's five minutes from here on foot.",
-    "category": "일상/길 안내",
-    "frequency": 9
+    "mistake": "As long as I know ✗ — '알기로는' 은 As far as I know",
+    "similar": "I think it was just a mistake.",
+    "category": "일상/이웃",
+    "frequency": 8
    }
   },
   {
-   "id": "en-personal-tourist-hostel-02-theres-a-park",
-   "sentence": "There's a park at the end of this street.",
-   "meaning": "이 길 끝에 공원이 있어요.",
+   "id": "en-personal-emma-alarm-02-thats-why-taped",
+   "sentence": "Nani got scared. That's why I taped over the speaker.",
+   "meaning": "나니가 무서워해서 스피커를 테이프로 막았어요.",
    "reading": null,
-   "phonetic_kr": "데어r저 파r컷 디 엔더v 디스 스트리잇",
+   "phonetic_kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r",
    "order_index": 2,
    "explanation": {
-    "key": "There's ~ = ~이 있어요 (길을 알려 줄 때 지표를 짚는 말, 영상 #16)",
-    "anchor": "공원이 있어요",
-    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
+    "key": "That's why ~ = 그래서 ~한 거예요 (앞에 말한 게 이유일 때, 영상 #29)",
+    "anchor": "스피커를 테이프로 막았어요",
+    "situation": "아파트 복도. 아침부터 화재경보기가 울렸다 그쳤다 하는 날, 위층 Emma 와 마주친다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
+      "name": "Emma",
+      "en": "Do you know why the alarm keeps going off?",
+      "ko": "경보기가 왜 계속 울리는지 아세요?",
+      "kr": "더여 노우 와이 디 얼라r암 키입스 고잉 오f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's about a five-minute walk from here.",
-      "ko": "여기서 걸어서 5분쯤이에요.",
-      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
+      "en": "As far as I know, it's a false alarm.",
+      "ko": "제가 알기로는 오작동이에요.",
+      "kr": "애z f파r 애자이 노우 잇서 f폴서라r암"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Oh, good. Which way do I go?",
-      "ko": "잘됐네요. 어느 쪽으로 가요?",
-      "kr": "오우 굿 위치 웨이 두 아이 고우"
+      "name": "Emma",
+      "en": "For three hours? My cats are still hiding.",
+      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
+      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a park at the end of this street.",
-      "ko": "이 길 끝에 공원이 있어요.",
-      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
+      "en": "Nani got scared. That's why I taped over the speaker.",
+      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Okay. Do I walk through the park?",
-      "ko": "네. 공원 안으로 지나가요?",
-      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
+      "name": "Emma",
+      "en": "Did that help?",
+      "ko": "효과 있었어요?",
+      "kr": "디드 댓 헬프"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to go in. Just turn left.",
-      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
-      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
+      "en": "Not much. It feels like background noise now.",
+      "ko": "별로요. 이젠 배경 소음 같아요.",
+      "kr": "낫 머치 잇 f피일z 라익 백그라운드 노이z 나우"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "How will I know which building it is?",
-      "ko": "어느 건물인지 어떻게 알아요?",
-      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
+      "name": "Emma",
+      "en": "How can anyone get used to that?",
+      "ko": "저런 소리에 어떻게 익숙해져요?",
+      "kr": "하우 커내니원 겟 유우스터 댓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's the one that's next to the bakery.",
-      "ko": "빵집 옆에 있는 거예요.",
-      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
+      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
+      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
      }
     ],
     "drills": [
      {
-      "en": "There's a bakery on the corner.",
-      "ko": "모퉁이에 빵집이 있어요.",
-      "kr": "데어r저 베이커리 온 더 코어r너r"
+      "en": "It was raining. That's why I stayed home.",
+      "ko": "비가 와서 집에 있었어요.",
+      "kr": "잇 워z 레이닝 댓츠 와이 아이 스테이드 호움"
      },
      {
-      "en": "There's a bus stop right there.",
-      "ko": "바로 저기 버스 정류장이 있어요.",
-      "kr": "데어r저 버스 스탑 라잇 데어r"
+      "en": "That's why she called you.",
+      "ko": "그래서 그녀가 전화한 거예요.",
+      "kr": "댓츠 와이 쉬 콜드 유"
      },
      {
-      "en": "Is there a pharmacy near here?",
-      "ko": "이 근처에 약국 있어요?",
-      "kr": "이z 데어r 어 f파r머씨 니어r 히어r"
+      "en": "Is that why the cats are hiding?",
+      "ko": "그래서 고양이들이 숨어 있는 거예요?",
+      "kr": "이z 댓 와이 더 캣차r 하이딩"
      },
      {
-      "en": "There are two exits near here.",
-      "ko": "이 근처에 출구가 두 개 있어요.",
-      "kr": "데어r 아r 투우 엑씻츠 니어r 히어r"
+      "en": "I covered it with tape.",
+      "ko": "테이프로 덮었어요.",
+      "kr": "아이 커v어r딧 위드 테입"
      },
      {
-      "en": "You'll see a big crosswalk.",
-      "ko": "큰 횡단보도가 보일 거예요.",
-      "kr": "유일 씨이 어 빅 크로오스워크"
+      "en": "That's why I moved her bed.",
+      "ko": "그래서 그 애 침대를 옮겼어요.",
+      "kr": "댓츠 와이 아이 무우v드 허r 베드"
      }
     ],
     "grammar": [
      {
-      "struct": "There's ~",
-      "body": "~이 있어요 (길을 알려 줄 때 지표를 짚는 말, 영상 #16)"
+      "struct": "That's why ~",
+      "body": "그래서 ~한 거예요 (앞에 말한 게 이유일 때, 영상 #29)"
      }
     ],
     "chunks": [
      [
-      "There's a",
-      "데어r저",
-      "~이 있다"
+      "Nani got scared.",
+      "나니 갓 스케어r드",
+      "나니가 무서워했다"
      ],
      [
-      "park at the end of",
-      "파r컷 디 엔더v",
-      "~ 끝에 공원"
+      "That's why I",
+      "댓츠 와이 아이",
+      "그래서 제가"
      ],
      [
-      "this street.",
-      "디스 스트리잇",
-      "이 길"
+      "taped over the speaker.",
+      "테입토우버r 더 스피이커r",
+      "스피커를 테이프로 막았다"
      ]
     ],
     "phonemes": [
      [
-      "/k/ park at",
-      "park 의 k 가 at 에 붙어 파r컷"
+      "/p/ taped over",
+      "taped 의 t 가 over 에 붙어 테입토우버r"
      ],
      [
-      "/d/ end of",
-      "end 의 d 가 of 에 붙어 엔더v"
+      "/iː/ speaker",
+      "speaker 는 긴 이 — 스피이커r"
      ]
     ],
-    "mistake": "뒤에 오는 것이 여럿이면 There are — There's two parks ✗",
-    "similar": "You'll see a park at the end of this street.",
-    "category": "일상/길 안내",
-    "frequency": 10
-   }
-  },
-  {
-   "id": "en-personal-tourist-hostel-03-dont-have-to-go-in",
-   "sentence": "You don't have to go in. Just turn left.",
-   "meaning": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
-   "reading": null,
-   "phonetic_kr": "유 돈 해프터 고우 인 저스 터r언 레f트",
-   "order_index": 3,
-   "explanation": {
-    "key": "You don't have to ~ = ~하지 않아도 돼요 (영상 #23)",
-    "anchor": "안 들어가도 돼요",
-    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It's about a five-minute walk from here.",
-      "ko": "여기서 걸어서 5분쯤이에요.",
-      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Oh, good. Which way do I go?",
-      "ko": "잘됐네요. 어느 쪽으로 가요?",
-      "kr": "오우 굿 위치 웨이 두 아이 고우"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "There's a park at the end of this street.",
-      "ko": "이 길 끝에 공원이 있어요.",
-      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Okay. Do I walk through the park?",
-      "ko": "네. 공원 안으로 지나가요?",
-      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You don't have to go in. Just turn left.",
-      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
-      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "How will I know which building it is?",
-      "ko": "어느 건물인지 어떻게 알아요?",
-      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It's the one that's next to the bakery.",
-      "ko": "빵집 옆에 있는 거예요.",
-      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
-     }
-    ],
-    "drills": [
-     {
-      "en": "You don't have to cross the street.",
-      "ko": "길 건너지 않아도 돼요.",
-      "kr": "유 돈 해프터 크로오스 더 스트리잇"
-     },
-     {
-      "en": "You don't have to pay for it.",
-      "ko": "돈 안 내도 돼요.",
-      "kr": "유 돈 해프터 페이 f퍼r 잇"
-     },
-     {
-      "en": "We don't have to hurry.",
-      "ko": "서두르지 않아도 돼요.",
-      "kr": "위 돈 해프터 허리"
-     },
-     {
-      "en": "Do I have to take a taxi?",
-      "ko": "택시 타야 해요?",
-      "kr": "두 아이 해프터 테이커 택씨"
-     },
-     {
-      "en": "Turn right at the bakery.",
-      "ko": "빵집에서 오른쪽으로 가세요.",
-      "kr": "터r언 라이럿 더 베이커리"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "You don't have to ~",
-      "body": "~하지 않아도 돼요 (영상 #23)"
-     }
-    ],
-    "chunks": [
-     [
-      "You don't have to",
-      "유 돈 해프터",
-      "~하지 않아도 된다"
-     ],
-     [
-      "go in.",
-      "고우 인",
-      "들어가다"
-     ],
-     [
-      "Just turn left.",
-      "저스 터r언 레f트",
-      "그냥 왼쪽으로 가세요"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/f/ have to",
-      "have to 는 해프터 — v 가 t 앞에서 f 처럼 된다"
-     ],
-     [
-      "/ɝ/ turn",
-      "turn 은 혀를 말아 터r언"
-     ]
-    ],
-    "mistake": "You don't have to 는 '안 해도 된다', You must not 은 '하면 안 된다'",
-    "similar": "No need to go through the park.",
-    "category": "일상/길 안내",
+    "mistake": "That's why 앞에 이유를 먼저 말한다 — 이유를 묻는 질문의 답으로 쓰지 않는다",
+    "similar": "Nani got scared, so I covered the speaker.",
+    "category": "일상/이웃",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-tourist-hostel-04-one-next-to-bakery",
-   "sentence": "It's the one that's next to the bakery.",
-   "meaning": "빵집 옆에 있는 거예요.",
+   "id": "en-personal-emma-alarm-03-feels-like-background-noise",
+   "sentence": "Not much. It feels like background noise now.",
+   "meaning": "별로요. 이젠 배경 소음 같아요.",
    "reading": null,
-   "phonetic_kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리",
-   "order_index": 4,
+   "phonetic_kr": "낫 머치 잇 f피일z 라익 백그라운드 노이z 나우",
+   "order_index": 3,
    "explanation": {
-    "key": "that's next to ~ = ~ 옆에 있는 것 (the one = 앞에서 말한 건물. that's 로 위치를 설명한다)",
-    "anchor": "빵집 옆에 있는 거",
-    "situation": "홍대입구역 공항철도 출구 앞. 큰 가방을 든 여행객이 휴대폰에 띄운 호스텔 주소를 보여 주며 길을 묻는다.",
+    "key": "It feels like ~ = ~같이 느껴져요 (영상 #13). background noise = 배경 소음",
+    "anchor": "배경 소음 같아요",
+    "situation": "아파트 복도. 아침부터 화재경보기가 울렸다 그쳤다 하는 날, 위층 Emma 와 마주친다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Excuse me, do you know where this hostel is?",
-      "ko": "실례합니다, 이 호스텔이 어디 있는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 웨어r 디스 하스텔 이z"
+      "name": "Emma",
+      "en": "Do you know why the alarm keeps going off?",
+      "ko": "경보기가 왜 계속 울리는지 아세요?",
+      "kr": "더여 노우 와이 디 얼라r암 키입스 고잉 오f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's about a five-minute walk from here.",
-      "ko": "여기서 걸어서 5분쯤이에요.",
-      "kr": "잇서바우러 f파이v 미닛 워크 f럼 히어r"
+      "en": "As far as I know, it's a false alarm.",
+      "ko": "제가 알기로는 오작동이에요.",
+      "kr": "애z f파r 애자이 노우 잇서 f폴서라r암"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Oh, good. Which way do I go?",
-      "ko": "잘됐네요. 어느 쪽으로 가요?",
-      "kr": "오우 굿 위치 웨이 두 아이 고우"
+      "name": "Emma",
+      "en": "For three hours? My cats are still hiding.",
+      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
+      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a park at the end of this street.",
-      "ko": "이 길 끝에 공원이 있어요.",
-      "kr": "데어r저 파r컷 디 엔더v 디스 스트리잇"
+      "en": "Nani got scared. That's why I taped over the speaker.",
+      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Okay. Do I walk through the park?",
-      "ko": "네. 공원 안으로 지나가요?",
-      "kr": "오우케이 두 아이 워크 쓰루우 더 파r크"
+      "name": "Emma",
+      "en": "Did that help?",
+      "ko": "효과 있었어요?",
+      "kr": "디드 댓 헬프"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to go in. Just turn left.",
-      "ko": "안 들어가도 돼요. 그냥 왼쪽으로 가세요.",
-      "kr": "유 돈 해프터 고우 인 저스 터r언 레f트"
+      "en": "Not much. It feels like background noise now.",
+      "ko": "별로요. 이젠 배경 소음 같아요.",
+      "kr": "낫 머치 잇 f피일z 라익 백그라운드 노이z 나우"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "How will I know which building it is?",
-      "ko": "어느 건물인지 어떻게 알아요?",
-      "kr": "하우 윌 아이 노우 위치 빌딩 이리z"
+      "name": "Emma",
+      "en": "How can anyone get used to that?",
+      "ko": "저런 소리에 어떻게 익숙해져요?",
+      "kr": "하우 커내니원 겟 유우스터 댓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's the one that's next to the bakery.",
-      "ko": "빵집 옆에 있는 거예요.",
-      "kr": "잇츠 더 원 댓츠 넥스 터 더 베이커리"
+      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
+      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
      }
     ],
     "drills": [
      {
-      "en": "The hostel is the one that's next to the bank.",
-      "ko": "호스텔은 은행 옆에 있는 거예요.",
-      "kr": "더 하스텔 이z 더 원 댓츠 넥스 터 더 뱅크"
+      "en": "It feels like home now.",
+      "ko": "이젠 집 같아요.",
+      "kr": "잇 f피일z 라익 호움 나우"
      },
      {
-      "en": "Is it the one that's next to the cafe?",
-      "ko": "카페 옆에 있는 거예요?",
-      "kr": "이짓 더 원 댓츠 넥스 터 더 캐f페이"
+      "en": "It feels like a long week.",
+      "ko": "긴 한 주 같아요.",
+      "kr": "잇 f피일z 라이커 롱 위익"
      },
      {
-      "en": "The bakery is across from the park.",
-      "ko": "빵집은 공원 건너편에 있어요.",
-      "kr": "더 베이커리 이z 어크로오스 f럼 더 파r크"
+      "en": "Does it still feel loud to you?",
+      "ko": "아직도 시끄럽게 느껴져요?",
+      "kr": "더짓 스틸 f피일 라우드 터 유"
      },
      {
-      "en": "Which building is it?",
-      "ko": "어느 건물이에요?",
-      "kr": "위치 빌딩 이짓"
+      "en": "I don't hear it anymore.",
+      "ko": "이젠 안 들려요.",
+      "kr": "아이 돈 히어r 이래니모어r"
      },
      {
-      "en": "It's the tall one on the left.",
-      "ko": "왼쪽에 있는 높은 거예요.",
-      "kr": "잇츠 더 톨 워논 더 레f트"
+      "en": "It felt like forever.",
+      "ko": "영원 같았어요.",
+      "kr": "잇 f펠트 라익 f퍼레v어r"
      }
     ],
     "grammar": [
      {
-      "struct": "that's next to ~",
-      "body": "~ 옆에 있는 것 (the one = 앞에서 말한 건물. that's 로 위치를 설명한다)"
+      "struct": "It feels like ~",
+      "body": "~같이 느껴져요 (영상 #13). background noise = 배경 소음"
      }
     ],
     "chunks": [
      [
-      "It's the one",
-      "잇츠 더 원",
-      "그건 ~인 것"
+      "Not much.",
+      "낫 머치",
+      "별로요"
      ],
      [
-      "that's next to",
-      "댓츠 넥스 터",
-      "~ 옆에 있는"
+      "It feels like",
+      "잇 f피일z 라익",
+      "~같이 느껴진다"
      ],
      [
-      "the bakery.",
-      "더 베이커리",
-      "빵집"
+      "background noise now.",
+      "백그라운드 노이z 나우",
+      "이젠 배경 소음"
      ]
     ],
     "phonemes": [
      [
-      "/t/ next to",
-      "next 의 t 와 to 의 t 가 겹쳐 넥스 터"
+      "/ɔɪ/ noise",
+      "noise 는 노이z — 끝을 z 로"
      ],
      [
-      "/eɪ/ bakery",
-      "bakery 는 이중모음 — 베이커리"
+      "/æ/ background",
+      "background 는 앞에 강세 — 백그라운드"
      ]
     ],
-    "mistake": "next to 뒤에는 바로 명사 — next the bakery ✗",
-    "similar": "It's the building beside the bakery.",
-    "category": "일상/길 안내",
+    "mistake": "It feels background noise ✗ — 명사 앞에는 like",
+    "similar": "I don't even hear it anymore.",
+    "category": "일상/이웃",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-emma-alarm-04-who-lives-downstairs",
+   "sentence": "The lady who lives downstairs stopped complaining in thirty minutes.",
+   "meaning": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
+   "reading": null,
+   "phonetic_kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠",
+   "order_index": 4,
+   "explanation": {
+    "key": "~ who lives downstairs = 아래층에 사는 ~ (who 가 사람을 뒤에서 설명한다)",
+    "anchor": "아래층 할머니",
+    "situation": "아파트 복도. 아침부터 화재경보기가 울렸다 그쳤다 하는 날, 위층 Emma 와 마주친다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Do you know why the alarm keeps going off?",
+      "ko": "경보기가 왜 계속 울리는지 아세요?",
+      "kr": "더여 노우 와이 디 얼라r암 키입스 고잉 오f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "As far as I know, it's a false alarm.",
+      "ko": "제가 알기로는 오작동이에요.",
+      "kr": "애z f파r 애자이 노우 잇서 f폴서라r암"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "For three hours? My cats are still hiding.",
+      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
+      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Nani got scared. That's why I taped over the speaker.",
+      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Did that help?",
+      "ko": "효과 있었어요?",
+      "kr": "디드 댓 헬프"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Not much. It feels like background noise now.",
+      "ko": "별로요. 이젠 배경 소음 같아요.",
+      "kr": "낫 머치 잇 f피일z 라익 백그라운드 노이z 나우"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "How can anyone get used to that?",
+      "ko": "저런 소리에 어떻게 익숙해져요?",
+      "kr": "하우 커내니원 겟 유우스터 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The lady who lives downstairs stopped complaining in thirty minutes.",
+      "ko": "아래층 할머니도 30분 만에 불평을 멈추셨어요.",
+      "kr": "더 레이디 후우 리v즈 다운스테어r즈 스탑트 컴플레이닝 인 써r리 미닛츠"
+     }
+    ],
+    "drills": [
+     {
+      "en": "The man who lives downstairs has a dog.",
+      "ko": "아래층 사는 남자는 개를 키워요.",
+      "kr": "더 맨 후우 리v즈 다운스테어r즈 해z 어 도그"
+     },
+     {
+      "en": "Do you know the woman who lives upstairs?",
+      "ko": "위층 사는 여자분 아세요?",
+      "kr": "더여 노우 더 워먼 후우 리v접스테어r즈"
+     },
+     {
+      "en": "She stopped complaining after a while.",
+      "ko": "그녀는 좀 지나니 불평을 멈췄어요.",
+      "kr": "쉬 스탑트 컴플레이닝 애f터r 어 와일"
+     },
+     {
+      "en": "Everyone got used to it.",
+      "ko": "모두 익숙해졌어요.",
+      "kr": "에v리원 갓 유우스터 잇"
+     },
+     {
+      "en": "Is he the one who lives next door?",
+      "ko": "옆집 사는 분이 그분이에요?",
+      "kr": "이z 히 더 원 후우 리v즈 넥스 도어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "~ who lives downstairs",
+      "body": "아래층에 사는 ~ (who 가 사람을 뒤에서 설명한다)"
+     }
+    ],
+    "chunks": [
+     [
+      "The lady who lives downstairs",
+      "더 레이디 후우 리v즈 다운스테어r즈",
+      "아래층에 사는 할머니"
+     ],
+     [
+      "stopped complaining",
+      "스탑트 컴플레이닝",
+      "불평을 멈췄다"
+     ],
+     [
+      "in thirty minutes.",
+      "인 써r리 미닛츠",
+      "30분 만에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ lives",
+      "lives 의 v 는 윗니를 아랫입술에 — 리v즈"
+     ],
+     [
+      "/t/ thirty",
+      "thirty 의 t 가 굴러 써r리"
+     ]
+    ],
+    "mistake": "The lady lives downstairs stopped ✗ — 동사가 둘이면 who 로 잇는다",
+    "similar": "Even the lady downstairs got used to it.",
+    "category": "일상/이웃",
     "frequency": 7
    }
   }

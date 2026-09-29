@@ -8,7 +8,7 @@
    "sentence": "There's only one who minds, and that's our cat.",
    "meaning": "신경 쓰는 건 저희 고양이 하나 정도예요.",
    "reading": null,
-   "phonetic_kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣",
+   "phonetic_kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣",
    "order_index": 1,
    "explanation": {
     "key": "There's ~ = ~가 있어요 (영상 #16). 뒤의 one who ~ = ~하는 사람·동물",
@@ -20,14 +20,14 @@
       "name": "Emma",
       "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
       "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
-      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
+      "kr": "하이 아임 에마 f러멉스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
       "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
-      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
+      "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
       "speaker": "A",
@@ -41,7 +41,7 @@
       "name": "지오",
       "en": "Ours is Nani, who can't see, so noise gets to her.",
       "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
-      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
+      "kr": "아워r지z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",
@@ -81,7 +81,7 @@
      {
       "en": "There's a cat upstairs that never stops meowing.",
       "ko": "위층에 계속 우는 고양이가 있어요.",
-      "kr": "데어r저 캣 업스테어r즈 댓 네버r 스탑스 미아우잉"
+      "kr": "데어r저 캐럽스테어r즈 댓 네버r 스탑스 미아우잉"
      },
      {
       "en": "Is there anyone who can help me carry this?",
@@ -103,7 +103,7 @@
     "chunks": [
      [
       "There's only one",
-      "데어r즈 오운리 원",
+      "데어r조운리 원",
       "하나뿐이다"
      ],
      [
@@ -113,7 +113,7 @@
      ],
      [
       "and that's our cat.",
-      "언 댓츠 아워r 캣",
+      "언 댓사워r 캣",
       "그게 우리 고양이다"
      ]
     ],
@@ -134,7 +134,7 @@
    "sentence": "Ours is Nani, who can't see, so noise gets to her.",
    "meaning": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
    "reading": null,
-   "phonetic_kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r",
+   "phonetic_kr": "아워r지z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r",
    "order_index": 2,
    "explanation": {
     "key": "who can't ~ = …, who can't ~ = 사람·동물을 덧붙여 설명하는 관계사(쉼표 뒤 who)",
@@ -146,14 +146,14 @@
       "name": "Emma",
       "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
       "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
-      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
+      "kr": "하이 아임 에마 f러멉스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
       "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
-      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
+      "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
       "speaker": "A",
@@ -167,7 +167,7 @@
       "name": "지오",
       "en": "Ours is Nani, who can't see, so noise gets to her.",
       "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
-      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
+      "kr": "아워r지z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",
@@ -202,7 +202,7 @@
      {
       "en": "This is my wife, who works for an airline.",
       "ko": "제 아내인데 항공사에서 일해요.",
-      "kr": "디스 이z 마이 와이f 후 워r크스 f퍼r 언 에어r라인"
+      "kr": "디시z 마이 와이f 후 워r크스 f퍼r 어네어r라인"
      },
      {
       "en": "That's Liam, who runs next to me at the gym.",
@@ -229,7 +229,7 @@
     "chunks": [
      [
       "Ours is Nani,",
-      "아워r즈 이z 나니",
+      "아워r지z 나니",
       "우리 고양이는 나니다"
      ],
      [
@@ -272,14 +272,14 @@
       "name": "Emma",
       "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
       "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
-      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
+      "kr": "하이 아임 에마 f러멉스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
       "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
-      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
+      "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
       "speaker": "A",
@@ -293,7 +293,7 @@
       "name": "지오",
       "en": "Ours is Nani, who can't see, so noise gets to her.",
       "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
-      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
+      "kr": "아워r지z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",
@@ -333,7 +333,7 @@
      {
       "en": "We just wanted to check on you.",
       "ko": "그냥 잘 있나 보러 왔어요.",
-      "kr": "위 저스 워니드 터 첵 온 유"
+      "kr": "위 저스 워니드 터 체콘 유"
      },
      {
       "en": "She just wanted to thank you.",
@@ -398,14 +398,14 @@
       "name": "Emma",
       "en": "Hi, I'm Emma from upstairs. Sorry about the noise today.",
       "ko": "안녕하세요, 위층으로 이사 온 Emma 예요. 오늘 시끄러웠죠, 죄송해요.",
-      "kr": "하이 아임 에마 f럼 업스테어r즈 쏘리 어바웃 더 노이z 터데이"
+      "kr": "하이 아임 에마 f러멉스테어r즈 쏘리 어바웃 더 노이z 터데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "There's only one who minds, and that's our cat.",
       "ko": "신경 쓰는 건 저희 고양이 하나 정도예요.",
-      "kr": "데어r즈 오운리 원 후 마인즈 언 댓츠 아워r 캣"
+      "kr": "데어r조운리 원 후 마인즈 언 댓사워r 캣"
      },
      {
       "speaker": "A",
@@ -419,7 +419,7 @@
       "name": "지오",
       "en": "Ours is Nani, who can't see, so noise gets to her.",
       "ko": "저희는 나니인데, 앞을 못 봐서 소리에 예민해요.",
-      "kr": "아워r즈 이z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
+      "kr": "아워r지z 나니 후 캔트 씨이 쏘우 노이z 겟츠 터 허r"
      },
      {
       "speaker": "A",

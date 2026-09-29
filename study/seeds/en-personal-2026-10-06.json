@@ -4,538 +4,528 @@
  "date": "2026-10-06",
  "cards": [
   {
-   "id": "en-personal-liam-treadmill-01-clip-thats-hanging",
-   "sentence": "Do you see the red clip that's hanging there?",
-   "meaning": "거기 매달려 있는 빨간 클립 보이세요?",
+   "id": "en-personal-tourist-ssam-01-let-me-show-how",
+   "sentence": "Not quite. Let me show you how it works.",
+   "meaning": "그렇진 않아요. 어떻게 먹는지 보여 드릴게요.",
    "reading": null,
-   "phonetic_kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r",
+   "phonetic_kr": "낫 콰잇 레미 쇼우 여 하우 잇 워r크스",
    "order_index": 1,
    "explanation": {
-    "key": "~ that's ~ = ~하고 있는 / ~에 있는 ~ (that's = that is. 관계사로 가리키는 물건을 설명한다)",
-    "anchor": "매달려 있는",
-    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Excuse me, do you know why this won't start?",
-      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Do you see the red clip that's hanging there?",
-      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
-      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "This one? What do I do with it?",
-      "ko": "이거요? 이걸로 뭘 해요?",
-      "kr": "디스 원 왓 두 아이 두 위딧"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me show you. It goes on your shirt.",
-      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
-      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That did it, thanks. Do you run every day?",
-      "ko": "됐네요, 고마워요. 매일 뛰세요?",
-      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I've been adding a minute every day.",
-      "ko": "매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 비내딩 어 미니레v리 데이"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Nice. How long can you go now?",
-      "ko": "좋네요. 지금은 얼마나 뛰어요?",
-      "kr": "나이스 하우 롱 컨 여 고우 나우"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Fifteen minutes. I'm trying to get to thirty.",
-      "ko": "15분이요. 30분까지 해 보려고요.",
-      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Do you see the sign that's on the wall?",
-      "ko": "벽에 붙은 안내문 보이세요?",
-      "kr": "더여 씨이 더 싸인 댓손 더 월"
-     },
-     {
-      "en": "It's the switch that's on the left.",
-      "ko": "왼쪽에 있는 스위치예요.",
-      "kr": "잇츠 더 스위치 댓손 더 레f트"
-     },
-     {
-      "en": "Is that the key that's missing?",
-      "ko": "없어진 열쇠가 그거예요?",
-      "kr": "이z 댓 더 키이 댓츠 미씽"
-     },
-     {
-      "en": "The bike that's by the window is free.",
-      "ko": "창가 쪽 자전거 비었어요.",
-      "kr": "더 바익 댓츠 바이 더 윈도우 이z f리이"
-     },
-     {
-      "en": "Can you see the red one?",
-      "ko": "빨간 거 보여요?",
-      "kr": "컨 여 씨이 더 레드 원"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "~ that's ~",
-      "body": "~하고 있는 / ~에 있는 ~ (that's = that is. 관계사로 가리키는 물건을 설명한다)"
-     }
-    ],
-    "chunks": [
-     [
-      "Do you see",
-      "더여 씨이",
-      "~ 보이세요"
-     ],
-     [
-      "the red clip",
-      "더 레드 클립",
-      "빨간 클립"
-     ],
-     [
-      "that's hanging there?",
-      "댓츠 행잉 데어r",
-      "거기 매달려 있는"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/ð/ there",
-      "there 는 혀끝을 이 사이에 — 데어r"
-     ],
-     [
-      "/ŋ/ hanging",
-      "hanging 은 행잉 — ng 를 g 로 터뜨리지 않는다"
-     ]
-    ],
-    "mistake": "that 만 쓰면 is 가 빠진다 — the clip that hanging ✗, the clip that's hanging ✓",
-    "similar": "Can you see that red clip?",
-    "category": "운동/헬스장",
-    "frequency": 6
-   }
-  },
-  {
-   "id": "en-personal-liam-treadmill-02-let-me-show",
-   "sentence": "Let me show you. It goes on your shirt.",
-   "meaning": "보여 드릴게요. 셔츠에 다는 거예요.",
-   "reading": null,
-   "phonetic_kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트",
-   "order_index": 2,
-   "explanation": {
-    "key": "Let me ~ = 제가 ~할게요 (도와주겠다고 나설 때, 영상 #6). show you = 보여 드리다",
+    "key": "Let me ~ = 제가 ~할게요 (영상 #6). how it works = 어떻게 하는지",
     "anchor": "보여 드릴게요",
-    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
+    "situation": "홍대 삼겹살집. 옆 테이블의 외국인 여행객이 상추를 따로 먹다가 지오에게 묻는다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Excuse me, do you know why this won't start?",
-      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Is this the way you eat Korean barbecue?",
+      "ko": "실례지만, 삼겹살 이렇게 먹는 거 맞아요?",
+      "kr": "익스큐우z 미 이z 디스 더 웨이 여 이잇 커리이언 바r비큐우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you see the red clip that's hanging there?",
-      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
-      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
+      "en": "Not quite. Let me show you how it works.",
+      "ko": "그렇진 않아요. 어떻게 먹는지 보여 드릴게요.",
+      "kr": "낫 콰잇 레미 쇼우 여 하우 잇 워r크스"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "This one? What do I do with it?",
-      "ko": "이거요? 이걸로 뭘 해요?",
-      "kr": "디스 원 왓 두 아이 두 위딧"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me show you. It goes on your shirt.",
-      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
-      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That did it, thanks. Do you run every day?",
-      "ko": "됐네요, 고마워요. 매일 뛰세요?",
-      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thanks. We've been eating the lettuce by itself.",
+      "ko": "고마워요. 상추만 따로 먹고 있었어요.",
+      "kr": "쌩스 위v 비니이링 더 레리스 바이 잇쎌f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been adding a minute every day.",
-      "ko": "매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 비내딩 어 미니레v리 데이"
+      "en": "It looks like a salad, but it's for wrapping.",
+      "ko": "샐러드처럼 보이지만, 싸 먹는 거예요.",
+      "kr": "잇 룩스 라이커 쌜러드 버릿츠 f퍼r 래핑"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Nice. How long can you go now?",
-      "ko": "좋네요. 지금은 얼마나 뛰어요?",
-      "kr": "나이스 하우 롱 컨 여 고우 나우"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Like this? Do I cut it in half?",
+      "ko": "이렇게요? 반으로 잘라요?",
+      "kr": "라익 디스 두 아이 커리린 해f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Fifteen minutes. I'm trying to get to thirty.",
-      "ko": "15분이요. 30분까지 해 보려고요.",
-      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
+      "en": "You don't have to. Put the whole thing in.",
+      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "The whole thing? That's a lot for one bite.",
+      "ko": "통째로요? 한 입에 먹기엔 많은데요.",
+      "kr": "더 호울 씽 댓서 랏 f퍼r 원 바잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've had fifty years of practice.",
+      "ko": "50년 동안 연습했거든요.",
+      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
      }
     ],
     "drills": [
      {
-      "en": "Let me try it first.",
-      "ko": "제가 먼저 해 볼게요.",
-      "kr": "레미 트라이 잇 f퍼r스트"
+      "en": "Let me show you the way.",
+      "ko": "길을 알려 드릴게요.",
+      "kr": "레미 쇼우 여 더 웨이"
      },
      {
-      "en": "Let me check the settings.",
-      "ko": "설정 좀 볼게요.",
-      "kr": "레미 첵 더 쎄링즈"
+      "en": "Let me try one first.",
+      "ko": "제가 먼저 하나 해 볼게요.",
+      "kr": "레미 트라이 원 f퍼r스트"
      },
      {
-      "en": "Can you show me how?",
+      "en": "Can you show me how it works?",
       "ko": "어떻게 하는지 보여 주실래요?",
-      "kr": "컨 여 쇼우 미 하우"
+      "kr": "컨 여 쇼우 미 하우 잇 워r크스"
      },
      {
-      "en": "I'll show you where it goes.",
-      "ko": "어디에 다는지 보여 드릴게요.",
-      "kr": "아일 쇼우 여 웨어r 잇 고우z"
+      "en": "I'll show you how we eat it.",
+      "ko": "저희는 어떻게 먹는지 보여 드릴게요.",
+      "kr": "아일 쇼우 여 하우 위 이이릿"
      },
      {
-      "en": "This goes on your belt.",
-      "ko": "이건 벨트에 다는 거예요.",
-      "kr": "디스 고우z 온 여r 벨트"
+      "en": "This is how you wrap it.",
+      "ko": "이렇게 싸는 거예요.",
+      "kr": "디시z 하우 여 래핏"
      }
     ],
     "grammar": [
      {
       "struct": "Let me ~",
-      "body": "제가 ~할게요 (도와주겠다고 나설 때, 영상 #6). show you = 보여 드리다"
+      "body": "제가 ~할게요 (영상 #6). how it works = 어떻게 하는지"
      }
     ],
     "chunks": [
      [
-      "Let me show you.",
-      "레미 쇼우 유",
-      "보여 드릴게요"
+      "Not quite.",
+      "낫 콰잇",
+      "그렇진 않아요"
      ],
      [
-      "It goes on",
-      "잇 고우z 온",
-      "그건 ~에 단다"
+      "Let me show you",
+      "레미 쇼우 여",
+      "제가 보여 드릴게요"
      ],
      [
-      "your shirt.",
-      "여r 셔r트",
-      "셔츠에"
+      "how it works.",
+      "하우 잇 워r크스",
+      "어떻게 하는지"
      ]
     ],
     "phonemes": [
      [
-      "/oʊ/ show",
-      "show 는 이중모음 — 쇼우"
+      "/kw/ quite",
+      "quite 는 콰잇 — 쿠아이트가 아니다"
      ],
      [
-      "/ʃ/ shirt",
-      "shirt 는 혀를 말아 셔r트 — 셔츠가 아니다"
+      "/ɝ/ works",
+      "works 는 혀를 말아 워r크스"
      ]
     ],
-    "mistake": "Let me 뒤에는 동사원형 — Let me to show ✗",
-    "similar": "I'll show you how.",
-    "category": "운동/헬스장",
+    "mistake": "Let me 뒤는 동사원형 — Let me to show ✗",
+    "similar": "Here, I'll show you.",
+    "category": "일상/외식",
     "frequency": 10
    }
   },
   {
-   "id": "en-personal-liam-treadmill-03-been-adding",
-   "sentence": "I've been adding a minute every day.",
-   "meaning": "매일 1분씩 늘리고 있어요.",
+   "id": "en-personal-tourist-ssam-02-looks-like-salad",
+   "sentence": "It looks like a salad, but it's for wrapping.",
+   "meaning": "샐러드처럼 보이지만, 싸 먹는 거예요.",
    "reading": null,
-   "phonetic_kr": "아이v 비내딩 어 미니레v리 데이",
-   "order_index": 3,
+   "phonetic_kr": "잇 룩스 라이커 쌜러드 버릿츠 f퍼r 래핑",
+   "order_index": 2,
    "explanation": {
-    "key": "I've been ~ = (요즘) 계속 ~하고 있어요 (영상 #5). 전부터 지금까지 이어지는 일",
-    "anchor": "늘리고 있어요",
-    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
+    "key": "It looks like ~ = ~처럼 보여요 (영상 #14). It looks like + 명사 = ~같이 생겼다",
+    "anchor": "샐러드처럼 보이지만",
+    "situation": "홍대 삼겹살집. 옆 테이블의 외국인 여행객이 상추를 따로 먹다가 지오에게 묻는다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Excuse me, do you know why this won't start?",
-      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Is this the way you eat Korean barbecue?",
+      "ko": "실례지만, 삼겹살 이렇게 먹는 거 맞아요?",
+      "kr": "익스큐우z 미 이z 디스 더 웨이 여 이잇 커리이언 바r비큐우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you see the red clip that's hanging there?",
-      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
-      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
+      "en": "Not quite. Let me show you how it works.",
+      "ko": "그렇진 않아요. 어떻게 먹는지 보여 드릴게요.",
+      "kr": "낫 콰잇 레미 쇼우 여 하우 잇 워r크스"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "This one? What do I do with it?",
-      "ko": "이거요? 이걸로 뭘 해요?",
-      "kr": "디스 원 왓 두 아이 두 위딧"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me show you. It goes on your shirt.",
-      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
-      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That did it, thanks. Do you run every day?",
-      "ko": "됐네요, 고마워요. 매일 뛰세요?",
-      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thanks. We've been eating the lettuce by itself.",
+      "ko": "고마워요. 상추만 따로 먹고 있었어요.",
+      "kr": "쌩스 위v 비니이링 더 레리스 바이 잇쎌f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been adding a minute every day.",
-      "ko": "매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 비내딩 어 미니레v리 데이"
+      "en": "It looks like a salad, but it's for wrapping.",
+      "ko": "샐러드처럼 보이지만, 싸 먹는 거예요.",
+      "kr": "잇 룩스 라이커 쌜러드 버릿츠 f퍼r 래핑"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Nice. How long can you go now?",
-      "ko": "좋네요. 지금은 얼마나 뛰어요?",
-      "kr": "나이스 하우 롱 컨 여 고우 나우"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Like this? Do I cut it in half?",
+      "ko": "이렇게요? 반으로 잘라요?",
+      "kr": "라익 디스 두 아이 커리린 해f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Fifteen minutes. I'm trying to get to thirty.",
-      "ko": "15분이요. 30분까지 해 보려고요.",
-      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
+      "en": "You don't have to. Put the whole thing in.",
+      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "The whole thing? That's a lot for one bite.",
+      "ko": "통째로요? 한 입에 먹기엔 많은데요.",
+      "kr": "더 호울 씽 댓서 랏 f퍼r 원 바잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've had fifty years of practice.",
+      "ko": "50년 동안 연습했거든요.",
+      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
      }
     ],
     "drills": [
      {
-      "en": "I've been sleeping better lately.",
-      "ko": "요즘 잠을 더 잘 자고 있어요.",
-      "kr": "아이v 빈 슬리이핑 베러r 레잇리"
+      "en": "It looks like rain.",
+      "ko": "비가 올 것 같아요.",
+      "kr": "잇 룩스 라익 레인"
      },
      {
-      "en": "She's been working late all week.",
-      "ko": "그녀는 일주일 내내 늦게까지 일하고 있어요.",
-      "kr": "쉬z 빈 워r킹 레이롤 위익"
+      "en": "It looks like a taco.",
+      "ko": "타코처럼 생겼어요.",
+      "kr": "잇 룩스 라이커 타아코우"
      },
      {
-      "en": "How long have you been running?",
-      "ko": "러닝 한 지 얼마나 됐어요?",
-      "kr": "하우 롱 해v 여 빈 러닝"
+      "en": "What does it look like?",
+      "ko": "어떻게 생겼어요?",
+      "kr": "왓 더짓 룩 라익"
      },
      {
-      "en": "I've been doing this for a month.",
-      "ko": "한 달째 하고 있어요.",
-      "kr": "아이v 빈 두잉 디스 f퍼r 어 먼쓰"
+      "en": "It looks spicy, but it isn't.",
+      "ko": "매워 보이지만 안 매워요.",
+      "kr": "잇 룩스 스파이씨 버리리즌"
      },
      {
-      "en": "We've been coming here since summer.",
-      "ko": "여름부터 여기 다니고 있어요.",
-      "kr": "위v 빈 커밍 히어r 씬스 써머r"
+      "en": "You wrap the meat in the lettuce.",
+      "ko": "고기를 상추에 싸요.",
+      "kr": "유 랩 더 미이린 더 레리스"
      }
     ],
     "grammar": [
      {
-      "struct": "I've been ~",
-      "body": "(요즘) 계속 ~하고 있어요 (영상 #5). 전부터 지금까지 이어지는 일"
+      "struct": "It looks like ~",
+      "body": "~처럼 보여요 (영상 #14). It looks like + 명사 = ~같이 생겼다"
      }
     ],
     "chunks": [
      [
-      "I've been adding",
-      "아이v 비내딩",
-      "계속 늘려 왔다"
+      "It looks like a salad,",
+      "잇 룩스 라이커 쌜러드",
+      "샐러드처럼 보인다"
      ],
      [
-      "a minute every day.",
-      "어 미니레v리 데이",
-      "매일 1분씩"
+      "but it's for wrapping.",
+      "버릿츠 f퍼r 래핑",
+      "하지만 싸 먹는 거다"
      ]
     ],
     "phonemes": [
      [
-      "/t/ minute every",
-      "minute 의 t 가 굴러 미니레v리"
+      "/æ/ salad",
+      "salad 는 쌜러드 — 입을 크게"
      ],
      [
-      "/n/ been adding",
-      "been 의 n 이 adding 에 붙어 비내딩"
+      "/t/ but it's",
+      "but 의 t 가 굴러 버릿츠"
      ]
     ],
-    "mistake": "been 뒤에는 -ing — I've been add ✗",
-    "similar": "I add a minute every day.",
-    "category": "운동/헬스장",
+    "mistake": "It looks a salad ✗ — 명사 앞에는 like",
+    "similar": "It's not a salad. It's for wrapping.",
+    "category": "일상/외식",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-liam-treadmill-04-trying-to-get-thirty",
-   "sentence": "Fifteen minutes. I'm trying to get to thirty.",
-   "meaning": "15분이요. 30분까지 해 보려고요.",
+   "id": "en-personal-tourist-ssam-03-dont-have-to-cut",
+   "sentence": "You don't have to. Put the whole thing in.",
+   "meaning": "안 잘라도 돼요. 통째로 넣으세요.",
    "reading": null,
-   "phonetic_kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리",
-   "order_index": 4,
+   "phonetic_kr": "유 돈 해프터 풋 더 호울 씽 인",
+   "order_index": 3,
    "explanation": {
-    "key": "I'm trying to ~ = ~하려고 (애쓰는 중이에요) (영상 #1). get to + 숫자 = ~까지 가다",
-    "anchor": "해 보려고요",
-    "situation": "홍대 헬스장. 옆 트레드밀의 외국인이 기계가 안 켜진다며 지오에게 묻는다. 지오는 러닝을 5분부터 매일 1분씩 늘리는 중이다.",
+    "key": "You don't have to ~ = ~하지 않아도 돼요 (영상 #23). 뒤 동사를 빼고 You don't have to. 로 끝낼 수 있다",
+    "anchor": "안 잘라도 돼요",
+    "situation": "홍대 삼겹살집. 옆 테이블의 외국인 여행객이 상추를 따로 먹다가 지오에게 묻는다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Excuse me, do you know why this won't start?",
-      "ko": "실례합니다, 이게 왜 안 켜지는지 아세요?",
-      "kr": "익스큐우z 미 더여 노우 와이 디스 워운 스타r트"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Is this the way you eat Korean barbecue?",
+      "ko": "실례지만, 삼겹살 이렇게 먹는 거 맞아요?",
+      "kr": "익스큐우z 미 이z 디스 더 웨이 여 이잇 커리이언 바r비큐우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you see the red clip that's hanging there?",
-      "ko": "거기 매달려 있는 빨간 클립 보이세요?",
-      "kr": "더여 씨이 더 레드 클립 댓츠 행잉 데어r"
+      "en": "Not quite. Let me show you how it works.",
+      "ko": "그렇진 않아요. 어떻게 먹는지 보여 드릴게요.",
+      "kr": "낫 콰잇 레미 쇼우 여 하우 잇 워r크스"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "This one? What do I do with it?",
-      "ko": "이거요? 이걸로 뭘 해요?",
-      "kr": "디스 원 왓 두 아이 두 위딧"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me show you. It goes on your shirt.",
-      "ko": "보여 드릴게요. 셔츠에 다는 거예요.",
-      "kr": "레미 쇼우 유 잇 고우z 온 여r 셔r트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That did it, thanks. Do you run every day?",
-      "ko": "됐네요, 고마워요. 매일 뛰세요?",
-      "kr": "댓 디딧 쌩스 더여 러네v리 데이"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thanks. We've been eating the lettuce by itself.",
+      "ko": "고마워요. 상추만 따로 먹고 있었어요.",
+      "kr": "쌩스 위v 비니이링 더 레리스 바이 잇쎌f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been adding a minute every day.",
-      "ko": "매일 1분씩 늘리고 있어요.",
-      "kr": "아이v 비내딩 어 미니레v리 데이"
+      "en": "It looks like a salad, but it's for wrapping.",
+      "ko": "샐러드처럼 보이지만, 싸 먹는 거예요.",
+      "kr": "잇 룩스 라이커 쌜러드 버릿츠 f퍼r 래핑"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Nice. How long can you go now?",
-      "ko": "좋네요. 지금은 얼마나 뛰어요?",
-      "kr": "나이스 하우 롱 컨 여 고우 나우"
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Like this? Do I cut it in half?",
+      "ko": "이렇게요? 반으로 잘라요?",
+      "kr": "라익 디스 두 아이 커리린 해f"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Fifteen minutes. I'm trying to get to thirty.",
-      "ko": "15분이요. 30분까지 해 보려고요.",
-      "kr": "f피프티인 미닛츠 아임 트라잉 터 겟 터 써r리"
+      "en": "You don't have to. Put the whole thing in.",
+      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "The whole thing? That's a lot for one bite.",
+      "ko": "통째로요? 한 입에 먹기엔 많은데요.",
+      "kr": "더 호울 씽 댓서 랏 f퍼r 원 바잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've had fifty years of practice.",
+      "ko": "50년 동안 연습했거든요.",
+      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
      }
     ],
     "drills": [
      {
-      "en": "I'm trying to run every day.",
-      "ko": "매일 뛰려고 하고 있어요.",
-      "kr": "아임 트라잉 터 러네v리 데이"
+      "en": "You don't have to cut it.",
+      "ko": "안 잘라도 돼요.",
+      "kr": "유 돈 해프터 커릿"
      },
      {
-      "en": "She's trying to sleep earlier.",
-      "ko": "그녀는 더 일찍 자려고 해요.",
-      "kr": "쉬z 트라잉 터 슬리이퍼r리어r"
+      "en": "You don't have to use chopsticks.",
+      "ko": "젓가락 안 써도 돼요.",
+      "kr": "유 돈 해프터 유우z 찹스틱스"
      },
      {
-      "en": "What are you trying to do?",
-      "ko": "뭘 하려는 거예요?",
-      "kr": "워러r여 트라잉 터 두"
+      "en": "Do I have to eat it in one bite?",
+      "ko": "한 입에 먹어야 해요?",
+      "kr": "두 아이 해프터 이이리린 원 바잇"
      },
      {
-      "en": "I'm going to get to thirty by next month.",
-      "ko": "다음 달까지 30분까지 갈 거예요.",
-      "kr": "아임 거너 겟 터 써r리 바이 넥스 먼쓰"
+      "en": "We don't have to order more.",
+      "ko": "더 안 시켜도 돼요.",
+      "kr": "위 돈 해프터 오어r더r 모어r"
      },
      {
-      "en": "We tried to finish early.",
-      "ko": "일찍 끝내려고 했어요.",
-      "kr": "위 트라이드 터 f피니쉬 어r리"
+      "en": "Just put it all in your mouth.",
+      "ko": "그냥 다 입에 넣으세요.",
+      "kr": "저스 푸리롤 인 여r 마우쓰"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm trying to ~",
-      "body": "~하려고 (애쓰는 중이에요) (영상 #1). get to + 숫자 = ~까지 가다"
+      "struct": "You don't have to ~",
+      "body": "~하지 않아도 돼요 (영상 #23). 뒤 동사를 빼고 You don't have to. 로 끝낼 수 있다"
      }
     ],
     "chunks": [
      [
-      "Fifteen minutes.",
-      "f피프티인 미닛츠",
-      "15분이요"
+      "You don't have to.",
+      "유 돈 해프터",
+      "안 그래도 돼요"
      ],
      [
-      "I'm trying to",
-      "아임 트라잉 터",
-      "~하려고 하는 중이다"
-     ],
-     [
-      "get to thirty.",
-      "겟 터 써r리",
-      "30까지 가다"
+      "Put the whole thing in.",
+      "풋 더 호울 씽 인",
+      "통째로 넣으세요"
      ]
     ],
     "phonemes": [
      [
-      "/θ/ thirty",
-      "thirty 의 th 는 혀를 이 사이에, t 는 굴러 써r리"
+      "/f/ have to",
+      "have to 는 해프터 — v 가 t 앞에서 f 처럼 된다"
      ],
      [
-      "/aɪ/ trying",
-      "trying 은 트라잉 — 추라잉이 아니다"
+      "/oʊ/ whole",
+      "whole 의 w 는 소리 나지 않는다 — 호울"
      ]
     ],
-    "mistake": "trying to 뒤에는 동사원형 — I'm trying to getting ✗",
-    "similar": "My goal is thirty minutes.",
-    "category": "운동/헬스장",
+    "mistake": "You don't have to 는 '안 해도 된다', You must not 은 '하면 안 된다'",
+    "similar": "No need. Just eat it in one bite.",
+    "category": "일상/외식",
     "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-tourist-ssam-04-fifty-years-practice",
+   "sentence": "I've had fifty years of practice.",
+   "meaning": "50년 동안 연습했거든요.",
+   "reading": null,
+   "phonetic_kr": "아이v 해드 f피프티 이어r저v 프랙티스",
+   "order_index": 4,
+   "explanation": {
+    "key": "~ years of practice = ~년 동안 연습 (have had + 기간 + of practice)",
+    "anchor": "50년 동안 연습했거든요",
+    "situation": "홍대 삼겹살집. 옆 테이블의 외국인 여행객이 상추를 따로 먹다가 지오에게 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Excuse me. Is this the way you eat Korean barbecue?",
+      "ko": "실례지만, 삼겹살 이렇게 먹는 거 맞아요?",
+      "kr": "익스큐우z 미 이z 디스 더 웨이 여 이잇 커리이언 바r비큐우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Not quite. Let me show you how it works.",
+      "ko": "그렇진 않아요. 어떻게 먹는지 보여 드릴게요.",
+      "kr": "낫 콰잇 레미 쇼우 여 하우 잇 워r크스"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Thanks. We've been eating the lettuce by itself.",
+      "ko": "고마워요. 상추만 따로 먹고 있었어요.",
+      "kr": "쌩스 위v 비니이링 더 레리스 바이 잇쎌f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like a salad, but it's for wrapping.",
+      "ko": "샐러드처럼 보이지만, 싸 먹는 거예요.",
+      "kr": "잇 룩스 라이커 쌜러드 버릿츠 f퍼r 래핑"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "Like this? Do I cut it in half?",
+      "ko": "이렇게요? 반으로 잘라요?",
+      "kr": "라익 디스 두 아이 커리린 해f"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to. Put the whole thing in.",
+      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+     },
+     {
+      "speaker": "A",
+      "name": "여행객",
+      "en": "The whole thing? That's a lot for one bite.",
+      "ko": "통째로요? 한 입에 먹기엔 많은데요.",
+      "kr": "더 호울 씽 댓서 랏 f퍼r 원 바잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've had fifty years of practice.",
+      "ko": "50년 동안 연습했거든요.",
+      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "She has ten years of practice.",
+      "ko": "그녀는 10년 경력이 있어요.",
+      "kr": "쉬 해z 텐 이어r저v 프랙티스"
+     },
+     {
+      "en": "I've had a lot of practice.",
+      "ko": "연습을 많이 했어요.",
+      "kr": "아이v 해더 라러v 프랙티스"
+     },
+     {
+      "en": "How many years have you lived here?",
+      "ko": "여기 산 지 몇 년 됐어요?",
+      "kr": "하우 메니 이어r즈 해v 여 리v드 히어r"
+     },
+     {
+      "en": "It takes practice.",
+      "ko": "연습이 필요해요.",
+      "kr": "잇 테익스 프랙티스"
+     },
+     {
+      "en": "I've been eating this for fifty years.",
+      "ko": "50년째 먹고 있어요.",
+      "kr": "아이v 비니이링 디스 f퍼r f피프티 이어r즈"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "~ years of practice",
+      "body": "~년 동안 연습 (have had + 기간 + of practice)"
+     }
+    ],
+    "chunks": [
+     [
+      "I've had",
+      "아이v 해드",
+      "~을 해 왔다"
+     ],
+     [
+      "fifty years of practice.",
+      "f피프티 이어r저v 프랙티스",
+      "50년 연습"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/j/ years",
+      "years 는 이어r즈 — 앞에 y 소리가 있다"
+     ],
+     [
+      "/æ/ practice",
+      "practice 는 프랙티스 — 입을 크게"
+     ]
+    ],
+    "mistake": "fifty year ✗ — years 로 복수",
+    "similar": "I've been doing this for fifty years.",
+    "category": "일상/외식",
+    "frequency": 7
    }
   }
  ]

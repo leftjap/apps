@@ -4,72 +4,207 @@
  "date": "2026-10-04",
  "cards": [
   {
-   "id": "en-personal-bkk-grab-01-can-you-say-again",
-   "sentence": "Sorry, can you say that again a bit slower?",
-   "meaning": "죄송한데 조금 천천히 다시 말해 주실래요?",
+   "id": "en-personal-bkk-grab-pin-01-only-shows-pin",
+   "sentence": "Excuse me. My Grab app only shows a PIN.",
+   "meaning": "실례합니다. 그랩 앱에 PIN 만 나와요.",
    "reading": null,
-   "phonetic_kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r",
+   "phonetic_kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀",
    "order_index": 1,
    "explanation": {
-    "key": "Can you ~ = ~해 주실래요 (부탁, 영상 #8). 못 알아들었을 때 되묻는 말",
-    "anchor": "다시",
-    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
+    "key": "only shows ~ = ~만 보여 줘요 (only 는 동사 앞에 둔다)",
+    "anchor": "PIN 만 나와요",
+    "situation": "수완나품 공항 입국장(2층). 그랩을 불렀는데 앱에 기사 대신 4자리 PIN 만 나온다. 공항 직원에게 묻는다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "기사",
-      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
-      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
-      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
+      "name": "지오",
+      "en": "Excuse me. My Grab app only shows a PIN.",
+      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
+      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "That's how it works now. Level one, gate four.",
+      "ko": "이제 그렇게 해요. 1층 4번 게이트요.",
+      "kr": "댓츠 하우 잇 워r크스 나우 레v얼 원 게잇 f포어r"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "Sorry, can you say that again a bit slower?",
       "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
-      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
+      "kr": "쏘리 컨 여 쎄이 대러게너 빗 슬로우어r"
      },
      {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Gate 4, level 1. You know which gate you're at?",
-      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
-      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm at the gate that's by the taxi sign.",
-      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
-      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
-     },
-     {
-      "speaker": "B",
-      "name": "기사",
-      "en": "That's level 2. What do you see near you?",
-      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
-      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
+      "speaker": "A",
+      "name": "직원",
+      "en": "Downstairs, gate four. Tell the first driver your PIN.",
+      "ko": "아래층 4번 게이트요. 맨 앞 기사님께 PIN 을 알려 주세요.",
+      "kr": "다운스테어r즈 게잇 f포어r 텔 더 f퍼r스 드라이v어r 여r 핀"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a 7-Eleven right next to me.",
-      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
-      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
+      "en": "So there's no driver who's coming for me?",
+      "ko": "그럼 저를 데리러 오는 기사는 없는 거예요?",
+      "kr": "쏘우 데어r즈 노우 드라이v어r 후우z 커밍 f퍼r 미"
      },
      {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Take the stairs by it. I'm at the bottom.",
-      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
-      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
+      "speaker": "A",
+      "name": "직원",
+      "en": "No. You take the car that's first in line.",
+      "ko": "네, 없어요. 줄 맨 앞에 있는 차를 타시면 돼요.",
+      "kr": "노우 유 테익 더 카r 댓츠 f퍼r스틴 라인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'll let you know when I'm down there.",
-      "ko": "내려가면 알려 드릴게요.",
-      "kr": "아일 레처 노우 웨나임 다운 데어r"
+      "en": "It feels like everything changes so fast these days.",
+      "ko": "요즘은 모든 게 참 빨리 변하는 것 같아요.",
+      "kr": "잇 f피일z 라이케v리씽 체인쥐z 쏘우 f패스 디이z 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Same here. I learned it last week.",
+      "ko": "저도요. 저도 지난주에 배웠어요.",
+      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
+     }
+    ],
+    "drills": [
+     {
+      "en": "The screen only shows the time.",
+      "ko": "화면에 시간만 나와요.",
+      "kr": "더 스크리이노운리 쇼우z 더 타임"
+     },
+     {
+      "en": "My phone only shows one bar.",
+      "ko": "휴대폰 신호가 한 칸밖에 안 떠요.",
+      "kr": "마이 f포우노운리 쇼우z 원 바r"
+     },
+     {
+      "en": "Why does it only show a number?",
+      "ko": "왜 번호만 나와요?",
+      "kr": "와이 더지로운리 쇼우 어 넘버r"
+     },
+     {
+      "en": "It says my driver is on the way.",
+      "ko": "기사가 오고 있다고 나와요.",
+      "kr": "잇 쎄z 마이 드라이v어r 이z 온 더 웨이"
+     },
+     {
+      "en": "All I see is a PIN.",
+      "ko": "보이는 건 PIN 뿐이에요.",
+      "kr": "올 아이 씨이 이z 어 핀"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "only shows ~",
+      "body": "~만 보여 줘요 (only 는 동사 앞에 둔다)"
+     }
+    ],
+    "chunks": [
+     [
+      "Excuse me.",
+      "익스큐우z 미",
+      "실례합니다"
+     ],
+     [
+      "My Grab app only",
+      "마이 그래배포운리",
+      "제 그랩 앱이 ~만"
+     ],
+     [
+      "shows a PIN.",
+      "쇼우z 어 핀",
+      "PIN 을 보여 준다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/æ/ app",
+      "app 은 입을 크게 — 앱. 어플이 아니다"
+     ],
+     [
+      "/oʊ/ only",
+      "only 는 오운리 — 짧게 끊지 않는다"
+     ]
+    ],
+    "mistake": "말할 때는 only 를 동사 앞에 — shows only a PIN 도 되지만 only shows 가 흔하다",
+    "similar": "All I see is a PIN.",
+    "category": "여행/교통",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-bkk-grab-pin-02-can-you-say-again",
+   "sentence": "Sorry, can you say that again a bit slower?",
+   "meaning": "죄송한데 조금 천천히 다시 말해 주실래요?",
+   "reading": null,
+   "phonetic_kr": "쏘리 컨 여 쎄이 대러게너 빗 슬로우어r",
+   "order_index": 2,
+   "explanation": {
+    "key": "Can you ~ = ~해 주실래요 (부탁, 영상 #8). 못 알아들었을 때 되묻는 말",
+    "anchor": "다시",
+    "situation": "수완나품 공항 입국장(2층). 그랩을 불렀는데 앱에 기사 대신 4자리 PIN 만 나온다. 공항 직원에게 묻는다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Excuse me. My Grab app only shows a PIN.",
+      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
+      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "That's how it works now. Level one, gate four.",
+      "ko": "이제 그렇게 해요. 1층 4번 게이트요.",
+      "kr": "댓츠 하우 잇 워r크스 나우 레v얼 원 게잇 f포어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry, can you say that again a bit slower?",
+      "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
+      "kr": "쏘리 컨 여 쎄이 대러게너 빗 슬로우어r"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Downstairs, gate four. Tell the first driver your PIN.",
+      "ko": "아래층 4번 게이트요. 맨 앞 기사님께 PIN 을 알려 주세요.",
+      "kr": "다운스테어r즈 게잇 f포어r 텔 더 f퍼r스 드라이v어r 여r 핀"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "So there's no driver who's coming for me?",
+      "ko": "그럼 저를 데리러 오는 기사는 없는 거예요?",
+      "kr": "쏘우 데어r즈 노우 드라이v어r 후우z 커밍 f퍼r 미"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "No. You take the car that's first in line.",
+      "ko": "네, 없어요. 줄 맨 앞에 있는 차를 타시면 돼요.",
+      "kr": "노우 유 테익 더 카r 댓츠 f퍼r스틴 라인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It feels like everything changes so fast these days.",
+      "ko": "요즘은 모든 게 참 빨리 변하는 것 같아요.",
+      "kr": "잇 f피일z 라이케v리씽 체인쥐z 쏘우 f패스 디이z 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Same here. I learned it last week.",
+      "ko": "저도요. 저도 지난주에 배웠어요.",
+      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
      }
     ],
     "drills": [
@@ -81,7 +216,7 @@
      {
       "en": "Can you speak a little slower?",
       "ko": "조금 천천히 말해 주실래요?",
-      "kr": "컨 여 스피익 어 리를 슬로우어r"
+      "kr": "컨 여 스피이커 리를 슬로우어r"
      },
      {
       "en": "Could you spell that for me?",
@@ -117,14 +252,9 @@
       "~해 줄 수 있나요"
      ],
      [
-      "say that again",
-      "쎄이 대러겐",
-      "그걸 다시 말하다"
-     ],
-     [
-      "a bit slower?",
-      "어 빗 슬로우어r",
-      "조금 천천히"
+      "say that again a bit slower?",
+      "쎄이 대러게너 빗 슬로우어r",
+      "조금 천천히 다시 말하다"
      ]
     ],
     "phonemes": [
@@ -140,381 +270,268 @@
    }
   },
   {
-   "id": "en-personal-bkk-grab-02-gate-thats-by",
-   "sentence": "I'm at the gate that's by the taxi sign.",
-   "meaning": "택시 표지판 옆에 있는 게이트에 있어요.",
+   "id": "en-personal-bkk-grab-pin-03-no-driver-coming",
+   "sentence": "So there's no driver who's coming for me?",
+   "meaning": "그럼 저를 데리러 오는 기사는 없는 거예요?",
    "reading": null,
-   "phonetic_kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인",
-   "order_index": 2,
+   "phonetic_kr": "쏘우 데어r즈 노우 드라이v어r 후우z 커밍 f퍼r 미",
+   "order_index": 3,
    "explanation": {
-    "key": "~ that's by ~ = ~ 옆에 있는 (관계사 that's 로 위치 설명)",
-    "anchor": "옆에 있는",
-    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
+    "key": "There's no ~ = ~가 없는 거예요? (There's no + 명사 + who's ~ = ~하는 사람이 없다, 영상 #16)",
+    "anchor": "데리러 오는 기사는 없는 거예요",
+    "situation": "수완나품 공항 입국장(2층). 그랩을 불렀는데 앱에 기사 대신 4자리 PIN 만 나온다. 공항 직원에게 묻는다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "기사",
-      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
-      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
-      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
+      "name": "지오",
+      "en": "Excuse me. My Grab app only shows a PIN.",
+      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
+      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "That's how it works now. Level one, gate four.",
+      "ko": "이제 그렇게 해요. 1층 4번 게이트요.",
+      "kr": "댓츠 하우 잇 워r크스 나우 레v얼 원 게잇 f포어r"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "Sorry, can you say that again a bit slower?",
       "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
-      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
+      "kr": "쏘리 컨 여 쎄이 대러게너 빗 슬로우어r"
      },
      {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Gate 4, level 1. You know which gate you're at?",
-      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
-      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm at the gate that's by the taxi sign.",
-      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
-      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
-     },
-     {
-      "speaker": "B",
-      "name": "기사",
-      "en": "That's level 2. What do you see near you?",
-      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
-      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
+      "speaker": "A",
+      "name": "직원",
+      "en": "Downstairs, gate four. Tell the first driver your PIN.",
+      "ko": "아래층 4번 게이트요. 맨 앞 기사님께 PIN 을 알려 주세요.",
+      "kr": "다운스테어r즈 게잇 f포어r 텔 더 f퍼r스 드라이v어r 여r 핀"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a 7-Eleven right next to me.",
-      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
-      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
+      "en": "So there's no driver who's coming for me?",
+      "ko": "그럼 저를 데리러 오는 기사는 없는 거예요?",
+      "kr": "쏘우 데어r즈 노우 드라이v어r 후우z 커밍 f퍼r 미"
      },
      {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Take the stairs by it. I'm at the bottom.",
-      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
-      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
+      "speaker": "A",
+      "name": "직원",
+      "en": "No. You take the car that's first in line.",
+      "ko": "네, 없어요. 줄 맨 앞에 있는 차를 타시면 돼요.",
+      "kr": "노우 유 테익 더 카r 댓츠 f퍼r스틴 라인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'll let you know when I'm down there.",
-      "ko": "내려가면 알려 드릴게요.",
-      "kr": "아일 레처 노우 웨나임 다운 데어r"
+      "en": "It feels like everything changes so fast these days.",
+      "ko": "요즘은 모든 게 참 빨리 변하는 것 같아요.",
+      "kr": "잇 f피일z 라이케v리씽 체인쥐z 쏘우 f패스 디이z 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Same here. I learned it last week.",
+      "ko": "저도요. 저도 지난주에 배웠어요.",
+      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
      }
     ],
     "drills": [
      {
-      "en": "I'm at the exit that's by the pharmacy.",
-      "ko": "약국 옆에 있는 출구에 있어요.",
-      "kr": "아임 엇 디 엑씻 댓츠 바이 더 f파r머씨"
+      "en": "There's no one who can help?",
+      "ko": "도와줄 수 있는 사람이 없어요?",
+      "kr": "데어r즈 노우 원 후 컨 헬프"
      },
      {
-      "en": "It's the door that's by the escalator.",
-      "ko": "에스컬레이터 옆에 있는 문이에요.",
-      "kr": "잇츠 더 도어r 댓츠 바이 디 에스컬레이러r"
+      "en": "There's no bus that goes there.",
+      "ko": "거기 가는 버스가 없어요.",
+      "kr": "데어r즈 노우 버스 댓 고우z 데어r"
      },
      {
-      "en": "Is this the stop that's by the mall?",
-      "ko": "여기가 쇼핑몰 옆 정류장이에요?",
-      "kr": "이z 디스 더 스탑 댓츠 바이 더 몰"
+      "en": "Is there anyone who speaks Korean?",
+      "ko": "한국어 하시는 분 있어요?",
+      "kr": "이z 데어r 애니원 후우 스피익스 커리이언"
      },
      {
-      "en": "We're at the cafe that's near gate 4.",
-      "ko": "4번 게이트 근처 카페에 있어요.",
-      "kr": "위어r 엇 더 캐f페이 댓츠 니어r 게잇 f포어r"
+      "en": "Nobody is coming to get me.",
+      "ko": "아무도 저를 데리러 안 와요.",
+      "kr": "노우바디 이z 커밍 터 겟 미"
+     },
+     {
+      "en": "There's a driver who's waiting outside.",
+      "ko": "밖에 기다리는 기사가 있어요.",
+      "kr": "데어r저 드라이v어r 후우z 웨이링 아웃싸이드"
      }
     ],
     "grammar": [
      {
-      "struct": "~ that's by ~",
-      "body": "~ 옆에 있는 (관계사 that's 로 위치 설명)"
+      "struct": "There's no ~",
+      "body": "~가 없는 거예요? (There's no + 명사 + who's ~ = ~하는 사람이 없다, 영상 #16)"
      }
     ],
     "chunks": [
      [
-      "I'm at the gate",
-      "아임 엇 더 게잇",
-      "나는 그 게이트에 있다"
+      "So there's no driver",
+      "쏘우 데어r즈 노우 드라이v어r",
+      "그럼 기사가 없다"
      ],
      [
-      "that's by",
-      "댓츠 바이",
-      "~옆에 있는"
-     ],
-     [
-      "the taxi sign.",
-      "더 택씨 싸인",
-      "택시 표지판"
+      "who's coming for me?",
+      "후우z 커밍 f퍼r 미",
+      "저를 데리러 오는"
      ]
     ],
     "phonemes": [
      [
-      "/æ/ at",
-      "비강세 at 은 약하게 엇 — '앳' 으로 세게 내지 않는다"
+      "/z/ who's",
+      "who's 는 후우z — who is 를 줄인 말"
+     ],
+     [
+      "/v/ driver",
+      "driver 의 v 는 윗니를 아랫입술에 — 드라이v어r"
      ]
     ],
-    "mistake": "that's = that is. 사물·장소는 that, 사람은 who",
-    "similar": "I'm by the taxi sign.",
+    "mistake": "There's no driver come ✗ — 뒤에서 설명할 때는 who's coming",
+    "similar": "So nobody is coming to get me?",
     "category": "여행/교통",
     "frequency": 8
    }
   },
   {
-   "id": "en-personal-bkk-grab-03-theres-7eleven",
-   "sentence": "There's a 7-Eleven right next to me.",
-   "meaning": "제 바로 옆에 세븐일레븐이 있어요.",
+   "id": "en-personal-bkk-grab-pin-04-feels-like-changes-fast",
+   "sentence": "It feels like everything changes so fast these days.",
+   "meaning": "요즘은 모든 게 참 빨리 변하는 것 같아요.",
    "reading": null,
-   "phonetic_kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미",
-   "order_index": 3,
-   "explanation": {
-    "key": "There's ~ = ~가 있어요 (전화로 내 주변을 말할 때, 영상 #16)",
-    "anchor": "있어요",
-    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
-      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
-      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Sorry, can you say that again a bit slower?",
-      "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
-      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
-     },
-     {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Gate 4, level 1. You know which gate you're at?",
-      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
-      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm at the gate that's by the taxi sign.",
-      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
-      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
-     },
-     {
-      "speaker": "B",
-      "name": "기사",
-      "en": "That's level 2. What do you see near you?",
-      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
-      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "There's a 7-Eleven right next to me.",
-      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
-      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
-     },
-     {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Take the stairs by it. I'm at the bottom.",
-      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
-      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'll let you know when I'm down there.",
-      "ko": "내려가면 알려 드릴게요.",
-      "kr": "아일 레처 노우 웨나임 다운 데어r"
-     }
-    ],
-    "drills": [
-     {
-      "en": "There's a taxi sign above me.",
-      "ko": "제 위에 택시 표지판이 있어요.",
-      "kr": "데어r저 택씨 싸인 어버v 미"
-     },
-     {
-      "en": "The stairs are on my left.",
-      "ko": "계단이 제 왼쪽에 있어요.",
-      "kr": "더 스테어r즈 아r 온 마이 레f트"
-     },
-     {
-      "en": "Is there a pickup point on this level?",
-      "ko": "이 층에 픽업 지점이 있나요?",
-      "kr": "이z 데어r 어 피컵 포인트 온 디스 레v얼"
-     },
-     {
-      "en": "There's no pickup sign here.",
-      "ko": "여기 픽업 표시가 없어요.",
-      "kr": "데어r즈 노우 피컵 싸인 히어r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "There's ~",
-      "body": "~가 있어요 (전화로 내 주변을 말할 때, 영상 #16)"
-     }
-    ],
-    "chunks": [
-     [
-      "There's a",
-      "데어r저",
-      "~가 하나 있다"
-     ],
-     [
-      "7-Eleven",
-      "쎄v은 일레v은",
-      "세븐일레븐"
-     ],
-     [
-      "right next to me.",
-      "라잇 넥스 터 미",
-      "내 바로 옆에"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/z/ There's",
-      "there's 의 s 는 z — 데어r즈, a 와 이어져 데어r저"
-     ]
-    ],
-    "mistake": "위치 설명은 There's + 물건 + 위치. 전화로 내 자리를 말하는 기본 틀",
-    "similar": "I'm right next to a 7-Eleven.",
-    "category": "여행/교통",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-bkk-grab-04-let-you-know-down",
-   "sentence": "I'll let you know when I'm down there.",
-   "meaning": "내려가면 알려 드릴게요.",
-   "reading": null,
-   "phonetic_kr": "아일 레처 노우 웨나임 다운 데어r",
+   "phonetic_kr": "잇 f피일z 라이케v리씽 체인쥐z 쏘우 f패스 디이z 데이z",
    "order_index": 4,
    "explanation": {
-    "key": "I'll let you know ~ = ~하면 알려 드릴게요 (영상 #26)",
-    "anchor": "알려",
-    "situation": "수완나품 공항. 그랩을 불렀는데 기사가 픽업 지점에서 지오를 못 찾고 전화했다. 앱 위치와 지오가 서 있는 층이 다르다.",
+    "key": "It feels like ~ = ~인 것 같아요 (느낌을 말할 때, 영상 #13). these days = 요즘",
+    "anchor": "빨리 변하는 것 같아요",
+    "situation": "수완나품 공항 입국장(2층). 그랩을 불렀는데 앱에 기사 대신 4자리 PIN 만 나온다. 공항 직원에게 묻는다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "기사",
-      "en": "Hello? Gate 4, level 1, taxi stand. Where are you?",
-      "ko": "여보세요? 4번 게이트, 1층, 택시 승강장이요. 어디세요?",
-      "kr": "헬로우 게잇 f포어r 레v얼 원 택씨 스탠드 웨어r 아r 유"
+      "name": "지오",
+      "en": "Excuse me. My Grab app only shows a PIN.",
+      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
+      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "That's how it works now. Level one, gate four.",
+      "ko": "이제 그렇게 해요. 1층 4번 게이트요.",
+      "kr": "댓츠 하우 잇 워r크스 나우 레v얼 원 게잇 f포어r"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "Sorry, can you say that again a bit slower?",
       "ko": "죄송한데 조금 천천히 다시 말해 주실래요?",
-      "kr": "쏘리 컨 여 쎄이 대러겐 어 빗 슬로우어r"
+      "kr": "쏘리 컨 여 쎄이 대러게너 빗 슬로우어r"
      },
      {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Gate 4, level 1. You know which gate you're at?",
-      "ko": "4번 게이트, 1층이요. 지금 어느 게이트에 있는지 아세요?",
-      "kr": "게잇 f포어r 레v얼 원 유 노우 위치 게잇 여r 엣"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm at the gate that's by the taxi sign.",
-      "ko": "택시 표지판 옆에 있는 게이트에 있어요.",
-      "kr": "아임 엇 더 게잇 댓츠 바이 더 택씨 싸인"
-     },
-     {
-      "speaker": "B",
-      "name": "기사",
-      "en": "That's level 2. What do you see near you?",
-      "ko": "그건 2층이에요. 주변에 뭐가 보여요?",
-      "kr": "댓츠 레v얼 투우 왓 더여 씨이 니어r 유"
+      "speaker": "A",
+      "name": "직원",
+      "en": "Downstairs, gate four. Tell the first driver your PIN.",
+      "ko": "아래층 4번 게이트요. 맨 앞 기사님께 PIN 을 알려 주세요.",
+      "kr": "다운스테어r즈 게잇 f포어r 텔 더 f퍼r스 드라이v어r 여r 핀"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a 7-Eleven right next to me.",
-      "ko": "제 바로 옆에 세븐일레븐이 있어요.",
-      "kr": "데어r저 쎄v은 일레v은 라잇 넥스 터 미"
+      "en": "So there's no driver who's coming for me?",
+      "ko": "그럼 저를 데리러 오는 기사는 없는 거예요?",
+      "kr": "쏘우 데어r즈 노우 드라이v어r 후우z 커밍 f퍼r 미"
      },
      {
-      "speaker": "B",
-      "name": "기사",
-      "en": "Take the stairs by it. I'm at the bottom.",
-      "ko": "그 옆 계단으로 내려오세요. 저는 아래에 있어요.",
-      "kr": "테익 더 스테어r즈 바이 잇 아임 엇 더 바름"
+      "speaker": "A",
+      "name": "직원",
+      "en": "No. You take the car that's first in line.",
+      "ko": "네, 없어요. 줄 맨 앞에 있는 차를 타시면 돼요.",
+      "kr": "노우 유 테익 더 카r 댓츠 f퍼r스틴 라인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'll let you know when I'm down there.",
-      "ko": "내려가면 알려 드릴게요.",
-      "kr": "아일 레처 노우 웨나임 다운 데어r"
+      "en": "It feels like everything changes so fast these days.",
+      "ko": "요즘은 모든 게 참 빨리 변하는 것 같아요.",
+      "kr": "잇 f피일z 라이케v리씽 체인쥐z 쏘우 f패스 디이z 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "직원",
+      "en": "Same here. I learned it last week.",
+      "ko": "저도요. 저도 지난주에 배웠어요.",
+      "kr": "쎄임 히어r 아이 러r언딧 라스 위익"
      }
     ],
     "drills": [
      {
-      "en": "I'll let you know when I see you.",
-      "ko": "보이면 알려 드릴게요.",
-      "kr": "아일 레처 노우 웨나이 씨이 유"
+      "en": "It feels like yesterday.",
+      "ko": "어제 같아요.",
+      "kr": "잇 f피일z 라익 예스터r데이"
      },
      {
-      "en": "Let me know if you can't find me.",
-      "ko": "저 못 찾으면 알려 주세요.",
-      "kr": "렛 미 노우 이f 여 캔트 f파인드 미"
+      "en": "It feels like I've been away for years.",
+      "ko": "몇 년 떠나 있었던 것 같아요.",
+      "kr": "잇 f피일z 라이카이v 비너웨이 f퍼r 이어r즈"
      },
      {
-      "en": "She'll let us know the gate.",
-      "ko": "아내가 게이트를 알려 줄 거예요.",
-      "kr": "쉴 레러스 노우 더 게잇"
+      "en": "Does it feel like home?",
+      "ko": "집 같은 느낌이에요?",
+      "kr": "더짓 f피일 라익 호움"
      },
      {
-      "en": "I'll text you when I'm outside.",
-      "ko": "밖에 나가면 문자할게요.",
-      "kr": "아일 텍스트 여 웨나임 아웃싸이드"
+      "en": "Everything feels new to me.",
+      "ko": "모든 게 새롭게 느껴져요.",
+      "kr": "에v리씽 f피일z 누우 터 미"
+     },
+     {
+      "en": "It felt like a long flight.",
+      "ko": "긴 비행이었던 것 같아요.",
+      "kr": "잇 f펠트 라이커 롱 f플라잇"
      }
     ],
     "grammar": [
      {
-      "struct": "I'll let you know ~",
-      "body": "~하면 알려 드릴게요 (영상 #26)"
+      "struct": "It feels like ~",
+      "body": "~인 것 같아요 (느낌을 말할 때, 영상 #13). these days = 요즘"
      }
     ],
     "chunks": [
      [
-      "I'll let you know",
-      "아일 레처 노우",
-      "알려 주겠다"
+      "It feels like everything",
+      "잇 f피일z 라이케v리씽",
+      "모든 게 ~인 것 같다"
      ],
      [
-      "when I'm",
-      "웨나임",
-      "내가 ~할 때"
+      "changes",
+      "체인쥐z",
+      "변한다"
      ],
      [
-      "down there.",
-      "다운 데어r",
-      "거기 아래에"
+      "so fast these days.",
+      "쏘우 f패스 디이z 데이z",
+      "요즘 아주 빨리"
      ]
     ],
     "phonemes": [
      [
-      "/tʃ/ let you",
-      "let 의 t 와 you 가 붙어 '처' — 레처"
+      "/iː/ feels",
+      "feels 는 긴 이 — f피일z"
+     ],
+     [
+      "/dʒ/ changes",
+      "changes 의 g 는 ㅈ — 체인쥐z"
      ]
     ],
-    "mistake": "when 절은 현재형 — when I'm down (O) when I'll be down (X)",
-    "similar": "I'll call you when I get there.",
+    "mistake": "It feels like 뒤에는 문장 — It feels like change fast ✗",
+    "similar": "Everything changes so fast now.",
     "category": "여행/교통",
-    "frequency": 9
+    "frequency": 8
    }
   }
  ]

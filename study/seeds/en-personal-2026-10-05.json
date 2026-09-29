@@ -4,7 +4,7 @@
  "date": "2026-10-05",
  "cards": [
   {
-   "id": "en-personal-bkk-checkin-01-like-to-check-in",
+   "id": "en-personal-bkk-wakeup-01-like-to-check-in",
    "sentence": "Hi. I'd like to check in, please.",
    "meaning": "안녕하세요. 체크인하려고요.",
    "reading": null,
@@ -13,7 +13,7 @@
    "explanation": {
     "key": "I'd like to ~ = ~하고 싶어요 / ~할게요 (정중한 요청, 영상 #17)",
     "anchor": "체크인하려고요",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
     "miniDialogue": [
      {
       "speaker": "B",
@@ -25,51 +25,51 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Welcome. Can I see your passport? No luggage?",
-      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
+      "en": "Welcome. Can I see your passport, please?",
+      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm supposed to get it back tonight.",
-      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
-      "kr": "아임 써포우스터 게릿 백 터나잇"
+      "en": "Here. I was wondering if breakfast is included.",
+      "ko": "여기요. 혹시 조식 포함인가요?",
+      "kr": "히어r 아이 워z 원더링 이f 브렉f퍼스티z 인클루우디드"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "No problem. There's a deposit, which you get back.",
-      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
-      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
+      "en": "It is. Breakfast is from six to ten.",
+      "ko": "네. 조식은 6시부터 10시까지예요.",
+      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I use the card I booked with?",
-      "ko": "예약할 때 쓴 카드로 해도 돼요?",
-      "kr": "커나이 유우z 더 카r다이 북트 위드"
+      "en": "I'm not sure if I'll be up by ten.",
+      "ko": "10시까지 일어날 수 있을지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아일 비 업 바이 텐"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Of course. Breakfast is from six to ten.",
-      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
-      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
+      "en": "Would you like a wake-up call?",
+      "ko": "모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure if breakfast is included.",
-      "ko": "조식이 포함돼 있는지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
+      "en": "Can you make it nine fifty?",
+      "ko": "9시 50분으로 해 주실 수 있어요?",
+      "kr": "컨 여 메이킷 나인 f피프티"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "It is. It's right by the lobby.",
-      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
-      "kr": "이리z 잇츠 라잇 바이 더 라비"
+      "en": "Nine fifty it is.",
+      "ko": "9시 50분으로 해 드릴게요.",
+      "kr": "나인 f피프티 이리z"
      }
     ],
     "drills": [
@@ -139,16 +139,16 @@
    }
   },
   {
-   "id": "en-personal-bkk-checkin-02-supposed-to-get-back",
-   "sentence": "I'm supposed to get it back tonight.",
-   "meaning": "오늘 밤에 돌려받기로 돼 있어요.",
+   "id": "en-personal-bkk-wakeup-02-wondering-breakfast",
+   "sentence": "Here. I was wondering if breakfast is included.",
+   "meaning": "여기요. 혹시 조식 포함인가요?",
    "reading": null,
-   "phonetic_kr": "아임 써포우스터 게릿 백 터나잇",
+   "phonetic_kr": "히어r 아이 워z 원더링 이f 브렉f퍼스티z 인클루우디드",
    "order_index": 2,
    "explanation": {
-    "key": "I'm supposed to ~ = ~하기로 되어 있어요 (정해진 일정·약속, 영상 #2). get ~ back = 되돌려 받다",
-    "anchor": "돌려받기로 돼 있어요",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
+    "key": "I was wondering if ~ = 혹시 ~인가요? (조심스럽게 묻는 말, 영상 #20)",
+    "anchor": "혹시 조식 포함인가요",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
     "miniDialogue": [
      {
       "speaker": "B",
@@ -160,361 +160,96 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Welcome. Can I see your passport? No luggage?",
-      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
+      "en": "Welcome. Can I see your passport, please?",
+      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm supposed to get it back tonight.",
-      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
-      "kr": "아임 써포우스터 게릿 백 터나잇"
+      "en": "Here. I was wondering if breakfast is included.",
+      "ko": "여기요. 혹시 조식 포함인가요?",
+      "kr": "히어r 아이 워z 원더링 이f 브렉f퍼스티z 인클루우디드"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "No problem. There's a deposit, which you get back.",
-      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
-      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
+      "en": "It is. Breakfast is from six to ten.",
+      "ko": "네. 조식은 6시부터 10시까지예요.",
+      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can I use the card I booked with?",
-      "ko": "예약할 때 쓴 카드로 해도 돼요?",
-      "kr": "커나이 유우z 더 카r다이 북트 위드"
+      "en": "I'm not sure if I'll be up by ten.",
+      "ko": "10시까지 일어날 수 있을지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아일 비 업 바이 텐"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "Of course. Breakfast is from six to ten.",
-      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
-      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
+      "en": "Would you like a wake-up call?",
+      "ko": "모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure if breakfast is included.",
-      "ko": "조식이 포함돼 있는지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
+      "en": "Can you make it nine fifty?",
+      "ko": "9시 50분으로 해 주실 수 있어요?",
+      "kr": "컨 여 메이킷 나인 f피프티"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "It is. It's right by the lobby.",
-      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
-      "kr": "이리z 잇츠 라잇 바이 더 라비"
+      "en": "Nine fifty it is.",
+      "ko": "9시 50분으로 해 드릴게요.",
+      "kr": "나인 f피프티 이리z"
      }
     ],
     "drills": [
      {
-      "en": "I'm supposed to check out at noon.",
-      "ko": "정오에 체크아웃하기로 돼 있어요.",
-      "kr": "아임 써포우스터 체카우럿 누운"
+      "en": "I was wondering if you could help me.",
+      "ko": "도와주실 수 있을까 해서요.",
+      "kr": "아이 워z 원더링 이f 여 커드 헬프 미"
      },
      {
-      "en": "She's supposed to land at six.",
-      "ko": "그녀는 6시에 착륙하기로 돼 있어요.",
-      "kr": "쉬z 써포우스터 랜덧 씩스"
+      "en": "I was wondering if there's a late checkout.",
+      "ko": "혹시 늦은 체크아웃이 되나요?",
+      "kr": "아이 워z 원더링 이f 데어r저 레잇 체카웃"
      },
      {
-      "en": "When are you supposed to leave?",
-      "ko": "언제 떠나기로 돼 있어요?",
-      "kr": "웨너r여 써포우스터 리이v"
+      "en": "We were wondering if the pool is open.",
+      "ko": "수영장이 여나 해서요.",
+      "kr": "위 워r 원더링 이f 더 푸울 이z 오우펀"
      },
      {
-      "en": "We were supposed to meet here.",
-      "ko": "여기서 만나기로 했었어요.",
-      "kr": "위 워r 써포우스터 미잇 히어r"
+      "en": "Does the room come with breakfast?",
+      "ko": "방에 조식이 딸려 있어요?",
+      "kr": "더즈 더 루움 컴 위드 브렉f퍼스트"
      },
      {
-      "en": "They'll bring it back tomorrow.",
-      "ko": "내일 다시 가져다줄 거예요.",
-      "kr": "데일 브링 잇 백 터마로우"
+      "en": "She was wondering if you're free tonight.",
+      "ko": "오늘 밤 시간 되시나 궁금해했어요.",
+      "kr": "쉬 워z 원더링 이f 여r f리이 터나잇"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm supposed to ~",
-      "body": "~하기로 되어 있어요 (정해진 일정·약속, 영상 #2). get ~ back = 되돌려 받다"
+      "struct": "I was wondering if ~",
+      "body": "혹시 ~인가요? (조심스럽게 묻는 말, 영상 #20)"
      }
     ],
     "chunks": [
      [
-      "I'm supposed to",
-      "아임 써포우스터",
-      "~하기로 되어 있다"
+      "Here.",
+      "히어r",
+      "여기요"
      ],
      [
-      "get it back",
-      "게릿 백",
-      "그걸 돌려받다"
-     ],
-     [
-      "tonight.",
-      "터나잇",
-      "오늘 밤"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/d/ supposed to",
-      "supposed 의 d 와 to 의 t 가 합쳐져 써포우스터"
-     ],
-     [
-      "/t/ get it",
-      "get 의 t 가 굴러 게릿"
-     ]
-    ],
-    "mistake": "supposed 의 d 는 to 와 합쳐져 잘 안 들린다 — 써포우스터. suppose to 로 쓰지 않는다",
-    "similar": "The airline is sending it here tonight.",
-    "category": "여행/호텔",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-bkk-checkin-03-card-i-booked-with",
-   "sentence": "Can I use the card I booked with?",
-   "meaning": "예약할 때 쓴 카드로 해도 돼요?",
-   "reading": null,
-   "phonetic_kr": "커나이 유우z 더 카r다이 북트 위드",
-   "order_index": 3,
-   "explanation": {
-    "key": "the ~ I booked with = 예약할 때 쓴 ~ (접촉절. with 가 문장 끝에 남는다)",
-    "anchor": "예약할 때 쓴 카드",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Hi. I'd like to check in, please.",
-      "ko": "안녕하세요. 체크인하려고요.",
-      "kr": "하이 아이드 라익 터 체킨 플리이z"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Welcome. Can I see your passport? No luggage?",
-      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm supposed to get it back tonight.",
-      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
-      "kr": "아임 써포우스터 게릿 백 터나잇"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "No problem. There's a deposit, which you get back.",
-      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
-      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Can I use the card I booked with?",
-      "ko": "예약할 때 쓴 카드로 해도 돼요?",
-      "kr": "커나이 유우z 더 카r다이 북트 위드"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Of course. Breakfast is from six to ten.",
-      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
-      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm not sure if breakfast is included.",
-      "ko": "조식이 포함돼 있는지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "It is. It's right by the lobby.",
-      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
-      "kr": "이리z 잇츠 라잇 바이 더 라비"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Is this the card you booked with?",
-      "ko": "이게 예약하실 때 쓴 카드예요?",
-      "kr": "이z 디스 더 카r저 북트 위드"
-     },
-     {
-      "en": "That's the phone I paid with.",
-      "ko": "그게 제가 결제한 휴대폰이에요.",
-      "kr": "댓츠 더 f포우나이 페이드 위드"
-     },
-     {
-      "en": "Can I pay the deposit in cash?",
-      "ko": "보증금을 현금으로 내도 돼요?",
-      "kr": "커나이 페이 더 디파지린 캐쉬"
-     },
-     {
-      "en": "Which card did you use?",
-      "ko": "어느 카드 쓰셨어요?",
-      "kr": "위치 카r드 디저 유우z"
-     },
-     {
-      "en": "I don't have the card I booked with.",
-      "ko": "예약할 때 쓴 카드가 없어요.",
-      "kr": "아이 돈 해v 더 카r다이 북트 위드"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "the ~ I booked with",
-      "body": "예약할 때 쓴 ~ (접촉절. with 가 문장 끝에 남는다)"
-     }
-    ],
-    "chunks": [
-     [
-      "Can I use",
-      "커나이 유우z",
-      "~를 써도 될까요"
-     ],
-     [
-      "the card I",
-      "더 카r다이",
-      "제가 ~한 카드"
-     ],
-     [
-      "booked with?",
-      "북트 위드",
-      "예약할 때 쓴"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/d/ card I",
-      "card 의 d 가 I 에 붙어 카r다이"
-     ],
-     [
-      "/ð/ with",
-      "with 의 th 는 혀를 이 사이에 살짝 — 위드"
-     ]
-    ],
-    "mistake": "with 를 빼면 뜻이 바뀐다 — the card I booked(카드를 예약함) ✗, the card I booked with ✓",
-    "similar": "Can I pay with the same card?",
-    "category": "여행/호텔",
-    "frequency": 7
-   }
-  },
-  {
-   "id": "en-personal-bkk-checkin-04-not-sure-breakfast",
-   "sentence": "I'm not sure if breakfast is included.",
-   "meaning": "조식이 포함돼 있는지 모르겠어요.",
-   "reading": null,
-   "phonetic_kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드",
-   "order_index": 4,
-   "explanation": {
-    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요 (영상 #10). 확인해 달라는 뜻을 부드럽게 전한다",
-    "anchor": "포함돼 있는지 모르겠어요",
-    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 가방은 항공사가 오늘 밤 호텔로 보내 주기로 했다. 프런트는 May.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Hi. I'd like to check in, please.",
-      "ko": "안녕하세요. 체크인하려고요.",
-      "kr": "하이 아이드 라익 터 체킨 플리이z"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Welcome. Can I see your passport? No luggage?",
-      "ko": "어서 오세요. 여권 좀 볼 수 있을까요? 짐은 없으세요?",
-      "kr": "웰컴 커나이 씨이 여r 패스포어r트 노우 러기지"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm supposed to get it back tonight.",
-      "ko": "오늘 밤에 돌려받기로 돼 있어요.",
-      "kr": "아임 써포우스터 게릿 백 터나잇"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "No problem. There's a deposit, which you get back.",
-      "ko": "괜찮아요. 보증금이 있는데, 나중에 돌려 드려요.",
-      "kr": "노우 프라블럼 데어r저 디파짓 위치 여 겟 백"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Can I use the card I booked with?",
-      "ko": "예약할 때 쓴 카드로 해도 돼요?",
-      "kr": "커나이 유우z 더 카r다이 북트 위드"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "Of course. Breakfast is from six to ten.",
-      "ko": "그럼요. 조식은 6시부터 10시까지예요.",
-      "kr": "어v 코어r스 브렉f퍼스티z f럼 씩스 터 텐"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I'm not sure if breakfast is included.",
-      "ko": "조식이 포함돼 있는지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 브렉f퍼스티z 인클루우디드"
-     },
-     {
-      "speaker": "A",
-      "name": "May",
-      "en": "It is. It's right by the lobby.",
-      "ko": "포함돼 있어요. 로비 바로 옆이에요.",
-      "kr": "이리z 잇츠 라잇 바이 더 라비"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I'm not sure if the room is ready.",
-      "ko": "방이 준비됐는지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 더 루우미z 레디"
-     },
-     {
-      "en": "Does the price include breakfast?",
-      "ko": "요금에 조식이 포함돼요?",
-      "kr": "더즈 더 프라이신클루우드 브렉f퍼스트"
-     },
-     {
-      "en": "Could you check if it's free?",
-      "ko": "무료인지 확인해 주시겠어요?",
-      "kr": "커저 체키f 잇츠 f리이"
-     },
-     {
-      "en": "She's not sure if the pool is open.",
-      "ko": "그녀는 수영장이 열려 있는지 잘 몰라요.",
-      "kr": "쉬z 낫 슈어r 이f 더 푸울 이z 오우펀"
-     },
-     {
-      "en": "I'm not sure if I have enough cash.",
-      "ko": "현금이 충분한지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 아이 해v 이너f 캐쉬"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I'm not sure if ~",
-      "body": "~인지 잘 모르겠어요 (영상 #10). 확인해 달라는 뜻을 부드럽게 전한다"
-     }
-    ],
-    "chunks": [
-     [
-      "I'm not sure if",
-      "아임 낫 슈어r 이f",
-      "~인지 잘 모르겠다"
+      "I was wondering if",
+      "아이 워z 원더링 이f",
+      "혹시 ~인가 해서요"
      ],
      [
       "breakfast is included.",
@@ -524,16 +259,286 @@
     ],
     "phonemes": [
      [
-      "/uː/ included",
-      "included 의 u 는 긴 우 — 인클루우디드"
+      "/w/ wondering",
+      "wondering 은 원더링 — w 는 입술을 둥글게"
      ],
      [
       "/t/ breakfast is",
       "breakfast 의 t 가 is 에 붙어 브렉f퍼스티z"
      ]
     ],
-    "mistake": "if 뒤는 평서문 어순 — if is breakfast included ✗",
+    "mistake": "wondering if 뒤는 평서문 어순 — if is breakfast included ✗",
     "similar": "Is breakfast included?",
+    "category": "여행/호텔",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-wakeup-03-not-sure-up-by-ten",
+   "sentence": "I'm not sure if I'll be up by ten.",
+   "meaning": "10시까지 일어날 수 있을지 모르겠어요.",
+   "reading": null,
+   "phonetic_kr": "아임 낫 슈어r 이f 아일 비 업 바이 텐",
+   "order_index": 3,
+   "explanation": {
+    "key": "I'm not sure if ~ = ~일지 잘 모르겠어요 (영상 #10). be up = 깨어 있다",
+    "anchor": "일어날 수 있을지 모르겠어요",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Hi. I'd like to check in, please.",
+      "ko": "안녕하세요. 체크인하려고요.",
+      "kr": "하이 아이드 라익 터 체킨 플리이z"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Welcome. Can I see your passport, please?",
+      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Here. I was wondering if breakfast is included.",
+      "ko": "여기요. 혹시 조식 포함인가요?",
+      "kr": "히어r 아이 워z 원더링 이f 브렉f퍼스티z 인클루우디드"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "It is. Breakfast is from six to ten.",
+      "ko": "네. 조식은 6시부터 10시까지예요.",
+      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if I'll be up by ten.",
+      "ko": "10시까지 일어날 수 있을지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아일 비 업 바이 텐"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Would you like a wake-up call?",
+      "ko": "모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you make it nine fifty?",
+      "ko": "9시 50분으로 해 주실 수 있어요?",
+      "kr": "컨 여 메이킷 나인 f피프티"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Nine fifty it is.",
+      "ko": "9시 50분으로 해 드릴게요.",
+      "kr": "나인 f피프티 이리z"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm not sure if I can make it.",
+      "ko": "갈 수 있을지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 컨 메이킷"
+     },
+     {
+      "en": "I'm not sure if the store is open.",
+      "ko": "가게가 열었는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 더 스토어r 이z 오우펀"
+     },
+     {
+      "en": "Are you sure you'll be up?",
+      "ko": "일어날 수 있는 거 확실해요?",
+      "kr": "아r 여 슈어r 유일 비 업"
+     },
+     {
+      "en": "She's not sure if she'll be back by six.",
+      "ko": "6시까지 돌아올지 모르겠대요.",
+      "kr": "쉬z 낫 슈어r 이f 쉬일 비 백 바이 씩스"
+     },
+     {
+      "en": "I usually get up around noon.",
+      "ko": "보통 정오쯤 일어나요.",
+      "kr": "아이 유우쥬얼리 게러버라운드 누운"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm not sure if ~",
+      "body": "~일지 잘 모르겠어요 (영상 #10). be up = 깨어 있다"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~일지 잘 모르겠다"
+     ],
+     [
+      "I'll be up",
+      "아일 비 업",
+      "제가 일어나 있을"
+     ],
+     [
+      "by ten.",
+      "바이 텐",
+      "10시까지"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃ/ sure",
+      "sure 는 슈어r — 수어가 아니다"
+     ],
+     [
+      "/aɪl/ I'll",
+      "I'll 은 아일 — 짧게 이어서"
+     ]
+    ],
+    "mistake": "by ten = 10시까지(마감), until ten = 10시까지 계속",
+    "similar": "I might not wake up in time.",
+    "category": "여행/호텔",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bkk-wakeup-04-can-you-make-it",
+   "sentence": "Can you make it nine fifty?",
+   "meaning": "9시 50분으로 해 주실 수 있어요?",
+   "reading": null,
+   "phonetic_kr": "컨 여 메이킷 나인 f피프티",
+   "order_index": 4,
+   "explanation": {
+    "key": "Can you ~ = ~해 주실 수 있어요? (영상 #8). make it + 시간 = ~시로 하다",
+    "anchor": "해 주실 수 있어요",
+    "situation": "방콕 호텔 프런트. 지오가 혼자 예약한 일반 호텔이다. 프런트는 May.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Hi. I'd like to check in, please.",
+      "ko": "안녕하세요. 체크인하려고요.",
+      "kr": "하이 아이드 라익 터 체킨 플리이z"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Welcome. Can I see your passport, please?",
+      "ko": "어서 오세요. 여권 좀 보여 주시겠어요?",
+      "kr": "웰컴 커나이 씨이 여r 패스포어r트 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Here. I was wondering if breakfast is included.",
+      "ko": "여기요. 혹시 조식 포함인가요?",
+      "kr": "히어r 아이 워z 원더링 이f 브렉f퍼스티z 인클루우디드"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "It is. Breakfast is from six to ten.",
+      "ko": "네. 조식은 6시부터 10시까지예요.",
+      "kr": "이리z 브렉f퍼스티z f럼 씩스 터 텐"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if I'll be up by ten.",
+      "ko": "10시까지 일어날 수 있을지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아일 비 업 바이 텐"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Would you like a wake-up call?",
+      "ko": "모닝콜 해 드릴까요?",
+      "kr": "워저 라이커 웨이컵 콜"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you make it nine fifty?",
+      "ko": "9시 50분으로 해 주실 수 있어요?",
+      "kr": "컨 여 메이킷 나인 f피프티"
+     },
+     {
+      "speaker": "A",
+      "name": "May",
+      "en": "Nine fifty it is.",
+      "ko": "9시 50분으로 해 드릴게요.",
+      "kr": "나인 f피프티 이리z"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Can you make it a little later?",
+      "ko": "조금 더 늦게 해 주실래요?",
+      "kr": "컨 여 메이키러 리를 레이러r"
+     },
+     {
+      "en": "Can we make it seven thirty?",
+      "ko": "7시 반으로 할까요?",
+      "kr": "컨 위 메이킷 쎄v은 써r리"
+     },
+     {
+      "en": "Could you wake me up at nine?",
+      "ko": "9시에 깨워 주시겠어요?",
+      "kr": "커저 웨익 미 어펏 나인"
+     },
+     {
+      "en": "Let's make it ten instead.",
+      "ko": "대신 10시로 하죠.",
+      "kr": "렛츠 메이킷 테닌스테드"
+     },
+     {
+      "en": "Can you call my room at noon?",
+      "ko": "정오에 제 방으로 전화해 주실래요?",
+      "kr": "컨 여 콜 마이 루우멋 누운"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Can you ~",
+      "body": "~해 주실 수 있어요? (영상 #8). make it + 시간 = ~시로 하다"
+     }
+    ],
+    "chunks": [
+     [
+      "Can you",
+      "컨 여",
+      "~해 줄 수 있나요"
+     ],
+     [
+      "make it",
+      "메이킷",
+      "~로 하다"
+     ],
+     [
+      "nine fifty?",
+      "나인 f피프티",
+      "9시 50분"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ make it",
+      "make 의 k 가 it 에 붙어 메이킷"
+     ],
+     [
+      "/f/ fifty",
+      "fifty 의 f 는 윗니를 아랫입술에 — f피프티"
+     ]
+    ],
+    "mistake": "make it at nine fifty 보다 make it nine fifty 가 자연스럽다",
+    "similar": "Could you call me at nine fifty?",
     "category": "여행/호텔",
     "frequency": 9
    }

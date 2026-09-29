@@ -4,543 +4,533 @@
  "date": "2026-10-03",
  "cards": [
   {
-   "id": "en-personal-bkk-lostbag-01-looks-like-bag",
-   "sentence": "Hi. It looks like my bag didn't come out.",
-   "meaning": "안녕하세요. 제 가방이 안 나온 것 같아요.",
+   "id": "en-personal-bkk-tdac-01-here-to-sightseeing",
+   "sentence": "I'm here to do some sightseeing. Five days.",
+   "meaning": "관광하러 왔어요. 5일이요.",
    "reading": null,
-   "phonetic_kr": "하이 잇 룩스 라익 마이 백 디든 커마웃",
+   "phonetic_kr": "아임 히어r 터 두 썸 싸잇씨잉 f파이v 데이z",
    "order_index": 1,
    "explanation": {
-    "key": "It looks like ~ = ~인 것 같아요 (보이는 상황으로 판단할 때, 영상 #14)",
-    "anchor": "안 나온 것 같아요",
-    "situation": "수완나품 수하물 서비스 카운터. 15번 벨트에서도 지오의 가방이 나오지 않았다.",
+    "key": "I'm here to ~ = ~하러 왔어요 (방문 목적, 영상 #4)",
+    "anchor": "관광하러 왔어요",
+    "situation": "수완나품 입국심사. 온라인 입국카드(TDAC) QR 코드만 보여 주면 되는데, 지오는 질문에 답할 준비를 해 왔다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Hi. It looks like my bag didn't come out.",
-      "ko": "안녕하세요. 제 가방이 안 나온 것 같아요.",
-      "kr": "하이 잇 룩스 라익 마이 백 디든 커마웃"
-     },
-     {
       "speaker": "A",
-      "name": "직원",
-      "en": "Sorry about that. Do you have your baggage tag?",
-      "ko": "죄송합니다. 수하물 태그 있으세요?",
-      "kr": "쏘리 어바웃 댓 더여 해v 여r 배기지 택"
+      "name": "심사관",
+      "en": "Passport, please.",
+      "ko": "여권 주세요.",
+      "kr": "패스포어r트 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "This is the tag they gave me at check-in.",
-      "ko": "체크인할 때 받은 태그예요.",
-      "kr": "디시z 더 택 데이 게이v 미 엇 체킨"
+      "en": "I'm here to do some sightseeing. Five days.",
+      "ko": "관광하러 왔어요. 5일이요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉 f파이v 데이z"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "Thanks. It's still in Seoul. It missed your flight.",
-      "ko": "감사합니다. 아직 서울에 있네요. 손님 비행기를 못 탔어요.",
-      "kr": "쌩스 잇츠 스틸 인 쏘울 잇 미스처r f플라잇"
+      "name": "심사관",
+      "en": "I just need the card you filled out online.",
+      "ko": "온라인으로 작성하신 카드만 있으면 돼요.",
+      "kr": "아이 저스 니이드 더 카r저 f필다우론라인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "How long will it take?",
-      "ko": "얼마나 걸릴까요?",
-      "kr": "하우 롱 윌릿 테익"
+      "en": "Sorry. I've been practicing that all week.",
+      "ko": "죄송해요. 일주일 내내 연습했거든요.",
+      "kr": "쏘리 아이v 빈 프랙티씽 대롤 위익"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "It'll come on the flight that lands tonight.",
-      "ko": "오늘 밤 도착하는 비행기로 와요.",
-      "kr": "이를 커몬 더 f플라잇 댓 랜즈 터나잇"
+      "name": "심사관",
+      "en": "Do you have the QR code?",
+      "ko": "QR 코드 있으세요?",
+      "kr": "더여 해v 더 큐우아r 코우드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can you send it to my hotel?",
-      "ko": "호텔로 보내 주실 수 있나요?",
-      "kr": "컨 여 쎈딧 터 마이 호우텔"
+      "en": "Here's the one I saved on my phone.",
+      "ko": "휴대폰에 저장해 둔 거예요.",
+      "kr": "히어r즈 더 워나이 쎄이v돈 마이 f포운"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "Sure. I need you to fill out this form first.",
-      "ko": "네. 먼저 이 양식을 작성해 주셔야 해요.",
-      "kr": "슈어r 아이 니이저 터 f필라웃 디스 f포어r엄 f퍼r스트"
+      "name": "심사관",
+      "en": "Okay. Look at the camera, please.",
+      "ko": "네. 카메라 봐 주세요.",
+      "kr": "오우케이 루컷 더 캐머러 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is that all?",
+      "ko": "이게 다예요?",
+      "kr": "이z 대롤"
      }
     ],
     "drills": [
      {
-      "en": "It looks like my flight is late.",
-      "ko": "제 비행기가 늦는 것 같아요.",
-      "kr": "잇 룩스 라익 마이 f플라이리z 레잇"
+      "en": "I'm here to see a friend.",
+      "ko": "친구 만나러 왔어요.",
+      "kr": "아임 히어r 터 씨이 어 f렌드"
      },
      {
-      "en": "It looks like they lost it.",
-      "ko": "그쪽에서 잃어버린 것 같아요.",
-      "kr": "잇 룩스 라익 데이 로스팃"
+      "en": "I'm here to pick up my bag.",
+      "ko": "가방 찾으러 왔어요.",
+      "kr": "아임 히어r 터 피컵 마이 백"
      },
      {
-      "en": "Looks like it's still in Seoul.",
-      "ko": "아직 서울에 있는 것 같네요.",
-      "kr": "룩스 라이킷츠 스틸 인 쏘울"
+      "en": "We're here to visit family.",
+      "ko": "가족 보러 왔어요.",
+      "kr": "위어r 히어r 터 v이짓 f패멀리"
      },
      {
-      "en": "Did your bag come out?",
-      "ko": "가방 나왔어요?",
-      "kr": "디저r 백 커마웃"
+      "en": "Are you here on business?",
+      "ko": "출장 오셨어요?",
+      "kr": "아r 여 히어r 온 비즈니스"
      },
      {
-      "en": "My suitcase never came out.",
-      "ko": "제 여행 가방이 끝내 안 나왔어요.",
-      "kr": "마이 쑤웃케이스 네버r 케이마웃"
+      "en": "What brings you to Bangkok?",
+      "ko": "방콕엔 무슨 일로 오셨어요?",
+      "kr": "왓 브링져 터 뱅콕"
      }
     ],
     "grammar": [
      {
-      "struct": "It looks like ~",
-      "body": "~인 것 같아요 (보이는 상황으로 판단할 때, 영상 #14)"
+      "struct": "I'm here to ~",
+      "body": "~하러 왔어요 (방문 목적, 영상 #4)"
      }
     ],
     "chunks": [
      [
-      "Hi.",
-      "하이",
-      "안녕하세요"
+      "I'm here to",
+      "아임 히어r 터",
+      "~하러 왔다"
      ],
      [
-      "It looks like",
-      "잇 룩스 라익",
-      "~인 것 같다"
+      "do some sightseeing.",
+      "두 썸 싸잇씨잉",
+      "관광을 좀 하다"
      ],
      [
-      "my bag didn't come out.",
-      "마이 백 디든 커마웃",
-      "제 가방이 안 나왔다"
+      "Five days.",
+      "f파이v 데이z",
+      "5일이요"
      ]
     ],
     "phonemes": [
      [
-      "/m/ come out",
-      "come 의 m 이 out 에 붙어 커마웃"
+      "/s/ sightseeing",
+      "sightseeing 은 두 s 모두 ㅆ — 싸잇씨잉"
      ],
      [
-      "/t/ didn't",
-      "didn't 의 t 는 거의 안 들린다 — 디든"
+      "/v/ five",
+      "five 의 v 는 윗니를 아랫입술에 — f파이v"
      ]
     ],
-    "mistake": "It looks like 뒤에는 문장을 통째로 — It looks like my bag not come ✗",
-    "similar": "My bag didn't come out.",
-    "category": "여행/공항",
+    "mistake": "to 뒤는 동사 — I'm here to sightseeing ✗, I'm here for sightseeing ✓",
+    "similar": "I'm here on vacation.",
+    "category": "여행/입국",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-bkk-tdac-02-been-practicing",
+   "sentence": "Sorry. I've been practicing that all week.",
+   "meaning": "죄송해요. 일주일 내내 연습했거든요.",
+   "reading": null,
+   "phonetic_kr": "쏘리 아이v 빈 프랙티씽 대롤 위익",
+   "order_index": 2,
+   "explanation": {
+    "key": "I've been ~ = 계속 ~해 왔어요 (영상 #5). all week = 일주일 내내",
+    "anchor": "일주일 내내 연습했거든요",
+    "situation": "수완나품 입국심사. 온라인 입국카드(TDAC) QR 코드만 보여 주면 되는데, 지오는 질문에 답할 준비를 해 왔다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Passport, please.",
+      "ko": "여권 주세요.",
+      "kr": "패스포어r트 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm here to do some sightseeing. Five days.",
+      "ko": "관광하러 왔어요. 5일이요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉 f파이v 데이z"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "I just need the card you filled out online.",
+      "ko": "온라인으로 작성하신 카드만 있으면 돼요.",
+      "kr": "아이 저스 니이드 더 카r저 f필다우론라인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sorry. I've been practicing that all week.",
+      "ko": "죄송해요. 일주일 내내 연습했거든요.",
+      "kr": "쏘리 아이v 빈 프랙티씽 대롤 위익"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Do you have the QR code?",
+      "ko": "QR 코드 있으세요?",
+      "kr": "더여 해v 더 큐우아r 코우드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Here's the one I saved on my phone.",
+      "ko": "휴대폰에 저장해 둔 거예요.",
+      "kr": "히어r즈 더 워나이 쎄이v돈 마이 f포운"
+     },
+     {
+      "speaker": "A",
+      "name": "심사관",
+      "en": "Okay. Look at the camera, please.",
+      "ko": "네. 카메라 봐 주세요.",
+      "kr": "오우케이 루컷 더 캐머러 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is that all?",
+      "ko": "이게 다예요?",
+      "kr": "이z 대롤"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been practicing my English every day.",
+      "ko": "매일 영어를 연습하고 있어요.",
+      "kr": "아이v 빈 프랙티씽 마이 잉글리쉬 에v리 데이"
+     },
+     {
+      "en": "She's been studying all night.",
+      "ko": "그녀는 밤새 공부했어요.",
+      "kr": "쉬z 빈 스터디잉 올 나잇"
+     },
+     {
+      "en": "Have you been waiting long?",
+      "ko": "오래 기다리셨어요?",
+      "kr": "해v 여 빈 웨이링 롱"
+     },
+     {
+      "en": "We've been planning this trip for months.",
+      "ko": "몇 달째 이 여행을 계획했어요.",
+      "kr": "위v 빈 플래닝 디스 트립 f퍼r 먼쓰스"
+     },
+     {
+      "en": "I practiced that answer on the plane.",
+      "ko": "비행기에서 그 대답을 연습했어요.",
+      "kr": "아이 프랙티스 대랜써r 온 더 플레인"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "계속 ~해 왔어요 (영상 #5). all week = 일주일 내내"
+     }
+    ],
+    "chunks": [
+     [
+      "Sorry.",
+      "쏘리",
+      "죄송해요"
+     ],
+     [
+      "I've been practicing",
+      "아이v 빈 프랙티씽",
+      "계속 연습해 왔다"
+     ],
+     [
+      "that all week.",
+      "대롤 위익",
+      "그걸 일주일 내내"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ that all",
+      "that 의 t 가 굴러 대롤"
+     ],
+     [
+      "/iː/ week",
+      "week 는 긴 이 — 위익"
+     ]
+    ],
+    "mistake": "practice 는 동사 — been practice ✗, been practicing ✓",
+    "similar": "I practiced that answer all week.",
+    "category": "여행/입국",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-bkk-lostbag-02-tag-they-gave-me",
-   "sentence": "This is the tag they gave me at check-in.",
-   "meaning": "체크인할 때 받은 태그예요.",
+   "id": "en-personal-bkk-tdac-03-the-one-i-saved",
+   "sentence": "Here's the one I saved on my phone.",
+   "meaning": "휴대폰에 저장해 둔 거예요.",
    "reading": null,
-   "phonetic_kr": "디시z 더 택 데이 게이v 미 엇 체킨",
-   "order_index": 2,
+   "phonetic_kr": "히어r즈 더 워나이 쎄이v돈 마이 f포운",
+   "order_index": 3,
    "explanation": {
-    "key": "the ~ they gave me = 그쪽에서 저한테 준 ~ (접촉절 — 명사 뒤에 '주어+동사' 를 바로 붙인다)",
-    "anchor": "받은 태그",
-    "situation": "수완나품 수하물 서비스 카운터. 15번 벨트에서도 지오의 가방이 나오지 않았다.",
+    "key": "the one I ~ = 제가 ~한 것 (the one = 앞에서 말한 그것. 뒤에 '주어+동사' 를 바로 붙인다)",
+    "anchor": "저장해 둔 거",
+    "situation": "수완나품 입국심사. 온라인 입국카드(TDAC) QR 코드만 보여 주면 되는데, 지오는 질문에 답할 준비를 해 왔다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Hi. It looks like my bag didn't come out.",
-      "ko": "안녕하세요. 제 가방이 안 나온 것 같아요.",
-      "kr": "하이 잇 룩스 라익 마이 백 디든 커마웃"
-     },
-     {
       "speaker": "A",
-      "name": "직원",
-      "en": "Sorry about that. Do you have your baggage tag?",
-      "ko": "죄송합니다. 수하물 태그 있으세요?",
-      "kr": "쏘리 어바웃 댓 더여 해v 여r 배기지 택"
+      "name": "심사관",
+      "en": "Passport, please.",
+      "ko": "여권 주세요.",
+      "kr": "패스포어r트 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "This is the tag they gave me at check-in.",
-      "ko": "체크인할 때 받은 태그예요.",
-      "kr": "디시z 더 택 데이 게이v 미 엇 체킨"
+      "en": "I'm here to do some sightseeing. Five days.",
+      "ko": "관광하러 왔어요. 5일이요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉 f파이v 데이z"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "Thanks. It's still in Seoul. It missed your flight.",
-      "ko": "감사합니다. 아직 서울에 있네요. 손님 비행기를 못 탔어요.",
-      "kr": "쌩스 잇츠 스틸 인 쏘울 잇 미스처r f플라잇"
+      "name": "심사관",
+      "en": "I just need the card you filled out online.",
+      "ko": "온라인으로 작성하신 카드만 있으면 돼요.",
+      "kr": "아이 저스 니이드 더 카r저 f필다우론라인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "How long will it take?",
-      "ko": "얼마나 걸릴까요?",
-      "kr": "하우 롱 윌릿 테익"
+      "en": "Sorry. I've been practicing that all week.",
+      "ko": "죄송해요. 일주일 내내 연습했거든요.",
+      "kr": "쏘리 아이v 빈 프랙티씽 대롤 위익"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "It'll come on the flight that lands tonight.",
-      "ko": "오늘 밤 도착하는 비행기로 와요.",
-      "kr": "이를 커몬 더 f플라잇 댓 랜즈 터나잇"
+      "name": "심사관",
+      "en": "Do you have the QR code?",
+      "ko": "QR 코드 있으세요?",
+      "kr": "더여 해v 더 큐우아r 코우드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can you send it to my hotel?",
-      "ko": "호텔로 보내 주실 수 있나요?",
-      "kr": "컨 여 쎈딧 터 마이 호우텔"
+      "en": "Here's the one I saved on my phone.",
+      "ko": "휴대폰에 저장해 둔 거예요.",
+      "kr": "히어r즈 더 워나이 쎄이v돈 마이 f포운"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "Sure. I need you to fill out this form first.",
-      "ko": "네. 먼저 이 양식을 작성해 주셔야 해요.",
-      "kr": "슈어r 아이 니이저 터 f필라웃 디스 f포어r엄 f퍼r스트"
+      "name": "심사관",
+      "en": "Okay. Look at the camera, please.",
+      "ko": "네. 카메라 봐 주세요.",
+      "kr": "오우케이 루컷 더 캐머러 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is that all?",
+      "ko": "이게 다예요?",
+      "kr": "이z 대롤"
      }
     ],
     "drills": [
      {
-      "en": "This is the receipt they gave me.",
-      "ko": "그쪽에서 준 영수증이에요.",
-      "kr": "디시z 더 리씨잇 데이 게이v 미"
+      "en": "Is this the one you wanted?",
+      "ko": "이게 원하시던 거예요?",
+      "kr": "이z 디스 더 원 여 원티드"
      },
      {
-      "en": "Is this the key they gave you?",
-      "ko": "그쪽에서 준 열쇠가 이거예요?",
-      "kr": "이z 디스 더 키이 데이 게이v 유"
+      "en": "That's the one I told you about.",
+      "ko": "그게 제가 말했던 거예요.",
+      "kr": "댓츠 더 워나이 톨저 어바웃"
      },
      {
-      "en": "I lost the tag they gave me.",
-      "ko": "받은 태그를 잃어버렸어요.",
-      "kr": "아이 로스 더 택 데이 게이v 미"
+      "en": "I lost the one I bought yesterday.",
+      "ko": "어제 산 걸 잃어버렸어요.",
+      "kr": "아이 로스 더 워나이 보옷 예스터r데이"
      },
      {
-      "en": "Here's the form you asked for.",
-      "ko": "요청하신 양식이에요.",
-      "kr": "히어r즈 더 f포어r엄 여 애스크트 f퍼r"
+      "en": "Show me the one you like.",
+      "ko": "마음에 드는 걸 보여 주세요.",
+      "kr": "쇼우 미 더 원 여 라익"
      },
      {
-      "en": "Where's the number they sent me?",
-      "ko": "그쪽에서 보낸 번호가 어디 있지?",
-      "kr": "웨어r즈 더 넘버r 데이 쎈 미"
+      "en": "The QR code is in my photos.",
+      "ko": "QR 코드는 사진첩에 있어요.",
+      "kr": "더 큐우아r 코우디z 인 마이 f포우로우z"
      }
     ],
     "grammar": [
      {
-      "struct": "the ~ they gave me",
-      "body": "그쪽에서 저한테 준 ~ (접촉절 — 명사 뒤에 '주어+동사' 를 바로 붙인다)"
+      "struct": "the one I ~",
+      "body": "제가 ~한 것 (the one = 앞에서 말한 그것. 뒤에 '주어+동사' 를 바로 붙인다)"
      }
     ],
     "chunks": [
      [
-      "This is",
-      "디시z",
-      "이게 ~예요"
+      "Here's the one I",
+      "히어r즈 더 워나이",
+      "여기 제가 ~한 거예요"
      ],
      [
-      "the tag",
-      "더 택",
-      "그 태그"
-     ],
-     [
-      "they gave me",
-      "데이 게이v 미",
-      "그쪽에서 저한테 준"
-     ],
-     [
-      "at check-in.",
-      "엇 체킨",
-      "체크인할 때"
+      "saved on my phone.",
+      "쎄이v돈 마이 f포운",
+      "휴대폰에 저장한"
      ]
     ],
     "phonemes": [
      [
-      "/eɪ/ gave",
-      "gave 는 이중모음을 살려 게이v"
+      "/n/ one I",
+      "one 의 n 이 I 에 붙어 워나이"
      ],
      [
-      "/k/ check-in",
-      "check 의 k 가 in 에 붙어 체킨"
+      "/d/ saved on",
+      "saved 의 d 가 on 에 붙어 쎄이v돈"
      ]
     ],
-    "mistake": "뒤에 it 을 또 쓰지 않는다 — the tag they gave me it ✗",
-    "similar": "Here's my baggage tag.",
-    "category": "여행/공항",
+    "mistake": "the one I saved it ✗ — it 을 또 쓰지 않는다",
+    "similar": "It's on my phone.",
+    "category": "여행/입국",
     "frequency": 7
    }
   },
   {
-   "id": "en-personal-bkk-lostbag-03-how-long-take",
-   "sentence": "How long will it take?",
-   "meaning": "얼마나 걸릴까요?",
+   "id": "en-personal-bkk-tdac-04-is-that-all",
+   "sentence": "Is that all?",
+   "meaning": "이게 다예요?",
    "reading": null,
-   "phonetic_kr": "하우 롱 윌릿 테익",
-   "order_index": 3,
-   "explanation": {
-    "key": "How long will it take = 얼마나 걸릴까요? (걸리는 시간을 묻는 기본 문장, 모두영어 1편 #101)",
-    "anchor": "얼마나 걸릴까요",
-    "situation": "수완나품 수하물 서비스 카운터. 15번 벨트에서도 지오의 가방이 나오지 않았다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Hi. It looks like my bag didn't come out.",
-      "ko": "안녕하세요. 제 가방이 안 나온 것 같아요.",
-      "kr": "하이 잇 룩스 라익 마이 백 디든 커마웃"
-     },
-     {
-      "speaker": "A",
-      "name": "직원",
-      "en": "Sorry about that. Do you have your baggage tag?",
-      "ko": "죄송합니다. 수하물 태그 있으세요?",
-      "kr": "쏘리 어바웃 댓 더여 해v 여r 배기지 택"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "This is the tag they gave me at check-in.",
-      "ko": "체크인할 때 받은 태그예요.",
-      "kr": "디시z 더 택 데이 게이v 미 엇 체킨"
-     },
-     {
-      "speaker": "A",
-      "name": "직원",
-      "en": "Thanks. It's still in Seoul. It missed your flight.",
-      "ko": "감사합니다. 아직 서울에 있네요. 손님 비행기를 못 탔어요.",
-      "kr": "쌩스 잇츠 스틸 인 쏘울 잇 미스처r f플라잇"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "How long will it take?",
-      "ko": "얼마나 걸릴까요?",
-      "kr": "하우 롱 윌릿 테익"
-     },
-     {
-      "speaker": "A",
-      "name": "직원",
-      "en": "It'll come on the flight that lands tonight.",
-      "ko": "오늘 밤 도착하는 비행기로 와요.",
-      "kr": "이를 커몬 더 f플라잇 댓 랜즈 터나잇"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Can you send it to my hotel?",
-      "ko": "호텔로 보내 주실 수 있나요?",
-      "kr": "컨 여 쎈딧 터 마이 호우텔"
-     },
-     {
-      "speaker": "A",
-      "name": "직원",
-      "en": "Sure. I need you to fill out this form first.",
-      "ko": "네. 먼저 이 양식을 작성해 주셔야 해요.",
-      "kr": "슈어r 아이 니이저 터 f필라웃 디스 f포어r엄 f퍼r스트"
-     }
-    ],
-    "drills": [
-     {
-      "en": "How long will it take to get here?",
-      "ko": "여기까지 오는 데 얼마나 걸릴까요?",
-      "kr": "하우 롱 윌릿 테익 터 겟 히어r"
-     },
-     {
-      "en": "How long does it take by taxi?",
-      "ko": "택시로 얼마나 걸려요?",
-      "kr": "하우 롱 더짓 테익 바이 택씨"
-     },
-     {
-      "en": "It'll take about a day.",
-      "ko": "하루쯤 걸릴 거예요.",
-      "kr": "이를 테이커바우러 데이"
-     },
-     {
-      "en": "When will it get here?",
-      "ko": "언제 여기 도착할까요?",
-      "kr": "웬 윌릿 겟 히어r"
-     },
-     {
-      "en": "Will it take long?",
-      "ko": "오래 걸릴까요?",
-      "kr": "윌릿 테익 롱"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "How long will it take",
-      "body": "얼마나 걸릴까요? (걸리는 시간을 묻는 기본 문장, 모두영어 1편 #101)"
-     }
-    ],
-    "chunks": [
-     [
-      "How long",
-      "하우 롱",
-      "얼마나 오래"
-     ],
-     [
-      "will it take?",
-      "윌릿 테익",
-      "걸릴까"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/l/ will it",
-      "will 의 l 이 it 에 이어져 윌릿"
-     ],
-     [
-      "/eɪ/ take",
-      "take 는 이중모음 — 테익"
-     ]
-    ],
-    "mistake": "늘 걸리는 시간은 How long does it take?, 이번 일은 will",
-    "similar": "When will it get here?",
-    "category": "여행/공항",
-    "frequency": 10
-   }
-  },
-  {
-   "id": "en-personal-bkk-lostbag-04-can-you-send",
-   "sentence": "Can you send it to my hotel?",
-   "meaning": "호텔로 보내 주실 수 있나요?",
-   "reading": null,
-   "phonetic_kr": "컨 여 쎈딧 터 마이 호우텔",
+   "phonetic_kr": "이z 대롤",
    "order_index": 4,
    "explanation": {
-    "key": "Can you ~ = ~해 주실 수 있어요? (부탁, 영상 #8)",
-    "anchor": "보내 주실 수 있나요",
-    "situation": "수완나품 수하물 서비스 카운터. 15번 벨트에서도 지오의 가방이 나오지 않았다.",
+    "key": "Is that all = 이게 다예요? (생각보다 간단할 때, 모두영어 1편 #166)",
+    "anchor": "이게 다예요",
+    "situation": "수완나품 입국심사. 온라인 입국카드(TDAC) QR 코드만 보여 주면 되는데, 지오는 질문에 답할 준비를 해 왔다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Hi. It looks like my bag didn't come out.",
-      "ko": "안녕하세요. 제 가방이 안 나온 것 같아요.",
-      "kr": "하이 잇 룩스 라익 마이 백 디든 커마웃"
-     },
-     {
       "speaker": "A",
-      "name": "직원",
-      "en": "Sorry about that. Do you have your baggage tag?",
-      "ko": "죄송합니다. 수하물 태그 있으세요?",
-      "kr": "쏘리 어바웃 댓 더여 해v 여r 배기지 택"
+      "name": "심사관",
+      "en": "Passport, please.",
+      "ko": "여권 주세요.",
+      "kr": "패스포어r트 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "This is the tag they gave me at check-in.",
-      "ko": "체크인할 때 받은 태그예요.",
-      "kr": "디시z 더 택 데이 게이v 미 엇 체킨"
+      "en": "I'm here to do some sightseeing. Five days.",
+      "ko": "관광하러 왔어요. 5일이요.",
+      "kr": "아임 히어r 터 두 썸 싸잇씨잉 f파이v 데이z"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "Thanks. It's still in Seoul. It missed your flight.",
-      "ko": "감사합니다. 아직 서울에 있네요. 손님 비행기를 못 탔어요.",
-      "kr": "쌩스 잇츠 스틸 인 쏘울 잇 미스처r f플라잇"
+      "name": "심사관",
+      "en": "I just need the card you filled out online.",
+      "ko": "온라인으로 작성하신 카드만 있으면 돼요.",
+      "kr": "아이 저스 니이드 더 카r저 f필다우론라인"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "How long will it take?",
-      "ko": "얼마나 걸릴까요?",
-      "kr": "하우 롱 윌릿 테익"
+      "en": "Sorry. I've been practicing that all week.",
+      "ko": "죄송해요. 일주일 내내 연습했거든요.",
+      "kr": "쏘리 아이v 빈 프랙티씽 대롤 위익"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "It'll come on the flight that lands tonight.",
-      "ko": "오늘 밤 도착하는 비행기로 와요.",
-      "kr": "이를 커몬 더 f플라잇 댓 랜즈 터나잇"
+      "name": "심사관",
+      "en": "Do you have the QR code?",
+      "ko": "QR 코드 있으세요?",
+      "kr": "더여 해v 더 큐우아r 코우드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Can you send it to my hotel?",
-      "ko": "호텔로 보내 주실 수 있나요?",
-      "kr": "컨 여 쎈딧 터 마이 호우텔"
+      "en": "Here's the one I saved on my phone.",
+      "ko": "휴대폰에 저장해 둔 거예요.",
+      "kr": "히어r즈 더 워나이 쎄이v돈 마이 f포운"
      },
      {
       "speaker": "A",
-      "name": "직원",
-      "en": "Sure. I need you to fill out this form first.",
-      "ko": "네. 먼저 이 양식을 작성해 주셔야 해요.",
-      "kr": "슈어r 아이 니이저 터 f필라웃 디스 f포어r엄 f퍼r스트"
+      "name": "심사관",
+      "en": "Okay. Look at the camera, please.",
+      "ko": "네. 카메라 봐 주세요.",
+      "kr": "오우케이 루컷 더 캐머러 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Is that all?",
+      "ko": "이게 다예요?",
+      "kr": "이z 대롤"
      }
     ],
     "drills": [
      {
-      "en": "Can you call me when it arrives?",
-      "ko": "도착하면 전화해 주실래요?",
-      "kr": "컨 여 콜 미 웨니러라이v즈"
+      "en": "Is that all you need?",
+      "ko": "필요한 게 그게 다예요?",
+      "kr": "이z 대롤 여 니이드"
      },
      {
-      "en": "Could you write down the address?",
-      "ko": "주소 좀 적어 주시겠어요?",
-      "kr": "커저 라잇 다운 디 애드레스"
+      "en": "That's all for today.",
+      "ko": "오늘은 여기까지예요.",
+      "kr": "댓쏠 f퍼r 터데이"
      },
      {
-      "en": "Can they bring it tonight?",
-      "ko": "오늘 밤에 가져다줄 수 있을까요?",
-      "kr": "컨 데이 브링 잇 터나잇"
+      "en": "Was that all they asked?",
+      "ko": "물어본 게 그게 다였어요?",
+      "kr": "워z 대롤 데이 애스크트"
      },
      {
-      "en": "Please send it to this address.",
-      "ko": "이 주소로 보내 주세요.",
-      "kr": "플리이z 쎈딧 터 디쌔드레스"
+      "en": "Is that everything?",
+      "ko": "그게 전부예요?",
+      "kr": "이z 대레v리씽"
      },
      {
-      "en": "Can you hold my bag for me?",
-      "ko": "가방 좀 맡아 주실래요?",
-      "kr": "컨 여 호울드 마이 백 f퍼r 미"
+      "en": "I thought there'd be more questions.",
+      "ko": "질문이 더 있을 줄 알았어요.",
+      "kr": "아이 쏘옷 데어r드 비 모어r 크웨스천즈"
      }
     ],
     "grammar": [
      {
-      "struct": "Can you ~",
-      "body": "~해 주실 수 있어요? (부탁, 영상 #8)"
+      "struct": "Is that all",
+      "body": "이게 다예요? (생각보다 간단할 때, 모두영어 1편 #166)"
      }
     ],
     "chunks": [
      [
-      "Can you",
-      "컨 여",
-      "~해 줄 수 있나요"
+      "Is",
+      "이z",
+      "~예요"
      ],
      [
-      "send it",
-      "쎈딧",
-      "그걸 보내다"
-     ],
-     [
-      "to my hotel?",
-      "터 마이 호우텔",
-      "제 호텔로"
+      "that all?",
+      "대롤",
+      "그게 다"
      ]
     ],
     "phonemes": [
      [
-      "/d/ send it",
-      "send 의 d 가 it 에 붙어 쎈딧"
+      "/t/ that all",
+      "that 의 t 가 굴러 대롤"
      ],
      [
-      "/oʊ/ hotel",
-      "hotel 은 뒤에 강세 — 호우텔"
+      "/z/ is",
+      "is 는 이z — 이스가 아니다"
      ]
     ],
-    "mistake": "Can you 뒤에는 동사원형 — Can you sending ✗",
-    "similar": "Could you deliver it to my hotel?",
-    "category": "여행/공항",
-    "frequency": 10
+    "mistake": "Is it all? 보다 Is that all? 이 자연스럽다",
+    "similar": "That was it?",
+    "category": "여행/입국",
+    "frequency": 8
    }
   }
  ]
