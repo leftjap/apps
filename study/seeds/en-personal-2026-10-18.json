@@ -4,15 +4,15 @@
  "date": "2026-10-18",
  "cards": [
   {
-   "id": "en-personal-tourist-english-01-let-me-walk-you",
-   "sentence": "Yes. Let me walk you there. It's on my way.",
-   "meaning": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
+   "id": "en-personal-tourist-english-01-let-me-show-where",
+   "sentence": "Yes. Let me show you where it is.",
+   "meaning": "네. 어디 있는지 알려 드릴게요.",
    "reading": null,
-   "phonetic_kr": "예스 레미 워켜 데어r 잇손 마이 웨이",
+   "phonetic_kr": "예스 레미 쇼우 여 웨어r 이리z",
    "order_index": 1,
    "explanation": {
-    "key": "Let me ~ = 제가 ~해 드릴게요 (영상 #6). walk you there = 거기까지 같이 걸어 주다",
-    "anchor": "모셔다 드릴게요",
+    "key": "Let me ~ = 제가 ~할게요 (영상 #6). where it is = 그게 어디 있는지",
+    "anchor": "알려 드릴게요",
     "situation": "역 근처. 외국인 여행객이 지하철역이 어디냐고 묻는다.",
     "miniDialogue": [
      {
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Yes. Let me walk you there. It's on my way.",
-      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
-      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+      "en": "Yes. Let me show you where it is.",
+      "ko": "네. 어디 있는지 알려 드릴게요.",
+      "kr": "예스 레미 쇼우 여 웨어r 이리z"
      },
      {
       "speaker": "A",
@@ -39,9 +39,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Thanks. I'm trying to study it every day.",
+      "en": "Thanks. I'm trying to study every day.",
       "ko": "고마워요. 매일 하려고 노력 중이에요.",
-      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+      "kr": "쌩스 아임 트라잉 터 스터디 에v리 데이"
      },
      {
       "speaker": "A",
@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Here lies a man who studied English all his life.",
-      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
-      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+      "en": "There's a good chance my tombstone will say, \"Still studying English.\"",
+      "ko": "제 묘비엔 '아직도 영어 공부 중'이라고 적힐 가능성이 커요.",
+      "kr": "데어r저 굿 챈스 마이 투움스토운 윌 쎄이 스틸 스터디잉 잉글리쉬"
      }
     ],
     "drills": [
@@ -79,14 +79,14 @@
       "kr": "레미 워켜 터 더 스테이션"
      },
      {
-      "en": "Let me take you to the exit.",
-      "ko": "출구까지 데려다 드릴게요.",
-      "kr": "레미 테이켜 터 디 에그짓"
+      "en": "Let me show you on the map.",
+      "ko": "지도에서 보여 드릴게요.",
+      "kr": "레미 쇼우 여 온 더 맵"
      },
      {
-      "en": "Is it on your way?",
-      "ko": "가시는 길이에요?",
-      "kr": "이지론 여r 웨이"
+      "en": "Do you know where the exit is?",
+      "ko": "출구가 어디 있는지 아세요?",
+      "kr": "더여 노우 웨어r 디 에그지리z"
      },
      {
       "en": "It's on my way home.",
@@ -94,15 +94,15 @@
       "kr": "잇손 마이 웨이 호움"
      },
      {
-      "en": "Can I walk with you?",
-      "ko": "같이 걸어가도 돼요?",
-      "kr": "커나이 워크 위드 유"
+      "en": "I'll show you where it is.",
+      "ko": "어디 있는지 보여 드릴게요.",
+      "kr": "아일 쇼우 여 웨어r 이리z"
      }
     ],
     "grammar": [
      {
       "struct": "Let me ~",
-      "body": "제가 ~해 드릴게요 (영상 #6). walk you there = 거기까지 같이 걸어 주다"
+      "body": "제가 ~할게요 (영상 #6). where it is = 그게 어디 있는지"
      }
     ],
     "chunks": [
@@ -112,27 +112,27 @@
       "네"
      ],
      [
-      "Let me walk you there.",
-      "레미 워켜 데어r",
-      "제가 거기까지 같이 가 드릴게요"
+      "Let me show you",
+      "레미 쇼우 여",
+      "제가 알려 드릴게요"
      ],
      [
-      "It's on my way.",
-      "잇손 마이 웨이",
-      "가는 길이에요"
+      "where it is.",
+      "웨어r 이리z",
+      "그게 어디 있는지"
      ]
     ],
     "phonemes": [
      [
-      "/k/ walk you",
-      "walk 의 l 은 소리 나지 않고 k 가 you 와 붙어 워켜"
+      "/ɛr/ where",
+      "where 는 웨어r — 혀를 말아 끝낸다"
      ],
      [
-      "/ɔ/ walk",
-      "walk 는 워크 — 월크가 아니다"
+      "/t/ it is",
+      "it 의 t 가 굴러 이리z"
      ]
     ],
-    "mistake": "Let me to walk ✗ — Let me 뒤는 동사원형",
+    "mistake": "where is it ✗ — 문장 안에 들어간 의문문은 평서 어순: where it is",
     "similar": "I'll take you there.",
     "category": "일상/길 안내",
     "frequency": 9
@@ -140,10 +140,10 @@
   },
   {
    "id": "en-personal-tourist-english-02-trying-to-study",
-   "sentence": "Thanks. I'm trying to study it every day.",
+   "sentence": "Thanks. I'm trying to study every day.",
    "meaning": "고마워요. 매일 하려고 노력 중이에요.",
    "reading": null,
-   "phonetic_kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이",
+   "phonetic_kr": "쌩스 아임 트라잉 터 스터디 에v리 데이",
    "order_index": 2,
    "explanation": {
     "key": "I'm trying to ~ = ~하려고 노력 중이에요 (영상 #1)",
@@ -160,9 +160,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Yes. Let me walk you there. It's on my way.",
-      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
-      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+      "en": "Yes. Let me show you where it is.",
+      "ko": "네. 어디 있는지 알려 드릴게요.",
+      "kr": "예스 레미 쇼우 여 웨어r 이리z"
      },
      {
       "speaker": "A",
@@ -174,9 +174,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Thanks. I'm trying to study it every day.",
+      "en": "Thanks. I'm trying to study every day.",
       "ko": "고마워요. 매일 하려고 노력 중이에요.",
-      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+      "kr": "쌩스 아임 트라잉 터 스터디 에v리 데이"
      },
      {
       "speaker": "A",
@@ -202,9 +202,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Here lies a man who studied English all his life.",
-      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
-      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+      "en": "There's a good chance my tombstone will say, \"Still studying English.\"",
+      "ko": "제 묘비엔 '아직도 영어 공부 중'이라고 적힐 가능성이 커요.",
+      "kr": "데어r저 굿 챈스 마이 투움스토운 윌 쎄이 스틸 스터디잉 잉글리쉬"
      }
     ],
     "drills": [
@@ -252,9 +252,9 @@
       "~하려고 노력 중이다"
      ],
      [
-      "study it every day.",
-      "스터디 이레v리 데이",
-      "매일 그걸 공부하다"
+      "study every day.",
+      "스터디 에v리 데이",
+      "매일 공부하다"
      ]
     ],
     "phonemes": [
@@ -263,8 +263,8 @@
       "trying 은 트라잉"
      ],
      [
-      "/t/ it every",
-      "it 의 t 가 굴러 이레v리"
+      "/ʌ/ study",
+      "study 는 스터디 — 앞에 강세"
      ]
     ],
     "mistake": "I'm trying to studying ✗ — to 뒤는 동사원형",
@@ -295,9 +295,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Yes. Let me walk you there. It's on my way.",
-      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
-      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+      "en": "Yes. Let me show you where it is.",
+      "ko": "네. 어디 있는지 알려 드릴게요.",
+      "kr": "예스 레미 쇼우 여 웨어r 이리z"
      },
      {
       "speaker": "A",
@@ -309,9 +309,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Thanks. I'm trying to study it every day.",
+      "en": "Thanks. I'm trying to study every day.",
       "ko": "고마워요. 매일 하려고 노력 중이에요.",
-      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+      "kr": "쌩스 아임 트라잉 터 스터디 에v리 데이"
      },
      {
       "speaker": "A",
@@ -337,9 +337,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Here lies a man who studied English all his life.",
-      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
-      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+      "en": "There's a good chance my tombstone will say, \"Still studying English.\"",
+      "ko": "제 묘비엔 '아직도 영어 공부 중'이라고 적힐 가능성이 커요.",
+      "kr": "데어r저 굿 챈스 마이 투움스토운 윌 쎄이 스틸 스터디잉 잉글리쉬"
      }
     ],
     "drills": [
@@ -404,15 +404,15 @@
    }
   },
   {
-   "id": "en-personal-tourist-english-04-here-lies-a-man",
-   "sentence": "Here lies a man who studied English all his life.",
-   "meaning": "평생 영어 공부하다 간 사람, 여기 잠들다.",
+   "id": "en-personal-tourist-english-04-good-chance-tombstone",
+   "sentence": "There's a good chance my tombstone will say, \"Still studying English.\"",
+   "meaning": "제 묘비엔 '아직도 영어 공부 중'이라고 적힐 가능성이 커요.",
    "reading": null,
-   "phonetic_kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f",
+   "phonetic_kr": "데어r저 굿 챈스 마이 투움스토운 윌 쎄이 스틸 스터디잉 잉글리쉬",
    "order_index": 4,
    "explanation": {
-    "key": "a man who ~ = ~한 사람 (a man who + 동사. Here lies = 여기 잠들다, 묘비 문구)",
-    "anchor": "평생 영어 공부하다 간 사람",
+    "key": "There's a good chance ~ = ~할 가능성이 커요 (영상 #16). There's a good chance + 문장",
+    "anchor": "적힐 가능성이 커요",
     "situation": "역 근처. 외국인 여행객이 지하철역이 어디냐고 묻는다.",
     "miniDialogue": [
      {
@@ -425,9 +425,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Yes. Let me walk you there. It's on my way.",
-      "ko": "네. 제가 모셔다 드릴게요. 가는 길이에요.",
-      "kr": "예스 레미 워켜 데어r 잇손 마이 웨이"
+      "en": "Yes. Let me show you where it is.",
+      "ko": "네. 어디 있는지 알려 드릴게요.",
+      "kr": "예스 레미 쇼우 여 웨어r 이리z"
      },
      {
       "speaker": "A",
@@ -439,9 +439,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Thanks. I'm trying to study it every day.",
+      "en": "Thanks. I'm trying to study every day.",
       "ko": "고마워요. 매일 하려고 노력 중이에요.",
-      "kr": "쌩스 아임 트라잉 터 스터디 이레v리 데이"
+      "kr": "쌩스 아임 트라잉 터 스터디 에v리 데이"
      },
      {
       "speaker": "A",
@@ -467,75 +467,70 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Here lies a man who studied English all his life.",
-      "ko": "평생 영어 공부하다 간 사람, 여기 잠들다.",
-      "kr": "히어r 라이저 맨 후 스터디딩글리쉬 올 히z 라이f"
+      "en": "There's a good chance my tombstone will say, \"Still studying English.\"",
+      "ko": "제 묘비엔 '아직도 영어 공부 중'이라고 적힐 가능성이 커요.",
+      "kr": "데어r저 굿 챈스 마이 투움스토운 윌 쎄이 스틸 스터디잉 잉글리쉬"
      }
     ],
     "drills": [
      {
-      "en": "Here lies a man who loved cats.",
-      "ko": "고양이를 사랑한 사람, 여기 잠들다.",
-      "kr": "히어r 라이저 맨 후 러v드 캣츠"
+      "en": "There's a good chance it'll rain.",
+      "ko": "비가 올 가능성이 커요.",
+      "kr": "데어r저 굿 챈씨를 레인"
      },
      {
-      "en": "He studied English all his life.",
-      "ko": "그는 평생 영어를 공부했어요.",
-      "kr": "히 스터디딩글리쉬 올 히z 라이f"
+      "en": "There's a good chance I'll be late.",
+      "ko": "늦을 가능성이 커요.",
+      "kr": "데어r저 굿 챈싸일 비 레잇"
      },
      {
-      "en": "Who's the man who wrote this?",
-      "ko": "이거 쓴 사람이 누구예요?",
-      "kr": "후우z 더 맨 후 로웃 디스"
+      "en": "What will your tombstone say?",
+      "ko": "당신 묘비엔 뭐라고 적힐까요?",
+      "kr": "왓 윌 여r 투움스토운 쎄이"
      },
      {
-      "en": "I've studied it all my life.",
-      "ko": "평생 그걸 공부했어요.",
-      "kr": "아이v 스터디디롤 마이 라이f"
-     },
-     {
-      "en": "She's a teacher who never gives up.",
-      "ko": "그녀는 절대 포기하지 않는 선생님이에요.",
-      "kr": "쉬z 어 티이처r 후 네v어r 기v접"
+      "en": "I'll probably study English forever.",
+      "ko": "저는 아마 영원히 영어 공부할 거예요.",
+      "kr": "아일 프라버블리 스터디 잉글리쉬 f퍼레v어r"
      }
     ],
     "grammar": [
      {
-      "struct": "a man who ~",
-      "body": "~한 사람 (a man who + 동사. Here lies = 여기 잠들다, 묘비 문구)"
+      "struct": "There's a good chance ~",
+      "body": "~할 가능성이 커요 (영상 #16). There's a good chance + 문장"
      }
     ],
     "chunks": [
      [
-      "Here lies a man",
-      "히어r 라이저 맨",
-      "여기 한 남자가 잠들다"
+      "There's a good chance",
+      "데어r저 굿 챈스",
+      "~할 가능성이 크다"
      ],
      [
-      "who studied English",
-      "후 스터디딩글리쉬",
-      "영어를 공부한"
+      "my tombstone will say,",
+      "마이 투움스토운 윌 쎄이",
+      "제 묘비엔 ~라고 적힐 것"
      ],
      [
-      "all his life.",
-      "올 히z 라이f",
-      "평생"
+      "\"Still studying English.\"",
+      "스틸 스터디잉 잉글리쉬",
+      "아직도 영어 공부 중"
      ]
     ],
     "phonemes": [
      [
-      "/aɪ/ lies",
-      "lies 는 라이z — a 와 붙어 라이저"
+      "/tʃ/ chance",
+      "chance 는 챈스"
      ],
      [
-      "/d/ studied English",
-      "studied 의 d 가 English 와 붙어 스터디딩글리쉬"
+      "/uː/ tomb",
+      "tomb 은 투움 — b 는 소리 나지 않는다"
      ]
     ],
-    "mistake": "Here lays ✗ — 눕다는 lie(lies)",
-    "similar": "It'll be on my tombstone.",
+    "mistake": "There is good chance ✗ — a 를 빼지 않는다: a good chance",
+    "similar": "I'll probably study English forever.",
     "category": "일상/길 안내",
-    "frequency": 5
+    "frequency": 8
    }
   }
  ]

@@ -4,15 +4,15 @@
  "date": "2026-10-15",
  "cards": [
   {
-   "id": "en-personal-tourist-noline-01-used-to-like",
-   "sentence": "I have. We used to like this place.",
-   "meaning": "네. 예전엔 좋아하던 곳이에요.",
+   "id": "en-personal-tourist-noline-01-been-a-while",
+   "sentence": "It's been a while.",
+   "meaning": "꽤 됐어요.",
    "reading": null,
-   "phonetic_kr": "아이 해v 위 유우스터 라익 디스 플레이스",
+   "phonetic_kr": "잇츠 비너 와일",
    "order_index": 1,
    "explanation": {
-    "key": "used to ~ = 예전엔 ~했어요 (지금은 아니다)",
-    "anchor": "예전엔 좋아하던 곳이에요",
+    "key": "It's been a while = 꽤 됐어요 (모두영어 1편 #16). 마지막으로 한 지 오래됐을 때",
+    "anchor": "꽤 됐어요",
     "situation": "저녁, 서촌 골목의 식당 앞. 외국인 여행객이 줄이 없는 식당을 보고 지나가던 지오에게 묻는다.",
     "miniDialogue": [
      {
@@ -25,23 +25,23 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I have. We used to like this place.",
-      "ko": "네. 예전엔 좋아하던 곳이에요.",
-      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+      "en": "It's been a while.",
+      "ko": "꽤 됐어요.",
+      "kr": "잇츠 비너 와일"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "Great! We won't have to wait.",
-      "ko": "잘됐다! 안 기다려도 되겠네요.",
-      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+      "en": "Well, at least we won't have to wait.",
+      "ko": "뭐, 적어도 안 기다려도 되겠네요.",
+      "kr": "웰 엇 리이스 위 워운트 해f터 웨잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife said that was a bad sign.",
-      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
-      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+      "en": "I don't think that's a good sign.",
+      "ko": "그게 좋은 징조 같진 않아요.",
+      "kr": "아이 돈 씽크 댓처 굿 싸인"
      },
      {
       "speaker": "A",
@@ -67,87 +67,72 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Even the glass I drank from smelled fishy.",
-      "ko": "제가 마신 잔에서도 비린내가 났어요.",
-      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+      "en": "Even the beer I ordered tasted fishy.",
+      "ko": "제가 시킨 맥주에서도 비린 맛이 났어요.",
+      "kr": "이이v은 더 비어r 아이 오어r더r드 테이스티드 f피쉬"
      }
     ],
     "drills": [
      {
-      "en": "We used to come here a lot.",
-      "ko": "여기 자주 왔었어요.",
-      "kr": "위 유우스터 컴 히어r 어 랏"
+      "en": "It's been a while since I was here.",
+      "ko": "여기 온 지 꽤 됐어요.",
+      "kr": "잇츠 비너 와일 씬싸이 워z 히어r"
      },
      {
-      "en": "I used to love this place.",
-      "ko": "예전엔 여기 정말 좋아했어요.",
-      "kr": "아이 유우스터 러v 디스 플레이스"
+      "en": "It's been ages.",
+      "ko": "엄청 오래됐어요.",
+      "kr": "잇츠 빈 에이지즈"
      },
      {
-      "en": "Did you use to live here?",
-      "ko": "예전에 여기 사셨어요?",
-      "kr": "디저 유우스터 리v 히어r"
+      "en": "How long has it been?",
+      "ko": "얼마나 됐어요?",
+      "kr": "하우 롱 해짓 빈"
      },
      {
-      "en": "It's not what it used to be.",
-      "ko": "예전 같지 않아요.",
-      "kr": "잇츠 낫 와릿 유우스터 비"
-     },
-     {
-      "en": "They used to have better food.",
-      "ko": "예전엔 음식이 더 좋았어요.",
-      "kr": "데이 유우스터 해v 베러r f푸우드"
+      "en": "I haven't been here in a long time.",
+      "ko": "여기 오랫동안 안 왔어요.",
+      "kr": "아이 해븐 빈 히어r 이너 롱 타임"
      }
     ],
     "grammar": [
      {
-      "struct": "used to ~",
-      "body": "예전엔 ~했어요 (지금은 아니다)"
+      "struct": "It's been a while",
+      "body": "꽤 됐어요 (모두영어 1편 #16). 마지막으로 한 지 오래됐을 때"
      }
     ],
     "chunks": [
      [
-      "I have.",
-      "아이 해v",
-      "네, 먹어 봤어요"
-     ],
-     [
-      "We used to",
-      "위 유우스터",
-      "우리는 예전엔 ~했다"
-     ],
-     [
-      "like this place.",
-      "라익 디스 플레이스",
-      "이곳을 좋아하다"
+      "It's been a while.",
+      "잇츠 비너 와일",
+      "꽤 됐어요"
      ]
     ],
     "phonemes": [
      [
-      "/s/ used to",
-      "used to 는 유우스터 — d 가 안 들린다"
+      "/ɪ/ been a",
+      "been 의 n 이 a 에 붙어 비너"
      ],
      [
-      "/aɪ/ like",
-      "like 는 라익 — 끝 k 는 짧게"
+      "/aɪ/ while",
+      "while 은 와일"
      ]
     ],
-    "mistake": "use to like ✗ — 예전 습관·상태는 used to",
-    "similar": "We liked it before.",
+    "mistake": "It's been a while ago ✗ — ago 를 붙이지 않는다",
+    "similar": "Not for a long time.",
     "category": "일상/외식",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-tourist-noline-02-a-bad-sign",
-   "sentence": "My wife said that was a bad sign.",
-   "meaning": "아내는 그게 안 좋은 징조라고 했어요.",
+   "id": "en-personal-tourist-noline-02-dont-think-good-sign",
+   "sentence": "I don't think that's a good sign.",
+   "meaning": "그게 좋은 징조 같진 않아요.",
    "reading": null,
-   "phonetic_kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인",
+   "phonetic_kr": "아이 돈 씽크 댓처 굿 싸인",
    "order_index": 2,
    "explanation": {
-    "key": "a bad sign = 안 좋은 징조 (sign = 징조·신호)",
-    "anchor": "안 좋은 징조라고 했어요",
+    "key": "I don't think ~ = ~인 것 같진 않아요 (영상 #11). 모두영어 1편 #176 I don't think that's a good idea 와 같은 틀",
+    "anchor": "좋은 징조 같진 않아요",
     "situation": "저녁, 서촌 골목의 식당 앞. 외국인 여행객이 줄이 없는 식당을 보고 지나가던 지오에게 묻는다.",
     "miniDialogue": [
      {
@@ -160,23 +145,23 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I have. We used to like this place.",
-      "ko": "네. 예전엔 좋아하던 곳이에요.",
-      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+      "en": "It's been a while.",
+      "ko": "꽤 됐어요.",
+      "kr": "잇츠 비너 와일"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "Great! We won't have to wait.",
-      "ko": "잘됐다! 안 기다려도 되겠네요.",
-      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+      "en": "Well, at least we won't have to wait.",
+      "ko": "뭐, 적어도 안 기다려도 되겠네요.",
+      "kr": "웰 엇 리이스 위 워운트 해f터 웨잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife said that was a bad sign.",
-      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
-      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+      "en": "I don't think that's a good sign.",
+      "ko": "그게 좋은 징조 같진 않아요.",
+      "kr": "아이 돈 씽크 댓처 굿 싸인"
      },
      {
       "speaker": "A",
@@ -202,26 +187,26 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Even the glass I drank from smelled fishy.",
-      "ko": "제가 마신 잔에서도 비린내가 났어요.",
-      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+      "en": "Even the beer I ordered tasted fishy.",
+      "ko": "제가 시킨 맥주에서도 비린 맛이 났어요.",
+      "kr": "이이v은 더 비어r 아이 오어r더r드 테이스티드 f피쉬"
      }
     ],
     "drills": [
      {
-      "en": "An empty restaurant is a bad sign.",
-      "ko": "빈 식당은 안 좋은 징조예요.",
-      "kr": "어넴티 레스터런티z 어 배드 싸인"
+      "en": "I don't think that's a good idea.",
+      "ko": "그건 좋은 생각 같지 않아요.",
+      "kr": "아이 돈 씽크 댓처 구다이디어"
+     },
+     {
+      "en": "I don't think they're open.",
+      "ko": "문 연 것 같지 않아요.",
+      "kr": "아이 돈 씽크 데어r 오우펀"
      },
      {
       "en": "Is that a good sign?",
-      "ko": "그거 좋은 징조예요?",
+      "ko": "그게 좋은 징조예요?",
       "kr": "이z 대러 굿 싸인"
-     },
-     {
-      "en": "She said it was too quiet.",
-      "ko": "너무 조용하다고 했어요.",
-      "kr": "쉬 쎄딧 워z 투우 콰이엇"
      },
      {
       "en": "A long line is a good sign.",
@@ -229,43 +214,43 @@
       "kr": "어 롱 라이니z 어 굿 싸인"
      },
      {
-      "en": "My wife noticed it first.",
-      "ko": "아내가 먼저 알아챘어요.",
-      "kr": "마이 와이f 노우티스팃 f퍼r스트"
+      "en": "An empty restaurant is a bad sign.",
+      "ko": "텅 빈 식당은 안 좋은 징조예요.",
+      "kr": "어넴티 레스터런티z 어 배드 싸인"
      }
     ],
     "grammar": [
      {
-      "struct": "a bad sign",
-      "body": "안 좋은 징조 (sign = 징조·신호)"
+      "struct": "I don't think ~",
+      "body": "~인 것 같진 않아요 (영상 #11). 모두영어 1편 #176 I don't think that's a good idea 와 같은 틀"
      }
     ],
     "chunks": [
      [
-      "My wife said",
-      "마이 와이f 쎄드",
-      "아내가 말했다"
+      "I don't think",
+      "아이 돈 씽크",
+      "~인 것 같지 않다"
      ],
      [
-      "that was a bad sign.",
-      "댓 워z 어 배드 싸인",
-      "그게 안 좋은 징조라고"
+      "that's a good sign.",
+      "댓처 굿 싸인",
+      "그게 좋은 징조"
      ]
     ],
     "phonemes": [
      [
-      "/aɪ/ sign",
-      "sign 의 g 는 소리 나지 않는다 — 싸인"
+      "/ð/ that's a",
+      "that's 의 s 가 a 에 붙어 댓처"
      ],
      [
-      "/ɛ/ said",
-      "said 는 쎄드 — 세이드가 아니다"
+      "/aɪ/ sign",
+      "sign 의 g 는 소리 나지 않는다 — 싸인"
      ]
     ],
-    "mistake": "a bad signal ✗ — 징조는 sign",
-    "similar": "My wife had a bad feeling about it.",
+    "mistake": "I think that's not a good sign 보다 영어는 부정을 앞에: I don't think that's a good sign",
+    "similar": "That's a bad sign.",
     "category": "일상/외식",
-    "frequency": 7
+    "frequency": 9
    }
   },
   {
@@ -290,23 +275,23 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I have. We used to like this place.",
-      "ko": "네. 예전엔 좋아하던 곳이에요.",
-      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+      "en": "It's been a while.",
+      "ko": "꽤 됐어요.",
+      "kr": "잇츠 비너 와일"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "Great! We won't have to wait.",
-      "ko": "잘됐다! 안 기다려도 되겠네요.",
-      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+      "en": "Well, at least we won't have to wait.",
+      "ko": "뭐, 적어도 안 기다려도 되겠네요.",
+      "kr": "웰 엇 리이스 위 워운트 해f터 웨잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife said that was a bad sign.",
-      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
-      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+      "en": "I don't think that's a good sign.",
+      "ko": "그게 좋은 징조 같진 않아요.",
+      "kr": "아이 돈 씽크 댓처 굿 싸인"
      },
      {
       "speaker": "A",
@@ -332,9 +317,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Even the glass I drank from smelled fishy.",
-      "ko": "제가 마신 잔에서도 비린내가 났어요.",
-      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+      "en": "Even the beer I ordered tasted fishy.",
+      "ko": "제가 시킨 맥주에서도 비린 맛이 났어요.",
+      "kr": "이이v은 더 비어r 아이 오어r더r드 테이스티드 f피쉬"
      }
     ],
     "drills": [
@@ -399,15 +384,15 @@
    }
   },
   {
-   "id": "en-personal-tourist-noline-04-even-the-glass",
-   "sentence": "Even the glass I drank from smelled fishy.",
-   "meaning": "제가 마신 잔에서도 비린내가 났어요.",
+   "id": "en-personal-tourist-noline-04-beer-tasted-fishy",
+   "sentence": "Even the beer I ordered tasted fishy.",
+   "meaning": "제가 시킨 맥주에서도 비린 맛이 났어요.",
    "reading": null,
-   "phonetic_kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬",
+   "phonetic_kr": "이이v은 더 비어r 아이 오어r더r드 테이스티드 f피쉬",
    "order_index": 4,
    "explanation": {
-    "key": "Even the ~ = ~조차도 (even = ~까지도. the glass I drank from = 제가 마신 잔)",
-    "anchor": "마신 잔에서도 비린내가 났어요",
+    "key": "tasted ~ = 맛이 ~했어요 (233 #112 It tastes ~ 의 과거). the beer I ordered = 제가 시킨 맥주",
+    "anchor": "비린 맛이 났어요",
     "situation": "저녁, 서촌 골목의 식당 앞. 외국인 여행객이 줄이 없는 식당을 보고 지나가던 지오에게 묻는다.",
     "miniDialogue": [
      {
@@ -420,23 +405,23 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I have. We used to like this place.",
-      "ko": "네. 예전엔 좋아하던 곳이에요.",
-      "kr": "아이 해v 위 유우스터 라익 디스 플레이스"
+      "en": "It's been a while.",
+      "ko": "꽤 됐어요.",
+      "kr": "잇츠 비너 와일"
      },
      {
       "speaker": "A",
       "name": "여행객",
-      "en": "Great! We won't have to wait.",
-      "ko": "잘됐다! 안 기다려도 되겠네요.",
-      "kr": "그뤠잇 위 워운트 해f터 웨잇"
+      "en": "Well, at least we won't have to wait.",
+      "ko": "뭐, 적어도 안 기다려도 되겠네요.",
+      "kr": "웰 엇 리이스 위 워운트 해f터 웨잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife said that was a bad sign.",
-      "ko": "아내는 그게 안 좋은 징조라고 했어요.",
-      "kr": "마이 와이f 쎄드 댓 워z 어 배드 싸인"
+      "en": "I don't think that's a good sign.",
+      "ko": "그게 좋은 징조 같진 않아요.",
+      "kr": "아이 돈 씽크 댓처 굿 싸인"
      },
      {
       "speaker": "A",
@@ -462,73 +447,68 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Even the glass I drank from smelled fishy.",
-      "ko": "제가 마신 잔에서도 비린내가 났어요.",
-      "kr": "이이v은 더 글래사이 드랭크 f럼 스멜드 f피쉬"
+      "en": "Even the beer I ordered tasted fishy.",
+      "ko": "제가 시킨 맥주에서도 비린 맛이 났어요.",
+      "kr": "이이v은 더 비어r 아이 오어r더r드 테이스티드 f피쉬"
      }
     ],
     "drills": [
      {
-      "en": "Even the soup was cold.",
-      "ko": "수프까지 식어 있었어요.",
-      "kr": "이이v은 더 쑤웁 워z 코울드"
+      "en": "The soup tasted a little salty.",
+      "ko": "국이 좀 짰어요.",
+      "kr": "더 쑤웁 테이스티더 리를 쏠티"
      },
      {
-      "en": "Even the staff looked tired.",
-      "ko": "직원들까지 피곤해 보였어요.",
-      "kr": "이이v은 더 스태f 룩트 타이어r드"
+      "en": "It tastes better than it looks.",
+      "ko": "보기보다 맛있어요.",
+      "kr": "잇 테이스츠 베러r 대닛 룩스"
      },
      {
-      "en": "Was the cup you drank from clean?",
-      "ko": "마신 컵은 깨끗했어요?",
-      "kr": "워z 더 컵 여 드랭크 f럼 클리인"
+      "en": "Does this taste fishy to you?",
+      "ko": "이거 비린 맛 나요?",
+      "kr": "더즈 디스 테이스 f피쉬 터 유"
      },
      {
-      "en": "The fish smelled a little off.",
-      "ko": "생선에서 좀 상한 냄새가 났어요.",
-      "kr": "더 f피쉬 스멜더 리를 오f"
+      "en": "Even the glasses smelled fishy.",
+      "ko": "잔에서도 비린내가 났어요.",
+      "kr": "이이v은 더 글래씨z 스멜드 f피쉬"
      },
      {
-      "en": "This is the place I told you about.",
-      "ko": "제가 말한 데가 여기예요.",
-      "kr": "디시z 더 플레이사이 톨저 어바웃"
+      "en": "This is the dish I ordered.",
+      "ko": "이게 제가 시킨 요리예요.",
+      "kr": "디시z 더 디쉬 아이 오어r더r드"
      }
     ],
     "grammar": [
      {
-      "struct": "Even the ~",
-      "body": "~조차도 (even = ~까지도. the glass I drank from = 제가 마신 잔)"
+      "struct": "tasted ~",
+      "body": "맛이 ~했어요 (233 #112 It tastes ~ 의 과거). the beer I ordered = 제가 시킨 맥주"
      }
     ],
     "chunks": [
      [
-      "Even the",
-      "이이v은 더",
-      "~조차"
+      "Even the beer I ordered",
+      "이이v은 더 비어r 아이 오어r더r드",
+      "제가 시킨 맥주조차"
      ],
      [
-      "glass I drank from",
-      "글래사이 드랭크 f럼",
-      "제가 마신 잔"
-     ],
-     [
-      "smelled fishy.",
-      "스멜드 f피쉬",
-      "비린내가 났다"
+      "tasted fishy.",
+      "테이스티드 f피쉬",
+      "비린 맛이 났다"
      ]
     ],
     "phonemes": [
      [
-      "/æ/ glass",
-      "glass 는 입을 크게 — I 와 붙어 글래사이"
+      "/iː/ even",
+      "even 은 긴 이 — 이이v은"
      ],
      [
-      "/ɪ/ fishy",
-      "fishy 는 f피쉬 — 비린"
+      "/ɪʃ/ fishy",
+      "fishy 는 f피쉬 — sh 는 입술을 내밀고"
      ]
     ],
-    "mistake": "the glass I drank ✗ — 전치사 from 까지: the glass I drank from",
-    "similar": "Even my glass smelled like fish.",
+    "mistake": "tasted fishily ✗ — taste 뒤에는 형용사(fishy)",
+    "similar": "Even the glasses smelled fishy.",
     "category": "일상/외식",
     "frequency": 7
    }

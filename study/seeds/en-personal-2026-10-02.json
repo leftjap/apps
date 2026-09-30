@@ -33,15 +33,15 @@
       "speaker": "A",
       "name": "승객",
       "en": "Are you someone I should know?",
-      "ko": "제가 알아봐야 할 분이세요?",
+      "ko": "혹시 유명한 분이세요?",
       "kr": "아r 여 썸워나이 슈드 노우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "They're all people my wife works with.",
-      "ko": "다 제 아내랑 같이 일하는 사람들이에요.",
-      "kr": "데어r 올 피이플 마이 와이f 워r크스 위드"
+      "en": "I don't think so. My wife works with them.",
+      "ko": "아닐 거예요. 제 아내가 같이 일하거든요.",
+      "kr": "아이 돈 씽크 쏘우 마이 와이f 워r크스 위드 뎀"
      },
      {
       "speaker": "A",
@@ -53,9 +53,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to be the perfect passenger.",
-      "ko": "완벽한 승객이 되려고 애쓰는 중이에요.",
-      "kr": "아임 트라잉 터 비 더 퍼r f펙트 패썬저r"
+      "en": "I'm trying to be a passenger she can be proud of.",
+      "ko": "아내가 자랑스러워할 만한 승객이 되려고 애쓰는 중이에요.",
+      "kr": "아임 트라잉 터 비 어 패썬저r 쉬 컨 비 프라우더v"
      },
      {
       "speaker": "A",
@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm more tired than the crew.",
-      "ko": "승무원들보다 제가 더 피곤해요.",
-      "kr": "아임 모어r 타이어r드 댄 더 크루우"
+      "en": "The thing is, I'm more tired than the crew.",
+      "ko": "문제는요, 제가 승무원들보다 더 피곤해요.",
+      "kr": "더 씽 이z 아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
@@ -139,15 +139,15 @@
    }
   },
   {
-   "id": "en-personal-bkk-polite-02-people-wife-works-with",
-   "sentence": "They're all people my wife works with.",
-   "meaning": "다 제 아내랑 같이 일하는 사람들이에요.",
+   "id": "en-personal-bkk-polite-02-dont-think-so-wife",
+   "sentence": "I don't think so. My wife works with them.",
+   "meaning": "아닐 거예요. 제 아내가 같이 일하거든요.",
    "reading": null,
-   "phonetic_kr": "데어r 올 피이플 마이 와이f 워r크스 위드",
+   "phonetic_kr": "아이 돈 씽크 쏘우 마이 와이f 워r크스 위드 뎀",
    "order_index": 2,
    "explanation": {
-    "key": "~ works with = ~가 같이 일하는 (사람들) — 관계사를 빼고 명사 뒤에 '주어+동사+with' 를 붙인다",
-    "anchor": "같이 일하는 사람들",
+    "key": "I don't think ~ = ~인 것 같진 않아요 (영상 #11). I don't think so. = 아닐 거예요(부드럽게 아니라고 할 때)",
+    "anchor": "아닐 거예요",
     "situation": "방콕행 비즈니스석. 아내 소연이 이 비행기에서 근무 중이라 승무원들이 지오를 계속 챙긴다. 옆자리 외국인 승객이 말을 건다.",
     "miniDialogue": [
      {
@@ -168,15 +168,15 @@
       "speaker": "A",
       "name": "승객",
       "en": "Are you someone I should know?",
-      "ko": "제가 알아봐야 할 분이세요?",
+      "ko": "혹시 유명한 분이세요?",
       "kr": "아r 여 썸워나이 슈드 노우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "They're all people my wife works with.",
-      "ko": "다 제 아내랑 같이 일하는 사람들이에요.",
-      "kr": "데어r 올 피이플 마이 와이f 워r크스 위드"
+      "en": "I don't think so. My wife works with them.",
+      "ko": "아닐 거예요. 제 아내가 같이 일하거든요.",
+      "kr": "아이 돈 씽크 쏘우 마이 와이f 워r크스 위드 뎀"
      },
      {
       "speaker": "A",
@@ -188,9 +188,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to be the perfect passenger.",
-      "ko": "완벽한 승객이 되려고 애쓰는 중이에요.",
-      "kr": "아임 트라잉 터 비 더 퍼r f펙트 패썬저r"
+      "en": "I'm trying to be a passenger she can be proud of.",
+      "ko": "아내가 자랑스러워할 만한 승객이 되려고 애쓰는 중이에요.",
+      "kr": "아임 트라잉 터 비 어 패썬저r 쉬 컨 비 프라우더v"
      },
      {
       "speaker": "A",
@@ -202,81 +202,81 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm more tired than the crew.",
-      "ko": "승무원들보다 제가 더 피곤해요.",
-      "kr": "아임 모어r 타이어r드 댄 더 크루우"
+      "en": "The thing is, I'm more tired than the crew.",
+      "ko": "문제는요, 제가 승무원들보다 더 피곤해요.",
+      "kr": "더 씽 이z 아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
      {
-      "en": "That's the guy my friend works with.",
-      "ko": "저 사람이 제 친구랑 같이 일하는 사람이에요.",
-      "kr": "댓츠 더 가이 마이 f렌드 워r크스 위드"
+      "en": "I don't think we've met.",
+      "ko": "처음 뵙는 것 같아요.",
+      "kr": "아이 돈 씽크 위v 멧"
      },
      {
-      "en": "These are the people I live with.",
-      "ko": "같이 사는 사람들이에요.",
-      "kr": "디이z 아r 더 피이플 아이 리v 위드"
+      "en": "I don't think I'm anyone special.",
+      "ko": "저는 특별한 사람 아닐 거예요.",
+      "kr": "아이 돈 씽카이매니원 스페셜"
      },
      {
-      "en": "She's someone I went to school with.",
-      "ko": "학교를 같이 다닌 사람이에요.",
-      "kr": "쉬z 썸워나이 웬 터 스쿠울 위드"
+      "en": "Do you think they know me?",
+      "ko": "저 사람들이 저를 아는 것 같아요?",
+      "kr": "더여 씽크 데이 노우 미"
      },
      {
-      "en": "Who do you work with?",
-      "ko": "누구랑 같이 일해요?",
-      "kr": "후우 더여 워r크 위드"
+      "en": "She works with a great team.",
+      "ko": "그녀는 좋은 팀이랑 일해요.",
+      "kr": "쉬 워r크스 위더 그뤠잇 티임"
      },
      {
-      "en": "My wife works with a great team.",
-      "ko": "아내는 좋은 팀이랑 일해요.",
-      "kr": "마이 와이f 워r크스 위더 그뤠잇 팀"
+      "en": "I don't think so. I'm just a passenger.",
+      "ko": "아닐 거예요. 그냥 승객이에요.",
+      "kr": "아이 돈 씽크 쏘우 아임 저스터 패썬저r"
      }
     ],
     "grammar": [
      {
-      "struct": "~ works with",
-      "body": "~가 같이 일하는 (사람들) — 관계사를 빼고 명사 뒤에 '주어+동사+with' 를 붙인다"
+      "struct": "I don't think ~",
+      "body": "~인 것 같진 않아요 (영상 #11). I don't think so. = 아닐 거예요(부드럽게 아니라고 할 때)"
      }
     ],
     "chunks": [
      [
-      "They're all people",
-      "데어r 올 피이플",
-      "다 ~한 사람들이다"
+      "I don't think so.",
+      "아이 돈 씽크 쏘우",
+      "아닐 거예요"
      ],
      [
-      "my wife works with.",
-      "마이 와이f 워r크스 위드",
-      "아내가 같이 일하는"
+      "My wife works with them.",
+      "마이 와이f 워r크스 위드 뎀",
+      "제 아내가 같이 일해요"
      ]
     ],
     "phonemes": [
      [
-      "/f/ wife",
-      "wife 의 f 는 윗니를 아랫입술에 — 와이f"
+      "/θ/ think",
+      "think 의 th 는 혀끝을 이 사이에 — 씽크"
      ],
      [
-      "/ð/ with",
-      "with 끝소리는 혀를 살짝 — 위드"
+      "/ð/ them",
+      "them 의 th 는 혀를 이 사이에 — 뎀"
      ]
     ],
-    "mistake": "with 를 빼면 안 된다 — people my wife works ✗",
-    "similar": "They're my wife's coworkers.",
+    "mistake": "I'm not think so ✗ — think 는 동사라 don't 로 부정: I don't think so",
+    "similar": "Not really. My wife is on the crew.",
     "category": "여행/기내",
-    "frequency": 7
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-bkk-polite-03-trying-perfect-passenger",
-   "sentence": "I'm trying to be the perfect passenger.",
-   "meaning": "완벽한 승객이 되려고 애쓰는 중이에요.",
+   "id": "en-personal-bkk-polite-03-trying-passenger-proud",
+   "sentence": "I'm trying to be a passenger she can be proud of.",
+   "meaning": "아내가 자랑스러워할 만한 승객이 되려고 애쓰는 중이에요.",
    "reading": null,
-   "phonetic_kr": "아임 트라잉 터 비 더 퍼r f펙트 패썬저r",
+   "phonetic_kr": "아임 트라잉 터 비 어 패썬저r 쉬 컨 비 프라우더v",
    "order_index": 3,
    "explanation": {
-    "key": "I'm trying to ~ = ~하려고 애쓰는 중이에요 (영상 #1)",
+    "key": "I'm trying to ~ = ~하려고 애쓰는 중이에요 (영상 #1). a passenger she can be proud of = 그녀가 자랑스러워할 만한 승객",
     "anchor": "되려고 애쓰는 중이에요",
     "situation": "방콕행 비즈니스석. 아내 소연이 이 비행기에서 근무 중이라 승무원들이 지오를 계속 챙긴다. 옆자리 외국인 승객이 말을 건다.",
     "miniDialogue": [
@@ -298,15 +298,15 @@
       "speaker": "A",
       "name": "승객",
       "en": "Are you someone I should know?",
-      "ko": "제가 알아봐야 할 분이세요?",
+      "ko": "혹시 유명한 분이세요?",
       "kr": "아r 여 썸워나이 슈드 노우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "They're all people my wife works with.",
-      "ko": "다 제 아내랑 같이 일하는 사람들이에요.",
-      "kr": "데어r 올 피이플 마이 와이f 워r크스 위드"
+      "en": "I don't think so. My wife works with them.",
+      "ko": "아닐 거예요. 제 아내가 같이 일하거든요.",
+      "kr": "아이 돈 씽크 쏘우 마이 와이f 워r크스 위드 뎀"
      },
      {
       "speaker": "A",
@@ -318,9 +318,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to be the perfect passenger.",
-      "ko": "완벽한 승객이 되려고 애쓰는 중이에요.",
-      "kr": "아임 트라잉 터 비 더 퍼r f펙트 패썬저r"
+      "en": "I'm trying to be a passenger she can be proud of.",
+      "ko": "아내가 자랑스러워할 만한 승객이 되려고 애쓰는 중이에요.",
+      "kr": "아임 트라잉 터 비 어 패썬저r 쉬 컨 비 프라우더v"
      },
      {
       "speaker": "A",
@@ -332,9 +332,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm more tired than the crew.",
-      "ko": "승무원들보다 제가 더 피곤해요.",
-      "kr": "아임 모어r 타이어r드 댄 더 크루우"
+      "en": "The thing is, I'm more tired than the crew.",
+      "ko": "문제는요, 제가 승무원들보다 더 피곤해요.",
+      "kr": "더 씽 이z 아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
@@ -359,15 +359,15 @@
       "kr": "아임 트라잉 터 스테이 콰이엇"
      },
      {
-      "en": "We tried to be on time.",
-      "ko": "제시간에 오려고 했어요.",
-      "kr": "위 트라이드 터 비 온 타임"
+      "en": "She's someone I'm proud of.",
+      "ko": "그녀는 제가 자랑스러워하는 사람이에요.",
+      "kr": "쉬z 썸워나임 프라우더v"
      }
     ],
     "grammar": [
      {
       "struct": "I'm trying to ~",
-      "body": "~하려고 애쓰는 중이에요 (영상 #1)"
+      "body": "~하려고 애쓰는 중이에요 (영상 #1). a passenger she can be proud of = 그녀가 자랑스러워할 만한 승객"
      }
     ],
     "chunks": [
@@ -377,37 +377,37 @@
       "~가 되려고 애쓰는 중이다"
      ],
      [
-      "the perfect passenger.",
-      "더 퍼r f펙트 패썬저r",
-      "완벽한 승객"
+      "a passenger she can be proud of.",
+      "어 패썬저r 쉬 컨 비 프라우더v",
+      "그녀가 자랑스러워할 만한 승객"
      ]
     ],
     "phonemes": [
      [
-      "/ɝ/ perfect",
-      "perfect 의 er 은 혀를 말아 퍼r"
+      "/d/ proud of",
+      "proud 의 d 가 of 에 붙어 프라우더v"
      ],
      [
       "/dʒ/ passenger",
       "passenger 의 g 는 ㅈ 소리 — 패썬저r"
      ]
     ],
-    "mistake": "trying to 뒤는 동사원형 — trying to being ✗",
-    "similar": "I want to be on my best behavior.",
+    "mistake": "a passenger she can be proud ✗ — 끝의 of 를 빼지 않는다: proud of",
+    "similar": "I want her to be proud of me.",
     "category": "여행/기내",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-bkk-polite-04-more-tired-than-crew",
-   "sentence": "I'm more tired than the crew.",
-   "meaning": "승무원들보다 제가 더 피곤해요.",
+   "id": "en-personal-bkk-polite-04-thing-is-more-tired",
+   "sentence": "The thing is, I'm more tired than the crew.",
+   "meaning": "문제는요, 제가 승무원들보다 더 피곤해요.",
    "reading": null,
-   "phonetic_kr": "아임 모어r 타이어r드 댄 더 크루우",
+   "phonetic_kr": "더 씽 이z 아임 모어r 타이어r드 댄 더 크루우",
    "order_index": 4,
    "explanation": {
-    "key": "more tired than ~ = ~보다 더 피곤해요 (more + 형용사 + than = ~보다 더 …한)",
-    "anchor": "더 피곤해요",
+    "key": "The thing is, ~ = 문제는요, ~ (영상 #21). 괜찮은 듯한 이야기 뒤에 걸리는 점을 꺼낼 때",
+    "anchor": "문제는요",
     "situation": "방콕행 비즈니스석. 아내 소연이 이 비행기에서 근무 중이라 승무원들이 지오를 계속 챙긴다. 옆자리 외국인 승객이 말을 건다.",
     "miniDialogue": [
      {
@@ -428,15 +428,15 @@
       "speaker": "A",
       "name": "승객",
       "en": "Are you someone I should know?",
-      "ko": "제가 알아봐야 할 분이세요?",
+      "ko": "혹시 유명한 분이세요?",
       "kr": "아r 여 썸워나이 슈드 노우"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "They're all people my wife works with.",
-      "ko": "다 제 아내랑 같이 일하는 사람들이에요.",
-      "kr": "데어r 올 피이플 마이 와이f 워r크스 위드"
+      "en": "I don't think so. My wife works with them.",
+      "ko": "아닐 거예요. 제 아내가 같이 일하거든요.",
+      "kr": "아이 돈 씽크 쏘우 마이 와이f 워r크스 위드 뎀"
      },
      {
       "speaker": "A",
@@ -448,9 +448,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to be the perfect passenger.",
-      "ko": "완벽한 승객이 되려고 애쓰는 중이에요.",
-      "kr": "아임 트라잉 터 비 더 퍼r f펙트 패썬저r"
+      "en": "I'm trying to be a passenger she can be proud of.",
+      "ko": "아내가 자랑스러워할 만한 승객이 되려고 애쓰는 중이에요.",
+      "kr": "아임 트라잉 터 비 어 패썬저r 쉬 컨 비 프라우더v"
      },
      {
       "speaker": "A",
@@ -462,49 +462,54 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm more tired than the crew.",
-      "ko": "승무원들보다 제가 더 피곤해요.",
-      "kr": "아임 모어r 타이어r드 댄 더 크루우"
+      "en": "The thing is, I'm more tired than the crew.",
+      "ko": "문제는요, 제가 승무원들보다 더 피곤해요.",
+      "kr": "더 씽 이z 아임 모어r 타이어r드 댄 더 크루우"
      }
     ],
     "drills": [
+     {
+      "en": "The thing is, the flight is really long.",
+      "ko": "문제는 비행이 정말 길다는 거예요.",
+      "kr": "더 씽 이z 더 f플라이리z 리얼리 롱"
+     },
+     {
+      "en": "The thing is, she's working today.",
+      "ko": "문제는 그녀가 오늘 일한다는 거예요.",
+      "kr": "더 씽 이z 쉬z 워r킹 터데이"
+     },
      {
       "en": "I'm more tired than yesterday.",
       "ko": "어제보다 더 피곤해요.",
       "kr": "아임 모어r 타이어r드 댄 예스터r데이"
      },
      {
-      "en": "You look more tired than me.",
-      "ko": "저보다 더 피곤해 보여요.",
-      "kr": "유 룩 모어r 타이어r드 댄 미"
-     },
-     {
       "en": "Are you more tired than usual?",
-      "ko": "평소보다 더 피곤해요?",
+      "ko": "평소보다 더 피곤하세요?",
       "kr": "아r 여 모어r 타이어r드 댄 유우쥬얼"
      },
      {
-      "en": "She's busier than anyone on the team.",
-      "ko": "그녀는 팀의 누구보다 더 바빠요.",
-      "kr": "쉬z 비지어r 대내니워논 더 티임"
-     },
-     {
-      "en": "Sitting all day makes me tired.",
-      "ko": "종일 앉아 있으면 피곤해요.",
-      "kr": "씨링 올 데이 메익스 미 타이어r드"
+      "en": "Being polite all day is hard work.",
+      "ko": "하루 종일 공손하게 있는 건 힘든 일이에요.",
+      "kr": "비잉 펄라이롤 데이 이z 하r드 워r크"
      }
     ],
     "grammar": [
      {
-      "struct": "more tired than ~",
-      "body": "~보다 더 피곤해요 (more + 형용사 + than = ~보다 더 …한)"
+      "struct": "The thing is, ~",
+      "body": "문제는요, ~ (영상 #21). 괜찮은 듯한 이야기 뒤에 걸리는 점을 꺼낼 때"
      }
     ],
     "chunks": [
      [
+      "The thing is,",
+      "더 씽 이z",
+      "문제는요"
+     ],
+     [
       "I'm more tired",
       "아임 모어r 타이어r드",
-      "제가 더 피곤하다"
+      "제가 더 피곤해요"
      ],
      [
       "than the crew.",
@@ -514,18 +519,18 @@
     ],
     "phonemes": [
      [
-      "/aɪɚ/ tired",
-      "tired 는 타이어r드 — 끊지 않고 빠르게"
+      "/θ/ thing",
+      "thing 의 th 는 혀끝을 이 사이에 — 씽"
      ],
      [
-      "/ð/ than",
-      "than 의 th 는 혀끝을 이 사이에 — 댄"
+      "/aɪər/ tired",
+      "tired 는 타이어r드 — 한 음절처럼 빨리"
      ]
     ],
-    "mistake": "I'm tired than the crew ✗ — '~보다 더' 는 more 를 빼지 않는다(more tired than)",
-    "similar": "I'm exhausted.",
+    "mistake": "The thing is 뒤에는 주어·동사를 갖춘 문장 — The thing is, more tired than the crew ✗",
+    "similar": "To be honest, I'm more tired than the crew.",
     "category": "여행/기내",
-    "frequency": 7
+    "frequency": 8
    }
   }
  ]

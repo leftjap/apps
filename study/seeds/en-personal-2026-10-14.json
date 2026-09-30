@@ -4,15 +4,15 @@
  "date": "2026-10-14",
  "cards": [
   {
-   "id": "en-personal-tom-bangkok-01-just-got-back-from",
-   "sentence": "I just got back from Bangkok.",
-   "meaning": "방콕에 갔다가 막 돌아왔어요.",
+   "id": "en-personal-tom-bangkok-01-been-in-bangkok",
+   "sentence": "I've been in Bangkok.",
+   "meaning": "방콕에 있었어요.",
    "reading": null,
-   "phonetic_kr": "아이 저스 갓 백 f럼 뱅콕",
+   "phonetic_kr": "아이v 비닌 뱅콕",
    "order_index": 1,
    "explanation": {
-    "key": "just got back from ~ = ~에서 막 돌아왔어요 (just = 방금, get back from = ~에서 돌아오다)",
-    "anchor": "막 돌아왔어요",
+    "key": "I've been ~ = ~에 있었어요 (영상 #5). Where have you been? 에는 I've been + 장소",
+    "anchor": "방콕에 있었어요",
     "situation": "방콕에서 돌아와 오랜만에 역 앞 카페에 들른 지오를 Tom 이 반긴다.",
     "miniDialogue": [
      {
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just got back from Bangkok.",
-      "ko": "방콕에 갔다가 막 돌아왔어요.",
-      "kr": "아이 저스 갓 백 f럼 뱅콕"
+      "en": "I've been in Bangkok.",
+      "ko": "방콕에 있었어요.",
+      "kr": "아이v 비닌 뱅콕"
      },
      {
       "speaker": "B",
@@ -39,9 +39,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No. It feels like nothing has changed in four years.",
-      "ko": "아뇨. 4년 동안 하나도 안 변한 느낌이에요.",
-      "kr": "노우 잇 f피일z 라익 나씽 해z 체인쥐딘 f포어r 이어r즈"
+      "en": "No. It feels like not much has changed in four years.",
+      "ko": "아뇨. 4년 동안 별로 안 변한 느낌이에요.",
+      "kr": "노우 잇 f피일z 라익 낫 머치 해z 체인쥐딘 f포어r 이어r즈"
      },
      {
       "speaker": "B",
@@ -67,82 +67,82 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The plane. It even had wireless charging.",
-      "ko": "비행기요. 무선 충전까지 되더라고요.",
-      "kr": "더 플레인 이리이v은 해드 와이어r리스 차r쥥"
+      "en": "The plane. There's even wireless charging.",
+      "ko": "비행기요. 무선 충전까지 돼요.",
+      "kr": "더 플레인 데어r지이v은 와이어r리스 차r쥥"
      }
     ],
     "drills": [
      {
-      "en": "I just got back from work.",
-      "ko": "일 끝나고 막 돌아왔어요.",
-      "kr": "아이 저스 갓 백 f럼 워r크"
+      "en": "I've been at the gym.",
+      "ko": "헬스장에 있었어요.",
+      "kr": "아이v 비넛 더 쥠"
      },
      {
-      "en": "She just got back from London.",
-      "ko": "그녀는 런던에서 막 돌아왔어요.",
-      "kr": "쉬 저스 갓 백 f럼 런던"
+      "en": "She's been at work all day.",
+      "ko": "그녀는 하루 종일 일했어요.",
+      "kr": "쉬z 비넛 워r콜 데이"
      },
      {
-      "en": "When did you get back?",
-      "ko": "언제 돌아왔어요?",
-      "kr": "웬 디저 겟 백"
+      "en": "I just got back from Bangkok.",
+      "ko": "방콕에서 막 돌아왔어요.",
+      "kr": "아이 저스 갓 백 f럼 뱅콕"
      },
      {
-      "en": "We just got home from the airport.",
-      "ko": "공항에서 막 집에 왔어요.",
-      "kr": "위 저스 갓 호움 f럼 디 에어r포어r트"
+      "en": "Where have you been all week?",
+      "ko": "일주일 내내 어디 있었어요?",
+      "kr": "웨어r 해v 여 비놀 위익"
      },
      {
-      "en": "I'm still tired from the trip.",
-      "ko": "여행 때문에 아직 피곤해요.",
-      "kr": "아임 스틸 타이어r드 f럼 더 트립"
+      "en": "Have you been busy?",
+      "ko": "바빴어요?",
+      "kr": "해v 여 빈 비지"
      }
     ],
     "grammar": [
      {
-      "struct": "just got back from ~",
-      "body": "~에서 막 돌아왔어요 (just = 방금, get back from = ~에서 돌아오다)"
+      "struct": "I've been ~",
+      "body": "~에 있었어요 (영상 #5). Where have you been? 에는 I've been + 장소"
      }
     ],
     "chunks": [
      [
-      "I just got back",
-      "아이 저스 갓 백",
-      "막 돌아왔다"
+      "I've been in",
+      "아이v 비닌",
+      "~에 있었다"
      ],
      [
-      "from Bangkok.",
-      "f럼 뱅콕",
-      "방콕에서"
+      "Bangkok.",
+      "뱅콕",
+      "방콕"
      ]
     ],
     "phonemes": [
      [
-      "/st/ just got",
-      "just 의 t 는 g 앞에서 빠진다 — 저스 갓"
+      "/n/ been in",
+      "been 의 n 이 in 에 붙어 비닌"
      ],
      [
-      "/æ/ back",
-      "back 은 입을 크게 — 백"
+      "/æ/ Bangkok",
+      "Bangkok 은 뱅콕 — 앞에 강세"
      ]
     ],
-    "mistake": "I just got back Bangkok ✗ — from 을 빼지 않는다",
-    "similar": "I was in Bangkok.",
+    "mistake": "I've been Bangkok ✗ — 장소 앞 전치사(in)를 빼지 않는다",
+    "similar": "I just got back from Bangkok.",
     "category": "일상/카페",
-    "frequency": 8
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-tom-bangkok-02-feels-like-nothing-changed",
-   "sentence": "No. It feels like nothing has changed in four years.",
-   "meaning": "아뇨. 4년 동안 하나도 안 변한 느낌이에요.",
+   "id": "en-personal-tom-bangkok-02-feels-like-not-much-changed",
+   "sentence": "No. It feels like not much has changed in four years.",
+   "meaning": "아뇨. 4년 동안 별로 안 변한 느낌이에요.",
    "reading": null,
-   "phonetic_kr": "노우 잇 f피일z 라익 나씽 해z 체인쥐딘 f포어r 이어r즈",
+   "phonetic_kr": "노우 잇 f피일z 라익 낫 머치 해z 체인쥐딘 f포어r 이어r즈",
    "order_index": 2,
    "explanation": {
-    "key": "It feels like ~ = ~인 느낌이에요 (영상 #13). nothing has changed = 아무것도 안 변했다",
-    "anchor": "하나도 안 변한 느낌이에요",
+    "key": "It feels like ~ = ~인 느낌이에요 (영상 #13). not much has changed = 별로 안 변했다",
+    "anchor": "별로 안 변한 느낌이에요",
     "situation": "방콕에서 돌아와 오랜만에 역 앞 카페에 들른 지오를 Tom 이 반긴다.",
     "miniDialogue": [
      {
@@ -155,9 +155,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just got back from Bangkok.",
-      "ko": "방콕에 갔다가 막 돌아왔어요.",
-      "kr": "아이 저스 갓 백 f럼 뱅콕"
+      "en": "I've been in Bangkok.",
+      "ko": "방콕에 있었어요.",
+      "kr": "아이v 비닌 뱅콕"
      },
      {
       "speaker": "B",
@@ -169,9 +169,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No. It feels like nothing has changed in four years.",
-      "ko": "아뇨. 4년 동안 하나도 안 변한 느낌이에요.",
-      "kr": "노우 잇 f피일z 라익 나씽 해z 체인쥐딘 f포어r 이어r즈"
+      "en": "No. It feels like not much has changed in four years.",
+      "ko": "아뇨. 4년 동안 별로 안 변한 느낌이에요.",
+      "kr": "노우 잇 f피일z 라익 낫 머치 해z 체인쥐딘 f포어r 이어r즈"
      },
      {
       "speaker": "B",
@@ -197,9 +197,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The plane. It even had wireless charging.",
-      "ko": "비행기요. 무선 충전까지 되더라고요.",
-      "kr": "더 플레인 이리이v은 해드 와이어r리스 차r쥥"
+      "en": "The plane. There's even wireless charging.",
+      "ko": "비행기요. 무선 충전까지 돼요.",
+      "kr": "더 플레인 데어r지이v은 와이어r리스 차r쥥"
      }
     ],
     "drills": [
@@ -232,7 +232,7 @@
     "grammar": [
      {
       "struct": "It feels like ~",
-      "body": "~인 느낌이에요 (영상 #13). nothing has changed = 아무것도 안 변했다"
+      "body": "~인 느낌이에요 (영상 #13). not much has changed = 별로 안 변했다"
      }
     ],
     "chunks": [
@@ -247,9 +247,9 @@
       "~인 느낌이다"
      ],
      [
-      "nothing has",
-      "나씽 해z",
-      "아무것도 ~ 않았다"
+      "not much has",
+      "낫 머치 해z",
+      "별로 ~ 않았다"
      ],
      [
       "changed in four years.",
@@ -267,7 +267,7 @@
       "changed 의 g 는 ㅈ — in 과 붙어 체인쥐딘"
      ]
     ],
-    "mistake": "nothing has change ✗ — has 뒤는 changed",
+    "mistake": "not much has change ✗ — has 뒤는 changed",
     "similar": "It looked the same as before.",
     "category": "일상/카페",
     "frequency": 8
@@ -295,9 +295,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just got back from Bangkok.",
-      "ko": "방콕에 갔다가 막 돌아왔어요.",
-      "kr": "아이 저스 갓 백 f럼 뱅콕"
+      "en": "I've been in Bangkok.",
+      "ko": "방콕에 있었어요.",
+      "kr": "아이v 비닌 뱅콕"
      },
      {
       "speaker": "B",
@@ -309,9 +309,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No. It feels like nothing has changed in four years.",
-      "ko": "아뇨. 4년 동안 하나도 안 변한 느낌이에요.",
-      "kr": "노우 잇 f피일z 라익 나씽 해z 체인쥐딘 f포어r 이어r즈"
+      "en": "No. It feels like not much has changed in four years.",
+      "ko": "아뇨. 4년 동안 별로 안 변한 느낌이에요.",
+      "kr": "노우 잇 f피일z 라익 낫 머치 해z 체인쥐딘 f포어r 이어r즈"
      },
      {
       "speaker": "B",
@@ -337,9 +337,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The plane. It even had wireless charging.",
-      "ko": "비행기요. 무선 충전까지 되더라고요.",
-      "kr": "더 플레인 이리이v은 해드 와이어r리스 차r쥥"
+      "en": "The plane. There's even wireless charging.",
+      "ko": "비행기요. 무선 충전까지 돼요.",
+      "kr": "더 플레인 데어r지이v은 와이어r리스 차r쥥"
      }
     ],
     "drills": [
@@ -404,15 +404,15 @@
    }
   },
   {
-   "id": "en-personal-tom-bangkok-04-even-had-charging",
-   "sentence": "The plane. It even had wireless charging.",
-   "meaning": "비행기요. 무선 충전까지 되더라고요.",
+   "id": "en-personal-tom-bangkok-04-theres-even-charging",
+   "sentence": "The plane. There's even wireless charging.",
+   "meaning": "비행기요. 무선 충전까지 돼요.",
    "reading": null,
-   "phonetic_kr": "더 플레인 이리이v은 해드 와이어r리스 차r쥥",
+   "phonetic_kr": "더 플레인 데어r지이v은 와이어r리스 차r쥥",
    "order_index": 4,
    "explanation": {
-    "key": "even had ~ = ~까지 있었어요 (even = ~까지도, 놀라움)",
-    "anchor": "무선 충전까지 되더라고요",
+    "key": "There's ~ = ~이 있어요 (영상 #16). There's even ~ = ~까지 있다(놀라움)",
+    "anchor": "무선 충전까지 돼요",
     "situation": "방콕에서 돌아와 오랜만에 역 앞 카페에 들른 지오를 Tom 이 반긴다.",
     "miniDialogue": [
      {
@@ -425,9 +425,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just got back from Bangkok.",
-      "ko": "방콕에 갔다가 막 돌아왔어요.",
-      "kr": "아이 저스 갓 백 f럼 뱅콕"
+      "en": "I've been in Bangkok.",
+      "ko": "방콕에 있었어요.",
+      "kr": "아이v 비닌 뱅콕"
      },
      {
       "speaker": "B",
@@ -439,9 +439,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "No. It feels like nothing has changed in four years.",
-      "ko": "아뇨. 4년 동안 하나도 안 변한 느낌이에요.",
-      "kr": "노우 잇 f피일z 라익 나씽 해z 체인쥐딘 f포어r 이어r즈"
+      "en": "No. It feels like not much has changed in four years.",
+      "ko": "아뇨. 4년 동안 별로 안 변한 느낌이에요.",
+      "kr": "노우 잇 f피일z 라익 낫 머치 해z 체인쥐딘 f포어r 이어r즈"
      },
      {
       "speaker": "B",
@@ -467,31 +467,26 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The plane. It even had wireless charging.",
-      "ko": "비행기요. 무선 충전까지 되더라고요.",
-      "kr": "더 플레인 이리이v은 해드 와이어r리스 차r쥥"
+      "en": "The plane. There's even wireless charging.",
+      "ko": "비행기요. 무선 충전까지 돼요.",
+      "kr": "더 플레인 데어r지이v은 와이어r리스 차r쥥"
      }
     ],
     "drills": [
      {
-      "en": "The room even had a view.",
-      "ko": "방에 전망까지 있었어요.",
-      "kr": "더 루우미이v은 해더 v유우"
+      "en": "There's a screen for each seat.",
+      "ko": "좌석마다 화면이 있어요.",
+      "kr": "데어r저 스크리인 f퍼r 이이치 씨잇"
      },
      {
-      "en": "It even had a coffee machine.",
-      "ko": "커피 머신까지 있었어요.",
-      "kr": "이리이v은 해더 커피 머쉬인"
+      "en": "There's a charger by the seat.",
+      "ko": "좌석 옆에 충전기가 있어요.",
+      "kr": "데어r저 차r쥐r 바이 더 씨잇"
      },
      {
-      "en": "Did the seat have a screen?",
-      "ko": "좌석에 화면이 있었어요?",
-      "kr": "디드 더 씨잇 해v 어 스크리인"
-     },
-     {
-      "en": "My phone charged during the flight.",
-      "ko": "비행 중에 휴대폰이 충전됐어요.",
-      "kr": "마이 f포운 차r쥐드 듀어링 더 f플라잇"
+      "en": "Is there anything to drink?",
+      "ko": "마실 거 있어요?",
+      "kr": "이z 데어r 애니씽 터 드링크"
      },
      {
       "en": "The seats were so comfortable.",
@@ -501,8 +496,8 @@
     ],
     "grammar": [
      {
-      "struct": "even had ~",
-      "body": "~까지 있었어요 (even = ~까지도, 놀라움)"
+      "struct": "There's ~",
+      "body": "~이 있어요 (영상 #16). There's even ~ = ~까지 있다(놀라움)"
      }
     ],
     "chunks": [
@@ -512,9 +507,9 @@
       "비행기요"
      ],
      [
-      "It even had",
-      "이리이v은 해드",
-      "~까지 있었다"
+      "There's even",
+      "데어r지이v은",
+      "~까지 있다"
      ],
      [
       "wireless charging.",
@@ -524,18 +519,18 @@
     ],
     "phonemes": [
      [
-      "/iː/ even",
-      "even 은 긴 이 — 이이v은"
+      "/z/ there's even",
+      "there's 의 z 가 even 에 붙어 데어r지이v은"
      ],
      [
       "/dʒ/ charging",
       "charging 은 차r쥥"
      ]
     ],
-    "mistake": "It even had 가 자연스럽다 — even 은 보통 동사 앞",
-    "similar": "It had everything, even wireless charging.",
+    "mistake": "There's even a wireless charging ✗ — charging 은 셀 수 없어 a 를 붙이지 않는다",
+    "similar": "It even had wireless charging.",
     "category": "일상/카페",
-    "frequency": 7
+    "frequency": 9
    }
   }
  ]

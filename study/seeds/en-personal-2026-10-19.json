@@ -5,10 +5,10 @@
  "cards": [
   {
    "id": "en-personal-tom-diary-01-supposed-to-write",
-   "sentence": "My diary. I'm supposed to write it every morning.",
+   "sentence": "My diary. I'm supposed to write in it every morning.",
    "meaning": "일기요. 아침마다 쓰기로 돼 있어요.",
    "reading": null,
-   "phonetic_kr": "마이 다이어리 아임 써포우스터 라이리레v리 모r닝",
+   "phonetic_kr": "마이 다이어리 아임 써포우스터 라이리니레v리 모r닝",
    "order_index": 1,
    "explanation": {
     "key": "I'm supposed to ~ = ~하기로 되어 있어요 (스스로 정한 일인데 잘 안 될 때도 쓴다, 영상 #2)",
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My diary. I'm supposed to write it every morning.",
+      "en": "My diary. I'm supposed to write in it every morning.",
       "ko": "일기요. 아침마다 쓰기로 돼 있어요.",
-      "kr": "마이 다이어리 아임 써포우스터 라이리레v리 모r닝"
+      "kr": "마이 다이어리 아임 써포우스터 라이리니레v리 모r닝"
      },
      {
       "speaker": "B",
@@ -117,15 +117,15 @@
       "~하기로 돼 있다"
      ],
      [
-      "write it every morning.",
-      "라이리레v리 모r닝",
-      "매일 아침 그걸 쓰다"
+      "write in it every morning.",
+      "라이리니레v리 모r닝",
+      "아침마다 거기에 쓰다"
      ]
     ],
     "phonemes": [
      [
-      "/t/ write it every",
-      "write 와 it 의 t 가 굴러 라이리레v리"
+      "/t/ write in it every",
+      "write·in·it·every 가 이어져 라이리니레v리"
      ],
      [
       "/aɪ/ diary",
@@ -160,9 +160,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My diary. I'm supposed to write it every morning.",
+      "en": "My diary. I'm supposed to write in it every morning.",
       "ko": "일기요. 아침마다 쓰기로 돼 있어요.",
-      "kr": "마이 다이어리 아임 써포우스터 라이리레v리 모r닝"
+      "kr": "마이 다이어리 아임 써포우스터 라이리니레v리 모r닝"
      },
      {
       "speaker": "B",
@@ -295,9 +295,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My diary. I'm supposed to write it every morning.",
+      "en": "My diary. I'm supposed to write in it every morning.",
       "ko": "일기요. 아침마다 쓰기로 돼 있어요.",
-      "kr": "마이 다이어리 아임 써포우스터 라이리레v리 모r닝"
+      "kr": "마이 다이어리 아임 써포우스터 라이리니레v리 모r닝"
      },
      {
       "speaker": "B",
@@ -359,14 +359,14 @@
       "kr": "워저 리이드 마이 북"
      },
      {
-      "en": "Only AI reads my stories.",
-      "ko": "제 글은 AI 만 읽어요.",
-      "kr": "오운리 에이아이 리이즈 마이 스토리즈"
+      "en": "I'm not sure if she'd like it.",
+      "ko": "그녀가 좋아할지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 쉬드 라이킷"
      },
      {
-      "en": "I'm not sure if I can finish it.",
-      "ko": "끝낼 수 있을지 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 아이 컨 f피니쉬 잇"
+      "en": "Do you think she'd read it?",
+      "ko": "그녀가 읽을 것 같아요?",
+      "kr": "더여 씽크 쉬드 리이딧"
      }
     ],
     "grammar": [
@@ -425,9 +425,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My diary. I'm supposed to write it every morning.",
+      "en": "My diary. I'm supposed to write in it every morning.",
       "ko": "일기요. 아침마다 쓰기로 돼 있어요.",
-      "kr": "마이 다이어리 아임 써포우스터 라이리레v리 모r닝"
+      "kr": "마이 다이어리 아임 써포우스터 라이리니레v리 모r닝"
      },
      {
       "speaker": "B",

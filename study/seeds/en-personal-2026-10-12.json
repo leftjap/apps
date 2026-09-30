@@ -4,15 +4,15 @@
  "date": "2026-10-12",
  "cards": [
   {
-   "id": "en-personal-bkk-suki-01-not-as-good-as-expected",
-   "sentence": "It's not as good as I expected.",
-   "meaning": "기대했던 것만 못하네요.",
+   "id": "en-personal-bkk-suki-01-feels-like-missing",
+   "sentence": "It feels like something's missing.",
+   "meaning": "뭔가 빠진 것 같아요.",
    "reading": null,
-   "phonetic_kr": "잇츠 나래z 구래자이 익스펙티드",
+   "phonetic_kr": "잇 f피일z 라익 썸씽즈 미씽",
    "order_index": 1,
    "explanation": {
-    "key": "not as good as ~ = ~만큼 좋지 않아요 (not as good as I expected = 기대만 못하다)",
-    "anchor": "기대했던 것만 못하네요",
+    "key": "It feels like ~ = ~인 것 같아요 (영상 #13). It feels like + 문장 = 느낌상 ~인 것 같다",
+    "anchor": "빠진 것 같아요",
     "situation": "방콕 쇼핑몰의 태국식 샤부샤부(수키) 식당. 기대하고 온 곳이다. 직원이 맛이 어떤지 묻는다.",
     "miniDialogue": [
      {
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's not as good as I expected.",
-      "ko": "기대했던 것만 못하네요.",
-      "kr": "잇츠 나래z 구래자이 익스펙티드"
+      "en": "It feels like something's missing.",
+      "ko": "뭔가 빠진 것 같아요.",
+      "kr": "잇 f피일z 라익 썸씽즈 미씽"
      },
      {
       "speaker": "A",
@@ -74,63 +74,58 @@
     ],
     "drills": [
      {
-      "en": "It's not as good as it looks.",
-      "ko": "보기만큼 좋진 않아요.",
-      "kr": "잇츠 나래z 구래짓 룩스"
+      "en": "It feels like something's wrong.",
+      "ko": "뭔가 잘못된 것 같아요.",
+      "kr": "잇 f피일z 라익 썸씽즈 롱"
      },
      {
-      "en": "The hotel was better than I expected.",
-      "ko": "호텔이 기대보다 좋았어요.",
-      "kr": "더 호우텔 워z 베러r 대나이 익스펙티드"
+      "en": "It feels like it needs more salt.",
+      "ko": "소금이 더 필요한 것 같아요.",
+      "kr": "잇 f피일z 라이킷 니이즈 모어r 쏠트"
      },
      {
-      "en": "Is it as good as you remember?",
-      "ko": "기억하는 만큼 맛있어요?",
-      "kr": "이지래z 구래z 여 리멤버r"
+      "en": "Does it feel like something's missing?",
+      "ko": "뭔가 빠진 느낌이에요?",
+      "kr": "더짓 f피일 라익 썸씽즈 미씽"
      },
      {
-      "en": "Nothing tastes the way it used to.",
-      "ko": "뭘 먹어도 예전 맛이 안 나요.",
-      "kr": "나씽 테이스츠 더 웨이 잇 유우스터"
-     },
-     {
-      "en": "I expected more, to be honest.",
-      "ko": "솔직히 더 기대했어요.",
-      "kr": "아이 익스펙티드 모어r 터 비 아너스트"
+      "en": "Something tastes different today.",
+      "ko": "오늘은 뭔가 맛이 달라요.",
+      "kr": "썸씽 테이스츠 디f퍼런트 터데이"
      }
     ],
     "grammar": [
      {
-      "struct": "not as good as ~",
-      "body": "~만큼 좋지 않아요 (not as good as I expected = 기대만 못하다)"
+      "struct": "It feels like ~",
+      "body": "~인 것 같아요 (영상 #13). It feels like + 문장 = 느낌상 ~인 것 같다"
      }
     ],
     "chunks": [
      [
-      "It's not as",
-      "잇츠 나래z",
-      "~만큼 ~하지 않다"
+      "It feels like",
+      "잇 f피일z 라익",
+      "~인 것 같다"
      ],
      [
-      "good as I expected.",
-      "구래자이 익스펙티드",
-      "기대했던 만큼 좋은"
+      "something's missing.",
+      "썸씽즈 미씽",
+      "뭔가 빠졌다"
      ]
     ],
     "phonemes": [
      [
-      "/t/ not as",
-      "not 의 t 가 굴러 나래z"
+      "/iː/ feels",
+      "feels 는 긴 이 — f피일z"
      ],
      [
-      "/d/ good as I",
-      "good 의 d 가 굴러 구래자이"
+      "/ɪ/ missing",
+      "missing 은 미씽 — 짧은 이"
      ]
     ],
-    "mistake": "not good as ✗ — as 를 두 번: not as good as",
-    "similar": "It's not what I expected.",
+    "mistake": "It feels like something missing ✗ — 문장이니 동사를 넣는다: something's missing",
+    "similar": "It's not as good as I expected.",
     "category": "여행/식당",
-    "frequency": 8
+    "frequency": 9
    }
   },
   {
@@ -155,9 +150,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's not as good as I expected.",
-      "ko": "기대했던 것만 못하네요.",
-      "kr": "잇츠 나래z 구래자이 익스펙티드"
+      "en": "It feels like something's missing.",
+      "ko": "뭔가 빠진 것 같아요.",
+      "kr": "잇 f피일z 라익 썸씽즈 미씽"
      },
      {
       "speaker": "A",
@@ -285,9 +280,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's not as good as I expected.",
-      "ko": "기대했던 것만 못하네요.",
-      "kr": "잇츠 나래z 구래자이 익스펙티드"
+      "en": "It feels like something's missing.",
+      "ko": "뭔가 빠진 것 같아요.",
+      "kr": "잇 f피일z 라익 썸씽즈 미씽"
      },
      {
       "speaker": "A",
@@ -420,9 +415,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's not as good as I expected.",
-      "ko": "기대했던 것만 못하네요.",
-      "kr": "잇츠 나래z 구래자이 익스펙티드"
+      "en": "It feels like something's missing.",
+      "ko": "뭔가 빠진 것 같아요.",
+      "kr": "잇 f피일z 라익 썸씽즈 미씽"
      },
      {
       "speaker": "A",
@@ -469,9 +464,14 @@
     ],
     "drills": [
      {
-      "en": "Suddenly it all makes sense.",
-      "ko": "갑자기 다 이해가 돼요.",
-      "kr": "써든리 이롤 메익스 쎈스"
+      "en": "It tastes a little different.",
+      "ko": "맛이 좀 달라요.",
+      "kr": "잇 테이스처 리를 디f퍼런트"
+     },
+     {
+      "en": "It tastes better than it looks.",
+      "ko": "보기보다 맛있어요.",
+      "kr": "잇 테이스츠 베러r 대닛 룩스"
      },
      {
       "en": "Suddenly I'm not hungry anymore.",
@@ -479,19 +479,14 @@
       "kr": "써든리 아임 낫 헝그리 애니모어r"
      },
      {
-      "en": "Why did it suddenly get cold?",
-      "ko": "왜 갑자기 추워졌어요?",
-      "kr": "와이 디딧 써든리 겟 코울드"
+      "en": "How does it taste?",
+      "ko": "맛이 어때요?",
+      "kr": "하우 더짓 테이스트"
      },
      {
       "en": "This soup tastes great.",
       "ko": "이 수프 맛있어요.",
       "kr": "디스 쑤웁 테이스츠 그뤠잇"
-     },
-     {
-      "en": "It tastes better than it looks.",
-      "ko": "보기보다 맛있어요.",
-      "kr": "잇 테이스츠 베러r 대닛 룩스"
      }
     ],
     "grammar": [

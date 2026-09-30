@@ -4,15 +4,15 @@
  "date": "2026-10-17",
  "cards": [
   {
-   "id": "en-personal-emma-trip-01-came-home-after",
-   "sentence": "Four days? We once came home after two nights.",
-   "meaning": "4일이요? 저희는 한 번 이틀 밤만 자고 돌아왔어요.",
+   "id": "en-personal-emma-trip-01-had-to-come-home",
+   "sentence": "Four days? We once had to come home after two nights.",
+   "meaning": "4일이요? 저희는 이틀 밤 만에 돌아와야 했던 적이 있어요.",
    "reading": null,
-   "phonetic_kr": "f포어r 데이z 위 원스 케임 호우매f터r 투우 나잇츠",
+   "phonetic_kr": "f포어r 데이z 위 원스 해드 터 컴 호우매f터r 투우 나잇츠",
    "order_index": 1,
    "explanation": {
-    "key": "came home after ~ = ~ 만에 집에 왔어요 (after two nights = 이틀 밤 자고)",
-    "anchor": "이틀 밤만 자고 돌아왔어요",
+    "key": "had to ~ = ~해야 했어요 (233 추가 #14 I have to ~ 의 과거). had to come home = 집에 돌아와야 했다",
+    "anchor": "돌아와야 했던 적이 있어요",
     "situation": "아파트 복도. Emma 가 다음 주 여행 얘기를 꺼낸다.",
     "miniDialogue": [
      {
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Four days? We once came home after two nights.",
-      "ko": "4일이요? 저희는 한 번 이틀 밤만 자고 돌아왔어요.",
-      "kr": "f포어r 데이z 위 원스 케임 호우매f터r 투우 나잇츠"
+      "en": "Four days? We once had to come home after two nights.",
+      "ko": "4일이요? 저희는 이틀 밤 만에 돌아와야 했던 적이 있어요.",
+      "kr": "f포어r 데이z 위 원스 해드 터 컴 호우매f터r 투우 나잇츠"
      },
      {
       "speaker": "A",
@@ -53,9 +53,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "We were packing before we finished the sentence.",
-      "ko": "말이 끝나기도 전에 짐을 싸고 있었어요.",
-      "kr": "위 워r 패킹 비f포어r 위 f피니쉬트 더 쎈턴스"
+      "en": "I did. My wife was just thinking the same thing.",
+      "ko": "제가요. 아내도 마침 같은 생각을 하고 있었어요.",
+      "kr": "아이 디드 마이 와이f 워z 저스 씽킹 더 쎄임 씽"
      },
      {
       "speaker": "A",
@@ -74,35 +74,30 @@
     ],
     "drills": [
      {
-      "en": "She came home after three days.",
-      "ko": "그녀는 사흘 만에 집에 왔어요.",
-      "kr": "쉬 케임 호우매f터r 쓰리이 데이z"
+      "en": "We had to come home early.",
+      "ko": "일찍 돌아와야 했어요.",
+      "kr": "위 해드 터 컴 호우머r리"
      },
      {
-      "en": "We came home early from our trip.",
-      "ko": "여행에서 일찍 돌아왔어요.",
-      "kr": "위 케임 호우머r리 f러마워r 트립"
+      "en": "She had to leave after one night.",
+      "ko": "그녀는 하룻밤 만에 떠나야 했어요.",
+      "kr": "쉬 해드 터 리이v 애f터r 원 나잇"
      },
      {
-      "en": "When did you come home?",
-      "ko": "언제 집에 왔어요?",
-      "kr": "웬 디저 컴 호움"
+      "en": "Did you have to cut your trip short?",
+      "ko": "여행을 줄여야 했어요?",
+      "kr": "디저 해v 터 컷 여r 트립 쇼r트"
      },
      {
       "en": "I came home after two nights.",
       "ko": "이틀 자고 집에 왔어요.",
       "kr": "아이 케임 호우매f터r 투우 나잇츠"
-     },
-     {
-      "en": "Four days is too long for me.",
-      "ko": "저한텐 4일은 너무 길어요.",
-      "kr": "f포어r 데이z 이z 투우 롱 f퍼r 미"
      }
     ],
     "grammar": [
      {
-      "struct": "came home after ~",
-      "body": "~ 만에 집에 왔어요 (after two nights = 이틀 밤 자고)"
+      "struct": "had to ~",
+      "body": "~해야 했어요 (233 추가 #14 I have to ~ 의 과거). had to come home = 집에 돌아와야 했다"
      }
     ],
     "chunks": [
@@ -112,9 +107,9 @@
       "4일이요?"
      ],
      [
-      "We once came",
-      "위 원스 케임",
-      "우리는 한 번 ~왔다"
+      "We once had to come",
+      "위 원스 해드 터 컴",
+      "우리는 한 번 ~와야 했다"
      ],
      [
       "home after two nights.",
@@ -132,8 +127,8 @@
       "home 은 호움, after 와 붙어 호우매f터r"
      ]
     ],
-    "mistake": "came to home ✗ — home 앞에는 to 를 쓰지 않는다",
-    "similar": "We cut our trip short.",
+    "mistake": "had to came ✗ — had to 뒤는 동사원형",
+    "similar": "We cut our trip short once.",
     "category": "일상/이웃",
     "frequency": 7
    }
@@ -160,9 +155,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Four days? We once came home after two nights.",
-      "ko": "4일이요? 저희는 한 번 이틀 밤만 자고 돌아왔어요.",
-      "kr": "f포어r 데이z 위 원스 케임 호우매f터r 투우 나잇츠"
+      "en": "Four days? We once had to come home after two nights.",
+      "ko": "4일이요? 저희는 이틀 밤 만에 돌아와야 했던 적이 있어요.",
+      "kr": "f포어r 데이z 위 원스 해드 터 컴 호우매f터r 투우 나잇츠"
      },
      {
       "speaker": "A",
@@ -188,9 +183,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "We were packing before we finished the sentence.",
-      "ko": "말이 끝나기도 전에 짐을 싸고 있었어요.",
-      "kr": "위 워r 패킹 비f포어r 위 f피니쉬트 더 쎈턴스"
+      "en": "I did. My wife was just thinking the same thing.",
+      "ko": "제가요. 아내도 마침 같은 생각을 하고 있었어요.",
+      "kr": "아이 디드 마이 와이f 워z 저스 씽킹 더 쎄임 씽"
      },
      {
       "speaker": "A",
@@ -214,9 +209,9 @@
       "kr": "더 씽 이z 아이 미스 마이 캐롤레디"
      },
      {
-      "en": "The thing is, she hates the carrier.",
-      "ko": "사실 그 애가 이동장을 싫어해요.",
-      "kr": "더 씽 이z 쉬 헤잇츠 더 캐리어r"
+      "en": "The thing is, it's hard to leave them.",
+      "ko": "사실 두고 가기가 힘들어요.",
+      "kr": "더 씽 이z 잇츠 하r드 터 리이v 뎀"
      },
      {
       "en": "Did you miss your cats on the trip?",
@@ -224,9 +219,9 @@
       "kr": "디저 미스 여r 캣손 더 트립"
      },
      {
-      "en": "We missed our flight home.",
-      "ko": "집에 오는 비행기를 놓쳤어요.",
-      "kr": "위 미스타워r f플라잇 호움"
+      "en": "I really missed my cats.",
+      "ko": "고양이들이 정말 보고 싶었어요.",
+      "kr": "아이 리얼리 미스 마이 캣츠"
      },
      {
       "en": "I missed her too much.",
@@ -274,15 +269,15 @@
    }
   },
   {
-   "id": "en-personal-emma-trip-03-before-we-finished",
-   "sentence": "We were packing before we finished the sentence.",
-   "meaning": "말이 끝나기도 전에 짐을 싸고 있었어요.",
+   "id": "en-personal-emma-trip-03-thinking-same-thing",
+   "sentence": "I did. My wife was just thinking the same thing.",
+   "meaning": "제가요. 아내도 마침 같은 생각을 하고 있었어요.",
    "reading": null,
-   "phonetic_kr": "위 워r 패킹 비f포어r 위 f피니쉬트 더 쎈턴스",
+   "phonetic_kr": "아이 디드 마이 와이f 워z 저스 씽킹 더 쎄임 씽",
    "order_index": 3,
    "explanation": {
-    "key": "before we finished ~ = ~하기도 전에 (before + 주어 + 동사)",
-    "anchor": "말이 끝나기도 전에",
+    "key": "thinking the same thing = 같은 생각을 하고 있었다 (모두영어 1편 #308 I was just thinking the same thing 의 인칭 변형)",
+    "anchor": "같은 생각을 하고 있었어요",
     "situation": "아파트 복도. Emma 가 다음 주 여행 얘기를 꺼낸다.",
     "miniDialogue": [
      {
@@ -295,9 +290,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Four days? We once came home after two nights.",
-      "ko": "4일이요? 저희는 한 번 이틀 밤만 자고 돌아왔어요.",
-      "kr": "f포어r 데이z 위 원스 케임 호우매f터r 투우 나잇츠"
+      "en": "Four days? We once had to come home after two nights.",
+      "ko": "4일이요? 저희는 이틀 밤 만에 돌아와야 했던 적이 있어요.",
+      "kr": "f포어r 데이z 위 원스 해드 터 컴 호우매f터r 투우 나잇츠"
      },
      {
       "speaker": "A",
@@ -323,9 +318,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "We were packing before we finished the sentence.",
-      "ko": "말이 끝나기도 전에 짐을 싸고 있었어요.",
-      "kr": "위 워r 패킹 비f포어r 위 f피니쉬트 더 쎈턴스"
+      "en": "I did. My wife was just thinking the same thing.",
+      "ko": "제가요. 아내도 마침 같은 생각을 하고 있었어요.",
+      "kr": "아이 디드 마이 와이f 워z 저스 씽킹 더 쎄임 씽"
      },
      {
       "speaker": "A",
@@ -344,68 +339,63 @@
     ],
     "drills": [
      {
-      "en": "She left before we finished dinner.",
-      "ko": "그녀는 우리가 저녁을 다 먹기도 전에 나갔어요.",
-      "kr": "쉬 레f 비f포어r 위 f피니쉬트 디너r"
+      "en": "I was just thinking the same thing.",
+      "ko": "저도 막 같은 생각 하고 있었어요.",
+      "kr": "아이 워z 저스 씽킹 더 쎄임 씽"
      },
      {
-      "en": "We were packing all night.",
-      "ko": "밤새 짐을 쌌어요.",
-      "kr": "위 워r 패킹 올 나잇"
+      "en": "We were thinking the same thing.",
+      "ko": "우리는 같은 생각을 하고 있었어요.",
+      "kr": "위 워r 씽킹 더 쎄임 씽"
      },
      {
-      "en": "Did you pack before breakfast?",
-      "ko": "아침 먹기 전에 짐 쌌어요?",
-      "kr": "디저 팩 비f포어r 브렉f퍼스트"
+      "en": "Were you thinking the same thing?",
+      "ko": "당신도 같은 생각이었어요?",
+      "kr": "워r 여 씽킹 더 쎄임 씽"
      },
      {
-      "en": "I was packing before she said yes.",
-      "ko": "그녀가 좋다고 하기도 전에 짐을 싸고 있었어요.",
-      "kr": "아이 워z 패킹 비f포어r 쉬 쎄드 예스"
-     },
-     {
-      "en": "Before I knew it, we were home.",
-      "ko": "정신 차려 보니 집이었어요.",
-      "kr": "비f포어r 아이 뉴우 잇 위 워r 호움"
+      "en": "She was thinking the same thing.",
+      "ko": "그녀도 같은 생각을 하고 있었어요.",
+      "kr": "쉬 워z 씽킹 더 쎄임 씽"
      }
     ],
     "grammar": [
      {
-      "struct": "before we finished ~",
-      "body": "~하기도 전에 (before + 주어 + 동사)"
+      "struct": "thinking the same thing",
+      "body": "같은 생각을 하고 있었다 (모두영어 1편 #308 I was just thinking the same thing 의 인칭 변형)"
      }
     ],
     "chunks": [
      [
-      "We were packing",
-      "위 워r 패킹",
-      "우리는 짐을 싸고 있었다"
+      "I did.",
+      "아이 디드",
+      "제가요"
      ],
      [
-      "before we finished",
-      "비f포어r 위 f피니쉬트",
-      "~를 끝내기도 전에"
+      "My wife was just",
+      "마이 와이f 워z 저스",
+      "아내도 마침"
      ],
      [
-      "the sentence.",
-      "더 쎈턴스",
-      "말을"
+      "thinking the same thing.",
+      "씽킹 더 쎄임 씽",
+      "같은 생각을 하고 있었다"
      ]
     ],
     "phonemes": [
      [
-      "/æ/ packing",
-      "packing 은 패킹"
+      "/θ/ thinking",
+      "thinking 의 th 는 혀끝을 이 사이에 — 씽킹"
      ],
      [
-      "/ɪ/ finished",
-      "finished 는 f피니쉬트"
+      "/eɪ/ same",
+      "same 은 쎄임"
      ]
     ],
-    "mistake": "before finish ✗ — before 뒤에 주어+동사 또는 -ing: before we finished / before finishing",
-    "similar": "We packed right away.",
+    "mistake": "thinking a same thing ✗ — same 앞에는 the: the same thing",
+    "similar": "We both wanted to go home.",
     "category": "일상/이웃",
-    "frequency": 7
+    "frequency": 8
    }
   },
   {
@@ -430,9 +420,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Four days? We once came home after two nights.",
-      "ko": "4일이요? 저희는 한 번 이틀 밤만 자고 돌아왔어요.",
-      "kr": "f포어r 데이z 위 원스 케임 호우매f터r 투우 나잇츠"
+      "en": "Four days? We once had to come home after two nights.",
+      "ko": "4일이요? 저희는 이틀 밤 만에 돌아와야 했던 적이 있어요.",
+      "kr": "f포어r 데이z 위 원스 해드 터 컴 호우매f터r 투우 나잇츠"
      },
      {
       "speaker": "A",
@@ -458,9 +448,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "We were packing before we finished the sentence.",
-      "ko": "말이 끝나기도 전에 짐을 싸고 있었어요.",
-      "kr": "위 워r 패킹 비f포어r 위 f피니쉬트 더 쎈턴스"
+      "en": "I did. My wife was just thinking the same thing.",
+      "ko": "제가요. 아내도 마침 같은 생각을 하고 있었어요.",
+      "kr": "아이 디드 마이 와이f 워z 저스 씽킹 더 쎄임 씽"
      },
      {
       "speaker": "A",

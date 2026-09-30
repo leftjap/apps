@@ -5,10 +5,10 @@
  "cards": [
   {
    "id": "en-personal-liam-skipped-01-not-in-the-mood",
-   "sentence": "I stayed home. I just wasn't in the mood.",
-   "meaning": "집에 있었어요. 그냥 내키지 않았어요.",
+   "sentence": "I wasn't in the mood.",
+   "meaning": "내키지 않았어요.",
    "reading": null,
-   "phonetic_kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드",
+   "phonetic_kr": "아이 워즈닌 더 무우드",
    "order_index": 1,
    "explanation": {
     "key": "in the mood = ~할 기분인 (not in the mood = 내키지 않다, 모두영어 1편 #187 의 과거형)",
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I stayed home. I just wasn't in the mood.",
-      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
-      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+      "en": "I wasn't in the mood.",
+      "ko": "내키지 않았어요.",
+      "kr": "아이 워즈닌 더 무우드"
      },
      {
       "speaker": "B",
@@ -46,16 +46,16 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "That happens. Do you know what caused it?",
-      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
-      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+      "en": "That happens. Maybe it was the workout you skipped.",
+      "ko": "그럴 때 있죠. 빼먹은 운동 때문이었을지도 몰라요.",
+      "kr": "댓 해펀즈 메이비 잇 워z 더 워r카우처 스킵트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife says it's the workout I skipped.",
-      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
-      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+      "en": "That's what my wife said.",
+      "ko": "아내도 그렇게 말했어요.",
+      "kr": "댓츠 왓 마이 와이f 쎄드"
      },
      {
       "speaker": "B",
@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Don't tell her I said this, but she was right.",
-      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
-      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+      "en": "Better. I didn't mean to prove her right.",
+      "ko": "나아졌어요. 아내 말이 맞다는 걸 증명하려던 건 아니었는데요.",
+      "kr": "베러r 아이 디든 미인 터 프루우v어r 라잇"
      }
     ],
     "drills": [
@@ -84,9 +84,9 @@
       "kr": "아r 여 인 더 무우드 f퍼r 어 워크"
      },
      {
-      "en": "I just stayed home all day.",
-      "ko": "그냥 하루 종일 집에 있었어요.",
-      "kr": "아이 저스 스테이드 호우몰 데이"
+      "en": "She's not in the mood to cook.",
+      "ko": "그녀는 요리할 기분이 아니에요.",
+      "kr": "쉬z 나린 더 무우드 터 쿡"
      },
      {
       "en": "She wasn't in the mood to talk.",
@@ -107,14 +107,9 @@
     ],
     "chunks": [
      [
-      "I stayed home.",
-      "아이 스테이드 호움",
-      "집에 있었다"
-     ],
-     [
-      "I just wasn't in",
-      "아이 저스 워즈닌",
-      "그냥 ~가 아니었다"
+      "I wasn't in",
+      "아이 워즈닌",
+      "~가 아니었다"
      ],
      [
       "the mood.",
@@ -160,9 +155,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I stayed home. I just wasn't in the mood.",
-      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
-      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+      "en": "I wasn't in the mood.",
+      "ko": "내키지 않았어요.",
+      "kr": "아이 워즈닌 더 무우드"
      },
      {
       "speaker": "B",
@@ -181,16 +176,16 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "That happens. Do you know what caused it?",
-      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
-      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+      "en": "That happens. Maybe it was the workout you skipped.",
+      "ko": "그럴 때 있죠. 빼먹은 운동 때문이었을지도 몰라요.",
+      "kr": "댓 해펀즈 메이비 잇 워z 더 워r카우처 스킵트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife says it's the workout I skipped.",
-      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
-      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+      "en": "That's what my wife said.",
+      "ko": "아내도 그렇게 말했어요.",
+      "kr": "댓츠 왓 마이 와이f 쎄드"
      },
      {
       "speaker": "B",
@@ -202,9 +197,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Don't tell her I said this, but she was right.",
-      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
-      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+      "en": "Better. I didn't mean to prove her right.",
+      "ko": "나아졌어요. 아내 말이 맞다는 걸 증명하려던 건 아니었는데요.",
+      "kr": "베러r 아이 디든 미인 터 프루우v어r 라잇"
      }
     ],
     "drills": [
@@ -274,15 +269,15 @@
    }
   },
   {
-   "id": "en-personal-liam-skipped-03-workout-i-skipped",
-   "sentence": "My wife says it's the workout I skipped.",
-   "meaning": "아내 말로는 제가 빼먹은 운동 탓이래요.",
+   "id": "en-personal-liam-skipped-03-thats-what-wife-said",
+   "sentence": "That's what my wife said.",
+   "meaning": "아내도 그렇게 말했어요.",
    "reading": null,
-   "phonetic_kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트",
+   "phonetic_kr": "댓츠 왓 마이 와이f 쎄드",
    "order_index": 3,
    "explanation": {
-    "key": "~ I skipped = 제가 빼먹은 ~ (명사 뒤에 '주어+동사' 를 바로 붙인다: the workout I skipped = 제가 빼먹은 운동)",
-    "anchor": "제가 빼먹은 운동 탓이래요",
+    "key": "That's what ~ = 그게 바로 ~한 거예요 (233 #074 That's what ~). That's what my wife said = 아내도 그렇게 말했어요",
+    "anchor": "그렇게 말했어요",
     "situation": "홍대 헬스장. 전날 운동을 빠진 지오에게 Liam 이 묻는다.",
     "miniDialogue": [
      {
@@ -295,9 +290,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I stayed home. I just wasn't in the mood.",
-      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
-      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+      "en": "I wasn't in the mood.",
+      "ko": "내키지 않았어요.",
+      "kr": "아이 워즈닌 더 무우드"
      },
      {
       "speaker": "B",
@@ -316,16 +311,16 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "That happens. Do you know what caused it?",
-      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
-      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+      "en": "That happens. Maybe it was the workout you skipped.",
+      "ko": "그럴 때 있죠. 빼먹은 운동 때문이었을지도 몰라요.",
+      "kr": "댓 해펀즈 메이비 잇 워z 더 워r카우처 스킵트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife says it's the workout I skipped.",
-      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
-      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+      "en": "That's what my wife said.",
+      "ko": "아내도 그렇게 말했어요.",
+      "kr": "댓츠 왓 마이 와이f 쎄드"
      },
      {
       "speaker": "B",
@@ -337,87 +332,77 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Don't tell her I said this, but she was right.",
-      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
-      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+      "en": "Better. I didn't mean to prove her right.",
+      "ko": "나아졌어요. 아내 말이 맞다는 걸 증명하려던 건 아니었는데요.",
+      "kr": "베러r 아이 디든 미인 터 프루우v어r 라잇"
      }
     ],
     "drills": [
      {
-      "en": "It's the workout you skipped yesterday.",
-      "ko": "어제 빼먹은 운동 때문이에요.",
-      "kr": "잇츠 더 워r카우처 스킵트 예스터r데이"
+      "en": "That's what I said.",
+      "ko": "제 말이 그거예요.",
+      "kr": "댓츠 와라이 쎄드"
      },
      {
-      "en": "This is the book I finished last night.",
-      "ko": "어젯밤에 다 읽은 책이에요.",
-      "kr": "디시z 더 부카이 f피니쉬트 라스 나잇"
+      "en": "That's what I thought.",
+      "ko": "저도 그렇게 생각했어요.",
+      "kr": "댓츠 와라이 쏘옷"
      },
      {
-      "en": "Is this the gym you go to?",
-      "ko": "여기가 다니시는 헬스장이에요?",
-      "kr": "이z 디스 더 쥠 여 고우 투우"
+      "en": "Is that what she said?",
+      "ko": "그녀가 그렇게 말했어요?",
+      "kr": "이z 댓 왓 쉬 쎄드"
      },
      {
-      "en": "I skipped my run again.",
-      "ko": "또 러닝을 빼먹었어요.",
-      "kr": "아이 스킵트 마이 러너겐"
-     },
-     {
-      "en": "The run I skipped made me grumpy.",
-      "ko": "빼먹은 러닝 때문에 짜증이 났어요.",
-      "kr": "더 러나이 스킵트 메이드 미 그럼피"
+      "en": "My wife said the same thing.",
+      "ko": "아내도 똑같은 말을 했어요.",
+      "kr": "마이 와이f 쎄드 더 쎄임 씽"
      }
     ],
     "grammar": [
      {
-      "struct": "~ I skipped",
-      "body": "제가 빼먹은 ~ (명사 뒤에 '주어+동사' 를 바로 붙인다: the workout I skipped = 제가 빼먹은 운동)"
+      "struct": "That's what ~",
+      "body": "그게 바로 ~한 거예요 (233 #074 That's what ~). That's what my wife said = 아내도 그렇게 말했어요"
      }
     ],
     "chunks": [
      [
-      "My wife says",
-      "마이 와이f 쎄z",
-      "아내 말로는"
+      "That's what",
+      "댓츠 왓",
+      "그게 바로 ~"
      ],
      [
-      "it's the",
-      "잇츠 더",
-      "그건 ~다"
-     ],
-     [
-      "workout I skipped.",
-      "워r카우라이 스킵트",
-      "제가 빼먹은 운동"
+      "my wife said.",
+      "마이 와이f 쎄드",
+      "아내가 한 말"
      ]
     ],
     "phonemes": [
      [
-      "/t/ workout I",
-      "workout 의 t 가 굴러 워r카우라이"
+      "/ts/ that's",
+      "that's 는 댓츠"
      ],
      [
-      "/pt/ skipped",
-      "skipped 끝은 트 — 스킵트"
+      "/ɛ/ said",
+      "said 는 쎄드 — 쎄이드가 아니다"
      ]
     ],
-    "mistake": "the workout I skipped it ✗ — it 을 또 쓰지 않는다",
-    "similar": "She thinks it's because I didn't work out.",
+    "mistake": "That's what my wife say ✗ — 지난 일이라 said",
+    "similar": "My wife said the same thing.",
     "category": "운동/헬스장",
-    "frequency": 7
+    "frequency": 8
    }
   },
   {
-   "id": "en-personal-liam-skipped-04-dont-tell-her",
-   "sentence": "Don't tell her I said this, but she was right.",
-   "meaning": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
+   "id": "en-personal-liam-skipped-04-didnt-mean-prove-right",
+   "sentence": "Better. I didn't mean to prove her right.",
+   "meaning": "나아졌어요. 아내 말이 맞다는 걸 증명하려던 건 아니었는데요.",
    "reading": null,
-   "phonetic_kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇",
+   "phonetic_kr": "베러r 아이 디든 미인 터 프루우v어r 라잇",
    "order_index": 4,
    "explanation": {
-    "key": "Don't tell her ~ = ~라고 그녀한테 말하지 마세요 (Don't tell her I said this = 제가 이 말 했다고 하지 마세요)",
-    "anchor": "제가 이 말 했다고 하지 마세요",
+    "key": "I didn't mean to ~ = ~하려던 건 아니었어요 (영상 #27). prove her right = 그녀 말이 맞다는 걸 증명하다",
+    "anchor": "증명하려던 건 아니었는데요",
     "situation": "홍대 헬스장. 전날 운동을 빠진 지오에게 Liam 이 묻는다.",
     "miniDialogue": [
      {
@@ -430,9 +415,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I stayed home. I just wasn't in the mood.",
-      "ko": "집에 있었어요. 그냥 내키지 않았어요.",
-      "kr": "아이 스테이드 호움 아이 저스 워즈닌 더 무우드"
+      "en": "I wasn't in the mood.",
+      "ko": "내키지 않았어요.",
+      "kr": "아이 워즈닌 더 무우드"
      },
      {
       "speaker": "B",
@@ -451,16 +436,16 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "That happens. Do you know what caused it?",
-      "ko": "그럴 때 있죠. 왜 그랬는지 알아요?",
-      "kr": "댓 해펀즈 더여 노우 왓 코오즈딧"
+      "en": "That happens. Maybe it was the workout you skipped.",
+      "ko": "그럴 때 있죠. 빼먹은 운동 때문이었을지도 몰라요.",
+      "kr": "댓 해펀즈 메이비 잇 워z 더 워r카우처 스킵트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife says it's the workout I skipped.",
-      "ko": "아내 말로는 제가 빼먹은 운동 탓이래요.",
-      "kr": "마이 와이f 쎄z 잇츠 더 워r카우라이 스킵트"
+      "en": "That's what my wife said.",
+      "ko": "아내도 그렇게 말했어요.",
+      "kr": "댓츠 왓 마이 와이f 쎄드"
      },
      {
       "speaker": "B",
@@ -472,75 +457,70 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Don't tell her I said this, but she was right.",
-      "ko": "아내한테는 제가 이 말 했다고 하지 마세요. 근데 아내 말이 맞았어요.",
-      "kr": "돈 텔 허r 아이 쎄드 디스 벗 쉬 워z 라잇"
+      "en": "Better. I didn't mean to prove her right.",
+      "ko": "나아졌어요. 아내 말이 맞다는 걸 증명하려던 건 아니었는데요.",
+      "kr": "베러r 아이 디든 미인 터 프루우v어r 라잇"
      }
     ],
     "drills": [
      {
-      "en": "Don't tell her I told you.",
-      "ko": "제가 말했다고 그녀한테 하지 마세요.",
-      "kr": "돈 텔 허r 아이 톨저"
+      "en": "I didn't mean to eat the whole thing.",
+      "ko": "다 먹으려던 건 아니었어요.",
+      "kr": "아이 디든 미인 터 이잇 더 호울 씽"
      },
      {
-      "en": "Don't tell anyone, but I'm nervous.",
-      "ko": "아무한테도 말하지 마세요, 사실 떨려요.",
-      "kr": "돈 텔 애니원 버라임 너rv어스"
+      "en": "I didn't mean to be rude.",
+      "ko": "무례하게 굴려던 건 아니었어요.",
+      "kr": "아이 디든 미인 터 비 루우드"
      },
      {
-      "en": "Did she say I was right?",
-      "ko": "그녀가 제 말이 맞다고 했어요?",
-      "kr": "디드 쉬 쎄이 아이 워z 라잇"
+      "en": "Did you mean to do that?",
+      "ko": "일부러 그런 거예요?",
+      "kr": "디저 미인 터 두 댓"
      },
      {
-      "en": "You were right about the gym.",
-      "ko": "헬스장 얘기는 당신 말이 맞았어요.",
-      "kr": "유 워r 라이러바웃 더 쥠"
-     },
-     {
-      "en": "Please don't tell my wife.",
-      "ko": "제 아내한테는 말하지 마세요.",
-      "kr": "플리이z 돈 텔 마이 와이f"
+      "en": "She was right about the gym.",
+      "ko": "헬스장 얘기는 그녀 말이 맞았어요.",
+      "kr": "쉬 워z 라이러바웃 더 쥠"
      }
     ],
     "grammar": [
      {
-      "struct": "Don't tell her ~",
-      "body": "~라고 그녀한테 말하지 마세요 (Don't tell her I said this = 제가 이 말 했다고 하지 마세요)"
+      "struct": "I didn't mean to ~",
+      "body": "~하려던 건 아니었어요 (영상 #27). prove her right = 그녀 말이 맞다는 걸 증명하다"
      }
     ],
     "chunks": [
      [
-      "Don't tell her",
-      "돈 텔 허r",
-      "그녀에게 말하지 마라"
+      "Better.",
+      "베러r",
+      "나아졌어요"
      ],
      [
-      "I said this,",
-      "아이 쎄드 디스",
-      "제가 이 말을 했다고"
+      "I didn't mean to",
+      "아이 디든 미인 터",
+      "~하려던 건 아니었다"
      ],
      [
-      "but she was right.",
-      "벗 쉬 워z 라잇",
-      "근데 그녀가 맞았다"
+      "prove her right.",
+      "프루우v어r 라잇",
+      "그녀 말이 맞다는 걸 증명하다"
      ]
     ],
     "phonemes": [
      [
-      "/ɛ/ tell",
-      "tell 은 텔"
+      "/uː/ prove",
+      "prove 는 긴 우 — 프루우v"
      ],
      [
-      "/aɪ/ right",
-      "right 는 라잇 — 혀를 말아 시작"
+      "/iː/ mean",
+      "mean 은 긴 이 — 미인"
      ]
     ],
-    "mistake": "Don't say her ✗ — 사람에게 말하다는 tell her",
-    "similar": "Keep this between us, but she was right.",
+    "mistake": "I didn't mean to proved ✗ — to 뒤는 동사원형",
+    "similar": "Better. She was right after all.",
     "category": "운동/헬스장",
-    "frequency": 8
+    "frequency": 9
    }
   }
  ]

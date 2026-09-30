@@ -53,9 +53,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to. Put the whole thing in.",
-      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
-      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+      "en": "You don't have to. Put the whole thing in your mouth.",
+      "ko": "안 잘라도 돼요. 통째로 입에 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인 여r 마우쓰"
      },
      {
       "speaker": "A",
@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've had fifty years of practice.",
-      "ko": "50년 동안 연습했거든요.",
-      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
+      "en": "You might want to open wide.",
+      "ko": "입을 크게 벌리시는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 오우펀 와이드"
      }
     ],
     "drills": [
@@ -188,9 +188,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to. Put the whole thing in.",
-      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
-      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+      "en": "You don't have to. Put the whole thing in your mouth.",
+      "ko": "안 잘라도 돼요. 통째로 입에 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인 여r 마우쓰"
      },
      {
       "speaker": "A",
@@ -202,9 +202,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've had fifty years of practice.",
-      "ko": "50년 동안 연습했거든요.",
-      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
+      "en": "You might want to open wide.",
+      "ko": "입을 크게 벌리시는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 오우펀 와이드"
      }
     ],
     "drills": [
@@ -270,10 +270,10 @@
   },
   {
    "id": "en-personal-tourist-ssam-03-dont-have-to-cut",
-   "sentence": "You don't have to. Put the whole thing in.",
-   "meaning": "안 잘라도 돼요. 통째로 넣으세요.",
+   "sentence": "You don't have to. Put the whole thing in your mouth.",
+   "meaning": "안 잘라도 돼요. 통째로 입에 넣으세요.",
    "reading": null,
-   "phonetic_kr": "유 돈 해프터 풋 더 호울 씽 인",
+   "phonetic_kr": "유 돈 해프터 풋 더 호울 씽 인 여r 마우쓰",
    "order_index": 3,
    "explanation": {
     "key": "You don't have to = ~하지 않아도 돼요 (영상 #23). 뒤 동사를 빼고 You don't have to. 로 끝낼 수 있다",
@@ -318,9 +318,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to. Put the whole thing in.",
-      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
-      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+      "en": "You don't have to. Put the whole thing in your mouth.",
+      "ko": "안 잘라도 돼요. 통째로 입에 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인 여r 마우쓰"
      },
      {
       "speaker": "A",
@@ -332,9 +332,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've had fifty years of practice.",
-      "ko": "50년 동안 연습했거든요.",
-      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
+      "en": "You might want to open wide.",
+      "ko": "입을 크게 벌리시는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 오우펀 와이드"
      }
     ],
     "drills": [
@@ -359,9 +359,9 @@
       "kr": "위 돈 해프터 오어r더r 모어r"
      },
      {
-      "en": "Just put it all in your mouth.",
-      "ko": "그냥 다 입에 넣으세요.",
-      "kr": "저스 푸리롤 인 여r 마우쓰"
+      "en": "You don't have to finish it all.",
+      "ko": "다 드시지 않아도 돼요.",
+      "kr": "유 돈 해프터 f피니쉬 이롤"
      }
     ],
     "grammar": [
@@ -377,9 +377,9 @@
       "안 그래도 돼요"
      ],
      [
-      "Put the whole thing in.",
-      "풋 더 호울 씽 인",
-      "통째로 넣으세요"
+      "Put the whole thing in your mouth.",
+      "풋 더 호울 씽 인 여r 마우쓰",
+      "통째로 입에 넣으세요"
      ]
     ],
     "phonemes": [
@@ -399,15 +399,15 @@
    }
   },
   {
-   "id": "en-personal-tourist-ssam-04-fifty-years-practice",
-   "sentence": "I've had fifty years of practice.",
-   "meaning": "50년 동안 연습했거든요.",
+   "id": "en-personal-tourist-ssam-04-might-want-open-wide",
+   "sentence": "You might want to open wide.",
+   "meaning": "입을 크게 벌리시는 게 좋을 거예요.",
    "reading": null,
-   "phonetic_kr": "아이v 해드 f피프티 이어r저v 프랙티스",
+   "phonetic_kr": "유 마잇 워너 오우펀 와이드",
    "order_index": 4,
    "explanation": {
-    "key": "~ years of practice = ~년 동안 연습 (have had + 기간 + of practice)",
-    "anchor": "50년 동안 연습했거든요",
+    "key": "You might want to ~ = ~하시는 게 좋을 거예요 (영상 #24). open wide = 입을 크게 벌리다",
+    "anchor": "크게 벌리시는 게 좋을 거예요",
     "situation": "홍대 삼겹살집. 옆 테이블의 외국인 여행객이 상추를 따로 먹다가 지오에게 묻는다.",
     "miniDialogue": [
      {
@@ -448,9 +448,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "You don't have to. Put the whole thing in.",
-      "ko": "안 잘라도 돼요. 통째로 넣으세요.",
-      "kr": "유 돈 해프터 풋 더 호울 씽 인"
+      "en": "You don't have to. Put the whole thing in your mouth.",
+      "ko": "안 잘라도 돼요. 통째로 입에 넣으세요.",
+      "kr": "유 돈 해프터 풋 더 호울 씽 인 여r 마우쓰"
      },
      {
       "speaker": "A",
@@ -462,70 +462,65 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've had fifty years of practice.",
-      "ko": "50년 동안 연습했거든요.",
-      "kr": "아이v 해드 f피프티 이어r저v 프랙티스"
+      "en": "You might want to open wide.",
+      "ko": "입을 크게 벌리시는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 오우펀 와이드"
      }
     ],
     "drills": [
      {
-      "en": "She's had ten years of practice.",
-      "ko": "그녀는 10년 동안 연습해 왔어요.",
-      "kr": "쉬z 해드 텐 이어r저v 프랙티스"
+      "en": "You might want to take a smaller bite.",
+      "ko": "조금 작게 드시는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 테이커 스몰러r 바잇"
      },
      {
-      "en": "I've had a lot of practice.",
-      "ko": "연습을 많이 했어요.",
-      "kr": "아이v 해더 라러v 프랙티스"
+      "en": "You might want to try it with garlic.",
+      "ko": "마늘이랑 드셔 보시는 게 좋을 거예요.",
+      "kr": "유 마잇 워너 트라이 잇 위드 가r릭"
      },
      {
-      "en": "How many years have you lived here?",
-      "ko": "여기 산 지 몇 년 됐어요?",
-      "kr": "하우 메니 이어r즈 해v 여 리v드 히어r"
+      "en": "Maybe you should cut it first.",
+      "ko": "먼저 자르시는 게 좋을지도 몰라요.",
+      "kr": "메이비 여 슈드 커릿 f퍼r스트"
      },
      {
-      "en": "It takes practice.",
-      "ko": "연습이 필요해요.",
-      "kr": "잇 테익스 프랙티스"
-     },
-     {
-      "en": "I've been eating this for fifty years.",
-      "ko": "50년째 먹고 있어요.",
-      "kr": "아이v 비니이링 디스 f퍼r f피프티 이어r즈"
+      "en": "Open wide and put it all in.",
+      "ko": "입을 크게 벌리고 다 넣으세요.",
+      "kr": "오우펀 와이던 푸리롤 인"
      }
     ],
     "grammar": [
      {
-      "struct": "~ years of practice",
-      "body": "~년 동안 연습 (have had + 기간 + of practice)"
+      "struct": "You might want to ~",
+      "body": "~하시는 게 좋을 거예요 (영상 #24). open wide = 입을 크게 벌리다"
      }
     ],
     "chunks": [
      [
-      "I've had",
-      "아이v 해드",
-      "~을 해 왔다"
+      "You might want to",
+      "유 마잇 워너",
+      "~하시는 게 좋을 거예요"
      ],
      [
-      "fifty years of practice.",
-      "f피프티 이어r저v 프랙티스",
-      "50년 연습"
+      "open wide.",
+      "오우펀 와이드",
+      "입을 크게 벌리다"
      ]
     ],
     "phonemes": [
      [
-      "/j/ years",
-      "years 는 이어r즈 — 앞에 y 소리가 있다"
+      "/ə/ want to",
+      "want to 는 빠르게 워너"
      ],
      [
-      "/æ/ practice",
-      "practice 는 프랙티스 — 입을 크게"
+      "/oʊ/ open",
+      "open 은 오우펀"
      ]
     ],
-    "mistake": "fifty year ✗ — years 로 복수",
-    "similar": "I've been doing this for fifty years.",
+    "mistake": "You might want open ✗ — want 뒤에 to",
+    "similar": "Just open your mouth wide.",
     "category": "일상/외식",
-    "frequency": 7
+    "frequency": 9
    }
   }
  ]

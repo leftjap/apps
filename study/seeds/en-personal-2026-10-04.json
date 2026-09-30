@@ -4,23 +4,23 @@
  "date": "2026-10-04",
  "cards": [
   {
-   "id": "en-personal-bkk-grab-pin-01-only-shows-pin",
-   "sentence": "Excuse me. My Grab app only shows a PIN.",
-   "meaning": "실례합니다. 그랩 앱에 PIN 만 나와요.",
+   "id": "en-personal-bkk-grab-pin-01-looks-like-pin-only",
+   "sentence": "Excuse me. It looks like Grab only gave me a PIN.",
+   "meaning": "실례합니다. 그랩이 PIN 만 준 것 같아요.",
    "reading": null,
-   "phonetic_kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀",
+   "phonetic_kr": "익스큐우z 미 잇 룩스 라익 그래보운리 게이v 미 어 핀",
    "order_index": 1,
    "explanation": {
-    "key": "only shows ~ = ~만 보여 줘요 (only 는 동사 앞에 둔다)",
-    "anchor": "PIN 만 나와요",
+    "key": "It looks like ~ = ~인 것 같아요 (영상 #14). It looks like + 문장 = 보니까 ~인 것 같다",
+    "anchor": "준 것 같아요",
     "situation": "수완나품 공항 입국장(2층). 그랩을 불렀는데 앱에 기사 대신 4자리 PIN 만 나온다. 공항 직원에게 묻는다.",
     "miniDialogue": [
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Excuse me. My Grab app only shows a PIN.",
-      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
-      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+      "en": "Excuse me. It looks like Grab only gave me a PIN.",
+      "ko": "실례합니다. 그랩이 PIN 만 준 것 같아요.",
+      "kr": "익스큐우z 미 잇 룩스 라익 그래보운리 게이v 미 어 핀"
      },
      {
       "speaker": "A",
@@ -67,42 +67,42 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I only learned it last week.",
-      "ko": "저도요. 저도 지난주에야 배웠어요.",
-      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
+      "en": "Same here. I only found out last week.",
+      "ko": "저도요. 저도 지난주에야 알았어요.",
+      "kr": "쎄임 히어r 아이 오운리 f파운다웃 라스 위익"
      }
     ],
     "drills": [
      {
-      "en": "The screen only shows the time.",
-      "ko": "화면에 시간만 나와요.",
-      "kr": "더 스크리이노운리 쇼우z 더 타임"
+      "en": "It looks like my driver is lost.",
+      "ko": "기사님이 길을 잃은 것 같아요.",
+      "kr": "잇 룩스 라익 마이 드라이v어r 이z 로스트"
      },
      {
-      "en": "My phone only shows one bar.",
-      "ko": "휴대폰 신호가 한 칸밖에 안 떠요.",
-      "kr": "마이 f포우노운리 쇼우z 원 바r"
+      "en": "It looks like the app changed.",
+      "ko": "앱이 바뀐 것 같아요.",
+      "kr": "잇 룩스 라익 디 앱 체인쥐드"
      },
      {
       "en": "Why does it only show a number?",
-      "ko": "왜 번호만 나와요?",
+      "ko": "왜 숫자만 나와요?",
       "kr": "와이 더지로운리 쇼우 어 넘버r"
      },
      {
-      "en": "It says my driver is on the way.",
-      "ko": "기사가 오고 있다고 나와요.",
-      "kr": "잇 쎄z 마이 드라이v어r 이z 온 더 웨이"
+      "en": "The screen only shows a PIN.",
+      "ko": "화면에 PIN 만 나와요.",
+      "kr": "더 스크리이노운리 쇼우z 어 핀"
      },
      {
-      "en": "All I see is a PIN.",
-      "ko": "보이는 건 PIN 뿐이에요.",
-      "kr": "올 아이 씨이 이z 어 핀"
+      "en": "Does it look like it's working?",
+      "ko": "작동하는 것 같아요?",
+      "kr": "더짓 룩 라이킷츠 워r킹"
      }
     ],
     "grammar": [
      {
-      "struct": "only shows ~",
-      "body": "~만 보여 줘요 (only 는 동사 앞에 둔다)"
+      "struct": "It looks like ~",
+      "body": "~인 것 같아요 (영상 #14). It looks like + 문장 = 보니까 ~인 것 같다"
      }
     ],
     "chunks": [
@@ -112,30 +112,30 @@
       "실례합니다"
      ],
      [
-      "My Grab app only",
-      "마이 그래배포운리",
-      "제 그랩 앱이 ~만"
+      "It looks like",
+      "잇 룩스 라익",
+      "~인 것 같아요"
      ],
      [
-      "shows a PIN.",
-      "쇼우z 어 핀",
-      "PIN 을 보여 준다"
+      "Grab only gave me a PIN.",
+      "그래보운리 게이v 미 어 핀",
+      "그랩이 PIN 만 줬다"
      ]
     ],
     "phonemes": [
      [
-      "/æ/ app",
-      "app 은 입을 크게 — 앱. 어플이 아니다"
+      "/ʊ/ looks",
+      "looks 는 짧은 우 — 룩스"
      ],
      [
-      "/oʊ/ only",
-      "only 는 오운리 — 짧게 끊지 않는다"
+      "/eɪ/ gave",
+      "gave 는 게이v — 끝은 v"
      ]
     ],
-    "mistake": "말할 때는 only 를 동사 앞에 — shows only a PIN 도 되지만 only shows 가 흔하다",
-    "similar": "All I see is a PIN.",
+    "mistake": "It looks Grab gave me ✗ — 문장 앞에는 like 를 넣는다: It looks like Grab gave me",
+    "similar": "Grab only gave me a PIN, it seems.",
     "category": "여행/교통",
-    "frequency": 8
+    "frequency": 9
    }
   },
   {
@@ -153,9 +153,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Excuse me. My Grab app only shows a PIN.",
-      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
-      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+      "en": "Excuse me. It looks like Grab only gave me a PIN.",
+      "ko": "실례합니다. 그랩이 PIN 만 준 것 같아요.",
+      "kr": "익스큐우z 미 잇 룩스 라익 그래보운리 게이v 미 어 핀"
      },
      {
       "speaker": "A",
@@ -202,9 +202,9 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I only learned it last week.",
-      "ko": "저도요. 저도 지난주에야 배웠어요.",
-      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
+      "en": "Same here. I only found out last week.",
+      "ko": "저도요. 저도 지난주에야 알았어요.",
+      "kr": "쎄임 히어r 아이 오운리 f파운다웃 라스 위익"
      }
     ],
     "drills": [
@@ -284,9 +284,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Excuse me. My Grab app only shows a PIN.",
-      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
-      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+      "en": "Excuse me. It looks like Grab only gave me a PIN.",
+      "ko": "실례합니다. 그랩이 PIN 만 준 것 같아요.",
+      "kr": "익스큐우z 미 잇 룩스 라익 그래보운리 게이v 미 어 핀"
      },
      {
       "speaker": "A",
@@ -333,9 +333,9 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I only learned it last week.",
-      "ko": "저도요. 저도 지난주에야 배웠어요.",
-      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
+      "en": "Same here. I only found out last week.",
+      "ko": "저도요. 저도 지난주에야 알았어요.",
+      "kr": "쎄임 히어r 아이 오운리 f파운다웃 라스 위익"
      }
     ],
     "drills": [
@@ -414,9 +414,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Excuse me. My Grab app only shows a PIN.",
-      "ko": "실례합니다. 그랩 앱에 PIN 만 나와요.",
-      "kr": "익스큐우z 미 마이 그래배포운리 쇼우z 어 핀"
+      "en": "Excuse me. It looks like Grab only gave me a PIN.",
+      "ko": "실례합니다. 그랩이 PIN 만 준 것 같아요.",
+      "kr": "익스큐우z 미 잇 룩스 라익 그래보운리 게이v 미 어 핀"
      },
      {
       "speaker": "A",
@@ -463,9 +463,9 @@
      {
       "speaker": "A",
       "name": "직원",
-      "en": "Same here. I only learned it last week.",
-      "ko": "저도요. 저도 지난주에야 배웠어요.",
-      "kr": "쎄임 히어r 아이 오운리 러r언딧 라스 위익"
+      "en": "Same here. I only found out last week.",
+      "ko": "저도요. 저도 지난주에야 알았어요.",
+      "kr": "쎄임 히어r 아이 오운리 f파운다웃 라스 위익"
      }
     ],
     "drills": [

@@ -6,13 +6,13 @@
   {
    "id": "en-personal-bkk-breakfast-01-didnt-mean-to-sleep",
    "sentence": "I didn't mean to sleep through the wake-up call.",
-   "meaning": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+   "meaning": "모닝콜을 못 듣고 계속 자려던 건 아니었어요.",
    "reading": null,
    "phonetic_kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜",
    "order_index": 1,
    "explanation": {
     "key": "I didn't mean to ~ = ~하려던 건 아니었어요 (의도하지 않은 일을 사과할 때, 영상 #27)",
-    "anchor": "잘 생각은 없었어요",
+    "anchor": "자려던 건 아니었어요",
     "situation": "방콕 호텔 프런트, 아침 10시 5분. 전날 9시 50분 모닝콜을 부탁했던 지오가 내려온다.",
     "miniDialogue": [
      {
@@ -26,15 +26,15 @@
       "speaker": "B",
       "name": "지오",
       "en": "I didn't mean to sleep through the wake-up call.",
-      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "ko": "모닝콜을 못 듣고 계속 자려던 건 아니었어요.",
       "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "That's okay. It rang a few times.",
-      "ko": "괜찮아요. 몇 번 울렸는데요.",
-      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+      "en": "That's okay. You did pick up, though.",
+      "ko": "괜찮아요. 받으시긴 했는데요.",
+      "kr": "댓소우케이 유 디드 피컵 도우"
      },
      {
       "speaker": "B",
@@ -46,16 +46,16 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Is there anything I can get you?",
-      "ko": "뭐 좀 가져다 드릴까요?",
-      "kr": "이z 데어r 애니씽 아이 컨 게처"
+      "en": "Is there anything I can do for you?",
+      "ko": "제가 뭐 도와드릴 게 있을까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 두 f퍼r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Is there a place nearby that still serves breakfast?",
-      "ko": "근처에 아직 아침 파는 데가 있을까요?",
-      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+      "en": "Can you recommend a place that still serves breakfast?",
+      "ko": "아직 아침 파는 곳 좀 추천해 주실 수 있어요?",
+      "kr": "컨 여 레커멘더 플레이스 댓 스틸 써rv즈 브렉f퍼스트"
      },
      {
       "speaker": "A",
@@ -146,7 +146,7 @@
    "phonetic_kr": "잇 룩스 라이카이 앤써r디린 마이 슬리입",
    "order_index": 2,
    "explanation": {
-    "key": "It looks like ~ = ~했나 봐요 (보이는 걸 근거로 짐작할 때, 영상 #14)",
+    "key": "It looks like ~ = ~했나 봐요 (드러난 사실로 짐작할 때, 영상 #14)",
     "anchor": "받았나 봐요",
     "situation": "방콕 호텔 프런트, 아침 10시 5분. 전날 9시 50분 모닝콜을 부탁했던 지오가 내려온다.",
     "miniDialogue": [
@@ -161,15 +161,15 @@
       "speaker": "B",
       "name": "지오",
       "en": "I didn't mean to sleep through the wake-up call.",
-      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "ko": "모닝콜을 못 듣고 계속 자려던 건 아니었어요.",
       "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "That's okay. It rang a few times.",
-      "ko": "괜찮아요. 몇 번 울렸는데요.",
-      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+      "en": "That's okay. You did pick up, though.",
+      "ko": "괜찮아요. 받으시긴 했는데요.",
+      "kr": "댓소우케이 유 디드 피컵 도우"
      },
      {
       "speaker": "B",
@@ -181,16 +181,16 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Is there anything I can get you?",
-      "ko": "뭐 좀 가져다 드릴까요?",
-      "kr": "이z 데어r 애니씽 아이 컨 게처"
+      "en": "Is there anything I can do for you?",
+      "ko": "제가 뭐 도와드릴 게 있을까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 두 f퍼r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Is there a place nearby that still serves breakfast?",
-      "ko": "근처에 아직 아침 파는 데가 있을까요?",
-      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+      "en": "Can you recommend a place that still serves breakfast?",
+      "ko": "아직 아침 파는 곳 좀 추천해 주실 수 있어요?",
+      "kr": "컨 여 레커멘더 플레이스 댓 스틸 써rv즈 브렉f퍼스트"
      },
      {
       "speaker": "A",
@@ -237,7 +237,7 @@
     "grammar": [
      {
       "struct": "It looks like ~",
-      "body": "~했나 봐요 (보이는 걸 근거로 짐작할 때, 영상 #14)"
+      "body": "~했나 봐요 (드러난 사실로 짐작할 때, 영상 #14)"
      }
     ],
     "chunks": [
@@ -269,15 +269,15 @@
    }
   },
   {
-   "id": "en-personal-bkk-breakfast-03-place-still-serves",
-   "sentence": "Is there a place nearby that still serves breakfast?",
-   "meaning": "근처에 아직 아침 파는 데가 있을까요?",
+   "id": "en-personal-bkk-breakfast-03-recommend-place-breakfast",
+   "sentence": "Can you recommend a place that still serves breakfast?",
+   "meaning": "아직 아침 파는 곳 좀 추천해 주실 수 있어요?",
    "reading": null,
-   "phonetic_kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트",
+   "phonetic_kr": "컨 여 레커멘더 플레이스 댓 스틸 써rv즈 브렉f퍼스트",
    "order_index": 3,
    "explanation": {
-    "key": "a place nearby that ~ = 근처에 ~하는 곳 (that 이 앞의 명사를 뒤에서 꾸민다: a place nearby that still serves breakfast = 근처에 아직 아침을 파는 곳)",
-    "anchor": "아직 아침 파는 데",
+    "key": "Can you ~ = ~해 주실 수 있어요? (영상 #8). a place that still serves breakfast = 아직 아침을 파는 곳",
+    "anchor": "추천해 주실 수 있어요",
     "situation": "방콕 호텔 프런트, 아침 10시 5분. 전날 9시 50분 모닝콜을 부탁했던 지오가 내려온다.",
     "miniDialogue": [
      {
@@ -291,15 +291,15 @@
       "speaker": "B",
       "name": "지오",
       "en": "I didn't mean to sleep through the wake-up call.",
-      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "ko": "모닝콜을 못 듣고 계속 자려던 건 아니었어요.",
       "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "That's okay. It rang a few times.",
-      "ko": "괜찮아요. 몇 번 울렸는데요.",
-      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+      "en": "That's okay. You did pick up, though.",
+      "ko": "괜찮아요. 받으시긴 했는데요.",
+      "kr": "댓소우케이 유 디드 피컵 도우"
      },
      {
       "speaker": "B",
@@ -311,16 +311,16 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Is there anything I can get you?",
-      "ko": "뭐 좀 가져다 드릴까요?",
-      "kr": "이z 데어r 애니씽 아이 컨 게처"
+      "en": "Is there anything I can do for you?",
+      "ko": "제가 뭐 도와드릴 게 있을까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 두 f퍼r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Is there a place nearby that still serves breakfast?",
-      "ko": "근처에 아직 아침 파는 데가 있을까요?",
-      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+      "en": "Can you recommend a place that still serves breakfast?",
+      "ko": "아직 아침 파는 곳 좀 추천해 주실 수 있어요?",
+      "kr": "컨 여 레커멘더 플레이스 댓 스틸 써rv즈 브렉f퍼스트"
      },
      {
       "speaker": "A",
@@ -339,42 +339,42 @@
     ],
     "drills": [
      {
-      "en": "Is there a café that still serves lunch?",
-      "ko": "아직 점심 파는 카페 있어요?",
-      "kr": "이z 데어r 어 캐f페이 댓 스틸 써rv즈 런치"
+      "en": "Can you recommend a good place to eat?",
+      "ko": "밥 먹기 좋은 곳 추천해 주실래요?",
+      "kr": "컨 여 레커멘더 굿 플레이스 터 이잇"
+     },
+     {
+      "en": "Can you call me a taxi?",
+      "ko": "택시 좀 불러 주실래요?",
+      "kr": "컨 여 콜 미 어 택씨"
+     },
+     {
+      "en": "Is there a café that opens early?",
+      "ko": "일찍 여는 카페 있어요?",
+      "kr": "이z 데어r 어 캐f페이 대로우펀저r리"
      },
      {
       "en": "I know a place that serves great noodles.",
-      "ko": "국수 맛있는 데를 알아요.",
+      "ko": "국수 맛있게 하는 집을 알아요.",
       "kr": "아이 노우 어 플레이스 댓 써rv즈 그뤠잇 누우들즈"
      },
      {
-      "en": "Is there anywhere that's open now?",
-      "ko": "지금 여는 데 있어요?",
-      "kr": "이z 데어r 애니웨어r 댓쏘우펀 나우"
-     },
-     {
-      "en": "Do you know where I can get breakfast?",
-      "ko": "아침 먹을 수 있는 데 아세요?",
-      "kr": "더여 노우 웨어r 아이 컨 겟 브렉f퍼스트"
-     },
-     {
-      "en": "Is there a place nearby that sells umbrellas?",
-      "ko": "근처에 우산 파는 데 있어요?",
-      "kr": "이z 데어r 어 플레이스 니어r바이 댓 쎌점브렐러즈"
+      "en": "Do you know a place that's open now?",
+      "ko": "지금 여는 곳 아세요?",
+      "kr": "더여 노우 어 플레이스 댓쏘우펀 나우"
      }
     ],
     "grammar": [
      {
-      "struct": "a place nearby that ~",
-      "body": "근처에 ~하는 곳 (that 이 앞의 명사를 뒤에서 꾸민다: a place nearby that still serves breakfast = 근처에 아직 아침을 파는 곳)"
+      "struct": "Can you ~",
+      "body": "~해 주실 수 있어요? (영상 #8). a place that still serves breakfast = 아직 아침을 파는 곳"
      }
     ],
     "chunks": [
      [
-      "Is there a place nearby",
-      "이z 데어r 어 플레이스 니어r바이",
-      "근처에 ~ 곳이 있나"
+      "Can you recommend a place",
+      "컨 여 레커멘더 플레이스",
+      "~한 곳을 추천해 주실래요"
      ],
      [
       "that still serves breakfast?",
@@ -384,18 +384,18 @@
     ],
     "phonemes": [
      [
-      "/ɝ/ serves",
-      "serves 는 혀를 말아 써rv즈"
+      "/ɛ/ recommend",
+      "recommend 는 레커멘드 — 끝에 강세, a 와 붙어 레커멘더"
      ],
      [
-      "/ɪ/ still",
-      "still 의 i 는 짧은 이 — 스틸"
+      "/ɝ/ serves",
+      "serves 는 혀를 말아 써rv즈"
      ]
     ],
-    "mistake": "that 이 뒤 동사의 주어라서 뺄 수 없다 (a rule I made 처럼 뒤에 주어가 따로 있으면 뺀다)",
-    "similar": "Where can I still get breakfast?",
+    "mistake": "a place still serves ✗ — 명사를 뒤에서 꾸밀 땐 that: a place that still serves",
+    "similar": "Is there a café nearby for breakfast?",
     "category": "여행/호텔",
-    "frequency": 7
+    "frequency": 9
    }
   },
   {
@@ -421,15 +421,15 @@
       "speaker": "B",
       "name": "지오",
       "en": "I didn't mean to sleep through the wake-up call.",
-      "ko": "모닝콜을 못 듣고 잘 생각은 없었어요.",
+      "ko": "모닝콜을 못 듣고 계속 자려던 건 아니었어요.",
       "kr": "아이 디든 미인 터 슬리입 쓰루우 더 웨이컵 콜"
      },
      {
       "speaker": "A",
       "name": "May",
-      "en": "That's okay. It rang a few times.",
-      "ko": "괜찮아요. 몇 번 울렸는데요.",
-      "kr": "댓소우케이 잇 랭 어 f퓨우 타임z"
+      "en": "That's okay. You did pick up, though.",
+      "ko": "괜찮아요. 받으시긴 했는데요.",
+      "kr": "댓소우케이 유 디드 피컵 도우"
      },
      {
       "speaker": "B",
@@ -441,16 +441,16 @@
      {
       "speaker": "A",
       "name": "May",
-      "en": "Is there anything I can get you?",
-      "ko": "뭐 좀 가져다 드릴까요?",
-      "kr": "이z 데어r 애니씽 아이 컨 게처"
+      "en": "Is there anything I can do for you?",
+      "ko": "제가 뭐 도와드릴 게 있을까요?",
+      "kr": "이z 데어r 애니씽 아이 컨 두 f퍼r 유"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Is there a place nearby that still serves breakfast?",
-      "ko": "근처에 아직 아침 파는 데가 있을까요?",
-      "kr": "이z 데어r 어 플레이스 니어r바이 댓 스틸 써rv즈 브렉f퍼스트"
+      "en": "Can you recommend a place that still serves breakfast?",
+      "ko": "아직 아침 파는 곳 좀 추천해 주실 수 있어요?",
+      "kr": "컨 여 레커멘더 플레이스 댓 스틸 써rv즈 브렉f퍼스트"
      },
      {
       "speaker": "A",

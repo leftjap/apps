@@ -32,16 +32,16 @@
      {
       "speaker": "A",
       "name": "Emma",
-      "en": "For three hours? My cats are still hiding.",
-      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
-      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
+      "en": "For three hours? I heard someone yelling in the hallway.",
+      "ko": "세 시간이나요? 복도에서 누가 소리 지르던데요.",
+      "kr": "f퍼r 쓰리이 아워r즈 아이 허r드 썸원 옐링 인 더 홀웨이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Nani got scared. That's why I taped over the speaker.",
-      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
-      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
+      "en": "Nani got scared, too. That's why I taped over the speaker.",
+      "ko": "나니도 겁을 먹었어요. 그래서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 투우 댓츠 와이 아이 테입토우버r 더 스피이커r"
      },
      {
       "speaker": "A",
@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
-      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
+      "en": "It sounds like the lady who was yelling did. In thirty minutes.",
+      "ko": "소리 지르던 할머니는 적응하신 것 같던데요. 30분 만에요.",
+      "kr": "잇 싸운즈 라익 더 레이디 후 워z 옐링 디드 인 써r리 미닛츠"
      }
     ],
     "drills": [
@@ -135,10 +135,10 @@
   },
   {
    "id": "en-personal-emma-alarm-02-thats-why-taped",
-   "sentence": "Nani got scared. That's why I taped over the speaker.",
-   "meaning": "나니가 무서워해서 스피커를 테이프로 막았어요.",
+   "sentence": "Nani got scared, too. That's why I taped over the speaker.",
+   "meaning": "나니도 겁을 먹었어요. 그래서 스피커를 테이프로 막았어요.",
    "reading": null,
-   "phonetic_kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r",
+   "phonetic_kr": "나니 갓 스케어r드 투우 댓츠 와이 아이 테입토우버r 더 스피이커r",
    "order_index": 2,
    "explanation": {
     "key": "That's why ~ = 그래서 ~한 거예요 (앞에 말한 게 이유일 때, 영상 #29)",
@@ -162,16 +162,16 @@
      {
       "speaker": "A",
       "name": "Emma",
-      "en": "For three hours? My cats are still hiding.",
-      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
-      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
+      "en": "For three hours? I heard someone yelling in the hallway.",
+      "ko": "세 시간이나요? 복도에서 누가 소리 지르던데요.",
+      "kr": "f퍼r 쓰리이 아워r즈 아이 허r드 썸원 옐링 인 더 홀웨이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Nani got scared. That's why I taped over the speaker.",
-      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
-      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
+      "en": "Nani got scared, too. That's why I taped over the speaker.",
+      "ko": "나니도 겁을 먹었어요. 그래서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 투우 댓츠 와이 아이 테입토우버r 더 스피이커r"
      },
      {
       "speaker": "A",
@@ -197,9 +197,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
-      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
+      "en": "It sounds like the lady who was yelling did. In thirty minutes.",
+      "ko": "소리 지르던 할머니는 적응하신 것 같던데요. 30분 만에요.",
+      "kr": "잇 싸운즈 라익 더 레이디 후 워z 옐링 디드 인 써r리 미닛츠"
      }
     ],
     "drills": [
@@ -224,9 +224,9 @@
       "kr": "아이 커v어r딧 위드 테입"
      },
      {
-      "en": "That's why I moved her bed.",
-      "ko": "그래서 그 애 침대를 옮겼어요.",
-      "kr": "댓츠 와이 아이 무우v드 허r 베드"
+      "en": "He was tired. That's why he left early.",
+      "ko": "그는 피곤해서 일찍 갔어요.",
+      "kr": "히 워z 타이어r드 댓츠 와이 히 레f터r리"
      }
     ],
     "grammar": [
@@ -237,9 +237,9 @@
     ],
     "chunks": [
      [
-      "Nani got scared.",
-      "나니 갓 스케어r드",
-      "나니가 무서워했다"
+      "Nani got scared, too.",
+      "나니 갓 스케어r드 투우",
+      "나니도 겁을 먹었어요"
      ],
      [
       "That's why I",
@@ -297,16 +297,16 @@
      {
       "speaker": "A",
       "name": "Emma",
-      "en": "For three hours? My cats are still hiding.",
-      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
-      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
+      "en": "For three hours? I heard someone yelling in the hallway.",
+      "ko": "세 시간이나요? 복도에서 누가 소리 지르던데요.",
+      "kr": "f퍼r 쓰리이 아워r즈 아이 허r드 썸원 옐링 인 더 홀웨이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Nani got scared. That's why I taped over the speaker.",
-      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
-      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
+      "en": "Nani got scared, too. That's why I taped over the speaker.",
+      "ko": "나니도 겁을 먹었어요. 그래서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 투우 댓츠 와이 아이 테입토우버r 더 스피이커r"
      },
      {
       "speaker": "A",
@@ -332,9 +332,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
-      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
+      "en": "It sounds like the lady who was yelling did. In thirty minutes.",
+      "ko": "소리 지르던 할머니는 적응하신 것 같던데요. 30분 만에요.",
+      "kr": "잇 싸운즈 라익 더 레이디 후 워z 옐링 디드 인 써r리 미닛츠"
      }
     ],
     "drills": [
@@ -404,15 +404,15 @@
    }
   },
   {
-   "id": "en-personal-emma-alarm-04-who-lives-downstairs",
-   "sentence": "The lady who lives downstairs hated it, too. For thirty minutes.",
-   "meaning": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
+   "id": "en-personal-emma-alarm-04-sounds-like-lady-did",
+   "sentence": "It sounds like the lady who was yelling did. In thirty minutes.",
+   "meaning": "소리 지르던 할머니는 적응하신 것 같던데요. 30분 만에요.",
    "reading": null,
-   "phonetic_kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠",
+   "phonetic_kr": "잇 싸운즈 라익 더 레이디 후 워z 옐링 디드 인 써r리 미닛츠",
    "order_index": 4,
    "explanation": {
-    "key": "~ who lives downstairs = 아래층에 사는 ~ (who 가 사람을 뒤에서 설명한다)",
-    "anchor": "아래층 할머니",
+    "key": "It sounds like ~ = ~인 것 같던데요 (영상 #15). 들리는 걸로 짐작할 때. the lady who was yelling = 소리 지르던 분",
+    "anchor": "적응하신 것 같던데요",
     "situation": "아파트 복도. 아침부터 화재경보기가 울렸다 그쳤다 하는 날, 위층 Emma 와 마주친다.",
     "miniDialogue": [
      {
@@ -432,16 +432,16 @@
      {
       "speaker": "A",
       "name": "Emma",
-      "en": "For three hours? My cats are still hiding.",
-      "ko": "세 시간이나요? 우리 고양이들은 아직도 숨어 있어요.",
-      "kr": "f퍼r 쓰리이 아워r즈 마이 캣차r 스틸 하이딩"
+      "en": "For three hours? I heard someone yelling in the hallway.",
+      "ko": "세 시간이나요? 복도에서 누가 소리 지르던데요.",
+      "kr": "f퍼r 쓰리이 아워r즈 아이 허r드 썸원 옐링 인 더 홀웨이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Nani got scared. That's why I taped over the speaker.",
-      "ko": "나니가 무서워해서 스피커를 테이프로 막았어요.",
-      "kr": "나니 갓 스케어r드 댓츠 와이 아이 테입토우버r 더 스피이커r"
+      "en": "Nani got scared, too. That's why I taped over the speaker.",
+      "ko": "나니도 겁을 먹었어요. 그래서 스피커를 테이프로 막았어요.",
+      "kr": "나니 갓 스케어r드 투우 댓츠 와이 아이 테입토우버r 더 스피이커r"
      },
      {
       "speaker": "A",
@@ -467,75 +467,80 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The lady who lives downstairs hated it, too. For thirty minutes.",
-      "ko": "아래층 할머니도 질색하셨어요. 30분 동안만요.",
-      "kr": "더 레이디 후우 리v즈 다운스테어r즈 헤이리딧 투우 f퍼r 써r리 미닛츠"
+      "en": "It sounds like the lady who was yelling did. In thirty minutes.",
+      "ko": "소리 지르던 할머니는 적응하신 것 같던데요. 30분 만에요.",
+      "kr": "잇 싸운즈 라익 더 레이디 후 워z 옐링 디드 인 써r리 미닛츠"
      }
     ],
     "drills": [
      {
-      "en": "The man who lives downstairs has a dog.",
-      "ko": "아래층 사는 남자는 개를 키워요.",
-      "kr": "더 맨 후우 리v즈 다운스테어r즈 해z 어 도그"
+      "en": "It sounds like the neighbors are home.",
+      "ko": "이웃들이 집에 있는 것 같아요.",
+      "kr": "잇 싸운즈 라익 더 네이버r자r 호움"
      },
      {
-      "en": "Do you know the woman who lives upstairs?",
-      "ko": "위층 사는 여자분 아세요?",
-      "kr": "더여 노우 더 워먼 후우 리v접스테어r즈"
+      "en": "It sounds like the alarm stopped.",
+      "ko": "경보가 멈춘 것 같아요.",
+      "kr": "잇 싸운즈 라익 디 얼라r암 스탑트"
      },
      {
-      "en": "She stopped complaining after a while.",
-      "ko": "그녀는 좀 지나니 불평을 멈췄어요.",
-      "kr": "쉬 스탑트 컴플레이닝 애f터r 어 와일"
+      "en": "Do you know the man who lives next door?",
+      "ko": "옆집에 사는 남자분 아세요?",
+      "kr": "더여 노우 더 맨 후우 리v즈 넥스 도어r"
+     },
+     {
+      "en": "She got used to it in a week.",
+      "ko": "그분은 일주일 만에 익숙해졌어요.",
+      "kr": "쉬 갓 유우스터 이리너 위익"
      },
      {
       "en": "Everyone got used to it.",
-      "ko": "모두 익숙해졌어요.",
+      "ko": "다들 익숙해졌어요.",
       "kr": "에v리원 갓 유우스터 잇"
-     },
-     {
-      "en": "Is he the one who lives next door?",
-      "ko": "옆집 사는 분이 그분이에요?",
-      "kr": "이z 히 더 원 후우 리v즈 넥스 도어r"
      }
     ],
     "grammar": [
      {
-      "struct": "~ who lives downstairs",
-      "body": "아래층에 사는 ~ (who 가 사람을 뒤에서 설명한다)"
+      "struct": "It sounds like ~",
+      "body": "~인 것 같던데요 (영상 #15). 들리는 걸로 짐작할 때. the lady who was yelling = 소리 지르던 분"
      }
     ],
     "chunks": [
      [
-      "The lady who lives downstairs",
-      "더 레이디 후우 리v즈 다운스테어r즈",
-      "아래층에 사는 할머니"
+      "It sounds like",
+      "잇 싸운즈 라익",
+      "~인 것 같던데요"
      ],
      [
-      "hated it, too.",
-      "헤이리딧 투우",
-      "그분도 질색했다"
+      "the lady who was yelling",
+      "더 레이디 후 워z 옐링",
+      "소리 지르던 분"
      ],
      [
-      "For thirty minutes.",
-      "f퍼r 써r리 미닛츠",
-      "30분 동안만"
+      "did.",
+      "디드",
+      "그랬다(적응했다)"
+     ],
+     [
+      "In thirty minutes.",
+      "인 써r리 미닛츠",
+      "30분 만에요"
      ]
     ],
     "phonemes": [
      [
-      "/v/ lives",
-      "lives 의 v 는 윗니를 아랫입술에 — 리v즈"
+      "/aʊ/ sounds",
+      "sounds 는 싸운즈 — 아우를 한 번에"
      ],
      [
-      "/t/ thirty",
-      "thirty 의 t 가 굴러 써r리"
+      "/θ/ thirty",
+      "thirty 의 th 는 혀끝을 이 사이에, t 는 굴러 써r리"
      ]
     ],
-    "mistake": "The lady lives downstairs hated it ✗ — 동사가 둘이면 who 로 잇는다",
-    "similar": "Even the lady downstairs got used to it.",
+    "mistake": "the lady who were yelling ✗ — the lady 가 한 사람이라 was",
+    "similar": "The lady who was yelling got used to it in thirty minutes.",
     "category": "일상/이웃",
-    "frequency": 7
+    "frequency": 8
    }
   }
  ]

@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Not really. It's still morning for me.",
-      "ko": "아뇨. 저한텐 아직 아침이에요.",
-      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
+      "en": "Not really. It feels like morning to me.",
+      "ko": "아뇨. 저한텐 아침 같아요.",
+      "kr": "낫 리얼리 잇 f피일z 라익 모r닝 터 미"
      }
     ],
     "drills": [
@@ -132,7 +132,7 @@
       "what 의 t 가 굴러 와라이"
      ]
     ],
-    "mistake": "Can I get 뒤는 명사(구) — what I had 도 명사 역할",
+    "mistake": "Can I get I had yesterday ✗ — '어제 마신 것'은 what 을 넣어 what I had yesterday",
     "similar": "The same as yesterday, please.",
     "category": "일상/카페",
     "frequency": 10
@@ -202,9 +202,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Not really. It's still morning for me.",
-      "ko": "아뇨. 저한텐 아직 아침이에요.",
-      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
+      "en": "Not really. It feels like morning to me.",
+      "ko": "아뇨. 저한텐 아침 같아요.",
+      "kr": "낫 리얼리 잇 f피일z 라익 모r닝 터 미"
      }
     ],
     "drills": [
@@ -332,9 +332,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Not really. It's still morning for me.",
-      "ko": "아뇨. 저한텐 아직 아침이에요.",
-      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
+      "en": "Not really. It feels like morning to me.",
+      "ko": "아뇨. 저한텐 아침 같아요.",
+      "kr": "낫 리얼리 잇 f피일z 라익 모r닝 터 미"
      }
     ],
     "drills": [
@@ -399,15 +399,15 @@
    }
   },
   {
-   "id": "en-personal-tom-noon-04-morning-for-me",
-   "sentence": "Not really. It's still morning for me.",
-   "meaning": "아뇨. 저한텐 아직 아침이에요.",
+   "id": "en-personal-tom-noon-04-still-feels-like-morning",
+   "sentence": "Not really. It feels like morning to me.",
+   "meaning": "아뇨. 저한텐 아침 같아요.",
    "reading": null,
-   "phonetic_kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미",
+   "phonetic_kr": "낫 리얼리 잇 f피일z 라익 모r닝 터 미",
    "order_index": 4,
    "explanation": {
-    "key": "~ for me = 저한텐 ~예요 (for me = 나한테는. 사람마다 기준이 다를 때)",
-    "anchor": "저한텐 아직 아침이에요",
+    "key": "It feels like ~ = ~ 같아요 (영상 #13). It feels like + 명사 = ~ 같다. to me = 저한텐",
+    "anchor": "아침 같아요",
     "situation": "공항철도 역 앞 카페, 12시 반. 호주인 바리스타 Tom 이 주문을 받는다. 지오는 단골이다.",
     "miniDialogue": [
      {
@@ -462,42 +462,37 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Not really. It's still morning for me.",
-      "ko": "아뇨. 저한텐 아직 아침이에요.",
-      "kr": "낫 리얼리 잇츠 스틸 모r닝 f퍼r 미"
+      "en": "Not really. It feels like morning to me.",
+      "ko": "아뇨. 저한텐 아침 같아요.",
+      "kr": "낫 리얼리 잇 f피일z 라익 모r닝 터 미"
      }
     ],
     "drills": [
      {
-      "en": "That's too early for me.",
-      "ko": "저한텐 너무 일러요.",
-      "kr": "댓츠 투우 어r리 f퍼r 미"
+      "en": "It feels like Monday today.",
+      "ko": "오늘은 월요일 같아요.",
+      "kr": "잇 f피일z 라익 먼데이 터데이"
      },
      {
-      "en": "Is this too spicy for you?",
-      "ko": "드시기에 너무 매워요?",
-      "kr": "이z 디스 투우 스파이씨 f퍼r 유"
+      "en": "It still feels like summer.",
+      "ko": "아직 여름 같아요.",
+      "kr": "잇 스틸 f피일z 라익 써머r"
      },
      {
-      "en": "This chair is too low for me.",
-      "ko": "이 의자는 저한테 너무 낮아요.",
-      "kr": "디스 체어r 이z 투우 로우 f퍼r 미"
+      "en": "Does it feel like morning to you?",
+      "ko": "당신한텐 아침 같아요?",
+      "kr": "더짓 f피일 라익 모r닝 터 유"
      },
      {
-      "en": "It's a little expensive for me.",
-      "ko": "저한텐 좀 비싸요.",
-      "kr": "잇서 리를 익스펜씨v f퍼r 미"
-     },
-     {
-      "en": "This size is perfect for me.",
-      "ko": "이 사이즈가 저한테 딱 맞아요.",
-      "kr": "디스 싸이z 이z 퍼r f펙트 f퍼r 미"
+      "en": "Coffee makes it feel like morning.",
+      "ko": "커피를 마시면 아침 같아요.",
+      "kr": "커f피 메익싯 f피일 라익 모r닝"
      }
     ],
     "grammar": [
      {
-      "struct": "~ for me",
-      "body": "저한텐 ~예요 (for me = 나한테는. 사람마다 기준이 다를 때)"
+      "struct": "It feels like ~",
+      "body": "~ 같아요 (영상 #13). It feels like + 명사 = ~ 같다. to me = 저한텐"
      }
     ],
     "chunks": [
@@ -507,28 +502,28 @@
       "아뇨"
      ],
      [
-      "It's still morning",
-      "잇츠 스틸 모r닝",
-      "아직 아침이다"
+      "It feels like morning",
+      "잇 f피일z 라익 모r닝",
+      "아침 같다"
      ],
      [
-      "for me.",
-      "f퍼r 미",
-      "저한테는"
+      "to me.",
+      "터 미",
+      "저한텐"
      ]
     ],
     "phonemes": [
      [
-      "/ɔr/ morning",
-      "morning 은 혀를 말아 모r닝 — 모닝이 아니다"
+      "/iː/ feels",
+      "feels 는 긴 이 — f피일z"
      ],
      [
-      "/ɪ/ still",
-      "still 의 i 는 짧은 이 — 스틸"
+      "/ɔːr/ morning",
+      "morning 은 혀를 말아 모r닝"
      ]
     ],
-    "mistake": "This is difficult to me ✗ → for me. 나한테 어렵다·이르다·비싸다의 '나한테는' 은 for me, to me 는 '내가 보기엔'",
-    "similar": "My day just started.",
+    "mistake": "It feels morning ✗ — 명사 앞에는 like: It feels like morning",
+    "similar": "For me, it's still morning.",
     "category": "일상/카페",
     "frequency": 8
    }

@@ -4,15 +4,15 @@
  "date": "2026-10-08",
  "cards": [
   {
-   "id": "en-personal-liam-noodles-01-skipped-my-run",
-   "sentence": "I skipped my run for black bean noodles.",
-   "meaning": "짜장면 때문에 러닝을 빼먹었어요.",
+   "id": "en-personal-liam-noodles-01-just-wanted-noodles",
+   "sentence": "I just wanted to get black bean noodles.",
+   "meaning": "그냥 짜장면이 먹고 싶었어요.",
    "reading": null,
-   "phonetic_kr": "아이 스킵트 마이 런 f퍼r 블랙 비인 누우들즈",
+   "phonetic_kr": "아이 저스 워니드 터 겟 블랙 비인 누우들즈",
    "order_index": 1,
    "explanation": {
-    "key": "skipped my ~ = ~를 빼먹었어요 (skip = 건너뛰다). for + 음식 = ~ 먹으려고",
-    "anchor": "러닝을 빼먹었어요",
+    "key": "I just wanted to ~ = 그냥 ~하고 싶었어요 (영상 #19). 큰 이유가 아니라는 느낌",
+    "anchor": "먹고 싶었어요",
     "situation": "홍대 헬스장. 어제 운동을 일찍 끝내고 간 지오에게 Liam 이 묻는다.",
     "miniDialogue": [
      {
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I skipped my run for black bean noodles.",
-      "ko": "짜장면 때문에 러닝을 빼먹었어요.",
-      "kr": "아이 스킵트 마이 런 f퍼r 블랙 비인 누우들즈"
+      "en": "I just wanted to get black bean noodles.",
+      "ko": "그냥 짜장면이 먹고 싶었어요.",
+      "kr": "아이 저스 워니드 터 겟 블랙 비인 누우들즈"
      },
      {
       "speaker": "B",
@@ -46,15 +46,15 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So is today the day you make up for it?",
-      "ko": "그럼 오늘이 만회하는 날이에요?",
-      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 잇"
+      "en": "So is today the day you make up for yesterday?",
+      "ko": "그럼 오늘이 어제 걸 만회하는 날이에요?",
+      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 예스터r데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "I'm supposed to beat what I did last time.",
-      "ko": "지난번 기록을 넘어야 해요.",
+      "ko": "지난번 기록을 넘기로 돼 있어요.",
       "kr": "아임 써포우스터 비잇 와라이 디드 라스 타임"
      },
      {
@@ -67,75 +67,65 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I already told myself two kilometers is enough.",
-      "ko": "벌써 2킬로면 충분하다고 저한테 말해 뒀어요.",
-      "kr": "아이 올레디 톨드 마이쎌f 투우 킬라미러r지z 이너f"
+      "en": "It depends on how I feel at two kilometers.",
+      "ko": "2킬로 지점에서 기분 봐서요.",
+      "kr": "잇 디펜존 하우 아이 f피일 엇 투우 킬라미러r즈"
      }
     ],
     "drills": [
      {
-      "en": "I skipped my workout yesterday.",
-      "ko": "어제 운동을 빼먹었어요.",
-      "kr": "아이 스킵트 마이 워r카웃 예스터r데이"
+      "en": "I just wanted to go home early.",
+      "ko": "그냥 일찍 집에 가고 싶었어요.",
+      "kr": "아이 저스 워니드 터 고우 호우머r리"
      },
      {
-      "en": "She skipped lunch to work.",
-      "ko": "그녀는 일하느라 점심을 걸렀어요.",
-      "kr": "쉬 스킵트 런치 터 워r크"
+      "en": "She just wanted to rest.",
+      "ko": "그녀는 그냥 쉬고 싶었어요.",
+      "kr": "쉬 저스 워니드 터 레스트"
      },
      {
-      "en": "Did you skip your run again?",
-      "ko": "또 러닝 빼먹었어요?",
-      "kr": "디저 스킵 여r 러너겐"
+      "en": "Did you just want to eat?",
+      "ko": "그냥 먹고 싶었던 거예요?",
+      "kr": "디저 저스 워너 이잇"
      },
      {
-      "en": "We skipped dessert.",
-      "ko": "디저트는 건너뛰었어요.",
-      "kr": "위 스킵트 디저r트"
-     },
-     {
-      "en": "Never skip your warm-up.",
-      "ko": "준비 운동은 빼먹지 마세요.",
-      "kr": "네버r 스킵 여r 워r멉"
+      "en": "We left early for lunch.",
+      "ko": "점심 먹으러 일찍 나왔어요.",
+      "kr": "위 레f터r리 f퍼r 런치"
      }
     ],
     "grammar": [
      {
-      "struct": "skipped my ~",
-      "body": "~를 빼먹었어요 (skip = 건너뛰다). for + 음식 = ~ 먹으려고"
+      "struct": "I just wanted to ~",
+      "body": "그냥 ~하고 싶었어요 (영상 #19). 큰 이유가 아니라는 느낌"
      }
     ],
     "chunks": [
      [
-      "I skipped",
-      "아이 스킵트",
-      "빼먹었다"
+      "I just wanted to",
+      "아이 저스 워니드 터",
+      "그냥 ~하고 싶었다"
      ],
      [
-      "my run",
-      "마이 런",
-      "러닝을"
-     ],
-     [
-      "for black bean noodles.",
-      "f퍼r 블랙 비인 누우들즈",
-      "짜장면 때문에"
+      "get black bean noodles.",
+      "겟 블랙 비인 누우들즈",
+      "짜장면을 먹다"
      ]
     ],
     "phonemes": [
      [
-      "/pt/ skipped",
-      "skipped 끝은 트 — 스킵트"
+      "/nt/ wanted",
+      "wanted 의 t 는 거의 사라져 워니드"
      ],
      [
       "/iː/ bean",
       "bean 은 긴 이 — 비인"
      ]
     ],
-    "mistake": "skip 의 과거는 skipped — p 를 두 번 쓴다",
-    "similar": "I missed my run because of lunch.",
+    "mistake": "I just wanted to got ✗ — to 뒤는 동사원형",
+    "similar": "I left early for black bean noodles.",
     "category": "운동/헬스장",
-    "frequency": 8
+    "frequency": 9
    }
   },
   {
@@ -160,9 +150,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I skipped my run for black bean noodles.",
-      "ko": "짜장면 때문에 러닝을 빼먹었어요.",
-      "kr": "아이 스킵트 마이 런 f퍼r 블랙 비인 누우들즈"
+      "en": "I just wanted to get black bean noodles.",
+      "ko": "그냥 짜장면이 먹고 싶었어요.",
+      "kr": "아이 저스 워니드 터 겟 블랙 비인 누우들즈"
      },
      {
       "speaker": "B",
@@ -181,15 +171,15 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So is today the day you make up for it?",
-      "ko": "그럼 오늘이 만회하는 날이에요?",
-      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 잇"
+      "en": "So is today the day you make up for yesterday?",
+      "ko": "그럼 오늘이 어제 걸 만회하는 날이에요?",
+      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 예스터r데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "I'm supposed to beat what I did last time.",
-      "ko": "지난번 기록을 넘어야 해요.",
+      "ko": "지난번 기록을 넘기로 돼 있어요.",
       "kr": "아임 써포우스터 비잇 와라이 디드 라스 타임"
      },
      {
@@ -202,9 +192,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I already told myself two kilometers is enough.",
-      "ko": "벌써 2킬로면 충분하다고 저한테 말해 뒀어요.",
-      "kr": "아이 올레디 톨드 마이쎌f 투우 킬라미러r지z 이너f"
+      "en": "It depends on how I feel at two kilometers.",
+      "ko": "2킬로 지점에서 기분 봐서요.",
+      "kr": "잇 디펜존 하우 아이 f피일 엇 투우 킬라미러r즈"
      }
     ],
     "drills": [
@@ -276,13 +266,13 @@
   {
    "id": "en-personal-liam-noodles-03-supposed-to-beat",
    "sentence": "I'm supposed to beat what I did last time.",
-   "meaning": "지난번 기록을 넘어야 해요.",
+   "meaning": "지난번 기록을 넘기로 돼 있어요.",
    "reading": null,
    "phonetic_kr": "아임 써포우스터 비잇 와라이 디드 라스 타임",
    "order_index": 3,
    "explanation": {
     "key": "I'm supposed to ~ = ~하기로 되어 있어요 (영상 #2). what I did = 제가 했던 것",
-    "anchor": "넘어야 해요",
+    "anchor": "넘기로 돼 있어요",
     "situation": "홍대 헬스장. 어제 운동을 일찍 끝내고 간 지오에게 Liam 이 묻는다.",
     "miniDialogue": [
      {
@@ -295,9 +285,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I skipped my run for black bean noodles.",
-      "ko": "짜장면 때문에 러닝을 빼먹었어요.",
-      "kr": "아이 스킵트 마이 런 f퍼r 블랙 비인 누우들즈"
+      "en": "I just wanted to get black bean noodles.",
+      "ko": "그냥 짜장면이 먹고 싶었어요.",
+      "kr": "아이 저스 워니드 터 겟 블랙 비인 누우들즈"
      },
      {
       "speaker": "B",
@@ -316,15 +306,15 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So is today the day you make up for it?",
-      "ko": "그럼 오늘이 만회하는 날이에요?",
-      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 잇"
+      "en": "So is today the day you make up for yesterday?",
+      "ko": "그럼 오늘이 어제 걸 만회하는 날이에요?",
+      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 예스터r데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "I'm supposed to beat what I did last time.",
-      "ko": "지난번 기록을 넘어야 해요.",
+      "ko": "지난번 기록을 넘기로 돼 있어요.",
       "kr": "아임 써포우스터 비잇 와라이 디드 라스 타임"
      },
      {
@@ -337,16 +327,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I already told myself two kilometers is enough.",
-      "ko": "벌써 2킬로면 충분하다고 저한테 말해 뒀어요.",
-      "kr": "아이 올레디 톨드 마이쎌f 투우 킬라미러r지z 이너f"
+      "en": "It depends on how I feel at two kilometers.",
+      "ko": "2킬로 지점에서 기분 봐서요.",
+      "kr": "잇 디펜존 하우 아이 f피일 엇 투우 킬라미러r즈"
      }
     ],
     "drills": [
      {
-      "en": "I'm supposed to run two point three today.",
-      "ko": "오늘 2.3킬로 뛰기로 돼 있어요.",
-      "kr": "아임 써포우스터 런 투우 포인 쓰리이 터데이"
+      "en": "I'm supposed to run a little farther today.",
+      "ko": "오늘은 조금 더 뛰기로 돼 있어요.",
+      "kr": "아임 써포우스터 러너 리를 f파r더r 터데이"
      },
      {
       "en": "We're supposed to meet at six.",
@@ -409,15 +399,15 @@
    }
   },
   {
-   "id": "en-personal-liam-noodles-04-told-myself",
-   "sentence": "I already told myself two kilometers is enough.",
-   "meaning": "벌써 2킬로면 충분하다고 저한테 말해 뒀어요.",
+   "id": "en-personal-liam-noodles-04-depends-how-i-feel",
+   "sentence": "It depends on how I feel at two kilometers.",
+   "meaning": "2킬로 지점에서 기분 봐서요.",
    "reading": null,
-   "phonetic_kr": "아이 올레디 톨드 마이쎌f 투우 킬라미러r지z 이너f",
+   "phonetic_kr": "잇 디펜존 하우 아이 f피일 엇 투우 킬라미러r즈",
    "order_index": 4,
    "explanation": {
-    "key": "told myself ~ = 스스로에게 ~라고 말해 뒀어요 (tell myself = 제 자신을 설득하다)",
-    "anchor": "충분하다고 저한테 말해 뒀어요",
+    "key": "It depends on ~ = ~에 달렸어요 (영상 #25). It depends on how I feel = 기분 봐서요",
+    "anchor": "기분 봐서요",
     "situation": "홍대 헬스장. 어제 운동을 일찍 끝내고 간 지오에게 Liam 이 묻는다.",
     "miniDialogue": [
      {
@@ -430,9 +420,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I skipped my run for black bean noodles.",
-      "ko": "짜장면 때문에 러닝을 빼먹었어요.",
-      "kr": "아이 스킵트 마이 런 f퍼r 블랙 비인 누우들즈"
+      "en": "I just wanted to get black bean noodles.",
+      "ko": "그냥 짜장면이 먹고 싶었어요.",
+      "kr": "아이 저스 워니드 터 겟 블랙 비인 누우들즈"
      },
      {
       "speaker": "B",
@@ -451,15 +441,15 @@
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So is today the day you make up for it?",
-      "ko": "그럼 오늘이 만회하는 날이에요?",
-      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 잇"
+      "en": "So is today the day you make up for yesterday?",
+      "ko": "그럼 오늘이 어제 걸 만회하는 날이에요?",
+      "kr": "쏘우 이z 터데이 더 데이 여 메이컵 f퍼r 예스터r데이"
      },
      {
       "speaker": "B",
       "name": "지오",
       "en": "I'm supposed to beat what I did last time.",
-      "ko": "지난번 기록을 넘어야 해요.",
+      "ko": "지난번 기록을 넘기로 돼 있어요.",
       "kr": "아임 써포우스터 비잇 와라이 디드 라스 타임"
      },
      {
@@ -472,70 +462,75 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I already told myself two kilometers is enough.",
-      "ko": "벌써 2킬로면 충분하다고 저한테 말해 뒀어요.",
-      "kr": "아이 올레디 톨드 마이쎌f 투우 킬라미러r지z 이너f"
+      "en": "It depends on how I feel at two kilometers.",
+      "ko": "2킬로 지점에서 기분 봐서요.",
+      "kr": "잇 디펜존 하우 아이 f피일 엇 투우 킬라미러r즈"
      }
     ],
     "drills": [
      {
-      "en": "I told myself to relax.",
-      "ko": "긴장 풀라고 스스로에게 말했어요.",
-      "kr": "아이 톨드 마이쎌f 터 릴랙스"
+      "en": "It depends on the weather.",
+      "ko": "날씨에 달렸어요.",
+      "kr": "잇 디펜존 더 웨더r"
      },
      {
-      "en": "She keeps telling herself it's fine.",
-      "ko": "그녀는 괜찮다고 계속 스스로를 다독여요.",
-      "kr": "쉬 키입스 텔링 허r쎌f 잇츠 f파인"
+      "en": "It depends on how busy I am.",
+      "ko": "제가 얼마나 바쁜지에 달렸어요.",
+      "kr": "잇 디펜존 하우 비지 아이 앰"
      },
      {
-      "en": "Two kilometers is enough for today.",
-      "ko": "오늘은 2킬로면 충분해요.",
-      "kr": "투우 킬라미러r지z 이너f f퍼r 터데이"
+      "en": "Does it depend on the traffic?",
+      "ko": "교통 상황에 따라 달라요?",
+      "kr": "더짓 디펜돈 더 트래f픽"
      },
      {
-      "en": "Don't tell yourself you can't.",
-      "ko": "못 한다고 스스로에게 말하지 마세요.",
-      "kr": "돈 텔 여r쎌f 여 캔트"
+      "en": "We'll see how I feel tomorrow.",
+      "ko": "내일 기분 봐서요.",
+      "kr": "위일 씨이 하우 아이 f피일 터마로우"
      },
      {
-      "en": "I already ran two kilometers.",
-      "ko": "벌써 2킬로 뛰었어요.",
-      "kr": "아이 올레디 랜 투우 킬라미러r즈"
+      "en": "Let's see how far I get.",
+      "ko": "어디까지 가는지 봐요.",
+      "kr": "렛츠 씨이 하우 f파r 아이 겟"
      }
     ],
     "grammar": [
      {
-      "struct": "told myself ~",
-      "body": "스스로에게 ~라고 말해 뒀어요 (tell myself = 제 자신을 설득하다)"
+      "struct": "It depends on ~",
+      "body": "~에 달렸어요 (영상 #25). It depends on how I feel = 기분 봐서요"
      }
     ],
     "chunks": [
      [
-      "I already told myself",
-      "아이 올레디 톨드 마이쎌f",
-      "벌써 제 자신에게 말해 뒀다"
+      "It depends on",
+      "잇 디펜존",
+      "~에 달렸다"
      ],
      [
-      "two kilometers is enough.",
-      "투우 킬라미러r지z 이너f",
-      "2킬로면 충분하다고"
+      "how I feel",
+      "하우 아이 f피일",
+      "제 기분이 어떤지"
+     ],
+     [
+      "at two kilometers.",
+      "엇 투우 킬라미러r즈",
+      "2킬로 지점에서"
      ]
     ],
     "phonemes": [
      [
-      "/ɑ/ kilometers",
-      "kilometers 는 미국식으로 킬라미러r즈 — 가운데 강세"
+      "/ɪ/ depends",
+      "depends 는 디펜즈 — 첫 모음은 짧은 이"
      ],
      [
-      "/f/ enough",
-      "enough 끝은 f — 이너f"
+      "/iː/ feel",
+      "feel 은 긴 이 — f피일"
      ]
     ],
-    "mistake": "told me myself ✗ — 나 자신에게는 told myself",
-    "similar": "I already decided two kilometers is enough.",
+    "mistake": "It depends of ✗ — depends 뒤는 on",
+    "similar": "We'll see at two kilometers.",
     "category": "운동/헬스장",
-    "frequency": 7
+    "frequency": 9
    }
   }
  ]

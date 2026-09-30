@@ -39,23 +39,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's a rule I made for myself.",
-      "ko": "제가 저한테 정한 규칙이에요.",
-      "kr": "잇서 루울 아이 메이드 f퍼r 마이쎌f"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "A rule you made? Why?",
-      "ko": "직접 정한 규칙이요? 왜요?",
-      "kr": "어 루울 여 메이드 와이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, beer gives me terrible hangovers.",
-      "ko": "사실 맥주는 숙취가 너무 심해서요.",
-      "kr": "더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
+      "en": "I do. The thing is, beer gives me terrible hangovers.",
+      "ko": "제가요. 사실 맥주는 숙취가 너무 심해서요.",
+      "kr": "아이 두 더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
      },
      {
       "speaker": "B",
@@ -67,9 +53,23 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Count me in. My rule is only about beer.",
-      "ko": "저도 끼워 줘요. 제 규칙은 맥주에만 해당돼요.",
-      "kr": "카운 미 인 마이 루울 이z 오운리 어바웃 비어r"
+      "en": "Count me in.",
+      "ko": "저도 끼워 줘요.",
+      "kr": "카운 미 인"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Wait. What about that rule you made?",
+      "ko": "잠깐만요. 직접 정했다는 그 규칙은요?",
+      "kr": "웨잇 와러바웃 댓 루울 여 메이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it covers whisky.",
+      "ko": "위스키까지 해당되는지는 잘 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 잇 커v어r즈 위스키"
      }
     ],
     "drills": [
@@ -139,144 +139,14 @@
    }
   },
   {
-   "id": "en-personal-liam-beer-02-rule-i-made",
-   "sentence": "It's a rule I made for myself.",
-   "meaning": "제가 저한테 정한 규칙이에요.",
+   "id": "en-personal-liam-beer-02-thing-is-hangovers",
+   "sentence": "I do. The thing is, beer gives me terrible hangovers.",
+   "meaning": "제가요. 사실 맥주는 숙취가 너무 심해서요.",
    "reading": null,
-   "phonetic_kr": "잇서 루울 아이 메이드 f퍼r 마이쎌f",
+   "phonetic_kr": "아이 두 더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈",
    "order_index": 2,
    "explanation": {
-    "key": "~ I made for myself = 제가 저한테 정한 ~ (명사 뒤에 '주어+동사' 를 바로 붙인다: a rule I made = 제가 정한 규칙)",
-    "anchor": "제가 저한테 정한 규칙이에요",
-    "situation": "홍대 헬스장. 운동을 마친 뒤 Liam 이 한잔하자고 한다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Do you want to grab a drink after this?",
-      "ko": "이따 한잔할래요?",
-      "kr": "더여 워너 그래버 드링캐f터r 디스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Sure, but I'm supposed to have just one beer.",
-      "ko": "좋죠, 근데 저는 맥주 한 병만 마시기로 돼 있어요.",
-      "kr": "슈어r 버라임 써포우스터 해v 저스 원 비어r"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Just one? Who says?",
-      "ko": "한 병만요? 누가 그래요?",
-      "kr": "저스 원 후우 쎄z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It's a rule I made for myself.",
-      "ko": "제가 저한테 정한 규칙이에요.",
-      "kr": "잇서 루울 아이 메이드 f퍼r 마이쎌f"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "A rule you made? Why?",
-      "ko": "직접 정한 규칙이요? 왜요?",
-      "kr": "어 루울 여 메이드 와이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, beer gives me terrible hangovers.",
-      "ko": "사실 맥주는 숙취가 너무 심해서요.",
-      "kr": "더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Fair enough. I'm getting whisky anyway.",
-      "ko": "그럴 만하네요. 저는 어차피 위스키 마실 거예요.",
-      "kr": "f페어r 이너f 아임 게링 위스키 애니웨이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Count me in. My rule is only about beer.",
-      "ko": "저도 끼워 줘요. 제 규칙은 맥주에만 해당돼요.",
-      "kr": "카운 미 인 마이 루울 이z 오운리 어바웃 비어r"
-     }
-    ],
-    "drills": [
-     {
-      "en": "It's a plan I made for myself.",
-      "ko": "제가 저를 위해 세운 계획이에요.",
-      "kr": "잇서 플래나이 메이드 f퍼r 마이쎌f"
-     },
-     {
-      "en": "This is the app I made for myself.",
-      "ko": "제가 쓰려고 만든 앱이에요.",
-      "kr": "디시z 디 애파이 메이드 f퍼r 마이쎌f"
-     },
-     {
-      "en": "Is that a rule you made yourself?",
-      "ko": "그거 직접 정한 규칙이에요?",
-      "kr": "이z 대러 루울 여 메이드 여r쎌f"
-     },
-     {
-      "en": "I made myself a promise.",
-      "ko": "저 자신과 약속했어요.",
-      "kr": "아이 메이드 마이쎌f 어 프라미스"
-     },
-     {
-      "en": "My wife and I made a rule together.",
-      "ko": "아내랑 같이 규칙을 정했어요.",
-      "kr": "마이 와이f 어나이 메이더 루울 터게더r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "~ I made for myself",
-      "body": "제가 저한테 정한 ~ (명사 뒤에 '주어+동사' 를 바로 붙인다: a rule I made = 제가 정한 규칙)"
-     }
-    ],
-    "chunks": [
-     [
-      "It's a rule",
-      "잇서 루울",
-      "그건 규칙이다"
-     ],
-     [
-      "I made for myself.",
-      "아이 메이드 f퍼r 마이쎌f",
-      "제가 저한테 정한"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/uː/ rule",
-      "rule 은 긴 우 — 루울"
-     ],
-     [
-      "/f/ myself",
-      "myself 끝 f 는 윗니를 아랫입술에 — 마이쎌f"
-     ]
-    ],
-    "mistake": "a rule I made it ✗ — it 을 또 쓰지 않는다",
-    "similar": "I came up with that rule.",
-    "category": "일상/술자리",
-    "frequency": 7
-   }
-  },
-  {
-   "id": "en-personal-liam-beer-03-thing-is-hangovers",
-   "sentence": "The thing is, beer gives me terrible hangovers.",
-   "meaning": "사실 맥주는 숙취가 너무 심해서요.",
-   "reading": null,
-   "phonetic_kr": "더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈",
-   "order_index": 3,
-   "explanation": {
-    "key": "The thing is, ~ = 사실은요, ~ (진짜 이유를 꺼낼 때, 영상 #21)",
+    "key": "The thing is, ~ = 사실은요, ~ (진짜 이유를 꺼낼 때, 영상 #21). Who says? 에 I do. = 제가요(제가 정했어요)",
     "anchor": "사실",
     "situation": "홍대 헬스장. 운동을 마친 뒤 Liam 이 한잔하자고 한다.",
     "miniDialogue": [
@@ -304,23 +174,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's a rule I made for myself.",
-      "ko": "제가 저한테 정한 규칙이에요.",
-      "kr": "잇서 루울 아이 메이드 f퍼r 마이쎌f"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "A rule you made? Why?",
-      "ko": "직접 정한 규칙이요? 왜요?",
-      "kr": "어 루울 여 메이드 와이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, beer gives me terrible hangovers.",
-      "ko": "사실 맥주는 숙취가 너무 심해서요.",
-      "kr": "더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
+      "en": "I do. The thing is, beer gives me terrible hangovers.",
+      "ko": "제가요. 사실 맥주는 숙취가 너무 심해서요.",
+      "kr": "아이 두 더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
      },
      {
       "speaker": "B",
@@ -332,9 +188,23 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Count me in. My rule is only about beer.",
-      "ko": "저도 끼워 줘요. 제 규칙은 맥주에만 해당돼요.",
-      "kr": "카운 미 인 마이 루울 이z 오운리 어바웃 비어r"
+      "en": "Count me in.",
+      "ko": "저도 끼워 줘요.",
+      "kr": "카운 미 인"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Wait. What about that rule you made?",
+      "ko": "잠깐만요. 직접 정했다는 그 규칙은요?",
+      "kr": "웨잇 와러바웃 댓 루울 여 메이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it covers whisky.",
+      "ko": "위스키까지 해당되는지는 잘 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 잇 커v어r즈 위스키"
      }
     ],
     "drills": [
@@ -367,10 +237,15 @@
     "grammar": [
      {
       "struct": "The thing is, ~",
-      "body": "사실은요, ~ (진짜 이유를 꺼낼 때, 영상 #21)"
+      "body": "사실은요, ~ (진짜 이유를 꺼낼 때, 영상 #21). Who says? 에 I do. = 제가요(제가 정했어요)"
      }
     ],
     "chunks": [
+     [
+      "I do.",
+      "아이 두",
+      "제가요"
+     ],
      [
       "The thing is,",
       "더 씽 이z",
@@ -404,12 +279,12 @@
    }
   },
   {
-   "id": "en-personal-liam-beer-04-count-me-in",
-   "sentence": "Count me in. My rule is only about beer.",
-   "meaning": "저도 끼워 줘요. 제 규칙은 맥주에만 해당돼요.",
+   "id": "en-personal-liam-beer-03-count-me-in",
+   "sentence": "Count me in.",
+   "meaning": "저도 끼워 줘요.",
    "reading": null,
-   "phonetic_kr": "카운 미 인 마이 루울 이z 오운리 어바웃 비어r",
-   "order_index": 4,
+   "phonetic_kr": "카운 미 인",
+   "order_index": 3,
    "explanation": {
     "key": "Count me in = 저도 끼워 주세요 (같이 하겠다고 할 때, 모두영어 2편 #164)",
     "anchor": "저도 끼워 줘요",
@@ -439,23 +314,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It's a rule I made for myself.",
-      "ko": "제가 저한테 정한 규칙이에요.",
-      "kr": "잇서 루울 아이 메이드 f퍼r 마이쎌f"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "A rule you made? Why?",
-      "ko": "직접 정한 규칙이요? 왜요?",
-      "kr": "어 루울 여 메이드 와이"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, beer gives me terrible hangovers.",
-      "ko": "사실 맥주는 숙취가 너무 심해서요.",
-      "kr": "더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
+      "en": "I do. The thing is, beer gives me terrible hangovers.",
+      "ko": "제가요. 사실 맥주는 숙취가 너무 심해서요.",
+      "kr": "아이 두 더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
      },
      {
       "speaker": "B",
@@ -467,16 +328,30 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Count me in. My rule is only about beer.",
-      "ko": "저도 끼워 줘요. 제 규칙은 맥주에만 해당돼요.",
-      "kr": "카운 미 인 마이 루울 이z 오운리 어바웃 비어r"
+      "en": "Count me in.",
+      "ko": "저도 끼워 줘요.",
+      "kr": "카운 미 인"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Wait. What about that rule you made?",
+      "ko": "잠깐만요. 직접 정했다는 그 규칙은요?",
+      "kr": "웨잇 와러바웃 댓 루울 여 메이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it covers whisky.",
+      "ko": "위스키까지 해당되는지는 잘 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 잇 커v어r즈 위스키"
      }
     ],
     "drills": [
      {
-      "en": "A drink after work? Count me in.",
-      "ko": "퇴근하고 한잔요? 저도 껴 주세요.",
-      "kr": "어 드링캐f터r 워r크 카운 미 인"
+      "en": "Count me in for drinks after work.",
+      "ko": "퇴근하고 한잔하는 데 저도 끼워 줘요.",
+      "kr": "카운 미 인 f퍼r 드링크새f터r 워r크"
      },
      {
       "en": "If you're getting noodles, count me in.",
@@ -494,9 +369,9 @@
       "kr": "카운 미 아웃 디스 타임"
      },
      {
-      "en": "My rule only applies on weekdays.",
-      "ko": "제 규칙은 평일에만 해당돼요.",
-      "kr": "마이 루울 오운리 어플라이z 온 위익데이z"
+      "en": "Count me in for the next one.",
+      "ko": "다음에도 저 끼워 주세요.",
+      "kr": "카운 미 인 f퍼r 더 넥스 원"
      }
     ],
     "grammar": [
@@ -510,16 +385,6 @@
       "Count me in.",
       "카운 미 인",
       "저도 끼워 줘요"
-     ],
-     [
-      "My rule is",
-      "마이 루울 이z",
-      "제 규칙은"
-     ],
-     [
-      "only about beer.",
-      "오운리 어바웃 비어r",
-      "맥주에만 해당된다"
      ]
     ],
     "phonemes": [
@@ -528,14 +393,139 @@
       "count 는 카운트 — 뒤 t 는 거의 안 들린다"
      ],
      [
-      "/oʊ/ only",
-      "only 는 오운리"
+      "/ɪ/ me in",
+      "me in 은 끊지 않고 이어서 미 인"
      ]
     ],
     "mistake": "Count in me ✗ — 사람은 count 와 in 사이에: count me in",
     "similar": "I'm in.",
     "category": "일상/술자리",
     "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-liam-beer-04-not-sure-covers-whisky",
+   "sentence": "I'm not sure if it covers whisky.",
+   "meaning": "위스키까지 해당되는지는 잘 모르겠네요.",
+   "reading": null,
+   "phonetic_kr": "아임 낫 슈어r 이f 잇 커v어r즈 위스키",
+   "order_index": 4,
+   "explanation": {
+    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요 (영상 #10). if it covers whisky = 위스키까지 해당되는지",
+    "anchor": "잘 모르겠네요",
+    "situation": "홍대 헬스장. 운동을 마친 뒤 Liam 이 한잔하자고 한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Do you want to grab a drink after this?",
+      "ko": "이따 한잔할래요?",
+      "kr": "더여 워너 그래버 드링캐f터r 디스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Sure, but I'm supposed to have just one beer.",
+      "ko": "좋죠, 근데 저는 맥주 한 병만 마시기로 돼 있어요.",
+      "kr": "슈어r 버라임 써포우스터 해v 저스 원 비어r"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Just one? Who says?",
+      "ko": "한 병만요? 누가 그래요?",
+      "kr": "저스 원 후우 쎄z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I do. The thing is, beer gives me terrible hangovers.",
+      "ko": "제가요. 사실 맥주는 숙취가 너무 심해서요.",
+      "kr": "아이 두 더 씽 이z 비어r 기v즈 미 테러블 행오우v어r즈"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Fair enough. I'm getting whisky anyway.",
+      "ko": "그럴 만하네요. 저는 어차피 위스키 마실 거예요.",
+      "kr": "f페어r 이너f 아임 게링 위스키 애니웨이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Count me in.",
+      "ko": "저도 끼워 줘요.",
+      "kr": "카운 미 인"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Wait. What about that rule you made?",
+      "ko": "잠깐만요. 직접 정했다는 그 규칙은요?",
+      "kr": "웨잇 와러바웃 댓 루울 여 메이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if it covers whisky.",
+      "ko": "위스키까지 해당되는지는 잘 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 잇 커v어r즈 위스키"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm not sure if it counts.",
+      "ko": "그게 쳐지는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 잇 카운츠"
+     },
+     {
+      "en": "I'm not sure if they're open today.",
+      "ko": "오늘 문 여는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 데어r 오우펀 터데이"
+     },
+     {
+      "en": "Does the rule cover wine, too?",
+      "ko": "그 규칙은 와인도 해당돼요?",
+      "kr": "더즈 더 루울 커v어r 와인 투우"
+     },
+     {
+      "en": "Let me check what the rule says.",
+      "ko": "규칙에 뭐라고 돼 있는지 볼게요.",
+      "kr": "레미 첵 왓 더 루울 쎄z"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm not sure if ~",
+      "body": "~인지 잘 모르겠어요 (영상 #10). if it covers whisky = 위스키까지 해당되는지"
+     }
+    ],
+    "chunks": [
+     [
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~인지 잘 모르겠다"
+     ],
+     [
+      "it covers whisky.",
+      "잇 커v어r즈 위스키",
+      "위스키까지 해당되는지"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃʊr/ sure",
+      "sure 는 슈어r — 혀를 말아 끝낸다"
+     ],
+     [
+      "/ʌ/ covers",
+      "covers 는 커v어r즈 — v 는 윗니를 아랫입술에"
+     ]
+    ],
+    "mistake": "if it cover ✗ — it 뒤에는 covers",
+    "similar": "I don't know if whisky counts.",
+    "category": "일상/술자리",
+    "frequency": 9
    }
   }
  ]

@@ -39,16 +39,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It shows how far I ran last time.",
-      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
-      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
+      "en": "Let me show you what it does.",
+      "ko": "뭘 하는지 보여 드릴게요.",
+      "kr": "레미 쇼우 여 와릿 더z"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So you try to beat it every day?",
-      "ko": "그럼 매일 그걸 넘으려고 하세요?",
-      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
+      "en": "Oh, it shows your last run. So you try to beat it?",
+      "ko": "아, 지난번 기록이 나오네요. 그럼 그걸 넘으려고 하세요?",
+      "kr": "오우 잇 쇼우z 여r 라스 런 쏘우 여 트라이 터 비이릿"
      },
      {
       "speaker": "B",
@@ -67,9 +67,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I also try to cheat every single day.",
-      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
-      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
+      "en": "I'm trying to cheat every single day, too.",
+      "ko": "꼼수도 매일 빠짐없이 부리려고 해요.",
+      "kr": "아임 트라잉 터 치이레v리 씽글 데이 투우"
      }
     ],
     "drills": [
@@ -127,22 +127,22 @@
       "myself 의 f 는 윗니를 아랫입술에 — 마이쎌f"
      ]
     ],
-    "mistake": "I made it by me ✗ — '직접' 은 myself",
+    "mistake": "I made it directly ✗ — '직접'은 myself: I made it myself",
     "similar": "It's my own app.",
     "category": "운동/헬스장",
     "frequency": 8
    }
   },
   {
-   "id": "en-personal-liam-app-02-how-far-i-ran",
-   "sentence": "It shows how far I ran last time.",
-   "meaning": "지난번에 얼마나 뛰었는지 보여 줘요.",
+   "id": "en-personal-liam-app-02-let-me-show-what",
+   "sentence": "Let me show you what it does.",
+   "meaning": "뭘 하는지 보여 드릴게요.",
    "reading": null,
-   "phonetic_kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임",
+   "phonetic_kr": "레미 쇼우 여 와릿 더z",
    "order_index": 2,
    "explanation": {
-    "key": "how far ~ = 얼마나 멀리 ~했는지 (how far 뒤에 주어+동사가 오는 삽입절)",
-    "anchor": "얼마나 뛰었는지",
+    "key": "Let me ~ = 제가 ~할게요 (영상 #6). what it does = 그게 뭘 하는지",
+    "anchor": "보여 드릴게요",
     "situation": "홍대 헬스장. 옆 트레드밀의 외국인(Liam)이 지오가 러닝 기록을 적는 앱을 보고 말을 건다.",
     "miniDialogue": [
      {
@@ -169,16 +169,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It shows how far I ran last time.",
-      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
-      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
+      "en": "Let me show you what it does.",
+      "ko": "뭘 하는지 보여 드릴게요.",
+      "kr": "레미 쇼우 여 와릿 더z"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So you try to beat it every day?",
-      "ko": "그럼 매일 그걸 넘으려고 하세요?",
-      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
+      "en": "Oh, it shows your last run. So you try to beat it?",
+      "ko": "아, 지난번 기록이 나오네요. 그럼 그걸 넘으려고 하세요?",
+      "kr": "오우 잇 쇼우z 여r 라스 런 쏘우 여 트라이 터 비이릿"
      },
      {
       "speaker": "B",
@@ -197,75 +197,70 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I also try to cheat every single day.",
-      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
-      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
+      "en": "I'm trying to cheat every single day, too.",
+      "ko": "꼼수도 매일 빠짐없이 부리려고 해요.",
+      "kr": "아임 트라잉 터 치이레v리 씽글 데이 투우"
      }
     ],
     "drills": [
      {
-      "en": "Do you know how far it is?",
-      "ko": "얼마나 먼지 아세요?",
-      "kr": "더여 노우 하우 f파r 이리z"
+      "en": "Let me show you what I made.",
+      "ko": "제가 만든 걸 보여 드릴게요.",
+      "kr": "레미 쇼우 여 와라이 메이드"
      },
      {
-      "en": "Tell me how far you ran today.",
-      "ko": "오늘 얼마나 뛰었는지 말해 줘요.",
-      "kr": "텔 미 하우 f파r 여 랜 터데이"
+      "en": "Let me check what I did last time.",
+      "ko": "지난번에 뭘 했는지 확인해 볼게요.",
+      "kr": "레미 첵 와라이 디드 라스 타임"
      },
      {
-      "en": "I can't remember how far we walked.",
-      "ko": "얼마나 걸었는지 기억이 안 나요.",
-      "kr": "아이 캔트 리멤버r 하우 f파r 위 워크트"
+      "en": "Can you show me what it does?",
+      "ko": "그게 뭘 하는지 보여 줄래요?",
+      "kr": "컨 여 쇼우 미 와릿 더z"
      },
      {
-      "en": "The app shows how long I slept.",
-      "ko": "앱이 제가 얼마나 잤는지 보여 줘요.",
-      "kr": "디 앱 쇼우z 하우 롱 아이 슬렙트"
+      "en": "I don't know what it does.",
+      "ko": "그게 뭘 하는지 모르겠어요.",
+      "kr": "아이 돈 노우 와릿 더z"
      },
      {
-      "en": "It shows how many steps I took.",
-      "ko": "제가 몇 걸음 걸었는지 보여 줘요.",
-      "kr": "잇 쇼우z 하우 메니 스텝사이 툭"
+      "en": "Let me see what it says.",
+      "ko": "뭐라고 나오는지 볼게요.",
+      "kr": "레미 씨이 와릿 쎄z"
      }
     ],
     "grammar": [
      {
-      "struct": "how far ~",
-      "body": "얼마나 멀리 ~했는지 (how far 뒤에 주어+동사가 오는 삽입절)"
+      "struct": "Let me ~",
+      "body": "제가 ~할게요 (영상 #6). what it does = 그게 뭘 하는지"
      }
     ],
     "chunks": [
      [
-      "It shows",
-      "잇 쇼우z",
-      "그게 보여 준다"
+      "Let me show you",
+      "레미 쇼우 여",
+      "제가 보여 드릴게요"
      ],
      [
-      "how far I ran",
-      "하우 f파r 아이 랜",
-      "제가 얼마나 뛰었는지"
-     ],
-     [
-      "last time.",
-      "라스 타임",
-      "지난번에"
+      "what it does.",
+      "와릿 더z",
+      "그게 뭘 하는지"
      ]
     ],
     "phonemes": [
      [
-      "/aʊ/ how",
-      "how 는 하우 — 이중모음"
+      "/t/ what it",
+      "what 의 t 가 모음 사이에서 굴러 와릿"
      ],
      [
-      "/t/ last time",
-      "last 의 t 가 time 의 t 와 겹쳐 라스 타임"
+      "/ʌ/ does",
+      "does 는 더z — 끝은 z 소리"
      ]
     ],
-    "mistake": "문장 속에서는 평서문 어순 — how far did I run ✗, how far I ran ✓",
-    "similar": "It shows my last distance.",
+    "mistake": "문장 안에 들어간 의문문은 평서 어순 — Let me show you what does it do ✗ / what it does ✓",
+    "similar": "Here, take a look.",
     "category": "운동/헬스장",
-    "frequency": 8
+    "frequency": 9
    }
   },
   {
@@ -304,16 +299,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It shows how far I ran last time.",
-      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
-      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
+      "en": "Let me show you what it does.",
+      "ko": "뭘 하는지 보여 드릴게요.",
+      "kr": "레미 쇼우 여 와릿 더z"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So you try to beat it every day?",
-      "ko": "그럼 매일 그걸 넘으려고 하세요?",
-      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
+      "en": "Oh, it shows your last run. So you try to beat it?",
+      "ko": "아, 지난번 기록이 나오네요. 그럼 그걸 넘으려고 하세요?",
+      "kr": "오우 잇 쇼우z 여r 라스 런 쏘우 여 트라이 터 비이릿"
      },
      {
       "speaker": "B",
@@ -332,9 +327,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I also try to cheat every single day.",
-      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
-      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
+      "en": "I'm trying to cheat every single day, too.",
+      "ko": "꼼수도 매일 빠짐없이 부리려고 해요.",
+      "kr": "아임 트라잉 터 치이레v리 씽글 데이 투우"
      }
     ],
     "drills": [
@@ -359,9 +354,9 @@
       "kr": "아이v 비내딩 웨이레v리 위익"
      },
      {
-      "en": "We've been saving a little every month.",
-      "ko": "매달 조금씩 모으고 있어요.",
-      "kr": "위v 빈 쎄이v잉 어 리를 에v리 먼쓰"
+      "en": "I've been running after my workouts.",
+      "ko": "근력 운동 끝나고 뛰고 있어요.",
+      "kr": "아이v 빈 러닝 애f터r 마이 워r카웃츠"
      }
     ],
     "grammar": [
@@ -404,15 +399,15 @@
    }
   },
   {
-   "id": "en-personal-liam-app-04-cheat-every-single-day",
-   "sentence": "I also try to cheat every single day.",
-   "meaning": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
+   "id": "en-personal-liam-app-04-trying-to-cheat-every-day",
+   "sentence": "I'm trying to cheat every single day, too.",
+   "meaning": "꼼수도 매일 빠짐없이 부리려고 해요.",
    "reading": null,
-   "phonetic_kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이",
+   "phonetic_kr": "아임 트라잉 터 치이레v리 씽글 데이 투우",
    "order_index": 4,
    "explanation": {
-    "key": "every single ~ = 하루도 빠짐없이 (every single day 는 every day 를 힘주어 말한 것)",
-    "anchor": "매일 빼먹지 않아요",
+    "key": "I'm trying to ~ = ~하려고 해요 (영상 #1). every single day = 하루도 빠짐없이",
+    "anchor": "부리려고 해요",
     "situation": "홍대 헬스장. 옆 트레드밀의 외국인(Liam)이 지오가 러닝 기록을 적는 앱을 보고 말을 건다.",
     "miniDialogue": [
      {
@@ -439,16 +434,16 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It shows how far I ran last time.",
-      "ko": "지난번에 얼마나 뛰었는지 보여 줘요.",
-      "kr": "잇 쇼우z 하우 f파r 아이 랜 라스 타임"
+      "en": "Let me show you what it does.",
+      "ko": "뭘 하는지 보여 드릴게요.",
+      "kr": "레미 쇼우 여 와릿 더z"
      },
      {
       "speaker": "B",
       "name": "Liam",
-      "en": "So you try to beat it every day?",
-      "ko": "그럼 매일 그걸 넘으려고 하세요?",
-      "kr": "쏘우 여 트라이 터 비이리레v리 데이"
+      "en": "Oh, it shows your last run. So you try to beat it?",
+      "ko": "아, 지난번 기록이 나오네요. 그럼 그걸 넘으려고 하세요?",
+      "kr": "오우 잇 쇼우z 여r 라스 런 쏘우 여 트라이 터 비이릿"
      },
      {
       "speaker": "B",
@@ -467,68 +462,68 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I also try to cheat every single day.",
-      "ko": "꼼수 부리려는 것도 매일 빼먹지 않아요.",
-      "kr": "아이 올쏘우 트라이 터 치이레v리 씽글 데이"
+      "en": "I'm trying to cheat every single day, too.",
+      "ko": "꼼수도 매일 빠짐없이 부리려고 해요.",
+      "kr": "아임 트라잉 터 치이레v리 씽글 데이 투우"
      }
     ],
     "drills": [
      {
+      "en": "I'm trying to run every single day.",
+      "ko": "매일 빠짐없이 뛰려고 해요.",
+      "kr": "아임 트라잉 터 러네v리 씽글 데이"
+     },
+     {
+      "en": "What are you trying to do?",
+      "ko": "뭘 하려는 거예요?",
+      "kr": "워러r여 트라잉 터 두"
+     },
+     {
       "en": "I check my phone every single day.",
-      "ko": "하루도 빠짐없이 휴대폰을 확인해요.",
+      "ko": "매일 빠짐없이 폰을 확인해요.",
       "kr": "아이 첵 마이 f포우네v리 씽글 데이"
      },
      {
-      "en": "She calls me every single night.",
-      "ko": "그녀는 매일 밤 빠짐없이 전화해요.",
-      "kr": "쉬 콜즈 미 에v리 씽글 나잇"
-     },
-     {
-      "en": "Do you really run every single day?",
-      "ko": "정말 하루도 안 빼고 뛰어요?",
-      "kr": "더여 리얼리 러네v리 씽글 데이"
+      "en": "I'm trying to read more, too.",
+      "ko": "책도 더 읽으려고 노력 중이에요.",
+      "kr": "아임 트라잉 터 리이드 모어r 투우"
      },
      {
       "en": "Every single seat was taken.",
-      "ko": "자리가 하나도 없었어요.",
+      "ko": "자리가 하나도 안 남았어요.",
       "kr": "에v리 씽글 씨잇 워z 테이큰"
-     },
-     {
-      "en": "I try to quit early every time.",
-      "ko": "매번 일찍 그만두려고 해요.",
-      "kr": "아이 트라이 터 크위러r리 에v리 타임"
      }
     ],
     "grammar": [
      {
-      "struct": "every single ~",
-      "body": "하루도 빠짐없이 (every single day 는 every day 를 힘주어 말한 것)"
+      "struct": "I'm trying to ~",
+      "body": "~하려고 해요 (영상 #1). every single day = 하루도 빠짐없이"
      }
     ],
     "chunks": [
      [
-      "I also try to",
-      "아이 올쏘우 트라이 터",
-      "저는 ~하려고도 한다"
+      "I'm trying to",
+      "아임 트라잉 터",
+      "~하려고 한다"
      ],
      [
-      "cheat every single day.",
-      "치이레v리 씽글 데이",
-      "매일 꼼수를 부리다"
+      "cheat every single day, too.",
+      "치이레v리 씽글 데이 투우",
+      "꼼수도 매일 빠짐없이 부리다"
      ]
     ],
     "phonemes": [
      [
-      "/iː/ cheat",
-      "cheat 는 긴 이 — 치잇. chit 이 아니다"
+      "/aɪ/ trying",
+      "trying 은 트라잉"
      ],
      [
       "/t/ cheat every",
       "cheat 의 t 가 굴러 치이레v리"
      ]
     ],
-    "mistake": "every 뒤는 단수 — every single days ✗",
-    "similar": "I try to cheat every day, too.",
+    "mistake": "I'm trying cheat ✗ — trying 뒤에 to",
+    "similar": "I never miss a day of cheating, either.",
     "category": "운동/헬스장",
     "frequency": 8
    }
