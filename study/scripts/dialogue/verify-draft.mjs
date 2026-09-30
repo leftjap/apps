@@ -31,6 +31,8 @@ export const hasRelClause = (en) => { const s = String(en || '').trim(); return 
 // 편마다 쓴 사람이 세 질문에 글로 답해야 통과한다. 형식적으로 채우지 못하게 15자 이상.
 const REVIEW_KEYS = { spoken: '지오가 실제로 이렇게 말하는가', facts: '시트 밖 사실을 지오에 대해 넣지 않았는가', english: '이 대화가 왜 영어로 벌어지는가(상대가 한국인이면 영어 장면이 아니다)' };
 const WIFE = /\b(my wife|she's (the )?crew|flight attendant|works? (for|as) (the |an? )?(airline|crew)|her (flight|section|route))\b/i;
+// sp 는 성별(A 여성·B 남성)이라 상대가 남성(Liam·Tom)이면 B 가 둘이다. 지오 줄은 이름으로 가른다(2026-09-30). name 없는 옛 초안은 B.
+export const isGioLine = (l) => (l.name ? String(l.name).trim() === '지오' : l.sp === 'B');
 
 export function checkDraft(scenes) {
   const srcErrors = []; const extraWarnings = [];
@@ -39,17 +41,17 @@ export function checkDraft(scenes) {
     else for (const [k, q] of Object.entries(REVIEW_KEYS)) {
       if (typeof s.review[k] !== 'string' || s.review[k].trim().length < 15) srcErrors.push(`${s.slug}: review.${k} 가 비었거나 너무 짧다 — "${q}" 에 답을 적을 것`);
     }
-    s.lines.forEach((l, i) => { if (l.sp === 'B' && WIFE.test(l.en)) extraWarnings.push(`${s.slug} ${i + 1}줄: 지오 줄에 아내(wife) 직업·동선 언급 — 지오는 아내 얘기를 스스로 꺼내지 않는다(2026-09-27). 상대가 묻거나 절차상 필요할 때만: "${l.en}"`); });
+    s.lines.forEach((l, i) => { if (isGioLine(l) && WIFE.test(l.en)) extraWarnings.push(`${s.slug} ${i + 1}줄: 지오 줄에 아내(wife) 직업·동선 언급 — 지오는 아내 얘기를 스스로 꺼내지 않는다(2026-09-27). 상대가 묻거나 절차상 필요할 때만: "${l.en}"`); });
     s.lines.forEach((l, i) => {
       if (!l.src || !String(l.src).trim()) srcErrors.push(`${s.slug} ${i + 1}줄 "${l.en}": src 없음 → 근거 없는 줄`);
       else if (s.date && !String(l.src).startsWith(s.date)) srcErrors.push(`${s.slug} ${i + 1}줄: src 날짜(${String(l.src).slice(0, 5)}) ≠ 장면 날짜(${s.date}) → 다른 날 사건 혼합`);
     });
-    const gio = s.lines.filter((l) => l.sp === 'B');
+    const gio = s.lines.filter(isGioLine);
     const reactive = gio.filter((l) => l.react === true || (l.react !== false && isReactive(l.en)));
     if (reactive.length > 2) extraWarnings.push(`${s.slug}: 지오 반응형 줄 ${reactive.length}개 — 편당 2 이하 (${reactive.map((l) => `"${l.en}"`).join(' ')})`);
     const rel = s.lines.filter((l) => l.rel === true || (l.rel !== false && hasRelClause(l.en)));
     if (rel.length < 2) extraWarnings.push(`${s.slug}: 관계사·삽입절 줄 ${rel.length}개 — 편당 2줄 이상 (접촉절은 rel:true 로 표시)`);
-    if (!rel.some((l) => l.sp === 'B')) extraWarnings.push(`${s.slug}: 지오 줄에 관계사·삽입절이 없음 — 카드 하나는 관계사 문장으로`);
+    if (!rel.some(isGioLine)) extraWarnings.push(`${s.slug}: 지오 줄에 관계사·삽입절이 없음 — 카드 하나는 관계사 문장으로`);
   }
   const cards = [];
   for (const s of scenes) {

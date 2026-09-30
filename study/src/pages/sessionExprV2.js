@@ -652,13 +652,28 @@ export function nextMiniVoice(turns, speaker, key) {
   turns[key] = n + 1;
   return pool[n % pool.length];
 }
+/* 학습자 줄 판정 — 화자 글자는 성별(A 여성·B 남성)이라 상대가 남성(Liam·Tom)이면 B 가 둘이다(2026-09-30).
+ * name 이 있으면 이름으로, 없으면(옛 시드·데모 픽스처) B 글자로 가른다. */
+export function isLearnerLine(ln) {
+  const name = String(ln?.name ?? '').trim();
+  return name ? name === '지오' : String(ln?.speaker ?? '').trim().toUpperCase() === 'B';
+}
 /* 전체 듣기 한 판 — 인물마다 목소리를 한 번만 정해 끝까지 쓴다(줄마다 바뀌면 누가 말하는지 따라가기 어렵다).
- * 다시 누르면 새 판이라 다음 목소리로 넘어간다. 키가 한글이라 영어 줄 문장의 횟수와 섞이지 않는다. */
+ * 다시 누르면 새 판이라 다음 목소리로 넘어간다. 키가 한글이라 영어 줄 문장의 횟수와 섞이지 않는다.
+ * 인물은 name(없으면 화자 글자)으로 가른다 — 같은 성별이 둘이면(Liam·지오) 그 성별 목소리 가운데 아직 안 쓴 것을 준다(2026-09-30). */
 function runVoices(turns) {
-  const picked = {};
-  return (sp) => {
+  const picked = {}; // 인물 → 목소리
+  const taken = {};  // 화자 글자 → 이 판에서 이미 준 목소리
+  return (sp, name) => {
     const k = String(sp ?? '').trim().toUpperCase();
-    return (picked[k] ??= nextMiniVoice(turns, sp, '전체 듣기 ' + k));
+    const who = String(name || k).trim();
+    if (picked[who]) return picked[who];
+    const pool = MINI_VOICE_POOLS[k] || MINI_VOICE_POOLS.A;
+    const used = (taken[k] ??= new Set());
+    let v = nextMiniVoice(turns, sp, '전체 듣기 ' + k);
+    for (let i = 1; i < pool.length && used.has(v); i++) v = nextMiniVoice(turns, sp, '전체 듣기 ' + k);
+    used.add(v);
+    return (picked[who] = v);
   };
 }
 const MINI_CSS = `
@@ -736,7 +751,7 @@ export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved
     const playAt = (k) => {
       if (k >= rows.length) return;
       const r = rows[k];
-      speakWithFeedback(r.play, r.l.en, { lang: ttsLang, voice: voiceOf(r.l.speaker), rate: 1.0, onEnd: () => playAt(k + 1) });
+      speakWithFeedback(r.play, r.l.en, { lang: ttsLang, voice: voiceOf(r.l.speaker, r.l.name), rate: 1.0, onEnd: () => playAt(k + 1) });
     };
     playAt(0);
   });
@@ -786,7 +801,7 @@ export function dialogueStageEl(group, ctx = {}) {
 
     const num = h('span', { class: 'vs-ln-num' + (selected ? ' on' : done ? ' done' : card ? ' card' : '') },
       done ? vCheck({ size: 11, sw: 3 }) : (card ? String(hit.num) : ''));
-    const gio = String(ln.speaker ?? '').trim().toUpperCase() === 'B';
+    const gio = isLearnerLine(ln);
     // name 이 없으면 speaker 글자 (miniDialogueEl 과 같은 계약 — 옛 시드·데모 픽스처는 name 이 없다)
     const name = h('span', { class: 'vs-ln-name' + (gio ? ' me' : '') }, String(ln.name || ln.speaker || ''));
     const enEl = h('div', { class: 'vs-ln-en' }, selected ? hlNode(ln.en, expr) : document.createTextNode(ln.en));
@@ -869,7 +884,7 @@ export function dialogueStageEl(group, ctx = {}) {
         paintPlaying(k);
         const r = rows[k];
         speakWithFeedback(r.btn || ctx.selectedPlayBtn, r.line.en, {
-          lang: ttsLang, voice: voiceOf(r.line.speaker), rate: 1.0, onEnd: () => step(k + 1),
+          lang: ttsLang, voice: voiceOf(r.line.speaker, r.line.name), rate: 1.0, onEnd: () => step(k + 1),
         });
       };
       playing = 0;

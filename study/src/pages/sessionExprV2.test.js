@@ -2937,3 +2937,76 @@ describe('대화 줄 목소리 — 누를 때마다 같은 성별 안에서 바�
     expect(voices()).toEqual([FEMALE[1], MALE[1], FEMALE[1]]);
   });
 });
+
+/* 남성 상대 편 (2026-09-30) — 화자 글자는 성별(A 여성·B 남성)이라 Liam·Tom 편은 지오도 상대도 B 다
+ * (시드 09-30·10-01·10-08·10-11·10-14·10-16·10-19). 전체 듣기가 글자마다 목소리를 하나 고르면 두 사람이 같은
+ * 목소리로 나오고, 틸(me)이 글자 B 를 따르면 상대 이름도 틸이 된다. 인물은 name 으로 가른다. */
+describe('남성 상대 편 — 지오와 상대가 같은 B 글자', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MALE = ['en-US-AndrewMultilingualNeural', 'en-US-GuyNeural', 'en-US-EricNeural'];
+  const MD = [
+    { speaker: 'B', name: 'Liam', en: "Sorry, what's that app you're using?", ko: '지금 쓰시는 그 앱 뭐예요?' },
+    { speaker: 'B', name: '지오', en: 'I made it myself.', ko: '제가 직접 만든 거예요.' },
+    { speaker: 'B', name: 'Liam', en: 'No way. What does it do?', ko: '설마요. 뭘 하는 앱이에요?' },
+    { speaker: 'B', name: '지오', en: 'Let me show you what it does.', ko: '뭘 하는지 보여 드릴게요.' },
+  ];
+  const mkCard = (id, sentence) => ({ id, sentence, ko: '뜻', pron: '발음',
+    explanation: { situation: '홍대 헬스장', miniDialogue: MD, key: `${sentence} = 뜻` } });
+  const group = () => buildDialogueGroups([mkCard('c1', 'I made it myself.'), mkCard('c2', 'Let me show you what it does.')])[0];
+  const ctx = () => ({
+    lang: 'en', selCardId: 'c1', expr: 'I made it', cueIndex: 0,
+    utterOf: () => [], drillProgOf: () => '', miniScoresOf: () => [],
+    onSelect: vi.fn(), onCardRec: vi.fn(), onMiniRec: vi.fn(),
+    selectedSlot: [document.createElement('div')], phone: false,
+    selectedPlayBtn: h('button', { class: 'vs-pill', type: 'button' }, '듣기'),
+  });
+  let speak;
+  beforeEach(() => {
+    speak = vi.fn((_t, o) => o?.onEnd?.());
+    window.studySpeech = { speak, cancel: vi.fn() };
+  });
+  const voices = () => speak.mock.calls.map((c) => c[1].voice);
+  const distinctPair = (v) => {
+    expect(v).toHaveLength(4);
+    expect(v.every((x) => MALE.includes(x))).toBe(true); // 둘 다 남성 목소리
+    expect(v[0]).toBe(v[2]);     // Liam 은 한 판 안에서 한 목소리
+    expect(v[1]).toBe(v[3]);     // 지오도
+    expect(v[0]).not.toBe(v[1]); // 서로는 다르다
+  };
+
+  it('전체 듣기 — Liam 과 지오는 남성 목소리 가운데 서로 다른 것을 받고, 한 판 안에서는 각자 하나다', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    el.querySelector('[data-role="stage-all"]').click();
+    distinctPair(voices());
+  });
+
+  it('다시 누르면 목소리가 바뀌되 여전히 서로 다르다', () => {
+    const state = makeState();
+    state.cards = [mkCard('c1', 'I made it myself.'), mkCard('c2', 'Let me show you what it does.')];
+    state.step = 1; state.sentence = state.cards[0];
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, {});
+    const all = host.querySelector('[data-role="stage-all"]');
+    all.click();
+    const first = voices(); distinctPair(first);
+    speak.mockClear();
+    all.click();
+    const second = voices(); distinctPair(second);
+    expect(second[0]).not.toBe(first[0]);
+    expect(second[1]).not.toBe(first[1]);
+  });
+
+  it('복습 미니대화 블록 전체 듣기도 두 사람을 가른다', () => {
+    const el = miniDialogueEl(MD, { id: 'c1', lang: 'en', sentence: 'I made it myself.' }, 'en', 'I made it');
+    document.body.appendChild(el);
+    el.querySelector('[data-role="mini-all"]').click();
+    distinctPair(voices());
+  });
+
+  it('틸(me)은 지오 이름에만 붙는다', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    const names = [...el.querySelectorAll('.vs-ln-name')];
+    expect(names.map((n) => n.textContent)).toEqual(['Liam', '지오', 'Liam', '지오']);
+    expect(names.map((n) => n.classList.contains('me'))).toEqual([false, true, false, true]);
+  });
+});

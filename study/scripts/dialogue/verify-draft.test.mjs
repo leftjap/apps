@@ -83,3 +83,25 @@ describe('셀프 검증 review 필수 (2026-09-27 — 지오가 안 할 말·시
     expect(checkDraft([s]).extraWarnings.some((w) => /아내|wife/.test(w))).toBe(true);
   });
 });
+
+/* 남성 상대(Liam·Tom) 편 (2026-09-30) — sp 는 성별이라 상대도 B 다. 지오 줄은 이름으로 가른다.
+ * 종전엔 상대의 반응형·wife 줄이 지오 줄로 세어지고, 상대 줄의 관계사가 지오 몫으로 잡혔다. */
+describe('남성 상대 편 — 상대도 sp B', () => {
+  const liam = (en, extra = {}) => line('B', en, { name: 'Liam', ...extra });
+  const maleScene = () => scene({ lines: [
+    liam('Is this the app that you made?'), line('B', "I'm here to check in."),
+    liam('That sounds great.'), line('B', 'Do you know where I can buy a card?'),
+    liam('Exactly.'), line('B', "I'm supposed to meet her at four."),
+    liam('You might be right.'), line('B', 'I made it myself.')] });
+  it('상대의 반응형 줄(3개)은 지오 반응형으로 세지 않는다', () => {
+    expect(checkDraft([maleScene()]).extraWarnings.some((x) => /반응형/.test(x))).toBe(false);
+  });
+  it('상대 줄의 wife 언급은 경고하지 않는다', () => {
+    const s = maleScene(); s.lines[0] = liam('Is your wife a flight attendant?');
+    expect(checkDraft([s]).extraWarnings.some((x) => /아내|wife/.test(x))).toBe(false);
+  });
+  it('관계사가 상대 줄에만 있으면 지오 줄 경고가 뜬다', () => {
+    const s = maleScene(); s.lines[3] = line('B', 'I need a card.'); s.lines[5] = line('B', 'I will meet her at four.');
+    expect(checkDraft([s]).extraWarnings.some((x) => /지오 줄에 관계사/.test(x))).toBe(true);
+  });
+});
