@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>연속 듣기 · PC</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0;background:oklch(97.5% .009 95);font-family:Pretendard,system-ui,sans-serif;color:#25322f;word-break:keep-all;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+a{color:oklch(35% .058 192)}a:hover{color:oklch(44% .062 192)}
+</style>
+</helmet>
+<div style="width: 1440px; height: 680px; box-sizing: border-box; background: oklch(97.5% .009 95); display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="height: 60px; flex-shrink: 0; border-bottom: 1px solid #e7e3d6; display: flex; align-items: center">
+    <div style="width: 1064px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between">
+      <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0; font-size: 13px; font-weight: 600; color: #6f7a75; background: none; border: 0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 9v12h14V9"></path></svg>
+        <span>홈으로</span>
+      </button>
+      <span style="font-size: 14px; color: #6f7a75">영어</span>
+    </div>
+  </div>
+
+  <div style="width: 1064px; margin: 0 auto; padding: 26px 20px 56px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px">
+
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <h1 style="margin: 0; font-family: Outfit, Pretendard, sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">연속 듣기</h1>
+      <span style="font-size: 14px; color: #6f7a75">영어 8문장 · 한 바퀴 약 1분</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 356px; gap: 26px; align-items: start">
+
+      <div style="background: #fffefb; border: 1px solid #e7e3d6; border-radius: 20px; padding: 8px 16px; box-shadow: 0 1px 0 rgba(25,35,32,.02), 0 10px 22px -18px rgba(25,35,32,.12); display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{rows}}" as="row" hint-placeholder-count="8">
+          <sc-if value="{{row.cur}}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{row.pick}}" aria-current="true" style="display: grid; grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1.15fr); gap: 0 18px; align-items: baseline; padding: 13px 14px; border-radius: 12px; border: 0; background: oklch(44% .062 192 / .08); text-align: left; color: inherit; font-size: 16px">
+              <span style="font-family: Outfit, sans-serif; font-size: 12px; font-weight: 700; color: oklch(35% .058 192); text-align: right; font-variant-numeric: tabular-nums">{{row.n}}</span>
+              <span style="font-size: 14px; line-height: 1.4; color: #25322f">{{row.ko}}</span>
+              <span style="font-size: 16px; font-weight: 700; line-height: 1.35; color: oklch(35% .058 192)">{{row.fo}}</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{row.idle}}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{row.pick}}" style="display: grid; grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1.15fr); gap: 0 18px; align-items: baseline; padding: 13px 14px; border-radius: 12px; border: 0; background: transparent; text-align: left; color: inherit; font-size: 16px">
+              <span style="font-family: Outfit, sans-serif; font-size: 12px; font-weight: 700; color: #9da69f; text-align: right; font-variant-numeric: tabular-nums">{{row.n}}</span>
+              <span style="font-size: 14px; line-height: 1.4; color: #6f7a75">{{row.ko}}</span>
+              <span style="font-size: 16px; font-weight: 700; line-height: 1.35; color: #25322f">{{row.fo}}</span>
+            </button>
+          </sc-if>
+        </sc-for>
+      </div>
+
+      <div style="background: #fffefb; border: 1px solid #e7e3d6; border-radius: 22px; padding: 22px 28px 26px; box-shadow: 0 1px 0 rgba(25,35,32,.02), 0 10px 22px -18px rgba(25,35,32,.12); display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center">
+        <span style="align-self: flex-start; font-family: Outfit, sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #9da69f">한글 뒤 영어 · 무한 반복</span>
+
+        <sc-if value="{{playing}}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{toggle}}" aria-label="일시정지" style="width: 120px; height: 120px; border-radius: 999px; border: 0; background: oklch(58% .115 32); color: #fffefb; display: inline-flex; align-items: center; justify-content: center; margin-top: 6px; padding: 0">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3v14H7zM14 5h3v14h-3z"></path></svg>
+          </button>
+        </sc-if>
+        <sc-if value="{{paused}}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{toggle}}" aria-label="재생" style="width: 120px; height: 120px; border-radius: 999px; border: 0; background: oklch(44% .062 192); color: #fffefb; display: inline-flex; align-items: center; justify-content: center; margin-top: 6px; padding: 0">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+          </button>
+        </sc-if>
+
+        <span style="font-size: 13px; color: #6f7a75; min-height: 18px">{{stateText}}</span>
+
+        <div style="width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 4px">
+          <div style="position: relative; height: 6px; border-radius: 999px; background: #ece8da; overflow: hidden">
+            <span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{progressPct}}; border-radius: 999px; background: oklch(44% .062 192)"></span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font-family: Outfit, sans-serif; font-size: 13px; font-weight: 700; color: #6f7a75; font-variant-numeric: tabular-nums">{{curPos}}</span>
+            <span style="font-family: Outfit, sans-serif; font-size: 12px; font-weight: 600; color: #9da69f; font-variant-numeric: tabular-nums">{{timePos}}</span>
+          </div>
+        </div>
+
+        <div style="width: 100%; height: 1px; background: #e7e3d6; margin-top: 2px"></div>
+
+        <div style="width: 100%; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; text-align: left; min-height: 84px">
+          <span style="font-family: Outfit, sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #9da69f">지금 나오는 문장</span>
+          <span style="font-size: 13px; color: #6f7a75">{{curKo}}</span>
+          <span style="font-size: 18px; font-weight: 700; line-height: 1.4; color: oklch(35% .058 192); text-wrap: pretty">{{curFo}}</span>
+        </div>
+
+        <button type="button" onClick="{{rebuild}}" style="margin-top: 4px; height: 40px; padding: 0 16px; font-size: 13px; font-weight: 700; border-radius: 999px; border: 1.5px solid #e7e3d6; background: transparent; color: #25322f">다시 만들기</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":680}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cur: 4, playing: true };
+  }
+  renderVals() {
+    const pairs = [
+      { ko: '막 전화하려던 참이었어.', fo: 'I was just about to call you.' },
+      { ko: '가는 중이야.', fo: "I'm on my way." },
+      { ko: '미안해할 필요 없어.', fo: "You don't have to be sorry." },
+      { ko: '도착하면 전화할게.', fo: "I'll call you when I get there." },
+      { ko: '자리 하나 남은 것 같아.', fo: "It looks like there's one table left." },
+      { ko: '빨리 먹고 싶다.', fo: "I can't wait to eat." },
+      { ko: '신선하지 않은 것 같아.', fo: "I don't think it's fresh." },
+      { ko: '마무리하는 중이야.', fo: "I'm finishing up." }
+    ];
+    const cur = this.state.cur;
+    const playing = this.state.playing;
+    const rows = pairs.map((p, i) => ({
+      n: String(i + 1), ko: p.ko, fo: p.fo,
+      cur: i === cur, idle: i !== cur,
+      pick: () => this.setState({ cur: i, playing: true })
+    }));
+    const now = cur >= 0 ? pairs[cur] : null;
+    const LOOP = 62;
+    const at = cur >= 0 ? Math.round((cur + 0.4) * LOOP / pairs.length) : 0;
+    const mmss = (t) => Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+    return {
+      rows,
+      playing,
+      paused: !playing,
+      stateText: playing ? '재생 중 · 화면을 잠가도 계속 나와요' : (cur >= 0 ? '일시정지' : '준비 완료 · 재생을 누르면 잠금 중에도 이어서 나와요'),
+      progressPct: Math.round(at / LOOP * 100) + '%',
+      timePos: mmss(at) + ' / ' + mmss(LOOP),
+      curPos: now ? (cur + 1) + ' / ' + pairs.length : '– / ' + pairs.length,
+      curKo: now ? now.ko : '',
+      curFo: now ? now.fo : '재생을 누르면 첫 문장부터',
+      toggle: () => this.setState({ playing: !playing, cur: cur < 0 ? 0 : cur }),
+      rebuild: () => this.setState({ playing: false, cur: -1 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -50,7 +50,46 @@ const CSS = `
 .li-row .ko{display:block;font-size:12.5px;color:var(--mut)}
 .li-row .fo{display:block;font-size:16px;font-weight:700;margin-top:2px;line-height:1.35}
 .li-row.cur{background:var(--teal-soft)}
-.li-row.cur .fo{color:var(--teal-deep)}`;
+.li-row.cur .fo{color:var(--teal-deep)}
+.li-row:disabled{cursor:default}
+/* PC(1024~) 배치 — 시안 design-ref/design_handoff_pc_listen_speak §1. 1023 이하에서는 묶음 상자를 없애(display:contents)
+ * 자식들이 현행처럼 .li-wrap 의 한 줄 흐름에 놓이게 하고, PC 에만 있는 요소는 숨긴다. */
+.li-head,.li-main,.li-rail,.li-card{display:contents}
+.li-lab,.li-prog,.li-div,.li-now{display:none}
+@media (min-width:1024px){
+.li-top-in{max-width:1064px}
+.li-wrap{max-width:1064px;padding:26px 20px 56px;align-items:stretch;gap:22px;text-align:left}
+.li-head{display:flex;align-items:baseline;gap:14px}
+.li-main{display:grid;grid-template-columns:minmax(0,1fr) 356px;grid-template-areas:"list rail";gap:26px;align-items:start}
+.li-card,.li-rail{background:var(--card);border:1px solid var(--line);box-shadow:0 1px 0 rgba(25,35,32,.02),0 10px 22px -18px rgba(25,35,32,.12)}
+.li-card{grid-area:list;display:block;border-radius:20px;padding:8px 16px}
+.li-empty{grid-area:list}
+.li-main:has(.li-empty) .li-rail,.li-main:has(.li-empty) .li-card{display:none}
+.li-rail{grid-area:rail;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;border-radius:22px;padding:22px 28px 26px;position:sticky;top:24px}
+.li-lab{display:block;align-self:flex-start;font-family:Outfit,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.li-play{margin-top:6px}
+.li-state{color:var(--mut)}
+.li-prog{display:flex;width:100%;flex-direction:column;gap:8px;margin-top:4px}
+.li-track{position:relative;height:6px;border-radius:999px;background:#ece8da;overflow:hidden}
+.li-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--teal)}
+.li-meta{display:flex;justify-content:space-between;align-items:baseline}
+.li-pos{font-family:Outfit,sans-serif;font-size:13px;font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums}
+.li-time{font-family:Outfit,sans-serif;font-size:12px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+.li-div{display:block;width:100%;height:1px;background:var(--line);margin-top:2px}
+.li-now{display:flex;width:100%;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;min-height:84px}
+.li-now .ko{font-size:13px;color:var(--mut)}
+.li-now .fo{font-size:18px;font-weight:700;line-height:1.4;color:var(--teal-deep);text-wrap:pretty}
+.li-rebuild{margin-top:4px;height:40px;padding:0 16px}
+.li-list{margin-top:0}
+.li-row{grid-template-columns:28px minmax(0,1fr) minmax(0,1.15fr);gap:0 18px;align-items:baseline;padding:13px 14px}
+.li-row .tx{display:contents}
+.li-row .n{padding-top:0}
+.li-row .ko{font-size:14px;line-height:1.4}
+.li-row .fo{margin-top:0}
+.li-row.cur .n{color:var(--teal-deep)}
+.li-row.cur .ko{color:var(--ink)}
+.li-row:not(.cur):not(:disabled):hover{background:#f8f6ee}
+}`;
 
 export function mountListen(host) {
   ensureV2Fonts();
@@ -64,7 +103,21 @@ export function mountListen(host) {
   const icon = h('span', {}, vIcon(VI.PLAY, { size: 44, fill: true }));
   const playBtn = h('button', { class: 'li-play', type: 'button', 'data-role': 'play', 'aria-label': '재생', disabled: true }, icon);
   const listEl = h('div', { class: 'li-list', 'data-role': 'script' });
-  const body = h('div', { class: 'li-wrap' }, h('h1', { class: 'li-h1' }, '연속 듣기'), sub, playBtn, state, listEl);
+  /* 재생 카드 — PC 에서만 보이는 라벨·진행 막대·n / N·시간·지금 나오는 문장을 품는다. 재생 버튼이 목록보다 DOM 앞에 있어야 하므로
+   * (listen.test.js) 카드를 앞에 두고 PC 에서는 grid-template-areas 로 목록을 왼쪽에 놓는다. */
+  const fill = h('span', { class: 'li-fill' });
+  const posEl = h('span', { class: 'li-pos' });
+  const timeEl = h('span', { class: 'li-time' });
+  const nowKo = h('span', { class: 'ko' });
+  const nowFo = h('span', { class: 'fo' });
+  const rail = h('div', { class: 'li-rail' },
+    h('span', { class: 'li-lab' }, `한글 뒤 ${langLabel(lang)} · 무한 반복`),
+    playBtn, state,
+    h('div', { class: 'li-prog' }, h('div', { class: 'li-track', 'aria-hidden': 'true' }, fill), h('div', { class: 'li-meta' }, posEl, timeEl)),
+    h('div', { class: 'li-div' }),
+    h('div', { class: 'li-now' }, h('span', { class: 'li-lab' }, '지금 나오는 문장'), nowKo, nowFo));
+  const main = h('div', { class: 'li-main' }, rail, h('div', { class: 'li-card' }, listEl));
+  const body = h('div', { class: 'li-wrap' }, h('div', { class: 'li-head' }, h('h1', { class: 'li-h1' }, '연속 듣기'), sub), main);
   const root = h('div', { class: 'li' },
     v2Style(CSS),
     h('div', { class: 'li-top' }, h('div', { class: 'li-top-in' },
@@ -73,7 +126,20 @@ export function mountListen(host) {
     body, audio);
   host.appendChild(root);
 
-  let url = null; let count = 0; let starts = []; let curIdx = -1;
+  let url = null; let count = 0; let starts = []; let curIdx = -1; let pairs = []; let seconds = 0;
+  const mmss = (t) => { const s = Math.floor(t); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  /* 재생 카드 — n / N·지금 나오는 문장은 현재 문장을, 막대·시간은 재생 위치를 따른다. 한 바퀴 길이(seconds)를 모르는 동안(만드는 중)은 시간을 비운다. */
+  const paintNow = () => {
+    const p = pairs[curIdx];
+    posEl.textContent = `${p ? curIdx + 1 : '–'} / ${pairs.length}`;
+    nowKo.textContent = p ? p.koText : '';
+    nowFo.textContent = p ? p.fo : '재생을 누르면 첫 문장부터';
+  };
+  const paintTime = () => {
+    const t = audio.currentTime || 0;
+    fill.style.width = `${seconds ? (t / seconds) * 100 : 0}%`;
+    timeEl.textContent = seconds ? `${mmss(t)} / ${mmss(seconds)}` : '';
+  };
   /* 스크립트 — 현재 문장 한 줄만 강조하고 가운데로 스크롤. 시작 초는 합성 때 받은 bookmark(없으면 균등 분할). */
   const setCur = (i) => {
     if (i === curIdx) return;
@@ -81,15 +147,17 @@ export function mountListen(host) {
     curIdx = i;
     const row = listEl.children[i];
     if (row) { row.classList.add('cur'); row.scrollIntoView?.({ block: 'center', behavior: 'smooth' }); }
+    paintNow();
   };
   const seek = (i) => { audio.currentTime = starts[i] ?? 0; setCur(i); if (audio.paused) doPlay(); };
-  const renderScript = (pairs) => {
+  /* 줄은 소리가 준비될 때까지 막아 둔다(build 가 합성 전에 그리고, 성공하면 푼다). */
+  const renderScript = () => {
     curIdx = -1;
-    listEl.replaceChildren(...pairs.map((p, i) => h('button', { class: 'li-row', type: 'button', 'data-i': i, onClick: () => seek(i) },
+    listEl.replaceChildren(...pairs.map((p, i) => h('button', { class: 'li-row', type: 'button', 'data-i': i, disabled: true, onClick: () => seek(i) },
       h('span', { class: 'n' }, String(i + 1)),
-      h('span', {}, h('span', { class: 'ko' }, p.koText), h('span', { class: 'fo' }, p.fo)))));
+      h('span', { class: 'tx' }, h('span', { class: 'ko' }, p.koText), h('span', { class: 'fo' }, p.fo)))));
   };
-  audio.addEventListener('timeupdate', () => { if (starts.length) setCur(currentIndex(starts, audio.currentTime)); });
+  audio.addEventListener('timeupdate', () => { if (starts.length) setCur(currentIndex(starts, audio.currentTime)); paintTime(); });
   const setIcon = (playing) => { icon.replaceChildren(vIcon(playing ? VI.PAUSE : VI.PLAY, { size: 44, fill: true })); playBtn.classList.toggle('on', playing); playBtn.setAttribute('aria-label', playing ? '일시정지' : '재생'); };
   const setMS = (st) => { try { if (navigator.mediaSession) navigator.mediaSession.playbackState = st; } catch (_) { /* noop */ } };
   const doPlay = () => audio.play().then(() => { setIcon(true); setMS('playing'); state.textContent = '재생 중 · 화면을 잠가도 계속 나와요'; }).catch((e) => { state.textContent = `재생 실패: ${e?.message ?? e}`; });
@@ -112,12 +180,14 @@ export function mountListen(host) {
   async function build() {
     playBtn.disabled = true; setIcon(false);
     body.querySelectorAll('.li-err, .li-retry, .li-rebuild, .li-empty').forEach((n) => n.remove());
-    starts = []; listEl.replaceChildren(); curIdx = -1;
+    starts = []; seconds = 0; listEl.replaceChildren(); curIdx = -1;
     let cards = [];
     try { cards = await window.studyDB.reviewQueue.where('lang').equals(lang).toArray(); } catch (e) { console.error('[listen] load', e); }
-    const pairs = buildListenPairs(cards);
-    if (!pairs.length) { sub.textContent = ''; body.appendChild(h('div', { class: 'li-empty' }, '아직 들을 문장이 없어요')); return; }
+    pairs = buildListenPairs(cards);
+    if (!pairs.length) { sub.textContent = ''; main.appendChild(h('div', { class: 'li-empty' }, '아직 들을 문장이 없어요')); return; }
     sub.textContent = `${langLabel(lang)} ${pairs.length}문장`;
+    /* 목록은 합성 전에 그린다 — PC 에서 합성하는 동안 왼쪽이 비지 않게(모바일도 같은 경로라 목록이 먼저 보인다). */
+    renderScript(); paintNow(); paintTime();
     state.textContent = '소리 만드는 중…';
     try {
       const synthesize = window.studyListen?.synthesize;
@@ -127,18 +197,19 @@ export function mountListen(host) {
         ...(synthesize ? { synthesize } : {}),
       });
       release();
-      url = URL.createObjectURL(out.blob); audio.src = url; count = out.count;
+      url = URL.createObjectURL(out.blob); audio.src = url; count = out.count; seconds = out.seconds;
       starts = Array.isArray(out.starts) ? out.starts : [];
-      renderScript(pairs);
+      listEl.querySelectorAll('.li-row').forEach((b) => { b.disabled = false; });
       sub.textContent = listenTitle(lang, out.count, out.seconds);
       state.textContent = '준비 완료 · 재생을 누르면 잠금 중에도 이어서 나와요';
-      playBtn.disabled = false; armMediaSession();
-      body.insertBefore(h('button', { class: 'li-rebuild', type: 'button', 'data-role': 'rebuild', onClick: () => { doPause(); build(); } }, '다시 만들기'), listEl);
+      playBtn.disabled = false; armMediaSession(); paintTime();
+      rail.appendChild(h('button', { class: 'li-rebuild', type: 'button', 'data-role': 'rebuild', onClick: () => { doPause(); build(); } }, '다시 만들기'));
     } catch (e) {
       console.warn('[listen] build 실패', e);
       state.textContent = '';
-      body.appendChild(h('div', { class: 'li-err' }, `소리를 만들지 못했어요 · ${e?.message ?? e}`));
-      body.appendChild(h('button', { class: 'li-retry', type: 'button', 'data-role': 'retry', onClick: () => build() }, '다시 시도'));
+      /* 실패 안내는 재생 카드 안 상태 문구 바로 아래 — 목록이 먼저 그려지므로 본문 끝에 붙이면 목록 아래로 밀린다. */
+      state.after(h('div', { class: 'li-err' }, `소리를 만들지 못했어요 · ${e?.message ?? e}`),
+        h('button', { class: 'li-retry', type: 'button', 'data-role': 'retry', onClick: () => build() }, '다시 시도'));
     }
   }
   build();

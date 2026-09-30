@@ -11,6 +11,7 @@
 - 앱 스펙: `~/apps/study/specs/study-app-spec.md`
 - 1차 정본 (payload 형식·en drift 결정): `~/apps/study/seeds/README.md`
 - 2차 정본 (lesson explanation): `~/apps/study/docs/lesson-explanation-guide-{ja,en}.md` + `explanation-schema.md`
+- 화면 시안: `~/apps/study/design-ref/` (연속 듣기·말하기 연습 PC 배치 = `design_handoff_pc_listen_speak/`, README 가 작업지시서이고 목업 인라인 수치가 정본)
 
 ## 카드 작성 게이트
 

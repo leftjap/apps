@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>말하기 연습 · PC</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0;background:oklch(97.5% .009 95);font-family:Pretendard,system-ui,sans-serif;color:#25322f;word-break:keep-all;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+a{color:oklch(35% .058 192)}a:hover{color:oklch(44% .062 192)}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1200px; box-sizing: border-box; background: oklch(97.5% .009 95); display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="height: 60px; flex-shrink: 0; border-bottom: 1px solid #e7e3d6; display: flex; align-items: center">
+    <div style="width: 1064px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between">
+      <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0; font-size: 13px; font-weight: 600; color: #6f7a75; background: none; border: 0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 9v12h14V9"></path></svg>
+        <span>홈으로</span>
+      </button>
+      <span style="font-size: 14px; color: #6f7a75">영어</span>
+    </div>
+  </div>
+
+  <div style="width: 1064px; margin: 0 auto; padding: 26px 20px 56px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px">
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <h1 style="margin: 0; font-family: Outfit, Pretendard, sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">말하기 연습</h1>
+      <p style="margin: 0; max-width: 720px; font-size: 14px; line-height: 1.5; color: #6f7a75">배운 표현 최대 5개로 ChatGPT 음성 연습 프롬프트를 만듭니다. 상대가 질문을 던지면 그 답으로 오늘 문장을 꺼내 말하고, 한 번은 사람·시간·사물을 바꿔 말하게 됩니다.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 356px minmax(0, 1fr); gap: 26px; align-items: start">
+
+      <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+
+        <div style="display: flex; gap: 4px; align-self: flex-start; background: #efebde; border-radius: 11px; padding: 4px">
+          <sc-for list="{{tabs}}" as="tab" hint-placeholder-count="3">
+            <sc-if value="{{tab.on}}" hint-placeholder-val="{{ false }}"><button type="button" aria-pressed="true" onClick="{{tab.pick}}" style="height: 36px; padding: 0 18px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 0; background: #fffefb; color: oklch(35% .058 192); box-shadow: 0 2px 6px -3px rgba(25,35,32,.22); white-space: nowrap">{{tab.label}}</button></sc-if>
+            <sc-if value="{{tab.off}}" hint-placeholder-val="{{ true }}"><button type="button" aria-pressed="false" onClick="{{tab.pick}}" style="height: 36px; padding: 0 18px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 0; background: transparent; color: #6f7a75; white-space: nowrap">{{tab.label}}</button></sc-if>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{isSession}}" hint-placeholder-val="{{ true }}">
+          <div style="background: #fffefb; border: 1px solid #e7e3d6; border-radius: 20px; box-shadow: 0 1px 0 rgba(25,35,32,.02), 0 10px 22px -18px rgba(25,35,32,.12); padding: 14px 10px 10px; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 10px 8px">
+              <span style="font-family: Outfit, Pretendard, sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #9da69f">세션</span>
+              <span style="font-family: Outfit, sans-serif; font-size: 12px; font-weight: 600; color: #9da69f">{{sessionCount}}</span>
+            </div>
+            <sc-for list="{{sessions}}" as="s" hint-placeholder-count="2">
+              <sc-if value="{{s.sel}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: flex-start; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 14px; background: oklch(44% .062 192 / .08)">
+                <button type="button" onClick="{{s.pick}}" aria-current="true" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; border: 0; background: transparent; text-align: left; color: inherit; font-size: 14.5px; border-radius: 10px">
+                  <span style="font-size: 12px; font-weight: 600; color: oklch(35% .058 192)">{{s.meta}}</span>
+                  <span style="width: 100%; font-size: 14.5px; font-weight: 700; line-height: 1.4; color: oklch(35% .058 192); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{s.first}}</span>
+                </button>
+                <button type="button" onClick="{{s.copy}}" aria-label="{{s.copyLabel}}" style="flex: 0 0 auto; margin-top: 9px; height: 32px; min-width: 58px; padding: 0 12px; font-size: 12.5px; font-weight: 700; border-radius: 999px; border: 1.5px solid oklch(44% .062 192); background: #fffefb; color: oklch(35% .058 192); white-space: nowrap">{{s.copyText}}</button>
+              </div>
+              </sc-if>
+              <sc-if value="{{s.idle}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: flex-start; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 14px; background: transparent">
+                <button type="button" onClick="{{s.pick}}" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; border: 0; background: transparent; text-align: left; color: inherit; font-size: 14.5px; border-radius: 10px">
+                  <span style="font-size: 12px; font-weight: 600; color: #9da69f">{{s.meta}}</span>
+                  <span style="width: 100%; font-size: 14.5px; font-weight: 700; line-height: 1.4; color: #25322f; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{s.first}}</span>
+                </button>
+                <button type="button" onClick="{{s.copy}}" aria-label="{{s.copyLabel}}" style="flex: 0 0 auto; margin-top: 9px; height: 32px; min-width: 58px; padding: 0 12px; font-size: 12.5px; font-weight: 700; border-radius: 999px; border: 1.5px solid #e7e3d6; background: #fffefb; color: #6f7a75; white-space: nowrap">{{s.copyText}}</button>
+              </div>
+              </sc-if>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isOther}}" hint-placeholder-val="{{ false }}">
+          <div style="background: #fffefb; border: 1px solid #e7e3d6; border-radius: 20px; box-shadow: 0 1px 0 rgba(25,35,32,.02), 0 10px 22px -18px rgba(25,35,32,.12); padding: 18px 20px; font-size: 13px; line-height: 1.6; color: #6f7a75">{{scopeNote}}</div>
+        </sc-if>
+
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+
+        <div style="background: #fffefb; border: 1px solid #e7e3d6; border-radius: 20px; box-shadow: 0 1px 0 rgba(25,35,32,.02), 0 10px 22px -18px rgba(25,35,32,.12); padding: 22px 26px 24px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-family: Outfit, Pretendard, sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #9da69f">{{eyebrow}}</span>
+            <sc-if value="{{hasItems}}" hint-placeholder-val="{{ true }}">
+              <span style="font-family: Outfit, Pretendard, sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: #25322f">{{title}}</span>
+            </sc-if>
+            <sc-if value="{{hasSituation}}" hint-placeholder-val="{{ true }}">
+              <span style="font-size: 13px; line-height: 1.5; color: #6f7a75">{{situation}}</span>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{hasItems}}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+              <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+                <label style="display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 12px 14px; border-radius: 12px; background: #f8f6ee; border: 1px solid #f1ede0; cursor: pointer">
+                  <input type="checkbox" checked="{{it.checked}}" onChange="{{it.toggle}}" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: oklch(44% .062 192)">
+                  <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+                    <span style="font-size: 16px; font-weight: 700; line-height: 1.35; color: #25322f">{{it.expr}}</span>
+                    <sc-if value="{{it.showSentence}}" hint-placeholder-val="{{ true }}">
+                      <span style="font-size: 13.5px; line-height: 1.4; color: #25322f">{{it.sentence}}</span>
+                    </sc-if>
+                    <span style="font-size: 12.5px; color: #6f7a75">{{it.ko}}</span>
+                  </span>
+                </label>
+              </sc-for>
+            </div>
+            <div style="font-size: 13px; line-height: 1.6; color: #6f7a75; padding: 12px 14px; border-radius: 12px; background: oklch(44% .062 192 / .08)">1 복사 → 2 ChatGPT 새 대화에 붙여 넣어 보내기 → 3 같은 대화에서 음성 모드 시작 → 4 약 10분 대화 → 5 끝나면 못 한 표현을 문장 모아보기에서 확인</div>
+          </sc-if>
+
+          <sc-if value="{{noItems}}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 2px 0 4px; font-size: 15px; line-height: 1.5; color: #25322f">{{emptyText}}</div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{hasItems}}" hint-placeholder-val="{{ true }}">
+          <div style="background: #fffefb; border: 1px solid #e7e3d6; border-radius: 20px; box-shadow: 0 1px 0 rgba(25,35,32,.02), 0 10px 22px -18px rgba(25,35,32,.12); padding: 20px 26px 24px; display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <span style="font-family: Outfit, Pretendard, sans-serif; font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #9da69f">프롬프트</span>
+                <span style="font-size: 13px; color: #6f7a75">{{promptMeta}}</span>
+              </div>
+              <button type="button" onClick="{{copyMain}}" disabled="{{copyDisabled}}" style="height: 46px; min-width: 132px; padding: 0 20px; font-size: 15px; font-weight: 800; border-radius: 12px; border: 0; background: oklch(44% .062 192); color: #fffefb; white-space: nowrap">{{copyLabel}}</button>
+            </div>
+            <div style="height: 420px; overflow: auto; box-sizing: border-box; padding: 14px 16px; border: 1px solid #e7e3d6; border-radius: 12px; background: #f8f6ee; font-size: 13px; line-height: 1.55; white-space: pre-wrap; color: #25322f">{{prompt}}</div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+/* voicePrompt.js 의 buildVoicePrompt 를 그대로 옮긴 것 — 체크를 풀면 프롬프트가 실제 앱처럼 바뀐다. */
+const VOICE_PROMPT_INTRO = '[아래를 ChatGPT 새 대화에 붙여 넣고, 텍스트 답장이 온 뒤에 같은 대화에서 음성 모드를 켜세요]';
+
+const str = (v) => String(v ?? '').trim();
+const linesOf = (arr) => (Array.isArray(arr) ? arr : []).filter((x) => x && str(x.en));
+
+function normalizeVoiceItems(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((it) => (typeof it === 'string' ? { expr: it } : it))
+    .filter((it) => it && str(it.expr))
+    .map((it) => ({
+      expr: str(it.expr),
+      situation: str(it.situation),
+      sentence: str(it.sentence),
+      ko: str(it.ko),
+      miniDialogue: linesOf(it.miniDialogue).map((l) => ({ speaker: str(l.speaker) || 'A', en: str(l.en), ko: str(l.ko) })),
+      drills: linesOf(it.drills).map((d) => ({ en: str(d.en), ko: str(d.ko) })),
+    }));
+}
+
+const sentenceOf = (it) => it.sentence || it.expr;
+
+const baseOf = (it) => ({ en: sentenceOf(it), ko: it.ko });
+
+function patternBlock(it, n) {
+  const b = baseOf(it);
+  const named = it.expr && it.expr !== b.en && it.expr !== b.en.replace(/[.?!]$/, '');
+  const shortPart = `short "${b.en}"${b.ko ? ` = ${b.ko}` : ''}`;
+  const rest = it.drills.filter((d) => d.en !== b.en).map((d) => `"${d.en}"`);
+  const practiced = rest.length ? `\n   practiced: ${rest.join(' · ')}` : '';
+  return `P${n}${named ? ` (${it.expr})` : ''}  ${shortPart}${practiced}`;
+}
+
+function background(list) {
+  const seen = new Set();
+  return list
+    .map((it) => it.situation)
+    .filter((s) => s && !seen.has(s) && seen.add(s))
+    .join(' ');
+}
+
+function buildVoicePrompt(items) {
+  const list = normalizeVoiceItems(items);
+  const header = list.length
+    ? list.map((it, i) => patternBlock(it, i + 1)).join('\n')
+    : 'P1  short "(use a few simple everyday sentences)"';
+  const bg = background(list);
+  const sentences = Math.max(1, list.length);
+  const total = 11 * sentences;
+
+  return `${VOICE_PROMPT_INTRO}
+
+You are my English speaking partner. I already learned today's patterns in my app, so do not teach them. Your job is to make me produce each pattern many different ways until it comes out without help.
+
+About me: Korean adult. I read English well and I repeat well, so repeating after you teaches me nothing. What I cannot do is build a sentence myself. Make me build it.${bg ? `\nMy day, so your cues and questions come from my life: ${bg}` : ''}
+
+Today's patterns, from my app. Take them in order:
+${header}
+
+While we drill, never say an English sentence that I am supposed to say. There your English is only for asking me questions, and everything else you say is in Korean.
+One exception: when a pattern starts, say its short form once in English and I repeat it once. That is not scored. Never say that sentence again.
+This session should run about fifteen minutes. I speak about ${total} times in the drill — ${sentences * 2} in review, ${sentences * 3} in the substitutions, ${sentences * 6} in the questions — and about eight more in the closing conversation.
+
+Work in three stages, in this order, and never mix them. Announce each one in Korean before you start it.
+
+A. 복습 — say "복습부터 합니다". Go through the sentences in order, one per turn: say the short form once in English, I repeat it once, then say its Korean meaning and I say the English from meaning. Nothing changed yet. One pass over every sentence.
+B. 바꿔 말하기 — say "이제 바꿔 말하기입니다". Work in passes, one slot per pass, and in each pass go through every sentence in order before you change slot: pass one the subject, pass two the thing or activity, pass three the time. If changing a sentence's subject would break the pattern — "It looks like ~", or a command like "Don't forget to ~" — change its thing or activity in the subject pass instead. Never take the same sentence twice in a row. A change cue is two Korean words: the slot, then the new word — "주어를 소연으로", "동작을 운동으로", "시간을 이번 주로". Take the new word from my day or from the practiced lines, never from outside my life. Name the new word; never describe it and never leave the slot out. Every change starts from that sentence's short form, never from my last answer, so I only ever hold one sentence in my head. Three passes in all, so ${sentences * 3} answers from me.
+C. 질문과 답 — say "이제 질문과 답입니다". Now mix the sentences. Ask me a question in English that one of them answers, and I answer in English with something changed. Then say "이번엔 질문을 만드세요", give an answer in Korean, and I build the English question that gets it. Keep alternating those two for ${sentences * 6} answers from me. In this stage a slot cue is wrong: when my answer misses, say in Korean which sentence answers it in three words or fewer ("먹는 얘기요"), never "주어를 …으로".
+
+Before each new sentence in A and B, say in Korean which sentence it is, using the Korean of its short form, like "이번엔 잘 못 먹고 있어입니다". Then I always know what the cues change.
+
+When the last pattern is done, say in Korean "이제 대화합니다" and, in that same turn, ask me your first question in English. The drill rules stop there. In the conversation you are a person in my day, not an assistant: answer as someone with a life of your own and never say you are an AI or that you do not sleep, eat or have a pet. Take whatever I say and answer it in English in one short line, then ask the next thing. Never correct me and never hint. There is no right answer to reach. Count my turns in the conversation. After my first, third, fifth and seventh turn, answer in one English line with no question and add "이번엔 저한테 물어보세요"; on my next turn I ask, and you answer it in English, then ask the next thing. Answer every question I ask before you move on. Do not stop before my eighth turn; never stop on a turn where I asked you something. Answer my last turn like any other, and never finish on a turn where I asked you something. Then, in a turn that holds nothing but the report, open with "리포트 하겠습니다" in Korean and give it.
+If I say 리포트, stop everything and give the report now.
+
+Rules:
+- One thing per turn. Then stop and wait at least five seconds. Your turn is one line, under twelve words. I must talk more than you.
+- When I am stuck or wrong, give one hint: the first two words, or in Korean what to fix in three words or fewer ("주어부터", "과거로요"). Then wait again.
+- Only if the hint fails twice, say the whole sentence once, say "따라 하세요.", and come back to it two or three turns later. That is the only time you say my sentence.
+- If I repeat your line instead of answering, say "그건 제 대사예요" and give me the first two words.
+- Accept my sentence whenever it keeps the pattern and changes the slot you asked for, even if I picked a different word than you had in mind. Do not send me back for a word choice.
+- Always fix a missing be-verb, a missing subject, or a wrong tense. Ignore article and preposition slips when the meaning is clear. No praise: say "네" and go straight on. Start your turn with "네" only when my answer was right, never when it was wrong, so I can tell a new item from a correction.
+- Never say the cue numbers, the pattern numbers, or the text in ( ). Never tell me which pattern to use; make me hear it in your cue.
+- At the end say only this and nothing else: for each pattern, its short form, then one word, and only one of these three with nothing added in brackets or parentheses. Count per pattern how many times you hinted and how many times you said my sentence for me: 못함 if you said my sentence one or more times, 힌트 if you only hinted, 혼자 if neither happened. Then one line starting 내일은. Give the report once; if I ask again, say only "끝났습니다".
+
+Start now: one line in Korean to tell me we are starting, then the first pattern.`;
+}
+
+const CARDS = {"en-personal-restaurant-01-looks-like": {"id": "en-personal-restaurant-01-looks-like", "expr": "It looks like ~", "sentence": "It looks like there's one table left.", "ko": "자리 하나 남은 것 같아.", "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.", "drills": [{"en": "It looks like rain."}, {"en": "It looks like they're full."}, {"en": "Looks like we're early."}, {"en": "Does it look like a long wait?"}]}, "en-personal-restaurant-02-cant-wait-to": {"id": "en-personal-restaurant-02-cant-wait-to", "expr": "I can't wait to ~", "sentence": "I can't wait to eat.", "ko": "빨리 먹고 싶다.", "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.", "drills": [{"en": "I can't wait to get home."}, {"en": "I can't wait for the weekend."}, {"en": "She can't wait to try it."}, {"en": "Can't you wait till we get home?"}]}, "en-personal-restaurant-03-dont-think": {"id": "en-personal-restaurant-03-dont-think", "expr": "I don't think ~", "sentence": "I don't think it's fresh.", "ko": "신선하지 않은 것 같아.", "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.", "drills": [{"en": "I don't think that's a good idea."}, {"en": "I don't think we need more."}, {"en": "She doesn't think it's worth it."}, {"en": "Don't you think it's too salty?"}, {"en": "I don't think I'm ready."}]}, "en-personal-restaurant-04-finishing-up": {"id": "en-personal-restaurant-04-finishing-up", "expr": "I'm finishing up", "sentence": "I'm finishing up.", "ko": "마무리하는 중이야.", "situation": "저녁 6시. 감자탕집에 갔더니 자리가 딱 하나 남아 있었다.", "drills": [{"en": "I'm almost done."}, {"en": "Are you almost done?"}, {"en": "Let's finish up and go."}, {"en": "I'm finishing up at work."}]}, "en-personal-pickup-01-about-to": {"id": "en-personal-pickup-01-about-to", "expr": "I was about to ~", "sentence": "I was just about to call you.", "ko": "막 전화하려던 참이었어.", "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.", "drills": [{"en": "I was just about to go to bed."}, {"en": "We were about to leave."}, {"en": "She was about to board."}, {"en": "Were you about to call me?"}]}, "en-personal-pickup-02-on-my-way": {"id": "en-personal-pickup-02-on-my-way", "expr": "I'm on my way", "sentence": "I'm on my way.", "ko": "가는 중이야.", "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.", "drills": [{"en": "I'm almost there."}, {"en": "She's on her way home."}, {"en": "I'm on my way to the gym."}, {"en": "We're on our way to the airport."}]}, "en-personal-pickup-03-dont-have-to": {"id": "en-personal-pickup-03-dont-have-to", "expr": "You don't have to ~", "sentence": "You don't have to be sorry.", "ko": "미안해할 필요 없어.", "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.", "drills": [{"en": "You don't have to explain."}, {"en": "You don't have to hurry."}, {"en": "We don't have to park far."}, {"en": "Do I have to come in?"}, {"en": "You don't have to do this alone."}]}, "en-personal-pickup-04-ill-call": {"id": "en-personal-pickup-04-ill-call", "expr": "I'll call you when ~", "sentence": "I'll call you when I get there.", "ko": "도착하면 전화할게.", "situation": "새벽. 라스베가스 비행에서 돌아오는 소연이 예정보다 한 시간 일찍 착륙해 전화했다. 한파주의보.", "drills": [{"en": "I'll call you later."}, {"en": "I'll call you when I'm done."}, {"en": "Call me when you land."}, {"en": "She'll call when she's done."}]}};
+const SESSIONS = [{"key": "s0925", "date": "9월 25일", "ids": ["en-personal-restaurant-01-looks-like", "en-personal-restaurant-02-cant-wait-to", "en-personal-restaurant-03-dont-think", "en-personal-restaurant-04-finishing-up"]}, {"key": "s0920", "date": "9월 20일", "ids": ["en-personal-pickup-01-about-to", "en-personal-pickup-02-on-my-way", "en-personal-pickup-03-dont-have-to", "en-personal-pickup-04-ill-call"]}];
+const SCOPES = [
+  { key: 'session', label: '세션' },
+  { key: 'hard', label: '최근 어려웠던 표현' },
+  { key: 'random', label: '랜덤 복습' }
+];
+const SCOPE_NOTE = {
+  hard: '최근 14일 안에 어려움으로 판정했거나 마지막 판정이 어려움인 표현을, 최근 순으로 최대 5개 모읍니다.',
+  random: '복습 카드에서 무작위로 최대 5개를 뽑습니다. 탭을 다시 누르면 새로 뽑습니다.'
+};
+const EMPTY_TEXT = { session: '공부한 세션이 없어요', hard: '최근 어려웠다고 판정한 표현이 없어요', random: '복습 카드가 없어요' };
+const uniq = (xs) => xs.filter((x, i) => x && xs.indexOf(x) === i);
+const shuffle = (xs) => { const a = xs.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { scope: 'session', sel: 's0925', off: {}, copied: null, randomIds: ['en-personal-restaurant-02-cant-wait-to', 'en-personal-pickup-02-on-my-way', 'en-personal-restaurant-04-finishing-up', 'en-personal-pickup-01-about-to', 'en-personal-restaurant-03-dont-think'] };
+  }
+  flash(key) {
+    this.setState({ copied: key });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ copied: null }), 1500);
+  }
+  renderVals() {
+    const st = this.state;
+    const off = st.off;
+    const sessionItems = (s) => s.ids.map((id) => CARDS[id]).filter(Boolean);
+    const sel = SESSIONS.find((s) => s.key === st.sel) || SESSIONS[0];
+    const valid = st.randomIds.map((id) => CARDS[id]).filter(Boolean);
+    const shown = st.scope === 'session' ? sessionItems(sel) : st.scope === 'random' ? valid : [];
+    const checkedItems = shown.filter((c) => !off[c.id]);
+    const promptText = buildVoicePrompt(checkedItems);
+    const copyText = (text, key) => { try { navigator.clipboard.writeText(text); } catch (e) { /* noop */ } this.flash(key); };
+
+    const tabs = SCOPES.map((sc) => ({
+      label: sc.label, on: sc.key === st.scope, off: sc.key !== st.scope,
+      pick: () => {
+        const next = { scope: sc.key, off: {} };
+        if (sc.key === 'random') next.randomIds = shuffle(Object.keys(CARDS)).slice(0, 5);
+        this.setState(next);
+      }
+    }));
+
+    const sessions = SESSIONS.map((s) => {
+      const its = sessionItems(s);
+      const isSel = s.key === sel.key;
+      return {
+        meta: s.date + ' · 표현 ' + its.length + '개',
+        first: its[0] ? its[0].sentence : '',
+        sel: isSel, idle: !isSel,
+        copyLabel: s.date + ' 세션 프롬프트 복사',
+        copyText: st.copied === 'row:' + s.key ? '복사됨' : '복사',
+        pick: () => this.setState({ sel: s.key, off: {} }),
+        copy: () => copyText(isSel && st.scope === 'session' ? promptText : buildVoicePrompt(its), 'row:' + s.key)
+      };
+    });
+
+    const items = shown.map((c) => ({
+      expr: c.expr, sentence: c.sentence, ko: c.ko,
+      showSentence: Boolean(c.sentence) && c.expr !== c.sentence && c.expr !== c.sentence.replace(/[.?!]$/, ''),
+      checked: !off[c.id],
+      toggle: () => this.setState({ off: Object.assign({}, off, { [c.id]: !off[c.id] }) })
+    }));
+
+    const isSession = st.scope === 'session';
+    const situation = uniq(shown.map((c) => c.situation)).join(' ');
+    const eyebrow = isSession ? '고른 세션' : (st.scope === 'hard' ? '최근 어려웠던 표현' : '랜덤 복습');
+    const title = isSession ? sel.date + ' · 표현 ' + shown.length + '개' : (shown.length ? '표현 ' + shown.length + '개' : '표현 없음');
+
+    return {
+      tabs, sessions, items,
+      isSession, isOther: !isSession,
+      scopeNote: SCOPE_NOTE[st.scope] || '',
+      sessionCount: SESSIONS.length + '개',
+      eyebrow, title,
+      situation, hasSituation: Boolean(situation) && shown.length > 0,
+      hasItems: shown.length > 0, noItems: shown.length === 0,
+      emptyText: EMPTY_TEXT[st.scope] + ' · 다른 범위를 골라 보세요',
+      promptMeta: checkedItems.length ? '고른 표현 ' + checkedItems.length + '개로 만든 프롬프트 · ChatGPT 새 대화에 붙여 넣기' : '표현을 하나 이상 고르세요',
+      prompt: promptText,
+      copyDisabled: checkedItems.length === 0,
+      copyLabel: st.copied === 'main' ? '복사됨 ✓' : '프롬프트 복사',
+      copyMain: () => copyText(promptText, 'main')
+    };
+  }
+}
+</script>
+</body>
+</html>

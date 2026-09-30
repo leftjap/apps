@@ -164,3 +164,108 @@ describe('mountListen — 스크립트 목록 · 현재 문장 강조 · 탭 탐
     expect(host.querySelectorAll('.li-row')[1].classList.contains('cur')).toBe(true);
   });
 });
+
+describe('mountListen — PC 재생 카드 · 목록 먼저 그리기 (2026-09-30 시안 design-ref/design_handoff_pc_listen_speak)', () => {
+  let host;
+  const rows = () => [...host.querySelectorAll('.li-row')];
+  const railText = (sel) => host.querySelector(`.li-rail ${sel}`).textContent;
+  beforeEach(() => {
+    host = document.createElement('div'); document.body.appendChild(host);
+    sessionStorage.setItem('studyLang', 'en');
+    window.studyDB = { reviewQueue: { where: () => ({ equals: () => ({ toArray: async () => CARDS }) }) } };
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function () { Object.defineProperty(this, 'paused', { value: false, configurable: true }); return Promise.resolve(); });
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(function () { Object.defineProperty(this, 'paused', { value: true, configurable: true }); });
+    global.URL.createObjectURL = vi.fn(() => 'blob:fake'); global.URL.revokeObjectURL = vi.fn();
+    Element.prototype.scrollIntoView = vi.fn();
+    M.buildListenAudio.mockReset();
+  });
+  afterEach(() => { host.remove(); vi.restoreAllMocks(); });
+
+  it('소리를 만드는 동안 목록을 먼저 그리고 줄을 막아 두었다가, 다 만들면 푼다', async () => {
+    let done;
+    M.buildListenAudio.mockImplementation(() => new Promise((r) => { done = r; }));
+    mountListen(host); await flush();
+    expect(rows()).toHaveLength(2);
+    expect(rows()[0].textContent).toContain('I have no appetite.');
+    expect(rows().every((r) => r.disabled)).toBe(true);
+    expect(railText('.li-pos')).toBe('– / 2');
+    expect(railText('.li-time')).toBe('');
+    done({ blob: new Blob(['x']), seconds: 6, count: 2, starts: [0, 3] }); await flush();
+    expect(rows()).toHaveLength(2);
+    expect(rows().every((r) => !r.disabled)).toBe(true);
+  });
+
+  it('재생 위치를 따라 n / N · 시간(초 버림) · 진행 막대 · 지금 나오는 문장이 바뀐다', async () => {
+    M.buildListenAudio.mockResolvedValue({ blob: new Blob(['x']), seconds: 62.4, count: 2, starts: [0, 31] });
+    mountListen(host); await flush();
+    expect(railText('.li-lab')).toBe('한글 뒤 영어 · 무한 반복');
+    expect(railText('.li-pos')).toBe('– / 2');
+    expect(railText('.li-time')).toBe('0:00 / 1:02');
+    expect(railText('.li-now .ko')).toBe('');
+    expect(railText('.li-now .fo')).toBe('재생을 누르면 첫 문장부터');
+    expect(parseFloat(host.querySelector('.li-fill').style.width)).toBe(0);
+    const audio = host.querySelector('audio');
+    audio.currentTime = 34.9; audio.dispatchEvent(new Event('timeupdate'));
+    expect(railText('.li-pos')).toBe('2 / 2');
+    expect(railText('.li-time')).toBe('0:34 / 1:02');
+    expect(railText('.li-now .ko')).toBe('(무슨) 문제가 있나요?');
+    expect(railText('.li-now .fo')).toBe('Is there a problem?');
+    expect(parseFloat(host.querySelector('.li-fill').style.width)).toBeCloseTo(55.93, 1);
+    expect(host.querySelector('.li-track').getAttribute('aria-hidden')).toBe('true');
+    audio.currentTime = 1; audio.dispatchEvent(new Event('timeupdate'));
+    expect(railText('.li-pos')).toBe('1 / 2');
+    expect(railText('.li-now .fo')).toBe('I have no appetite.');
+  });
+
+  it('문장 줄을 누르면 지금 나오는 문장과 n / N 도 그 줄로 바뀐다', async () => {
+    M.buildListenAudio.mockResolvedValue({ blob: new Blob(['x']), seconds: 6, count: 2, starts: [0, 3] });
+    mountListen(host); await flush();
+    rows()[1].click(); await flush();
+    expect(railText('.li-pos')).toBe('2 / 2');
+    expect(railText('.li-now .fo')).toBe('Is there a problem?');
+  });
+
+  it('일본어면 라벨이 일본어로 바뀐다', async () => {
+    sessionStorage.setItem('studyLang', 'ja');
+    M.buildListenAudio.mockResolvedValue({ blob: new Blob(['x']), seconds: 6, count: 2, starts: [0, 3] });
+    mountListen(host); await flush();
+    expect(railText('.li-lab')).toBe('한글 뒤 일본어 · 무한 반복');
+  });
+
+  it('합성 실패 → 안내와 다시 시도는 재생 카드 안 상태 문구 바로 아래, 목록은 막힌 채 남는다. 다시 시도가 성공하면 안내가 사라진다', async () => {
+    M.buildListenAudio.mockRejectedValueOnce(new Error('token')).mockResolvedValueOnce({ blob: new Blob(['x']), seconds: 6, count: 2, starts: [0, 3] });
+    mountListen(host); await flush();
+    const state = host.querySelector('.li-rail .li-state');
+    expect(state.nextElementSibling.classList.contains('li-err')).toBe(true);
+    expect(state.nextElementSibling.textContent).toBe('소리를 만들지 못했어요 · token');
+    expect(state.nextElementSibling.nextElementSibling.getAttribute('data-role')).toBe('retry');
+    expect(rows()).toHaveLength(2);
+    expect(rows().every((r) => r.disabled)).toBe(true);
+    host.querySelector('[data-role="retry"]').click(); await flush();
+    expect(host.querySelector('.li-err')).toBeNull();
+    expect(host.querySelector('[data-role="retry"]')).toBeNull();
+    expect(rows().every((r) => !r.disabled)).toBe(true);
+  });
+
+  it('다시 만들기는 재생 카드 맨 끝에 있고, 누르면 위치 표시를 처음으로 돌리고 목록을 다시 막는다', async () => {
+    let done;
+    M.buildListenAudio.mockResolvedValueOnce({ blob: new Blob(['x']), seconds: 6, count: 2, starts: [0, 3] })
+      .mockImplementationOnce(() => new Promise((r) => { done = r; }));
+    mountListen(host); await flush();
+    const rail = host.querySelector('.li-rail');
+    expect(rail.lastElementChild.getAttribute('data-role')).toBe('rebuild');
+    const audio = host.querySelector('audio');
+    audio.currentTime = 4; audio.dispatchEvent(new Event('timeupdate'));
+    expect(railText('.li-pos')).toBe('2 / 2');
+    rail.querySelector('[data-role="rebuild"]').click(); await flush();
+    expect(M.buildListenAudio).toHaveBeenCalledTimes(2);
+    expect(railText('.li-pos')).toBe('– / 2');
+    expect(railText('.li-time')).toBe('');
+    expect(railText('.li-now .fo')).toBe('재생을 누르면 첫 문장부터');
+    expect(parseFloat(host.querySelector('.li-fill').style.width)).toBe(0);
+    expect(rows().every((r) => r.disabled)).toBe(true);
+    expect(host.querySelector('[data-role="rebuild"]')).toBeNull();
+    done({ blob: new Blob(['x']), seconds: 6, count: 2, starts: [0, 3] }); await flush();
+    expect(rail.lastElementChild.getAttribute('data-role')).toBe('rebuild');
+  });
+});

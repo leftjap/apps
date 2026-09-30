@@ -105,3 +105,168 @@ describe('mountSpeak — 세션 고르기 → 표현 체크 → 프롬프트 복
     expect(host.querySelector('[data-role="session"]').hidden).toBe(true);
   });
 });
+
+describe('mountSpeak — PC 세션 목록 · 줄 복사 · 카드 머리 (2026-09-30 시안 design-ref/design_handoff_pc_listen_speak)', () => {
+  let host, write;
+  const row = (key) => host.querySelector(`[data-role="session-list"] [data-role="session-row"][data-key="${key}"]`);
+  const text = (sel) => host.querySelector(sel).textContent;
+  beforeEach(() => {
+    host = document.createElement('div'); document.body.appendChild(host);
+    sessionStorage.setItem('studyLang', 'en');
+    window.studyDay = { TODAY_ISO: T };
+    window.studyDB = { reviewQueue: table(CARDS), sessionLogs: table(LOGS) };
+    write = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: write } });
+  });
+  afterEach(() => { host.remove(); delete window.studyDay; vi.restoreAllMocks(); });
+
+  it('세션 목록 — 최신순 줄마다 날짜 · 표현 수와 첫 문장, 개수, 고른 세션 표시', async () => {
+    mountSpeak(host); await flush();
+    const rows = [...host.querySelectorAll('[data-role="session-list"] [data-role="session-row"]')];
+    expect(rows.map((r) => r.dataset.key)).toEqual(['L-today', 'L-past']);
+    expect(rows[0].querySelector('.meta').textContent).toBe('9월 8일 · 표현 2개');
+    expect(rows[0].querySelector('.first').textContent).toBe('It depends on what you want to do.');
+    expect(rows[1].querySelector('.meta').textContent).toBe('9월 5일 · 표현 1개');
+    expect(text('[data-role="session-list"] .cnt')).toBe('2개');
+    expect(rows[0].classList.contains('on')).toBe(true);
+    expect(rows[0].querySelector('button').getAttribute('aria-current')).toBe('true');
+    expect(rows[1].classList.contains('on')).toBe(false);
+    expect(rows[1].querySelector('button').hasAttribute('aria-current')).toBe(false);
+    expect(rows[1].querySelector('[data-role="session-copy"]').getAttribute('aria-label')).toBe('9월 5일 세션 프롬프트 복사');
+    expect(host.querySelectorAll('[data-role="copy"]')).toHaveLength(1);
+  });
+
+  it('세션 줄을 누르면 select 값·표현·프롬프트·카드 제목이 그 세션으로 바뀌고 표시가 옮겨간다', async () => {
+    mountSpeak(host); await flush();
+    row('L-past').querySelector('button').click(); await flush();
+    expect(host.querySelector('[data-role="session"]').value).toBe('L-past');
+    expect(labels(host)).toEqual(['on my way']);
+    expect(host.querySelector('textarea').value).toContain("I'm on my way.");
+    expect(host.querySelector('textarea').value).not.toContain('It depends on what you want to do.');
+    expect(text('.sp-ctitle')).toBe('9월 5일 · 표현 1개');
+    expect(row('L-past').classList.contains('on')).toBe(true);
+    expect(row('L-past').querySelector('button').getAttribute('aria-current')).toBe('true');
+    expect(row('L-today').classList.contains('on')).toBe(false);
+    expect(row('L-today').querySelector('button').hasAttribute('aria-current')).toBe(false);
+  });
+
+  it('모바일 select 로 고르면 세션 목록 표시도 따라간다', async () => {
+    mountSpeak(host); await flush();
+    await pick(host, 'L-past');
+    expect(row('L-past').classList.contains('on')).toBe(true);
+    expect(row('L-today').classList.contains('on')).toBe(false);
+  });
+
+  it('다른 범위를 봤다가 세션으로 돌아오면 목록 선택이 그대로고, 다른 범위에서는 목록을 숨긴다', async () => {
+    mountSpeak(host); await flush();
+    row('L-past').querySelector('button').click(); await flush();
+    host.querySelector('[data-scope="hard"]').click(); await flush();
+    expect(host.querySelector('[data-role="session-list"]').hidden).toBe(true);
+    host.querySelector('[data-scope="session"]').click(); await flush();
+    expect(host.querySelector('[data-role="session-list"]').hidden).toBe(false);
+    expect(row('L-past').classList.contains('on')).toBe(true);
+    expect(row('L-today').classList.contains('on')).toBe(false);
+  });
+
+  it('다른 세션 줄 복사 → 그 세션 표현 전부로 만든 프롬프트, 고른 세션은 그대로, 1.5초 복사됨', async () => {
+    mountSpeak(host); await flush();
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      const btn = row('L-past').querySelector('[data-role="session-copy"]');
+      btn.click(); await vi.advanceTimersByTimeAsync(0);
+      expect(write).toHaveBeenCalledTimes(1);
+      const copied = write.mock.calls[0][0];
+      expect(copied).toContain("I'm on my way.");
+      expect(copied).toContain('늦어서 연락할 때');
+      expect(copied).not.toContain('It depends on what you want to do.');
+      expect(host.querySelector('[data-role="session"]').value).toBe('L-today');
+      expect(labels(host)).toEqual(['it depends on', "I'd love to, but"]);
+      expect(row('L-today').classList.contains('on')).toBe(true);
+      expect(btn.textContent).toBe('복사됨');
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(btn.textContent).toBe('복사됨');
+      await vi.advanceTimersByTimeAsync(1);
+      expect(btn.textContent).toBe('복사');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('고른 세션 줄 복사 → 체크 해제가 반영된 textarea 값 그대로', async () => {
+    mountSpeak(host); await flush();
+    host.querySelector('[data-role="item"] input').click(); await flush();
+    row('L-today').querySelector('[data-role="session-copy"]').click(); await flush();
+    const copied = write.mock.calls[0][0];
+    expect(copied).toBe(host.querySelector('textarea').value);
+    expect(copied).not.toContain('It depends on what you want to do.');
+    expect(copied).toContain("I'd love to, but I already have plans.");
+  });
+
+  it('클립보드가 막히면 그 줄의 프롬프트를 execCommand 로 복사한다(고른 세션 textarea 가 아니라)', async () => {
+    write.mockRejectedValue(new Error('denied'));
+    let selected = '';
+    document.execCommand = vi.fn(() => { selected = document.activeElement?.value ?? ''; return true; });
+    mountSpeak(host); await flush();
+    row('L-past').querySelector('[data-role="session-copy"]').click(); await flush();
+    expect(document.execCommand).toHaveBeenCalledWith('copy');
+    expect(selected).toContain("I'm on my way.");
+    expect(selected).not.toContain('It depends on what you want to do.');
+    expect(document.querySelectorAll('textarea')).toHaveLength(1);
+    delete document.execCommand;
+  });
+
+  it('프롬프트 설명은 고른 표현 수를 따르고, 모두 풀면 큰 복사 버튼이 막힌다', async () => {
+    mountSpeak(host); await flush();
+    expect(text('.sp-pdesc')).toBe('고른 표현 2개로 만든 프롬프트 · ChatGPT 새 대화에 붙여 넣기');
+    host.querySelector('[data-role="item"] input').click(); await flush();
+    expect(text('.sp-pdesc')).toBe('고른 표현 1개로 만든 프롬프트 · ChatGPT 새 대화에 붙여 넣기');
+    host.querySelectorAll('[data-role="item"] input')[1].click(); await flush();
+    expect(text('.sp-pdesc')).toBe('표현을 하나 이상 고르세요');
+    expect(host.querySelector('[data-role="copy"]').disabled).toBe(true);
+  });
+
+  it('카드 머리 — 세션이면 고른 세션, 다른 범위면 범위 이름·보이는 표현 수·범위 설명', async () => {
+    mountSpeak(host); await flush();
+    expect(text('.sp-chead .sp-lab')).toBe('고른 세션');
+    expect(text('.sp-ctitle')).toBe('9월 8일 · 표현 2개');
+    expect(text('.sp-csit')).toBe('결정을 미룰 때 제안을 거절할 때');
+    expect(host.querySelector('.sp-note').hidden).toBe(true);
+    host.querySelector('[data-scope="hard"]').click(); await flush();
+    expect(text('.sp-chead .sp-lab')).toBe('최근 어려웠던 표현');
+    expect(text('.sp-ctitle')).toBe('표현 1개');
+    expect(text('.sp-csit')).toBe('못 알아들었을 때');
+    expect(host.querySelector('.sp-note').hidden).toBe(false);
+    expect(text('.sp-note')).toBe('최근 14일 안에 어려움으로 판정했거나 마지막 판정이 어려움인 표현을, 최근 순으로 최대 5개 모읍니다.');
+    host.querySelector('[data-scope="random"]').click(); await flush();
+    expect(text('.sp-chead .sp-lab')).toBe('랜덤 복습');
+    expect(text('.sp-ctitle')).toBe('표현 4개');
+    expect(text('.sp-note')).toBe('복습 카드에서 무작위로 최대 5개를 뽑습니다. 탭을 다시 누르면 새로 뽑습니다.');
+    host.querySelector('[data-scope="session"]').click(); await flush();
+    expect(host.querySelector('.sp-note').hidden).toBe(true);
+  });
+
+  it('표현 항목 — 문장·뜻 줄을 두되 표현과 같은 문장(끝 문장부호만 다른 것 포함)은 빼고, 상황은 중복 없이 머리에 한 번', async () => {
+    const same = [
+      { id: 's1', lang: 'en', sentence: "I'm finishing up.", meaning: '마무리하는 중이야.', explanation: { key: "I'm finishing up = 마무리 중이야", situation: '저녁 6시.' }, promotedAt: `${T}T10:00:00Z` },
+      { id: 's2', lang: 'en', sentence: "I can't wait to eat.", meaning: '빨리 먹고 싶다.', explanation: { key: "I can't wait to ~ = 빨리 ~하고 싶다", situation: '저녁 6시.' }, promotedAt: `${T}T10:00:00Z` },
+      { id: 's3', lang: 'en', sentence: 'Thank you.', meaning: '고마워.', explanation: { key: 'Thank you. = 고마워' }, promotedAt: `${T}T10:00:00Z` },
+    ];
+    window.studyDB = { reviewQueue: table(same), sessionLogs: table([{ id: 'L1', date: T, lang: 'en', mode: 'new', newSentenceIds: ['s1', 's2', 's3'], sentenceIds: ['s1', 's2', 's3'], createdAt: `${T}T10:00:00Z` }]) };
+    mountSpeak(host); await flush();
+    const items = [...host.querySelectorAll('[data-role="item"]')];
+    expect(items[0].querySelector('.se')).toBeNull();
+    expect(items[1].querySelector('.se').textContent).toBe("I can't wait to eat.");
+    expect(items[2].querySelector('.se')).toBeNull();
+    expect(items.map((it) => it.querySelector('.ko').textContent)).toEqual(['마무리하는 중이야.', '빨리 먹고 싶다.', '고마워.']);
+    expect(text('.sp-csit')).toBe('저녁 6시.');
+  });
+
+  it('빈 범위 — 머리 제목·상황을 숨기고 빈 문구만', async () => {
+    window.studyDB = { reviewQueue: table([]), sessionLogs: table([]) };
+    mountSpeak(host); await flush();
+    expect(host.querySelector('[data-scope="random"]').classList.contains('on')).toBe(true);
+    expect(text('.sp-chead .sp-lab')).toBe('랜덤 복습');
+    expect(host.querySelector('.sp-ctitle').hidden).toBe(true);
+    expect(host.querySelector('.sp-csit').hidden).toBe(true);
+    expect(text('.sp-empty')).toBe('복습 카드가 없어요 · 다른 범위를 골라 보세요');
+    expect(host.querySelector('[data-role="session-list"]').hidden).toBe(true);
+  });
+});
