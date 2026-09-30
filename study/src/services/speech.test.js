@@ -598,6 +598,55 @@ describe('speech — Wave A.16 transient 재시도', () => {
     expect(result.mockFallback).toBe(true);
   });
 
+  /* 2026-09-30 사용자 보고("네트워크 오류가 자꾸 뜸") — Azure 가 한도 초과를 429 가 아니라
+   * 400 + 본문 "Quota exceeded. Cid: " 로 돌려준다(실측: 같은 요청을 동시에 보내면 한쪽이 110ms 만에
+   * 이 응답, 곧 다시 보내면 통과). 이 거절만 429 처럼 다루고, 요청이 잘못된 400 은 위 테스트대로 둔다. */
+  const quota400 = () => new Response('"Quota exceeded. Cid: "', { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+
+  it('STT 400 "Quota exceeded" 1회 → 429 처럼 재시도해 성공 (실 score)', async () => {
+    vi.useFakeTimers();
+    try {
+      let stt = 0;
+      _fetchSpy.mockImplementation(async (url) => {
+        if (String(url).includes('/functions/v1/azure-token')) return token200();
+        if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return stt === 1 ? quota400() : okResponse(); }
+        return new Response('nf', { status: 404 });
+      });
+      const { Speech } = await import('./speech.js');
+      Speech.clearAzureTokenCache();
+      const p = Speech.analyzeWavRest(blob(), 'hi');
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(stt).toBe(1); // 429 와 같은 2초 백오프 전에는 다시 보내지 않는다
+      await vi.advanceTimersByTimeAsync(10);
+      const result = await p;
+      expect(stt).toBe(2);
+      expect(result.score).toBe(80);
+      expect(result.mockFallback).toBeUndefined();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('STT 지속 400 "Quota exceeded" → 재시도 소진(총 3회) 후 rate_limited, 거절 문구는 콘솔에', async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      let stt = 0;
+      _fetchSpy.mockImplementation(async (url) => {
+        if (String(url).includes('/functions/v1/azure-token')) return token200();
+        if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return quota400(); }
+        return new Response('nf', { status: 404 });
+      });
+      const { Speech } = await import('./speech.js');
+      Speech.clearAzureTokenCache();
+      const p = Speech.analyzeWavRest(blob(), 'hi');
+      await vi.advanceTimersByTimeAsync(20000);
+      const result = await p;
+      expect(stt).toBe(3);
+      expect(result.mockFallback).toBe(true);
+      expect(result.fallbackReason).toBe('rate_limited');
+      expect(warn.mock.calls.some((c) => c.join(' ').includes('Quota exceeded'))).toBe(true);
+    } finally { warn.mockRestore(); vi.useRealTimers(); }
+  });
+
   it('azure-token edge 일시적 500 → 재시도 후 성공', async () => {
     let tok = 0;
     _fetchSpy.mockImplementation(async (url) => {

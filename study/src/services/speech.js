@@ -58,7 +58,7 @@ export function clearAzureTokenCache() {
 // MS 공식 (speech-services-quotas-and-limits, 2026-06): F0 는 autoscaling 으로 한도 내에서도 429 발생 →
 // "every implementation should gracefully handle 429 errors with retry logic". 기존엔 단발 실패를 즉시
 // "네트워크 오류" 토스트로 종결 → 사용자가 수동 재시도. token edge fetch + STT fetch 공용.
-// 4xx(429 제외)·정상 응답은 재시도 안 함 (재시도해도 무의미).
+// 4xx(429 제외)·정상 응답은 재시도 안 함 (재시도해도 무의미). 단 400 + 본문 "Quota exceeded" 는 429 로 본다(아래 _isQuotaRejection).
 // 2026-07-22 실측: F0 429 는 400/1000ms 백오프(총 1.4초)로는 안 풀리고 60초+ 지속 →
 // 429 만 길게(2s/5s) + Retry-After 헤더 존중(캡 8s). 5xx/네트워크는 기존 짧은 딜레이 유지
 // (문서의 1-2-4분 권장은 대량 워크로드용, 인터랙티브엔 부적합).
@@ -79,6 +79,14 @@ export function retryDelayFor(status, attempt, retryAfterHeader) {
 
 function _sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/* 한도 거절 (2026-09-30 사용자 보고 "네트워크 오류가 자꾸 뜸") — Azure 가 한도 초과를 429 가 아니라
+ * 400 + 본문 "Quota exceeded. Cid: " 로 돌려준다(실측: 같은 요청을 동시에 보내면 한쪽이 110ms 만에 이 응답,
+ * 곧 다시 보내면 통과). 요청이 잘못된 400 과 가르려고 본문을 본다 — clone 이라 호출자는 본문을 다시 읽을 수 있다. */
+async function _isQuotaRejection(res) {
+  if (res.status !== 400) return false;
+  try { return /quota exceeded/i.test(await res.clone().text()); } catch { return false; }
 }
 
 /** ms 안에 안 끝나면 거부 (timeout 코드). 타이머는 settle 시 정리. */
@@ -112,8 +120,9 @@ async function _fetchWithRetry(url, init, label = '', { timeoutMs = 0, meter = n
       } else {
         res = await fetch(url, req);
       }
-      if (res.status === 429 || res.status >= 500) {
-        const delay = retryDelayFor(res.status, attempt, res.headers?.get?.('retry-after'));
+      const quota = await _isQuotaRejection(res);
+      if (res.status === 429 || res.status >= 500 || quota) {
+        const delay = retryDelayFor(quota ? 429 : res.status, attempt, res.headers?.get?.('retry-after'));
         if (delay != null) {
           _dbg('fetch transient 재시도', { label, status: res.status, attempt, delay });
           await _sleep(delay);
@@ -1293,9 +1302,12 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       sttAttempts: meterRef.attempts, ...(meterRef.timeouts ? { sttTimeouts: meterRef.timeouts } : {}),
     };
     if (!res.ok) {
-      console.warn('[speech][rest] HTTP', res.status);
-      // 429 지속 = F0 혼잡 — '네트워크 오류' 가 아니라 잠시 뒤 재시도 안내로 분기 (2026-07-22 실측)
-      return analyzeMock(expectedText, res.status === 429 ? 'rate_limited' : 'azure_recognize_fail');
+      const detail = await res.text().catch(() => '');
+      console.warn('[speech][rest] HTTP', res.status, detail.slice(0, 200));
+      // 429 지속 = F0 혼잡 — '네트워크 오류' 가 아니라 잠시 뒤 재시도 안내로 분기 (2026-07-22 실측).
+      // 400 "Quota exceeded" 지속도 같은 한도 거절이다 (2026-09-30 실측).
+      const limited = res.status === 429 || (res.status === 400 && /quota exceeded/i.test(detail));
+      return analyzeMock(expectedText, limited ? 'rate_limited' : 'azure_recognize_fail');
     }
     const json = await res.json();
     if (json.RecognitionStatus !== 'Success') {
