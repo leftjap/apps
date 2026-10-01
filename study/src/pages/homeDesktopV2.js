@@ -19,32 +19,33 @@ import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts, DOW_KO, isoShift, mondayOf, 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const VH_CSS = `
-.vh{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;${V_VARS}}
+.vh{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;-webkit-font-smoothing:antialiased;${V_VARS}}
 .vh *{box-sizing:border-box;margin:0}
-.vh-wrap{width:100%;max-width:1120px;margin:0 auto;padding:30px 28px 36px}
-.vh-top{display:flex;justify-content:space-between;align-items:center}
+.vh-layout{display:grid;grid-template-columns:296px minmax(0,1fr)}
+.vh-rail{background:var(--card);border-right:1px solid var(--line);padding:30px 30px 28px;display:flex;flex-direction:column;gap:26px;min-width:0;min-height:100vh;min-height:100dvh}
+.vh-top{display:flex;flex-direction:column;gap:14px}
 .vh-logo{font-family:Outfit,sans-serif;font-weight:700;font-size:20px;letter-spacing:-0.02em;color:var(--teal-deep)}
-.vh-seg{display:flex;gap:22px}
+.vh-seg{display:flex;gap:18px}
 .vh-seg button{font:inherit;background:none;border:0;cursor:pointer;font-size:14px;font-weight:600;color:var(--faint);display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:0}
 .vh-seg button.on{color:var(--teal-deep)}
 .vh-seg button.on i{width:6px;height:6px;border-radius:50%;background:var(--coral)}
-.vh-icons{display:flex;gap:14px;color:var(--faint)}
-.vh-icons button{background:none;border:0;padding:0;color:inherit;cursor:pointer;display:inline-flex}
-.vh-main{margin-top:26px;display:grid;grid-template-columns:minmax(0,1fr) 356px;gap:22px;align-items:start}
-.vh-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.vh-icons{display:flex;flex-direction:column;margin-top:auto;border-top:1px solid #f1ede0;padding-top:8px}
+.vh-icons button{font:inherit;background:none;border:0;padding:9px 10px;margin:0 -10px;color:var(--mut);cursor:pointer;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600}
+.vh-main{padding:30px 36px 34px;min-width:0}
+.vh-col{width:100%;max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:22px;min-width:0}
 .vh-card{background:var(--card);border:1px solid var(--line);border-radius:22px;
   box-shadow:0 1px 0 rgba(25,35,32,.02),0 10px 22px -18px rgba(25,35,32,.12)}
-.vh-lab{font-family:Outfit;font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.vh-lab{font-family:Outfit,Pretendard,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
 
 /* ── 최근 4주 캘린더 (§5.3) ── */
-.vh-calcard{padding:26px 28px}
+.vh-calcard{padding:24px 28px 26px}
 .vh-calhd{display:flex;justify-content:space-between;align-items:baseline}
-.vh-calhd .mo{font-family:Outfit;font-size:11.5px;font-weight:600;letter-spacing:.06em;color:var(--faint)}
-.vh-calgrid{display:grid;grid-template-columns:repeat(7,1fr) 150px;gap:8px}
+.vh-calhd .mo{font-family:Outfit,sans-serif;font-size:11.5px;font-weight:600;letter-spacing:.06em;color:var(--faint)}
+.vh-calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) 168px;gap:8px}
 .vh-caldow{margin-top:16px;font-family:Outfit;font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--faint);text-align:center}
-.vh-caldow .wk{text-align:left;letter-spacing:.04em;padding-left:16px}
+.vh-caldow .wk{text-align:left;letter-spacing:.04em;padding-left:18px}
 .vh-calcells{margin-top:10px}
-.vh-cell{height:72px;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;justify-content:space-between;animation:v-settle .4s both}
+.vh-cell{height:86px;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;justify-content:space-between;animation:v-settle .4s both}
 .vh-cell .dt{font-size:10.5px;font-weight:600;line-height:1}
 .vh-cell .vv{font-family:Outfit;font-size:17px;font-weight:700;letter-spacing:-.02em;line-height:1}
 .vh-cell.t0{background:var(--card);border:1px solid #eeeadd;padding:7px 9px}
@@ -71,8 +72,8 @@ const VH_CSS = `
 .vh-cell.fut .dt{color:#d8d2c2;font-weight:400}
 ${V_TODAY_KEY}
 .vh-wklab{display:none}
-.vh-wkcol{grid-column:8;grid-row:1/5;border-left:1px solid #f1ede0;padding-left:16px;display:flex;flex-direction:column;gap:8px}
-.vh-wk{height:72px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.vh-wkcol{grid-column:8;grid-row:1/5;border-left:1px solid #f1ede0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.vh-wk{height:86px;display:flex;flex-direction:column;justify-content:center;gap:8px}
 .vh-wk .v{font-family:Outfit;font-size:16px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--ink);white-space:nowrap}
 .vh-wk .v em{font-style:normal;font-size:10.5px;font-weight:700;margin-left:5px;letter-spacing:.02em}
 .vh-wk.best .v{color:var(--coral-deep)}
@@ -83,9 +84,9 @@ ${V_TODAY_KEY}
 .vh-wk .tr > b{position:absolute;top:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:var(--teal-deep);box-shadow:0 0 0 3px var(--card)}
 
 /* ── 누적 (§5.6) ── */
-.vh-cum{padding:20px 26px 22px;display:grid;gap:20px;grid-template-columns:repeat(var(--cols,4),1fr)}
+.vh-cum{padding:18px 0 0;display:grid;gap:20px;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));background:none;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
 .vh-cum .k{font-size:11.5px;font-weight:600;color:var(--faint)}
-.vh-cum .v{font-family:Outfit;font-size:21px;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-top:5px;white-space:nowrap}
+.vh-cum .v{font-family:Outfit,Pretendard,sans-serif;font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-top:5px;white-space:nowrap}
 .vh-cum .v em{font-style:normal;font-size:12px;color:var(--faint);font-weight:600}
 
 /* ── 오늘 발화 링 (§5.4) ── */
@@ -118,10 +119,45 @@ ${V_TODAY_KEY}
 .vh-cta.sec{color:var(--ink);background:transparent;border:1.5px solid var(--line);padding:14px 18px}
 .vh-cta.sec:hover{background:#f8f6ee}
 .vh-cta .go{font-size:13px;font-weight:700;color:var(--faint);flex:0 0 auto}
-@media (max-width:980px){
-  .vh-main{grid-template-columns:1fr}
-  .vh-calgrid{grid-template-columns:repeat(7,1fr)}
-  .vh-wkcol{display:none}
+.vh-todayhead{display:flex;align-items:center;gap:20px}
+.vh-todayhead .vh-todayhd{display:flex;flex-direction:column;gap:6px}
+.vh-todayhead .d{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.vh-todayline{font-size:13.5px;color:var(--mut)}
+.vh-todayhead .vh-ring2{width:76px;height:76px;flex:0 0 auto}
+.vh-todayhead svg{width:76px;height:76px}
+.vh-todayhead circle{stroke-width:15}
+.vh-todayhead .cn .n{font-size:28px;margin-top:0}
+.vh-todayhead .cn .lb,.vh-todayhead .cn .pv{display:none}
+.vh-todayhead .pl{inset:2.5px}
+.vh-primary{display:flex;flex-direction:column;gap:10px}
+.vh-primary .vh-cta{display:flex;flex-direction:column;align-items:stretch;gap:5px;min-width:0}
+.vh-cta-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vh-primary .pri{padding:15px 18px 14px}
+.vh-primary .rev{padding:14px 18px 13px}
+.vh-primary .t2{font-size:12px;line-height:1.45;margin-top:0;min-width:0}
+.vh-primary .rev .t2{color:var(--mut)}
+.vh-nowrap{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.vh-practice{display:flex;flex-direction:column}
+.vh-practice .vh-lab{padding-bottom:8px}
+.vh-practice .sec{justify-content:flex-start;gap:12px;padding:11px 10px;margin:0 -10px;border:0;border-radius:0}
+.vh-practice .sec:hover{border-radius:10px}
+.vh-practice .sec + .sec{border-top:1px solid #f1ede0}
+.vh-practice .sec > span{min-width:0}
+.vh-practice .t2{font-size:12px;line-height:1.4;color:var(--mut)}
+.vh-rail svg{flex:0 0 auto}
+.vh-practice svg{color:var(--mut)}
+.vh-caldow,.vh-cell .vv{font-family:Outfit,Pretendard,sans-serif}
+.vh-cell.today .vv{font-family:Pretendard,sans-serif}
+@media (min-width:1024px) and (max-width:1159px){
+  .vh-calgrid{grid-template-columns:repeat(7,minmax(0,1fr))}
+  .vh-caldow .wk{display:none}
+  .vh-cell{height:74px}
+  .vh-wkcol{grid-column:1/-1;grid-row:5;border-left:0;border-top:1px solid #f1ede0;padding:12px 0 0;margin-top:6px;display:grid;grid-template-columns:56px repeat(4,minmax(0,1fr));gap:12px;align-items:end}
+  .vh-wklab{display:block;font-family:Outfit,Pretendard,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--faint);padding-bottom:1px}
+  .vh-wk{height:auto;gap:7px}
+  .vh-wk .v{font-size:14px}
+  .vh-wk .tr{height:6px}
+  .vh-wk .tr > b{width:8px;height:8px}
 }
 `;
 
@@ -267,7 +303,7 @@ function prevDayUtterance(dayMap, todayISO) {
   return best ? Number(dayMap[best]) || 0 : 0;
 }
 
-function todayRingCard(state) {
+function todayRingCard(state, desktop = false) {
   const todayISO = todayOf(state);
   const todayN = Number(state.tried) || 0;
   const prev = prevDayUtterance(state.dayMap, todayISO);
@@ -291,22 +327,27 @@ function todayRingCard(state) {
     svg.appendChild(c);
   }
 
+  const ring = h('div', { class: 'vh-ring2' }, svg,
+    over ? h('i', { class: 'pl' }) : null,
+    h('span', { class: 'cn' },
+      h('span', { class: 'lb' }, '오늘 발화'),
+      h('span', { class: 'n' }, String(todayN)),
+      prev > 0 ? h('span', { class: 'pv' + (over ? ' over' : '') }, `직전 ${prev}회`) : null));
+  if (desktop) return h('div', { class: 'vh-todayhead' }, ring,
+    h('div', { class: 'vh-todayhd' },
+      h('span', { class: 'd' }, koDateLabel(todayISO)),
+      h('span', { class: 'vh-todayline' }, `오늘 발화 ${todayN}회${prev > 0 ? ` · 직전 학습일 ${prev}회` : ''}`)));
+
   return h('div', { class: 'vh-card vh-todaycard' },
     h('div', { class: 'vh-todayhd' },
       h('span', { class: 'd' }, koDateLabel(todayISO)),
       h('span', { class: 't' }, '오늘')),
-    h('div', { class: 'vh-ringwrap' },
-      h('div', { class: 'vh-ring2' }, svg,
-        over ? h('i', { class: 'pl' }) : null,
-        h('span', { class: 'cn' },
-          h('span', { class: 'lb' }, '오늘 발화'),
-          h('span', { class: 'n' }, String(todayN)),
-          prev > 0 ? h('span', { class: 'pv' + (over ? ' over' : '') }, `직전 ${prev}회`) : null))),
+    h('div', { class: 'vh-ringwrap' }, ring),
   );
 }
 
 /* CTA 4개(연속 듣기 포함, 2026-09-06) — 1번 라벨은 기존 phase 분기를 그대로 따른다(fresh/mid/done). */
-function ctaCard(state, d) {
+function ctaCard(state, d, desktop = false) {
   const isMath = state.lang === 'math';
   const newUnit = isMath ? '문제' : '표현';
   const reviewUnit = isMath ? '문제' : '문장';
@@ -333,6 +374,32 @@ function ctaCard(state, d) {
       ? `복습 큐 ${state.totalReview}${reviewUnit} · 원하는 만큼`
       : `복습 ${reviewUnit} ${state.totalReview} · 오늘이 적기 · ${state.reviewCount}${reviewUnit} ≈ ${d.reviewMin}분`;
   const reviewLabel = d.reviewFree ? '자유 복습' : '복습 시작';
+
+  if (desktop) {
+    const newParts = d.phase === 'mid' && state.resume !== 'new' && state.newPractice
+      ? [`지난 연습 발화 ${state.newPractice.utterances}회 · `,
+        h('span', { class: 'vh-nowrap' }, `「${state.newPractice.firstMeaning}」부터`)] : newSub;
+    const reviewParts = state.totalReview > 0 && !d.reviewFree
+      ? [`복습 ${reviewUnit} ${state.totalReview} · 오늘이 적기 · `,
+        h('span', { class: 'vh-nowrap' }, `${state.reviewCount}${reviewUnit} ≈ ${d.reviewMin}분`)] : reviewSub;
+    return [
+      h('div', { class: 'vh-primary' },
+        h('button', { class: 'vh-cta pri', type: 'button', onClick: goNew },
+          h('span', { class: 'vh-cta-title' }, h('span', { class: 't1' }, newLabel), vIcon(VI.PLAY, { size: 14, fill: true })),
+          h('span', { class: 't2' }, newParts)),
+        h('button', { class: 'vh-cta rev', type: 'button', onClick: goReview },
+          h('span', { class: 'vh-cta-title' }, h('span', { class: 't1' }, reviewLabel), vIcon(VI.REPEAT, { size: 14, sw: 2 })),
+          h('span', { class: 't2' }, reviewParts))),
+      isMath ? null : h('div', { class: 'vh-practice' },
+        h('span', { class: 'vh-lab' }, '다른 연습'),
+        [
+          [VI.LIST, '문장 모아보기', '지금까지 공부한 문장 · 한글 보고 떠올리기', '#/sentences'],
+          [VI.HEADPHONES, '연속 듣기', `한글 뒤 ${state.lang === 'ja' ? '일본어' : '영어'} · 무한 반복 · 잠금 중에도 재생`, '#/listen'],
+          ...(state.lang === 'en' ? [[VI.MIC, '말하기 연습', 'ChatGPT 음성 모드 · 배운 표현 · 약 10분', '#/speak']] : []),
+        ].map(([icon, label, sub, hash]) => h('button', { class: 'vh-cta sec', type: 'button', onClick: () => { window.location.hash = hash; } },
+          vIcon(icon, { size: 18 }), h('span', {}, h('span', { class: 't1' }, label), h('span', { class: 't2' }, sub))))),
+    ];
+  }
 
   return h('div', { class: 'vh-card vh-ctacard' },
     h('button', { class: 'vh-cta pri', type: 'button', onClick: goNew },
@@ -517,18 +584,17 @@ export function renderHomeDesktopV2(state) {
 
   return h('div', { class: 'vh' },
     v2Style(VH_CSS),
-    h('div', { class: 'vh-wrap' },
-      h('div', { class: 'vh-top' },
-        h('span', { class: 'vh-logo' }, 'Study'),
-        langSeg(state),
+    h('div', { class: 'vh-layout' },
+      h('nav', { class: 'vh-rail' },
+        h('div', { class: 'vh-top' }, h('span', { class: 'vh-logo' }, 'Study'), langSeg(state)),
+        ctaCard(state, d, true),
         h('div', { class: 'vh-icons' },
-          h('button', { type: 'button', 'aria-label': '기록', onClick: () => { window.location.hash = '#/stats'; } }, vIcon(VI.CAL, { size: 18 })),
-          h('button', { type: 'button', 'aria-label': '설정', onClick: () => { window.location.hash = '#/settings'; } }, vIcon(VI.GEAR, { size: 18 })),
+          h('button', { type: 'button', 'aria-label': '기록', onClick: () => { window.location.hash = '#/stats'; } }, vIcon(VI.CAL, { size: 18 }), '기록'),
+          h('button', { type: 'button', 'aria-label': '설정', onClick: () => { window.location.hash = '#/settings'; } }, vIcon(VI.GEAR, { size: 18 }), '설정'),
         ),
       ),
-      h('div', { class: 'vh-main' },
-        h('div', { class: 'vh-col' }, calendarCard(state, d), cumCard(state, d)),
-        h('div', { class: 'vh-col' }, todayRingCard(state), ctaCard(state, d)),
+      h('main', { class: 'vh-main' },
+        h('div', { class: 'vh-col' }, todayRingCard(state, true), calendarCard(state, d), cumCard(state, d)),
       ),
     ),
   );

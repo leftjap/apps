@@ -2,6 +2,45 @@
 import { describe, it, expect } from 'vitest';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
 
+describe('PC 홈 레일 핸드오프', () => {
+  it.each([['en', 5], ['ja', 4], ['math', 2]])('%s 행동은 레일에만 배치된다', (lang, count) => {
+    const root = renderHomeDesktopV2(baseState({ lang }));
+    expect(root.querySelectorAll('nav .vh-cta')).toHaveLength(count);
+    expect(root.querySelectorAll('main .vh-cta')).toHaveLength(0);
+    expect(root.querySelector('.vh-cta.sec .go')).toBeNull();
+    expect(root.textContent.includes('다른 연습')).toBe(lang !== 'math');
+    expect([...root.querySelector('main > div').children].map((child) => child.className))
+      .toEqual(['vh-todayhead', 'vh-card vh-calcard', 'vh-card vh-cum']);
+  });
+
+  it('헤더는 링과 같은 직전 학습일을 비교하고 없는 기록을 만들지 않는다', () => {
+    const state = baseState({ todayISO: '2026-09-30', tried: 3, dayMap: { '2026-09-26': 1 } });
+    const root = renderHomeDesktopV2(state);
+    expect(root.querySelector('.vh-todayline').textContent).toBe('오늘 발화 3회 · 직전 학습일 1회');
+    expect(root.querySelector('.vh-ring2 .pv.over').textContent).toBe('직전 1회');
+    expect(root.querySelector('.vh-todayhd .t')).toBeNull();
+    expect(renderHomeDesktopV2({ ...state, dayMap: {} }).querySelector('.vh-todayline').textContent).toBe('오늘 발화 3회');
+  });
+
+  it('기록과 설정은 글자와 접근성 이름을 유지하며 이동한다', () => {
+    const root = renderHomeDesktopV2(baseState());
+    for (const [label, hash] of [['기록', '#/stats'], ['설정', '#/settings']]) {
+      const button = root.querySelector(`nav button[aria-label="${label}"]`);
+      expect(button?.textContent).toBe(label);
+      button.click();
+      expect(window.location.hash).toBe(hash);
+    }
+  });
+
+  it('긴 첫 문장과 복습 소요 시간을 PC에서만 묶고 모바일 DOM은 유지한다', () => {
+    const state = baseState({ newPractice: { utterances: 1, firstMeaning: '또 과식한 소리 같아.' } });
+    const root = renderHomeDesktopV2(state);
+    expect(root.querySelector('.pri .vh-nowrap').textContent).toBe('「또 과식한 소리 같아.」부터');
+    expect(root.querySelector('.rev .vh-nowrap').textContent).toBe('2문장 ≈ 4분');
+    expect(renderHomeMobileV2(state).querySelector('.vh-nowrap')).toBeNull();
+  });
+});
+
 function baseState(over = {}) {
   return {
     size: 'desktop', lang: 'en', resume: null,

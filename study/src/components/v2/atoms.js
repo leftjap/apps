@@ -48,6 +48,8 @@ export const V_KEYS = `
 `;
 
 export const VI = {
+  LIST: 'M4 6h16M4 12h16M4 18h10',
+  HEADPHONES: 'M4 18v-5a8 8 0 0 1 16 0v5M4 14h3v6H4zM17 14h3v6h-3z',
   PLAY: 'M8 5v14l11-7z',
   PAUSE: 'M7 5h3v14H7zM14 5h3v14h-3z',
   MIC: 'M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',
