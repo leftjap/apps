@@ -12,7 +12,7 @@
 - 1차 정본 (payload 형식·en drift 결정): `~/apps/study/seeds/README.md`
 - 2차 정본 (lesson explanation): `~/apps/study/docs/lesson-explanation-guide-{ja,en}.md` + `explanation-schema.md`
 - 화면 시안: `~/apps/study/design-ref/` (연속 듣기·말하기 연습 PC 배치 = `design_handoff_pc_listen_speak/`, README 가 작업지시서이고 목업 인라인 수치가 정본)
-- 홈 PC 배치: 로컬 시안 `design-ref/design_handoff_pc_home/`, 구현·검증 기록 `docs/2026-09-30-pc-home-plan.md`. 개인 기록이 포함된 시안과 캡처는 공개 저장소에 올리지 않는다.
+- 홈 PC 배치: 1024px 이상은 반응형이 아닌 1,288px 최소 폭(레일 296 + 본문·패딩 992), 본문 920px 고정 배치다. 로컬 시안 `design-ref/design_handoff_pc_home/`의 1024px 접힘 지시는 2026-10-01 사용자 결정으로 폐기했다. 구현·검증 기록은 `docs/2026-09-30-pc-home-plan.md`이며, 개인 기록이 포함된 시안과 캡처는 공개 저장소에 올리지 않는다.
 
 ## 카드 작성 게이트
 

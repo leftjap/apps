@@ -35,20 +35,22 @@ test('과목을 왕복하면 레일 행동과 수학 경로가 함께 바뀐다'
   await expect(page.locator('nav .vh-cta')).toHaveCount(5);
 });
 
-test('반응형 경계를 왕복해도 칸·발화·버튼을 잃지 않는다', async ({ page }) => {
+test('모바일 전환 외에는 PC 고정 배치를 유지한다', async ({ page }) => {
   await page.goto('mocks/home.html?demo=1&phase=mid');
-  for (const width of [390, 1023, 1024, 1159, 1160, 1280, 1920, 1023, 1440]) {
+  for (const width of [390, 1023, 1024, 1159, 1160, 1280, 1288, 1920, 1023, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(page.locator(width >= 1024 ? '.vh' : '.vhm')).toBeVisible();
     await expect(page.locator('.vh-cell')).toHaveCount(28);
     await expect(page.locator('.vh-wk')).toHaveCount(4);
     await expect(page.locator('.vh-ring2 .n')).toHaveText('18');
     await expect(page.locator('.vh-cta')).toHaveCount(5);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (width >= 1024) {
       expect((await page.locator('nav').boundingBox()).width).toBe(296);
-      expect(await page.locator('.vh-wkcol').evaluate((node) => getComputedStyle(node).display)).toBe(width < 1160 ? 'grid' : 'flex');
-      expect((await page.locator('.vh-col').boundingBox()).width).toBe(Math.min(920, width - 368));
+      expect(await page.locator('.vh-wkcol').evaluate((node) => getComputedStyle(node).display)).toBe('flex');
+      expect((await page.locator('.vh-col').boundingBox()).width).toBe(920);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(Math.max(1288, width));
+    } else {
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     }
   }
 });

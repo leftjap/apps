@@ -19,9 +19,9 @@ import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts, DOW_KO, isoShift, mondayOf, 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const VH_CSS = `
-.vh{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;-webkit-font-smoothing:antialiased;${V_VARS}}
+.vh{width:100%;min-width:1288px;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;-webkit-font-smoothing:antialiased;${V_VARS}}
 .vh *{box-sizing:border-box;margin:0}
-.vh-layout{display:grid;grid-template-columns:296px minmax(0,1fr)}
+.vh-layout{display:grid;grid-template-columns:296px minmax(992px,1fr)}
 .vh-rail{background:var(--card);border-right:1px solid var(--line);padding:30px 30px 28px;display:flex;flex-direction:column;gap:26px;min-width:0;min-height:100vh;min-height:100dvh}
 .vh-top{display:flex;flex-direction:column;gap:14px}
 .vh-logo{font-family:Outfit,sans-serif;font-weight:700;font-size:20px;letter-spacing:-0.02em;color:var(--teal-deep)}
@@ -32,7 +32,7 @@ const VH_CSS = `
 .vh-icons{display:flex;flex-direction:column;margin-top:auto;border-top:1px solid #f1ede0;padding-top:8px}
 .vh-icons button{font:inherit;background:none;border:0;padding:9px 10px;margin:0 -10px;color:var(--mut);cursor:pointer;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600}
 .vh-main{padding:30px 36px 34px;min-width:0}
-.vh-col{width:100%;max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:22px;min-width:0}
+.vh-col{width:920px;margin:0 auto;display:flex;flex-direction:column;gap:22px;min-width:0}
 .vh-card{background:var(--card);border:1px solid var(--line);border-radius:22px;
   box-shadow:0 1px 0 rgba(25,35,32,.02),0 10px 22px -18px rgba(25,35,32,.12)}
 .vh-lab{font-family:Outfit,Pretendard,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
@@ -148,17 +148,6 @@ ${V_TODAY_KEY}
 .vh-practice svg{color:var(--mut)}
 .vh-caldow,.vh-cell .vv{font-family:Outfit,Pretendard,sans-serif}
 .vh-cell.today .vv{font-family:Pretendard,sans-serif}
-@media (min-width:1024px) and (max-width:1159px){
-  .vh-calgrid{grid-template-columns:repeat(7,minmax(0,1fr))}
-  .vh-caldow .wk{display:none}
-  .vh-cell{height:74px}
-  .vh-wkcol{grid-column:1/-1;grid-row:5;border-left:0;border-top:1px solid #f1ede0;padding:12px 0 0;margin-top:6px;display:grid;grid-template-columns:56px repeat(4,minmax(0,1fr));gap:12px;align-items:end}
-  .vh-wklab{display:block;font-family:Outfit,Pretendard,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.08em;color:var(--faint);padding-bottom:1px}
-  .vh-wk{height:auto;gap:7px}
-  .vh-wk .v{font-size:14px}
-  .vh-wk .tr{height:6px}
-  .vh-wk .tr > b{width:8px;height:8px}
-}
 `;
 
 function langSeg(state) {
