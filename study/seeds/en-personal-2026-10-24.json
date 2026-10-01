@@ -1,0 +1,522 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-24",
+ "cards": [
+  {
+   "id": "en-personal-renewal-cost-01-been",
+   "sentence": "I've been thinking about what a day off costs.",
+   "meaning": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
+   "reading": null,
+   "phonetic_kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠",
+   "order_index": 1,
+   "explanation": {
+    "key": "I've been ~ = 계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요.",
+    "anchor": "생각하고 있었어요",
+    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Still thinking about the gym membership?",
+      "ko": "아직도 헬스장 회원권 생각 중이에요?",
+      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been thinking about what a day off costs.",
+      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
+      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Do you know how much the whole year was?",
+      "ko": "일 년치가 얼마였는지 알아요?",
+      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was seven hundred thousand won.",
+      "ko": "칠십만 원이었어요.",
+      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That's a lot. Who paid for it?",
+      "ko": "큰돈이네요. 누가 냈어요?",
+      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife. That's why I feel bad skipping a day.",
+      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
+      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Well, at least taking a day off is free.",
+      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
+      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, even doing nothing costs two thousand won.",
+      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
+      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been looking for my glasses.",
+      "ko": "안경을 계속 찾고 있었어요.",
+      "kr": "아이v 빈 루킹 f퍼r 마이 글래씨z"
+     },
+     {
+      "en": "She's been waiting by the entrance.",
+      "ko": "그녀는 입구 옆에서 계속 기다리고 있어요.",
+      "kr": "쉬z 빈 웨이링 바이 디 엔트런스"
+     },
+     {
+      "en": "Have you been getting enough sleep?",
+      "ko": "계속 잠은 충분히 자고 있나요?",
+      "kr": "해v 여 빈 게링 이너f 슬리입"
+     },
+     {
+      "en": "We've been talking about the same thing.",
+      "ko": "우리는 계속 같은 이야기를 해왔어요.",
+      "kr": "위v 빈 토킹 어바웃 더 쎄임 씽"
+     },
+     {
+      "en": "I've been trying to reach the front desk.",
+      "ko": "프런트에 연락하려고 계속 시도했어요.",
+      "kr": "아이v 빈 트라잉 터 리이치 더 f런트 데스크"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요."
+     }
+    ],
+    "chunks": [
+     [
+      "I've been thinking",
+      "아이v 빈 씽킹",
+      "계속 생각하고 있었어요"
+     ],
+     [
+      "about what a day off costs.",
+      "어바웃 와러 데이 오f 코스츠",
+      "하루 쉬면 얼마가 드는지"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ I've",
+      "I've에서 v를 지우면 I와 구별되지 않아요."
+     ],
+     [
+      "/t/ what a",
+      "what의 t가 a 앞에서 굴러 와러로 이어져요."
+     ]
+    ],
+    "mistake": "I've been compare ✗ → I've been comparing. 진행 중인 행동은 been 뒤에 -ing형을 붙여요.",
+    "similar": "I've kept thinking about it. (그것을 계속 생각해 왔어요.)",
+    "category": "운동/등록",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-renewal-cost-02-was",
+   "sentence": "It was seven hundred thousand won.",
+   "meaning": "칠십만 원이었어요.",
+   "reading": null,
+   "phonetic_kr": "잇 워z 쎄v언 헌드러드 싸우전드 원",
+   "order_index": 2,
+   "explanation": {
+    "key": "It was ~ = ~였어요. 이미 지불한 가격처럼 과거의 상태나 값을 말해요. 233 추가 26.",
+    "anchor": "칠십만 원이었어요",
+    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Still thinking about the gym membership?",
+      "ko": "아직도 헬스장 회원권 생각 중이에요?",
+      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been thinking about what a day off costs.",
+      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
+      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Do you know how much the whole year was?",
+      "ko": "일 년치가 얼마였는지 알아요?",
+      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was seven hundred thousand won.",
+      "ko": "칠십만 원이었어요.",
+      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That's a lot. Who paid for it?",
+      "ko": "큰돈이네요. 누가 냈어요?",
+      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife. That's why I feel bad skipping a day.",
+      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
+      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Well, at least taking a day off is free.",
+      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
+      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, even doing nothing costs two thousand won.",
+      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
+      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It was forty dollars.",
+      "ko": "사십 달러였어요.",
+      "kr": "잇 워z f포어r리 달러rz"
+     },
+     {
+      "en": "Was it cheaper last year?",
+      "ko": "작년에는 더 쌌나요?",
+      "kr": "워짓 치이퍼r 라스 이어r"
+     },
+     {
+      "en": "The ticket was free.",
+      "ko": "그 표는 무료였어요.",
+      "kr": "더 티킷 워z f리이"
+     },
+     {
+      "en": "It wasn't as expensive as I expected.",
+      "ko": "생각했던 것만큼 비싸지는 않았어요.",
+      "kr": "잇 워즈내직스펜씨v 애자이 익스펙티드"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It was ~",
+      "body": "~였어요. 이미 지불한 가격처럼 과거의 상태나 값을 말해요. 233 추가 26."
+     }
+    ],
+    "chunks": [
+     [
+      "It was",
+      "잇 워z",
+      "그것은 ~였어요"
+     ],
+     [
+      "seven hundred thousand won.",
+      "쎄v언 헌드러드 싸우전드 원",
+      "칠십만 원"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ seven",
+      "seven의 v는 아랫입술에 윗니를 대요."
+     ],
+     [
+      "/θ/ thousand",
+      "thousand는 혀끝을 살짝 내밀며 시작해요."
+     ]
+    ],
+    "mistake": "It were ✗ → It was. 단수 주어 it의 be동사 과거형은 was예요.",
+    "similar": "That was the price. (그게 가격이었어요.)",
+    "category": "운동/등록",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-renewal-cost-03-why",
+   "sentence": "My wife. That's why I feel bad skipping a day.",
+   "meaning": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
+   "reading": null,
+   "phonetic_kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이",
+   "order_index": 3,
+   "explanation": {
+    "key": "That's why ~ = 그래서 ~인 거예요. 앞에서 나온 이유에 따른 결과를 설명해요.",
+    "anchor": "그래서",
+    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Still thinking about the gym membership?",
+      "ko": "아직도 헬스장 회원권 생각 중이에요?",
+      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been thinking about what a day off costs.",
+      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
+      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Do you know how much the whole year was?",
+      "ko": "일 년치가 얼마였는지 알아요?",
+      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was seven hundred thousand won.",
+      "ko": "칠십만 원이었어요.",
+      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That's a lot. Who paid for it?",
+      "ko": "큰돈이네요. 누가 냈어요?",
+      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife. That's why I feel bad skipping a day.",
+      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
+      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Well, at least taking a day off is free.",
+      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
+      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, even doing nothing costs two thousand won.",
+      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
+      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+     }
+    ],
+    "drills": [
+     {
+      "en": "That's why we took the bus.",
+      "ko": "그래서 우리는 버스를 탔어요.",
+      "kr": "댓츠 와이 위 툭 더 버스"
+     },
+     {
+      "en": "Maybe that's why the door is locked.",
+      "ko": "아마 그래서 문이 잠겨 있나 봐요.",
+      "kr": "메이비 댓츠 와이 더 도어r 이z 락트"
+     },
+     {
+      "en": "Is that why you came back?",
+      "ko": "그래서 돌아온 거예요?",
+      "kr": "이z 댓 와이 여 케임 백"
+     },
+     {
+      "en": "That's why I asked for help.",
+      "ko": "그래서 도움을 요청했어요.",
+      "kr": "댓츠 와이 아이 애스크트 f퍼r 헬프"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "That's why ~",
+      "body": "그래서 ~인 거예요. 앞에서 나온 이유에 따른 결과를 설명해요."
+     }
+    ],
+    "chunks": [
+     [
+      "My wife.",
+      "마이 와이f",
+      "아내요"
+     ],
+     [
+      "That's why I feel bad",
+      "댓츠 와이 아이 f피일 배드",
+      "그래서 마음에 걸려요"
+     ],
+     [
+      "skipping a day.",
+      "스키핑 어 데이",
+      "하루 빠지는 게"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/f/ wife",
+      "wife 끝은 f로 닫고 브 소리를 넣지 않아요."
+     ],
+     [
+      "/iː/ feel",
+      "feel의 이 모음을 길게 내요."
+     ]
+    ],
+    "mistake": "That's why 뒤는 결과예요. That's because 뒤에 이유를 넣는 구조와 방향을 바꾸지 않아요.",
+    "similar": "That's the reason. (그게 이유예요.)",
+    "category": "운동/등록",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-renewal-cost-04-thing",
+   "sentence": "The thing is, even doing nothing costs two thousand won.",
+   "meaning": "실은 아무것도 안 해도 이천 원이 들어요.",
+   "reading": null,
+   "phonetic_kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원",
+   "order_index": 4,
+   "explanation": {
+    "key": "The thing is, ~ = 실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요.",
+    "anchor": "실은",
+    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Still thinking about the gym membership?",
+      "ko": "아직도 헬스장 회원권 생각 중이에요?",
+      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been thinking about what a day off costs.",
+      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
+      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Do you know how much the whole year was?",
+      "ko": "일 년치가 얼마였는지 알아요?",
+      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It was seven hundred thousand won.",
+      "ko": "칠십만 원이었어요.",
+      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "That's a lot. Who paid for it?",
+      "ko": "큰돈이네요. 누가 냈어요?",
+      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "My wife. That's why I feel bad skipping a day.",
+      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
+      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+     },
+     {
+      "speaker": "B",
+      "name": "Liam",
+      "en": "Well, at least taking a day off is free.",
+      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
+      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, even doing nothing costs two thousand won.",
+      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
+      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+     }
+    ],
+    "drills": [
+     {
+      "en": "The thing is, we need more time.",
+      "ko": "실은 시간이 더 필요해요.",
+      "kr": "더 씽 이z 위 니이드 모어r 타임"
+     },
+     {
+      "en": "But the thing is, nobody has a key.",
+      "ko": "그런데 실은 아무도 열쇠가 없어요.",
+      "kr": "벗 더 씽 이z 노우바디 해저 키이"
+     },
+     {
+      "en": "Well, the thing is, the shop closes soon.",
+      "ko": "음, 실은 가게가 곧 닫아요.",
+      "kr": "웰 더 씽 이z 더 샵 클로우지z 쑤운"
+     },
+     {
+      "en": "The thing is, I left my phone at home.",
+      "ko": "실은 휴대폰을 집에 두고 왔어요.",
+      "kr": "더 씽 이z 아이 레f트 마이 f포우넛 호움"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "The thing is, ~",
+      "body": "실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요."
+     }
+    ],
+    "chunks": [
+     [
+      "The thing is,",
+      "더 씽 이z",
+      "실은"
+     ],
+     [
+      "even doing nothing",
+      "이이v언 두잉 낫씽",
+      "아무것도 안 해도"
+     ],
+     [
+      "costs two thousand won.",
+      "코스츠 투우 싸우전드 원",
+      "이천 원이 들어요"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ even",
+      "even 첫 모음은 길고 중간 v를 입술로 내요."
+     ],
+     [
+      "/θ/ nothing",
+      "nothing의 th는 thing과 같은 무성음이에요."
+     ]
+    ],
+    "mistake": "The thing are ✗ → The thing is. 뒤에는 주어와 동사가 있는 절을 이어 사정을 말해요.",
+    "similar": "Here's the problem. (문제는 이거예요.)",
+    "category": "운동/등록",
+    "frequency": 8
+   }
+  }
+ ]
+}

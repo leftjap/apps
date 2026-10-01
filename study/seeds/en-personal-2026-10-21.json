@@ -1,0 +1,527 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-21",
+ "cards": [
+  {
+   "id": "en-personal-parcel-dinner-01-let",
+   "sentence": "Let me take that off your hands.",
+   "meaning": "그거 제가 받을게요.",
+   "reading": null,
+   "phonetic_kr": "레미 테익 대로f 여r 핸드z",
+   "order_index": 1,
+   "explanation": {
+    "key": "Let me ~ = 본문의 Let me ~는 제가 ~하겠다는 자청이에요. Please let me ~는 제가 ~하도록 해달라는 허용 요청이에요. Can you let me know ~?는 상대에게 ~을 알려달라는 요청으로 구별해요.",
+    "anchor": "제가 받을게요",
+    "situation": "Emma가 대신 받은 김치 택배를 건넨다. 김치에 맞춰 수육과 장보기를 생각하다 치킨 배달까지 고민한 일기가 중심이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Is this the kimchi delivery you were waiting for?",
+      "ko": "기다리던 김치 택배가 이거예요?",
+      "kr": "이z 디스 더 김치 딜리v어리 여 워r 웨이링 f퍼r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me take that off your hands.",
+      "ko": "그거 제가 받을게요.",
+      "kr": "레미 테익 대로f 여r 핸드z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Are you making dinner with it?",
+      "ko": "그걸로 저녁 만들 거예요?",
+      "kr": "아r 여 메이킹 디너r 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to boil pork to go with it.",
+      "ko": "곁들여 먹을 돼지고기를 삶고 싶어요.",
+      "kr": "아이드 라이크 터 보일 포어r크 터 고우 위딧"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What else do you need?",
+      "ko": "또 뭐가 필요해요?",
+      "kr": "와렐스 더여 니이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm thinking about buying some fruit, too.",
+      "ko": "과일도 좀 살까 생각 중이에요.",
+      "kr": "아임 씽킹 어바웃 바잉 썸 f루우트 투우"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Sounds like a lot of shopping for one dinner.",
+      "ko": "저녁 한 끼에 장을 꽤 봐야겠네요.",
+      "kr": "싸운드z 라이커 라러v 샤핑 f퍼r 원 디너r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if chicken delivery would be easier.",
+      "ko": "치킨 배달이 더 간단할지 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 치킨 딜리v어리 워드 비 이이지어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let me hold the door.",
+      "ko": "제가 문을 잡아드릴게요.",
+      "kr": "레미 호울드 더 도어r"
+     },
+     {
+      "en": "Please let me finish this sentence.",
+      "ko": "이 문장은 끝까지 말하게 해주세요.",
+      "kr": "플리이z 레미 f피니쉬 디스 쎈턴스"
+     },
+     {
+      "en": "Can you let me know the price?",
+      "ko": "가격을 알려주실 수 있나요?",
+      "kr": "컨 여 레미 노우 더 프라이스"
+     },
+     {
+      "en": "Let me check which train we need.",
+      "ko": "어느 기차를 타야 하는지 확인할게요.",
+      "kr": "레미 첵 위치 트레인 위 니이드"
+     },
+     {
+      "en": "Just let me move this chair.",
+      "ko": "이 의자만 옮길게요.",
+      "kr": "저스 레미 무우v 디스 체어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "본문의 Let me ~는 제가 ~하겠다는 자청이에요. Please let me ~는 제가 ~하도록 해달라는 허용 요청이에요. Can you let me know ~?는 상대에게 ~을 알려달라는 요청으로 구별해요."
+     }
+    ],
+    "chunks": [
+     [
+      "Let me take",
+      "레미 테익",
+      "제가 받을게요"
+     ],
+     [
+      "that off your hands.",
+      "대로f 여r 핸드z",
+      "당신 손에 있는 그것을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ let me",
+      "let me의 t를 따로 터뜨리지 않고 레미로 이어 말해요."
+     ],
+     [
+      "/t/ that off",
+      "that의 t가 off 앞에서 굴러 대로f로 이어져요."
+     ]
+    ],
+    "mistake": "Let me to take ✗ → Let me take. let 뒤 목적어 다음에는 to 없이 동사원형을 써요.",
+    "similar": "I'll do that. (제가 그걸 할게요.)",
+    "category": "일상/택배",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-parcel-dinner-02-like",
+   "sentence": "I'd like to boil pork to go with it.",
+   "meaning": "곁들여 먹을 돼지고기를 삶고 싶어요.",
+   "reading": null,
+   "phonetic_kr": "아이드 라이크 터 보일 포어r크 터 고우 위딧",
+   "order_index": 2,
+   "explanation": {
+    "key": "I'd like to ~ = ~하고 싶어요. 원하는 행동을 부드럽게 말해요.",
+    "anchor": "삶고 싶어요",
+    "situation": "Emma가 대신 받은 김치 택배를 건넨다. 김치에 맞춰 수육과 장보기를 생각하다 치킨 배달까지 고민한 일기가 중심이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Is this the kimchi delivery you were waiting for?",
+      "ko": "기다리던 김치 택배가 이거예요?",
+      "kr": "이z 디스 더 김치 딜리v어리 여 워r 웨이링 f퍼r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me take that off your hands.",
+      "ko": "그거 제가 받을게요.",
+      "kr": "레미 테익 대로f 여r 핸드z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Are you making dinner with it?",
+      "ko": "그걸로 저녁 만들 거예요?",
+      "kr": "아r 여 메이킹 디너r 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to boil pork to go with it.",
+      "ko": "곁들여 먹을 돼지고기를 삶고 싶어요.",
+      "kr": "아이드 라이크 터 보일 포어r크 터 고우 위딧"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What else do you need?",
+      "ko": "또 뭐가 필요해요?",
+      "kr": "와렐스 더여 니이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm thinking about buying some fruit, too.",
+      "ko": "과일도 좀 살까 생각 중이에요.",
+      "kr": "아임 씽킹 어바웃 바잉 썸 f루우트 투우"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Sounds like a lot of shopping for one dinner.",
+      "ko": "저녁 한 끼에 장을 꽤 봐야겠네요.",
+      "kr": "싸운드z 라이커 라러v 샤핑 f퍼r 원 디너r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if chicken delivery would be easier.",
+      "ko": "치킨 배달이 더 간단할지 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 치킨 딜리v어리 워드 비 이이지어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'd like to sit by the window.",
+      "ko": "창가에 앉고 싶어요.",
+      "kr": "아이드 라이크 터 씻 바이 더 윈도우"
+     },
+     {
+      "en": "Would you like to come inside?",
+      "ko": "안으로 들어오실래요?",
+      "kr": "워저 라이크 터 커민싸이드"
+     },
+     {
+      "en": "She'd like to see the menu.",
+      "ko": "그녀는 메뉴를 보고 싶어 해요.",
+      "kr": "쉬드 라이크 터 씨이 더 메뉴우"
+     },
+     {
+      "en": "We'd like to leave a little earlier.",
+      "ko": "우리는 조금 더 일찍 떠나고 싶어요.",
+      "kr": "위드 라이크 터 리이v 어 리를 어r리어r"
+     },
+     {
+      "en": "I'd like to ask about the room.",
+      "ko": "객실에 관해 묻고 싶어요.",
+      "kr": "아이드 라이크 터 애스커바웃 더 루움"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'd like to ~",
+      "body": "~하고 싶어요. 원하는 행동을 부드럽게 말해요."
+     }
+    ],
+    "chunks": [
+     [
+      "I'd like to boil pork",
+      "아이드 라이크 터 보일 포어r크",
+      "돼지고기를 삶고 싶어요"
+     ],
+     [
+      "to go with it.",
+      "터 고우 위딧",
+      "그것과 곁들일 수 있게"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/r/ pork",
+      "pork의 r을 한글 ㄹ처럼 굴리지 않아요."
+     ],
+     [
+      "/ð/ with it",
+      "with it은 위딧으로 이어져도 혀끝의 th 위치를 유지해요."
+     ]
+    ],
+    "mistake": "I'd like sitting ✗ → I'd like to sit. 지금 하고 싶은 행동은 would like to + 동사원형으로 말해요.",
+    "similar": "I want to do that. (그걸 하고 싶어요. 더 직접적인 말투.)",
+    "category": "일상/택배",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-parcel-dinner-03-thinking",
+   "sentence": "I'm thinking about buying some fruit, too.",
+   "meaning": "과일도 좀 살까 생각 중이에요.",
+   "reading": null,
+   "phonetic_kr": "아임 씽킹 어바웃 바잉 썸 f루우트 투우",
+   "order_index": 3,
+   "explanation": {
+    "key": "I'm thinking about ~ = ~할까 생각 중이에요. 아직 결정하지 않고 어떤 행동을 고려할 때 thinking about + -ing를 써요.",
+    "anchor": "살까 생각 중이에요",
+    "situation": "Emma가 대신 받은 김치 택배를 건넨다. 김치에 맞춰 수육과 장보기를 생각하다 치킨 배달까지 고민한 일기가 중심이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Is this the kimchi delivery you were waiting for?",
+      "ko": "기다리던 김치 택배가 이거예요?",
+      "kr": "이z 디스 더 김치 딜리v어리 여 워r 웨이링 f퍼r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me take that off your hands.",
+      "ko": "그거 제가 받을게요.",
+      "kr": "레미 테익 대로f 여r 핸드z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Are you making dinner with it?",
+      "ko": "그걸로 저녁 만들 거예요?",
+      "kr": "아r 여 메이킹 디너r 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to boil pork to go with it.",
+      "ko": "곁들여 먹을 돼지고기를 삶고 싶어요.",
+      "kr": "아이드 라이크 터 보일 포어r크 터 고우 위딧"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What else do you need?",
+      "ko": "또 뭐가 필요해요?",
+      "kr": "와렐스 더여 니이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm thinking about buying some fruit, too.",
+      "ko": "과일도 좀 살까 생각 중이에요.",
+      "kr": "아임 씽킹 어바웃 바잉 썸 f루우트 투우"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Sounds like a lot of shopping for one dinner.",
+      "ko": "저녁 한 끼에 장을 꽤 봐야겠네요.",
+      "kr": "싸운드z 라이커 라러v 샤핑 f퍼r 원 디너r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if chicken delivery would be easier.",
+      "ko": "치킨 배달이 더 간단할지 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 치킨 딜리v어리 워드 비 이이지어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm thinking about taking the bus.",
+      "ko": "버스를 탈까 생각 중이에요.",
+      "kr": "아임 씽킹 어바웃 테이킹 더 버스"
+     },
+     {
+      "en": "Are you thinking about moving?",
+      "ko": "이사할까 생각 중인가요?",
+      "kr": "아r 여 씽킹 어바웃 무우v잉"
+     },
+     {
+      "en": "She's thinking about staying another night.",
+      "ko": "그녀는 하룻밤 더 묵을까 생각 중이에요.",
+      "kr": "쉬z 씽킹 어바웃 스테잉 어너더r 나잇"
+     },
+     {
+      "en": "We're thinking about getting a bigger table.",
+      "ko": "우리는 더 큰 탁자를 살까 생각 중이에요.",
+      "kr": "위어r 씽킹 어바웃 게링 어 비거r 테이블"
+     },
+     {
+      "en": "I'm thinking about leaving a little earlier.",
+      "ko": "조금 더 일찍 떠날까 생각 중이에요.",
+      "kr": "아임 씽킹 어바웃 리이v잉 어 리를 어r리어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm thinking about ~",
+      "body": "~할까 생각 중이에요. 아직 결정하지 않고 어떤 행동을 고려할 때 thinking about + -ing를 써요."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm thinking about buying",
+      "아임 씽킹 어바웃 바잉",
+      "살까 생각 중이에요"
+     ],
+     [
+      "some fruit, too.",
+      "썸 f루우트 투우",
+      "과일도 좀"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/θ/ thinking",
+      "thinking의 th는 혀끝을 앞니 사이에 가볍게 대고 공기를 내보내요."
+     ],
+     [
+      "/f/ fruit",
+      "fruit의 첫소리는 윗니와 아랫입술로 내요."
+     ]
+    ],
+    "mistake": "I'm thinking about buy ✗ → I'm thinking about buying. 전치사 about 뒤에는 동명사를 써요.",
+    "similar": "I might buy some fruit. (과일을 좀 살지도 몰라요.)",
+    "category": "일상/택배",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-parcel-dinner-04-unsure",
+   "sentence": "I'm not sure if chicken delivery would be easier.",
+   "meaning": "치킨 배달이 더 간단할지 모르겠네요.",
+   "reading": null,
+   "phonetic_kr": "아임 낫 슈어r 이f 치킨 딜리v어리 워드 비 이이지어r",
+   "order_index": 4,
+   "explanation": {
+    "key": "I'm not sure if ~ = ~인지 모르겠어요. 사실 여부나 가능성을 확신하지 못할 때 써요.",
+    "anchor": "간단할지 모르겠네요",
+    "situation": "Emma가 대신 받은 김치 택배를 건넨다. 김치에 맞춰 수육과 장보기를 생각하다 치킨 배달까지 고민한 일기가 중심이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Is this the kimchi delivery you were waiting for?",
+      "ko": "기다리던 김치 택배가 이거예요?",
+      "kr": "이z 디스 더 김치 딜리v어리 여 워r 웨이링 f퍼r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me take that off your hands.",
+      "ko": "그거 제가 받을게요.",
+      "kr": "레미 테익 대로f 여r 핸드z"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Are you making dinner with it?",
+      "ko": "그걸로 저녁 만들 거예요?",
+      "kr": "아r 여 메이킹 디너r 위딧"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'd like to boil pork to go with it.",
+      "ko": "곁들여 먹을 돼지고기를 삶고 싶어요.",
+      "kr": "아이드 라이크 터 보일 포어r크 터 고우 위딧"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What else do you need?",
+      "ko": "또 뭐가 필요해요?",
+      "kr": "와렐스 더여 니이드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm thinking about buying some fruit, too.",
+      "ko": "과일도 좀 살까 생각 중이에요.",
+      "kr": "아임 씽킹 어바웃 바잉 썸 f루우트 투우"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Sounds like a lot of shopping for one dinner.",
+      "ko": "저녁 한 끼에 장을 꽤 봐야겠네요.",
+      "kr": "싸운드z 라이커 라러v 샤핑 f퍼r 원 디너r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if chicken delivery would be easier.",
+      "ko": "치킨 배달이 더 간단할지 모르겠네요.",
+      "kr": "아임 낫 슈어r 이f 치킨 딜리v어리 워드 비 이이지어r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm not sure if this is the right bus.",
+      "ko": "이게 맞는 버스인지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 디씨z 더 라잇 버스"
+     },
+     {
+      "en": "She's not sure if the key fits.",
+      "ko": "그녀는 그 열쇠가 맞는지 확신하지 못해요.",
+      "kr": "쉬z 낫 슈어r 이f 더 키이 f피츠"
+     },
+     {
+      "en": "Do you know if the shop is open?",
+      "ko": "가게가 열려 있는지 아나요?",
+      "kr": "더여 노우 이f 더 샤피z 오우픈"
+     },
+     {
+      "en": "We're not sure if we can make it.",
+      "ko": "우리가 갈 수 있을지 모르겠어요.",
+      "kr": "위어r 낫 슈어r 이f 위 컨 메이킷"
+     },
+     {
+      "en": "I'm not sure if I understood the question.",
+      "ko": "질문을 이해했는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 언더r스투드 더 퀘스천"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm not sure if ~",
+      "body": "~인지 모르겠어요. 사실 여부나 가능성을 확신하지 못할 때 써요."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~인지 모르겠어요"
+     ],
+     [
+      "chicken delivery would be easier.",
+      "치킨 딜리v어리 워드 비 이이지어r",
+      "치킨 배달이 더 간단할지"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ delivery",
+      "delivery 중간의 v는 아랫입술에 윗니를 대요."
+     ],
+     [
+      "/iː/ easier",
+      "easier의 첫 모음은 길게 이이로 내요."
+     ]
+    ],
+    "mistake": "I'm not sure if is it open ✗ → I'm not sure if it is open. if 뒤는 주어 다음 동사의 평서문 어순이에요.",
+    "similar": "I don't know whether that's true. (그게 사실인지는 모르겠어요.)",
+    "category": "일상/택배",
+    "frequency": 10
+   }
+  }
+ ]
+}

@@ -1,0 +1,517 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-28",
+ "cards": [
+  {
+   "id": "en-personal-house-comparisons-01-decided",
+   "sentence": "I haven't decided yet.",
+   "meaning": "아직 결정하지 못했어요.",
+   "reading": null,
+   "phonetic_kr": "아이 해븐 디싸이리드 옛",
+   "order_index": 1,
+   "explanation": {
+    "key": "I haven't decided ~ = 아직 결정하지 못했어요. 모두영어 2편 #86. 완료되지 않은 결정을 현재완료 부정으로 말해요.",
+    "anchor": "아직 결정하지 못했어요",
+    "situation": "Emma가 이사할 집을 골랐는지 묻는다. 원래 필요에 맞춰 샀던 집인데 다른 집과 비교하며 괴로워진 일기를 바탕으로 한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Have you found a house you want to move to?",
+      "ko": "이사하고 싶은 집을 찾았어요?",
+      "kr": "해v 여 f파운더 하우스 여 원 터 무우v 투"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정하지 못했어요.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What's wrong with the place you have now?",
+      "ko": "지금 사는 집은 뭐가 문제예요?",
+      "kr": "왓츠 롱 위드 더 플레이스 여 해v 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if I need anything bigger.",
+      "ko": "더 큰 집이 필요한지는 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 니이대니씽 비거r"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "But you started looking. What happened?",
+      "ko": "그런데 알아보기 시작했잖아요. 어떻게 됐어요?",
+      "kr": "벗 여 스타r티드 루킹 왓 해픈드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been comparing homes instead of enjoying mine.",
+      "ko": "제 집을 즐기기보다 다른 집들과 비교해 왔어요.",
+      "kr": "아이v 빈 컴페어r링 호움z 인스테더v 인조잉 마인"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So has all that research made you happier?",
+      "ko": "그렇게 알아보니까 더 행복해졌어요?",
+      "kr": "쏘우 해z 올 댓 리써r치 메이처 해피어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Ignorance is bliss.",
+      "ko": "모르는 게 약이에요.",
+      "kr": "이그너런씨z 블리스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I haven't decided where to stay.",
+      "ko": "어디에 묵을지 아직 결정하지 못했어요.",
+      "kr": "아이 해븐 디싸이리드 웨어r 터 스테이"
+     },
+     {
+      "en": "She hasn't decided which one to buy.",
+      "ko": "그녀는 어느 것을 살지 아직 결정하지 못했어요.",
+      "kr": "쉬 해즌 디싸이리드 위치 원 터 바이"
+     },
+     {
+      "en": "Have you decided on a date?",
+      "ko": "날짜를 결정했나요?",
+      "kr": "해v 여 디싸이리더너 데잇"
+     },
+     {
+      "en": "We haven't decided what to do next.",
+      "ko": "우리는 다음에 뭘 할지 아직 결정하지 못했어요.",
+      "kr": "위 해븐 디싸이리드 왓 터 두 넥스트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I haven't decided ~",
+      "body": "아직 결정하지 못했어요. 모두영어 2편 #86. 완료되지 않은 결정을 현재완료 부정으로 말해요."
+     }
+    ],
+    "chunks": [
+     [
+      "I haven't decided",
+      "아이 해븐 디싸이리드",
+      "결정하지 못했어요"
+     ],
+     [
+      "yet.",
+      "옛",
+      "아직"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ decided",
+      "decided의 가운데 d는 가볍게 굴러 디싸이리드로 들려요."
+     ],
+     [
+      "/t/ yet",
+      "yet 끝 t를 닫고 불필요한 으를 덧붙이지 않아요."
+     ]
+    ],
+    "mistake": "I haven't decide ✗ → I haven't decided. have 뒤는 과거분사 decided예요.",
+    "similar": "I'm still thinking about it. (아직 생각 중이에요.)",
+    "category": "일상/주거",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-house-comparisons-02-unsure",
+   "sentence": "I'm not sure if I need anything bigger.",
+   "meaning": "더 큰 집이 필요한지는 모르겠어요.",
+   "reading": null,
+   "phonetic_kr": "아임 낫 슈어r 이f 아이 니이대니씽 비거r",
+   "order_index": 2,
+   "explanation": {
+    "key": "I'm not sure if ~ = ~인지 모르겠어요. 사실 여부나 가능성을 확신하지 못할 때 써요.",
+    "anchor": "필요한지는 모르겠어요",
+    "situation": "Emma가 이사할 집을 골랐는지 묻는다. 원래 필요에 맞춰 샀던 집인데 다른 집과 비교하며 괴로워진 일기를 바탕으로 한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Have you found a house you want to move to?",
+      "ko": "이사하고 싶은 집을 찾았어요?",
+      "kr": "해v 여 f파운더 하우스 여 원 터 무우v 투"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정하지 못했어요.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What's wrong with the place you have now?",
+      "ko": "지금 사는 집은 뭐가 문제예요?",
+      "kr": "왓츠 롱 위드 더 플레이스 여 해v 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if I need anything bigger.",
+      "ko": "더 큰 집이 필요한지는 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 니이대니씽 비거r"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "But you started looking. What happened?",
+      "ko": "그런데 알아보기 시작했잖아요. 어떻게 됐어요?",
+      "kr": "벗 여 스타r티드 루킹 왓 해픈드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been comparing homes instead of enjoying mine.",
+      "ko": "제 집을 즐기기보다 다른 집들과 비교해 왔어요.",
+      "kr": "아이v 빈 컴페어r링 호움z 인스테더v 인조잉 마인"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So has all that research made you happier?",
+      "ko": "그렇게 알아보니까 더 행복해졌어요?",
+      "kr": "쏘우 해z 올 댓 리써r치 메이처 해피어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Ignorance is bliss.",
+      "ko": "모르는 게 약이에요.",
+      "kr": "이그너런씨z 블리스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm not sure if this is the right bus.",
+      "ko": "이게 맞는 버스인지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 디씨z 더 라잇 버스"
+     },
+     {
+      "en": "She's not sure if the key fits.",
+      "ko": "그녀는 그 열쇠가 맞는지 확신하지 못해요.",
+      "kr": "쉬z 낫 슈어r 이f 더 키이 f피츠"
+     },
+     {
+      "en": "Do you know if the shop is open?",
+      "ko": "가게가 열려 있는지 아나요?",
+      "kr": "더여 노우 이f 더 샤피z 오우픈"
+     },
+     {
+      "en": "We're not sure if we can make it.",
+      "ko": "우리가 갈 수 있을지 모르겠어요.",
+      "kr": "위어r 낫 슈어r 이f 위 컨 메이킷"
+     },
+     {
+      "en": "I'm not sure if I understood the question.",
+      "ko": "질문을 이해했는지 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 언더r스투드 더 퀘스천"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'm not sure if ~",
+      "body": "~인지 모르겠어요. 사실 여부나 가능성을 확신하지 못할 때 써요."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~인지 모르겠어요"
+     ],
+     [
+      "I need anything bigger.",
+      "아이 니이대니씽 비거r",
+      "더 큰 것이 필요한지"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/iː/ need",
+      "need의 모음은 니이드로 길게 말해요."
+     ],
+     [
+      "/g/ bigger",
+      "bigger의 g는 혀 뒤쪽으로 막았다가 열어요."
+     ]
+    ],
+    "mistake": "I'm not sure if is it open ✗ → I'm not sure if it is open. if 뒤는 주어 다음 동사의 평서문 어순이에요.",
+    "similar": "I don't know whether that's true. (그게 사실인지는 모르겠어요.)",
+    "category": "일상/주거",
+    "frequency": 10
+   }
+  },
+  {
+   "id": "en-personal-house-comparisons-03-been",
+   "sentence": "I've been comparing homes instead of enjoying mine.",
+   "meaning": "제 집을 즐기기보다 다른 집들과 비교해 왔어요.",
+   "reading": null,
+   "phonetic_kr": "아이v 빈 컴페어r링 호움z 인스테더v 인조잉 마인",
+   "order_index": 3,
+   "explanation": {
+    "key": "I've been ~ = 계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요.",
+    "anchor": "비교해 왔어요",
+    "situation": "Emma가 이사할 집을 골랐는지 묻는다. 원래 필요에 맞춰 샀던 집인데 다른 집과 비교하며 괴로워진 일기를 바탕으로 한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Have you found a house you want to move to?",
+      "ko": "이사하고 싶은 집을 찾았어요?",
+      "kr": "해v 여 f파운더 하우스 여 원 터 무우v 투"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정하지 못했어요.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What's wrong with the place you have now?",
+      "ko": "지금 사는 집은 뭐가 문제예요?",
+      "kr": "왓츠 롱 위드 더 플레이스 여 해v 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if I need anything bigger.",
+      "ko": "더 큰 집이 필요한지는 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 니이대니씽 비거r"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "But you started looking. What happened?",
+      "ko": "그런데 알아보기 시작했잖아요. 어떻게 됐어요?",
+      "kr": "벗 여 스타r티드 루킹 왓 해픈드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been comparing homes instead of enjoying mine.",
+      "ko": "제 집을 즐기기보다 다른 집들과 비교해 왔어요.",
+      "kr": "아이v 빈 컴페어r링 호움z 인스테더v 인조잉 마인"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So has all that research made you happier?",
+      "ko": "그렇게 알아보니까 더 행복해졌어요?",
+      "kr": "쏘우 해z 올 댓 리써r치 메이처 해피어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Ignorance is bliss.",
+      "ko": "모르는 게 약이에요.",
+      "kr": "이그너런씨z 블리스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I've been looking for my glasses.",
+      "ko": "안경을 계속 찾고 있었어요.",
+      "kr": "아이v 빈 루킹 f퍼r 마이 글래씨z"
+     },
+     {
+      "en": "She's been waiting by the entrance.",
+      "ko": "그녀는 입구 옆에서 계속 기다리고 있어요.",
+      "kr": "쉬z 빈 웨이링 바이 디 엔트런스"
+     },
+     {
+      "en": "Have you been getting enough sleep?",
+      "ko": "계속 잠은 충분히 자고 있나요?",
+      "kr": "해v 여 빈 게링 이너f 슬리입"
+     },
+     {
+      "en": "We've been talking about the same thing.",
+      "ko": "우리는 계속 같은 이야기를 해왔어요.",
+      "kr": "위v 빈 토킹 어바웃 더 쎄임 씽"
+     },
+     {
+      "en": "I've been trying to reach the front desk.",
+      "ko": "프런트에 연락하려고 계속 시도했어요.",
+      "kr": "아이v 빈 트라잉 터 리이치 더 f런트 데스크"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I've been ~",
+      "body": "계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요."
+     }
+    ],
+    "chunks": [
+     [
+      "I've been comparing homes",
+      "아이v 빈 컴페어r링 호움z",
+      "집들을 비교해 왔어요"
+     ],
+     [
+      "instead of enjoying mine.",
+      "인스테더v 인조잉 마인",
+      "제 집을 즐기는 대신"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ instead of",
+      "instead 끝 d를 of에 이어 인스테더v로 말해요."
+     ],
+     [
+      "/z/ homes",
+      "homes 끝 s는 유성 z. 호움z로 남겨요."
+     ]
+    ],
+    "mistake": "I've been compare ✗ → I've been comparing. 진행 중인 행동은 been 뒤에 -ing형을 붙여요.",
+    "similar": "I've kept thinking about it. (그것을 계속 생각해 왔어요.)",
+    "category": "일상/주거",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-house-comparisons-04-bliss",
+   "sentence": "Ignorance is bliss.",
+   "meaning": "모르는 게 약이에요.",
+   "reading": null,
+   "phonetic_kr": "이그너런씨z 블리스",
+   "order_index": 4,
+   "explanation": {
+    "key": "Ignorance is bliss = 모르는 게 약이에요. 알게 되어 오히려 마음이 복잡할 때 쓰는 고정 표현. 모두영어 1편 #230·2편 #53.",
+    "anchor": "모르는 게 약이에요",
+    "situation": "Emma가 이사할 집을 골랐는지 묻는다. 원래 필요에 맞춰 샀던 집인데 다른 집과 비교하며 괴로워진 일기를 바탕으로 한다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "Have you found a house you want to move to?",
+      "ko": "이사하고 싶은 집을 찾았어요?",
+      "kr": "해v 여 f파운더 하우스 여 원 터 무우v 투"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정하지 못했어요.",
+      "kr": "아이 해븐 디싸이리드 옛"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "What's wrong with the place you have now?",
+      "ko": "지금 사는 집은 뭐가 문제예요?",
+      "kr": "왓츠 롱 위드 더 플레이스 여 해v 나우"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'm not sure if I need anything bigger.",
+      "ko": "더 큰 집이 필요한지는 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 아이 니이대니씽 비거r"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "But you started looking. What happened?",
+      "ko": "그런데 알아보기 시작했잖아요. 어떻게 됐어요?",
+      "kr": "벗 여 스타r티드 루킹 왓 해픈드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I've been comparing homes instead of enjoying mine.",
+      "ko": "제 집을 즐기기보다 다른 집들과 비교해 왔어요.",
+      "kr": "아이v 빈 컴페어r링 호움z 인스테더v 인조잉 마인"
+     },
+     {
+      "speaker": "A",
+      "name": "Emma",
+      "en": "So has all that research made you happier?",
+      "ko": "그렇게 알아보니까 더 행복해졌어요?",
+      "kr": "쏘우 해z 올 댓 리써r치 메이처 해피어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Ignorance is bliss.",
+      "ko": "모르는 게 약이에요.",
+      "kr": "이그너런씨z 블리스"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Sometimes ignorance is bliss.",
+      "ko": "때로는 모르는 게 약이에요.",
+      "kr": "썸타임z 이그너런씨z 블리스"
+     },
+     {
+      "en": "Is ignorance really bliss?",
+      "ko": "모르는 게 정말 약일까요?",
+      "kr": "이z 이그너런스 리얼리 블리스"
+     },
+     {
+      "en": "They say ignorance is bliss.",
+      "ko": "모르는 게 약이라고들 해요.",
+      "kr": "데이 쎄이 이그너런씨z 블리스"
+     },
+     {
+      "en": "Maybe ignorance is bliss after all.",
+      "ko": "어쩌면 결국 모르는 게 약인가 봐요.",
+      "kr": "메이비 이그너런씨z 블리쌔f터r 올"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Ignorance is bliss",
+      "body": "모르는 게 약이에요. 알게 되어 오히려 마음이 복잡할 때 쓰는 고정 표현. 모두영어 1편 #230·2편 #53."
+     }
+    ],
+    "chunks": [
+     [
+      "Ignorance is",
+      "이그너런씨z",
+      "모르는 것은"
+     ],
+     [
+      "bliss.",
+      "블리스",
+      "행복이다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/s/ ignorance is",
+      "ignorance의 s와 is를 이어 이그너런씨z로 말해요."
+     ],
+     [
+      "/ɪ/ bliss",
+      "bliss는 짧은 이 모음이에요. 블리이스로 늘이지 않아요."
+     ]
+    ],
+    "mistake": "Ignorance are bliss ✗ → Ignorance is bliss. ignorance는 셀 수 없는 단수 명사예요.",
+    "similar": "Sometimes it's better not to know. (때로는 모르는 편이 나아요.)",
+    "category": "일상/주거",
+    "frequency": 6
+   }
+  }
+ ]
+}

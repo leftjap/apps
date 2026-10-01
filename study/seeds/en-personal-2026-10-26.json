@@ -1,0 +1,517 @@
+{
+ "lang": "en",
+ "track": "personal",
+ "date": "2026-10-26",
+ "cards": [
+  {
+   "id": "en-personal-pork-thin-slices-01-should",
+   "sentence": "I think you should try the place I went to.",
+   "meaning": "제가 갔던 곳에 가보는 게 좋겠어요.",
+   "reading": null,
+   "phonetic_kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투",
+   "order_index": 1,
+   "explanation": {
+    "key": "I think you should ~ = ~하는 게 좋겠어요. 상대에게 도움이 될 행동을 추천해요.",
+    "anchor": "가보는 게 좋겠어요",
+    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Do you know a place that serves good boiled pork?",
+      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
+      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should try the place I went to.",
+      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "What made it so good?",
+      "ko": "뭐가 그렇게 좋았어요?",
+      "kr": "왓 메이딧 쏘우 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, the meat is lean and sliced thin.",
+      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
+      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Is it the fat you don't like?",
+      "ko": "비계가 싫으신 거예요?",
+      "kr": "이짓 더 f팻 여 돈 라이크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't like that texture.",
+      "ko": "그 식감을 안 좋아해요.",
+      "kr": "아이 돈 라이크 댓 텍스처r"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Sounds like you inspected every slice.",
+      "ko": "한 점 한 점 심사한 것 같네요.",
+      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have dinner.",
+      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
+      "kr": "아이 저스 워니드 터 해v 디너r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I think you should check the address.",
+      "ko": "주소를 확인하는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 첵 디 어드레스"
+     },
+     {
+      "en": "Do you think we should book a table?",
+      "ko": "우리가 자리를 예약하는 게 좋을까요?",
+      "kr": "더여 씽크 위 슈드 부커 테이블"
+     },
+     {
+      "en": "She thinks you should ask at the desk.",
+      "ko": "그녀는 프런트에 물어보는 게 좋겠다고 해요.",
+      "kr": "쉬 씽크스 여 셔대스컷 더 데스크"
+     },
+     {
+      "en": "I think you should take the earlier train.",
+      "ko": "더 이른 기차를 타는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 테이크 디 어r리어r 트레인"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I think you should ~",
+      "body": "~하는 게 좋겠어요. 상대에게 도움이 될 행동을 추천해요."
+     }
+    ],
+    "chunks": [
+     [
+      "I think you should try",
+      "아이 씽켜 슈드 트라이",
+      "가보는 게 좋겠어요"
+     ],
+     [
+      "the place I went to.",
+      "더 플레이싸이 웬 투",
+      "제가 갔던 곳을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ think you",
+      "think you는 gold 확정형 씽켜로 이어 말해요."
+     ],
+     [
+      "/s/ place I",
+      "place 끝 s를 I와 이어 플레이싸이로 말해요."
+     ]
+    ],
+    "mistake": "I think you should to try ✗ → I think you should try. should 뒤는 to 없는 동사원형이에요.",
+    "similar": "You might want to try it. (한번 해보는 게 좋을 거예요. 더 완곡한 권유.)",
+    "category": "외식/추천",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-pork-thin-slices-02-thing",
+   "sentence": "The thing is, the meat is lean and sliced thin.",
+   "meaning": "실은 비계가 적고 얇게 썰어서 나와요.",
+   "reading": null,
+   "phonetic_kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬",
+   "order_index": 2,
+   "explanation": {
+    "key": "The thing is, ~ = 실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요.",
+    "anchor": "실은",
+    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Do you know a place that serves good boiled pork?",
+      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
+      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should try the place I went to.",
+      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "What made it so good?",
+      "ko": "뭐가 그렇게 좋았어요?",
+      "kr": "왓 메이딧 쏘우 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, the meat is lean and sliced thin.",
+      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
+      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Is it the fat you don't like?",
+      "ko": "비계가 싫으신 거예요?",
+      "kr": "이짓 더 f팻 여 돈 라이크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't like that texture.",
+      "ko": "그 식감을 안 좋아해요.",
+      "kr": "아이 돈 라이크 댓 텍스처r"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Sounds like you inspected every slice.",
+      "ko": "한 점 한 점 심사한 것 같네요.",
+      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have dinner.",
+      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
+      "kr": "아이 저스 워니드 터 해v 디너r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "The thing is, we need more time.",
+      "ko": "실은 시간이 더 필요해요.",
+      "kr": "더 씽 이z 위 니이드 모어r 타임"
+     },
+     {
+      "en": "But the thing is, nobody has a key.",
+      "ko": "그런데 실은 아무도 열쇠가 없어요.",
+      "kr": "벗 더 씽 이z 노우바디 해저 키이"
+     },
+     {
+      "en": "Well, the thing is, the shop closes soon.",
+      "ko": "음, 실은 가게가 곧 닫아요.",
+      "kr": "웰 더 씽 이z 더 샵 클로우지z 쑤운"
+     },
+     {
+      "en": "The thing is, I left my phone at home.",
+      "ko": "실은 휴대폰을 집에 두고 왔어요.",
+      "kr": "더 씽 이z 아이 레f트 마이 f포우넛 호움"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "The thing is, ~",
+      "body": "실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요."
+     }
+    ],
+    "chunks": [
+     [
+      "The thing is,",
+      "더 씽 이z",
+      "실은"
+     ],
+     [
+      "the meat is lean and",
+      "더 미이리z 리이넌",
+      "고기에 비계가 적고"
+     ],
+     [
+      "sliced thin.",
+      "슬라이스 씬",
+      "얇게 썰었어요"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ meat is",
+      "meat 끝 t가 is 앞에서 굴러 미이리z로 이어져요."
+     ],
+     [
+      "/θ/ thin",
+      "thin은 혀끝을 내밀어 소리를 내며 sin과 구별해요."
+     ]
+    ],
+    "mistake": "The thing are ✗ → The thing is. 뒤에는 주어와 동사가 있는 절을 이어 사정을 말해요.",
+    "similar": "Here's the problem. (문제는 이거예요.)",
+    "category": "외식/추천",
+    "frequency": 8
+   }
+  },
+  {
+   "id": "en-personal-pork-thin-slices-03-dislike",
+   "sentence": "I don't like that texture.",
+   "meaning": "그 식감을 안 좋아해요.",
+   "reading": null,
+   "phonetic_kr": "아이 돈 라이크 댓 텍스처r",
+   "order_index": 3,
+   "explanation": {
+    "key": "I don't like ~ = ~을 좋아하지 않아요. 음식의 특정 식감처럼 호불호의 대상을 정확히 말해요. 233 #29.",
+    "anchor": "안 좋아해요",
+    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Do you know a place that serves good boiled pork?",
+      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
+      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should try the place I went to.",
+      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "What made it so good?",
+      "ko": "뭐가 그렇게 좋았어요?",
+      "kr": "왓 메이딧 쏘우 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, the meat is lean and sliced thin.",
+      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
+      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Is it the fat you don't like?",
+      "ko": "비계가 싫으신 거예요?",
+      "kr": "이짓 더 f팻 여 돈 라이크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't like that texture.",
+      "ko": "그 식감을 안 좋아해요.",
+      "kr": "아이 돈 라이크 댓 텍스처r"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Sounds like you inspected every slice.",
+      "ko": "한 점 한 점 심사한 것 같네요.",
+      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have dinner.",
+      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
+      "kr": "아이 저스 워니드 터 해v 디너r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I don't like the texture of this meat.",
+      "ko": "이 고기의 식감이 마음에 안 들어요.",
+      "kr": "아이 돈 라이크 더 텍스처r 어v 디스 미이트"
+     },
+     {
+      "en": "Do you like the sauce?",
+      "ko": "소스가 마음에 들어요?",
+      "kr": "더여 라이크 더 쏘스"
+     },
+     {
+      "en": "She doesn't like this color.",
+      "ko": "그녀는 이 색을 좋아하지 않아요.",
+      "kr": "쉬 더즌 라이크 디스 컬러r"
+     },
+     {
+      "en": "We don't like how this sounds.",
+      "ko": "우리는 이 말이 어떻게 들리는지가 마음에 안 들어요.",
+      "kr": "위 돈 라이크 하우 디스 싸운드z"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I don't like ~",
+      "body": "~을 좋아하지 않아요. 음식의 특정 식감처럼 호불호의 대상을 정확히 말해요. 233 #29."
+     }
+    ],
+    "chunks": [
+     [
+      "I don't like",
+      "아이 돈 라이크",
+      "좋아하지 않아요"
+     ],
+     [
+      "that texture.",
+      "댓 텍스처r",
+      "그 식감을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/k/ texture",
+      "texture의 k를 없애지 않고 텍스처r로 말해요."
+     ],
+     [
+      "/ð/ that",
+      "that의 첫 th는 성대가 울리는 소리예요."
+     ]
+    ],
+    "mistake": "I no like ✗ → I don't like. 일반동사의 현재 부정에는 don't를 써요.",
+    "similar": "That texture isn't for me. (그 식감은 제 취향이 아니에요.)",
+    "category": "외식/추천",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-pork-thin-slices-04-wanted",
+   "sentence": "I just wanted to have dinner.",
+   "meaning": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
+   "reading": null,
+   "phonetic_kr": "아이 저스 워니드 터 해v 디너r",
+   "order_index": 4,
+   "explanation": {
+    "key": "I just wanted to ~ = 그냥 ~하고 싶었을 뿐이에요. 행동의 소박한 의도를 설명하거나 오해를 풀어요.",
+    "anchor": "먹고 싶었을 뿐이에요",
+    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Do you know a place that serves good boiled pork?",
+      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
+      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should try the place I went to.",
+      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "What made it so good?",
+      "ko": "뭐가 그렇게 좋았어요?",
+      "kr": "왓 메이딧 쏘우 굿"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "The thing is, the meat is lean and sliced thin.",
+      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
+      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Is it the fat you don't like?",
+      "ko": "비계가 싫으신 거예요?",
+      "kr": "이짓 더 f팻 여 돈 라이크"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't like that texture.",
+      "ko": "그 식감을 안 좋아해요.",
+      "kr": "아이 돈 라이크 댓 텍스처r"
+     },
+     {
+      "speaker": "B",
+      "name": "Tom",
+      "en": "Sounds like you inspected every slice.",
+      "ko": "한 점 한 점 심사한 것 같네요.",
+      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have dinner.",
+      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
+      "kr": "아이 저스 워니드 터 해v 디너r"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I just wanted to ask a question.",
+      "ko": "그냥 질문 하나 하고 싶었을 뿐이에요.",
+      "kr": "아이 저스 워니드 터 애스커 퀘스천"
+     },
+     {
+      "en": "She just wanted to say hello.",
+      "ko": "그녀는 그냥 인사하고 싶었을 뿐이에요.",
+      "kr": "쉬 저스 워니드 터 쎄이 헬로우"
+     },
+     {
+      "en": "Did you just want to look around?",
+      "ko": "그냥 둘러보고 싶었던 건가요?",
+      "kr": "디저 저스 원 터 루커라운드"
+     },
+     {
+      "en": "We just wanted to help.",
+      "ko": "우리는 그냥 돕고 싶었을 뿐이에요.",
+      "kr": "위 저스 워니드 터 헬프"
+     },
+     {
+      "en": "I just wanted to make sure you got home.",
+      "ko": "집에 도착했는지 확인하고 싶었을 뿐이에요.",
+      "kr": "아이 저스 워니드 터 메익 슈어r 여 갓 호움"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I just wanted to ~",
+      "body": "그냥 ~하고 싶었을 뿐이에요. 행동의 소박한 의도를 설명하거나 오해를 풀어요."
+     }
+    ],
+    "chunks": [
+     [
+      "I just wanted to",
+      "아이 저스 워니드 터",
+      "그냥 ~하고 싶었을 뿐이에요"
+     ],
+     [
+      "have dinner.",
+      "해v 디너r",
+      "저녁을 먹다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ just wanted",
+      "just 뒤 자음 w 앞에서는 t를 따로 내지 않아요."
+     ],
+     [
+      "/v/ have",
+      "have 끝 v는 아랫입술을 써서 남겨요."
+     ]
+    ],
+    "mistake": "I just wanted to had ✗ → I just wanted to have. wanted가 과거여도 to 뒤는 원형이에요.",
+    "similar": "That was all I wanted. (제가 원한 건 그게 전부였어요.)",
+    "category": "외식/추천",
+    "frequency": 9
+   }
+  }
+ ]
+}
