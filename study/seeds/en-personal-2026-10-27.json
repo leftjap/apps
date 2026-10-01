@@ -4,522 +4,495 @@
  "date": "2026-10-27",
  "cards": [
   {
-   "id": "en-personal-back-needs-rest-01-been",
-   "sentence": "I've been having pain I haven't felt before.",
-   "meaning": "전에는 느껴보지 못한 통증이 계속 있어요.",
+   "id": "en-personal-bed-space-for-three-01-dontthink",
+   "sentence": "I don't think I can move without waking her.",
+   "meaning": "얘 안 깨우고는 못 움직일 것 같아.",
    "reading": null,
-   "phonetic_kr": "아이v 빈 해v잉 페이나이 해븐 f펠트 비f포어r",
+   "phonetic_kr": "아이 돈 씽카이 컨 무우v 위다웃 웨이킹 허r",
    "order_index": 1,
    "explanation": {
-    "key": "I've been ~ = 계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요.",
-    "anchor": "계속 있어요",
-    "situation": "Liam이 스쿼트 후 허리 상태를 묻는다. 평소와 다른 통증과 식사 후 잠을 잔 일기를 되돌아본다.",
+    "key": "I don't think ~ = ~인 것 같지는 않아요. 생각이나 판단을 부드럽게 부정해요.",
+    "anchor": "못 움직일 것 같아",
+    "situation": "나니를 깨우지 않고 소연의 자리를 만들려 한다. 고양이가 다시 가까이 온다는 즉석 상황으로 마무리하고, 잠자리 취향이나 매일의 반복 행동을 추가하지 않는다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "How's your back after those squats?",
-      "ko": "그 스쿼트 하고 나서 허리는 어때요?",
-      "kr": "하우z 여r 배캐f터 도우z 스콰츠"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Move over. I need some room in this bed.",
+      "ko": "좀 비켜 봐. 나도 잘 자리 있어야지.",
+      "kr": "무우v 오우버r 아이 니이드 썸 루우민 디스 베드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been having pain I haven't felt before.",
-      "ko": "전에는 느껴보지 못한 통증이 계속 있어요.",
-      "kr": "아이v 빈 해v잉 페이나이 해븐 f펠트 비f포어r"
+      "en": "I don't think I can move without waking her.",
+      "ko": "얘 안 깨우고는 못 움직일 것 같아.",
+      "kr": "아이 돈 씽카이 컨 무우v 위다웃 웨이킹 허r"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "What about the pain you mentioned in your legs?",
-      "ko": "말했던 다리 통증은요?",
-      "kr": "와러바웃 더 페인 여 멘션딘 여r 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It feels like even my clothes hurt my legs.",
-      "ko": "옷마저 다리를 아프게 하는 것 같아요.",
-      "kr": "잇 f피일z 라이키이v언 마이 클로우즈 허r트 마이 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did you take a break?",
-      "ko": "쉬기는 했어요?",
-      "kr": "디저 테이커 브레익"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just slide the blanket that's under your arm.",
+      "ko": "네 팔 밑에 있는 이불만 좀 밀어.",
+      "kr": "저스 슬라이드 더 블랭킷 댓썬더r 여r 아r음"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I had to lie down after I ate.",
-      "ko": "먹고 나서 누워야 했어요.",
-      "kr": "아이 해드 터 라이 다우내f터r 아이 에잇"
+      "en": "Can you lift the blanket she's lying on?",
+      "ko": "얘가 누워 있는 이불 좀 들어줄래?",
+      "kr": "컨 여 리f트 더 블랭킷 쉬z 라이잉 온"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did resting help you figure out what was wrong?",
-      "ko": "쉬니까 뭐가 문제였는지 알겠던가요?",
-      "kr": "디드 레스팅 헬프 여 f피겨r 아웃 왓 워z 롱"
+      "speaker": "A",
+      "name": "소연",
+      "en": "There. She's still asleep. Now move.",
+      "ko": "됐다. 아직 자네. 이제 움직여.",
+      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like my body wanted a day off.",
-      "ko": "제 몸이 하루 쉬고 싶었던 것 같아요.",
-      "kr": "잇 룩스 라이크 마이 바디 워니더 데이 오f"
+      "en": "It looks like she's moved closer again.",
+      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
+      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Great. You made room for the cat, not me.",
+      "ko": "잘했네. 내 자리 말고 고양이 자리를 만들었네.",
+      "kr": "그뤠잇 유 메이드 루움 f퍼r 더 캣 낫 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should ask her, not me.",
+      "ko": "나 말고 얘한테 부탁해야 할 것 같은데.",
+      "kr": "아이 씽켜 셔래스크 허r 낫 미"
      }
     ],
     "drills": [
      {
-      "en": "I've been looking for my glasses.",
-      "ko": "안경을 계속 찾고 있었어요.",
-      "kr": "아이v 빈 루킹 f퍼r 마이 글래씨z"
+      "en": "I don't think we need this.",
+      "ko": "이건 필요하지 않을 것 같아요.",
+      "kr": "아이 돈 씽크 위 니이드 디스"
      },
      {
-      "en": "She's been waiting by the entrance.",
-      "ko": "그녀는 입구 옆에서 계속 기다리고 있어요.",
-      "kr": "쉬z 빈 웨이링 바이 디 엔트런스"
+      "en": "She doesn't think it's ready.",
+      "ko": "아직 준비가 안 된 것 같대요.",
+      "kr": "쉬 더즌 씽키츠 레디"
      },
      {
-      "en": "Have you been getting enough sleep?",
-      "ko": "계속 잠은 충분히 자고 있나요?",
-      "kr": "해v 여 빈 게링 이너f 슬리입"
+      "en": "Do you think it will fit?",
+      "ko": "이게 들어갈 것 같아요?",
+      "kr": "더여 씽킷 윌 f핏"
      },
      {
-      "en": "We've been talking about the same thing.",
-      "ko": "우리는 계속 같은 이야기를 해왔어요.",
-      "kr": "위v 빈 토킹 어바웃 더 쎄임 씽"
-     },
-     {
-      "en": "I've been trying to reach the front desk.",
-      "ko": "프런트에 연락하려고 계속 시도했어요.",
-      "kr": "아이v 빈 트라잉 터 리이치 더 f런트 데스크"
+      "en": "We didn't think it would take so long.",
+      "ko": "이렇게 오래 걸릴 줄 몰랐어요.",
+      "kr": "위 디든 씽킷 워드 테익 쏘우 롱"
      }
     ],
     "grammar": [
      {
-      "struct": "I've been ~",
-      "body": "계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요."
+      "struct": "I don't think ~",
+      "body": "~인 것 같지는 않아요. 생각이나 판단을 부드럽게 부정해요."
      }
     ],
     "chunks": [
      [
-      "I've been having",
-      "아이v 빈 해v잉",
-      "계속 느끼고 있어요"
+      "I don't think I can move",
+      "아이 돈 씽카이 컨 무우v",
+      "움직일 수 있을 것 같지 않아"
      ],
      [
-      "pain I haven't felt before.",
-      "페이나이 해븐 f펠트 비f포어r",
-      "전에 느껴보지 못한 통증을"
+      "without waking her.",
+      "위다웃 웨이킹 허r",
+      "얘를 깨우지 않고"
      ]
     ],
     "phonemes": [
      [
-      "/n/ pain I",
-      "pain 끝 n을 I에 붙여 페이나이로 이어 말해요."
-     ],
-     [
-      "/f/ felt",
-      "felt의 첫소리는 아랫입술과 윗니로 내요."
+      "/θ/ think",
+      "think의 th는 혀끝을 이 사이에 가볍게 대고 바람을 내요."
      ]
     ],
-    "mistake": "I've been compare ✗ → I've been comparing. 진행 중인 행동은 been 뒤에 -ing형을 붙여요.",
-    "similar": "I've kept thinking about it. (그것을 계속 생각해 왔어요.)",
-    "category": "운동/휴식",
+    "mistake": "못 움직일 것 같다는 뜻은 I don't think I can move예요. can't를 붙이면 이중 부정이 돼요.",
+    "similar": "I doubt that will work. (그게 될지는 의문이에요.)",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-back-needs-rest-02-feels",
-   "sentence": "It feels like even my clothes hurt my legs.",
-   "meaning": "옷마저 다리를 아프게 하는 것 같아요.",
+   "id": "en-personal-bed-space-for-three-02-can",
+   "sentence": "Can you lift the blanket she's lying on?",
+   "meaning": "얘가 누워 있는 이불 좀 들어줄래?",
    "reading": null,
-   "phonetic_kr": "잇 f피일z 라이키이v언 마이 클로우즈 허r트 마이 레그z",
+   "phonetic_kr": "컨 여 리f트 더 블랭킷 쉬z 라이잉 온",
    "order_index": 2,
    "explanation": {
-    "key": "It feels like ~ = ~인 것 같아요. 몸으로 느끼는 감각이나 주관적 인상을 비유해요.",
-    "anchor": "아프게 하는 것 같아요",
-    "situation": "Liam이 스쿼트 후 허리 상태를 묻는다. 평소와 다른 통증과 식사 후 잠을 잔 일기를 되돌아본다.",
+    "key": "Can you ~ = ~해 줄 수 있어요? 본문과 Could you ~는 상대에게 행동을 부탁해요. can은 능력에도 써서 I can carry는 '들 수 있다', can't move는 '옮길 수 없다'예요. Can she come with us?는 여기서 '같이 와도 돼요?'라는 허락 질문이에요.",
+    "anchor": "들어줄래",
+    "situation": "나니를 깨우지 않고 소연의 자리를 만들려 한다. 고양이가 다시 가까이 온다는 즉석 상황으로 마무리하고, 잠자리 취향이나 매일의 반복 행동을 추가하지 않는다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "How's your back after those squats?",
-      "ko": "그 스쿼트 하고 나서 허리는 어때요?",
-      "kr": "하우z 여r 배캐f터 도우z 스콰츠"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Move over. I need some room in this bed.",
+      "ko": "좀 비켜 봐. 나도 잘 자리 있어야지.",
+      "kr": "무우v 오우버r 아이 니이드 썸 루우민 디스 베드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been having pain I haven't felt before.",
-      "ko": "전에는 느껴보지 못한 통증이 계속 있어요.",
-      "kr": "아이v 빈 해v잉 페이나이 해븐 f펠트 비f포어r"
+      "en": "I don't think I can move without waking her.",
+      "ko": "얘 안 깨우고는 못 움직일 것 같아.",
+      "kr": "아이 돈 씽카이 컨 무우v 위다웃 웨이킹 허r"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "What about the pain you mentioned in your legs?",
-      "ko": "말했던 다리 통증은요?",
-      "kr": "와러바웃 더 페인 여 멘션딘 여r 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It feels like even my clothes hurt my legs.",
-      "ko": "옷마저 다리를 아프게 하는 것 같아요.",
-      "kr": "잇 f피일z 라이키이v언 마이 클로우즈 허r트 마이 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did you take a break?",
-      "ko": "쉬기는 했어요?",
-      "kr": "디저 테이커 브레익"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just slide the blanket that's under your arm.",
+      "ko": "네 팔 밑에 있는 이불만 좀 밀어.",
+      "kr": "저스 슬라이드 더 블랭킷 댓썬더r 여r 아r음"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I had to lie down after I ate.",
-      "ko": "먹고 나서 누워야 했어요.",
-      "kr": "아이 해드 터 라이 다우내f터r 아이 에잇"
+      "en": "Can you lift the blanket she's lying on?",
+      "ko": "얘가 누워 있는 이불 좀 들어줄래?",
+      "kr": "컨 여 리f트 더 블랭킷 쉬z 라이잉 온"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did resting help you figure out what was wrong?",
-      "ko": "쉬니까 뭐가 문제였는지 알겠던가요?",
-      "kr": "디드 레스팅 헬프 여 f피겨r 아웃 왓 워z 롱"
+      "speaker": "A",
+      "name": "소연",
+      "en": "There. She's still asleep. Now move.",
+      "ko": "됐다. 아직 자네. 이제 움직여.",
+      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like my body wanted a day off.",
-      "ko": "제 몸이 하루 쉬고 싶었던 것 같아요.",
-      "kr": "잇 룩스 라이크 마이 바디 워니더 데이 오f"
+      "en": "It looks like she's moved closer again.",
+      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
+      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Great. You made room for the cat, not me.",
+      "ko": "잘했네. 내 자리 말고 고양이 자리를 만들었네.",
+      "kr": "그뤠잇 유 메이드 루움 f퍼r 더 캣 낫 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should ask her, not me.",
+      "ko": "나 말고 얘한테 부탁해야 할 것 같은데.",
+      "kr": "아이 씽켜 셔래스크 허r 낫 미"
      }
     ],
     "drills": [
      {
-      "en": "It feels like summer already.",
-      "ko": "벌써 여름인 것 같아요.",
-      "kr": "잇 f피일z 라이크 써머r 올레디"
+      "en": "Can you hold this for me?",
+      "ko": "이거 좀 잡아 주실래요?",
+      "kr": "컨 여 호울드 디스 f퍼r 미"
      },
      {
-      "en": "Does it feel like home?",
-      "ko": "집 같은 느낌이 나요?",
-      "kr": "더짓 f피일 라이크 호움"
+      "en": "Could you leave some room?",
+      "ko": "자리 좀 남겨 주실래요?",
+      "kr": "커저 리이v 썸 루움"
      },
      {
-      "en": "This feels like a warm blanket.",
-      "ko": "이건 따뜻한 담요 같은 느낌이에요.",
-      "kr": "디스 f피일z 라이커 워r암 블랭킷"
+      "en": "I can carry that.",
+      "ko": "그건 제가 들 수 있어요.",
+      "kr": "아이 컨 캐리 댓"
      },
      {
-      "en": "It doesn't feel like the same place.",
-      "ko": "같은 장소라는 느낌이 안 들어요.",
-      "kr": "잇 더즌 f피일 라이크 더 쎄임 플레이스"
+      "en": "Can she come with us?",
+      "ko": "그녀도 같이 와도 돼요?",
+      "kr": "컨 쉬 컴 위더스"
      },
      {
-      "en": "To me, it feels like a fresh start.",
-      "ko": "제게는 새로 시작하는 것 같아요.",
-      "kr": "터 미 잇 f피일z 라이커 f레쉬 스타r트"
+      "en": "We can't move it alone.",
+      "ko": "우리끼리는 그걸 옮길 수 없어요.",
+      "kr": "위 캔 무우v 이럴로운"
      }
     ],
     "grammar": [
      {
-      "struct": "It feels like ~",
-      "body": "~인 것 같아요. 몸으로 느끼는 감각이나 주관적 인상을 비유해요."
+      "struct": "Can you ~",
+      "body": "~해 줄 수 있어요? 본문과 Could you ~는 상대에게 행동을 부탁해요. can은 능력에도 써서 I can carry는 '들 수 있다', can't move는 '옮길 수 없다'예요. Can she come with us?는 여기서 '같이 와도 돼요?'라는 허락 질문이에요."
      }
     ],
     "chunks": [
      [
-      "It feels like even my clothes",
-      "잇 f피일z 라이키이v언 마이 클로우즈",
-      "심지어 제 옷마저 ~인 것 같아요"
+      "Can you lift the blanket",
+      "컨 여 리f트 더 블랭킷",
+      "이불 좀 들어줄래"
      ],
      [
-      "hurt my legs.",
-      "허r트 마이 레그z",
-      "다리를 아프게 하는"
+      "she's lying on?",
+      "쉬z 라이잉 온",
+      "얘가 누워 있는"
      ]
     ],
     "phonemes": [
      [
-      "/v/ even",
-      "even의 v를 b처럼 터뜨리지 않아요."
-     ],
-     [
-      "/r/ hurt",
-      "hurt의 r에서 혀끝이 입천장을 치지 않게 해요."
+      "/kənjə/ can you",
+      "can you는 강세 없이 컨 여로 말해요."
      ]
     ],
-    "mistake": "It feel like ✗ → It feels like. 주어 it 뒤의 현재형 동사에 s를 붙여요.",
-    "similar": "I feel as if I'm still there. (아직 거기 있는 듯한 느낌이에요.)",
-    "category": "운동/휴식",
+    "mistake": "Can you to lift ✗ → Can you lift. can 뒤 동사에는 to를 붙이지 않아요.",
+    "similar": "Could you help me? (좀 도와주시겠어요?)",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-back-needs-rest-03-hadto",
-   "sentence": "I had to lie down after I ate.",
-   "meaning": "먹고 나서 누워야 했어요.",
+   "id": "en-personal-bed-space-for-three-03-looks",
+   "sentence": "It looks like she's moved closer again.",
+   "meaning": "보니까 얘가 또 더 붙은 것 같은데.",
    "reading": null,
-   "phonetic_kr": "아이 해드 터 라이 다우내f터r 아이 에잇",
+   "phonetic_kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐",
    "order_index": 3,
    "explanation": {
-    "key": "I had to ~ = ~해야 했어요. 과거에 필요했던 행동을 말해요. 233 추가 14 I have to의 과거형이에요.",
-    "anchor": "누워야 했어요",
-    "situation": "Liam이 스쿼트 후 허리 상태를 묻는다. 평소와 다른 통증과 식사 후 잠을 잔 일기를 되돌아본다.",
+    "key": "It looks like ~ = 보니 ~인 것 같아요. 눈앞의 모습이나 화면을 근거로 짐작해요.",
+    "anchor": "보니까 얘가 또 더 붙은 것 같은데",
+    "situation": "나니를 깨우지 않고 소연의 자리를 만들려 한다. 고양이가 다시 가까이 온다는 즉석 상황으로 마무리하고, 잠자리 취향이나 매일의 반복 행동을 추가하지 않는다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "How's your back after those squats?",
-      "ko": "그 스쿼트 하고 나서 허리는 어때요?",
-      "kr": "하우z 여r 배캐f터 도우z 스콰츠"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Move over. I need some room in this bed.",
+      "ko": "좀 비켜 봐. 나도 잘 자리 있어야지.",
+      "kr": "무우v 오우버r 아이 니이드 썸 루우민 디스 베드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been having pain I haven't felt before.",
-      "ko": "전에는 느껴보지 못한 통증이 계속 있어요.",
-      "kr": "아이v 빈 해v잉 페이나이 해븐 f펠트 비f포어r"
+      "en": "I don't think I can move without waking her.",
+      "ko": "얘 안 깨우고는 못 움직일 것 같아.",
+      "kr": "아이 돈 씽카이 컨 무우v 위다웃 웨이킹 허r"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "What about the pain you mentioned in your legs?",
-      "ko": "말했던 다리 통증은요?",
-      "kr": "와러바웃 더 페인 여 멘션딘 여r 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It feels like even my clothes hurt my legs.",
-      "ko": "옷마저 다리를 아프게 하는 것 같아요.",
-      "kr": "잇 f피일z 라이키이v언 마이 클로우즈 허r트 마이 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did you take a break?",
-      "ko": "쉬기는 했어요?",
-      "kr": "디저 테이커 브레익"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just slide the blanket that's under your arm.",
+      "ko": "네 팔 밑에 있는 이불만 좀 밀어.",
+      "kr": "저스 슬라이드 더 블랭킷 댓썬더r 여r 아r음"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I had to lie down after I ate.",
-      "ko": "먹고 나서 누워야 했어요.",
-      "kr": "아이 해드 터 라이 다우내f터r 아이 에잇"
+      "en": "Can you lift the blanket she's lying on?",
+      "ko": "얘가 누워 있는 이불 좀 들어줄래?",
+      "kr": "컨 여 리f트 더 블랭킷 쉬z 라이잉 온"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did resting help you figure out what was wrong?",
-      "ko": "쉬니까 뭐가 문제였는지 알겠던가요?",
-      "kr": "디드 레스팅 헬프 여 f피겨r 아웃 왓 워z 롱"
+      "speaker": "A",
+      "name": "소연",
+      "en": "There. She's still asleep. Now move.",
+      "ko": "됐다. 아직 자네. 이제 움직여.",
+      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like my body wanted a day off.",
-      "ko": "제 몸이 하루 쉬고 싶었던 것 같아요.",
-      "kr": "잇 룩스 라이크 마이 바디 워니더 데이 오f"
+      "en": "It looks like she's moved closer again.",
+      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
+      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Great. You made room for the cat, not me.",
+      "ko": "잘했네. 내 자리 말고 고양이 자리를 만들었네.",
+      "kr": "그뤠잇 유 메이드 루움 f퍼r 더 캣 낫 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should ask her, not me.",
+      "ko": "나 말고 얘한테 부탁해야 할 것 같은데.",
+      "kr": "아이 씽켜 셔래스크 허r 낫 미"
      }
     ],
     "drills": [
      {
-      "en": "I had to wait outside.",
-      "ko": "밖에서 기다려야 했어요.",
-      "kr": "아이 해드 터 웨이라웃싸이드"
-     },
-     {
-      "en": "She had to change trains.",
-      "ko": "그녀는 기차를 갈아타야 했어요.",
-      "kr": "쉬 해드 터 체인지 트레인z"
-     },
-     {
-      "en": "Did you have to pay again?",
-      "ko": "다시 돈을 내야 했어요?",
-      "kr": "디저 해f터 페이 어겐"
-     },
-     {
-      "en": "We didn't have to rush.",
-      "ko": "우리는 서두를 필요가 없었어요.",
-      "kr": "위 디든 해f터 러쉬"
-     },
-     {
-      "en": "I had to go back for my bag.",
-      "ko": "가방 때문에 돌아가야 했어요.",
-      "kr": "아이 해드 터 고우 백 f퍼r 마이 백"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I had to ~",
-      "body": "~해야 했어요. 과거에 필요했던 행동을 말해요. 233 추가 14 I have to의 과거형이에요."
-     }
-    ],
-    "chunks": [
-     [
-      "I had to lie",
-      "아이 해드 터 라이",
-      "누워야 했어요"
-     ],
-     [
-      "down after I ate.",
-      "다우내f터r 아이 에잇",
-      "먹고 나서"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/n/ down after",
-      "down 끝 n을 after에 이어 다우내f터로 말해요."
-     ],
-     [
-      "/eɪ/ ate",
-      "ate는 에잇. eat의 이이트와 구별해요."
-     ]
-    ],
-    "mistake": "I had to drove ✗ → I had to drive. 과거 표시는 had에 있으므로 to 뒤는 동사원형이에요.",
-    "similar": "It was necessary. (그럴 필요가 있었어요.)",
-    "category": "운동/휴식",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-back-needs-rest-04-looks",
-   "sentence": "It looks like my body wanted a day off.",
-   "meaning": "제 몸이 하루 쉬고 싶었던 것 같아요.",
-   "reading": null,
-   "phonetic_kr": "잇 룩스 라이크 마이 바디 워니더 데이 오f",
-   "order_index": 4,
-   "explanation": {
-    "key": "It looks like ~ = ~인 것 같아요. 보이는 모습이나 상황을 바탕으로 추측해요.",
-    "anchor": "싶었던 것 같아요",
-    "situation": "Liam이 스쿼트 후 허리 상태를 묻는다. 평소와 다른 통증과 식사 후 잠을 잔 일기를 되돌아본다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "How's your back after those squats?",
-      "ko": "그 스쿼트 하고 나서 허리는 어때요?",
-      "kr": "하우z 여r 배캐f터 도우z 스콰츠"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I've been having pain I haven't felt before.",
-      "ko": "전에는 느껴보지 못한 통증이 계속 있어요.",
-      "kr": "아이v 빈 해v잉 페이나이 해븐 f펠트 비f포어r"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "What about the pain you mentioned in your legs?",
-      "ko": "말했던 다리 통증은요?",
-      "kr": "와러바웃 더 페인 여 멘션딘 여r 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It feels like even my clothes hurt my legs.",
-      "ko": "옷마저 다리를 아프게 하는 것 같아요.",
-      "kr": "잇 f피일z 라이키이v언 마이 클로우즈 허r트 마이 레그z"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did you take a break?",
-      "ko": "쉬기는 했어요?",
-      "kr": "디저 테이커 브레익"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I had to lie down after I ate.",
-      "ko": "먹고 나서 누워야 했어요.",
-      "kr": "아이 해드 터 라이 다우내f터r 아이 에잇"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Did resting help you figure out what was wrong?",
-      "ko": "쉬니까 뭐가 문제였는지 알겠던가요?",
-      "kr": "디드 레스팅 헬프 여 f피겨r 아웃 왓 워z 롱"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It looks like my body wanted a day off.",
-      "ko": "제 몸이 하루 쉬고 싶었던 것 같아요.",
-      "kr": "잇 룩스 라이크 마이 바디 워니더 데이 오f"
-     }
-    ],
-    "drills": [
-     {
-      "en": "It looks like the shop is closed.",
-      "ko": "가게가 닫힌 것 같아요.",
-      "kr": "잇 룩스 라이크 더 샤피z 클로우z드"
+      "en": "It looks like our taxi is here.",
+      "ko": "우리 택시가 온 것 같아요.",
+      "kr": "잇 룩스 라이카우어r 택씨 이z 히어r"
      },
      {
       "en": "Does it look like rain?",
-      "ko": "비가 올 것 같아 보여요?",
+      "ko": "비가 올 것 같아요?",
       "kr": "더짓 룩 라이크 레인"
      },
      {
-      "en": "This looks like the right entrance.",
-      "ko": "여기가 맞는 입구 같아요.",
-      "kr": "디스 룩스 라이크 더 라이렌트런스"
+      "en": "They look like they're ready to leave.",
+      "ko": "떠날 준비가 된 것 같아요.",
+      "kr": "데이 룩 라이크 데어r 레디 터 리이v"
      },
      {
-      "en": "It doesn't look like anyone is home.",
-      "ko": "집에 아무도 없는 것 같아요.",
-      "kr": "잇 더즌 룩 라이캐니워니z 호움"
-     },
-     {
-      "en": "From here, it looks like a small park.",
-      "ko": "여기서 보면 작은 공원 같아요.",
-      "kr": "f럼 히어r 잇 룩스 라이커 스몰 파r크"
+      "en": "It didn't look like the same place.",
+      "ko": "같은 곳으로 보이지 않았어요.",
+      "kr": "잇 디든 룩 라이크 더 쎄임 플레이스"
      }
     ],
     "grammar": [
      {
       "struct": "It looks like ~",
-      "body": "~인 것 같아요. 보이는 모습이나 상황을 바탕으로 추측해요."
+      "body": "보니 ~인 것 같아요. 눈앞의 모습이나 화면을 근거로 짐작해요."
      }
     ],
     "chunks": [
      [
-      "It looks like my body",
-      "잇 룩스 라이크 마이 바디",
-      "제 몸이 ~한 것 같아요"
+      "It looks like she's moved",
+      "잇 룩스 라이크 쉬z 무우v드",
+      "보니까 얘가 움직인 것 같아"
      ],
      [
-      "wanted a day off.",
-      "워니더 데이 오f",
-      "하루 쉬고 싶었던"
+      "closer again.",
+      "클로우써r 어겐",
+      "다시 더 가까이"
      ]
     ],
     "phonemes": [
      [
-      "/d/ wanted a",
-      "wanted 마지막 d가 a로 이어져 워니더로 들려요."
-     ],
-     [
-      "/f/ off",
-      "off 끝의 f를 아랫입술로 마무리해요."
+      "/ʊ/ looks",
+      "looks는 짧은 모음으로 룩스, like는 라이크예요. like 뒤 모음은 이어 적어요."
      ]
     ],
-    "mistake": "It looks like tired ✗ → It looks tired 또는 It looks like he's tired. like 뒤에는 명사나 절이 와요.",
+    "mistake": "It look like ✗ → It looks like. 주어가 it이므로 looks를 써요.",
     "similar": "It seems that way. (그런 것 같아요.)",
-    "category": "운동/휴식",
+    "category": "생활/가족",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-bed-space-for-three-04-should",
+   "sentence": "I think you should ask her, not me.",
+   "meaning": "나 말고 얘한테 부탁해야 할 것 같은데.",
+   "reading": null,
+   "phonetic_kr": "아이 씽켜 셔래스크 허r 낫 미",
+   "order_index": 4,
+   "explanation": {
+    "key": "I think you should ~ = ~하는 게 좋겠어요. 내 판단임을 밝히며 조언해요.",
+    "anchor": "부탁해야 할 것 같은데",
+    "situation": "나니를 깨우지 않고 소연의 자리를 만들려 한다. 고양이가 다시 가까이 온다는 즉석 상황으로 마무리하고, 잠자리 취향이나 매일의 반복 행동을 추가하지 않는다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Move over. I need some room in this bed.",
+      "ko": "좀 비켜 봐. 나도 잘 자리 있어야지.",
+      "kr": "무우v 오우버r 아이 니이드 썸 루우민 디스 베드"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I don't think I can move without waking her.",
+      "ko": "얘 안 깨우고는 못 움직일 것 같아.",
+      "kr": "아이 돈 씽카이 컨 무우v 위다웃 웨이킹 허r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Just slide the blanket that's under your arm.",
+      "ko": "네 팔 밑에 있는 이불만 좀 밀어.",
+      "kr": "저스 슬라이드 더 블랭킷 댓썬더r 여r 아r음"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you lift the blanket she's lying on?",
+      "ko": "얘가 누워 있는 이불 좀 들어줄래?",
+      "kr": "컨 여 리f트 더 블랭킷 쉬z 라이잉 온"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "There. She's still asleep. Now move.",
+      "ko": "됐다. 아직 자네. 이제 움직여.",
+      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like she's moved closer again.",
+      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
+      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Great. You made room for the cat, not me.",
+      "ko": "잘했네. 내 자리 말고 고양이 자리를 만들었네.",
+      "kr": "그뤠잇 유 메이드 루움 f퍼r 더 캣 낫 미"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should ask her, not me.",
+      "ko": "나 말고 얘한테 부탁해야 할 것 같은데.",
+      "kr": "아이 씽켜 셔래스크 허r 낫 미"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I think you should take a break.",
+      "ko": "좀 쉬시는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 테이커 브레이크"
+     },
+     {
+      "en": "Do you think I should call?",
+      "ko": "제가 전화하는 게 좋을까요?",
+      "kr": "더여 씽카이 슈드 콜"
+     },
+     {
+      "en": "She thinks we should wait.",
+      "ko": "그녀는 우리가 기다리는 게 좋겠대요.",
+      "kr": "쉬 씽크스 위 슈드 웨잇"
+     },
+     {
+      "en": "I don't think you should rush.",
+      "ko": "서두르지 않는 게 좋겠어요.",
+      "kr": "아이 돈 씽켜 슈드 러쉬"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I think you should ~",
+      "body": "~하는 게 좋겠어요. 내 판단임을 밝히며 조언해요."
+     }
+    ],
+    "chunks": [
+     [
+      "I think you should ask her,",
+      "아이 씽켜 셔래스크 허r",
+      "얘한테 부탁해야 할 것 같은데"
+     ],
+     [
+      "not me.",
+      "낫 미",
+      "나 말고"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/kjə/ think you",
+      "think you는 씽켜로 붙여 말해요. should는 약형 셔드이며 ask 앞에서 d가 가볍게 굴러 셔래스크로 이어져요."
+     ],
+     [
+      "/r/ her",
+      "her 끝의 r을 남겨 허r로 말해요. 쉼표 뒤 not me는 대비하는 말이므로 따로 이어 말해요."
+     ]
+    ],
+    "mistake": "I think you should to ask ✗ → I think you should ask. should 뒤에는 to 없이 동사원형을 써요.",
+    "similar": "Ask her instead. (대신 얘한테 부탁해.)",
+    "category": "생활/가족",
     "frequency": 9
    }
   }

@@ -4,512 +4,500 @@
  "date": "2026-10-26",
  "cards": [
   {
-   "id": "en-personal-pork-thin-slices-01-should",
-   "sentence": "I think you should try the place I went to.",
-   "meaning": "제가 갔던 곳에 가보는 게 좋겠어요.",
+   "id": "en-personal-gyeongseop-taxi-screen-01-let",
+   "sentence": "Let me try mine while you do that.",
+   "meaning": "형, 그거 하시는 동안 제 걸로 해볼게요.",
    "reading": null,
-   "phonetic_kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투",
+   "phonetic_kr": "레미 트라이 마인 와일 여 두 댓",
    "order_index": 1,
    "explanation": {
-    "key": "I think you should ~ = ~하는 게 좋겠어요. 상대에게 도움이 될 행동을 추천해요.",
-    "anchor": "가보는 게 좋겠어요",
-    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
+    "key": "Let me ~ = 제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요.",
+    "anchor": "제 걸로 해볼게요",
+    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
     "miniDialogue": [
      {
       "speaker": "B",
-      "name": "Tom",
-      "en": "Do you know a place that serves good boiled pork?",
-      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
-      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
+      "name": "정경섭",
+      "en": "This taxi app keeps asking me to sign in.",
+      "ko": "이 택시 앱은 자꾸 로그인하라네.",
+      "kr": "디스 택씨 앱 키입쌔스킹 미 터 싸이닌"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should try the place I went to.",
-      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
-      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
+      "en": "Let me try mine while you do that.",
+      "ko": "형, 그거 하시는 동안 제 걸로 해볼게요.",
+      "kr": "레미 트라이 마인 와일 여 두 댓"
      },
      {
       "speaker": "B",
-      "name": "Tom",
-      "en": "What made it so good?",
-      "ko": "뭐가 그렇게 좋았어요?",
-      "kr": "왓 메이딧 쏘우 굿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, the meat is lean and sliced thin.",
-      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
-      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Is it the fat you don't like?",
-      "ko": "비계가 싫으신 거예요?",
-      "kr": "이짓 더 f팻 여 돈 라이크"
+      "name": "정경섭",
+      "en": "Do you know what it wants me to verify?",
+      "ko": "나한테 뭘 인증하라는 건지 알겠냐?",
+      "kr": "더여 노우 와릿 원츠 미 터 v베러f파이"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I don't like that texture.",
-      "ko": "그 식감을 안 좋아해요.",
-      "kr": "아이 돈 라이크 댓 텍스처r"
+      "en": "You don't have to keep trying. I've booked one.",
+      "ko": "계속 안 하셔도 돼요. 내가 택시 잡았어.",
+      "kr": "유 돈 해f터 키입 트라잉 아이v 북트 원"
      },
      {
       "speaker": "B",
-      "name": "Tom",
-      "en": "Sounds like you inspected every slice.",
-      "ko": "한 점 한 점 심사한 것 같네요.",
-      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
+      "name": "정경섭",
+      "en": "Already? Where is it?",
+      "ko": "벌써? 어디 있는데?",
+      "kr": "올레디 웨어r 이짓"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just wanted to have dinner.",
-      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 해v 디너r"
+      "en": "It looks like the taxi I booked is here.",
+      "ko": "형, 내가 잡은 택시 온 것 같은데.",
+      "kr": "잇 룩스 라이크 더 택씨 아이 북티z 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Then what am I supposed to do with this screen?",
+      "ko": "그럼 이 화면은 어쩌라는 거냐?",
+      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should close it and get in.",
+      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
+      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
      }
     ],
     "drills": [
      {
-      "en": "I think you should check the address.",
-      "ko": "주소를 확인하는 게 좋겠어요.",
-      "kr": "아이 씽켜 슈드 첵 디 어드레스"
+      "en": "Let me carry the bag.",
+      "ko": "가방은 제가 들게요.",
+      "kr": "레미 캐리 더 백"
      },
      {
-      "en": "Do you think we should book a table?",
-      "ko": "우리가 자리를 예약하는 게 좋을까요?",
-      "kr": "더여 씽크 위 슈드 부커 테이블"
+      "en": "Can you let me finish?",
+      "ko": "제 말을 끝까지 하게 해 주실래요?",
+      "kr": "컨 여 렛 미 f피니쉬"
      },
      {
-      "en": "She thinks you should ask at the desk.",
-      "ko": "그녀는 프런트에 물어보는 게 좋겠다고 해요.",
-      "kr": "쉬 씽크스 여 셔대스컷 더 데스크"
+      "en": "Just let me check one thing.",
+      "ko": "하나만 확인할게요.",
+      "kr": "저스 렛 미 체크 원 씽"
      },
      {
-      "en": "I think you should take the earlier train.",
-      "ko": "더 이른 기차를 타는 게 좋겠어요.",
-      "kr": "아이 씽켜 슈드 테이크 디 어r리어r 트레인"
+      "en": "Let us know when you're ready.",
+      "ko": "준비되면 알려 주세요.",
+      "kr": "레러스 노우 웬 여r 레디"
+     },
+     {
+      "en": "Let me see what you mean.",
+      "ko": "무슨 뜻인지 좀 볼게요.",
+      "kr": "레미 씨이 왓처 미인"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "Let me ~",
+      "body": "제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요."
+     }
+    ],
+    "chunks": [
+     [
+      "Let me try mine",
+      "레미 트라이 마인",
+      "제 걸로 해볼게요"
+     ],
+     [
+      "while you do that.",
+      "와일 여 두 댓",
+      "형이 그거 하시는 동안"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/lɛmi/ let me",
+      "let me는 자연스러운 회화에서 레미로 이어져요."
+     ]
+    ],
+    "mistake": "Let me to hold ✗ → Let me hold. me 다음에 바로 동사원형을 써요.",
+    "similar": "I'll do that. (제가 할게요.)",
+    "category": "생활/친구",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-gyeongseop-taxi-screen-02-donthave",
+   "sentence": "You don't have to keep trying. I've booked one.",
+   "meaning": "계속 안 하셔도 돼요. 내가 택시 잡았어.",
+   "reading": null,
+   "phonetic_kr": "유 돈 해f터 키입 트라잉 아이v 북트 원",
+   "order_index": 2,
+   "explanation": {
+    "key": "You don't have to ~ = ~하지 않아도 돼요. 의무가 없다는 뜻이지 금지는 아니에요.",
+    "anchor": "계속 안 하셔도 돼요",
+    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "This taxi app keeps asking me to sign in.",
+      "ko": "이 택시 앱은 자꾸 로그인하라네.",
+      "kr": "디스 택씨 앱 키입쌔스킹 미 터 싸이닌"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me try mine while you do that.",
+      "ko": "형, 그거 하시는 동안 제 걸로 해볼게요.",
+      "kr": "레미 트라이 마인 와일 여 두 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Do you know what it wants me to verify?",
+      "ko": "나한테 뭘 인증하라는 건지 알겠냐?",
+      "kr": "더여 노우 와릿 원츠 미 터 v베러f파이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to keep trying. I've booked one.",
+      "ko": "계속 안 하셔도 돼요. 내가 택시 잡았어.",
+      "kr": "유 돈 해f터 키입 트라잉 아이v 북트 원"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Already? Where is it?",
+      "ko": "벌써? 어디 있는데?",
+      "kr": "올레디 웨어r 이짓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like the taxi I booked is here.",
+      "ko": "형, 내가 잡은 택시 온 것 같은데.",
+      "kr": "잇 룩스 라이크 더 택씨 아이 북티z 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Then what am I supposed to do with this screen?",
+      "ko": "그럼 이 화면은 어쩌라는 거냐?",
+      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should close it and get in.",
+      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
+      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
+     }
+    ],
+    "drills": [
+     {
+      "en": "You don't have to wait for me.",
+      "ko": "저를 기다리지 않아도 돼요.",
+      "kr": "유 돈 해f터 웨잇 f퍼r 미"
+     },
+     {
+      "en": "We don't have to leave yet.",
+      "ko": "아직 떠나지 않아도 돼요.",
+      "kr": "위 돈 해f터 리이v 옛"
+     },
+     {
+      "en": "Do I have to do this now?",
+      "ko": "지금 이걸 해야 해요?",
+      "kr": "두 아이 해f터 두 디스 나우"
+     },
+     {
+      "en": "She didn't have to pay.",
+      "ko": "그녀는 돈을 내지 않아도 됐어요.",
+      "kr": "쉬 디든 해f터 페이"
+     },
+     {
+      "en": "You don't have to bring anything.",
+      "ko": "아무것도 안 가져오셔도 돼요.",
+      "kr": "유 돈 해f터 브링 애니씽"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "You don't have to ~",
+      "body": "~하지 않아도 돼요. 의무가 없다는 뜻이지 금지는 아니에요."
+     }
+    ],
+    "chunks": [
+     [
+      "You don't have to keep trying.",
+      "유 돈 해f터 키입 트라잉",
+      "계속 시도 안 하셔도 돼요"
+     ],
+     [
+      "I've booked one.",
+      "아이v 북트 원",
+      "내가 한 대 잡았어"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/hæftə/ have to",
+      "have to에서는 v가 무성음 f 쪽으로 바뀌어 해f터로 이어져요."
+     ]
+    ],
+    "mistake": "You mustn't는 하면 안 된다는 금지예요. 필요 없다는 뜻은 You don't have to예요.",
+    "similar": "There's no need to do that. (그렇게 할 필요는 없어요.)",
+    "category": "생활/친구",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-gyeongseop-taxi-screen-03-looks",
+   "sentence": "It looks like the taxi I booked is here.",
+   "meaning": "형, 내가 잡은 택시 온 것 같은데.",
+   "reading": null,
+   "phonetic_kr": "잇 룩스 라이크 더 택씨 아이 북티z 히어r",
+   "order_index": 3,
+   "explanation": {
+    "key": "It looks like ~ = 보니 ~인 것 같아요. 눈앞의 모습이나 화면을 근거로 짐작해요.",
+    "anchor": "온 것 같은데",
+    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "This taxi app keeps asking me to sign in.",
+      "ko": "이 택시 앱은 자꾸 로그인하라네.",
+      "kr": "디스 택씨 앱 키입쌔스킹 미 터 싸이닌"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me try mine while you do that.",
+      "ko": "형, 그거 하시는 동안 제 걸로 해볼게요.",
+      "kr": "레미 트라이 마인 와일 여 두 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Do you know what it wants me to verify?",
+      "ko": "나한테 뭘 인증하라는 건지 알겠냐?",
+      "kr": "더여 노우 와릿 원츠 미 터 v베러f파이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to keep trying. I've booked one.",
+      "ko": "계속 안 하셔도 돼요. 내가 택시 잡았어.",
+      "kr": "유 돈 해f터 키입 트라잉 아이v 북트 원"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Already? Where is it?",
+      "ko": "벌써? 어디 있는데?",
+      "kr": "올레디 웨어r 이짓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like the taxi I booked is here.",
+      "ko": "형, 내가 잡은 택시 온 것 같은데.",
+      "kr": "잇 룩스 라이크 더 택씨 아이 북티z 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Then what am I supposed to do with this screen?",
+      "ko": "그럼 이 화면은 어쩌라는 거냐?",
+      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should close it and get in.",
+      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
+      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It looks like our taxi is here.",
+      "ko": "우리 택시가 온 것 같아요.",
+      "kr": "잇 룩스 라이카우어r 택씨 이z 히어r"
+     },
+     {
+      "en": "Does it look like rain?",
+      "ko": "비가 올 것 같아요?",
+      "kr": "더짓 룩 라이크 레인"
+     },
+     {
+      "en": "They look like they're ready to leave.",
+      "ko": "떠날 준비가 된 것 같아요.",
+      "kr": "데이 룩 라이크 데어r 레디 터 리이v"
+     },
+     {
+      "en": "It didn't look like the same place.",
+      "ko": "같은 곳으로 보이지 않았어요.",
+      "kr": "잇 디든 룩 라이크 더 쎄임 플레이스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It looks like ~",
+      "body": "보니 ~인 것 같아요. 눈앞의 모습이나 화면을 근거로 짐작해요."
+     }
+    ],
+    "chunks": [
+     [
+      "It looks like the taxi",
+      "잇 룩스 라이크 더 택씨",
+      "택시가 ~인 것 같아"
+     ],
+     [
+      "I booked is here.",
+      "아이 북티z 히어r",
+      "내가 잡은 게 여기에 있어"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʊ/ looks",
+      "looks는 짧은 모음으로 룩스, like는 라이크예요. like 뒤 모음은 이어 적어요."
+     ]
+    ],
+    "mistake": "It look like ✗ → It looks like. 주어가 it이므로 looks를 써요.",
+    "similar": "It seems that way. (그런 것 같아요.)",
+    "category": "생활/친구",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-gyeongseop-taxi-screen-04-should",
+   "sentence": "I think you should close it and get in.",
+   "meaning": "형, 그건 닫고 타시면 될 것 같아요.",
+   "reading": null,
+   "phonetic_kr": "아이 씽켜 슈드 클로우z 이런 게린",
+   "order_index": 4,
+   "explanation": {
+    "key": "I think you should ~ = ~하는 게 좋겠어요. 내 판단임을 밝히며 조언해요.",
+    "anchor": "닫고 타시면 될 것 같아요",
+    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
+    "miniDialogue": [
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "This taxi app keeps asking me to sign in.",
+      "ko": "이 택시 앱은 자꾸 로그인하라네.",
+      "kr": "디스 택씨 앱 키입쌔스킹 미 터 싸이닌"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me try mine while you do that.",
+      "ko": "형, 그거 하시는 동안 제 걸로 해볼게요.",
+      "kr": "레미 트라이 마인 와일 여 두 댓"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Do you know what it wants me to verify?",
+      "ko": "나한테 뭘 인증하라는 건지 알겠냐?",
+      "kr": "더여 노우 와릿 원츠 미 터 v베러f파이"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You don't have to keep trying. I've booked one.",
+      "ko": "계속 안 하셔도 돼요. 내가 택시 잡았어.",
+      "kr": "유 돈 해f터 키입 트라잉 아이v 북트 원"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Already? Where is it?",
+      "ko": "벌써? 어디 있는데?",
+      "kr": "올레디 웨어r 이짓"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It looks like the taxi I booked is here.",
+      "ko": "형, 내가 잡은 택시 온 것 같은데.",
+      "kr": "잇 룩스 라이크 더 택씨 아이 북티z 히어r"
+     },
+     {
+      "speaker": "B",
+      "name": "정경섭",
+      "en": "Then what am I supposed to do with this screen?",
+      "ko": "그럼 이 화면은 어쩌라는 거냐?",
+      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I think you should close it and get in.",
+      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
+      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I think you should take a break.",
+      "ko": "좀 쉬시는 게 좋겠어요.",
+      "kr": "아이 씽켜 슈드 테이커 브레이크"
+     },
+     {
+      "en": "Do you think I should call?",
+      "ko": "제가 전화하는 게 좋을까요?",
+      "kr": "더여 씽카이 슈드 콜"
+     },
+     {
+      "en": "She thinks we should wait.",
+      "ko": "그녀는 우리가 기다리는 게 좋겠대요.",
+      "kr": "쉬 씽크스 위 슈드 웨잇"
+     },
+     {
+      "en": "I don't think you should rush.",
+      "ko": "서두르지 않는 게 좋겠어요.",
+      "kr": "아이 돈 씽켜 슈드 러쉬"
      }
     ],
     "grammar": [
      {
       "struct": "I think you should ~",
-      "body": "~하는 게 좋겠어요. 상대에게 도움이 될 행동을 추천해요."
+      "body": "~하는 게 좋겠어요. 내 판단임을 밝히며 조언해요."
      }
     ],
     "chunks": [
      [
-      "I think you should try",
-      "아이 씽켜 슈드 트라이",
-      "가보는 게 좋겠어요"
+      "I think you should",
+      "아이 씽켜 슈드",
+      "형이 ~하시는 게 좋겠어요"
      ],
      [
-      "the place I went to.",
-      "더 플레이싸이 웬 투",
-      "제가 갔던 곳을"
+      "close it and get in.",
+      "클로우z 이런 게린",
+      "그걸 닫고 타다"
      ]
     ],
     "phonemes": [
      [
-      "/k/ think you",
-      "think you는 gold 확정형 씽켜로 이어 말해요."
+      "/kjə/ think you",
+      "think you는 씽켜로 붙여 말해요. should는 여기서 슈드로 가볍게 이어져요."
      ],
      [
-      "/s/ place I",
-      "place 끝 s를 I와 이어 플레이싸이로 말해요."
+      "/t/ get in",
+      "get의 끝 t가 in으로 이어져 게린이 돼요."
      ]
     ],
-    "mistake": "I think you should to try ✗ → I think you should try. should 뒤는 to 없는 동사원형이에요.",
-    "similar": "You might want to try it. (한번 해보는 게 좋을 거예요. 더 완곡한 권유.)",
-    "category": "외식/추천",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-pork-thin-slices-02-thing",
-   "sentence": "The thing is, the meat is lean and sliced thin.",
-   "meaning": "실은 비계가 적고 얇게 썰어서 나와요.",
-   "reading": null,
-   "phonetic_kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬",
-   "order_index": 2,
-   "explanation": {
-    "key": "The thing is, ~ = 실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요.",
-    "anchor": "실은",
-    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Do you know a place that serves good boiled pork?",
-      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
-      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I think you should try the place I went to.",
-      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
-      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "What made it so good?",
-      "ko": "뭐가 그렇게 좋았어요?",
-      "kr": "왓 메이딧 쏘우 굿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, the meat is lean and sliced thin.",
-      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
-      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Is it the fat you don't like?",
-      "ko": "비계가 싫으신 거예요?",
-      "kr": "이짓 더 f팻 여 돈 라이크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't like that texture.",
-      "ko": "그 식감을 안 좋아해요.",
-      "kr": "아이 돈 라이크 댓 텍스처r"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Sounds like you inspected every slice.",
-      "ko": "한 점 한 점 심사한 것 같네요.",
-      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I just wanted to have dinner.",
-      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 해v 디너r"
-     }
-    ],
-    "drills": [
-     {
-      "en": "The thing is, we need more time.",
-      "ko": "실은 시간이 더 필요해요.",
-      "kr": "더 씽 이z 위 니이드 모어r 타임"
-     },
-     {
-      "en": "But the thing is, nobody has a key.",
-      "ko": "그런데 실은 아무도 열쇠가 없어요.",
-      "kr": "벗 더 씽 이z 노우바디 해저 키이"
-     },
-     {
-      "en": "Well, the thing is, the shop closes soon.",
-      "ko": "음, 실은 가게가 곧 닫아요.",
-      "kr": "웰 더 씽 이z 더 샵 클로우지z 쑤운"
-     },
-     {
-      "en": "The thing is, I left my phone at home.",
-      "ko": "실은 휴대폰을 집에 두고 왔어요.",
-      "kr": "더 씽 이z 아이 레f트 마이 f포우넛 호움"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "The thing is, ~",
-      "body": "실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요."
-     }
-    ],
-    "chunks": [
-     [
-      "The thing is,",
-      "더 씽 이z",
-      "실은"
-     ],
-     [
-      "the meat is lean and",
-      "더 미이리z 리이넌",
-      "고기에 비계가 적고"
-     ],
-     [
-      "sliced thin.",
-      "슬라이스 씬",
-      "얇게 썰었어요"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/t/ meat is",
-      "meat 끝 t가 is 앞에서 굴러 미이리z로 이어져요."
-     ],
-     [
-      "/θ/ thin",
-      "thin은 혀끝을 내밀어 소리를 내며 sin과 구별해요."
-     ]
-    ],
-    "mistake": "The thing are ✗ → The thing is. 뒤에는 주어와 동사가 있는 절을 이어 사정을 말해요.",
-    "similar": "Here's the problem. (문제는 이거예요.)",
-    "category": "외식/추천",
-    "frequency": 8
-   }
-  },
-  {
-   "id": "en-personal-pork-thin-slices-03-dislike",
-   "sentence": "I don't like that texture.",
-   "meaning": "그 식감을 안 좋아해요.",
-   "reading": null,
-   "phonetic_kr": "아이 돈 라이크 댓 텍스처r",
-   "order_index": 3,
-   "explanation": {
-    "key": "I don't like ~ = ~을 좋아하지 않아요. 음식의 특정 식감처럼 호불호의 대상을 정확히 말해요. 233 #29.",
-    "anchor": "안 좋아해요",
-    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Do you know a place that serves good boiled pork?",
-      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
-      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I think you should try the place I went to.",
-      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
-      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "What made it so good?",
-      "ko": "뭐가 그렇게 좋았어요?",
-      "kr": "왓 메이딧 쏘우 굿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, the meat is lean and sliced thin.",
-      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
-      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Is it the fat you don't like?",
-      "ko": "비계가 싫으신 거예요?",
-      "kr": "이짓 더 f팻 여 돈 라이크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't like that texture.",
-      "ko": "그 식감을 안 좋아해요.",
-      "kr": "아이 돈 라이크 댓 텍스처r"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Sounds like you inspected every slice.",
-      "ko": "한 점 한 점 심사한 것 같네요.",
-      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I just wanted to have dinner.",
-      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 해v 디너r"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I don't like the texture of this meat.",
-      "ko": "이 고기의 식감이 마음에 안 들어요.",
-      "kr": "아이 돈 라이크 더 텍스처r 어v 디스 미이트"
-     },
-     {
-      "en": "Do you like the sauce?",
-      "ko": "소스가 마음에 들어요?",
-      "kr": "더여 라이크 더 쏘스"
-     },
-     {
-      "en": "She doesn't like this color.",
-      "ko": "그녀는 이 색을 좋아하지 않아요.",
-      "kr": "쉬 더즌 라이크 디스 컬러r"
-     },
-     {
-      "en": "We don't like how this sounds.",
-      "ko": "우리는 이 말이 어떻게 들리는지가 마음에 안 들어요.",
-      "kr": "위 돈 라이크 하우 디스 싸운드z"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I don't like ~",
-      "body": "~을 좋아하지 않아요. 음식의 특정 식감처럼 호불호의 대상을 정확히 말해요. 233 #29."
-     }
-    ],
-    "chunks": [
-     [
-      "I don't like",
-      "아이 돈 라이크",
-      "좋아하지 않아요"
-     ],
-     [
-      "that texture.",
-      "댓 텍스처r",
-      "그 식감을"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/k/ texture",
-      "texture의 k를 없애지 않고 텍스처r로 말해요."
-     ],
-     [
-      "/ð/ that",
-      "that의 첫 th는 성대가 울리는 소리예요."
-     ]
-    ],
-    "mistake": "I no like ✗ → I don't like. 일반동사의 현재 부정에는 don't를 써요.",
-    "similar": "That texture isn't for me. (그 식감은 제 취향이 아니에요.)",
-    "category": "외식/추천",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-pork-thin-slices-04-wanted",
-   "sentence": "I just wanted to have dinner.",
-   "meaning": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
-   "reading": null,
-   "phonetic_kr": "아이 저스 워니드 터 해v 디너r",
-   "order_index": 4,
-   "explanation": {
-    "key": "I just wanted to ~ = 그냥 ~하고 싶었을 뿐이에요. 행동의 소박한 의도를 설명하거나 오해를 풀어요.",
-    "anchor": "먹고 싶었을 뿐이에요",
-    "situation": "Tom이 보쌈 맛집을 묻는다. 연희동에서 얇고 비계가 적은 보쌈을 맛있게 먹은 사실을 바탕으로 추천한다.",
-    "miniDialogue": [
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Do you know a place that serves good boiled pork?",
-      "ko": "삶은 돼지고기를 맛있게 하는 곳 알아요?",
-      "kr": "더여 노우 어 플레이스 댓 써r v즈 굿 보일드 포어r크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I think you should try the place I went to.",
-      "ko": "제가 갔던 곳에 가보는 게 좋겠어요.",
-      "kr": "아이 씽켜 슈드 트라이 더 플레이싸이 웬 투"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "What made it so good?",
-      "ko": "뭐가 그렇게 좋았어요?",
-      "kr": "왓 메이딧 쏘우 굿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "The thing is, the meat is lean and sliced thin.",
-      "ko": "실은 비계가 적고 얇게 썰어서 나와요.",
-      "kr": "더 씽 이z 더 미이리z 리이넌 슬라이스 씬"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Is it the fat you don't like?",
-      "ko": "비계가 싫으신 거예요?",
-      "kr": "이짓 더 f팻 여 돈 라이크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't like that texture.",
-      "ko": "그 식감을 안 좋아해요.",
-      "kr": "아이 돈 라이크 댓 텍스처r"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Sounds like you inspected every slice.",
-      "ko": "한 점 한 점 심사한 것 같네요.",
-      "kr": "싸운드z 라이켜 인스펙티데v리 슬라이스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I just wanted to have dinner.",
-      "ko": "저는 그냥 저녁을 먹고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 해v 디너r"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I just wanted to ask a question.",
-      "ko": "그냥 질문 하나 하고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 애스커 퀘스천"
-     },
-     {
-      "en": "She just wanted to say hello.",
-      "ko": "그녀는 그냥 인사하고 싶었을 뿐이에요.",
-      "kr": "쉬 저스 워니드 터 쎄이 헬로우"
-     },
-     {
-      "en": "Did you just want to look around?",
-      "ko": "그냥 둘러보고 싶었던 건가요?",
-      "kr": "디저 저스 원 터 루커라운드"
-     },
-     {
-      "en": "We just wanted to help.",
-      "ko": "우리는 그냥 돕고 싶었을 뿐이에요.",
-      "kr": "위 저스 워니드 터 헬프"
-     },
-     {
-      "en": "I just wanted to make sure you got home.",
-      "ko": "집에 도착했는지 확인하고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 메익 슈어r 여 갓 호움"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I just wanted to ~",
-      "body": "그냥 ~하고 싶었을 뿐이에요. 행동의 소박한 의도를 설명하거나 오해를 풀어요."
-     }
-    ],
-    "chunks": [
-     [
-      "I just wanted to",
-      "아이 저스 워니드 터",
-      "그냥 ~하고 싶었을 뿐이에요"
-     ],
-     [
-      "have dinner.",
-      "해v 디너r",
-      "저녁을 먹다"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/t/ just wanted",
-      "just 뒤 자음 w 앞에서는 t를 따로 내지 않아요."
-     ],
-     [
-      "/v/ have",
-      "have 끝 v는 아랫입술을 써서 남겨요."
-     ]
-    ],
-    "mistake": "I just wanted to had ✗ → I just wanted to have. wanted가 과거여도 to 뒤는 원형이에요.",
-    "similar": "That was all I wanted. (제가 원한 건 그게 전부였어요.)",
-    "category": "외식/추천",
+    "mistake": "I think you should to close ✗ → should close. should 뒤에는 동사원형이에요.",
+    "similar": "Maybe you could try that. (그렇게 해 보셔도 좋겠어요.)",
+    "category": "생활/친구",
     "frequency": 9
    }
   }

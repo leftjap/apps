@@ -4,517 +4,505 @@
  "date": "2026-10-29",
  "cards": [
   {
-   "id": "en-personal-walking-book-photo-01-mind",
-   "sentence": "Do you mind standing by the tree behind you?",
-   "meaning": "뒤쪽 나무 옆에 서주실래요?",
+   "id": "en-personal-photo-before-the-next-page-01-let",
+   "sentence": "Let me mark where I stopped reading.",
+   "meaning": "어디까지 읽었는지 표시만 할게요.",
    "reading": null,
-   "phonetic_kr": "더여 마인드 스탠딩 바이 더 트리이 비하인드 유",
+   "phonetic_kr": "레미 마r크 웨어r 아이 스탑트 리이딩",
    "order_index": 1,
    "explanation": {
-    "key": "Do you mind ~ = Do you mind + -ing는 상대에게 ~해 달라는 공손한 부탁이에요. Do you mind if I ~?는 제가 ~해도 괜찮을지 허락을 구해요. I don't mind -ing는 ~해도 괜찮다는 뜻이에요.",
-    "anchor": "서주실래요",
-    "situation": "산책 중 여행객의 사진을 찍어주다가 들고 있는 책에 관한 질문을 받는다. 산책 책을 제목에 끌려 펼쳤지만 내용에는 공감하지 못한 일기가 중심이다.",
+    "key": "Let me ~ = 제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요.",
+    "anchor": "표시만 할게요",
+    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Could you take a photo of us on our walk?",
-      "ko": "산책하는 저희 사진 좀 찍어주시겠어요?",
-      "kr": "커저 테이커 f포우토우 어v 어써나워r 워크"
+      "name": "Maya",
+      "en": "Could you take our photo? Sorry to interrupt your reading.",
+      "ko": "사진 좀 찍어 주실래요? 책 읽으시는데 죄송해요.",
+      "kr": "커저 테이카우어r f포우토우 쏘리 터 인터럽트 여r 리이딩"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind standing by the tree behind you?",
-      "ko": "뒤쪽 나무 옆에 서주실래요?",
-      "kr": "더여 마인드 스탠딩 바이 더 트리이 비하인드 유"
+      "en": "Let me mark where I stopped reading.",
+      "ko": "어디까지 읽었는지 표시만 할게요.",
+      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Sure. Is this the spot you meant?",
-      "ko": "네. 말씀하신 자리가 여기인가요?",
-      "kr": "슈어r 이z 디스 더 스팟 여 멘트"
+      "name": "Maya",
+      "en": "Thanks. We want the whole street behind us.",
+      "ko": "감사해요. 저희 뒤로 거리가 다 나왔으면 좋겠어요.",
+      "kr": "쌩크스 위 원 더 호울 스트리잇 비하인더스"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me get the whole tree in the picture.",
-      "ko": "나무 전체가 사진에 들어오게 찍을게요.",
-      "kr": "레미 겟 더 호울 트리이 인 더 픽처r"
+      "en": "You might want to stand where the light is better.",
+      "ko": "빛이 더 좋은 쪽에 서시는 게 좋겠어요.",
+      "kr": "유 마잇 워너 스탠드 웨어r 더 라이리z 베러r"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Is that book you're carrying about walking?",
-      "ko": "들고 계신 책은 산책에 관한 건가요?",
-      "kr": "이z 댓 북 여r 캐리잉 어바웃 워킹"
+      "name": "Maya",
+      "en": "Perfect. Are we both in the picture?",
+      "ko": "좋네요. 저희 둘 다 나오나요?",
+      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just wanted to see what it said about walking.",
-      "ko": "산책에 관해 무슨 말을 하나 보고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 씨이 와릿 쎄더바웃 워킹"
+      "en": "Yes. I was about to take it. Hold still.",
+      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
+      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Was it any good?",
-      "ko": "책은 괜찮았어요?",
-      "kr": "워지래니 굿"
+      "name": "Maya",
+      "en": "Thanks! One more, then back to your book.",
+      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
+      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like the title was the best part.",
-      "ko": "제목이 가장 좋았던 것 같아요.",
-      "kr": "잇 룩스 라이크 더 타이틀 워z 더 베스 파r트"
+      "en": "There's no rush. The title was the best part.",
+      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
+      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
      }
     ],
     "drills": [
      {
-      "en": "Do you mind moving your bag?",
-      "ko": "가방을 옮겨주시겠어요?",
-      "kr": "더여 마인드 무우v잉 여r 백"
+      "en": "Let me carry the bag.",
+      "ko": "가방은 제가 들게요.",
+      "kr": "레미 캐리 더 백"
      },
      {
-      "en": "Would you mind closing the door?",
-      "ko": "문을 닫아주시겠어요?",
-      "kr": "워저 마인드 클로우징 더 도어r"
+      "en": "Can you let me finish?",
+      "ko": "제 말을 끝까지 하게 해 주실래요?",
+      "kr": "컨 여 렛 미 f피니쉬"
      },
      {
-      "en": "I don't mind waiting here.",
-      "ko": "저는 여기서 기다려도 괜찮아요.",
-      "kr": "아이 돈 마인드 웨이링 히어r"
+      "en": "Just let me check one thing.",
+      "ko": "하나만 확인할게요.",
+      "kr": "저스 렛 미 체크 원 씽"
      },
      {
-      "en": "Do you mind if I sit here?",
-      "ko": "제가 여기 앉아도 괜찮을까요?",
-      "kr": "더여 마인디f 아이 씻 히어r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "Do you mind ~",
-      "body": "Do you mind + -ing는 상대에게 ~해 달라는 공손한 부탁이에요. Do you mind if I ~?는 제가 ~해도 괜찮을지 허락을 구해요. I don't mind -ing는 ~해도 괜찮다는 뜻이에요."
-     }
-    ],
-    "chunks": [
-     [
-      "Do you mind standing",
-      "더여 마인드 스탠딩",
-      "서주실래요"
-     ],
-     [
-      "by the tree behind you?",
-      "바이 더 트리이 비하인드 유",
-      "당신 뒤쪽 나무 옆에"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/ə/ do you",
-      "조동사 do와 비강세 you는 더여로 가볍게 이어져요."
-     ],
-     [
-      "/iː/ tree",
-      "tree는 트리이로 길게 내요."
-     ]
-    ],
-    "mistake": "Do you mind to stand ✗ → Do you mind standing. 상대에게 부탁하는 행동은 -ing형으로 이어요.",
-    "similar": "Could you stand over there? (저쪽에 서주실래요?)",
-    "category": "일상/산책",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-walking-book-photo-02-let",
-   "sentence": "Let me get the whole tree in the picture.",
-   "meaning": "나무 전체가 사진에 들어오게 찍을게요.",
-   "reading": null,
-   "phonetic_kr": "레미 겟 더 호울 트리이 인 더 픽처r",
-   "order_index": 2,
-   "explanation": {
-    "key": "Let me ~ = 본문의 Let me ~는 제가 ~하겠다는 자청이에요. Please let me ~는 제가 ~하도록 해달라는 허용 요청이에요. Can you let me know ~?는 상대에게 ~을 알려달라는 요청으로 구별해요.",
-    "anchor": "찍을게요",
-    "situation": "산책 중 여행객의 사진을 찍어주다가 들고 있는 책에 관한 질문을 받는다. 산책 책을 제목에 끌려 펼쳤지만 내용에는 공감하지 못한 일기가 중심이다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Could you take a photo of us on our walk?",
-      "ko": "산책하는 저희 사진 좀 찍어주시겠어요?",
-      "kr": "커저 테이커 f포우토우 어v 어써나워r 워크"
+      "en": "Let us know when you're ready.",
+      "ko": "준비되면 알려 주세요.",
+      "kr": "레러스 노우 웬 여r 레디"
      },
      {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Do you mind standing by the tree behind you?",
-      "ko": "뒤쪽 나무 옆에 서주실래요?",
-      "kr": "더여 마인드 스탠딩 바이 더 트리이 비하인드 유"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Sure. Is this the spot you meant?",
-      "ko": "네. 말씀하신 자리가 여기인가요?",
-      "kr": "슈어r 이z 디스 더 스팟 여 멘트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me get the whole tree in the picture.",
-      "ko": "나무 전체가 사진에 들어오게 찍을게요.",
-      "kr": "레미 겟 더 호울 트리이 인 더 픽처r"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Is that book you're carrying about walking?",
-      "ko": "들고 계신 책은 산책에 관한 건가요?",
-      "kr": "이z 댓 북 여r 캐리잉 어바웃 워킹"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I just wanted to see what it said about walking.",
-      "ko": "산책에 관해 무슨 말을 하나 보고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 씨이 와릿 쎄더바웃 워킹"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Was it any good?",
-      "ko": "책은 괜찮았어요?",
-      "kr": "워지래니 굿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It looks like the title was the best part.",
-      "ko": "제목이 가장 좋았던 것 같아요.",
-      "kr": "잇 룩스 라이크 더 타이틀 워z 더 베스 파r트"
-     }
-    ],
-    "drills": [
-     {
-      "en": "Let me hold the door.",
-      "ko": "제가 문을 잡아드릴게요.",
-      "kr": "레미 호울드 더 도어r"
-     },
-     {
-      "en": "Please let me finish this sentence.",
-      "ko": "이 문장은 끝까지 말하게 해주세요.",
-      "kr": "플리이z 레미 f피니쉬 디스 쎈턴스"
-     },
-     {
-      "en": "Can you let me know the price?",
-      "ko": "가격을 알려주실 수 있나요?",
-      "kr": "컨 여 레미 노우 더 프라이스"
-     },
-     {
-      "en": "Let me check which train we need.",
-      "ko": "어느 기차를 타야 하는지 확인할게요.",
-      "kr": "레미 첵 위치 트레인 위 니이드"
-     },
-     {
-      "en": "Just let me move this chair.",
-      "ko": "이 의자만 옮길게요.",
-      "kr": "저스 레미 무우v 디스 체어r"
+      "en": "Let me see what you mean.",
+      "ko": "무슨 뜻인지 좀 볼게요.",
+      "kr": "레미 씨이 왓처 미인"
      }
     ],
     "grammar": [
      {
       "struct": "Let me ~",
-      "body": "본문의 Let me ~는 제가 ~하겠다는 자청이에요. Please let me ~는 제가 ~하도록 해달라는 허용 요청이에요. Can you let me know ~?는 상대에게 ~을 알려달라는 요청으로 구별해요."
+      "body": "제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요."
      }
     ],
     "chunks": [
      [
-      "Let me get the whole tree",
-      "레미 겟 더 호울 트리이",
-      "나무 전체를 넣을게요"
+      "Let me mark",
+      "레미 마r크",
+      "표시만 할게요"
      ],
      [
-      "in the picture.",
-      "인 더 픽처r",
-      "사진 안에"
+      "where I stopped reading.",
+      "웨어r 아이 스탑트 리이딩",
+      "어디까지 읽었는지"
      ]
     ],
     "phonemes": [
      [
-      "/iː/ tree",
-      "tree의 긴 모음 다음 in으로 자연스럽게 넘어가요."
-     ],
-     [
-      "/r/ picture",
-      "picture 끝 r에서 혀를 입천장에 대지 않아요."
+      "/lɛmi/ let me",
+      "let me는 자연스러운 회화에서 레미로 이어져요."
      ]
     ],
-    "mistake": "Let me to take ✗ → Let me take. let 뒤 목적어 다음에는 to 없이 동사원형을 써요.",
-    "similar": "I'll do that. (제가 그걸 할게요.)",
-    "category": "일상/산책",
-    "frequency": 10
-   }
-  },
-  {
-   "id": "en-personal-walking-book-photo-03-wanted",
-   "sentence": "I just wanted to see what it said about walking.",
-   "meaning": "산책에 관해 무슨 말을 하나 보고 싶었을 뿐이에요.",
-   "reading": null,
-   "phonetic_kr": "아이 저스 워니드 터 씨이 와릿 쎄더바웃 워킹",
-   "order_index": 3,
-   "explanation": {
-    "key": "I just wanted to ~ = 그냥 ~하고 싶었을 뿐이에요. 행동의 소박한 의도를 설명하거나 오해를 풀어요.",
-    "anchor": "보고 싶었을 뿐이에요",
-    "situation": "산책 중 여행객의 사진을 찍어주다가 들고 있는 책에 관한 질문을 받는다. 산책 책을 제목에 끌려 펼쳤지만 내용에는 공감하지 못한 일기가 중심이다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Could you take a photo of us on our walk?",
-      "ko": "산책하는 저희 사진 좀 찍어주시겠어요?",
-      "kr": "커저 테이커 f포우토우 어v 어써나워r 워크"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Do you mind standing by the tree behind you?",
-      "ko": "뒤쪽 나무 옆에 서주실래요?",
-      "kr": "더여 마인드 스탠딩 바이 더 트리이 비하인드 유"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Sure. Is this the spot you meant?",
-      "ko": "네. 말씀하신 자리가 여기인가요?",
-      "kr": "슈어r 이z 디스 더 스팟 여 멘트"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me get the whole tree in the picture.",
-      "ko": "나무 전체가 사진에 들어오게 찍을게요.",
-      "kr": "레미 겟 더 호울 트리이 인 더 픽처r"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Is that book you're carrying about walking?",
-      "ko": "들고 계신 책은 산책에 관한 건가요?",
-      "kr": "이z 댓 북 여r 캐리잉 어바웃 워킹"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I just wanted to see what it said about walking.",
-      "ko": "산책에 관해 무슨 말을 하나 보고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 씨이 와릿 쎄더바웃 워킹"
-     },
-     {
-      "speaker": "A",
-      "name": "여행객",
-      "en": "Was it any good?",
-      "ko": "책은 괜찮았어요?",
-      "kr": "워지래니 굿"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It looks like the title was the best part.",
-      "ko": "제목이 가장 좋았던 것 같아요.",
-      "kr": "잇 룩스 라이크 더 타이틀 워z 더 베스 파r트"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I just wanted to ask a question.",
-      "ko": "그냥 질문 하나 하고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 애스커 퀘스천"
-     },
-     {
-      "en": "She just wanted to say hello.",
-      "ko": "그녀는 그냥 인사하고 싶었을 뿐이에요.",
-      "kr": "쉬 저스 워니드 터 쎄이 헬로우"
-     },
-     {
-      "en": "Did you just want to look around?",
-      "ko": "그냥 둘러보고 싶었던 건가요?",
-      "kr": "디저 저스 원 터 루커라운드"
-     },
-     {
-      "en": "We just wanted to help.",
-      "ko": "우리는 그냥 돕고 싶었을 뿐이에요.",
-      "kr": "위 저스 워니드 터 헬프"
-     },
-     {
-      "en": "I just wanted to make sure you got home.",
-      "ko": "집에 도착했는지 확인하고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 메익 슈어r 여 갓 호움"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I just wanted to ~",
-      "body": "그냥 ~하고 싶었을 뿐이에요. 행동의 소박한 의도를 설명하거나 오해를 풀어요."
-     }
-    ],
-    "chunks": [
-     [
-      "I just wanted to see",
-      "아이 저스 워니드 터 씨이",
-      "그냥 보고 싶었을 뿐이에요"
-     ],
-     [
-      "what it said about walking.",
-      "와릿 쎄더바웃 워킹",
-      "산책에 대해 무엇이라고 했는지"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/d/ said about",
-      "said 끝 d를 about에 이어 쎄더바웃으로 말해요."
-     ],
-     [
-      "/t/ what it",
-      "what it의 t는 가볍게 굴러 와릿으로 이어져요."
-     ]
-    ],
-    "mistake": "I just wanted to had ✗ → I just wanted to have. wanted가 과거여도 to 뒤는 원형이에요.",
-    "similar": "That was all I wanted. (제가 원한 건 그게 전부였어요.)",
-    "category": "일상/산책",
+    "mistake": "Let me to hold ✗ → Let me hold. me 다음에 바로 동사원형을 써요.",
+    "similar": "I'll do that. (제가 할게요.)",
+    "category": "여행/사진",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-walking-book-photo-04-looks",
-   "sentence": "It looks like the title was the best part.",
-   "meaning": "제목이 가장 좋았던 것 같아요.",
+   "id": "en-personal-photo-before-the-next-page-02-might",
+   "sentence": "You might want to stand where the light is better.",
+   "meaning": "빛이 더 좋은 쪽에 서시는 게 좋겠어요.",
    "reading": null,
-   "phonetic_kr": "잇 룩스 라이크 더 타이틀 워z 더 베스 파r트",
-   "order_index": 4,
+   "phonetic_kr": "유 마잇 워너 스탠드 웨어r 더 라이리z 베러r",
+   "order_index": 2,
    "explanation": {
-    "key": "It looks like ~ = ~인 것 같아요. 보이는 모습이나 상황을 바탕으로 추측해요.",
-    "anchor": "좋았던 것 같아요",
-    "situation": "산책 중 여행객의 사진을 찍어주다가 들고 있는 책에 관한 질문을 받는다. 산책 책을 제목에 끌려 펼쳤지만 내용에는 공감하지 못한 일기가 중심이다.",
+    "key": "You might want to ~ = ~하는 게 좋겠어요. 본문에서는 상대에게 선택권을 남기는 권유예요. We might want to ~도 함께 할 일을 조심스럽게 제안할 수 있어요. She might want to ~는 제삼자의 욕구를 추측하는 '~하고 싶을 수도 있어요'이고, Do you want to ~?는 원하는지 직접 묻는 질문이에요.",
+    "anchor": "서시는 게 좋겠어요",
+    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Could you take a photo of us on our walk?",
-      "ko": "산책하는 저희 사진 좀 찍어주시겠어요?",
-      "kr": "커저 테이커 f포우토우 어v 어써나워r 워크"
+      "name": "Maya",
+      "en": "Could you take our photo? Sorry to interrupt your reading.",
+      "ko": "사진 좀 찍어 주실래요? 책 읽으시는데 죄송해요.",
+      "kr": "커저 테이카우어r f포우토우 쏘리 터 인터럽트 여r 리이딩"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind standing by the tree behind you?",
-      "ko": "뒤쪽 나무 옆에 서주실래요?",
-      "kr": "더여 마인드 스탠딩 바이 더 트리이 비하인드 유"
+      "en": "Let me mark where I stopped reading.",
+      "ko": "어디까지 읽었는지 표시만 할게요.",
+      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Sure. Is this the spot you meant?",
-      "ko": "네. 말씀하신 자리가 여기인가요?",
-      "kr": "슈어r 이z 디스 더 스팟 여 멘트"
+      "name": "Maya",
+      "en": "Thanks. We want the whole street behind us.",
+      "ko": "감사해요. 저희 뒤로 거리가 다 나왔으면 좋겠어요.",
+      "kr": "쌩크스 위 원 더 호울 스트리잇 비하인더스"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me get the whole tree in the picture.",
-      "ko": "나무 전체가 사진에 들어오게 찍을게요.",
-      "kr": "레미 겟 더 호울 트리이 인 더 픽처r"
+      "en": "You might want to stand where the light is better.",
+      "ko": "빛이 더 좋은 쪽에 서시는 게 좋겠어요.",
+      "kr": "유 마잇 워너 스탠드 웨어r 더 라이리z 베러r"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Is that book you're carrying about walking?",
-      "ko": "들고 계신 책은 산책에 관한 건가요?",
-      "kr": "이z 댓 북 여r 캐리잉 어바웃 워킹"
+      "name": "Maya",
+      "en": "Perfect. Are we both in the picture?",
+      "ko": "좋네요. 저희 둘 다 나오나요?",
+      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just wanted to see what it said about walking.",
-      "ko": "산책에 관해 무슨 말을 하나 보고 싶었을 뿐이에요.",
-      "kr": "아이 저스 워니드 터 씨이 와릿 쎄더바웃 워킹"
+      "en": "Yes. I was about to take it. Hold still.",
+      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
+      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
      },
      {
       "speaker": "A",
-      "name": "여행객",
-      "en": "Was it any good?",
-      "ko": "책은 괜찮았어요?",
-      "kr": "워지래니 굿"
+      "name": "Maya",
+      "en": "Thanks! One more, then back to your book.",
+      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
+      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like the title was the best part.",
-      "ko": "제목이 가장 좋았던 것 같아요.",
-      "kr": "잇 룩스 라이크 더 타이틀 워z 더 베스 파r트"
+      "en": "There's no rush. The title was the best part.",
+      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
+      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
      }
     ],
     "drills": [
      {
-      "en": "It looks like the shop is closed.",
-      "ko": "가게가 닫힌 것 같아요.",
-      "kr": "잇 룩스 라이크 더 샤피z 클로우z드"
+      "en": "You might want to try this side.",
+      "ko": "이쪽에서 해 보시는 게 좋겠어요.",
+      "kr": "유 마잇 워너 트라이 디스 싸이드"
      },
      {
-      "en": "Does it look like rain?",
-      "ko": "비가 올 것 같아 보여요?",
-      "kr": "더짓 룩 라이크 레인"
+      "en": "She might want to sit down.",
+      "ko": "그녀는 앉고 싶을 수도 있어요.",
+      "kr": "쉬 마잇 워너 씻 다운"
      },
      {
-      "en": "This looks like the right entrance.",
-      "ko": "여기가 맞는 입구 같아요.",
-      "kr": "디스 룩스 라이크 더 라이렌트런스"
+      "en": "We might want to leave early.",
+      "ko": "우리 일찍 떠나는 게 좋겠어요.",
+      "kr": "위 마잇 워너 리이v 어r리"
      },
      {
-      "en": "It doesn't look like anyone is home.",
-      "ko": "집에 아무도 없는 것 같아요.",
-      "kr": "잇 더즌 룩 라이캐니워니z 호움"
-     },
-     {
-      "en": "From here, it looks like a small park.",
-      "ko": "여기서 보면 작은 공원 같아요.",
-      "kr": "f럼 히어r 잇 룩스 라이커 스몰 파r크"
+      "en": "Do you want to move closer?",
+      "ko": "더 가까이 오실래요?",
+      "kr": "더여 워너 무우v 클로우써r"
      }
     ],
     "grammar": [
      {
-      "struct": "It looks like ~",
-      "body": "~인 것 같아요. 보이는 모습이나 상황을 바탕으로 추측해요."
+      "struct": "You might want to ~",
+      "body": "~하는 게 좋겠어요. 본문에서는 상대에게 선택권을 남기는 권유예요. We might want to ~도 함께 할 일을 조심스럽게 제안할 수 있어요. She might want to ~는 제삼자의 욕구를 추측하는 '~하고 싶을 수도 있어요'이고, Do you want to ~?는 원하는지 직접 묻는 질문이에요."
      }
     ],
     "chunks": [
      [
-      "It looks like the title",
-      "잇 룩스 라이크 더 타이틀",
-      "제목이 ~인 것 같아요"
+      "You might want to stand",
+      "유 마잇 워너 스탠드",
+      "서시는 게 좋겠어요"
      ],
      [
-      "was the best part.",
-      "워z 더 베스 파r트",
-      "가장 좋았던 부분"
+      "where the light is better.",
+      "웨어r 더 라이리z 베러r",
+      "빛이 더 좋은 곳에"
      ]
     ],
     "phonemes": [
      [
-      "/t/ best part",
-      "best 뒤 p 앞에서는 t를 따로 내지 않고 베스 파r트로 말해요."
+      "/wɑnə/ want to",
+      "want to는 회화에서 워너로 이어져요. might는 마잇으로 앞에 남겨요."
      ],
      [
-      "/aɪ/ title",
-      "title 첫 모음은 아이. 강세를 첫 음절에 둬요."
+      "/t/ light is",
+      "light의 t가 is로 이어져 라이리z가 돼요. better의 t도 가볍게 굴려 베러r로 말해요."
      ]
     ],
-    "mistake": "It looks like tired ✗ → It looks tired 또는 It looks like he's tired. like 뒤에는 명사나 절이 와요.",
-    "similar": "It seems that way. (그런 것 같아요.)",
-    "category": "일상/산책",
+    "mistake": "You might want standing ✗ → You might want to stand. want 뒤는 to + 동사예요.",
+    "similar": "Maybe try this spot. (이 자리에서 해 보셔도 좋겠어요.)",
+    "category": "여행/사진",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-photo-before-the-next-page-03-wasabout",
+   "sentence": "Yes. I was about to take it. Hold still.",
+   "meaning": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
+   "reading": null,
+   "phonetic_kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸",
+   "order_index": 3,
+   "explanation": {
+    "key": "I was about to ~ = 막 ~하려던 참이었어요. 무언가 하기 직전이었다고 말해요.",
+    "anchor": "막 찍으려던 참이에요",
+    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Could you take our photo? Sorry to interrupt your reading.",
+      "ko": "사진 좀 찍어 주실래요? 책 읽으시는데 죄송해요.",
+      "kr": "커저 테이카우어r f포우토우 쏘리 터 인터럽트 여r 리이딩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me mark where I stopped reading.",
+      "ko": "어디까지 읽었는지 표시만 할게요.",
+      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Thanks. We want the whole street behind us.",
+      "ko": "감사해요. 저희 뒤로 거리가 다 나왔으면 좋겠어요.",
+      "kr": "쌩크스 위 원 더 호울 스트리잇 비하인더스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to stand where the light is better.",
+      "ko": "빛이 더 좋은 쪽에 서시는 게 좋겠어요.",
+      "kr": "유 마잇 워너 스탠드 웨어r 더 라이리z 베러r"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Perfect. Are we both in the picture?",
+      "ko": "좋네요. 저희 둘 다 나오나요?",
+      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. I was about to take it. Hold still.",
+      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
+      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Thanks! One more, then back to your book.",
+      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
+      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's no rush. The title was the best part.",
+      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
+      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I was about to call you.",
+      "ko": "막 전화하려던 참이었어요.",
+      "kr": "아이 워z 어바웃 터 콜 유"
+     },
+     {
+      "en": "We were about to leave.",
+      "ko": "막 떠나려던 참이었어요.",
+      "kr": "위 워r 어바웃 터 리이v"
+     },
+     {
+      "en": "Were you about to say something?",
+      "ko": "막 무슨 말을 하려던 참이었어요?",
+      "kr": "워r 여 어바웃 터 쎄이 썸씽"
+     },
+     {
+      "en": "She was about to close the door.",
+      "ko": "막 문을 닫으려던 참이었어요.",
+      "kr": "쉬 워z 어바웃 터 클로우z 더 도어r"
+     },
+     {
+      "en": "They were about to start dinner.",
+      "ko": "그들은 막 저녁 식사를 시작하려던 참이었어요.",
+      "kr": "데이 워r 어바웃 터 스타r트 디너r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I was about to ~",
+      "body": "막 ~하려던 참이었어요. 무언가 하기 직전이었다고 말해요."
+     }
+    ],
+    "chunks": [
+     [
+      "Yes.",
+      "예스",
+      "네"
+     ],
+     [
+      "I was about to take it.",
+      "아이 워z 어바웃 터 테이킷",
+      "막 찍으려던 참이에요"
+     ],
+     [
+      "Hold still.",
+      "호울드 스틸",
+      "잠깐 가만히 계세요"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/z/ was",
+      "was의 끝소리 z를 남겨 워z 어바웃 터로 말해요."
+     ]
+    ],
+    "mistake": "I was about doing ✗ → I was about to do. about to 뒤는 동사원형이에요.",
+    "similar": "I was just going to do that. (막 그걸 하려던 참이었어요.)",
+    "category": "여행/사진",
+    "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-photo-before-the-next-page-04-there",
+   "sentence": "There's no rush. The title was the best part.",
+   "meaning": "서두를 것 없어요. 제목이 제일 좋았거든요.",
+   "reading": null,
+   "phonetic_kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트",
+   "order_index": 4,
+   "explanation": {
+    "key": "There's no ~ = ~가 없어요. 명사 앞에 no를 붙여 없음을 말해요.",
+    "anchor": "서두를 것 없어요",
+    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Could you take our photo? Sorry to interrupt your reading.",
+      "ko": "사진 좀 찍어 주실래요? 책 읽으시는데 죄송해요.",
+      "kr": "커저 테이카우어r f포우토우 쏘리 터 인터럽트 여r 리이딩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Let me mark where I stopped reading.",
+      "ko": "어디까지 읽었는지 표시만 할게요.",
+      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Thanks. We want the whole street behind us.",
+      "ko": "감사해요. 저희 뒤로 거리가 다 나왔으면 좋겠어요.",
+      "kr": "쌩크스 위 원 더 호울 스트리잇 비하인더스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to stand where the light is better.",
+      "ko": "빛이 더 좋은 쪽에 서시는 게 좋겠어요.",
+      "kr": "유 마잇 워너 스탠드 웨어r 더 라이리z 베러r"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Perfect. Are we both in the picture?",
+      "ko": "좋네요. 저희 둘 다 나오나요?",
+      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Yes. I was about to take it. Hold still.",
+      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
+      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Thanks! One more, then back to your book.",
+      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
+      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's no rush. The title was the best part.",
+      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
+      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
+     }
+    ],
+    "drills": [
+     {
+      "en": "There's no need to hurry.",
+      "ko": "서두를 필요 없어요.",
+      "kr": "데어rz 노우 니이드 터 허리"
+     },
+     {
+      "en": "Is there any room left?",
+      "ko": "남은 자리가 있나요?",
+      "kr": "이z 데어r 애니 루움 레f트"
+     },
+     {
+      "en": "There was no one at the door.",
+      "ko": "문 앞에는 아무도 없었어요.",
+      "kr": "데어r 워z 노우 워넛 더 도어r"
+     },
+     {
+      "en": "We have no time to waste.",
+      "ko": "낭비할 시간이 없어요.",
+      "kr": "위 해v 노우 타임 터 웨이스트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "There's no ~",
+      "body": "~가 없어요. 명사 앞에 no를 붙여 없음을 말해요."
+     }
+    ],
+    "chunks": [
+     [
+      "There's no rush.",
+      "데어rz 노우 러쉬",
+      "서두를 것 없어요"
+     ],
+     [
+      "The title was the best part.",
+      "더 타이럴 워z 더 베스 파r트",
+      "제목이 제일 좋은 부분이었어요"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ðɛrz/ there's",
+      "there's는 데어rz로, th를 ㄷ처럼 세게 터뜨리지 않고 r과 z를 이어요."
+     ]
+    ],
+    "mistake": "There's no rush에서 rush는 서두름이에요. There's no a rush처럼 a를 넣지 않아요.",
+    "similar": "We have plenty of time. (시간은 충분해요.)",
+    "category": "여행/사진",
     "frequency": 9
    }
   }

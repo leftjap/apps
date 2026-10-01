@@ -4,518 +4,497 @@
  "date": "2026-10-23",
  "cards": [
   {
-   "id": "en-personal-cat-next-bed-01-there",
-   "sentence": "There's a cat tower beside my desk.",
-   "meaning": "제 책상 옆에 캣타워가 있어요.",
+   "id": "en-personal-washer-first-loads-01-let",
+   "sentence": "Let me hold the basket while you pull.",
+   "meaning": "네가 꺼내는 동안 내가 바구니 잡을게.",
    "reading": null,
-   "phonetic_kr": "데어rz 어 캣 타워r 비싸이드 마이 데스크",
+   "phonetic_kr": "레미 호울드 더 배스킷 와일 여 풀",
    "order_index": 1,
    "explanation": {
-    "key": "There's ~ = ~이 있어요. 상대에게 새로 알려주는 존재나 위치를 소개해요.",
-    "anchor": "캣타워가 있어요",
-    "situation": "집에 들른 Emma가 책상 옆에서 자는 나니를 본다. 나니가 캣타워에서 자다가 밤에는 침대로 따라오는 일상을 이야기한다.",
+    "key": "Let me ~ = 제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요.",
+    "anchor": "내가 바구니 잡을게",
+    "situation": "둘이 새 세탁기에서 이불을 꺼내고 다음 옷 빨래를 준비한다. 바구니를 함께 드는 행동과 가족을 잘못 만났다는 농담은 창작이며 새 생활 습관을 약속하지 않는다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Where does Nani sleep while you're working?",
-      "ko": "일하고 있을 때 나니는 어디서 자요?",
-      "kr": "웨어r 더z 나니 슬리입 와일 여r 워r킹"
+      "name": "소연",
+      "en": "The blankets are dry. Help me get them out.",
+      "ko": "이불 다 말랐어. 꺼내는 것 좀 도와줘.",
+      "kr": "더 블랭킷써r 드라이 헬프 미 겟 더마웃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a cat tower beside my desk.",
-      "ko": "제 책상 옆에 캣타워가 있어요.",
-      "kr": "데어rz 어 캣 타워r 비싸이드 마이 데스크"
+      "en": "Let me hold the basket while you pull.",
+      "ko": "네가 꺼내는 동안 내가 바구니 잡을게.",
+      "kr": "레미 호울드 더 배스킷 와일 여 풀"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she follow you when you go to bed?",
-      "ko": "잘 때도 따라와요?",
-      "kr": "더z 쉬 f팔로우 여 웬 여 고우 터 베드"
+      "name": "소연",
+      "en": "Feel this. It's like someone ironed them.",
+      "ko": "만져 봐. 누가 다림질한 것 같아.",
+      "kr": "f피일 디스 잇츠 라이크 썸워나이어r은드 덤"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's where she sleeps next.",
-      "ko": "다음에는 거기서 자요.",
-      "kr": "댓츠 웨어r 쉬 슬리입스 넥스트"
+      "en": "I can't wait to sleep under these tonight.",
+      "ko": "오늘 밤에 빨리 이거 덮고 자고 싶다.",
+      "kr": "아이 캔 웨잇 터 슬리이번더r 디이z 터나잇"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "So she gets up just to follow you?",
-      "ko": "따라가려고만 일어나는 거예요?",
-      "kr": "쏘우 쉬 겟썹 저스 터 f팔로우 유"
+      "name": "소연",
+      "en": "Put the clothes we left over there in next.",
+      "ko": "다음엔 저기 둔 옷 넣자.",
+      "kr": "풋 더 클로우즈 위 레f토우버r 데어r 인 넥스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, she goes straight back to sleep.",
-      "ko": "제가 알기로는 곧장 다시 자요.",
-      "kr": "애z f파r 애자이 노우 쉬 고우z 스트레잇 백 터 슬리입"
+      "en": "I'm not sure if another load will fit.",
+      "ko": "한 번 더 돌릴 빨래가 다 들어갈지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 어나더r 로우드 윌 f핏"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she know how busy your day is?",
-      "ko": "하루가 얼마나 바쁜지 나니도 알까요?",
-      "kr": "더z 쉬 노우 하우 비지 여r 데이 이z"
+      "name": "소연",
+      "en": "They'll fit. Poor thing, straight to work on day one.",
+      "ko": "들어가. 불쌍해라, 오자마자 일이네.",
+      "kr": "데일 f핏 푸어r 씽 스트레잇 터 워r콘 데이 원"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I don't think the work I do impresses her.",
-      "ko": "제가 하는 일이 나니에게 인상적인 것 같지는 않아요.",
-      "kr": "아이 돈 씽크 더 워r카이 두 임프레씨z 허r"
+      "en": "It sounds like it joined the wrong family.",
+      "ko": "들어 보니 가족을 잘못 만난 것 같네.",
+      "kr": "잇 싸운즈 라이킷 조인드 더 롱 f패밀리"
      }
     ],
     "drills": [
      {
-      "en": "There's a bag under the table.",
-      "ko": "탁자 아래 가방이 있어요.",
-      "kr": "데어rz 어 배건더r 더 테이블"
+      "en": "Let me carry the bag.",
+      "ko": "가방은 제가 들게요.",
+      "kr": "레미 캐리 더 백"
      },
      {
-      "en": "Is there a lift in this building?",
-      "ko": "이 건물에 엘리베이터가 있나요?",
-      "kr": "이z 데어r 어 리f틴 디스 빌딩"
+      "en": "Can you let me finish?",
+      "ko": "제 말을 끝까지 하게 해 주실래요?",
+      "kr": "컨 여 렛 미 f피니쉬"
      },
      {
-      "en": "There are two cups on the shelf.",
-      "ko": "선반에 컵 두 개가 있어요.",
-      "kr": "데어r 아r 투우 컵썬 더 셸f"
+      "en": "Just let me check one thing.",
+      "ko": "하나만 확인할게요.",
+      "kr": "저스 렛 미 체크 원 씽"
      },
      {
-      "en": "Look, there's a cat by the door.",
-      "ko": "봐요, 문 옆에 고양이가 있어요.",
-      "kr": "룩 데어rz 어 캣 바이 더 도어r"
+      "en": "Let us know when you're ready.",
+      "ko": "준비되면 알려 주세요.",
+      "kr": "레러스 노우 웬 여r 레디"
      },
      {
-      "en": "There's nothing left in the box.",
-      "ko": "상자에 남은 게 없어요.",
-      "kr": "데어rz 낫씽 레f틴 더 박스"
+      "en": "Let me see what you mean.",
+      "ko": "무슨 뜻인지 좀 볼게요.",
+      "kr": "레미 씨이 왓처 미인"
      }
     ],
     "grammar": [
      {
-      "struct": "There's ~",
-      "body": "~이 있어요. 상대에게 새로 알려주는 존재나 위치를 소개해요."
+      "struct": "Let me ~",
+      "body": "제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요."
      }
     ],
     "chunks": [
      [
-      "There's a cat tower",
-      "데어rz 어 캣 타워r",
-      "캣타워가 있어요"
+      "Let me hold the basket",
+      "레미 호울드 더 배스킷",
+      "내가 바구니를 잡을게"
      ],
      [
-      "beside my desk.",
-      "비싸이드 마이 데스크",
-      "제 책상 옆에"
+      "while you pull.",
+      "와일 여 풀",
+      "네가 꺼내는 동안"
      ]
     ],
     "phonemes": [
      [
-      "/z/ there's",
-      "there's 끝은 유성 z로 남기고 뒤 a와 매끄럽게 이어가요."
-     ],
-     [
-      "/aɪ/ beside",
-      "beside의 강세는 뒤쪽 side에 있어요."
+      "/lɛmi/ let me",
+      "let me는 자연스러운 회화에서 레미로 이어져요."
      ]
     ],
-    "mistake": "There's two chairs는 정식 형태가 아니에요. 둘 이상은 There are two chairs로 연습해요.",
-    "similar": "You can find it here. (그건 여기서 찾을 수 있어요.)",
-    "category": "일상/반려동물",
-    "frequency": 10
+    "mistake": "Let me to hold ✗ → Let me hold. me 다음에 바로 동사원형을 써요.",
+    "similar": "I'll do that. (제가 할게요.)",
+    "category": "생활/가족",
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-cat-next-bed-02-where",
-   "sentence": "That's where she sleeps next.",
-   "meaning": "다음에는 거기서 자요.",
+   "id": "en-personal-washer-first-loads-02-wait",
+   "sentence": "I can't wait to sleep under these tonight.",
+   "meaning": "오늘 밤에 빨리 이거 덮고 자고 싶다.",
    "reading": null,
-   "phonetic_kr": "댓츠 웨어r 쉬 슬리입스 넥스트",
+   "phonetic_kr": "아이 캔 웨잇 터 슬리이번더r 디이z 터나잇",
    "order_index": 2,
    "explanation": {
-    "key": "That's where ~ = 바로 거기에서 ~해요. 앞서 말한 장소를 받아 그곳에서 하는 일을 말해요. 233 #76.",
-    "anchor": "거기서 자요",
-    "situation": "집에 들른 Emma가 책상 옆에서 자는 나니를 본다. 나니가 캣타워에서 자다가 밤에는 침대로 따라오는 일상을 이야기한다.",
+    "key": "I can't wait to ~ = 빨리 ~하고 싶어요. can't wait to + 동사는 기대가 크다는 관용 표현이에요. 반면 Can you wait until tomorrow?는 기대 표현이 아니라 실제로 '내일까지 기다려 주실 수 있어요?'라고 요청하는 말이에요.",
+    "anchor": "빨리 이거 덮고 자고 싶다",
+    "situation": "둘이 새 세탁기에서 이불을 꺼내고 다음 옷 빨래를 준비한다. 바구니를 함께 드는 행동과 가족을 잘못 만났다는 농담은 창작이며 새 생활 습관을 약속하지 않는다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Where does Nani sleep while you're working?",
-      "ko": "일하고 있을 때 나니는 어디서 자요?",
-      "kr": "웨어r 더z 나니 슬리입 와일 여r 워r킹"
+      "name": "소연",
+      "en": "The blankets are dry. Help me get them out.",
+      "ko": "이불 다 말랐어. 꺼내는 것 좀 도와줘.",
+      "kr": "더 블랭킷써r 드라이 헬프 미 겟 더마웃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a cat tower beside my desk.",
-      "ko": "제 책상 옆에 캣타워가 있어요.",
-      "kr": "데어rz 어 캣 타워r 비싸이드 마이 데스크"
+      "en": "Let me hold the basket while you pull.",
+      "ko": "네가 꺼내는 동안 내가 바구니 잡을게.",
+      "kr": "레미 호울드 더 배스킷 와일 여 풀"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she follow you when you go to bed?",
-      "ko": "잘 때도 따라와요?",
-      "kr": "더z 쉬 f팔로우 여 웬 여 고우 터 베드"
+      "name": "소연",
+      "en": "Feel this. It's like someone ironed them.",
+      "ko": "만져 봐. 누가 다림질한 것 같아.",
+      "kr": "f피일 디스 잇츠 라이크 썸워나이어r은드 덤"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's where she sleeps next.",
-      "ko": "다음에는 거기서 자요.",
-      "kr": "댓츠 웨어r 쉬 슬리입스 넥스트"
+      "en": "I can't wait to sleep under these tonight.",
+      "ko": "오늘 밤에 빨리 이거 덮고 자고 싶다.",
+      "kr": "아이 캔 웨잇 터 슬리이번더r 디이z 터나잇"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "So she gets up just to follow you?",
-      "ko": "따라가려고만 일어나는 거예요?",
-      "kr": "쏘우 쉬 겟썹 저스 터 f팔로우 유"
+      "name": "소연",
+      "en": "Put the clothes we left over there in next.",
+      "ko": "다음엔 저기 둔 옷 넣자.",
+      "kr": "풋 더 클로우즈 위 레f토우버r 데어r 인 넥스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, she goes straight back to sleep.",
-      "ko": "제가 알기로는 곧장 다시 자요.",
-      "kr": "애z f파r 애자이 노우 쉬 고우z 스트레잇 백 터 슬리입"
+      "en": "I'm not sure if another load will fit.",
+      "ko": "한 번 더 돌릴 빨래가 다 들어갈지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 어나더r 로우드 윌 f핏"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she know how busy your day is?",
-      "ko": "하루가 얼마나 바쁜지 나니도 알까요?",
-      "kr": "더z 쉬 노우 하우 비지 여r 데이 이z"
+      "name": "소연",
+      "en": "They'll fit. Poor thing, straight to work on day one.",
+      "ko": "들어가. 불쌍해라, 오자마자 일이네.",
+      "kr": "데일 f핏 푸어r 씽 스트레잇 터 워r콘 데이 원"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I don't think the work I do impresses her.",
-      "ko": "제가 하는 일이 나니에게 인상적인 것 같지는 않아요.",
-      "kr": "아이 돈 씽크 더 워r카이 두 임프레씨z 허r"
+      "en": "It sounds like it joined the wrong family.",
+      "ko": "들어 보니 가족을 잘못 만난 것 같네.",
+      "kr": "잇 싸운즈 라이킷 조인드 더 롱 f패밀리"
      }
     ],
     "drills": [
      {
-      "en": "That's where I left my bag.",
-      "ko": "제가 가방을 둔 곳이 거기예요.",
-      "kr": "댓츠 웨어r 아이 레f트 마이 백"
+      "en": "I can't wait to try this.",
+      "ko": "빨리 이걸 해 보고 싶어요.",
+      "kr": "아이 캔 웨잇 터 트라이 디스"
      },
      {
-      "en": "Is that where we turn left?",
-      "ko": "거기서 좌회전하나요?",
-      "kr": "이z 댓 웨어r 위 터r언 레f트"
+      "en": "We can't wait to get home.",
+      "ko": "빨리 집에 가고 싶어요.",
+      "kr": "위 캔 웨잇 터 겟 호움"
      },
      {
-      "en": "Maybe that's where the sound comes from.",
-      "ko": "아마 소리가 나는 곳이 거기인가 봐요.",
-      "kr": "메이비 댓츠 웨어r 더 싸운드 컴z f럼"
+      "en": "Can you wait until tomorrow?",
+      "ko": "내일까지 기다려 주실 수 있어요?",
+      "kr": "컨 여 웨이런틸 터마로우"
      },
      {
-      "en": "That's where you can get tickets.",
-      "ko": "거기서 표를 살 수 있어요.",
-      "kr": "댓츠 웨어r 여 컨 겟 티킷츠"
+      "en": "She can't wait to see the photos.",
+      "ko": "사진을 빨리 보고 싶어 해요.",
+      "kr": "쉬 캔 웨잇 터 씨이 더 f포우토우z"
      }
     ],
     "grammar": [
      {
-      "struct": "That's where ~",
-      "body": "바로 거기에서 ~해요. 앞서 말한 장소를 받아 그곳에서 하는 일을 말해요. 233 #76."
+      "struct": "I can't wait to ~",
+      "body": "빨리 ~하고 싶어요. can't wait to + 동사는 기대가 크다는 관용 표현이에요. 반면 Can you wait until tomorrow?는 기대 표현이 아니라 실제로 '내일까지 기다려 주실 수 있어요?'라고 요청하는 말이에요."
      }
     ],
     "chunks": [
      [
-      "That's where",
-      "댓츠 웨어r",
-      "거기가 ~하는 곳이에요"
+      "I can't wait to",
+      "아이 캔 웨잇 터",
+      "빨리 ~하고 싶어"
      ],
      [
-      "she sleeps next.",
-      "쉬 슬리입스 넥스트",
-      "그녀가 다음에 자는"
+      "sleep under these tonight.",
+      "슬리이번더r 디이z 터나잇",
+      "오늘 밤에 이걸 덮고 자다"
      ]
     ],
     "phonemes": [
      [
-      "/iː/ sleeps",
-      "sleeps의 모음을 길게 하고 끝 ps를 짧게 닫아요."
-     ],
-     [
-      "/r/ where",
-      "where의 r은 혀끝을 입천장에 닿지 않게 유지해요."
+      "/eɪ/ wait",
+      "wait의 에이 이중모음을 남겨 웨잇 터로 말해요."
      ]
     ],
-    "mistake": "That's where does she sleep ✗ → That's where she sleeps. where 뒤도 주어+동사 어순이에요.",
-    "similar": "She sleeps there. (그녀는 거기서 자요.)",
-    "category": "일상/반려동물",
-    "frequency": 7
+    "mistake": "I can't wait sleeping ✗ → I can't wait to sleep. to 뒤에 동사원형을 붙여요.",
+    "similar": "I'm really looking forward to it. (정말 기대돼요.)",
+    "category": "생활/가족",
+    "frequency": 8
    }
   },
   {
-   "id": "en-personal-cat-next-bed-03-far",
-   "sentence": "As far as I know, she goes straight back to sleep.",
-   "meaning": "제가 알기로는 곧장 다시 자요.",
+   "id": "en-personal-washer-first-loads-03-unsure",
+   "sentence": "I'm not sure if another load will fit.",
+   "meaning": "한 번 더 돌릴 빨래가 다 들어갈지 모르겠네.",
    "reading": null,
-   "phonetic_kr": "애z f파r 애자이 노우 쉬 고우z 스트레잇 백 터 슬리입",
+   "phonetic_kr": "아임 낫 슈어r 이f 어나더r 로우드 윌 f핏",
    "order_index": 3,
    "explanation": {
-    "key": "As far as I know, ~ = 제가 알기로는 ~예요. 자신이 아는 범위를 밝혀 단정을 피할 때 써요.",
-    "anchor": "제가 알기로는",
-    "situation": "집에 들른 Emma가 책상 옆에서 자는 나니를 본다. 나니가 캣타워에서 자다가 밤에는 침대로 따라오는 일상을 이야기한다.",
+    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요. 확신이 없는 내용을 if 뒤에 붙여요.",
+    "anchor": "모르겠네",
+    "situation": "둘이 새 세탁기에서 이불을 꺼내고 다음 옷 빨래를 준비한다. 바구니를 함께 드는 행동과 가족을 잘못 만났다는 농담은 창작이며 새 생활 습관을 약속하지 않는다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Where does Nani sleep while you're working?",
-      "ko": "일하고 있을 때 나니는 어디서 자요?",
-      "kr": "웨어r 더z 나니 슬리입 와일 여r 워r킹"
+      "name": "소연",
+      "en": "The blankets are dry. Help me get them out.",
+      "ko": "이불 다 말랐어. 꺼내는 것 좀 도와줘.",
+      "kr": "더 블랭킷써r 드라이 헬프 미 겟 더마웃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a cat tower beside my desk.",
-      "ko": "제 책상 옆에 캣타워가 있어요.",
-      "kr": "데어rz 어 캣 타워r 비싸이드 마이 데스크"
+      "en": "Let me hold the basket while you pull.",
+      "ko": "네가 꺼내는 동안 내가 바구니 잡을게.",
+      "kr": "레미 호울드 더 배스킷 와일 여 풀"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she follow you when you go to bed?",
-      "ko": "잘 때도 따라와요?",
-      "kr": "더z 쉬 f팔로우 여 웬 여 고우 터 베드"
+      "name": "소연",
+      "en": "Feel this. It's like someone ironed them.",
+      "ko": "만져 봐. 누가 다림질한 것 같아.",
+      "kr": "f피일 디스 잇츠 라이크 썸워나이어r은드 덤"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's where she sleeps next.",
-      "ko": "다음에는 거기서 자요.",
-      "kr": "댓츠 웨어r 쉬 슬리입스 넥스트"
+      "en": "I can't wait to sleep under these tonight.",
+      "ko": "오늘 밤에 빨리 이거 덮고 자고 싶다.",
+      "kr": "아이 캔 웨잇 터 슬리이번더r 디이z 터나잇"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "So she gets up just to follow you?",
-      "ko": "따라가려고만 일어나는 거예요?",
-      "kr": "쏘우 쉬 겟썹 저스 터 f팔로우 유"
+      "name": "소연",
+      "en": "Put the clothes we left over there in next.",
+      "ko": "다음엔 저기 둔 옷 넣자.",
+      "kr": "풋 더 클로우즈 위 레f토우버r 데어r 인 넥스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, she goes straight back to sleep.",
-      "ko": "제가 알기로는 곧장 다시 자요.",
-      "kr": "애z f파r 애자이 노우 쉬 고우z 스트레잇 백 터 슬리입"
+      "en": "I'm not sure if another load will fit.",
+      "ko": "한 번 더 돌릴 빨래가 다 들어갈지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 어나더r 로우드 윌 f핏"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she know how busy your day is?",
-      "ko": "하루가 얼마나 바쁜지 나니도 알까요?",
-      "kr": "더z 쉬 노우 하우 비지 여r 데이 이z"
+      "name": "소연",
+      "en": "They'll fit. Poor thing, straight to work on day one.",
+      "ko": "들어가. 불쌍해라, 오자마자 일이네.",
+      "kr": "데일 f핏 푸어r 씽 스트레잇 터 워r콘 데이 원"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I don't think the work I do impresses her.",
-      "ko": "제가 하는 일이 나니에게 인상적인 것 같지는 않아요.",
-      "kr": "아이 돈 씽크 더 워r카이 두 임프레씨z 허r"
+      "en": "It sounds like it joined the wrong family.",
+      "ko": "들어 보니 가족을 잘못 만난 것 같네.",
+      "kr": "잇 싸운즈 라이킷 조인드 더 롱 f패밀리"
      }
     ],
     "drills": [
      {
-      "en": "As far as I know, the room is empty.",
-      "ko": "제가 알기로는 그 방이 비어 있어요.",
-      "kr": "애z f파r 애자이 노우 더 루우미z 엠프티"
+      "en": "I'm not sure if this will fit.",
+      "ko": "이게 들어갈지 잘 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 디스 윌 f핏"
      },
      {
-      "en": "But as far as I know, nobody called.",
-      "ko": "하지만 제가 알기로는 아무도 전화하지 않았어요.",
-      "kr": "버래z f파r 애자이 노우 노우바디 콜드"
+      "en": "We're not sure if the shop is open.",
+      "ko": "가게가 열었는지 잘 모르겠어요.",
+      "kr": "위어r 낫 슈어r 이f 더 샤피z 오우펀"
      },
      {
-      "en": "Well, as far as I know, we can park here.",
-      "ko": "음, 제가 알기로는 여기 주차할 수 있어요.",
-      "kr": "웰 애z f파r 애자이 노우 위 컨 파r크 히어r"
+      "en": "Are you sure we need both?",
+      "ko": "둘 다 필요한 게 확실해요?",
+      "kr": "아r 여 슈어r 위 니이드 보우쓰"
      },
      {
-      "en": "As far as I know, she left this morning.",
-      "ko": "제가 알기로는 그녀가 오늘 아침 떠났어요.",
-      "kr": "애z f파r 애자이 노우 쉬 레f트 디스 모어r닝"
+      "en": "She's not sure if she can come.",
+      "ko": "올 수 있을지 잘 모르겠대요.",
+      "kr": "쉬z 낫 슈어r 이f 쉬 컨 컴"
+     },
+     {
+      "en": "I wasn't sure if you were busy.",
+      "ko": "바쁘신지 확신이 없었어요.",
+      "kr": "아이 워z은 슈어r 이f 여 워r 비지"
      }
     ],
     "grammar": [
      {
-      "struct": "As far as I know, ~",
-      "body": "제가 알기로는 ~예요. 자신이 아는 범위를 밝혀 단정을 피할 때 써요."
+      "struct": "I'm not sure if ~",
+      "body": "~인지 잘 모르겠어요. 확신이 없는 내용을 if 뒤에 붙여요."
      }
     ],
     "chunks": [
      [
-      "As far as I know,",
-      "애z f파r 애자이 노우",
-      "제가 알기로는"
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~인지 모르겠어"
      ],
      [
-      "she goes straight back to sleep.",
-      "쉬 고우z 스트레잇 백 터 슬리입",
-      "곧장 다시 자요"
+      "another load will fit.",
+      "어나더r 로우드 윌 f핏",
+      "한 번 더 돌릴 분량이 들어갈지"
      ]
     ],
     "phonemes": [
      [
-      "/z/ as I",
-      "as의 z가 I와 이어져 애자이로 들려요."
-     ],
-     [
-      "/iː/ sleep",
-      "sleep은 슬리입으로 길게 내고 끝 p를 닫아요."
+      "/ʃʊr/ sure",
+      "sure 끝의 r을 남겨 슈어r로, if의 f는 윗니를 아랫입술에 대요."
      ]
     ],
-    "mistake": "As far I know ✗ → As far as I know. far 앞뒤의 as가 둘 다 필요해요.",
-    "similar": "To my knowledge, that's correct. (제가 아는 한 맞아요.)",
-    "category": "일상/반려동물",
-    "frequency": 7
+    "mistake": "I'm not sure if will it fit ✗ → if it will fit. if 뒤는 주어 다음 동사예요.",
+    "similar": "I don't know whether it will work. (될지 모르겠어요.)",
+    "category": "생활/가족",
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-cat-next-bed-04-dontthink",
-   "sentence": "I don't think the work I do impresses her.",
-   "meaning": "제가 하는 일이 나니에게 인상적인 것 같지는 않아요.",
+   "id": "en-personal-washer-first-loads-04-sounds",
+   "sentence": "It sounds like it joined the wrong family.",
+   "meaning": "들어 보니 가족을 잘못 만난 것 같네.",
    "reading": null,
-   "phonetic_kr": "아이 돈 씽크 더 워r카이 두 임프레씨z 허r",
+   "phonetic_kr": "잇 싸운즈 라이킷 조인드 더 롱 f패밀리",
    "order_index": 4,
    "explanation": {
-    "key": "I don't think ~ = ~인 것 같지 않아요. 단정적인 부정보다 부드럽게 자신의 판단을 말해요.",
-    "anchor": "인상적인 것 같지는 않아요",
-    "situation": "집에 들른 Emma가 책상 옆에서 자는 나니를 본다. 나니가 캣타워에서 자다가 밤에는 침대로 따라오는 일상을 이야기한다.",
+    "key": "It sounds like ~ = 들어 보니 ~인 것 같아요. 들은 말이나 소리로 짐작해요.",
+    "anchor": "들어 보니 가족을 잘못 만난 것 같네",
+    "situation": "둘이 새 세탁기에서 이불을 꺼내고 다음 옷 빨래를 준비한다. 바구니를 함께 드는 행동과 가족을 잘못 만났다는 농담은 창작이며 새 생활 습관을 약속하지 않는다.",
     "miniDialogue": [
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Where does Nani sleep while you're working?",
-      "ko": "일하고 있을 때 나니는 어디서 자요?",
-      "kr": "웨어r 더z 나니 슬리입 와일 여r 워r킹"
+      "name": "소연",
+      "en": "The blankets are dry. Help me get them out.",
+      "ko": "이불 다 말랐어. 꺼내는 것 좀 도와줘.",
+      "kr": "더 블랭킷써r 드라이 헬프 미 겟 더마웃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's a cat tower beside my desk.",
-      "ko": "제 책상 옆에 캣타워가 있어요.",
-      "kr": "데어rz 어 캣 타워r 비싸이드 마이 데스크"
+      "en": "Let me hold the basket while you pull.",
+      "ko": "네가 꺼내는 동안 내가 바구니 잡을게.",
+      "kr": "레미 호울드 더 배스킷 와일 여 풀"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she follow you when you go to bed?",
-      "ko": "잘 때도 따라와요?",
-      "kr": "더z 쉬 f팔로우 여 웬 여 고우 터 베드"
+      "name": "소연",
+      "en": "Feel this. It's like someone ironed them.",
+      "ko": "만져 봐. 누가 다림질한 것 같아.",
+      "kr": "f피일 디스 잇츠 라이크 썸워나이어r은드 덤"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's where she sleeps next.",
-      "ko": "다음에는 거기서 자요.",
-      "kr": "댓츠 웨어r 쉬 슬리입스 넥스트"
+      "en": "I can't wait to sleep under these tonight.",
+      "ko": "오늘 밤에 빨리 이거 덮고 자고 싶다.",
+      "kr": "아이 캔 웨잇 터 슬리이번더r 디이z 터나잇"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "So she gets up just to follow you?",
-      "ko": "따라가려고만 일어나는 거예요?",
-      "kr": "쏘우 쉬 겟썹 저스 터 f팔로우 유"
+      "name": "소연",
+      "en": "Put the clothes we left over there in next.",
+      "ko": "다음엔 저기 둔 옷 넣자.",
+      "kr": "풋 더 클로우즈 위 레f토우버r 데어r 인 넥스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "As far as I know, she goes straight back to sleep.",
-      "ko": "제가 알기로는 곧장 다시 자요.",
-      "kr": "애z f파r 애자이 노우 쉬 고우z 스트레잇 백 터 슬리입"
+      "en": "I'm not sure if another load will fit.",
+      "ko": "한 번 더 돌릴 빨래가 다 들어갈지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 어나더r 로우드 윌 f핏"
      },
      {
       "speaker": "A",
-      "name": "Emma",
-      "en": "Does she know how busy your day is?",
-      "ko": "하루가 얼마나 바쁜지 나니도 알까요?",
-      "kr": "더z 쉬 노우 하우 비지 여r 데이 이z"
+      "name": "소연",
+      "en": "They'll fit. Poor thing, straight to work on day one.",
+      "ko": "들어가. 불쌍해라, 오자마자 일이네.",
+      "kr": "데일 f핏 푸어r 씽 스트레잇 터 워r콘 데이 원"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I don't think the work I do impresses her.",
-      "ko": "제가 하는 일이 나니에게 인상적인 것 같지는 않아요.",
-      "kr": "아이 돈 씽크 더 워r카이 두 임프레씨z 허r"
+      "en": "It sounds like it joined the wrong family.",
+      "ko": "들어 보니 가족을 잘못 만난 것 같네.",
+      "kr": "잇 싸운즈 라이킷 조인드 더 롱 f패밀리"
      }
     ],
     "drills": [
      {
-      "en": "I don't think this seat is taken.",
-      "ko": "이 자리는 주인이 없는 것 같아요.",
-      "kr": "아이 돈 씽크 디스 씨이리z 테이큰"
+      "en": "It sounds like a lot of work.",
+      "ko": "들어 보니 일이 많겠네요.",
+      "kr": "잇 싸운즈 라이커 라러v 워r크"
      },
      {
-      "en": "She doesn't think we need a taxi.",
-      "ko": "그녀는 우리가 택시를 탈 필요가 없다고 생각해요.",
-      "kr": "쉬 더즌 씽크 위 니이더 택씨"
+      "en": "That sounds like a good plan.",
+      "ko": "듣기에 좋은 계획이네요.",
+      "kr": "댓 싸운즈 라이커 굿 플랜"
      },
      {
-      "en": "Do you think the store is open?",
-      "ko": "가게가 열려 있을 것 같아요?",
-      "kr": "더여 씽크 더 스토어r 이z 오우픈"
+      "en": "Does it sound like someone is outside?",
+      "ko": "밖에 누가 있는 소리 같아요?",
+      "kr": "더짓 싸운드 라이크 썸워니z 아웃싸이드"
      },
      {
-      "en": "We don't think it will rain.",
-      "ko": "우리는 비가 올 것 같지 않아요.",
-      "kr": "위 돈 씽킷 윌 레인"
-     },
-     {
-      "en": "I don't think I heard the name correctly.",
-      "ko": "이름을 제대로 들은 것 같지 않아요.",
-      "kr": "아이 돈 씽카이 허r드 더 네임 커r렉틀리"
+      "en": "It didn't sound like a joke.",
+      "ko": "농담처럼 들리진 않았어요.",
+      "kr": "잇 디든 싸운드 라이커 조욱"
      }
     ],
     "grammar": [
      {
-      "struct": "I don't think ~",
-      "body": "~인 것 같지 않아요. 단정적인 부정보다 부드럽게 자신의 판단을 말해요."
+      "struct": "It sounds like ~",
+      "body": "들어 보니 ~인 것 같아요. 들은 말이나 소리로 짐작해요."
      }
     ],
     "chunks": [
      [
-      "I don't think",
-      "아이 돈 씽크",
-      "~인 것 같지는 않아요"
+      "It sounds like it joined",
+      "잇 싸운즈 라이킷 조인드",
+      "들어 보니 들어온 것 같네"
      ],
      [
-      "the work I do",
-      "더 워r카이 두",
-      "제가 하는 일이"
-     ],
-     [
-      "impresses her.",
-      "임프레씨z 허r",
-      "그녀에게 인상적이라고"
+      "the wrong family.",
+      "더 롱 f패밀리",
+      "잘못된 가족에"
      ]
     ],
     "phonemes": [
      [
-      "/k/ work I",
-      "work 끝 k를 I에 이어 워r카이로 말해요."
-     ],
-     [
-      "/z/ impresses",
-      "impresses 끝은 /ɪz/. 씨z를 남겨요."
+      "/aʊ/ sounds",
+      "sounds는 싸운즈, like 뒤 모음은 이어 라이킷·라이커처럼 말해요."
      ]
     ],
-    "mistake": "I don't think it doesn't work는 이중 부정으로 뜻이 바뀔 수 있어요. '안 되는 것 같다'는 I don't think it works.",
-    "similar": "It doesn't seem right. (맞는 것 같지 않아요.)",
-    "category": "일상/반려동물",
-    "frequency": 10
+    "mistake": "It sounds it joined ✗ → It sounds like it joined. 문장을 이을 때 like를 넣어요.",
+    "similar": "From what you said, that seems right. (말씀을 들으니 그런 것 같아요.)",
+    "category": "생활/가족",
+    "frequency": 9
    }
   }
  ]

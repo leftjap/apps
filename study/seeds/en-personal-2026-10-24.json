@@ -4,518 +4,496 @@
  "date": "2026-10-24",
  "cards": [
   {
-   "id": "en-personal-renewal-cost-01-been",
-   "sentence": "I've been thinking about what a day off costs.",
-   "meaning": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
+   "id": "en-personal-lunch-before-code-01-trying",
+   "sentence": "I'm trying to finish what I started.",
+   "meaning": "하던 거 끝내려고 하고 있어.",
    "reading": null,
-   "phonetic_kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠",
+   "phonetic_kr": "아임 트라잉 터 f피니쉬 와라이 스타r리드",
    "order_index": 1,
    "explanation": {
-    "key": "I've been ~ = 계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요.",
-    "anchor": "생각하고 있었어요",
-    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "key": "I'm trying to ~ = ~하려고 노력하거나 시도하고 있어요. 진행 중인 노력을 말해요.",
+    "anchor": "끝내려고 하고 있어",
+    "situation": "코딩을 잠깐 멈추고 먹고 쉬도록 소연이 부른다. 식탁에 차린 음식·마우스·저장 버튼은 장면을 위한 창작이며 치료 효과나 새로운 생활 습관은 만들지 않았다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Still thinking about the gym membership?",
-      "ko": "아직도 헬스장 회원권 생각 중이에요?",
-      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Stop working for a minute. Come and eat.",
+      "ko": "일 좀 멈추고 와서 밥 먹어.",
+      "kr": "스탑 워r킹 f퍼r 어 미닛 커머니잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been thinking about what a day off costs.",
-      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
-      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+      "en": "I'm trying to finish what I started.",
+      "ko": "하던 거 끝내려고 하고 있어.",
+      "kr": "아임 트라잉 터 f피니쉬 와라이 스타r리드"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Do you know how much the whole year was?",
-      "ko": "일 년치가 얼마였는지 알아요?",
-      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It was seven hundred thousand won.",
-      "ko": "칠십만 원이었어요.",
-      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That's a lot. Who paid for it?",
-      "ko": "큰돈이네요. 누가 냈어요?",
-      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+      "speaker": "A",
+      "name": "소연",
+      "en": "The food I put out is getting cold.",
+      "ko": "내가 차려 놓은 밥 식겠다.",
+      "kr": "더 f푸우다이 푸라우리z 게링 코울드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife. That's why I feel bad skipping a day.",
-      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
-      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Well, at least taking a day off is free.",
-      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
-      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Eat something, then give your back a rest.",
+      "ko": "그래. 뭐 좀 먹고 허리도 좀 쉬게 해.",
+      "kr": "굿 이잇 썸씽 덴 기v 여r 배커 레스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, even doing nothing costs two thousand won.",
-      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
-      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+      "en": "I was about to do that.",
+      "ko": "막 그러려던 참이었어.",
+      "kr": "아이 워z 어바웃 터 두 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then let go of the mouse and come eat.",
+      "ko": "그럼 마우스 놓고 와서 먹어.",
+      "kr": "덴 렛 고우 어v 더 마우선 커미잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to save my work.",
+      "ko": "그냥 작업한 것만 저장하려던 거야.",
+      "kr": "아이 저스 원티드 터 쎄이v 마이 워r크"
      }
     ],
     "drills": [
      {
-      "en": "I've been looking for my glasses.",
-      "ko": "안경을 계속 찾고 있었어요.",
-      "kr": "아이v 빈 루킹 f퍼r 마이 글래씨z"
+      "en": "I'm trying to keep it simple.",
+      "ko": "복잡하게 안 하려고 해요.",
+      "kr": "아임 트라잉 터 키이핏 씸플"
      },
      {
-      "en": "She's been waiting by the entrance.",
-      "ko": "그녀는 입구 옆에서 계속 기다리고 있어요.",
-      "kr": "쉬z 빈 웨이링 바이 디 엔트런스"
+      "en": "We're trying to finish before lunch.",
+      "ko": "점심 전에 끝내려고 해요.",
+      "kr": "위어r 트라잉 터 f피니쉬 비f포어r 런치"
      },
      {
-      "en": "Have you been getting enough sleep?",
-      "ko": "계속 잠은 충분히 자고 있나요?",
-      "kr": "해v 여 빈 게링 이너f 슬리입"
+      "en": "Are you trying to move this alone?",
+      "ko": "이걸 혼자 옮기려고 하세요?",
+      "kr": "아r 여 트라잉 터 무우v 디썰로운"
      },
      {
-      "en": "We've been talking about the same thing.",
-      "ko": "우리는 계속 같은 이야기를 해왔어요.",
-      "kr": "위v 빈 토킹 어바웃 더 쎄임 씽"
+      "en": "She's trying to get some sleep.",
+      "ko": "잠을 좀 자려고 해요.",
+      "kr": "쉬z 트라잉 터 겟 썸 슬리입"
      },
      {
-      "en": "I've been trying to reach the front desk.",
-      "ko": "프런트에 연락하려고 계속 시도했어요.",
-      "kr": "아이v 빈 트라잉 터 리이치 더 f런트 데스크"
+      "en": "I wasn't trying to rush you.",
+      "ko": "재촉하려던 건 아니었어요.",
+      "kr": "아이 워z은 트라잉 터 러쉬 유"
      }
     ],
     "grammar": [
      {
-      "struct": "I've been ~",
-      "body": "계속 ~해 왔어요. 여기서는 have been + -ing로 과거부터 최근까지 이어진 행동을 말해요."
+      "struct": "I'm trying to ~",
+      "body": "~하려고 노력하거나 시도하고 있어요. 진행 중인 노력을 말해요."
      }
     ],
     "chunks": [
      [
-      "I've been thinking",
-      "아이v 빈 씽킹",
-      "계속 생각하고 있었어요"
+      "I'm trying to finish",
+      "아임 트라잉 터 f피니쉬",
+      "끝내려고 하고 있어"
      ],
      [
-      "about what a day off costs.",
-      "어바웃 와러 데이 오f 코스츠",
-      "하루 쉬면 얼마가 드는지"
+      "what I started.",
+      "와라이 스타r리드",
+      "내가 시작한 것을"
      ]
     ],
     "phonemes": [
      [
-      "/v/ I've",
-      "I've에서 v를 지우면 I와 구별되지 않아요."
+      "/aɪ/ I'm",
+      "I'm은 아임으로 시작하고 trying to는 트라잉 터로 이어 말해요."
      ],
      [
-      "/t/ what a",
-      "what의 t가 a 앞에서 굴러 와러로 이어져요."
+      "/t/ what I",
+      "what의 끝 t가 뒤의 I로 이어져 와라이가 돼요."
      ]
     ],
-    "mistake": "I've been compare ✗ → I've been comparing. 진행 중인 행동은 been 뒤에 -ing형을 붙여요.",
-    "similar": "I've kept thinking about it. (그것을 계속 생각해 왔어요.)",
-    "category": "운동/등록",
+    "mistake": "I'm trying finish ✗ → I'm trying to finish. to 뒤에는 동사원형을 써요.",
+    "similar": "I'm working on it. (지금 하고 있어요.)",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-renewal-cost-02-was",
-   "sentence": "It was seven hundred thousand won.",
-   "meaning": "칠십만 원이었어요.",
+   "id": "en-personal-lunch-before-code-02-finishing",
+   "sentence": "I'm finishing up.",
+   "meaning": "마무리하는 중이야.",
    "reading": null,
-   "phonetic_kr": "잇 워z 쎄v언 헌드러드 싸우전드 원",
+   "phonetic_kr": "아임 f피니슁 업",
    "order_index": 2,
    "explanation": {
-    "key": "It was ~ = ~였어요. 이미 지불한 가격처럼 과거의 상태나 값을 말해요. 233 추가 26.",
-    "anchor": "칠십만 원이었어요",
-    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "key": "I'm finishing up = 마무리하는 중이에요. 하던 일을 끝내 가는 중이라고 말해요.",
+    "anchor": "마무리하는 중이야",
+    "situation": "코딩을 잠깐 멈추고 먹고 쉬도록 소연이 부른다. 식탁에 차린 음식·마우스·저장 버튼은 장면을 위한 창작이며 치료 효과나 새로운 생활 습관은 만들지 않았다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Still thinking about the gym membership?",
-      "ko": "아직도 헬스장 회원권 생각 중이에요?",
-      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Stop working for a minute. Come and eat.",
+      "ko": "일 좀 멈추고 와서 밥 먹어.",
+      "kr": "스탑 워r킹 f퍼r 어 미닛 커머니잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been thinking about what a day off costs.",
-      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
-      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+      "en": "I'm trying to finish what I started.",
+      "ko": "하던 거 끝내려고 하고 있어.",
+      "kr": "아임 트라잉 터 f피니쉬 와라이 스타r리드"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Do you know how much the whole year was?",
-      "ko": "일 년치가 얼마였는지 알아요?",
-      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It was seven hundred thousand won.",
-      "ko": "칠십만 원이었어요.",
-      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That's a lot. Who paid for it?",
-      "ko": "큰돈이네요. 누가 냈어요?",
-      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+      "speaker": "A",
+      "name": "소연",
+      "en": "The food I put out is getting cold.",
+      "ko": "내가 차려 놓은 밥 식겠다.",
+      "kr": "더 f푸우다이 푸라우리z 게링 코울드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife. That's why I feel bad skipping a day.",
-      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
-      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Well, at least taking a day off is free.",
-      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
-      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Eat something, then give your back a rest.",
+      "ko": "그래. 뭐 좀 먹고 허리도 좀 쉬게 해.",
+      "kr": "굿 이잇 썸씽 덴 기v 여r 배커 레스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, even doing nothing costs two thousand won.",
-      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
-      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+      "en": "I was about to do that.",
+      "ko": "막 그러려던 참이었어.",
+      "kr": "아이 워z 어바웃 터 두 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then let go of the mouse and come eat.",
+      "ko": "그럼 마우스 놓고 와서 먹어.",
+      "kr": "덴 렛 고우 어v 더 마우선 커미잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to save my work.",
+      "ko": "그냥 작업한 것만 저장하려던 거야.",
+      "kr": "아이 저스 원티드 터 쎄이v 마이 워r크"
      }
     ],
     "drills": [
      {
-      "en": "It was forty dollars.",
-      "ko": "사십 달러였어요.",
-      "kr": "잇 워z f포어r리 달러rz"
+      "en": "I'm finishing up here.",
+      "ko": "여기서 마무리하는 중이에요.",
+      "kr": "아임 f피니슁 업 히어r"
      },
      {
-      "en": "Was it cheaper last year?",
-      "ko": "작년에는 더 쌌나요?",
-      "kr": "워짓 치이퍼r 라스 이어r"
+      "en": "Are you finishing up?",
+      "ko": "마무리하는 중이세요?",
+      "kr": "아r 여 f피니슁 업"
      },
      {
-      "en": "The ticket was free.",
-      "ko": "그 표는 무료였어요.",
-      "kr": "더 티킷 워z f리이"
+      "en": "She's finishing up in the kitchen.",
+      "ko": "부엌에서 마무리하는 중이에요.",
+      "kr": "쉬z f피니슁 어핀 더 키친"
      },
      {
-      "en": "It wasn't as expensive as I expected.",
-      "ko": "생각했던 것만큼 비싸지는 않았어요.",
-      "kr": "잇 워즈내직스펜씨v 애자이 익스펙티드"
+      "en": "We finished up before lunch.",
+      "ko": "점심 전에 마무리했어요.",
+      "kr": "위 f피니쉬덥 비f포어r 런치"
      }
     ],
     "grammar": [
      {
-      "struct": "It was ~",
-      "body": "~였어요. 이미 지불한 가격처럼 과거의 상태나 값을 말해요. 233 추가 26."
+      "struct": "I'm finishing up",
+      "body": "마무리하는 중이에요. 하던 일을 끝내 가는 중이라고 말해요."
      }
     ],
     "chunks": [
      [
-      "It was",
-      "잇 워z",
-      "그것은 ~였어요"
-     ],
-     [
-      "seven hundred thousand won.",
-      "쎄v언 헌드러드 싸우전드 원",
-      "칠십만 원"
+      "I'm finishing up.",
+      "아임 f피니슁 업",
+      "마무리하는 중이야"
      ]
     ],
     "phonemes": [
      [
-      "/v/ seven",
-      "seven의 v는 아랫입술에 윗니를 대요."
-     ],
-     [
-      "/θ/ thousand",
-      "thousand는 혀끝을 살짝 내밀며 시작해요."
+      "/f/ finishing",
+      "첫소리는 윗니를 아랫입술에 대는 f예요. 끝 /ŋ/과 up은 띄어 적어요."
      ]
     ],
-    "mistake": "It were ✗ → It was. 단수 주어 it의 be동사 과거형은 was예요.",
-    "similar": "That was the price. (그게 가격이었어요.)",
-    "category": "운동/등록",
-    "frequency": 10
+    "mistake": "I'm finish up ✗ → I'm finishing up. 지금 하는 중이므로 finishing을 써요.",
+    "similar": "I'm almost done. (거의 다 했어요.)",
+    "category": "생활/가족",
+    "frequency": 8
    }
   },
   {
-   "id": "en-personal-renewal-cost-03-why",
-   "sentence": "My wife. That's why I feel bad skipping a day.",
-   "meaning": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
+   "id": "en-personal-lunch-before-code-03-wasabout",
+   "sentence": "I was about to do that.",
+   "meaning": "막 그러려던 참이었어.",
    "reading": null,
-   "phonetic_kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이",
+   "phonetic_kr": "아이 워z 어바웃 터 두 댓",
    "order_index": 3,
    "explanation": {
-    "key": "That's why ~ = 그래서 ~인 거예요. 앞에서 나온 이유에 따른 결과를 설명해요.",
-    "anchor": "그래서",
-    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "key": "I was about to ~ = 막 ~하려던 참이었어요. 무언가 하기 직전이었다고 말해요.",
+    "anchor": "막 그러려던 참이었어",
+    "situation": "코딩을 잠깐 멈추고 먹고 쉬도록 소연이 부른다. 식탁에 차린 음식·마우스·저장 버튼은 장면을 위한 창작이며 치료 효과나 새로운 생활 습관은 만들지 않았다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Still thinking about the gym membership?",
-      "ko": "아직도 헬스장 회원권 생각 중이에요?",
-      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Stop working for a minute. Come and eat.",
+      "ko": "일 좀 멈추고 와서 밥 먹어.",
+      "kr": "스탑 워r킹 f퍼r 어 미닛 커머니잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been thinking about what a day off costs.",
-      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
-      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+      "en": "I'm trying to finish what I started.",
+      "ko": "하던 거 끝내려고 하고 있어.",
+      "kr": "아임 트라잉 터 f피니쉬 와라이 스타r리드"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Do you know how much the whole year was?",
-      "ko": "일 년치가 얼마였는지 알아요?",
-      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It was seven hundred thousand won.",
-      "ko": "칠십만 원이었어요.",
-      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That's a lot. Who paid for it?",
-      "ko": "큰돈이네요. 누가 냈어요?",
-      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+      "speaker": "A",
+      "name": "소연",
+      "en": "The food I put out is getting cold.",
+      "ko": "내가 차려 놓은 밥 식겠다.",
+      "kr": "더 f푸우다이 푸라우리z 게링 코울드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife. That's why I feel bad skipping a day.",
-      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
-      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Well, at least taking a day off is free.",
-      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
-      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Eat something, then give your back a rest.",
+      "ko": "그래. 뭐 좀 먹고 허리도 좀 쉬게 해.",
+      "kr": "굿 이잇 썸씽 덴 기v 여r 배커 레스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, even doing nothing costs two thousand won.",
-      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
-      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+      "en": "I was about to do that.",
+      "ko": "막 그러려던 참이었어.",
+      "kr": "아이 워z 어바웃 터 두 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then let go of the mouse and come eat.",
+      "ko": "그럼 마우스 놓고 와서 먹어.",
+      "kr": "덴 렛 고우 어v 더 마우선 커미잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to save my work.",
+      "ko": "그냥 작업한 것만 저장하려던 거야.",
+      "kr": "아이 저스 원티드 터 쎄이v 마이 워r크"
      }
     ],
     "drills": [
      {
-      "en": "That's why we took the bus.",
-      "ko": "그래서 우리는 버스를 탔어요.",
-      "kr": "댓츠 와이 위 툭 더 버스"
+      "en": "I was about to call you.",
+      "ko": "막 전화하려던 참이었어요.",
+      "kr": "아이 워z 어바웃 터 콜 유"
      },
      {
-      "en": "Maybe that's why the door is locked.",
-      "ko": "아마 그래서 문이 잠겨 있나 봐요.",
-      "kr": "메이비 댓츠 와이 더 도어r 이z 락트"
+      "en": "We were about to leave.",
+      "ko": "막 떠나려던 참이었어요.",
+      "kr": "위 워r 어바웃 터 리이v"
      },
      {
-      "en": "Is that why you came back?",
-      "ko": "그래서 돌아온 거예요?",
-      "kr": "이z 댓 와이 여 케임 백"
+      "en": "Were you about to say something?",
+      "ko": "막 무슨 말을 하려던 참이었어요?",
+      "kr": "워r 여 어바웃 터 쎄이 썸씽"
      },
      {
-      "en": "That's why I asked for help.",
-      "ko": "그래서 도움을 요청했어요.",
-      "kr": "댓츠 와이 아이 애스크트 f퍼r 헬프"
+      "en": "She was about to close the door.",
+      "ko": "막 문을 닫으려던 참이었어요.",
+      "kr": "쉬 워z 어바웃 터 클로우z 더 도어r"
+     },
+     {
+      "en": "They were about to start dinner.",
+      "ko": "그들은 막 저녁 식사를 시작하려던 참이었어요.",
+      "kr": "데이 워r 어바웃 터 스타r트 디너r"
      }
     ],
     "grammar": [
      {
-      "struct": "That's why ~",
-      "body": "그래서 ~인 거예요. 앞에서 나온 이유에 따른 결과를 설명해요."
+      "struct": "I was about to ~",
+      "body": "막 ~하려던 참이었어요. 무언가 하기 직전이었다고 말해요."
      }
     ],
     "chunks": [
      [
-      "My wife.",
-      "마이 와이f",
-      "아내요"
+      "I was about to",
+      "아이 워z 어바웃 터",
+      "막 ~하려던 참이었어"
      ],
      [
-      "That's why I feel bad",
-      "댓츠 와이 아이 f피일 배드",
-      "그래서 마음에 걸려요"
-     ],
-     [
-      "skipping a day.",
-      "스키핑 어 데이",
-      "하루 빠지는 게"
+      "do that.",
+      "두 댓",
+      "그렇게 하다"
      ]
     ],
     "phonemes": [
      [
-      "/f/ wife",
-      "wife 끝은 f로 닫고 브 소리를 넣지 않아요."
-     ],
-     [
-      "/iː/ feel",
-      "feel의 이 모음을 길게 내요."
+      "/z/ was",
+      "was의 끝소리 z를 남겨 워z 어바웃 터로 말해요."
      ]
     ],
-    "mistake": "That's why 뒤는 결과예요. That's because 뒤에 이유를 넣는 구조와 방향을 바꾸지 않아요.",
-    "similar": "That's the reason. (그게 이유예요.)",
-    "category": "운동/등록",
+    "mistake": "I was about doing ✗ → I was about to do. about to 뒤는 동사원형이에요.",
+    "similar": "I was just going to do that. (막 그걸 하려던 참이었어요.)",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-renewal-cost-04-thing",
-   "sentence": "The thing is, even doing nothing costs two thousand won.",
-   "meaning": "실은 아무것도 안 해도 이천 원이 들어요.",
+   "id": "en-personal-lunch-before-code-04-wanted",
+   "sentence": "I just wanted to save my work.",
+   "meaning": "그냥 작업한 것만 저장하려던 거야.",
    "reading": null,
-   "phonetic_kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원",
+   "phonetic_kr": "아이 저스 원티드 터 쎄이v 마이 워r크",
    "order_index": 4,
    "explanation": {
-    "key": "The thing is, ~ = 실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요.",
-    "anchor": "실은",
-    "situation": "Liam이 헬스장 재등록을 물어본다. 연간 비용과 하루 빠질 때 아깝다는 지오의 계산을 이야기한다.",
+    "key": "I just wanted to ~ = 그냥 ~하려던 거예요. 의도를 설명하거나 부탁을 완곡하게 꺼내요.",
+    "anchor": "그냥 작업한 것만 저장하려던 거야",
+    "situation": "코딩을 잠깐 멈추고 먹고 쉬도록 소연이 부른다. 식탁에 차린 음식·마우스·저장 버튼은 장면을 위한 창작이며 치료 효과나 새로운 생활 습관은 만들지 않았다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Still thinking about the gym membership?",
-      "ko": "아직도 헬스장 회원권 생각 중이에요?",
-      "kr": "스틸 씽킹 어바웃 더 짐 멤버r쉽"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Stop working for a minute. Come and eat.",
+      "ko": "일 좀 멈추고 와서 밥 먹어.",
+      "kr": "스탑 워r킹 f퍼r 어 미닛 커머니잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I've been thinking about what a day off costs.",
-      "ko": "하루 쉬면 얼마가 드는지 생각하고 있었어요.",
-      "kr": "아이v 빈 씽킹 어바웃 와러 데이 오f 코스츠"
+      "en": "I'm trying to finish what I started.",
+      "ko": "하던 거 끝내려고 하고 있어.",
+      "kr": "아임 트라잉 터 f피니쉬 와라이 스타r리드"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Do you know how much the whole year was?",
-      "ko": "일 년치가 얼마였는지 알아요?",
-      "kr": "더여 노우 하우 머치 더 호울 이어r 워z"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "It was seven hundred thousand won.",
-      "ko": "칠십만 원이었어요.",
-      "kr": "잇 워z 쎄v언 헌드러드 싸우전드 원"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "That's a lot. Who paid for it?",
-      "ko": "큰돈이네요. 누가 냈어요?",
-      "kr": "댓서 랏 후우 페이드 f퍼r 잇"
+      "speaker": "A",
+      "name": "소연",
+      "en": "The food I put out is getting cold.",
+      "ko": "내가 차려 놓은 밥 식겠다.",
+      "kr": "더 f푸우다이 푸라우리z 게링 코울드"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "My wife. That's why I feel bad skipping a day.",
-      "ko": "아내요. 그래서 하루 빠지면 마음에 걸려요.",
-      "kr": "마이 와이f 댓츠 와이 아이 f피일 배드 스키핑 어 데이"
+      "en": "I'm finishing up.",
+      "ko": "마무리하는 중이야.",
+      "kr": "아임 f피니슁 업"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Well, at least taking a day off is free.",
-      "ko": "그래도 하루 쉬는 건 공짜잖아요.",
-      "kr": "웰 엇 리이스 테이킹 어 데이 오f 이z f리이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Good. Eat something, then give your back a rest.",
+      "ko": "그래. 뭐 좀 먹고 허리도 좀 쉬게 해.",
+      "kr": "굿 이잇 썸씽 덴 기v 여r 배커 레스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, even doing nothing costs two thousand won.",
-      "ko": "실은 아무것도 안 해도 이천 원이 들어요.",
-      "kr": "더 씽 이z 이이v언 두잉 낫씽 코스츠 투우 싸우전드 원"
+      "en": "I was about to do that.",
+      "ko": "막 그러려던 참이었어.",
+      "kr": "아이 워z 어바웃 터 두 댓"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then let go of the mouse and come eat.",
+      "ko": "그럼 마우스 놓고 와서 먹어.",
+      "kr": "덴 렛 고우 어v 더 마우선 커미잇"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to save my work.",
+      "ko": "그냥 작업한 것만 저장하려던 거야.",
+      "kr": "아이 저스 원티드 터 쎄이v 마이 워r크"
      }
     ],
     "drills": [
      {
-      "en": "The thing is, we need more time.",
-      "ko": "실은 시간이 더 필요해요.",
-      "kr": "더 씽 이z 위 니이드 모어r 타임"
+      "en": "I just wanted to check the time.",
+      "ko": "시간만 확인하려던 거예요.",
+      "kr": "아이 저스 원티드 터 체크 더 타임"
      },
      {
-      "en": "But the thing is, nobody has a key.",
-      "ko": "그런데 실은 아무도 열쇠가 없어요.",
-      "kr": "벗 더 씽 이z 노우바디 해저 키이"
+      "en": "She just wanted to say hello.",
+      "ko": "그냥 인사하려던 거예요.",
+      "kr": "쉬 저스 원티드 터 쎄이 헬로우"
      },
      {
-      "en": "Well, the thing is, the shop closes soon.",
-      "ko": "음, 실은 가게가 곧 닫아요.",
-      "kr": "웰 더 씽 이z 더 샵 클로우지z 쑤운"
+      "en": "Did you just want to ask one question?",
+      "ko": "질문 하나만 하려던 거예요?",
+      "kr": "디저 저스 원 터 애스크 원 퀘스천"
      },
      {
-      "en": "The thing is, I left my phone at home.",
-      "ko": "실은 휴대폰을 집에 두고 왔어요.",
-      "kr": "더 씽 이z 아이 레f트 마이 f포우넛 호움"
+      "en": "We just wanted to help.",
+      "ko": "저희는 그냥 도우려던 거예요.",
+      "kr": "위 저스 원티드 터 헬프"
      }
     ],
     "grammar": [
      {
-      "struct": "The thing is, ~",
-      "body": "실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요."
+      "struct": "I just wanted to ~",
+      "body": "그냥 ~하려던 거예요. 의도를 설명하거나 부탁을 완곡하게 꺼내요."
      }
     ],
     "chunks": [
      [
-      "The thing is,",
-      "더 씽 이z",
-      "실은"
+      "I just wanted to save",
+      "아이 저스 원티드 터 쎄이v",
+      "그냥 저장하려던 거야"
      ],
      [
-      "even doing nothing",
-      "이이v언 두잉 낫씽",
-      "아무것도 안 해도"
-     ],
-     [
-      "costs two thousand won.",
-      "코스츠 투우 싸우전드 원",
-      "이천 원이 들어요"
+      "my work.",
+      "마이 워r크",
+      "내 작업을"
      ]
     ],
     "phonemes": [
      [
-      "/v/ even",
-      "even 첫 모음은 길고 중간 v를 입술로 내요."
-     ],
-     [
-      "/θ/ nothing",
-      "nothing의 th는 thing과 같은 무성음이에요."
+      "/ɪd/ wanted",
+      "wanted는 원티드, 뒤의 to와 이어 원티드 터로 말해요."
      ]
     ],
-    "mistake": "The thing are ✗ → The thing is. 뒤에는 주어와 동사가 있는 절을 이어 사정을 말해요.",
-    "similar": "Here's the problem. (문제는 이거예요.)",
-    "category": "운동/등록",
-    "frequency": 8
+    "mistake": "I just wanted to having ✗ → to have. to 뒤는 동사원형이에요.",
+    "similar": "I only meant to help. (도우려던 것뿐이에요.)",
+    "category": "생활/가족",
+    "frequency": 9
    }
   }
  ]

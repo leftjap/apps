@@ -4,522 +4,505 @@
  "date": "2026-10-20",
  "cards": [
   {
-   "id": "en-personal-run-first-01-trying",
-   "sentence": "I'm trying to run before I lift.",
-   "meaning": "근력 운동 전에 달리려고 해요.",
+   "id": "en-personal-kimchi-shopping-together-01-trying",
+   "sentence": "I'm trying to keep the shopping list short.",
+   "meaning": "장보기 목록을 짧게 줄이려고 하고 있어.",
    "reading": null,
-   "phonetic_kr": "아임 트라잉 터 런 비f포어r 아이 리f트",
+   "phonetic_kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트",
    "order_index": 1,
    "explanation": {
-    "key": "I'm trying to ~ = ~하려고 노력하거나 시도하고 있어요. 지금 하고 있는 시도를 설명해요.",
-    "anchor": "달리려고 해요",
-    "situation": "헬스장에서 Liam이 러닝부터 하는 이유를 묻는다. 힘들면 러닝을 빼먹어서 순서를 바꾼 일기를 바탕으로 만든 대화.",
+    "key": "I'm trying to ~ = ~하려고 노력하거나 시도하고 있어요. 진행 중인 노력을 말해요.",
+    "anchor": "줄이려고 하고 있어",
+    "situation": "김치 배송 소식에 저녁 준비를 의논한다. 장보기 목록을 줄이려다 치킨 주문까지 생각하게 되는 부부 대화로 창작했다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Starting with the treadmill today?",
-      "ko": "오늘은 러닝머신부터 해요?",
-      "kr": "스타r팅 위드 더 트레드밀 터데이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "We need lettuce and garlic for the pork tonight.",
+      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
+      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to run before I lift.",
-      "ko": "근력 운동 전에 달리려고 해요.",
-      "kr": "아임 트라잉 터 런 비f포어r 아이 리f트"
+      "en": "I'm trying to keep the shopping list short.",
+      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
+      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Was running last not working for you?",
-      "ko": "마지막에 달리는 건 잘 안 됐어요?",
-      "kr": "워z 러닝 라스 낫 워r킹 f퍼r 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't think the order I used before worked.",
-      "ko": "전에 하던 순서는 효과가 없었던 것 같아요.",
-      "kr": "아이 돈 씽크 디 오어r더r 아이 유우z드 비f포어r 워r크트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Is running the part you kept skipping?",
-      "ko": "계속 빼먹던 게 러닝이에요?",
-      "kr": "이z 러닝 더 파r트 여 켑 스키핑"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then skip the fruit you were thinking of buying.",
+      "ko": "그럼 사려고 했던 과일은 빼.",
+      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, I was too tired to run.",
-      "ko": "실은 달리기엔 너무 지쳤거든요.",
-      "kr": "더 씽 이z 아이 워z 투우 타이어r드 터 런"
+      "en": "Do you mind choosing the vegetables?",
+      "ko": "채소는 네가 골라줄래?",
+      "kr": "더여 마인드 추우징 더 v베지터블즈"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "So now you do the hard part first?",
-      "ko": "그래서 이제 힘든 걸 먼저 하는군요?",
-      "kr": "쏘우 나우 여 두 더 하r드 파r트 f퍼r스트"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
+      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
+      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I run before I can change my mind.",
-      "ko": "그래서 마음이 바뀌기 전에 뛰는 거예요.",
-      "kr": "댓츠 와이 아이 런 비f포어r 아이 컨 체인지 마이 마인드"
+      "en": "I'm not sure if ordering chicken would be simpler.",
+      "ko": "치킨 시키는 게 더 간단할지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 오어r더링 치킨 워드 비 씸플러r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "All this because a box of kimchi is coming.",
+      "ko": "김치 한 상자 온다고 일이 커졌네.",
+      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have something with it.",
+      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
+      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
      }
     ],
     "drills": [
      {
-      "en": "I'm trying to find the entrance.",
-      "ko": "입구를 찾으려고 하고 있어요.",
-      "kr": "아임 트라잉 터 f파인드 디 엔트런스"
+      "en": "I'm trying to keep it simple.",
+      "ko": "복잡하게 안 하려고 해요.",
+      "kr": "아임 트라잉 터 키이핏 씸플"
      },
      {
-      "en": "She's trying to open the window.",
-      "ko": "그녀는 창문을 열려고 하고 있어요.",
-      "kr": "쉬z 트라잉 터 오우픈 더 윈도우"
+      "en": "We're trying to finish before lunch.",
+      "ko": "점심 전에 끝내려고 해요.",
+      "kr": "위어r 트라잉 터 f피니쉬 비f포어r 런치"
      },
      {
-      "en": "Are you trying to call someone?",
-      "ko": "누군가에게 전화하려고 하고 있나요?",
-      "kr": "아r 여 트라잉 터 콜 썸원"
+      "en": "Are you trying to move this alone?",
+      "ko": "이걸 혼자 옮기려고 하세요?",
+      "kr": "아r 여 트라잉 터 무우v 디썰로운"
      },
      {
-      "en": "We're trying to leave before dark.",
-      "ko": "우리는 어두워지기 전에 떠나려고 하고 있어요.",
-      "kr": "위어r 트라잉 터 리이v 비f포어r 다r크"
+      "en": "She's trying to get some sleep.",
+      "ko": "잠을 좀 자려고 해요.",
+      "kr": "쉬z 트라잉 터 겟 썸 슬리입"
      },
      {
-      "en": "I'm not trying to win.",
-      "ko": "이기려고 하는 건 아니에요.",
-      "kr": "아임 낫 트라잉 터 윈"
+      "en": "I wasn't trying to rush you.",
+      "ko": "재촉하려던 건 아니었어요.",
+      "kr": "아이 워z은 트라잉 터 러쉬 유"
      }
     ],
     "grammar": [
      {
       "struct": "I'm trying to ~",
-      "body": "~하려고 노력하거나 시도하고 있어요. 지금 하고 있는 시도를 설명해요."
+      "body": "~하려고 노력하거나 시도하고 있어요. 진행 중인 노력을 말해요."
      }
     ],
     "chunks": [
      [
-      "I'm trying to run",
-      "아임 트라잉 터 런",
-      "달리려고 하고 있어요"
+      "I'm trying to keep",
+      "아임 트라잉 터 키입",
+      "유지하려고 하고 있어"
      ],
      [
-      "before I lift.",
-      "비f포어r 아이 리f트",
-      "근력 운동을 하기 전에"
+      "the shopping list short.",
+      "더 샤핑 리스 쇼어r트",
+      "장보기 목록을 짧게"
      ]
     ],
     "phonemes": [
      [
-      "/aɪ/ trying",
-      "trying은 트라잉. 첫 모음을 트리로 줄이지 않아요."
+      "/aɪ/ I'm",
+      "I'm은 아임으로 시작하고 trying to는 트라잉 터로 이어 말해요."
      ],
      [
-      "/f/ lift",
-      "lift 끝에서 아랫입술에 윗니를 대고 /f/를 낸 뒤 /t/를 닫아요."
+      "/st/ list short",
+      "list 뒤의 sh 앞에서는 t가 탈락해 리스 쇼어r트로 이어져요."
      ]
     ],
-    "mistake": "I'm trying run ✗ → I'm trying to run. try 뒤에 동사원형을 이을 때 to를 넣어요.",
-    "similar": "I'm working on it. (그 일을 해나가는 중이에요.)",
-    "category": "운동/순서",
+    "mistake": "I'm trying finish ✗ → I'm trying to finish. to 뒤에는 동사원형을 써요.",
+    "similar": "I'm working on it. (지금 하고 있어요.)",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-run-first-02-dontthink",
-   "sentence": "I don't think the order I used before worked.",
-   "meaning": "전에 하던 순서는 효과가 없었던 것 같아요.",
+   "id": "en-personal-kimchi-shopping-together-02-mind",
+   "sentence": "Do you mind choosing the vegetables?",
+   "meaning": "채소는 네가 골라줄래?",
    "reading": null,
-   "phonetic_kr": "아이 돈 씽크 디 오어r더r 아이 유우z드 비f포어r 워r크트",
+   "phonetic_kr": "더여 마인드 추우징 더 v베지터블즈",
    "order_index": 2,
    "explanation": {
-    "key": "I don't think ~ = ~인 것 같지 않아요. 단정적인 부정보다 부드럽게 자신의 판단을 말해요.",
-    "anchor": "효과가 없었던 것 같아요",
-    "situation": "헬스장에서 Liam이 러닝부터 하는 이유를 묻는다. 힘들면 러닝을 빼먹어서 순서를 바꾼 일기를 바탕으로 만든 대화.",
+    "key": "Do you mind ~ = Do you mind -ing?는 '~해 주실래요?'라는 부탁, Do you mind if I ~?는 '제가 ~해도 괜찮아요?'라는 허락 요청이에요. I don't mind -ing는 '~하는 것을 꺼리지 않아요 / 괜찮아요'이고, She wouldn't mind는 '그녀도 꺼리지 않을 거예요'라는 예상이에요.",
+    "anchor": "골라줄래",
+    "situation": "김치 배송 소식에 저녁 준비를 의논한다. 장보기 목록을 줄이려다 치킨 주문까지 생각하게 되는 부부 대화로 창작했다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Starting with the treadmill today?",
-      "ko": "오늘은 러닝머신부터 해요?",
-      "kr": "스타r팅 위드 더 트레드밀 터데이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "We need lettuce and garlic for the pork tonight.",
+      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
+      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to run before I lift.",
-      "ko": "근력 운동 전에 달리려고 해요.",
-      "kr": "아임 트라잉 터 런 비f포어r 아이 리f트"
+      "en": "I'm trying to keep the shopping list short.",
+      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
+      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Was running last not working for you?",
-      "ko": "마지막에 달리는 건 잘 안 됐어요?",
-      "kr": "워z 러닝 라스 낫 워r킹 f퍼r 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't think the order I used before worked.",
-      "ko": "전에 하던 순서는 효과가 없었던 것 같아요.",
-      "kr": "아이 돈 씽크 디 오어r더r 아이 유우z드 비f포어r 워r크트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Is running the part you kept skipping?",
-      "ko": "계속 빼먹던 게 러닝이에요?",
-      "kr": "이z 러닝 더 파r트 여 켑 스키핑"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then skip the fruit you were thinking of buying.",
+      "ko": "그럼 사려고 했던 과일은 빼.",
+      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, I was too tired to run.",
-      "ko": "실은 달리기엔 너무 지쳤거든요.",
-      "kr": "더 씽 이z 아이 워z 투우 타이어r드 터 런"
+      "en": "Do you mind choosing the vegetables?",
+      "ko": "채소는 네가 골라줄래?",
+      "kr": "더여 마인드 추우징 더 v베지터블즈"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "So now you do the hard part first?",
-      "ko": "그래서 이제 힘든 걸 먼저 하는군요?",
-      "kr": "쏘우 나우 여 두 더 하r드 파r트 f퍼r스트"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
+      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
+      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I run before I can change my mind.",
-      "ko": "그래서 마음이 바뀌기 전에 뛰는 거예요.",
-      "kr": "댓츠 와이 아이 런 비f포어r 아이 컨 체인지 마이 마인드"
+      "en": "I'm not sure if ordering chicken would be simpler.",
+      "ko": "치킨 시키는 게 더 간단할지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 오어r더링 치킨 워드 비 씸플러r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "All this because a box of kimchi is coming.",
+      "ko": "김치 한 상자 온다고 일이 커졌네.",
+      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have something with it.",
+      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
+      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
      }
     ],
     "drills": [
      {
-      "en": "I don't think this seat is taken.",
-      "ko": "이 자리는 주인이 없는 것 같아요.",
-      "kr": "아이 돈 씽크 디스 씨이리z 테이큰"
+      "en": "Do you mind helping with the dishes?",
+      "ko": "설거지 좀 도와주실래요?",
+      "kr": "더여 마인드 헬핑 위드 더 디쉬즈"
      },
      {
-      "en": "She doesn't think we need a taxi.",
-      "ko": "그녀는 우리가 택시를 탈 필요가 없다고 생각해요.",
-      "kr": "쉬 더즌 씽크 위 니이더 택씨"
+      "en": "Would you mind moving your bag?",
+      "ko": "가방 좀 옮겨 주실래요?",
+      "kr": "워저 마인드 무우v잉 여r 백"
      },
      {
-      "en": "Do you think the store is open?",
-      "ko": "가게가 열려 있을 것 같아요?",
-      "kr": "더여 씽크 더 스토어r 이z 오우픈"
+      "en": "I don't mind waiting here.",
+      "ko": "여기서 기다려도 괜찮아요.",
+      "kr": "아이 돈 마인드 웨이링 히어r"
      },
      {
-      "en": "We don't think it will rain.",
-      "ko": "우리는 비가 올 것 같지 않아요.",
-      "kr": "위 돈 씽킷 윌 레인"
+      "en": "Do you mind if I open this?",
+      "ko": "제가 이거 열어도 괜찮아요?",
+      "kr": "더여 마인디f 아이 오우픈 디스"
      },
      {
-      "en": "I don't think I heard the name correctly.",
-      "ko": "이름을 제대로 들은 것 같지 않아요.",
-      "kr": "아이 돈 씽카이 허r드 더 네임 커r렉틀리"
+      "en": "She wouldn't mind joining us.",
+      "ko": "같이해도 괜찮아할 거예요.",
+      "kr": "쉬 워든 마인드 조이닝 어스"
      }
     ],
     "grammar": [
      {
-      "struct": "I don't think ~",
-      "body": "~인 것 같지 않아요. 단정적인 부정보다 부드럽게 자신의 판단을 말해요."
+      "struct": "Do you mind ~",
+      "body": "Do you mind -ing?는 '~해 주실래요?'라는 부탁, Do you mind if I ~?는 '제가 ~해도 괜찮아요?'라는 허락 요청이에요. I don't mind -ing는 '~하는 것을 꺼리지 않아요 / 괜찮아요'이고, She wouldn't mind는 '그녀도 꺼리지 않을 거예요'라는 예상이에요."
      }
     ],
     "chunks": [
      [
-      "I don't think",
-      "아이 돈 씽크",
-      "~라고 생각하지 않아요"
+      "Do you mind",
+      "더여 마인드",
+      "~해 줄래"
      ],
      [
-      "the order I used before",
-      "디 오어r더r 아이 유우z드 비f포어r",
-      "전에 사용하던 순서가"
-     ],
-     [
-      "worked.",
-      "워r크트",
-      "효과가 있었다고"
+      "choosing the vegetables?",
+      "추우징 더 v베지터블즈",
+      "채소를 고르는 것"
      ]
     ],
     "phonemes": [
      [
-      "/ð/ the order",
-      "모음으로 시작하는 order 앞의 the는 디로 이어져요."
-     ],
-     [
-      "/z/ used",
-      "사용했다는 뜻의 used는 /juːzd/. 익숙하다는 used to와 구별해요."
+      "/dəjə/ do you",
+      "강세 없는 do you는 더여로 이어져요."
      ]
     ],
-    "mistake": "I don't think it doesn't work는 이중 부정으로 뜻이 바뀔 수 있어요. '안 되는 것 같다'는 I don't think it works.",
-    "similar": "It doesn't seem right. (맞는 것 같지 않아요.)",
-    "category": "운동/순서",
-    "frequency": 10
+    "mistake": "Do you mind to help ✗ → Do you mind helping? 남에게 부탁할 때는 -ing, 내 행동의 허락은 if I + 동사예요.",
+    "similar": "Is that okay with you? (괜찮겠어요?)",
+    "category": "생활/가족",
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-run-first-03-thing",
-   "sentence": "The thing is, I was too tired to run.",
-   "meaning": "실은 달리기엔 너무 지쳤거든요.",
+   "id": "en-personal-kimchi-shopping-together-03-unsure",
+   "sentence": "I'm not sure if ordering chicken would be simpler.",
+   "meaning": "치킨 시키는 게 더 간단할지 모르겠네.",
    "reading": null,
-   "phonetic_kr": "더 씽 이z 아이 워z 투우 타이어r드 터 런",
+   "phonetic_kr": "아임 낫 슈어r 이f 오어r더링 치킨 워드 비 씸플러r",
    "order_index": 3,
    "explanation": {
-    "key": "The thing is, ~ = 실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요.",
-    "anchor": "실은",
-    "situation": "헬스장에서 Liam이 러닝부터 하는 이유를 묻는다. 힘들면 러닝을 빼먹어서 순서를 바꾼 일기를 바탕으로 만든 대화.",
+    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요. 확신이 없는 내용을 if 뒤에 붙여요.",
+    "anchor": "모르겠네",
+    "situation": "김치 배송 소식에 저녁 준비를 의논한다. 장보기 목록을 줄이려다 치킨 주문까지 생각하게 되는 부부 대화로 창작했다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Starting with the treadmill today?",
-      "ko": "오늘은 러닝머신부터 해요?",
-      "kr": "스타r팅 위드 더 트레드밀 터데이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "We need lettuce and garlic for the pork tonight.",
+      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
+      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to run before I lift.",
-      "ko": "근력 운동 전에 달리려고 해요.",
-      "kr": "아임 트라잉 터 런 비f포어r 아이 리f트"
+      "en": "I'm trying to keep the shopping list short.",
+      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
+      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Was running last not working for you?",
-      "ko": "마지막에 달리는 건 잘 안 됐어요?",
-      "kr": "워z 러닝 라스 낫 워r킹 f퍼r 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't think the order I used before worked.",
-      "ko": "전에 하던 순서는 효과가 없었던 것 같아요.",
-      "kr": "아이 돈 씽크 디 오어r더r 아이 유우z드 비f포어r 워r크트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Is running the part you kept skipping?",
-      "ko": "계속 빼먹던 게 러닝이에요?",
-      "kr": "이z 러닝 더 파r트 여 켑 스키핑"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then skip the fruit you were thinking of buying.",
+      "ko": "그럼 사려고 했던 과일은 빼.",
+      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, I was too tired to run.",
-      "ko": "실은 달리기엔 너무 지쳤거든요.",
-      "kr": "더 씽 이z 아이 워z 투우 타이어r드 터 런"
+      "en": "Do you mind choosing the vegetables?",
+      "ko": "채소는 네가 골라줄래?",
+      "kr": "더여 마인드 추우징 더 v베지터블즈"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "So now you do the hard part first?",
-      "ko": "그래서 이제 힘든 걸 먼저 하는군요?",
-      "kr": "쏘우 나우 여 두 더 하r드 파r트 f퍼r스트"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
+      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
+      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I run before I can change my mind.",
-      "ko": "그래서 마음이 바뀌기 전에 뛰는 거예요.",
-      "kr": "댓츠 와이 아이 런 비f포어r 아이 컨 체인지 마이 마인드"
+      "en": "I'm not sure if ordering chicken would be simpler.",
+      "ko": "치킨 시키는 게 더 간단할지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 오어r더링 치킨 워드 비 씸플러r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "All this because a box of kimchi is coming.",
+      "ko": "김치 한 상자 온다고 일이 커졌네.",
+      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have something with it.",
+      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
+      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
      }
     ],
     "drills": [
      {
-      "en": "The thing is, we need more time.",
-      "ko": "실은 시간이 더 필요해요.",
-      "kr": "더 씽 이z 위 니이드 모어r 타임"
+      "en": "I'm not sure if this will fit.",
+      "ko": "이게 들어갈지 잘 모르겠어요.",
+      "kr": "아임 낫 슈어r 이f 디스 윌 f핏"
      },
      {
-      "en": "But the thing is, nobody has a key.",
-      "ko": "그런데 실은 아무도 열쇠가 없어요.",
-      "kr": "벗 더 씽 이z 노우바디 해저 키이"
+      "en": "We're not sure if the shop is open.",
+      "ko": "가게가 열었는지 잘 모르겠어요.",
+      "kr": "위어r 낫 슈어r 이f 더 샤피z 오우펀"
      },
      {
-      "en": "Well, the thing is, the shop closes soon.",
-      "ko": "음, 실은 가게가 곧 닫아요.",
-      "kr": "웰 더 씽 이z 더 샵 클로우지z 쑤운"
+      "en": "Are you sure we need both?",
+      "ko": "둘 다 필요한 게 확실해요?",
+      "kr": "아r 여 슈어r 위 니이드 보우쓰"
      },
      {
-      "en": "The thing is, I left my phone at home.",
-      "ko": "실은 휴대폰을 집에 두고 왔어요.",
-      "kr": "더 씽 이z 아이 레f트 마이 f포우넛 호움"
+      "en": "She's not sure if she can come.",
+      "ko": "올 수 있을지 잘 모르겠대요.",
+      "kr": "쉬z 낫 슈어r 이f 쉬 컨 컴"
+     },
+     {
+      "en": "I wasn't sure if you were busy.",
+      "ko": "바쁘신지 확신이 없었어요.",
+      "kr": "아이 워z은 슈어r 이f 여 워r 비지"
      }
     ],
     "grammar": [
      {
-      "struct": "The thing is, ~",
-      "body": "실은 ~예요. 상대가 아직 모르는 사정이나 핵심 이유를 덧붙여요."
+      "struct": "I'm not sure if ~",
+      "body": "~인지 잘 모르겠어요. 확신이 없는 내용을 if 뒤에 붙여요."
      }
     ],
     "chunks": [
      [
-      "The thing is,",
-      "더 씽 이z",
-      "실은"
+      "I'm not sure if",
+      "아임 낫 슈어r 이f",
+      "~인지 잘 모르겠어"
      ],
      [
-      "I was too tired",
-      "아이 워z 투우 타이어r드",
-      "제가 너무 지쳤어요"
-     ],
-     [
-      "to run.",
-      "터 런",
-      "달리기에는"
+      "ordering chicken would be simpler.",
+      "오어r더링 치킨 워드 비 씸플러r",
+      "치킨을 주문하는 게 더 간단할지"
      ]
     ],
     "phonemes": [
      [
-      "/θ/ thing",
-      "thing은 혀끝을 살짝 내밀고 공기를 내보내요."
-     ],
-     [
-      "/r/ tired",
-      "tired의 r에서 혀를 입천장에 붙이지 않아요."
+      "/ʃʊr/ sure",
+      "sure 끝의 r을 남겨 슈어r로, if의 f는 윗니를 아랫입술에 대요."
      ]
     ],
-    "mistake": "The thing are ✗ → The thing is. 뒤에는 주어와 동사가 있는 절을 이어 사정을 말해요.",
-    "similar": "Here's the problem. (문제는 이거예요.)",
-    "category": "운동/순서",
-    "frequency": 8
+    "mistake": "I'm not sure if will it fit ✗ → if it will fit. if 뒤는 주어 다음 동사예요.",
+    "similar": "I don't know whether it will work. (될지 모르겠어요.)",
+    "category": "생활/가족",
+    "frequency": 9
    }
   },
   {
-   "id": "en-personal-run-first-04-why",
-   "sentence": "That's why I run before I can change my mind.",
-   "meaning": "그래서 마음이 바뀌기 전에 뛰는 거예요.",
+   "id": "en-personal-kimchi-shopping-together-04-wanted",
+   "sentence": "I just wanted to have something with it.",
+   "meaning": "그냥 같이 먹을 게 좀 있으면 했지.",
    "reading": null,
-   "phonetic_kr": "댓츠 와이 아이 런 비f포어r 아이 컨 체인지 마이 마인드",
+   "phonetic_kr": "아이 저스 원티드 터 해v 썸씽 위딧",
    "order_index": 4,
    "explanation": {
-    "key": "That's why ~ = 그래서 ~인 거예요. 앞에서 나온 이유에 따른 결과를 설명해요.",
-    "anchor": "그래서",
-    "situation": "헬스장에서 Liam이 러닝부터 하는 이유를 묻는다. 힘들면 러닝을 빼먹어서 순서를 바꾼 일기를 바탕으로 만든 대화.",
+    "key": "I just wanted to ~ = 그냥 ~하려던 거예요. 의도를 설명하거나 부탁을 완곡하게 꺼내요.",
+    "anchor": "그냥 같이 먹을 게 좀 있으면 했지",
+    "situation": "김치 배송 소식에 저녁 준비를 의논한다. 장보기 목록을 줄이려다 치킨 주문까지 생각하게 되는 부부 대화로 창작했다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Starting with the treadmill today?",
-      "ko": "오늘은 러닝머신부터 해요?",
-      "kr": "스타r팅 위드 더 트레드밀 터데이"
+      "speaker": "A",
+      "name": "소연",
+      "en": "We need lettuce and garlic for the pork tonight.",
+      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
+      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to run before I lift.",
-      "ko": "근력 운동 전에 달리려고 해요.",
-      "kr": "아임 트라잉 터 런 비f포어r 아이 리f트"
+      "en": "I'm trying to keep the shopping list short.",
+      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
+      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Was running last not working for you?",
-      "ko": "마지막에 달리는 건 잘 안 됐어요?",
-      "kr": "워z 러닝 라스 낫 워r킹 f퍼r 유"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "I don't think the order I used before worked.",
-      "ko": "전에 하던 순서는 효과가 없었던 것 같아요.",
-      "kr": "아이 돈 씽크 디 오어r더r 아이 유우z드 비f포어r 워r크트"
-     },
-     {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "Is running the part you kept skipping?",
-      "ko": "계속 빼먹던 게 러닝이에요?",
-      "kr": "이z 러닝 더 파r트 여 켑 스키핑"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Then skip the fruit you were thinking of buying.",
+      "ko": "그럼 사려고 했던 과일은 빼.",
+      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "The thing is, I was too tired to run.",
-      "ko": "실은 달리기엔 너무 지쳤거든요.",
-      "kr": "더 씽 이z 아이 워z 투우 타이어r드 터 런"
+      "en": "Do you mind choosing the vegetables?",
+      "ko": "채소는 네가 골라줄래?",
+      "kr": "더여 마인드 추우징 더 v베지터블즈"
      },
      {
-      "speaker": "B",
-      "name": "Liam",
-      "en": "So now you do the hard part first?",
-      "ko": "그래서 이제 힘든 걸 먼저 하는군요?",
-      "kr": "쏘우 나우 여 두 더 하r드 파r트 f퍼r스트"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
+      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
+      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "That's why I run before I can change my mind.",
-      "ko": "그래서 마음이 바뀌기 전에 뛰는 거예요.",
-      "kr": "댓츠 와이 아이 런 비f포어r 아이 컨 체인지 마이 마인드"
+      "en": "I'm not sure if ordering chicken would be simpler.",
+      "ko": "치킨 시키는 게 더 간단할지 모르겠네.",
+      "kr": "아임 낫 슈어r 이f 오어r더링 치킨 워드 비 씸플러r"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "All this because a box of kimchi is coming.",
+      "ko": "김치 한 상자 온다고 일이 커졌네.",
+      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I just wanted to have something with it.",
+      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
+      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
      }
     ],
     "drills": [
      {
-      "en": "That's why we took the bus.",
-      "ko": "그래서 우리는 버스를 탔어요.",
-      "kr": "댓츠 와이 위 툭 더 버스"
+      "en": "I just wanted to check the time.",
+      "ko": "시간만 확인하려던 거예요.",
+      "kr": "아이 저스 원티드 터 체크 더 타임"
      },
      {
-      "en": "Maybe that's why the door is locked.",
-      "ko": "아마 그래서 문이 잠겨 있나 봐요.",
-      "kr": "메이비 댓츠 와이 더 도어r 이z 락트"
+      "en": "She just wanted to say hello.",
+      "ko": "그냥 인사하려던 거예요.",
+      "kr": "쉬 저스 원티드 터 쎄이 헬로우"
      },
      {
-      "en": "Is that why you came back?",
-      "ko": "그래서 돌아온 거예요?",
-      "kr": "이z 댓 와이 여 케임 백"
+      "en": "Did you just want to ask one question?",
+      "ko": "질문 하나만 하려던 거예요?",
+      "kr": "디저 저스 원 터 애스크 원 퀘스천"
      },
      {
-      "en": "That's why I asked for help.",
-      "ko": "그래서 도움을 요청했어요.",
-      "kr": "댓츠 와이 아이 애스크트 f퍼r 헬프"
+      "en": "We just wanted to help.",
+      "ko": "저희는 그냥 도우려던 거예요.",
+      "kr": "위 저스 원티드 터 헬프"
      }
     ],
     "grammar": [
      {
-      "struct": "That's why ~",
-      "body": "그래서 ~인 거예요. 앞에서 나온 이유에 따른 결과를 설명해요."
+      "struct": "I just wanted to ~",
+      "body": "그냥 ~하려던 거예요. 의도를 설명하거나 부탁을 완곡하게 꺼내요."
      }
     ],
     "chunks": [
      [
-      "That's why I run",
-      "댓츠 와이 아이 런",
-      "그래서 제가 뛰는 거예요"
+      "I just wanted to have",
+      "아이 저스 원티드 터 해v",
+      "그냥 있으면 했어"
      ],
      [
-      "before I can change my mind.",
-      "비f포어r 아이 컨 체인지 마이 마인드",
-      "마음이 바뀔 수 있기 전에"
+      "something with it.",
+      "썸씽 위딧",
+      "그것과 같이 먹을 것"
      ]
     ],
     "phonemes": [
      [
-      "/æ/ that's",
-      "that's의 모음은 입을 넓게 벌려요."
-     ],
-     [
-      "/ə/ can",
-      "강조하지 않는 can은 컨. change에 힘을 실어요."
+      "/ɪd/ wanted",
+      "wanted는 원티드, 뒤의 to와 이어 원티드 터로 말해요."
      ]
     ],
-    "mistake": "That's why 뒤는 결과예요. That's because 뒤에 이유를 넣는 구조와 방향을 바꾸지 않아요.",
-    "similar": "That's the reason. (그게 이유예요.)",
-    "category": "운동/순서",
+    "mistake": "I just wanted to having ✗ → to have. to 뒤는 동사원형이에요.",
+    "similar": "I only meant to help. (도우려던 것뿐이에요.)",
+    "category": "생활/가족",
     "frequency": 9
    }
   }
