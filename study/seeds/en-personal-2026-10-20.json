@@ -4,51 +4,51 @@
  "date": "2026-10-20",
  "cards": [
   {
-   "id": "en-personal-kimchi-shopping-together-01-trying",
-   "sentence": "I'm trying to keep the shopping list short.",
-   "meaning": "장보기 목록을 짧게 줄이려고 하고 있어.",
+   "id": "en-personal-kimchi-shopping-together-01-decided",
+   "sentence": "I haven't decided yet.",
+   "meaning": "아직 결정 안 했어.",
    "reading": null,
-   "phonetic_kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트",
+   "phonetic_kr": "아이 해븐 디싸이리드 옛",
    "order_index": 1,
    "explanation": {
-    "key": "I'm trying to ~ = ~하려고 노력하거나 시도하고 있어요. 진행 중인 노력을 말해요.",
-    "anchor": "줄이려고 하고 있어",
+    "key": "I haven't decided ~ = 아직 결정하지 않았어요. 지금까지 결정이 나지 않은 상태를 말해요. yet은 부정문에서 '아직'이에요.",
+    "anchor": "아직 결정 안 했어",
     "situation": "김치 배송 소식에 저녁 준비를 의논한다. 장보기 목록을 줄이려다 치킨 주문까지 생각하게 되는 부부 대화로 창작했다.",
     "miniDialogue": [
      {
       "speaker": "A",
       "name": "소연",
-      "en": "We need lettuce and garlic for the pork tonight.",
-      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
-      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
+      "en": "What are we having with the kimchi tonight?",
+      "ko": "오늘 저녁에 김치랑 뭐 먹지?",
+      "kr": "와러r 위 해v잉 위드 더 김치 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to keep the shopping list short.",
-      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
-      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정 안 했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Then skip the fruit you were thinking of buying.",
-      "ko": "그럼 사려고 했던 과일은 빼.",
-      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
+      "en": "What about the pork you were going to cook?",
+      "ko": "삶으려고 했던 돼지고기는?",
+      "kr": "와러바웃 더 포어r크 여 워r 고우잉 터 쿡"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind choosing the vegetables?",
-      "ko": "채소는 네가 골라줄래?",
-      "kr": "더여 마인드 추우징 더 v베지터블즈"
+      "en": "Do you mind picking up lettuce and garlic?",
+      "ko": "상추랑 마늘 좀 사다 줄래?",
+      "kr": "더여 마인드 피킹 업 레리선 가r릭"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
-      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
-      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
+      "en": "Sure. I'll get the perilla leaves, too.",
+      "ko": "응. 깻잎도 사 올게.",
+      "kr": "슈어r 아일 겟 더 퍼릴러 리이vz 투우"
      },
      {
       "speaker": "B",
@@ -60,125 +60,111 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "All this because a box of kimchi is coming.",
-      "ko": "김치 한 상자 온다고 일이 커졌네.",
-      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+      "en": "Then why did you send me a shopping list?",
+      "ko": "그럼 장보기 목록은 왜 보내 줬어?",
+      "kr": "덴 와이 디저 쎈드 미 어 샤핑 리스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just wanted to have something with it.",
-      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
-      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
+      "en": "I just wanted to buy a few things for dinner.",
+      "ko": "그냥 저녁거리 몇 가지만 사려던 건데.",
+      "kr": "아이 저스 원티드 터 바이 어 f퓨우 씽즈 f퍼r 디너r"
      }
     ],
     "drills": [
      {
-      "en": "I'm trying to keep it simple.",
-      "ko": "복잡하게 안 하려고 해요.",
-      "kr": "아임 트라잉 터 키이핏 씸플"
+      "en": "I haven't decided what to order.",
+      "ko": "뭘 주문할지 아직 정하지 않았어요.",
+      "kr": "아이 해븐 디싸이리드 왓 터 오어r더r"
      },
      {
-      "en": "We're trying to finish before lunch.",
-      "ko": "점심 전에 끝내려고 해요.",
-      "kr": "위어r 트라잉 터 f피니쉬 비f포어r 런치"
+      "en": "Have you decided where to go?",
+      "ko": "어디 갈지 정하셨어요?",
+      "kr": "해v 여 디싸이리드 웨어r 터 고우"
      },
      {
-      "en": "Are you trying to move this alone?",
-      "ko": "이걸 혼자 옮기려고 하세요?",
-      "kr": "아r 여 트라잉 터 무우v 디썰로운"
+      "en": "We haven't decided on a date.",
+      "ko": "아직 날짜를 정하지 않았어요.",
+      "kr": "위 해븐 디싸이리더너 데잇"
      },
      {
-      "en": "She's trying to get some sleep.",
-      "ko": "잠을 좀 자려고 해요.",
-      "kr": "쉬z 트라잉 터 겟 썸 슬리입"
-     },
-     {
-      "en": "I wasn't trying to rush you.",
-      "ko": "재촉하려던 건 아니었어요.",
-      "kr": "아이 워z은 트라잉 터 러쉬 유"
+      "en": "She decided to stay home.",
+      "ko": "그녀는 집에 있기로 했어요.",
+      "kr": "쉬 디싸이리드 터 스테이 호움"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm trying to ~",
-      "body": "~하려고 노력하거나 시도하고 있어요. 진행 중인 노력을 말해요."
+      "struct": "I haven't decided ~",
+      "body": "아직 결정하지 않았어요. 지금까지 결정이 나지 않은 상태를 말해요. yet은 부정문에서 '아직'이에요."
      }
     ],
     "chunks": [
      [
-      "I'm trying to keep",
-      "아임 트라잉 터 키입",
-      "유지하려고 하고 있어"
-     ],
-     [
-      "the shopping list short.",
-      "더 샤핑 리스 쇼어r트",
-      "장보기 목록을 짧게"
+      "I haven't decided yet.",
+      "아이 해븐 디싸이리드 옛",
+      "아직 결정 안 했어"
      ]
     ],
     "phonemes": [
      [
-      "/aɪ/ I'm",
-      "I'm은 아임으로 시작하고 trying to는 트라잉 터로 이어 말해요."
-     ],
-     [
-      "/st/ list short",
-      "list 뒤의 sh 앞에서는 t가 탈락해 리스 쇼어r트로 이어져요."
+      "/d/ decided",
+      "decided의 가운데 d가 가볍게 굴러 디싸이리드로 들려요."
      ]
     ],
-    "mistake": "I'm trying finish ✗ → I'm trying to finish. to 뒤에는 동사원형을 써요.",
-    "similar": "I'm working on it. (지금 하고 있어요.)",
+    "mistake": "I haven't decide ✗ → I haven't decided. have 뒤에는 과거분사 decided를 써요.",
+    "similar": "I'm still thinking about it. (아직 생각 중이에요.)",
     "category": "생활/가족",
-    "frequency": 9
+    "frequency": 8
    }
   },
   {
-   "id": "en-personal-kimchi-shopping-together-02-mind",
-   "sentence": "Do you mind choosing the vegetables?",
-   "meaning": "채소는 네가 골라줄래?",
+   "id": "en-personal-kimchi-shopping-together-02-pick-up-vegetables",
+   "sentence": "Do you mind picking up lettuce and garlic?",
+   "meaning": "상추랑 마늘 좀 사다 줄래?",
    "reading": null,
-   "phonetic_kr": "더여 마인드 추우징 더 v베지터블즈",
+   "phonetic_kr": "더여 마인드 피킹 업 레리선 가r릭",
    "order_index": 2,
    "explanation": {
     "key": "Do you mind ~ = Do you mind -ing?는 '~해 주실래요?'라는 부탁, Do you mind if I ~?는 '제가 ~해도 괜찮아요?'라는 허락 요청이에요. I don't mind -ing는 '~하는 것을 꺼리지 않아요 / 괜찮아요'이고, She wouldn't mind는 '그녀도 꺼리지 않을 거예요'라는 예상이에요.",
-    "anchor": "골라줄래",
+    "anchor": "사다 줄래",
     "situation": "김치 배송 소식에 저녁 준비를 의논한다. 장보기 목록을 줄이려다 치킨 주문까지 생각하게 되는 부부 대화로 창작했다.",
     "miniDialogue": [
      {
       "speaker": "A",
       "name": "소연",
-      "en": "We need lettuce and garlic for the pork tonight.",
-      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
-      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
+      "en": "What are we having with the kimchi tonight?",
+      "ko": "오늘 저녁에 김치랑 뭐 먹지?",
+      "kr": "와러r 위 해v잉 위드 더 김치 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to keep the shopping list short.",
-      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
-      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정 안 했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Then skip the fruit you were thinking of buying.",
-      "ko": "그럼 사려고 했던 과일은 빼.",
-      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
+      "en": "What about the pork you were going to cook?",
+      "ko": "삶으려고 했던 돼지고기는?",
+      "kr": "와러바웃 더 포어r크 여 워r 고우잉 터 쿡"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind choosing the vegetables?",
-      "ko": "채소는 네가 골라줄래?",
-      "kr": "더여 마인드 추우징 더 v베지터블즈"
+      "en": "Do you mind picking up lettuce and garlic?",
+      "ko": "상추랑 마늘 좀 사다 줄래?",
+      "kr": "더여 마인드 피킹 업 레리선 가r릭"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
-      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
-      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
+      "en": "Sure. I'll get the perilla leaves, too.",
+      "ko": "응. 깻잎도 사 올게.",
+      "kr": "슈어r 아일 겟 더 퍼릴러 리이vz 투우"
      },
      {
       "speaker": "B",
@@ -190,16 +176,16 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "All this because a box of kimchi is coming.",
-      "ko": "김치 한 상자 온다고 일이 커졌네.",
-      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+      "en": "Then why did you send me a shopping list?",
+      "ko": "그럼 장보기 목록은 왜 보내 줬어?",
+      "kr": "덴 와이 디저 쎈드 미 어 샤핑 리스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just wanted to have something with it.",
-      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
-      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
+      "en": "I just wanted to buy a few things for dinner.",
+      "ko": "그냥 저녁거리 몇 가지만 사려던 건데.",
+      "kr": "아이 저스 원티드 터 바이 어 f퓨우 씽즈 f퍼r 디너r"
      }
     ],
     "drills": [
@@ -242,9 +228,9 @@
       "~해 줄래"
      ],
      [
-      "choosing the vegetables?",
-      "추우징 더 v베지터블즈",
-      "채소를 고르는 것"
+      "picking up lettuce and garlic?",
+      "피킹 업 레리선 가r릭",
+      "상추와 마늘을 사 오는 것"
      ]
     ],
     "phonemes": [
@@ -274,37 +260,37 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "We need lettuce and garlic for the pork tonight.",
-      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
-      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
+      "en": "What are we having with the kimchi tonight?",
+      "ko": "오늘 저녁에 김치랑 뭐 먹지?",
+      "kr": "와러r 위 해v잉 위드 더 김치 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to keep the shopping list short.",
-      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
-      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정 안 했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Then skip the fruit you were thinking of buying.",
-      "ko": "그럼 사려고 했던 과일은 빼.",
-      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
+      "en": "What about the pork you were going to cook?",
+      "ko": "삶으려고 했던 돼지고기는?",
+      "kr": "와러바웃 더 포어r크 여 워r 고우잉 터 쿡"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind choosing the vegetables?",
-      "ko": "채소는 네가 골라줄래?",
-      "kr": "더여 마인드 추우징 더 v베지터블즈"
+      "en": "Do you mind picking up lettuce and garlic?",
+      "ko": "상추랑 마늘 좀 사다 줄래?",
+      "kr": "더여 마인드 피킹 업 레리선 가r릭"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
-      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
-      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
+      "en": "Sure. I'll get the perilla leaves, too.",
+      "ko": "응. 깻잎도 사 올게.",
+      "kr": "슈어r 아일 겟 더 퍼릴러 리이vz 투우"
      },
      {
       "speaker": "B",
@@ -316,16 +302,16 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "All this because a box of kimchi is coming.",
-      "ko": "김치 한 상자 온다고 일이 커졌네.",
-      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+      "en": "Then why did you send me a shopping list?",
+      "ko": "그럼 장보기 목록은 왜 보내 줬어?",
+      "kr": "덴 와이 디저 쎈드 미 어 샤핑 리스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just wanted to have something with it.",
-      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
-      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
+      "en": "I just wanted to buy a few things for dinner.",
+      "ko": "그냥 저녁거리 몇 가지만 사려던 건데.",
+      "kr": "아이 저스 원티드 터 바이 어 f퓨우 씽즈 f퍼r 디너r"
      }
     ],
     "drills": [
@@ -387,50 +373,50 @@
   },
   {
    "id": "en-personal-kimchi-shopping-together-04-wanted",
-   "sentence": "I just wanted to have something with it.",
-   "meaning": "그냥 같이 먹을 게 좀 있으면 했지.",
+   "sentence": "I just wanted to buy a few things for dinner.",
+   "meaning": "그냥 저녁거리 몇 가지만 사려던 건데.",
    "reading": null,
-   "phonetic_kr": "아이 저스 원티드 터 해v 썸씽 위딧",
+   "phonetic_kr": "아이 저스 원티드 터 바이 어 f퓨우 씽즈 f퍼r 디너r",
    "order_index": 4,
    "explanation": {
     "key": "I just wanted to ~ = 그냥 ~하려던 거예요. 의도를 설명하거나 부탁을 완곡하게 꺼내요.",
-    "anchor": "그냥 같이 먹을 게 좀 있으면 했지",
+    "anchor": "그냥 저녁거리 몇 가지만 사려던 건데",
     "situation": "김치 배송 소식에 저녁 준비를 의논한다. 장보기 목록을 줄이려다 치킨 주문까지 생각하게 되는 부부 대화로 창작했다.",
     "miniDialogue": [
      {
       "speaker": "A",
       "name": "소연",
-      "en": "We need lettuce and garlic for the pork tonight.",
-      "ko": "오늘 저녁 고기랑 먹을 상추랑 마늘이 필요해.",
-      "kr": "위 니이드 레리선 가r릭 f퍼r 더 포어r크 터나잇"
+      "en": "What are we having with the kimchi tonight?",
+      "ko": "오늘 저녁에 김치랑 뭐 먹지?",
+      "kr": "와러r 위 해v잉 위드 더 김치 터나잇"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm trying to keep the shopping list short.",
-      "ko": "장보기 목록을 짧게 줄이려고 하고 있어.",
-      "kr": "아임 트라잉 터 키입 더 샤핑 리스 쇼어r트"
+      "en": "I haven't decided yet.",
+      "ko": "아직 결정 안 했어.",
+      "kr": "아이 해븐 디싸이리드 옛"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Then skip the fruit you were thinking of buying.",
-      "ko": "그럼 사려고 했던 과일은 빼.",
-      "kr": "덴 스킵 더 f루우처 워r 씽킹 어v 바이잉"
+      "en": "What about the pork you were going to cook?",
+      "ko": "삶으려고 했던 돼지고기는?",
+      "kr": "와러바웃 더 포어r크 여 워r 고우잉 터 쿡"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind choosing the vegetables?",
-      "ko": "채소는 네가 골라줄래?",
-      "kr": "더여 마인드 추우징 더 v베지터블즈"
+      "en": "Do you mind picking up lettuce and garlic?",
+      "ko": "상추랑 마늘 좀 사다 줄래?",
+      "kr": "더여 마인드 피킹 업 레리선 가r릭"
      },
      {
       "speaker": "A",
       "name": "소연",
-      "en": "Fine. Lettuce, garlic, and the perilla leaves I like.",
-      "ko": "그래. 상추, 마늘, 내가 좋아하는 깻잎.",
-      "kr": "f아인 레리스 가r릭 언 더 퍼릴러 리이vz 아이 라이크"
+      "en": "Sure. I'll get the perilla leaves, too.",
+      "ko": "응. 깻잎도 사 올게.",
+      "kr": "슈어r 아일 겟 더 퍼릴러 리이vz 투우"
      },
      {
       "speaker": "B",
@@ -442,16 +428,16 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "All this because a box of kimchi is coming.",
-      "ko": "김치 한 상자 온다고 일이 커졌네.",
-      "kr": "올 디스 비커z 어 박써v 김치 이z 커밍"
+      "en": "Then why did you send me a shopping list?",
+      "ko": "그럼 장보기 목록은 왜 보내 줬어?",
+      "kr": "덴 와이 디저 쎈드 미 어 샤핑 리스트"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I just wanted to have something with it.",
-      "ko": "그냥 같이 먹을 게 좀 있으면 했지.",
-      "kr": "아이 저스 원티드 터 해v 썸씽 위딧"
+      "en": "I just wanted to buy a few things for dinner.",
+      "ko": "그냥 저녁거리 몇 가지만 사려던 건데.",
+      "kr": "아이 저스 원티드 터 바이 어 f퓨우 씽즈 f퍼r 디너r"
      }
     ],
     "drills": [
@@ -484,14 +470,14 @@
     ],
     "chunks": [
      [
-      "I just wanted to have",
-      "아이 저스 원티드 터 해v",
-      "그냥 있으면 했어"
+      "I just wanted to buy",
+      "아이 저스 원티드 터 바이",
+      "그냥 사려던 건데"
      ],
      [
-      "something with it.",
-      "썸씽 위딧",
-      "그것과 같이 먹을 것"
+      "a few things for dinner.",
+      "어 f퓨우 씽즈 f퍼r 디너r",
+      "저녁거리 몇 가지"
      ]
     ],
     "phonemes": [

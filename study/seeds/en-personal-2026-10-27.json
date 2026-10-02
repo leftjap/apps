@@ -46,16 +46,16 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "There. She's still asleep. Now move.",
-      "ko": "됐다. 아직 자네. 이제 움직여.",
-      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
+      "en": "There. Move now. Wait, she's coming closer again.",
+      "ko": "됐다. 이제 움직여. 잠깐, 얘 또 더 붙는다.",
+      "kr": "데어r 무우v 나우 웨잇 쉬z 커밍 클로우써r 어겐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like she's moved closer again.",
-      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
-      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+      "en": "I knew this would happen.",
+      "ko": "이럴 줄 알았어.",
+      "kr": "아이 뉴우 디스 워드 해픈"
      },
      {
       "speaker": "A",
@@ -167,16 +167,16 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "There. She's still asleep. Now move.",
-      "ko": "됐다. 아직 자네. 이제 움직여.",
-      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
+      "en": "There. Move now. Wait, she's coming closer again.",
+      "ko": "됐다. 이제 움직여. 잠깐, 얘 또 더 붙는다.",
+      "kr": "데어r 무우v 나우 웨잇 쉬z 커밍 클로우써r 어겐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like she's moved closer again.",
-      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
-      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+      "en": "I knew this would happen.",
+      "ko": "이럴 줄 알았어.",
+      "kr": "아이 뉴우 디스 워드 해픈"
      },
      {
       "speaker": "A",
@@ -251,15 +251,15 @@
    }
   },
   {
-   "id": "en-personal-bed-space-for-three-03-looks",
-   "sentence": "It looks like she's moved closer again.",
-   "meaning": "보니까 얘가 또 더 붙은 것 같은데.",
+   "id": "en-personal-bed-space-for-three-03-knew-happen",
+   "sentence": "I knew this would happen.",
+   "meaning": "이럴 줄 알았어.",
    "reading": null,
-   "phonetic_kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐",
+   "phonetic_kr": "아이 뉴우 디스 워드 해픈",
    "order_index": 3,
    "explanation": {
-    "key": "It looks like ~ = 보니 ~인 것 같아요. 눈앞의 모습이나 화면을 근거로 짐작해요.",
-    "anchor": "보니까 얘가 또 더 붙은 것 같은데",
+    "key": "knew this would happen = 이렇게 될 줄 알았어요. 지금 벌어진 일을 미리 예상했다는 뜻이에요. 항상 반복된다는 뜻은 아니에요.",
+    "anchor": "이럴 줄 알았어",
     "situation": "나니를 깨우지 않고 소연의 자리를 만들려 한다. 고양이가 다시 가까이 온다는 즉석 상황으로 마무리하고, 잠자리 취향이나 매일의 반복 행동을 추가하지 않는다.",
     "miniDialogue": [
      {
@@ -293,16 +293,16 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "There. She's still asleep. Now move.",
-      "ko": "됐다. 아직 자네. 이제 움직여.",
-      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
+      "en": "There. Move now. Wait, she's coming closer again.",
+      "ko": "됐다. 이제 움직여. 잠깐, 얘 또 더 붙는다.",
+      "kr": "데어r 무우v 나우 웨잇 쉬z 커밍 클로우써r 어겐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like she's moved closer again.",
-      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
-      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+      "en": "I knew this would happen.",
+      "ko": "이럴 줄 알았어.",
+      "kr": "아이 뉴우 디스 워드 해픈"
      },
      {
       "speaker": "A",
@@ -321,54 +321,49 @@
     ],
     "drills": [
      {
-      "en": "It looks like our taxi is here.",
-      "ko": "우리 택시가 온 것 같아요.",
-      "kr": "잇 룩스 라이카우어r 택씨 이z 히어r"
+      "en": "She knew this would happen.",
+      "ko": "그녀는 이렇게 될 줄 알았어요.",
+      "kr": "쉬 뉴우 디스 워드 해픈"
      },
      {
-      "en": "Does it look like rain?",
-      "ko": "비가 올 것 같아요?",
-      "kr": "더짓 룩 라이크 레인"
+      "en": "Did you know this would happen?",
+      "ko": "이렇게 될 줄 아셨어요?",
+      "kr": "디저 노우 디스 워드 해픈"
      },
      {
-      "en": "They look like they're ready to leave.",
-      "ko": "떠날 준비가 된 것 같아요.",
-      "kr": "데이 룩 라이크 데어r 레디 터 리이v"
+      "en": "We didn't know this would happen.",
+      "ko": "저희는 이렇게 될 줄 몰랐어요.",
+      "kr": "위 디든 노우 디스 워드 해픈"
      },
      {
-      "en": "It didn't look like the same place.",
-      "ko": "같은 곳으로 보이지 않았어요.",
-      "kr": "잇 디든 룩 라이크 더 쎄임 플레이스"
+      "en": "I knew this would happen again.",
+      "ko": "이런 일이 다시 일어날 줄 알았어요.",
+      "kr": "아이 뉴우 디스 워드 해프너겐"
      }
     ],
     "grammar": [
      {
-      "struct": "It looks like ~",
-      "body": "보니 ~인 것 같아요. 눈앞의 모습이나 화면을 근거로 짐작해요."
+      "struct": "knew this would happen",
+      "body": "이렇게 될 줄 알았어요. 지금 벌어진 일을 미리 예상했다는 뜻이에요. 항상 반복된다는 뜻은 아니에요."
      }
     ],
     "chunks": [
      [
-      "It looks like she's moved",
-      "잇 룩스 라이크 쉬z 무우v드",
-      "보니까 얘가 움직인 것 같아"
-     ],
-     [
-      "closer again.",
-      "클로우써r 어겐",
-      "다시 더 가까이"
+      "I knew this would happen.",
+      "아이 뉴우 디스 워드 해픈",
+      "이럴 줄 알았어"
      ]
     ],
     "phonemes": [
      [
-      "/ʊ/ looks",
-      "looks는 짧은 모음으로 룩스, like는 라이크예요. like 뒤 모음은 이어 적어요."
+      "/wəd/ would",
+      "would는 강조하지 않을 때 워드로 말해요. knew는 뉴우로 길게 시작해요."
      ]
     ],
-    "mistake": "It look like ✗ → It looks like. 주어가 it이므로 looks를 써요.",
-    "similar": "It seems that way. (그런 것 같아요.)",
+    "mistake": "I knew this will happen ✗ → I knew this would happen. 과거 시점에서 내다본 일이라 would를 써요.",
+    "similar": "I saw this coming. (이럴 줄 예상했어요.)",
     "category": "생활/가족",
-    "frequency": 9
+    "frequency": 8
    }
   },
   {
@@ -414,16 +409,16 @@
      {
       "speaker": "A",
       "name": "소연",
-      "en": "There. She's still asleep. Now move.",
-      "ko": "됐다. 아직 자네. 이제 움직여.",
-      "kr": "데어r 쉬z 스틸 어슬리입 나우 무우v"
+      "en": "There. Move now. Wait, she's coming closer again.",
+      "ko": "됐다. 이제 움직여. 잠깐, 얘 또 더 붙는다.",
+      "kr": "데어r 무우v 나우 웨잇 쉬z 커밍 클로우써r 어겐"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It looks like she's moved closer again.",
-      "ko": "보니까 얘가 또 더 붙은 것 같은데.",
-      "kr": "잇 룩스 라이크 쉬z 무우v드 클로우써r 어겐"
+      "en": "I knew this would happen.",
+      "ko": "이럴 줄 알았어.",
+      "kr": "아이 뉴우 디스 워드 해픈"
      },
      {
       "speaker": "A",

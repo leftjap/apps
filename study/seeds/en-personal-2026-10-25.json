@@ -4,198 +4,193 @@
  "date": "2026-10-25",
  "cards": [
   {
-   "id": "en-personal-tom-standing-break-01-mind",
-   "sentence": "Do you mind if I stand for a bit?",
-   "meaning": "잠깐 서 있어도 괜찮을까요?",
+   "id": "en-personal-space-for-sewing-01-show-space",
+   "sentence": "Let me show you something.",
+   "meaning": "내가 뭐 좀 보여 줄게.",
    "reading": null,
-   "phonetic_kr": "더여 마인디f 아이 스탠드 f퍼r 어 빗",
+   "phonetic_kr": "레미 쇼우 여 썸씽",
    "order_index": 1,
    "explanation": {
-    "key": "Do you mind ~ = Do you mind -ing?는 '~해 주실래요?'라는 부탁, Do you mind if I ~?는 '제가 ~해도 괜찮아요?'라는 허락 요청이에요. I don't mind -ing는 '~하는 것을 꺼리지 않아요 / 괜찮아요'이고, She wouldn't mind는 '그녀도 꺼리지 않을 거예요'라는 예상이에요.",
-    "anchor": "서 있어도 괜찮을까요",
-    "situation": "Tom이 음료를 가져오며 자리를 권하지만 지오는 잠깐 서서 다리를 편다. 의자를 옮겨 주려는 배려를 사양하고 왕복 여덟 시간 운전을 설명한다. 며칠 앉아 있었던 듯하다는 끝말은 전날의 긴 운전과 뻐근함을 과장한 창작이다.",
+    "key": "Let me ~ = 제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요.",
+    "anchor": "내가 뭐 좀 보여 줄게",
+    "situation": "소연이 다시 옷을 만들 작업 공간을 찾는다. 거실 책상 뒤 의자를 옮기자는 이야기를 하다가, 미싱 테이블이 들어갈지 먼저 줄자로 재기로 하는 창작 대화다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Take the seat I cleared. I'll bring your drink.",
-      "ko": "비워 둔 자리에 앉으세요. 음료 가져올게요.",
-      "kr": "테익 더 씨이라이 클리어r드 아일 브링 여r 드링크"
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want to make clothes again. Where would I work?",
+      "ko": "다시 옷 만들고 싶은데. 어디서 작업하지?",
+      "kr": "아이 원 터 메익 클로우z 어겐 웨어r 워라이 워r크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if I stand for a bit?",
-      "ko": "잠깐 서 있어도 괜찮을까요?",
-      "kr": "더여 마인디f 아이 스탠드 f퍼r 어 빗"
+      "en": "Let me show you something.",
+      "ko": "내가 뭐 좀 보여 줄게.",
+      "kr": "레미 쇼우 여 썸씽"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Not at all. Let me move this chair.",
-      "ko": "그럼요. 이 의자 치워 드릴게요.",
-      "kr": "나러롤 레미 무우v 디스 체어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You don't have to move it. My legs just need stretching.",
-      "ko": "안 치우셔도 돼요. 그냥 다리 좀 펴려고요.",
-      "kr": "유 돈 해f터 무우v 잇 마이 레그z 저스 니이드 스트레칭"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Long trip?",
-      "ko": "멀리 다녀오셨어요?",
-      "kr": "롱 트립"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Behind your desk? We'd need to move that chair.",
+      "ko": "네 책상 뒤? 저 의자는 옮겨야겠네.",
+      "kr": "비하인드 여r 데스크 위드 니이드 터 무우v 댓 체어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I had to drive both ways, which took eight hours.",
-      "ko": "왕복으로 운전해야 했는데, 여덟 시간 걸렸어요.",
-      "kr": "아이 해드 터 드라이v 보우쓰 웨이z 위치 투케이라우어rz"
+      "en": "You don't have to move it. I'll do it.",
+      "ko": "네가 옮길 필요 없어. 내가 할게.",
+      "kr": "유 돈 해f터 무우v 잇 아일 두잇"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Then I won't make you sit down.",
-      "ko": "그럼 앉으시라고 안 할게요.",
-      "kr": "데나이 워운 메이켜 씻 다운"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait. Let's measure before we start moving things.",
+      "ko": "잠깐. 옮기기 전에 치수부터 재자.",
+      "kr": "웨잇 렛츠 메저r 비f포어r 위 스타r트 무우v잉 씽즈"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It feels like I've been sitting for days.",
-      "ko": "며칠 내내 앉아 있었던 것 같아요.",
-      "kr": "잇 f피일z 라이카이v 빈 씨링 f퍼r 데이z"
+      "en": "I was just thinking the same thing.",
+      "ko": "나도 막 같은 생각 하고 있었어.",
+      "kr": "아이 워z 저스 씽킹 더 쎄임 씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the tape measure that's in the drawer.",
+      "ko": "서랍에 있는 줄자 가져올게.",
+      "kr": "아일 겟 더 테입 메저r 댓씬 더 드로어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you check how wide the space is?",
+      "ko": "거기 폭이 얼마나 되는지 재 줄래?",
+      "kr": "컨 여 체크 하우 와이드 더 스페이씨z"
      }
     ],
     "drills": [
      {
-      "en": "Do you mind helping with the dishes?",
-      "ko": "설거지 좀 도와주실래요?",
-      "kr": "더여 마인드 헬핑 위드 더 디쉬즈"
+      "en": "Let me carry the bag.",
+      "ko": "가방은 제가 들게요.",
+      "kr": "레미 캐리 더 백"
      },
      {
-      "en": "Would you mind moving your bag?",
-      "ko": "가방 좀 옮겨 주실래요?",
-      "kr": "워저 마인드 무우v잉 여r 백"
+      "en": "Can you let me finish?",
+      "ko": "제 말을 끝까지 하게 해 주실래요?",
+      "kr": "컨 여 렛 미 f피니쉬"
      },
      {
-      "en": "I don't mind waiting here.",
-      "ko": "여기서 기다려도 괜찮아요.",
-      "kr": "아이 돈 마인드 웨이링 히어r"
+      "en": "Just let me check one thing.",
+      "ko": "하나만 확인할게요.",
+      "kr": "저스 렛 미 체크 원 씽"
      },
      {
-      "en": "Do you mind if I open this?",
-      "ko": "제가 이거 열어도 괜찮아요?",
-      "kr": "더여 마인디f 아이 오우픈 디스"
+      "en": "Let us know when you're ready.",
+      "ko": "준비되면 알려 주세요.",
+      "kr": "레러스 노우 웬 여r 레디"
      },
      {
-      "en": "She wouldn't mind joining us.",
-      "ko": "같이해도 괜찮아할 거예요.",
-      "kr": "쉬 워든 마인드 조이닝 어스"
+      "en": "Let me see what you mean.",
+      "ko": "무슨 뜻인지 좀 볼게요.",
+      "kr": "레미 씨이 왓처 미인"
      }
     ],
     "grammar": [
      {
-      "struct": "Do you mind ~",
-      "body": "Do you mind -ing?는 '~해 주실래요?'라는 부탁, Do you mind if I ~?는 '제가 ~해도 괜찮아요?'라는 허락 요청이에요. I don't mind -ing는 '~하는 것을 꺼리지 않아요 / 괜찮아요'이고, She wouldn't mind는 '그녀도 꺼리지 않을 거예요'라는 예상이에요."
+      "struct": "Let me ~",
+      "body": "제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요."
      }
     ],
     "chunks": [
      [
-      "Do you mind if I stand",
-      "더여 마인디f 아이 스탠드",
-      "제가 서 있어도 괜찮을까요"
-     ],
-     [
-      "for a bit?",
-      "f퍼r 어 빗",
-      "잠깐"
+      "Let me show you something.",
+      "레미 쇼우 여 썸씽",
+      "내가 뭐 좀 보여 줄게"
      ]
     ],
     "phonemes": [
      [
-      "/dəjə/ do you",
-      "강세 없는 do you는 더여로 이어져요."
+      "/lɛmi/ let me",
+      "let me는 자연스러운 회화에서 레미로 이어져요."
      ]
     ],
-    "mistake": "Do you mind to help ✗ → Do you mind helping? 남에게 부탁할 때는 -ing, 내 행동의 허락은 if I + 동사예요.",
-    "similar": "Is that okay with you? (괜찮겠어요?)",
-    "category": "일상/카페",
+    "mistake": "Let me to hold ✗ → Let me hold. me 다음에 바로 동사원형을 써요.",
+    "similar": "I'll do that. (제가 할게요.)",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-tom-standing-break-02-donthave",
-   "sentence": "You don't have to move it. My legs just need stretching.",
-   "meaning": "안 치우셔도 돼요. 그냥 다리 좀 펴려고요.",
+   "id": "en-personal-space-for-sewing-02-move-one-chair",
+   "sentence": "You don't have to move it. I'll do it.",
+   "meaning": "네가 옮길 필요 없어. 내가 할게.",
    "reading": null,
-   "phonetic_kr": "유 돈 해f터 무우v 잇 마이 레그z 저스 니이드 스트레칭",
+   "phonetic_kr": "유 돈 해f터 무우v 잇 아일 두잇",
    "order_index": 2,
    "explanation": {
     "key": "You don't have to ~ = ~하지 않아도 돼요. 의무가 없다는 뜻이지 금지는 아니에요.",
-    "anchor": "안 치우셔도 돼요",
-    "situation": "Tom이 음료를 가져오며 자리를 권하지만 지오는 잠깐 서서 다리를 편다. 의자를 옮겨 주려는 배려를 사양하고 왕복 여덟 시간 운전을 설명한다. 며칠 앉아 있었던 듯하다는 끝말은 전날의 긴 운전과 뻐근함을 과장한 창작이다.",
+    "anchor": "네가 옮길 필요 없어",
+    "situation": "소연이 다시 옷을 만들 작업 공간을 찾는다. 거실 책상 뒤 의자를 옮기자는 이야기를 하다가, 미싱 테이블이 들어갈지 먼저 줄자로 재기로 하는 창작 대화다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Take the seat I cleared. I'll bring your drink.",
-      "ko": "비워 둔 자리에 앉으세요. 음료 가져올게요.",
-      "kr": "테익 더 씨이라이 클리어r드 아일 브링 여r 드링크"
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want to make clothes again. Where would I work?",
+      "ko": "다시 옷 만들고 싶은데. 어디서 작업하지?",
+      "kr": "아이 원 터 메익 클로우z 어겐 웨어r 워라이 워r크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if I stand for a bit?",
-      "ko": "잠깐 서 있어도 괜찮을까요?",
-      "kr": "더여 마인디f 아이 스탠드 f퍼r 어 빗"
+      "en": "Let me show you something.",
+      "ko": "내가 뭐 좀 보여 줄게.",
+      "kr": "레미 쇼우 여 썸씽"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Not at all. Let me move this chair.",
-      "ko": "그럼요. 이 의자 치워 드릴게요.",
-      "kr": "나러롤 레미 무우v 디스 체어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You don't have to move it. My legs just need stretching.",
-      "ko": "안 치우셔도 돼요. 그냥 다리 좀 펴려고요.",
-      "kr": "유 돈 해f터 무우v 잇 마이 레그z 저스 니이드 스트레칭"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Long trip?",
-      "ko": "멀리 다녀오셨어요?",
-      "kr": "롱 트립"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Behind your desk? We'd need to move that chair.",
+      "ko": "네 책상 뒤? 저 의자는 옮겨야겠네.",
+      "kr": "비하인드 여r 데스크 위드 니이드 터 무우v 댓 체어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I had to drive both ways, which took eight hours.",
-      "ko": "왕복으로 운전해야 했는데, 여덟 시간 걸렸어요.",
-      "kr": "아이 해드 터 드라이v 보우쓰 웨이z 위치 투케이라우어rz"
+      "en": "You don't have to move it. I'll do it.",
+      "ko": "네가 옮길 필요 없어. 내가 할게.",
+      "kr": "유 돈 해f터 무우v 잇 아일 두잇"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Then I won't make you sit down.",
-      "ko": "그럼 앉으시라고 안 할게요.",
-      "kr": "데나이 워운 메이켜 씻 다운"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait. Let's measure before we start moving things.",
+      "ko": "잠깐. 옮기기 전에 치수부터 재자.",
+      "kr": "웨잇 렛츠 메저r 비f포어r 위 스타r트 무우v잉 씽즈"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It feels like I've been sitting for days.",
-      "ko": "며칠 내내 앉아 있었던 것 같아요.",
-      "kr": "잇 f피일z 라이카이v 빈 씨링 f퍼r 데이z"
+      "en": "I was just thinking the same thing.",
+      "ko": "나도 막 같은 생각 하고 있었어.",
+      "kr": "아이 워z 저스 씽킹 더 쎄임 씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the tape measure that's in the drawer.",
+      "ko": "서랍에 있는 줄자 가져올게.",
+      "kr": "아일 겟 더 테입 메저r 댓씬 더 드로어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you check how wide the space is?",
+      "ko": "거기 폭이 얼마나 되는지 재 줄래?",
+      "kr": "컨 여 체크 하우 와이드 더 스페이씨z"
      }
     ],
     "drills": [
@@ -235,12 +230,12 @@
      [
       "You don't have to move it.",
       "유 돈 해f터 무우v 잇",
-      "안 치우셔도 돼요"
+      "네가 옮길 필요 없어"
      ],
      [
-      "My legs just need stretching.",
-      "마이 레그z 저스 니이드 스트레칭",
-      "그냥 다리를 좀 펴야겠어요"
+      "I'll do it.",
+      "아일 두잇",
+      "내가 할게"
      ]
     ],
     "phonemes": [
@@ -251,257 +246,254 @@
     ],
     "mistake": "You mustn't는 하면 안 된다는 금지예요. 필요 없다는 뜻은 You don't have to예요.",
     "similar": "There's no need to do that. (그렇게 할 필요는 없어요.)",
-    "category": "일상/카페",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
   {
-   "id": "en-personal-tom-standing-break-03-had",
-   "sentence": "I had to drive both ways, which took eight hours.",
-   "meaning": "왕복으로 운전해야 했는데, 여덟 시간 걸렸어요.",
+   "id": "en-personal-space-for-sewing-03-same-thought",
+   "sentence": "I was just thinking the same thing.",
+   "meaning": "나도 막 같은 생각 하고 있었어.",
    "reading": null,
-   "phonetic_kr": "아이 해드 터 드라이v 보우쓰 웨이z 위치 투케이라우어rz",
+   "phonetic_kr": "아이 워z 저스 씽킹 더 쎄임 씽",
    "order_index": 3,
    "explanation": {
-    "key": "I had to ~ = ~해야 했어요. 과거의 필요나 의무를 말해요.",
-    "anchor": "운전해야 했는데",
-    "situation": "Tom이 음료를 가져오며 자리를 권하지만 지오는 잠깐 서서 다리를 편다. 의자를 옮겨 주려는 배려를 사양하고 왕복 여덟 시간 운전을 설명한다. 며칠 앉아 있었던 듯하다는 끝말은 전날의 긴 운전과 뻐근함을 과장한 창작이다.",
+    "key": "thinking the same thing = 같은 생각을 하고 있어요. was just thinking은 상대가 말하기 직전에 나도 막 그 생각을 하던 중이었다는 뜻이에요.",
+    "anchor": "나도 막 같은 생각 하고 있었어",
+    "situation": "소연이 다시 옷을 만들 작업 공간을 찾는다. 거실 책상 뒤 의자를 옮기자는 이야기를 하다가, 미싱 테이블이 들어갈지 먼저 줄자로 재기로 하는 창작 대화다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Take the seat I cleared. I'll bring your drink.",
-      "ko": "비워 둔 자리에 앉으세요. 음료 가져올게요.",
-      "kr": "테익 더 씨이라이 클리어r드 아일 브링 여r 드링크"
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want to make clothes again. Where would I work?",
+      "ko": "다시 옷 만들고 싶은데. 어디서 작업하지?",
+      "kr": "아이 원 터 메익 클로우z 어겐 웨어r 워라이 워r크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if I stand for a bit?",
-      "ko": "잠깐 서 있어도 괜찮을까요?",
-      "kr": "더여 마인디f 아이 스탠드 f퍼r 어 빗"
+      "en": "Let me show you something.",
+      "ko": "내가 뭐 좀 보여 줄게.",
+      "kr": "레미 쇼우 여 썸씽"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Not at all. Let me move this chair.",
-      "ko": "그럼요. 이 의자 치워 드릴게요.",
-      "kr": "나러롤 레미 무우v 디스 체어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You don't have to move it. My legs just need stretching.",
-      "ko": "안 치우셔도 돼요. 그냥 다리 좀 펴려고요.",
-      "kr": "유 돈 해f터 무우v 잇 마이 레그z 저스 니이드 스트레칭"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Long trip?",
-      "ko": "멀리 다녀오셨어요?",
-      "kr": "롱 트립"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Behind your desk? We'd need to move that chair.",
+      "ko": "네 책상 뒤? 저 의자는 옮겨야겠네.",
+      "kr": "비하인드 여r 데스크 위드 니이드 터 무우v 댓 체어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I had to drive both ways, which took eight hours.",
-      "ko": "왕복으로 운전해야 했는데, 여덟 시간 걸렸어요.",
-      "kr": "아이 해드 터 드라이v 보우쓰 웨이z 위치 투케이라우어rz"
+      "en": "You don't have to move it. I'll do it.",
+      "ko": "네가 옮길 필요 없어. 내가 할게.",
+      "kr": "유 돈 해f터 무우v 잇 아일 두잇"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Then I won't make you sit down.",
-      "ko": "그럼 앉으시라고 안 할게요.",
-      "kr": "데나이 워운 메이켜 씻 다운"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait. Let's measure before we start moving things.",
+      "ko": "잠깐. 옮기기 전에 치수부터 재자.",
+      "kr": "웨잇 렛츠 메저r 비f포어r 위 스타r트 무우v잉 씽즈"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It feels like I've been sitting for days.",
-      "ko": "며칠 내내 앉아 있었던 것 같아요.",
-      "kr": "잇 f피일z 라이카이v 빈 씨링 f퍼r 데이z"
+      "en": "I was just thinking the same thing.",
+      "ko": "나도 막 같은 생각 하고 있었어.",
+      "kr": "아이 워z 저스 씽킹 더 쎄임 씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the tape measure that's in the drawer.",
+      "ko": "서랍에 있는 줄자 가져올게.",
+      "kr": "아일 겟 더 테입 메저r 댓씬 더 드로어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you check how wide the space is?",
+      "ko": "거기 폭이 얼마나 되는지 재 줄래?",
+      "kr": "컨 여 체크 하우 와이드 더 스페이씨z"
      }
     ],
     "drills": [
      {
-      "en": "I had to wait outside.",
-      "ko": "밖에서 기다려야 했어요.",
-      "kr": "아이 해드 터 웨이라웃싸이드"
+      "en": "We're thinking the same thing.",
+      "ko": "우리는 같은 생각을 하고 있어요.",
+      "kr": "위어r 씽킹 더 쎄임 씽"
      },
      {
-      "en": "Did you have to walk home?",
-      "ko": "집까지 걸어가야 했어요?",
-      "kr": "디저 해f터 워크 호움"
+      "en": "Were you thinking the same thing?",
+      "ko": "같은 생각을 하고 계셨어요?",
+      "kr": "워r 여 씽킹 더 쎄임 씽"
      },
      {
-      "en": "We didn't have to pay again.",
-      "ko": "다시 돈을 낼 필요는 없었어요.",
-      "kr": "위 디든 해f터 페이 어겐"
+      "en": "I wasn't thinking the same thing.",
+      "ko": "저는 같은 생각을 하고 있지는 않았어요.",
+      "kr": "아이 워z은 씽킹 더 쎄임 씽"
      },
      {
-      "en": "She had to leave before lunch.",
-      "ko": "그녀는 점심 전에 떠나야 했어요.",
-      "kr": "쉬 해드 터 리이v 비f포어r 런치"
+      "en": "She was thinking about something else.",
+      "ko": "그녀는 다른 생각을 하고 있었어요.",
+      "kr": "쉬 워z 씽킹 어바웃 썸씽 엘스"
      }
     ],
     "grammar": [
      {
-      "struct": "I had to ~",
-      "body": "~해야 했어요. 과거의 필요나 의무를 말해요."
+      "struct": "thinking the same thing",
+      "body": "같은 생각을 하고 있어요. was just thinking은 상대가 말하기 직전에 나도 막 그 생각을 하던 중이었다는 뜻이에요."
      }
     ],
     "chunks": [
      [
-      "I had to drive both ways,",
-      "아이 해드 터 드라이v 보우쓰 웨이z",
-      "왕복으로 운전해야 했는데"
+      "I was just thinking",
+      "아이 워z 저스 씽킹",
+      "나도 막 생각하고 있었어"
      ],
      [
-      "which took eight hours.",
-      "위치 투케이라우어rz",
-      "그 운전에 여덟 시간이 걸렸어요"
+      "the same thing.",
+      "더 쎄임 씽",
+      "같은 것을"
      ]
     ],
     "phonemes": [
      [
-      "/hædtə/ had to",
-      "had to는 해드 터로, d를 크게 터뜨리지 않고 to로 이어져요."
-     ],
-     [
-      "/t/ eight hours",
-      "hours의 h는 소리가 나지 않아 eight의 t가 뒤 모음으로 이어져 에이라우어rz로 적어요."
-     ],
-     [
-      "/k/ took eight",
-      "took의 k가 eight에 이어져 투케이, eight hours까지 연결하면 투케이라우어rz로 적어요. 쉼표 앞 ways의 끝 z는 남겨 웨이z로 말해요."
+      "/θ/ thinking",
+      "thinking은 씽킹으로, th에서는 혀끝을 이 사이에 가볍게 대고 바람을 내요."
      ]
     ],
-    "mistake": "I had to drove ✗ → I had to drive. 과거 표시는 had에 있고 to 뒤는 원형이에요.",
-    "similar": "I needed to do it. (그 일을 해야 했어요.)",
-    "category": "일상/카페",
-    "frequency": 9
+    "mistake": "I was think the same thing ✗ → I was thinking the same thing. 진행형은 be + -ing예요.",
+    "similar": "That was on my mind, too. (저도 그 생각을 하고 있었어요.)",
+    "category": "생활/가족",
+    "frequency": 8
    }
   },
   {
-   "id": "en-personal-tom-standing-break-04-feels",
-   "sentence": "It feels like I've been sitting for days.",
-   "meaning": "며칠 내내 앉아 있었던 것 같아요.",
+   "id": "en-personal-space-for-sewing-04-check-space-width",
+   "sentence": "Can you check how wide the space is?",
+   "meaning": "거기 폭이 얼마나 되는지 재 줄래?",
    "reading": null,
-   "phonetic_kr": "잇 f피일z 라이카이v 빈 씨링 f퍼r 데이z",
+   "phonetic_kr": "컨 여 체크 하우 와이드 더 스페이씨z",
    "order_index": 4,
    "explanation": {
-    "key": "It feels like ~ = ~처럼 느껴져요. 신체 감각이나 주관적인 인상을 말해요.",
-    "anchor": "앉아 있었던 것 같아요",
-    "situation": "Tom이 음료를 가져오며 자리를 권하지만 지오는 잠깐 서서 다리를 편다. 의자를 옮겨 주려는 배려를 사양하고 왕복 여덟 시간 운전을 설명한다. 며칠 앉아 있었던 듯하다는 끝말은 전날의 긴 운전과 뻐근함을 과장한 창작이다.",
+    "key": "Can you ~ = ~해 줄 수 있어요? 본문과 Could you ~는 상대에게 행동을 부탁해요. can은 능력에도 써서 I can carry는 '들 수 있다', can't move는 '옮길 수 없다'예요. Can she come with us?는 여기서 '같이 와도 돼요?'라는 허락 질문이에요.",
+    "anchor": "재 줄래",
+    "situation": "소연이 다시 옷을 만들 작업 공간을 찾는다. 거실 책상 뒤 의자를 옮기자는 이야기를 하다가, 미싱 테이블이 들어갈지 먼저 줄자로 재기로 하는 창작 대화다.",
     "miniDialogue": [
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Take the seat I cleared. I'll bring your drink.",
-      "ko": "비워 둔 자리에 앉으세요. 음료 가져올게요.",
-      "kr": "테익 더 씨이라이 클리어r드 아일 브링 여r 드링크"
+      "speaker": "A",
+      "name": "소연",
+      "en": "I want to make clothes again. Where would I work?",
+      "ko": "다시 옷 만들고 싶은데. 어디서 작업하지?",
+      "kr": "아이 원 터 메익 클로우z 어겐 웨어r 워라이 워r크"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Do you mind if I stand for a bit?",
-      "ko": "잠깐 서 있어도 괜찮을까요?",
-      "kr": "더여 마인디f 아이 스탠드 f퍼r 어 빗"
+      "en": "Let me show you something.",
+      "ko": "내가 뭐 좀 보여 줄게.",
+      "kr": "레미 쇼우 여 썸씽"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Not at all. Let me move this chair.",
-      "ko": "그럼요. 이 의자 치워 드릴게요.",
-      "kr": "나러롤 레미 무우v 디스 체어r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You don't have to move it. My legs just need stretching.",
-      "ko": "안 치우셔도 돼요. 그냥 다리 좀 펴려고요.",
-      "kr": "유 돈 해f터 무우v 잇 마이 레그z 저스 니이드 스트레칭"
-     },
-     {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Long trip?",
-      "ko": "멀리 다녀오셨어요?",
-      "kr": "롱 트립"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Behind your desk? We'd need to move that chair.",
+      "ko": "네 책상 뒤? 저 의자는 옮겨야겠네.",
+      "kr": "비하인드 여r 데스크 위드 니이드 터 무우v 댓 체어r"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I had to drive both ways, which took eight hours.",
-      "ko": "왕복으로 운전해야 했는데, 여덟 시간 걸렸어요.",
-      "kr": "아이 해드 터 드라이v 보우쓰 웨이z 위치 투케이라우어rz"
+      "en": "You don't have to move it. I'll do it.",
+      "ko": "네가 옮길 필요 없어. 내가 할게.",
+      "kr": "유 돈 해f터 무우v 잇 아일 두잇"
      },
      {
-      "speaker": "B",
-      "name": "Tom",
-      "en": "Then I won't make you sit down.",
-      "ko": "그럼 앉으시라고 안 할게요.",
-      "kr": "데나이 워운 메이켜 씻 다운"
+      "speaker": "A",
+      "name": "소연",
+      "en": "Wait. Let's measure before we start moving things.",
+      "ko": "잠깐. 옮기기 전에 치수부터 재자.",
+      "kr": "웨잇 렛츠 메저r 비f포어r 위 스타r트 무우v잉 씽즈"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "It feels like I've been sitting for days.",
-      "ko": "며칠 내내 앉아 있었던 것 같아요.",
-      "kr": "잇 f피일z 라이카이v 빈 씨링 f퍼r 데이z"
+      "en": "I was just thinking the same thing.",
+      "ko": "나도 막 같은 생각 하고 있었어.",
+      "kr": "아이 워z 저스 씽킹 더 쎄임 씽"
+     },
+     {
+      "speaker": "A",
+      "name": "소연",
+      "en": "I'll get the tape measure that's in the drawer.",
+      "ko": "서랍에 있는 줄자 가져올게.",
+      "kr": "아일 겟 더 테입 메저r 댓씬 더 드로어r"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "Can you check how wide the space is?",
+      "ko": "거기 폭이 얼마나 되는지 재 줄래?",
+      "kr": "컨 여 체크 하우 와이드 더 스페이씨z"
      }
     ],
     "drills": [
      {
-      "en": "It feels like summer today.",
-      "ko": "오늘은 여름처럼 느껴져요.",
-      "kr": "잇 f피일z 라이크 써머r 터데이"
+      "en": "Can you hold this for me?",
+      "ko": "이거 좀 잡아 주실래요?",
+      "kr": "컨 여 호울드 디스 f퍼r 미"
      },
      {
-      "en": "Does it feel like the same blanket?",
-      "ko": "같은 이불 같은 느낌이에요?",
-      "kr": "더짓 f피일 라이크 더 쎄임 블랭킷"
+      "en": "Could you leave some room?",
+      "ko": "자리 좀 남겨 주실래요?",
+      "kr": "커저 리이v 썸 루움"
      },
      {
-      "en": "That felt like a very long walk.",
-      "ko": "정말 오래 걸은 것처럼 느껴졌어요.",
-      "kr": "댓 f펠트 라이커 v베리 롱 워크"
+      "en": "I can carry that.",
+      "ko": "그건 제가 들 수 있어요.",
+      "kr": "아이 컨 캐리 댓"
      },
      {
-      "en": "It doesn't feel like home yet.",
-      "ko": "아직 내 집처럼 느껴지지는 않아요.",
-      "kr": "잇 더즌 f피일 라이크 호움 옛"
+      "en": "Can she come with us?",
+      "ko": "그녀도 같이 와도 돼요?",
+      "kr": "컨 쉬 컴 위더스"
+     },
+     {
+      "en": "We can't move it alone.",
+      "ko": "우리끼리는 그걸 옮길 수 없어요.",
+      "kr": "위 캔 무우v 이럴로운"
      }
     ],
     "grammar": [
      {
-      "struct": "It feels like ~",
-      "body": "~처럼 느껴져요. 신체 감각이나 주관적인 인상을 말해요."
+      "struct": "Can you ~",
+      "body": "~해 줄 수 있어요? 본문과 Could you ~는 상대에게 행동을 부탁해요. can은 능력에도 써서 I can carry는 '들 수 있다', can't move는 '옮길 수 없다'예요. Can she come with us?는 여기서 '같이 와도 돼요?'라는 허락 질문이에요."
      }
     ],
     "chunks": [
      [
-      "It feels like I've been sitting",
-      "잇 f피일z 라이카이v 빈 씨링",
-      "계속 앉아 있었던 것 같아요"
+      "Can you check",
+      "컨 여 체크",
+      "확인해 줄래"
      ],
      [
-      "for days.",
-      "f퍼r 데이z",
-      "며칠 동안"
+      "how wide the space is?",
+      "하우 와이드 더 스페이씨z",
+      "그 공간의 폭이 얼마나 되는지"
      ]
     ],
     "phonemes": [
      [
-      "/iː/ feels",
-      "feels는 f피일z로 길게 말해요. f는 윗니와 아랫입술 사이로 바람을 내요."
+      "/kənjə/ can you",
+      "can you는 강세 없이 컨 여로 말해요."
      ]
     ],
-    "mistake": "It feels I've been sitting ✗ → It feels like I've been sitting. 문장을 붙일 때 like가 필요해요.",
-    "similar": "That's how it feels to me. (제게는 그렇게 느껴져요.)",
-    "category": "일상/카페",
+    "mistake": "Can you to lift ✗ → Can you lift. can 뒤 동사에는 to를 붙이지 않아요.",
+    "similar": "Could you help me? (좀 도와주시겠어요?)",
+    "category": "생활/가족",
     "frequency": 9
    }
   }

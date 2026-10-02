@@ -4,16 +4,16 @@
  "date": "2026-10-29",
  "cards": [
   {
-   "id": "en-personal-photo-before-the-next-page-01-let",
-   "sentence": "Let me mark where I stopped reading.",
-   "meaning": "어디까지 읽었는지 표시만 할게요.",
+   "id": "en-personal-photo-before-the-next-page-01-put-book-down",
+   "sentence": "I'll put my book down. Where would you like to stand?",
+   "meaning": "책 내려놓을게요. 어디에 서고 싶으세요?",
    "reading": null,
-   "phonetic_kr": "레미 마r크 웨어r 아이 스탑트 리이딩",
+   "phonetic_kr": "아일 풋 마이 북 다운 웨어r 워저 라이크 터 스탠드",
    "order_index": 1,
    "explanation": {
-    "key": "Let me ~ = 제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요.",
-    "anchor": "표시만 할게요",
-    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
+    "key": "I'll ~ = 제가 ~할게요. 지금 하기로 정한 행동이나 바로 해 줄 일을 말해요. 드릴의 Will you ~?는 상대에게 ~해 주실래요?라고 부탁하는 표현이에요.",
+    "anchor": "책 내려놓을게요",
+    "situation": "홍대에서 책을 읽던 지오가 여행객 사진을 찍어 준다. 한 장 더 요청받아 책은 나중에 읽어도 된다고 답한 뒤, 책 주제를 묻는 짧은 대화로 넘어가는 창작 장면이다.",
     "miniDialogue": [
      {
       "speaker": "A",
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me mark where I stopped reading.",
-      "ko": "어디까지 읽었는지 표시만 할게요.",
-      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
+      "en": "I'll put my book down. Where would you like to stand?",
+      "ko": "책 내려놓을게요. 어디에 서고 싶으세요?",
+      "kr": "아일 풋 마이 북 다운 웨어r 워저 라이크 터 스탠드"
      },
      {
       "speaker": "A",
@@ -46,87 +46,82 @@
      {
       "speaker": "A",
       "name": "Maya",
-      "en": "Perfect. Are we both in the picture?",
-      "ko": "좋네요. 저희 둘 다 나오나요?",
-      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
+      "en": "We love the photo you took. One more, please?",
+      "ko": "찍어 주신 사진 마음에 들어요. 한 장만 더 부탁드려도 될까요?",
+      "kr": "위 러v 더 f포우토우 여 툭 원 모어r 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Yes. I was about to take it. Hold still.",
-      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
-      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
+      "en": "There's no rush. The book can wait.",
+      "ko": "서두를 것 없어요. 책은 나중에 읽어도 돼요.",
+      "kr": "데어rz 노우 러쉬 더 북 컨 웨잇"
      },
      {
       "speaker": "A",
       "name": "Maya",
-      "en": "Thanks! One more, then back to your book.",
-      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
-      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
+      "en": "What's the book about?",
+      "ko": "무슨 내용의 책이에요?",
+      "kr": "왓츠 더 부커바웃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's no rush. The title was the best part.",
-      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
-      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
+      "en": "It's about walking. I should be doing that instead.",
+      "ko": "산책에 관한 책이에요. 저도 이거 읽는 대신 걸어야겠네요.",
+      "kr": "잇서바웃 워킹 아이 슈드 비 두잉 대린스테드"
      }
     ],
     "drills": [
      {
-      "en": "Let me carry the bag.",
-      "ko": "가방은 제가 들게요.",
-      "kr": "레미 캐리 더 백"
+      "en": "I'll check the address.",
+      "ko": "제가 주소를 확인할게요.",
+      "kr": "아일 체크 디 어드레스"
      },
      {
-      "en": "Can you let me finish?",
-      "ko": "제 말을 끝까지 하게 해 주실래요?",
-      "kr": "컨 여 렛 미 f피니쉬"
+      "en": "Will you hold this for me?",
+      "ko": "이거 좀 잡아 주실래요?",
+      "kr": "윌 여 호울드 디스 f퍼r 미"
      },
      {
-      "en": "Just let me check one thing.",
-      "ko": "하나만 확인할게요.",
-      "kr": "저스 렛 미 체크 원 씽"
+      "en": "We'll wait by the door.",
+      "ko": "저희는 문 옆에서 기다릴게요.",
+      "kr": "위일 웨잇 바이 더 도어r"
      },
      {
-      "en": "Let us know when you're ready.",
-      "ko": "준비되면 알려 주세요.",
-      "kr": "레러스 노우 웬 여r 레디"
-     },
-     {
-      "en": "Let me see what you mean.",
-      "ko": "무슨 뜻인지 좀 볼게요.",
-      "kr": "레미 씨이 왓처 미인"
+      "en": "She'll bring the bag.",
+      "ko": "그녀가 가방을 가져올 거예요.",
+      "kr": "쉴 브링 더 백"
      }
     ],
     "grammar": [
      {
-      "struct": "Let me ~",
-      "body": "제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요."
+      "struct": "I'll ~",
+      "body": "제가 ~할게요. 지금 하기로 정한 행동이나 바로 해 줄 일을 말해요. 드릴의 Will you ~?는 상대에게 ~해 주실래요?라고 부탁하는 표현이에요."
      }
     ],
     "chunks": [
      [
-      "Let me mark",
-      "레미 마r크",
-      "표시만 할게요"
+      "I'll put my book down.",
+      "아일 풋 마이 북 다운",
+      "책 내려놓을게요"
      ],
      [
-      "where I stopped reading.",
-      "웨어r 아이 스탑트 리이딩",
-      "어디까지 읽었는지"
+      "Where would you like to stand?",
+      "웨어r 워저 라이크 터 스탠드",
+      "어디에 서고 싶으세요"
      ]
     ],
     "phonemes": [
      [
-      "/lɛmi/ let me",
-      "let me는 자연스러운 회화에서 레미로 이어져요."
+      "/aɪl/ I'll",
+      "I'll은 I will을 줄인 말이며 아일로 이어 말해요."
      ]
     ],
-    "mistake": "Let me to hold ✗ → Let me hold. me 다음에 바로 동사원형을 써요.",
-    "similar": "I'll do that. (제가 할게요.)",
+    "mistake": "I'll checked ✗ → I'll check. will 뒤에는 동사원형을 써요.",
+    "similar": "I'm going to do that now. (지금 그걸 할 거예요.)",
     "category": "여행/사진",
-    "frequency": 9
+    "frequency": 8
    }
   },
   {
@@ -139,7 +134,7 @@
    "explanation": {
     "key": "You might want to ~ = ~하는 게 좋겠어요. 본문에서는 상대에게 선택권을 남기는 권유예요. We might want to ~도 함께 할 일을 조심스럽게 제안할 수 있어요. She might want to ~는 제삼자의 욕구를 추측하는 '~하고 싶을 수도 있어요'이고, Do you want to ~?는 원하는지 직접 묻는 질문이에요.",
     "anchor": "서시는 게 좋겠어요",
-    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
+    "situation": "홍대에서 책을 읽던 지오가 여행객 사진을 찍어 준다. 한 장 더 요청받아 책은 나중에 읽어도 된다고 답한 뒤, 책 주제를 묻는 짧은 대화로 넘어가는 창작 장면이다.",
     "miniDialogue": [
      {
       "speaker": "A",
@@ -151,9 +146,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me mark where I stopped reading.",
-      "ko": "어디까지 읽었는지 표시만 할게요.",
-      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
+      "en": "I'll put my book down. Where would you like to stand?",
+      "ko": "책 내려놓을게요. 어디에 서고 싶으세요?",
+      "kr": "아일 풋 마이 북 다운 웨어r 워저 라이크 터 스탠드"
      },
      {
       "speaker": "A",
@@ -172,30 +167,30 @@
      {
       "speaker": "A",
       "name": "Maya",
-      "en": "Perfect. Are we both in the picture?",
-      "ko": "좋네요. 저희 둘 다 나오나요?",
-      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
+      "en": "We love the photo you took. One more, please?",
+      "ko": "찍어 주신 사진 마음에 들어요. 한 장만 더 부탁드려도 될까요?",
+      "kr": "위 러v 더 f포우토우 여 툭 원 모어r 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Yes. I was about to take it. Hold still.",
-      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
-      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
+      "en": "There's no rush. The book can wait.",
+      "ko": "서두를 것 없어요. 책은 나중에 읽어도 돼요.",
+      "kr": "데어rz 노우 러쉬 더 북 컨 웨잇"
      },
      {
       "speaker": "A",
       "name": "Maya",
-      "en": "Thanks! One more, then back to your book.",
-      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
-      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
+      "en": "What's the book about?",
+      "ko": "무슨 내용의 책이에요?",
+      "kr": "왓츠 더 부커바웃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's no rush. The title was the best part.",
-      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
-      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
+      "en": "It's about walking. I should be doing that instead.",
+      "ko": "산책에 관한 책이에요. 저도 이거 읽는 대신 걸어야겠네요.",
+      "kr": "잇서바웃 워킹 아이 슈드 비 두잉 대린스테드"
      }
     ],
     "drills": [
@@ -255,147 +250,16 @@
    }
   },
   {
-   "id": "en-personal-photo-before-the-next-page-03-wasabout",
-   "sentence": "Yes. I was about to take it. Hold still.",
-   "meaning": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
+   "id": "en-personal-photo-before-the-next-page-03-book-can-wait",
+   "sentence": "There's no rush. The book can wait.",
+   "meaning": "서두를 것 없어요. 책은 나중에 읽어도 돼요.",
    "reading": null,
-   "phonetic_kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸",
+   "phonetic_kr": "데어rz 노우 러쉬 더 북 컨 웨잇",
    "order_index": 3,
-   "explanation": {
-    "key": "I was about to ~ = 막 ~하려던 참이었어요. 무언가 하기 직전이었다고 말해요.",
-    "anchor": "막 찍으려던 참이에요",
-    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
-    "miniDialogue": [
-     {
-      "speaker": "A",
-      "name": "Maya",
-      "en": "Could you take our photo? Sorry to interrupt your reading.",
-      "ko": "사진 좀 찍어 주실래요? 책 읽으시는데 죄송해요.",
-      "kr": "커저 테이카우어r f포우토우 쏘리 터 인터럽트 여r 리이딩"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Let me mark where I stopped reading.",
-      "ko": "어디까지 읽었는지 표시만 할게요.",
-      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
-     },
-     {
-      "speaker": "A",
-      "name": "Maya",
-      "en": "Thanks. We want the whole street behind us.",
-      "ko": "감사해요. 저희 뒤로 거리가 다 나왔으면 좋겠어요.",
-      "kr": "쌩크스 위 원 더 호울 스트리잇 비하인더스"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "You might want to stand where the light is better.",
-      "ko": "빛이 더 좋은 쪽에 서시는 게 좋겠어요.",
-      "kr": "유 마잇 워너 스탠드 웨어r 더 라이리z 베러r"
-     },
-     {
-      "speaker": "A",
-      "name": "Maya",
-      "en": "Perfect. Are we both in the picture?",
-      "ko": "좋네요. 저희 둘 다 나오나요?",
-      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "Yes. I was about to take it. Hold still.",
-      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
-      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
-     },
-     {
-      "speaker": "A",
-      "name": "Maya",
-      "en": "Thanks! One more, then back to your book.",
-      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
-      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
-     },
-     {
-      "speaker": "B",
-      "name": "지오",
-      "en": "There's no rush. The title was the best part.",
-      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
-      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
-     }
-    ],
-    "drills": [
-     {
-      "en": "I was about to call you.",
-      "ko": "막 전화하려던 참이었어요.",
-      "kr": "아이 워z 어바웃 터 콜 유"
-     },
-     {
-      "en": "We were about to leave.",
-      "ko": "막 떠나려던 참이었어요.",
-      "kr": "위 워r 어바웃 터 리이v"
-     },
-     {
-      "en": "Were you about to say something?",
-      "ko": "막 무슨 말을 하려던 참이었어요?",
-      "kr": "워r 여 어바웃 터 쎄이 썸씽"
-     },
-     {
-      "en": "She was about to close the door.",
-      "ko": "막 문을 닫으려던 참이었어요.",
-      "kr": "쉬 워z 어바웃 터 클로우z 더 도어r"
-     },
-     {
-      "en": "They were about to start dinner.",
-      "ko": "그들은 막 저녁 식사를 시작하려던 참이었어요.",
-      "kr": "데이 워r 어바웃 터 스타r트 디너r"
-     }
-    ],
-    "grammar": [
-     {
-      "struct": "I was about to ~",
-      "body": "막 ~하려던 참이었어요. 무언가 하기 직전이었다고 말해요."
-     }
-    ],
-    "chunks": [
-     [
-      "Yes.",
-      "예스",
-      "네"
-     ],
-     [
-      "I was about to take it.",
-      "아이 워z 어바웃 터 테이킷",
-      "막 찍으려던 참이에요"
-     ],
-     [
-      "Hold still.",
-      "호울드 스틸",
-      "잠깐 가만히 계세요"
-     ]
-    ],
-    "phonemes": [
-     [
-      "/z/ was",
-      "was의 끝소리 z를 남겨 워z 어바웃 터로 말해요."
-     ]
-    ],
-    "mistake": "I was about doing ✗ → I was about to do. about to 뒤는 동사원형이에요.",
-    "similar": "I was just going to do that. (막 그걸 하려던 참이었어요.)",
-    "category": "여행/사진",
-    "frequency": 9
-   }
-  },
-  {
-   "id": "en-personal-photo-before-the-next-page-04-there",
-   "sentence": "There's no rush. The title was the best part.",
-   "meaning": "서두를 것 없어요. 제목이 제일 좋았거든요.",
-   "reading": null,
-   "phonetic_kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트",
-   "order_index": 4,
    "explanation": {
     "key": "There's no ~ = ~가 없어요. 명사 앞에 no를 붙여 없음을 말해요.",
     "anchor": "서두를 것 없어요",
-    "situation": "여행객이 사진을 부탁하자 책을 잠깐 내려놓고 빛이 좋은 쪽으로 안내한다. 책으로 돌아가라는 배려에 제목이 제일 좋았다는 가벼운 말로 답하며 독서 취향 인터뷰로 바꾸지 않았다.",
+    "situation": "홍대에서 책을 읽던 지오가 여행객 사진을 찍어 준다. 한 장 더 요청받아 책은 나중에 읽어도 된다고 답한 뒤, 책 주제를 묻는 짧은 대화로 넘어가는 창작 장면이다.",
     "miniDialogue": [
      {
       "speaker": "A",
@@ -407,9 +271,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Let me mark where I stopped reading.",
-      "ko": "어디까지 읽었는지 표시만 할게요.",
-      "kr": "레미 마r크 웨어r 아이 스탑트 리이딩"
+      "en": "I'll put my book down. Where would you like to stand?",
+      "ko": "책 내려놓을게요. 어디에 서고 싶으세요?",
+      "kr": "아일 풋 마이 북 다운 웨어r 워저 라이크 터 스탠드"
      },
      {
       "speaker": "A",
@@ -428,30 +292,30 @@
      {
       "speaker": "A",
       "name": "Maya",
-      "en": "Perfect. Are we both in the picture?",
-      "ko": "좋네요. 저희 둘 다 나오나요?",
-      "kr": "퍼r f펙트 아r 위 보우씬 더 픽처r"
+      "en": "We love the photo you took. One more, please?",
+      "ko": "찍어 주신 사진 마음에 들어요. 한 장만 더 부탁드려도 될까요?",
+      "kr": "위 러v 더 f포우토우 여 툭 원 모어r 플리이z"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "Yes. I was about to take it. Hold still.",
-      "ko": "네. 막 찍으려던 참이에요. 잠깐 가만히 계세요.",
-      "kr": "예스 아이 워z 어바웃 터 테이킷 호울드 스틸"
+      "en": "There's no rush. The book can wait.",
+      "ko": "서두를 것 없어요. 책은 나중에 읽어도 돼요.",
+      "kr": "데어rz 노우 러쉬 더 북 컨 웨잇"
      },
      {
       "speaker": "A",
       "name": "Maya",
-      "en": "Thanks! One more, then back to your book.",
-      "ko": "감사해요! 한 장만 더 부탁드리고, 다시 책 읽으시게 할게요.",
-      "kr": "쌩크스 원 모어r 덴 백 터 여r 북"
+      "en": "What's the book about?",
+      "ko": "무슨 내용의 책이에요?",
+      "kr": "왓츠 더 부커바웃"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "There's no rush. The title was the best part.",
-      "ko": "서두를 것 없어요. 제목이 제일 좋았거든요.",
-      "kr": "데어rz 노우 러쉬 더 타이럴 워z 더 베스 파r트"
+      "en": "It's about walking. I should be doing that instead.",
+      "ko": "산책에 관한 책이에요. 저도 이거 읽는 대신 걸어야겠네요.",
+      "kr": "잇서바웃 워킹 아이 슈드 비 두잉 대린스테드"
      }
     ],
     "drills": [
@@ -489,9 +353,9 @@
       "서두를 것 없어요"
      ],
      [
-      "The title was the best part.",
-      "더 타이럴 워z 더 베스 파r트",
-      "제목이 제일 좋은 부분이었어요"
+      "The book can wait.",
+      "더 북 컨 웨잇",
+      "책은 나중에 읽어도 돼요"
      ]
     ],
     "phonemes": [
@@ -504,6 +368,132 @@
     "similar": "We have plenty of time. (시간은 충분해요.)",
     "category": "여행/사진",
     "frequency": 9
+   }
+  },
+  {
+   "id": "en-personal-photo-before-the-next-page-04-walking-instead",
+   "sentence": "It's about walking. I should be doing that instead.",
+   "meaning": "산책에 관한 책이에요. 저도 이거 읽는 대신 걸어야겠네요.",
+   "reading": null,
+   "phonetic_kr": "잇서바웃 워킹 아이 슈드 비 두잉 대린스테드",
+   "order_index": 4,
+   "explanation": {
+    "key": "I should ~ = ~해야겠어요. should는 의무뿐 아니라 조언이나 지금 무엇을 하는 편이 나은지도 말해요. 본문의 should be doing은 지금 다른 행동을 하고 있어야겠다는 뜻이에요.",
+    "anchor": "걸어야겠네요",
+    "situation": "홍대에서 책을 읽던 지오가 여행객 사진을 찍어 준다. 한 장 더 요청받아 책은 나중에 읽어도 된다고 답한 뒤, 책 주제를 묻는 짧은 대화로 넘어가는 창작 장면이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Could you take our photo? Sorry to interrupt your reading.",
+      "ko": "사진 좀 찍어 주실래요? 책 읽으시는데 죄송해요.",
+      "kr": "커저 테이카우어r f포우토우 쏘리 터 인터럽트 여r 리이딩"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "I'll put my book down. Where would you like to stand?",
+      "ko": "책 내려놓을게요. 어디에 서고 싶으세요?",
+      "kr": "아일 풋 마이 북 다운 웨어r 워저 라이크 터 스탠드"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "Thanks. We want the whole street behind us.",
+      "ko": "감사해요. 저희 뒤로 거리가 다 나왔으면 좋겠어요.",
+      "kr": "쌩크스 위 원 더 호울 스트리잇 비하인더스"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "You might want to stand where the light is better.",
+      "ko": "빛이 더 좋은 쪽에 서시는 게 좋겠어요.",
+      "kr": "유 마잇 워너 스탠드 웨어r 더 라이리z 베러r"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "We love the photo you took. One more, please?",
+      "ko": "찍어 주신 사진 마음에 들어요. 한 장만 더 부탁드려도 될까요?",
+      "kr": "위 러v 더 f포우토우 여 툭 원 모어r 플리이z"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "There's no rush. The book can wait.",
+      "ko": "서두를 것 없어요. 책은 나중에 읽어도 돼요.",
+      "kr": "데어rz 노우 러쉬 더 북 컨 웨잇"
+     },
+     {
+      "speaker": "A",
+      "name": "Maya",
+      "en": "What's the book about?",
+      "ko": "무슨 내용의 책이에요?",
+      "kr": "왓츠 더 부커바웃"
+     },
+     {
+      "speaker": "B",
+      "name": "지오",
+      "en": "It's about walking. I should be doing that instead.",
+      "ko": "산책에 관한 책이에요. 저도 이거 읽는 대신 걸어야겠네요.",
+      "kr": "잇서바웃 워킹 아이 슈드 비 두잉 대린스테드"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I should get some rest.",
+      "ko": "좀 쉬어야겠어요.",
+      "kr": "아이 슈드 겟 썸 레스트"
+     },
+     {
+      "en": "You should be sleeping now.",
+      "ko": "지금은 자고 있어야죠.",
+      "kr": "유 슈드 비 슬리핑 나우"
+     },
+     {
+      "en": "We should check the time.",
+      "ko": "시간을 확인하는 게 좋겠어요.",
+      "kr": "위 슈드 체크 더 타임"
+     },
+     {
+      "en": "Should I wait here?",
+      "ko": "여기서 기다리는 게 좋을까요?",
+      "kr": "슈라이 웨잇 히어r"
+     },
+     {
+      "en": "I should be working on this.",
+      "ko": "지금은 이 일을 하고 있어야겠어요.",
+      "kr": "아이 슈드 비 워r킹 언 디스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I should ~",
+      "body": "~해야겠어요. should는 의무뿐 아니라 조언이나 지금 무엇을 하는 편이 나은지도 말해요. 본문의 should be doing은 지금 다른 행동을 하고 있어야겠다는 뜻이에요."
+     }
+    ],
+    "chunks": [
+     [
+      "It's about walking.",
+      "잇서바웃 워킹",
+      "산책에 관한 책이에요"
+     ],
+     [
+      "I should be doing that instead.",
+      "아이 슈드 비 두잉 대린스테드",
+      "대신 그걸 하고 있어야겠어요"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʃəd/ should",
+      "강세 없는 should는 슈드로 짧게 말해요. should be는 슈드 비로 이어져요."
+     ]
+    ],
+    "mistake": "I should to walk ✗ → I should walk. should 뒤에는 동사원형을 써요. 진행형은 should be + -ing예요.",
+    "similar": "Maybe I ought to go for a walk. (산책하러 나가야 할지도 모르겠어요.)",
+    "category": "여행/사진",
+    "frequency": 8
    }
   }
  ]

@@ -4,15 +4,15 @@
  "date": "2026-10-22",
  "cards": [
   {
-   "id": "en-personal-bongsu-introduction-01-wonder",
-   "sentence": "I was wondering if you could stop saying that.",
-   "meaning": "그 말 좀 그만해 줄 수 있나 해서.",
+   "id": "en-personal-bongsu-introduction-01-introduce-name",
+   "sentence": "Can you just introduce me by name?",
+   "meaning": "그냥 이름만 소개해 줄래?",
    "reading": null,
-   "phonetic_kr": "아이 워z 원더링 이f 여 커드 스탑 쎄잉 댓",
+   "phonetic_kr": "컨 여 저스인트러두우스 미 바이 네임",
    "order_index": 1,
    "explanation": {
-    "key": "I was wondering if ~ = 혹시 ~할 수 있을까 해서요. 조심스럽게 부탁하거나 물어요.",
-    "anchor": "그 말 좀 그만해 줄 수 있나 해서",
+    "key": "Can you ~ = ~해 줄 수 있어요? 본문과 Could you ~는 상대에게 행동을 부탁해요. can은 능력에도 써서 I can carry는 '들 수 있다', can't move는 '옮길 수 없다'예요. Can she come with us?는 여기서 '같이 와도 돼요?'라는 허락 질문이에요.",
+    "anchor": "이름만 소개해 줄래",
     "situation": "봉수가 새 사람을 소개하려 하자 지오가 '웃긴 친구'라는 소개를 말린다. 봉수가 수줍은 친구로 바꿔 소개하려는 마지막 행동은 창작이다. 정치·투자·건강 추정은 넣지 않았다.",
     "miniDialogue": [
      {
@@ -25,9 +25,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was wondering if you could stop saying that.",
-      "ko": "그 말 좀 그만해 줄 수 있나 해서.",
-      "kr": "아이 워z 원더링 이f 여 커드 스탑 쎄잉 댓"
+      "en": "Can you just introduce me by name?",
+      "ko": "그냥 이름만 소개해 줄래?",
+      "kr": "컨 여 저스인트러두우스 미 바이 네임"
      },
      {
       "speaker": "B",
@@ -53,9 +53,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure if I remember how.",
-      "ko": "어떻게 하는 건지 기억날지 모르겠네.",
-      "kr": "아임 낫 슈어r 이f 아이 리멤버r 하우"
+      "en": "I don't even know what to say.",
+      "ko": "무슨 말을 해야 할지도 모르겠어.",
+      "kr": "아이 도니이븐 노우 왓 터 쎄이"
      },
      {
       "speaker": "B",
@@ -74,53 +74,62 @@
     ],
     "drills": [
      {
-      "en": "I was wondering if you could help.",
-      "ko": "도와주실 수 있을까 해서요.",
-      "kr": "아이 워z 원더링 이f 여 커드 헬프"
+      "en": "Can you hold this for me?",
+      "ko": "이거 좀 잡아 주실래요?",
+      "kr": "컨 여 호울드 디스 f퍼r 미"
      },
      {
-      "en": "We were wondering if we could sit here.",
-      "ko": "여기 앉아도 될까 해서요.",
-      "kr": "위 워r 원더링 이f 위 커드 씻 히어r"
+      "en": "Could you leave some room?",
+      "ko": "자리 좀 남겨 주실래요?",
+      "kr": "커저 리이v 썸 루움"
      },
      {
-      "en": "She was wondering if you're free.",
-      "ko": "시간이 되시는지 궁금해했어요.",
-      "kr": "쉬 워z 원더링 이f 여r f리이"
+      "en": "I can carry that.",
+      "ko": "그건 제가 들 수 있어요.",
+      "kr": "아이 컨 캐리 댓"
      },
      {
-      "en": "I was wondering if we could leave early.",
-      "ko": "일찍 떠나도 될까 해서요.",
-      "kr": "아이 워z 원더링 이f 위 커드 리이v 어r리"
+      "en": "Can she come with us?",
+      "ko": "그녀도 같이 와도 돼요?",
+      "kr": "컨 쉬 컴 위더스"
+     },
+     {
+      "en": "We can't move it alone.",
+      "ko": "우리끼리는 그걸 옮길 수 없어요.",
+      "kr": "위 캔 무우v 이럴로운"
      }
     ],
     "grammar": [
      {
-      "struct": "I was wondering if ~",
-      "body": "혹시 ~할 수 있을까 해서요. 조심스럽게 부탁하거나 물어요."
+      "struct": "Can you ~",
+      "body": "~해 줄 수 있어요? 본문과 Could you ~는 상대에게 행동을 부탁해요. can은 능력에도 써서 I can carry는 '들 수 있다', can't move는 '옮길 수 없다'예요. Can she come with us?는 여기서 '같이 와도 돼요?'라는 허락 질문이에요."
      }
     ],
     "chunks": [
      [
-      "I was wondering if",
-      "아이 워z 원더링 이f",
-      "~할 수 있나 해서"
+      "Can you just introduce me",
+      "컨 여 저스인트러두우스 미",
+      "그냥 나를 소개해 줄래"
      ],
      [
-      "you could stop saying that.",
-      "여 커드 스탑 쎄잉 댓",
-      "네가 그 말을 그만할 수 있을지"
+      "by name?",
+      "바이 네임",
+      "이름만으로"
      ]
     ],
     "phonemes": [
      [
-      "/w/ wondering",
-      "wondering은 원더링으로 시작해요. 첫 w에서 입술을 둥글게 해요."
+      "/kən jə/ Can you",
+      "부탁하는 Can you는 컨 여로 가볍게 시작해요."
+     ],
+     [
+      "/duːs/ introduce",
+      "introduce의 끝은 두우스로 길게 말하고 me로 이어요."
      ]
     ],
-    "mistake": "I was wondering if could you stop ✗ → if you could stop. 간접의문절은 평서문 어순이에요.",
-    "similar": "Could you stop doing that? (그것 좀 그만해 줄래요?)",
-    "category": "생활/친구",
+    "mistake": "Can you to lift ✗ → Can you lift. can 뒤 동사에는 to를 붙이지 않아요.",
+    "similar": "Could you help me? (좀 도와주시겠어요?)",
+    "category": "생활/가족",
     "frequency": 9
    }
   },
@@ -146,9 +155,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was wondering if you could stop saying that.",
-      "ko": "그 말 좀 그만해 줄 수 있나 해서.",
-      "kr": "아이 워z 원더링 이f 여 커드 스탑 쎄잉 댓"
+      "en": "Can you just introduce me by name?",
+      "ko": "그냥 이름만 소개해 줄래?",
+      "kr": "컨 여 저스인트러두우스 미 바이 네임"
      },
      {
       "speaker": "B",
@@ -174,9 +183,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure if I remember how.",
-      "ko": "어떻게 하는 건지 기억날지 모르겠네.",
-      "kr": "아임 낫 슈어r 이f 아이 리멤버r 하우"
+      "en": "I don't even know what to say.",
+      "ko": "무슨 말을 해야 할지도 모르겠어.",
+      "kr": "아이 도니이븐 노우 왓 터 쎄이"
      },
      {
       "speaker": "B",
@@ -246,15 +255,15 @@
    }
   },
   {
-   "id": "en-personal-bongsu-introduction-03-unsure",
-   "sentence": "I'm not sure if I remember how.",
-   "meaning": "어떻게 하는 건지 기억날지 모르겠네.",
+   "id": "en-personal-bongsu-introduction-03-even-know",
+   "sentence": "I don't even know what to say.",
+   "meaning": "무슨 말을 해야 할지도 모르겠어.",
    "reading": null,
-   "phonetic_kr": "아임 낫 슈어r 이f 아이 리멤버r 하우",
+   "phonetic_kr": "아이 도니이븐 노우 왓 터 쎄이",
    "order_index": 3,
    "explanation": {
-    "key": "I'm not sure if ~ = ~인지 잘 모르겠어요. 확신이 없는 내용을 if 뒤에 붙여요.",
-    "anchor": "모르겠네",
+    "key": "I don't even know ~ = ~조차 모르겠어요. even은 알아야 할 가장 기본적인 것마저 모른다는 느낌을 더해요.",
+    "anchor": "무슨 말을 해야 할지도 모르겠어",
     "situation": "봉수가 새 사람을 소개하려 하자 지오가 '웃긴 친구'라는 소개를 말린다. 봉수가 수줍은 친구로 바꿔 소개하려는 마지막 행동은 창작이다. 정치·투자·건강 추정은 넣지 않았다.",
     "miniDialogue": [
      {
@@ -267,9 +276,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was wondering if you could stop saying that.",
-      "ko": "그 말 좀 그만해 줄 수 있나 해서.",
-      "kr": "아이 워z 원더링 이f 여 커드 스탑 쎄잉 댓"
+      "en": "Can you just introduce me by name?",
+      "ko": "그냥 이름만 소개해 줄래?",
+      "kr": "컨 여 저스인트러두우스 미 바이 네임"
      },
      {
       "speaker": "B",
@@ -295,9 +304,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure if I remember how.",
-      "ko": "어떻게 하는 건지 기억날지 모르겠네.",
-      "kr": "아임 낫 슈어r 이f 아이 리멤버r 하우"
+      "en": "I don't even know what to say.",
+      "ko": "무슨 말을 해야 할지도 모르겠어.",
+      "kr": "아이 도니이븐 노우 왓 터 쎄이"
      },
      {
       "speaker": "B",
@@ -316,59 +325,54 @@
     ],
     "drills": [
      {
-      "en": "I'm not sure if this will fit.",
-      "ko": "이게 들어갈지 잘 모르겠어요.",
-      "kr": "아임 낫 슈어r 이f 디스 윌 f핏"
+      "en": "I don't even know his name.",
+      "ko": "그 사람 이름조차 몰라요.",
+      "kr": "아이 도니이븐 노우 히z 네임"
      },
      {
-      "en": "We're not sure if the shop is open.",
-      "ko": "가게가 열었는지 잘 모르겠어요.",
-      "kr": "위어r 낫 슈어r 이f 더 샤피z 오우펀"
+      "en": "She doesn't even know where we are.",
+      "ko": "그녀는 우리가 어디 있는지도 몰라요.",
+      "kr": "쉬 더즈니이븐 노우 웨어r 위 아r"
      },
      {
-      "en": "Are you sure we need both?",
-      "ko": "둘 다 필요한 게 확실해요?",
-      "kr": "아r 여 슈어r 위 니이드 보우쓰"
+      "en": "Do you even know what happened?",
+      "ko": "무슨 일이 있었는지는 알고 계세요?",
+      "kr": "더여 이이븐 노우 왓 해픈드"
      },
      {
-      "en": "She's not sure if she can come.",
-      "ko": "올 수 있을지 잘 모르겠대요.",
-      "kr": "쉬z 낫 슈어r 이f 쉬 컨 컴"
-     },
-     {
-      "en": "I wasn't sure if you were busy.",
-      "ko": "바쁘신지 확신이 없었어요.",
-      "kr": "아이 워z은 슈어r 이f 여 워r 비지"
+      "en": "We didn't even know it was closed.",
+      "ko": "저희는 문을 닫았다는 것도 몰랐어요.",
+      "kr": "위 디드니이븐 노우 잇 워z 클로우z드"
      }
     ],
     "grammar": [
      {
-      "struct": "I'm not sure if ~",
-      "body": "~인지 잘 모르겠어요. 확신이 없는 내용을 if 뒤에 붙여요."
+      "struct": "I don't even know ~",
+      "body": "~조차 모르겠어요. even은 알아야 할 가장 기본적인 것마저 모른다는 느낌을 더해요."
      }
     ],
     "chunks": [
      [
-      "I'm not sure if",
-      "아임 낫 슈어r 이f",
-      "~인지 모르겠네"
+      "I don't even know",
+      "아이 도니이븐 노우",
+      "~조차 모르겠어"
      ],
      [
-      "I remember how.",
-      "아이 리멤버r 하우",
-      "내가 방법을 기억하는지"
+      "what to say.",
+      "왓 터 쎄이",
+      "무슨 말을 해야 할지"
      ]
     ],
     "phonemes": [
      [
-      "/ʃʊr/ sure",
-      "sure 끝의 r을 남겨 슈어r로, if의 f는 윗니를 아랫입술에 대요."
+      "/iː/ even",
+      "don't even의 경계를 이어 도니이븐으로 적어요. even의 첫 모음은 길게 이이예요."
      ]
     ],
-    "mistake": "I'm not sure if will it fit ✗ → if it will fit. if 뒤는 주어 다음 동사예요.",
-    "similar": "I don't know whether it will work. (될지 모르겠어요.)",
+    "mistake": "I don't even know what should I say ✗ → what I should say. 간접의문절은 평서문 어순이에요. what to say는 '무슨 말을 할지'예요.",
+    "similar": "I'm at a loss for words. (무슨 말을 해야 할지 모르겠어요.)",
     "category": "생활/친구",
-    "frequency": 9
+    "frequency": 8
    }
   },
   {
@@ -393,9 +397,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I was wondering if you could stop saying that.",
-      "ko": "그 말 좀 그만해 줄 수 있나 해서.",
-      "kr": "아이 워z 원더링 이f 여 커드 스탑 쎄잉 댓"
+      "en": "Can you just introduce me by name?",
+      "ko": "그냥 이름만 소개해 줄래?",
+      "kr": "컨 여 저스인트러두우스 미 바이 네임"
      },
      {
       "speaker": "B",
@@ -421,9 +425,9 @@
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I'm not sure if I remember how.",
-      "ko": "어떻게 하는 건지 기억날지 모르겠네.",
-      "kr": "아임 낫 슈어r 이f 아이 리멤버r 하우"
+      "en": "I don't even know what to say.",
+      "ko": "무슨 말을 해야 할지도 모르겠어.",
+      "kr": "아이 도니이븐 노우 왓 터 쎄이"
      },
      {
       "speaker": "B",

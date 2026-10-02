@@ -13,7 +13,7 @@
    "explanation": {
     "key": "Let me ~ = 제가 ~할게요. 본문에서는 자신이 할 일을 자청해요. let + 사람 + 동사는 그 사람이 ~하게 두거나 허락한다는 뜻도 있어 Can you let me finish?는 '끝까지 말하게 해 주실래요?'예요. Let us know는 '알려 주세요'라는 요청이고, Just let me check는 잠깐 확인하겠다는 말이에요.",
     "anchor": "제 걸로 해볼게요",
-    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
+    "situation": "정경섭 형이 택시 앱 인증에 막히자 지오가 택시를 잡는다. 도착한 차를 함께 찾고 번호를 확인한 뒤 타려는 생활 대화다.",
     "miniDialogue": [
      {
       "speaker": "B",
@@ -60,16 +60,16 @@
      {
       "speaker": "B",
       "name": "정경섭",
-      "en": "Then what am I supposed to do with this screen?",
-      "ko": "그럼 이 화면은 어쩌라는 거냐?",
-      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+      "en": "Is that the car with its lights flashing?",
+      "ko": "저기 불 깜빡이는 차야?",
+      "kr": "이z 댓 더 카r 위딧츠 라이츠 f플래슁"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should close it and get in.",
-      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
-      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
+      "en": "I'll check the number before we get in.",
+      "ko": "타기 전에 제가 차 번호 확인할게요.",
+      "kr": "아일 체크 더 넘버r 비f포어r 위 게린"
      }
     ],
     "drills": [
@@ -139,7 +139,7 @@
    "explanation": {
     "key": "You don't have to ~ = ~하지 않아도 돼요. 의무가 없다는 뜻이지 금지는 아니에요.",
     "anchor": "계속 안 하셔도 돼요",
-    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
+    "situation": "정경섭 형이 택시 앱 인증에 막히자 지오가 택시를 잡는다. 도착한 차를 함께 찾고 번호를 확인한 뒤 타려는 생활 대화다.",
     "miniDialogue": [
      {
       "speaker": "B",
@@ -186,16 +186,16 @@
      {
       "speaker": "B",
       "name": "정경섭",
-      "en": "Then what am I supposed to do with this screen?",
-      "ko": "그럼 이 화면은 어쩌라는 거냐?",
-      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+      "en": "Is that the car with its lights flashing?",
+      "ko": "저기 불 깜빡이는 차야?",
+      "kr": "이z 댓 더 카r 위딧츠 라이츠 f플래슁"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should close it and get in.",
-      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
-      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
+      "en": "I'll check the number before we get in.",
+      "ko": "타기 전에 제가 차 번호 확인할게요.",
+      "kr": "아일 체크 더 넘버r 비f포어r 위 게린"
      }
     ],
     "drills": [
@@ -265,7 +265,7 @@
    "explanation": {
     "key": "It looks like ~ = 보니 ~인 것 같아요. 눈앞의 모습이나 화면을 근거로 짐작해요.",
     "anchor": "온 것 같은데",
-    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
+    "situation": "정경섭 형이 택시 앱 인증에 막히자 지오가 택시를 잡는다. 도착한 차를 함께 찾고 번호를 확인한 뒤 타려는 생활 대화다.",
     "miniDialogue": [
      {
       "speaker": "B",
@@ -312,16 +312,16 @@
      {
       "speaker": "B",
       "name": "정경섭",
-      "en": "Then what am I supposed to do with this screen?",
-      "ko": "그럼 이 화면은 어쩌라는 거냐?",
-      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+      "en": "Is that the car with its lights flashing?",
+      "ko": "저기 불 깜빡이는 차야?",
+      "kr": "이z 댓 더 카r 위딧츠 라이츠 f플래슁"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should close it and get in.",
-      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
-      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
+      "en": "I'll check the number before we get in.",
+      "ko": "타기 전에 제가 차 번호 확인할게요.",
+      "kr": "아일 체크 더 넘버r 비f포어r 위 게린"
      }
     ],
     "drills": [
@@ -377,16 +377,16 @@
    }
   },
   {
-   "id": "en-personal-gyeongseop-taxi-screen-04-should",
-   "sentence": "I think you should close it and get in.",
-   "meaning": "형, 그건 닫고 타시면 될 것 같아요.",
+   "id": "en-personal-gyeongseop-taxi-screen-04-check-car-number",
+   "sentence": "I'll check the number before we get in.",
+   "meaning": "타기 전에 제가 차 번호 확인할게요.",
    "reading": null,
-   "phonetic_kr": "아이 씽켜 슈드 클로우z 이런 게린",
+   "phonetic_kr": "아일 체크 더 넘버r 비f포어r 위 게린",
    "order_index": 4,
    "explanation": {
-    "key": "I think you should ~ = ~하는 게 좋겠어요. 내 판단임을 밝히며 조언해요.",
-    "anchor": "닫고 타시면 될 것 같아요",
-    "situation": "택시 앱 인증에 막힌 형 옆에서 지오가 자기 앱으로 택시를 잡고 함께 탄다. 기존 1묶음의 저녁 예약 실패와 다른 사건이다. 화면의 세부 문구와 마지막 농담은 창작했다.",
+    "key": "I'll ~ = 제가 ~할게요. 지금 하기로 정한 행동이나 바로 해 줄 일을 말해요. 드릴의 Will you ~?는 상대에게 ~해 주실래요?라고 부탁하는 표현이에요.",
+    "anchor": "제가 차 번호 확인할게요",
+    "situation": "정경섭 형이 택시 앱 인증에 막히자 지오가 택시를 잡는다. 도착한 차를 함께 찾고 번호를 확인한 뒤 타려는 생활 대화다.",
     "miniDialogue": [
      {
       "speaker": "B",
@@ -433,72 +433,68 @@
      {
       "speaker": "B",
       "name": "정경섭",
-      "en": "Then what am I supposed to do with this screen?",
-      "ko": "그럼 이 화면은 어쩌라는 거냐?",
-      "kr": "덴 와러마이 써포우스터 두 위드 디스 스크리인"
+      "en": "Is that the car with its lights flashing?",
+      "ko": "저기 불 깜빡이는 차야?",
+      "kr": "이z 댓 더 카r 위딧츠 라이츠 f플래슁"
      },
      {
       "speaker": "B",
       "name": "지오",
-      "en": "I think you should close it and get in.",
-      "ko": "형, 그건 닫고 타시면 될 것 같아요.",
-      "kr": "아이 씽켜 슈드 클로우z 이런 게린"
+      "en": "I'll check the number before we get in.",
+      "ko": "타기 전에 제가 차 번호 확인할게요.",
+      "kr": "아일 체크 더 넘버r 비f포어r 위 게린"
      }
     ],
     "drills": [
      {
-      "en": "I think you should take a break.",
-      "ko": "좀 쉬시는 게 좋겠어요.",
-      "kr": "아이 씽켜 슈드 테이커 브레이크"
+      "en": "I'll check the address.",
+      "ko": "제가 주소를 확인할게요.",
+      "kr": "아일 체크 디 어드레스"
      },
      {
-      "en": "Do you think I should call?",
-      "ko": "제가 전화하는 게 좋을까요?",
-      "kr": "더여 씽카이 슈드 콜"
+      "en": "Will you hold this for me?",
+      "ko": "이거 좀 잡아 주실래요?",
+      "kr": "윌 여 호울드 디스 f퍼r 미"
      },
      {
-      "en": "She thinks we should wait.",
-      "ko": "그녀는 우리가 기다리는 게 좋겠대요.",
-      "kr": "쉬 씽크스 위 슈드 웨잇"
+      "en": "We'll wait by the door.",
+      "ko": "저희는 문 옆에서 기다릴게요.",
+      "kr": "위일 웨잇 바이 더 도어r"
      },
      {
-      "en": "I don't think you should rush.",
-      "ko": "서두르지 않는 게 좋겠어요.",
-      "kr": "아이 돈 씽켜 슈드 러쉬"
+      "en": "She'll bring the bag.",
+      "ko": "그녀가 가방을 가져올 거예요.",
+      "kr": "쉴 브링 더 백"
      }
     ],
     "grammar": [
      {
-      "struct": "I think you should ~",
-      "body": "~하는 게 좋겠어요. 내 판단임을 밝히며 조언해요."
+      "struct": "I'll ~",
+      "body": "제가 ~할게요. 지금 하기로 정한 행동이나 바로 해 줄 일을 말해요. 드릴의 Will you ~?는 상대에게 ~해 주실래요?라고 부탁하는 표현이에요."
      }
     ],
     "chunks": [
      [
-      "I think you should",
-      "아이 씽켜 슈드",
-      "형이 ~하시는 게 좋겠어요"
+      "I'll check the number",
+      "아일 체크 더 넘버r",
+      "제가 차 번호 확인할게요"
      ],
      [
-      "close it and get in.",
-      "클로우z 이런 게린",
-      "그걸 닫고 타다"
+      "before we get in.",
+      "비f포어r 위 게린",
+      "우리가 타기 전에"
      ]
     ],
     "phonemes": [
      [
-      "/kjə/ think you",
-      "think you는 씽켜로 붙여 말해요. should는 여기서 슈드로 가볍게 이어져요."
-     ],
-     [
-      "/t/ get in",
-      "get의 끝 t가 in으로 이어져 게린이 돼요."
+      "/aɪl/ I'll",
+      "I'll은 I will을 줄인 말이며 아일로 이어 말해요."
      ]
     ],
-    "mistake": "I think you should to close ✗ → should close. should 뒤에는 동사원형이에요.",
-    "similar": "Maybe you could try that. (그렇게 해 보셔도 좋겠어요.)",
+    "mistake": "I'll checked ✗ → I'll check. will 뒤에는 동사원형을 써요.",
+    "similar": "I'm going to do that now. (지금 그걸 할 거예요.)",
     "category": "생활/친구",
-    "frequency": 9
+    "frequency": 8
    }
   }
  ]
