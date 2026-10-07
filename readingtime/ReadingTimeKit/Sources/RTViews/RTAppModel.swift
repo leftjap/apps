@@ -387,6 +387,20 @@ public final class RTAppModel: ObservableObject {
     }
     /// 변경 영속 훅 (앱: UserDefaults JSON 저장)
     public var onUserDataChange: ((RTUserData) -> Void)?
+    /// 로컬 사본이 없는 기기는 서버 복원 전까지 스냅샷 업로드를 막는다.
+    public var needsUserDataRestore = false
+    public func restoreUserDataIfNeeded(fetch: () async throws -> String?) async throws {
+        guard needsUserDataRestore else { return }
+        let json = try await fetch()
+        guard needsUserDataRestore else { return }
+        if let json {
+            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+            let restored = try decoder.decode(RTUserData.self, from: Data(json.utf8))
+            userData = restored
+            onUserDataChange?(restored)
+        }
+        needsUserDataRestore = false
+    }
     /// 시간 주입 (테스트 결정적 실행)
     public var now: () -> Date = { Date() }
 

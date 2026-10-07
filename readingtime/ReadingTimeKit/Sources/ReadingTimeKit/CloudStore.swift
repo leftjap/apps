@@ -76,9 +76,9 @@ public final class CloudStore: ObservableObject {
 
     // 로그아웃 — 로컬 세션 제거 (개인 앱: 실패해도 UI 로그아웃은 진행)
     public func signOut() async {
-        try? await client.auth.signOut()
         ownerID = nil
         signedIn = false
+        try? await client.auth.signOut()
     }
 
     // 종이책 세션 종료 시 오늘치에 delta 초를 더해 upsert (read-modify-write; 단일 사용자라 경쟁 무시)
@@ -112,6 +112,17 @@ public final class CloudStore: ObservableObject {
         try await client.from("readingtime_userdata")
             .upsert(row, onConflict: "owner_id")
             .execute()
+    }
+
+    /// 새 기기 복원용 본인 스냅샷. 로그인 계정의 행만 읽는다.
+    public func fetchUserData() async throws -> String? {
+        guard let owner = ownerID else { return nil }
+        let rows: [PartnerSnapshotRow] = try await client.from("readingtime_userdata")
+            .select("data")
+            .eq("owner_id", value: owner.uuidString)
+            .execute().value
+        guard ownerID == owner else { throw CancellationError() }
+        return rows.first?.data
     }
 
     // 프레즌스 — 세션 recording 시작 시 now, 종료/일시정지 시 nil. (upsert 가 행을 보장하므로 update)

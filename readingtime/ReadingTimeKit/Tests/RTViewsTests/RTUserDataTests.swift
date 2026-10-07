@@ -2,6 +2,112 @@ import Testing
 import Foundation
 @testable import RTViews
 
+@MainActor
+@Suite struct RTUserDataRestoreTests {
+    private func snapshot() -> RTUserData {
+        RTUserData(books: [.init(isbn: "saved", title: "Saved book", author: "Author",
+                                publisher: "", coverUrl: "", addedAt: Date(timeIntervalSince1970: 0))],
+                   sessions: [.init(isbn: "saved", mode: "tap", seconds: 90,
+                                    endedAt: Date(timeIntervalSince1970: 60), pauseCount: 0)])
+    }
+
+    private func json(_ data: RTUserData) throws -> String {
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        return String(decoding: try encoder.encode(data), as: UTF8.self)
+    }
+
+    @Test func newDeviceRestoresBeforeEnablingUploads() async throws {
+        let model = RTAppModel()
+        model.userData = RTUserData()
+        model.needsUserDataRestore = true
+        var persisted: RTUserData?
+        var uploadsBlockedDuringPersist = false
+        model.onUserDataChange = { data in
+            persisted = data
+            uploadsBlockedDuringPersist = model.needsUserDataRestore
+        }
+        let saved = snapshot()
+        try await model.restoreUserDataIfNeeded { try json(saved) }
+        #expect(model.userData == saved)
+        #expect(persisted == saved)
+        #expect(uploadsBlockedDuringPersist)
+        #expect(!model.needsUserDataRestore)
+    }
+
+    @Test func existingLocalDataPreservesOfflineChanges() async throws {
+        let model = RTAppModel()
+        let local = snapshot()
+        model.userData = local
+        try await model.restoreUserDataIfNeeded {
+            Issue.record("Existing local data must not be replaced by a server snapshot")
+            return nil
+        }
+        #expect(model.userData == local)
+    }
+
+    @Test func lateOverlappingDownloadCannotOverwriteNewLocalChanges() async throws {
+        let model = RTAppModel()
+        model.userData = RTUserData()
+        model.needsUserDataRestore = true
+        let saved = try json(snapshot())
+        var finishDownload: CheckedContinuation<String?, Error>?
+        let delayed = Task {
+            try await model.restoreUserDataIfNeeded {
+                try await withCheckedThrowingContinuation { finishDownload = $0 }
+            }
+        }
+        while finishDownload == nil { await Task.yield() }
+        try await model.restoreUserDataIfNeeded { saved }
+        model.searchResults = [hit0]
+        model.toggleAdd(hit0.isbn)
+        let latest = model.userData
+        finishDownload?.resume(returning: saved)
+        try await delayed.value
+        #expect(model.userData == latest)
+        #expect(model.added.contains(hit0.isbn))
+    }
+
+    @Test func failedDownloadKeepsUploadsBlockedAndCanRetry() async throws {
+        let model = RTAppModel()
+        model.userData = RTUserData()
+        model.needsUserDataRestore = true
+        var persisted = false
+        model.onUserDataChange = { _ in persisted = true }
+        do {
+            try await model.restoreUserDataIfNeeded { throw URLError(.notConnectedToInternet) }
+            Issue.record("A failed download must not enable uploads")
+        } catch { #expect((error as? URLError)?.code == .notConnectedToInternet) }
+        #expect(model.needsUserDataRestore)
+        #expect(model.userData == RTUserData())
+        #expect(!persisted)
+        let saved = snapshot()
+        try await model.restoreUserDataIfNeeded { try json(saved) }
+        #expect(model.userData == saved)
+        #expect(!model.needsUserDataRestore)
+    }
+
+    @Test func invalidSnapshotKeepsUploadsBlocked() async throws {
+        let model = RTAppModel()
+        model.userData = RTUserData()
+        model.needsUserDataRestore = true
+        do {
+            try await model.restoreUserDataIfNeeded { "{" }
+            Issue.record("An invalid snapshot must not enable uploads")
+        } catch { #expect(error is DecodingError) }
+        #expect(model.needsUserDataRestore)
+        #expect(model.userData == RTUserData())
+    }
+
+    @Test func newAccountWithoutSnapshotCanStartAfterFetch() async throws {
+        let model = RTAppModel()
+        model.userData = RTUserData()
+        model.needsUserDataRestore = true
+        try await model.restoreUserDataIfNeeded { nil }
+        #expect(!model.needsUserDataRestore)
+        #expect(model.userData == RTUserData())
+    }
+}
+
 // §6-④ 실데이터 정본 — 라이브 모드(userData 주입) 시 책 등록/세션 기록/파생값.
 // 데모 모드(userData nil)는 기존 동작 불변이 회귀 가드.
 

@@ -44,15 +44,16 @@ struct ReadingTimeApp: App {
             model.userData = saved
         } else {
             model.userData = RTUserData()
+            model.needsUserDataRestore = true
         }
         if !sequenceLaunch {
-            model.onUserDataChange = { data in
+            model.onUserDataChange = { [weak model] data in
                 let enc = JSONEncoder()
                 enc.dateEncodingStrategy = .iso8601
                 if let raw = try? enc.encode(data) {
                     UserDefaults.standard.set(raw, forKey: "rt.userData")
                     // 함께 읽기 — 파트너가 읽도록 스냅샷 업로드 (로그인 시에만 실동작)
-                    if let json = String(data: raw, encoding: .utf8) {
+                    if model?.needsUserDataRestore == false, let json = String(data: raw, encoding: .utf8) {
                         Task { try? await cloud.uploadUserData(json) }
                     }
                 }
@@ -134,7 +135,7 @@ struct ReadingTimeApp: App {
                 }
             }
 
-            if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
+            if UserDefaults.standard.bool(forKey: "rt.loggedIn"), !model.needsUserDataRestore {
                 // 표시 이름: 마지막 로그인 값으로 즉시 표시 (오프라인 콜드스타트) — restore() 가 갱신
                 model.displayName = UserDefaults.standard.string(forKey: "rt.displayName")
                 model.nav(.home)
@@ -174,11 +175,10 @@ struct ReadingTimeApp: App {
             model.loginHandler = { [weak model] in
                 Task { @MainActor in
                     do {
-                        try await cloud.signInWithGoogle()
+                        if !cloud.signedIn { try await cloud.signInWithGoogle() }
                         Self.applyDisplayName(from: cloud, to: model)
-                        model?.login()
-                        // 로그인 직후 동기화 (앱 시작 .task 는 이미 지나감) — 스냅샷 올림 + 파트너 로드
                         if let model {
+                            try await Self.restoreSnapshot(from: cloud, to: model)
                             Self.uploadSnapshot(from: model, to: cloud)
                             await Self.loadPartner(from: cloud, to: model)
                             await Self.loadEbook(from: cloud, to: model)
@@ -249,9 +249,21 @@ struct ReadingTimeApp: App {
         UserDefaults.standard.set(n, forKey: "rt.displayName")
     }
 
+    /// 로컬 사본이 없으면 업로드보다 먼저 본인 서버 스냅샷을 복원한다.
+    @MainActor private static func restoreSnapshot(from cloud: CloudStore, to model: RTAppModel) async throws {
+        guard cloud.signedIn else { return }
+        try await model.restoreUserDataIfNeeded { try await cloud.fetchUserData() }
+        guard cloud.signedIn, model.route == .login else { return }
+        model.login()
+        if let raw = UserDefaults.standard.data(forKey: "rt.session"),
+           let saved = try? JSONDecoder().decode(RTSession.self, from: raw) {
+            model.restoreSession(saved)
+        }
+    }
+
     /// 내 RTUserData 스냅샷을 클라우드에 1회 업로드 (앱 시작 시 — 파트너가 최신 상태를 읽도록).
     @MainActor private static func uploadSnapshot(from model: RTAppModel?, to cloud: CloudStore) {
-        guard let data = model?.userData else { return }
+        guard model?.needsUserDataRestore == false, let data = model?.userData else { return }
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
         guard let raw = try? enc.encode(data), let json = String(data: raw, encoding: .utf8) else { return }
         Task { try? await cloud.uploadUserData(json) }
@@ -438,9 +450,15 @@ struct ReadingTimeApp: App {
                         model.nav(.login)
                     } else {
                         Self.applyDisplayName(from: cloud, to: model)
-                        Self.uploadSnapshot(from: model, to: cloud)       // 내 스냅샷 1회 올림(파트너가 읽도록)
-                        await Self.loadPartner(from: cloud, to: model)   // 함께 읽기 — 파트너 스냅샷
-                        await Self.loadEbook(from: cloud, to: model)     // 밀리 일별 — 통계 합산
+                        do {
+                            try await Self.restoreSnapshot(from: cloud, to: model)
+                            Self.uploadSnapshot(from: model, to: cloud)
+                            await Self.loadPartner(from: cloud, to: model)
+                            await Self.loadEbook(from: cloud, to: model)
+                        } catch {
+                            Logger(subsystem: "com.leftjap.readingtime", category: "sync")
+                                .error("서버 데이터 복원 실패: \(String(describing: error), privacy: .public)")
+                        }
                     }
                 }
                 .onReceive(model.$route) { route in
