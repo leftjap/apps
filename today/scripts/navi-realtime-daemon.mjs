@@ -141,7 +141,7 @@ async function codexPass(prompt, allowedTools, work, outputFile) {
   const { stdout } = await runFile(CODEX, [
     'exec', '--ignore-user-config', '--ephemeral', '--skip-git-repo-check',
     '--model', CODEX_MODEL, '--sandbox', 'read-only',
-    '-c', 'model_reasoning_effort="medium"', '-c', 'project_doc_max_bytes=0',
+    '-c', 'model_reasoning_effort="xhigh"', '-c', 'project_doc_max_bytes=0',
     '-c', `web_search="${allowedTools.includes('WebSearch') ? 'live' : 'disabled'}"`,
     '--output-last-message', path.join(work, outputFile), instructions,
   ], {
