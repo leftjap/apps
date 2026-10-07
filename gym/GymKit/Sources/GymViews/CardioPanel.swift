@@ -23,6 +23,7 @@ struct CardioPanel: View {
     private let metric = GymCardioMetric.distance
     @State private var dragX: CGFloat = 0
     @State private var dragging = false
+    @GestureState private var gestureActive = false
     @State private var flash = false
 
     private var prevRun: GymSessionLogic.GymCardioRun? {
@@ -41,6 +42,19 @@ struct CardioPanel: View {
             .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
         }
         .accessibilityIdentifier("cardio-card")
+        .onChange(of: gestureActive) { _, active in
+            guard !active, dragging else { return }
+            dragging = false
+            withAnimation(.easeOut(duration: 0.18)) { dragX = 0 }
+        }
+        .onChange(of: exerciseId) { _, _ in
+            dragging = false
+            dragX = 0
+        }
+        .onDisappear {
+            dragging = false
+            dragX = 0
+        }
     }
 
     // MARK: - 제스처 영역 — 좌우 여백 탭 = ±0.1km, 숫자 탭 = 키패드, 수평 드래그 = 저장/되돌리기
@@ -79,6 +93,7 @@ struct CardioPanel: View {
         }
         .gesture(
             DragGesture(minimumDistance: GymCardioLayout.dragSlop)
+                .updating($gestureActive) { _, active, _ in active = true }
                 .onChanged { v in
                     guard !locked else { return }
                     let dx = Double(v.translation.width), dy = Double(v.translation.height)

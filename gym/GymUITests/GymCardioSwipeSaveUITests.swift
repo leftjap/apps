@@ -32,6 +32,54 @@ final class GymCardioSwipeSaveUITests: XCTestCase {
         let a = XCTAttachment(screenshot: app.screenshot()); a.name = name; a.lifetime = .keepAlways; add(a)
     }
 
+    func testInterruptedDragReturnsDistanceToCenterWithoutSaving() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]
+        app.launch()
+        openTreadmill(app)
+        let card = app.otherElements["cardio-card"].firstMatch
+        let initialHero = heroValue(app), size = app.windows.firstMatch.frame
+        app.coordinate(withNormalizedOffset: CGVector(dx: initialHero.frame.midX / size.width,
+                                                     dy: initialHero.frame.midY / size.height)).tap()
+        XCTAssertTrue(app.buttons["keypad-done"].waitForExistence(timeout: 5))
+        for key in ["2", ".", "2"] { app.buttons["keypad-key-\(key)"].tap() }
+        app.buttons["keypad-done"].tap()
+        Thread.sleep(forTimeInterval: 0.6)
+        let center = heroValue(app).frame.midX
+        XCTAssertEqual(heroValue(app).label, "2.2")
+        XCTAssertEqual(distanceLabel(app), "거리")
+
+        for offset in [-75.0, 75.0] {
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5,
+                                                                     dy: heroValue(app).frame.midY / size.height))
+            let end = start.withOffset(CGVector(dx: offset, dy: 0))
+            let interruption = expectation(description: "Another app interrupts the held cardio drag \(offset)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                XCUIApplication(bundleIdentifier: "com.apple.Preferences").activate()
+                interruption.fulfill()
+            }
+            start.press(forDuration: 0.05, thenDragTo: end,
+                        withVelocity: .slow, thenHoldForDuration: 3)
+            wait(for: [interruption], timeout: 10)
+            XCTAssertEqual(app.state, .runningBackground)
+            app.activate()
+            XCTAssertTrue(card.waitForExistence(timeout: 5))
+            shot(app, "cardio-interrupted-drag-\(offset)")
+            XCTAssertEqual(heroValue(app).label, "2.2", "An interrupted drag must preserve the entered distance")
+            XCTAssertEqual(distanceLabel(app), "거리", "An interrupted drag must not save the distance")
+            XCTAssertEqual(heroValue(app).frame.midX, center, accuracy: 1,
+                           "An interrupted drag must not leave the distance shifted")
+        }
+
+        card.swipeLeft(); Thread.sleep(forTimeInterval: 0.8)
+        XCTAssertEqual(distanceLabel(app), "거리 · 저장됨")
+        XCTAssertEqual(heroValue(app).frame.midX, center, accuracy: 1)
+        card.swipeRight(); Thread.sleep(forTimeInterval: 0.8)
+        XCTAssertEqual(distanceLabel(app), "거리")
+        XCTAssertEqual(heroValue(app).label, "2.2")
+        XCTAssertEqual(heroValue(app).frame.midX, center, accuracy: 1)
+    }
+
     func testDistanceOnlySwipeSaveGhostAndUndo() {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]

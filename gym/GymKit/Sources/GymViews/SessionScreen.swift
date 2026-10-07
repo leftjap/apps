@@ -182,6 +182,7 @@ public struct SessionScreenView: View {
     // 드래그 추종 커밋 (작업지시서 §4 / FIG 2 — GymSwipeMath 수식 구동)
     @State private var heroDragX: CGFloat
     @State private var heroDragging = false
+    @GestureState private var heroGestureActive = false
     @State private var ringVisible = false     // 햅틱 링 (커밋 1회)
     @State private var ringIsPR = false
     @State private var ringMoment = 0          // 재생 id (연속 커밋 재마운트)
@@ -300,11 +301,23 @@ public struct SessionScreenView: View {
         }
         // 표시 종목 전환(레일 탭·종목완료 자동 전환 공통) — 이름 스왑 + 컨텍스트 딥 1회 재생.
         .onChange(of: model.currentExerciseId) { _, _ in
+            heroDragging = false
+            heroDragX = 0
             guard !reduceMotion else { return }
             exSwapMoment += 1
         }
         // 세션 화면을 벗어나면 예약된 안착 진동을 버린다 — 홈에서 울리는 유령 진동 차단 (감사 #10)
-        .onDisappear { model.cancelPendingSwitchHaptics() }
+        .onDisappear {
+            heroDragging = false
+            heroDragX = 0
+            model.cancelPendingSwitchHaptics()
+        }
+        .onChange(of: heroGestureActive) { _, active in
+            // onEnded는 취소 때 호출되지 않는다. GestureState의 자동 초기화로 복귀한다.
+            guard !active, heroDragging else { return }
+            heroDragging = false
+            springBackHero()
+        }
         // 오버레이 z 순서 — 날짜상세 < 운동추가(69) < 키패드(79) < 액션시트(90), mock z-index 정합.
         // 나중에 붙인 overlay 가 위로 쌓이므로 날짜 상세를 맨 먼저 건다.
         .overlay { dayDetailOverlay }
@@ -363,7 +376,8 @@ public struct SessionScreenView: View {
                                                prevSessionSets: prevBlk?.sets, kind: kind)
             return SetBarSlot(id: i, top: d.top, bottom: d.bottom, isPreview: d.isPreview,
                               state: i == cur ? .now : (sets[i].done ? .done : .upcoming),
-                              pr: sets[i].pr, volume: sets[i].volume)
+                              pr: sets[i].pr,
+                              magnitude: kind == .bodyweight ? (Double(d.top) ?? 0) : sets[i].volume)
         }
         let bestPR = model.prs.first { $0.exerciseId == exId && $0.type == .e1rm }
         let best: (top: String, bottom: String)? = kind == .weight
@@ -431,8 +445,7 @@ public struct SessionScreenView: View {
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             if !slots.isEmpty && kind != .cardio {
-                PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight,
-                               dragP: CGFloat(revealP),
+                PrevRecordBars(slots: slots, best: best, dragP: CGFloat(revealP),
                                onLongPressSlot: { i in actionTarget = .setRow(i) },
                                showHeader: false)
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
@@ -513,6 +526,7 @@ public struct SessionScreenView: View {
                 }
             }
             .gesture(DragGesture(minimumDistance: 8)
+                .updating($heroGestureActive) { _, active, _ in active = true }
                 .onChanged { v in
                     let dx = Double(v.translation.width), dy = Double(v.translation.height)
                     if !heroDragging {
