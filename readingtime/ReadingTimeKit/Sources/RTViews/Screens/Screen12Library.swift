@@ -13,6 +13,7 @@ public struct Screen12Library: View {
     private let filter: RTLibraryFilter
     private let sort: RTLibrarySort
     private let live: Live?
+    @FocusState private var searchFocused: Bool
 
     public init(model: RTAppModel? = nil) {
         self.model = model
@@ -20,7 +21,12 @@ public struct Screen12Library: View {
         self.sort = model?.librarySort ?? .recent
         if let m = model, let d = m.userData {
             let cal = Calendar(identifier: .gregorian)
-            let reading = d.books.filter { !$0.finished }.sorted { $0.addedAt > $1.addedAt }
+            let query = m.libraryQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+            let books = d.books.filter {
+                query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)
+                    || $0.author.localizedCaseInsensitiveContains(query)
+            }
+            let reading = books.filter { !$0.finished }.sorted { $0.addedAt > $1.addedAt }
             var meta: [String: String] = [:]
             for b in reading {
                 let days = (cal.dateComponents([.day], from: cal.startOfDay(for: b.addedAt),
@@ -31,7 +37,7 @@ public struct Screen12Library: View {
                     : "\(RTAppModel.hmString(m.totalSeconds(isbn: b.isbn))) · \(m.sessionCount(isbn: b.isbn))회 · \(days)일째"
             }
             self.live = Live(total: d.books.count, reading: reading, readingMeta: meta,
-                             finished: d.books.filter { $0.finished })
+                             finished: books.filter { $0.finished })
         } else {
             self.live = nil
         }
@@ -43,30 +49,43 @@ public struct Screen12Library: View {
             VStack(alignment: .leading, spacing: 0) {
                 search
                 toolbar.padding(.top, 12)
-                if filter != .finished, live == nil || !(live!.reading.isEmpty) {
-                    Text("읽는 중").font(.mono(10, 600)).tracking(10 * 0.18)
-                        .foregroundColor(RT.faint)
-                        .padding(EdgeInsets(top: 16, leading: 2, bottom: 10, trailing: 0))
-                    if let live {
-                        VStack(spacing: 10) {
-                            ForEach(live.reading, id: \.isbn) { b in
-                                liveReadingCard(b)
+                GeometryReader { geo in
+                    RTCappedScroll(height: geo.size.height) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if filter != .finished, live == nil || !(live!.reading.isEmpty) {
+                                Text("읽는 중").font(.mono(10, 600)).tracking(10 * 0.18)
+                                    .foregroundColor(RT.faint)
+                                    .padding(EdgeInsets(top: 16, leading: 2, bottom: 10, trailing: 0))
+                                if let live {
+                                    VStack(spacing: 10) {
+                                        ForEach(live.reading, id: \.isbn) { b in
+                                            liveReadingCard(b)
+                                        }
+                                    }
+                                } else {
+                                    readingCard
+                                }
+                            }
+                            if filter != .reading, live == nil || !(live!.finished.isEmpty) {
+                                HStack(spacing: 4) {
+                                    Text("완독").font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.faint)
+                                    Text(live.map { "\($0.finished.count)" } ?? "13")
+                                        .font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.ghost)
+                                }
+                                .padding(EdgeInsets(top: 20, leading: 2, bottom: 12, trailing: 0))
+                                grid
+                            }
+                            if let live, (filter == .finished || live.reading.isEmpty),
+                               (filter == .reading || live.finished.isEmpty) {
+                                Text("표시할 책이 없어요").font(.sans(13, 500)).foregroundColor(RT.muted)
+                                    .frame(maxWidth: .infinity).padding(.top, 32)
+                                    .accessibilityIdentifier("library.empty")
                             }
                         }
-                    } else {
-                        readingCard
+                        .padding(.bottom, 32)
                     }
+                    .scrollDismissesKeyboard(.interactively)
                 }
-                if filter != .reading, live == nil || !(live!.finished.isEmpty) {
-                    HStack(spacing: 4) {
-                        Text("완독").font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.faint)
-                        Text(live.map { "\($0.finished.count)" } ?? "13")
-                            .font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.ghost)
-                    }
-                    .padding(EdgeInsets(top: 20, leading: 2, bottom: 12, trailing: 0))
-                    grid
-                }
-                Spacer(minLength: 0)
             }
             .padding(.horizontal, 20)
             .padding(.top, 102)
@@ -103,8 +122,29 @@ public struct Screen12Library: View {
             RTIcon(["M20 20l-3.6-3.6"], size: 16, stroke: Color(hex: 0xA59D87), lineWidth: 2)
                 .overlay(Circle().stroke(Color(hex: 0xA59D87), lineWidth: 2 * 16 / 24)
                     .frame(width: 14 * 16 / 24, height: 14 * 16 / 24).offset(x: -16 / 24, y: -16 / 24))
-            Text("내 책 · 저자 검색").font(.sans(13.5, 500)).foregroundColor(Color(hex: 0xA59D87))
-            Spacer()
+            if let model, live != nil {
+                TextField("내 책 · 저자 검색", text: Binding(
+                    get: { model.libraryQuery }, set: { model.libraryQuery = $0 }),
+                    prompt: Text("내 책 · 저자 검색").foregroundColor(Color(hex: 0xA59D87)))
+                    .textFieldStyle(.plain)
+                    .font(.sans(13.5, 500)).foregroundColor(RT.ink)
+                    .autocorrectionDisabled()
+                    .focused($searchFocused)
+                    .submitLabel(.search)
+                    .onSubmit { searchFocused = false }
+                    .accessibilityIdentifier("library.search")
+                if !model.libraryQuery.isEmpty {
+                    Button { model.libraryQuery = "" } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundColor(RT.muted)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("검색 지우기")
+                    .accessibilityIdentifier("library.search.clear")
+                }
+            } else {
+                Text("내 책 · 저자 검색").font(.sans(13.5, 500)).foregroundColor(Color(hex: 0xA59D87))
+                Spacer()
+            }
         }
         .padding(.horizontal, 14)
         .frame(height: 44)

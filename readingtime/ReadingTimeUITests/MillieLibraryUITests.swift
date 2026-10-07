@@ -81,4 +81,80 @@ final class MillieLibraryUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["완독"].firstMatch.exists, "완독 버튼이 없음")
         XCTAssertFalse(app.staticTexts["직접 추가"].exists, "밀리 상세에 '직접 추가' 가 노출됨")
     }
+
+    private func launchLongLibrary() throws -> XCUIApplication {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("library-\(UUID().uuidString).json")
+        var books: [[String: Any]] = [[
+            "isbn": "reading", "title": "Alpha reading", "author": "Reader",
+            "publisher": "", "coverUrl": "", "addedAt": "2026-09-01T12:00:00Z", "finished": false
+        ]]
+        for i in 0..<15 {
+            books.append([
+                "isbn": "B\(i)", "title": i == 0 ? "Alpha finished" : "Library book \(i)",
+                "author": "Writer", "publisher": "", "coverUrl": "",
+                "addedAt": String(format: "2026-09-%02dT12:00:00Z", 30 - i), "finished": true
+            ])
+        }
+        try JSONSerialization.data(withJSONObject: ["books": books, "sessions": []]).write(to: file)
+        addTeardownBlock { try FileManager.default.removeItem(at: file) }
+        let app = XCUIApplication()
+        let fixture = ProcessInfo.processInfo.environment["RT_LIBRARY_FIXTURE"] ?? file.path
+        app.launchArguments = ["--seq", "login,loadUserData:\(fixture),nav:12"]
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any)["library.grid.B0"].firstMatch.waitForExistence(timeout: 10),
+                      "서재 테스트 데이터가 로드되지 않음")
+        return app
+    }
+
+    func testLibrarySearchMatchesTitleAndAuthorAndClears() throws {
+        let app = try launchLongLibrary()
+        let field = app.textFields["library.search"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "서재 검색창이 입력란이 아님")
+        field.tap()
+        field.typeText("alpha\n")
+        XCTAssertTrue(app.staticTexts["Alpha reading"].exists, "읽는 중 제목 검색이 적용되지 않음")
+        XCTAssertTrue(app.descendants(matching: .any)["library.grid.B0"].firstMatch.exists,
+                      "완독 제목 검색이 적용되지 않음")
+        XCTAssertFalse(app.descendants(matching: .any)["library.grid.B1"].firstMatch.exists,
+                       "검색과 무관한 책이 남음")
+
+        let clear = app.buttons["library.search.clear"]
+        XCTAssertTrue(clear.exists)
+        clear.tap()
+        field.tap()
+        field.typeText("writer\n")
+        XCTAssertFalse(app.staticTexts["Alpha reading"].exists, "저자 검색에서 무관한 읽는 중 책이 남음")
+        XCTAssertTrue(app.descendants(matching: .any)["library.grid.B1"].firstMatch.exists, "저자로 검색되지 않음")
+
+        clear.tap()
+        XCTAssertTrue(app.staticTexts["Alpha reading"].exists, "검색을 비워도 읽는 중 목록이 복구되지 않음")
+        XCTAssertTrue(app.descendants(matching: .any)["library.grid.B1"].firstMatch.exists, "검색을 비워도 완독 목록이 복구되지 않음")
+    }
+
+    func testLibrarySearchWithoutMatchesShowsEmptyState() throws {
+        let app = try launchLongLibrary()
+        let field = app.textFields["library.search"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "서재 검색창이 입력란이 아님")
+        field.tap()
+        field.typeText("no-such-book\n")
+        XCTAssertTrue(app.staticTexts["library.empty"].waitForExistence(timeout: 5), "검색 결과 없음 안내가 없음")
+        XCTAssertFalse(app.staticTexts["Alpha reading"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["library.grid.B0"].firstMatch.exists)
+    }
+
+    func testLongLibraryScrollReachesLastBookAndKeepsHeaderVisible() throws {
+        let app = try launchLongLibrary()
+        let last = app.descendants(matching: .any)["library.grid.B14"].firstMatch
+        for _ in 0..<6 {
+            if last.frame.maxY <= app.frame.maxY - 24, last.frame.minY > 0 { break }
+            app.swipeUp()
+        }
+        XCTAssertLessThanOrEqual(last.frame.maxY, app.frame.maxY - 24,
+                                 "목록이 스크롤되지 않아 마지막 책이 화면 아래에 잘림")
+        XCTAssertTrue(app.staticTexts["서재"].isHittable, "긴 목록에서 서재 헤더가 화면 밖으로 밀림")
+        last.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["detail.screen"].waitForExistence(timeout: 5),
+                      "스크롤한 마지막 책의 상세를 열 수 없음")
+        XCTAssertTrue(app.staticTexts["Library book 14"].firstMatch.exists)
+    }
 }

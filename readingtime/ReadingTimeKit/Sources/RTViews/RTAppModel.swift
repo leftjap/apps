@@ -222,6 +222,7 @@ public final class RTAppModel: ObservableObject {
     @Published public var added: Set<String> = ["flow"]  // 13 데모: 첫 행 추가됨
     @Published public var libraryFilter: RTLibraryFilter = .all
     @Published public var librarySort: RTLibrarySort = .recent
+    @Published public var libraryQuery = ""
     // 하루 첫 실행 안무(#7a) 재생 플래그 — 앱 셸이 UserDefaults 날짜 판정 후 홈 진입 시 1회 set.
     // 데모(rtshot/rtapp)·기본은 false → 홈은 정지 #7b (픽셀 오라클 불변)
     @Published public var playPickup = false

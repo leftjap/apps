@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import SwiftUI
 @testable import RTViews
 
 // RTAppModel — prototype/app.js 인터랙션 정본과의 정합 테스트.
@@ -348,6 +349,51 @@ import Foundation
 
     @Test func recentKeepsOriginalOrder() {
         #expect(keys(.recent) == ["money", "farewell", "trend", "light", "same", "focus"])
+    }
+
+    @Test func liveLibrarySearchMatchesTitleOrAuthorAndPreservesSort() {
+        let m = RTAppModel()
+        m.userData = RTUserData(books: [
+            RTBook(isbn: "A", title: "Alpha", author: "Writer", publisher: "", coverUrl: "",
+                   addedAt: Date(timeIntervalSince1970: 2), finished: true, rating: 2),
+            RTBook(isbn: "B", title: "독학이라는 세계", author: "시라토리 하루히코", publisher: "", coverUrl: "",
+                   addedAt: Date(timeIntervalSince1970: 1), finished: true, rating: 5),
+            RTBook(isbn: "C", title: "Alpha reading", author: "Writer", publisher: "", coverUrl: "",
+                   addedAt: Date(timeIntervalSince1970: 3))
+        ])
+        let cases: [(String, [String])] = [
+            ("alpha", ["A"]), ("  ALPHA\n", ["A"]), ("writer", ["A"]),
+            ("독학", ["B"]), ("시라토리", ["B"]), ("없는책", []), (" \n", ["A", "B"])
+        ]
+        for (query, expected) in cases {
+            m.libraryQuery = query
+            #expect(Screen12Library(model: m).sortedLiveFinished.map(\.isbn) == expected)
+        }
+        m.libraryQuery = ""
+        m.setLibrarySort(.rating)
+        #expect(Screen12Library(model: m).sortedLiveFinished.map(\.isbn) == ["B", "A"])
+    }
+
+    @Test func headlessLibraryDrawsBookContent() throws {
+        _ = RTFonts.register()
+        let renderer = ImageRenderer(content: Screen12Library().rtHeadless())
+        renderer.scale = 1
+        renderer.proposedSize = ProposedViewSize(width: 390, height: 844)
+        let image = try #require(renderer.cgImage)
+        let books = try #require(image.cropping(to: CGRect(x: 20, y: 250, width: 350, height: 350)))
+        var pixels = [UInt8](repeating: 0, count: 350 * 350 * 4)
+        let darkPixels = try pixels.withUnsafeMutableBytes { raw -> Int in
+            let context = try #require(CGContext(
+                data: raw.baseAddress, width: 350, height: 350, bitsPerComponent: 8, bytesPerRow: 350 * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue))
+            context.draw(books, in: CGRect(x: 0, y: 0, width: 350, height: 350))
+            let bytes = raw.bindMemory(to: UInt8.self)
+            return stride(from: 0, to: bytes.count, by: 4).filter {
+                bytes[$0] < 150 && bytes[$0 + 1] < 150 && bytes[$0 + 2] < 150
+            }.count
+        }
+        #expect(darkPixels > 100, "서재 책 영역이 백지로 렌더됨")
     }
 }
 
