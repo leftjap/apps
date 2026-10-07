@@ -18,5 +18,5 @@ resign_verify \
   $HOME/apps/readingtime/ReadingTime.xcodeproj ReadingTime com.leftjap.readingtime \
   $HOME/.local/share/readingtime-resign/dd ReadingTime \
   7E959831-9CD6-5413-8ADB-2A04D72C5073 \
-  4DBC8522-14E4-5308-B527-E43DAEB2DAE4   # 지오 iPhone 11 Pro · 소연 iPhone XR
+  3587B7A1-B2F0-50F9-88DB-116441284DC6   # 지오 iPhone 11 Pro · 소연 iPhone 17
 exit $?
