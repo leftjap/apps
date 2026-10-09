@@ -105,7 +105,7 @@ function readMaybe(p) { try { return fs.readFileSync(p, 'utf8').trim(); } catch 
 async function claudePass(prompt, allowedTools, cwd) {
   const run = (model) => runFile(
     CLAUDE,
-    ['-p', prompt, '--model', model, '--allowedTools', allowedTools, '--permission-mode', 'bypassPermissions'],
+    ['-p', prompt, '--no-session-persistence', '--model', model, '--allowedTools', allowedTools, '--permission-mode', 'bypassPermissions'],
     {
       cwd,
       env: { ...process.env, CLAUDE_CODE_OAUTH_TOKEN: OAUTH_TOKEN, HOME, PATH: '/opt/homebrew/bin:/usr/bin:/bin' },
