@@ -1,7 +1,7 @@
 # ~/apps
 
 ## 프로젝트 구조
-- 앱: Study/Today/Book/Pick/Cue/Best (PWA, GitHub Pages `/apps/<app>/` 배포) + Board (Electron, git 미업로드. `~/apps/board/CLAUDE.md` 별도). `launcher/` 는 디자인 브리프 스텁(앱 아님). `readingtime/` 는 iOS 네이티브 준비 중이며, 웹 프로토타입(`prototype/`)이 픽셀 정본, 시안은 `design-ref/v3`(v8 최종). 기록 화면(원페이지: 월 히트맵·책·지도)은 별도 정본 `design-ref/design_handoff_record_onepage/` + 픽셀 오라클 `.oracle/`(`scripts/record-verify.sh` 로 대조), 탭 모드(05)도 별도 정본 `design-ref/design_handoff_tap_mode/`(시안 J).
+- 앱: Study/Today/Book/Pick/Cue/Best (PWA, GitHub Pages `/apps/<app>/` 배포). `launcher/` 는 디자인 브리프 스텁(앱 아님). `readingtime/` 는 iOS 네이티브 준비 중이며, 웹 프로토타입(`prototype/`)이 픽셀 정본, 시안은 `design-ref/v3`(v8 최종). 기록 화면(원페이지: 월 히트맵·책·지도)은 별도 정본 `design-ref/design_handoff_record_onepage/` + 픽셀 오라클 `.oracle/`(`scripts/record-verify.sh` 로 대조), 탭 모드(05)도 별도 정본 `design-ref/design_handoff_tap_mode/`(시안 J).
 - **`gym/` 은 iOS 네이티브 앱** (2026-07-07 전환, `ea98b97`). **실기기에 설치된 건 네이티브**(`Gym.xcodeproj` + `GymKit/Sources/{GymCore,GymViews}`, SwiftUI). 같은 폴더의 PWA(`src/`+`mocks/`)는 잔존이며 Pages 배포는 계속되지만 폰엔 없다. **화면·디자인 작업을 PWA 에만 하면 실기기엔 변화가 0** (2026-07-17 실사고: 웹만 고치고 "실기기 반영됨" 오단정). 상세·검증도구는 `~/apps/gym/CLAUDE.md`.
 - 앱별 스펙: `~/apps/<app>/specs/<app>-app-spec.md` (현재 best/gym/pick/study)
 - `~/apps/lessons/`: 환경 함정 (lazy load, 인용 시 직접 Read)
@@ -37,4 +37,4 @@
 
 - **테스트 실행**: 2026-08-30 부로 6개 PWA 의 `test` 스크립트를 `vitest run` 으로 바꾸고 watch 는 `test:watch` 로 분리했으므로 `pnpm test` 는 안전합니다. 다만 `run` 없이 `pnpm vitest` 로 직접 부르면 여전히 watch 에 걸려 Bash 가 멈추므로, PreToolUse hook 이 그 경우만 차단합니다.
 - **PWA 배포 전 확인**: `pnpm test` → `pnpm build` → `pnpm preview` 순. manifest·서비스워커·오프라인은 dev 모드에서 꺼져 있어 `preview` 단계에서만 확인된다. 홈 화면 추가와 standalone 동작은 자동화가 불가능하므로 iPhone Safari 실기기로 직접 본다.
-- **pnpm 10 onlyBuiltDependencies**: 누락 시 esbuild postinstall 차단. PWA 앱(study/gym/today/book/pick/cue/best) `["esbuild"]`. Board 는 `~/apps/board/CLAUDE.md` 참조.
+- **pnpm 10 onlyBuiltDependencies**: 누락 시 esbuild postinstall 차단. PWA 앱(study/gym/today/book/pick/cue/best) `["esbuild"]`.

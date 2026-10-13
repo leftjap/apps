@@ -1,6 +1,6 @@
 # ~/apps — PWA 리빌드 허브
 
-Board(Electron, git 미업로드) + PWA 6앱 (Study/Gym/Today/Book/Pick/Cue) 단일 트리. 메타 (`CLAUDE.md`/`lessons/`/`scripts/`/`.claude/`) 와 코드·앱별 spec 모두 여기.
+PWA 6앱 (Study/Gym/Today/Book/Pick/Cue) 단일 트리. 메타 (`CLAUDE.md`/`lessons/`/`scripts/`/`.claude/`) 와 코드·앱별 spec 모두 여기.
 
 ## 앱 목록
 
