@@ -38,3 +38,61 @@ export function buildPushPayload(record, badge) {
   if (typeof badge === 'number') payload.badge = badge;
   return payload;
 }
+
+/** Health alerts bypass the notification enum/table and require service credentials. */
+export function authorizePushRequest(headers, body, { serviceKey, webhookSecret } = {}) {
+  if (body?.type === 'ingest_gap') {
+    return serviceKey && headers.get('Authorization') === `Bearer ${serviceKey}` ? 'ingest_gap' : null;
+  }
+  return webhookSecret && headers.get('X-Push-Secret') === webhookSecret ? 'webhook' : null;
+}
+
+export function buildIngestGapPayload() {
+  return {
+    title: '가계부 자동입력 확인',
+    body: '카드 문자 자동입력이 멈췄을 수 있어요. 최근 기록과 아이폰 단축어를 확인해 주세요.',
+    tag: 'expense-ingest-gap',
+    data: { section: 'expense' },
+  };
+}
+
+/** Transport errors never return/log subscription endpoints or upstream bodies. */
+export async function deliverPushMessages(subscriptions, payload, { send, prune }) {
+  let sent = 0, pruned = 0, failed = 0;
+  for (const subscription of subscriptions) {
+    try {
+      await send(subscription, payload);
+      sent++;
+    } catch (error) {
+      const message = String(error?.message || error);
+      if (/\b(404|410)\b|gone|not found/i.test(message)) {
+        try { await prune(subscription); pruned++; } catch { failed++; }
+      } else failed++;
+    }
+  }
+  return { status: sent > 0 ? (failed > 0 ? 'partial' : 'ok') : 'delivery_failed', sent, pruned, failed, total: subscriptions.length };
+}
+
+/** Projects may have more than one valid service credential. An alternate bearer
+ * is authorized only by the same project's service-admin endpoint, never by
+ * decoding an unverified JWT role. Discard its response without reading users.
+ */
+export async function authenticatePushRequest(headers, body, options = {}) {
+  const immediate = authorizePushRequest(headers, body, options);
+  if (immediate) return immediate;
+  if (body?.type !== 'ingest_gap' || !options.supabaseUrl) return null;
+  const authorization = headers.get('Authorization') || '';
+  const bearer = authorization.match(/^Bearer ([^\s]+)$/)?.[1];
+  if (!bearer) return null;
+  try {
+    const response = await (options.fetcher || fetch)(`${options.supabaseUrl.replace(/\/$/, '')}/auth/v1/admin/users?page=1&per_page=1`, {
+      method: 'GET', redirect: 'error', signal: AbortSignal.timeout(5000),
+      headers: { Authorization: `Bearer ${bearer}`, apikey: bearer },
+    });
+    const verified = response.status === 200;
+    try { await response.body?.cancel(); } catch { /* no body data is used */ }
+    return verified ? 'ingest_gap' : null;
+  } catch {
+    return null;
+  }
+}

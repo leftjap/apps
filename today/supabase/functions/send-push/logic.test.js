@@ -89,3 +89,92 @@ describe('new_post — 클로드 자동댓글(글 완성 신호) 시점 발사',
     expect(buildPushPayload({ ...postRow, preview: '' }).body).toBe('새 글이 올라왔어요');
   });
 });
+
+// Service health notifications must never accept the normal webhook credential.
+import * as pushLogic from './logic.js';
+describe('private ingest health push', () => {
+  const recipient = '11111111-1111-4111-8111-111111111111';
+  const body = { type: 'ingest_gap', recipient_id: recipient };
+  const secrets = { serviceKey: 'service-test', webhookSecret: 'webhook-test' };
+  it('requires service authorization for the generic expense warning', () => {
+    expect(pushLogic.authorizePushRequest).toBeTypeOf('function');
+    expect(pushLogic.authorizePushRequest(new Headers({ Authorization: 'Bearer service-test' }), body, secrets)).toBe('ingest_gap');
+    expect(pushLogic.authorizePushRequest(new Headers({ 'X-Push-Secret': 'webhook-test' }), body, secrets)).toBe(null);
+    expect(pushLogic.authorizePushRequest(new Headers({ Authorization: 'Bearer anon-test' }), body, secrets)).toBe(null);
+    expect(pushLogic.authorizePushRequest(new Headers(), body, {})).toBe(null);
+  });
+  it('preserves webhook authorization for normal comments and posts', () => {
+    expect(pushLogic.authorizePushRequest).toBeTypeOf('function');
+    expect(pushLogic.authorizePushRequest(new Headers({ 'X-Push-Secret': 'webhook-test' }), { record: baseRow }, secrets)).toBe('webhook');
+  });
+  it('builds a fixed private warning that cannot echo supplied sensitive details', () => {
+    expect(pushLogic.buildIngestGapPayload).toBeTypeOf('function');
+    const p = pushLogic.buildIngestGapPayload({ preview: 'PRIVATE', card: 'PRIVATE_CARD' });
+    expect(p.data).toEqual({ section: 'expense' });
+    expect(JSON.stringify(p)).not.toContain('PRIVATE');
+    expect(p.title).toContain('가계부');
+  });
+});
+
+describe('delivery result accounting', () => {
+  it('counts expired subscriptions separately and reports a real transport failure', async () => {
+    expect(pushLogic.deliverPushMessages).toBeTypeOf('function');
+    const removed = [];
+    const results = await pushLogic.deliverPushMessages([
+      { endpoint: 'ok' }, { endpoint: 'expired' }, { endpoint: 'failed' },
+    ], 'generic', {
+      send: async (sub, payload) => {
+        expect(payload).toBe('generic');
+        if (sub.endpoint === 'expired') throw new Error('410 Gone');
+        if (sub.endpoint === 'failed') throw new Error('temporary transport failure');
+      },
+      prune: async (sub) => removed.push(sub.endpoint),
+    });
+    expect(results).toEqual({ status: 'partial', sent: 1, pruned: 1, failed: 1, total: 3 });
+    expect(removed).toEqual(['expired']);
+  });
+  it('does not report ok when every subscription fails', async () => {
+    expect(pushLogic.deliverPushMessages).toBeTypeOf('function');
+    expect(await pushLogic.deliverPushMessages([{ endpoint: 'failed' }], 'generic', {
+      send: async () => { throw new Error('unavailable'); }, prune: async () => {},
+    })).toEqual({ status: 'delivery_failed', sent: 0, pruned: 0, failed: 1, total: 1 });
+  });
+});
+
+describe('alternate valid project service credentials', () => {
+  const body = { type: 'ingest_gap', recipient_id: '11111111-1111-4111-8111-111111111111' };
+  const secrets = { serviceKey: 'current-service', webhookSecret: 'webhook', supabaseUrl: 'https://project.example.test' };
+  it('accepts an alternate service credential only after same-project admin authentication succeeds', async () => {
+    expect(pushLogic.authenticatePushRequest).toBeTypeOf('function');
+    let cancelled = false;
+    const result = await pushLogic.authenticatePushRequest(new Headers({ Authorization: 'Bearer alternate-service' }), body, {
+      ...secrets,
+      fetcher: async (url, options) => {
+        expect(url).toBe('https://project.example.test/auth/v1/admin/users?page=1&per_page=1');
+        expect(options.headers).toMatchObject({ Authorization: 'Bearer alternate-service', apikey: 'alternate-service' });
+        return { status: 200, body: { cancel: async () => { cancelled = true; } }, json: () => { throw new Error('private admin data must never be read'); } };
+      },
+    });
+    expect(result).toBe('ingest_gap');
+    expect(cancelled).toBe(true);
+  });
+  it.each([401, 403, 500])('rejects invalid, anon, user or unavailable admin authentication (%i)', async (status) => {
+    expect(pushLogic.authenticatePushRequest).toBeTypeOf('function');
+    expect(await pushLogic.authenticatePushRequest(new Headers({ Authorization: 'Bearer untrusted-token' }), body, {
+      ...secrets, fetcher: async () => ({ status, body: { cancel: async () => {} } }),
+    })).toBe(null);
+  });
+  it('fails closed on a network error and never treats a decoded role claim as authorization', async () => {
+    expect(pushLogic.authenticatePushRequest).toBeTypeOf('function');
+    expect(await pushLogic.authenticatePushRequest(new Headers({ Authorization: 'Bearer forged.service_role.signature' }), body, {
+      ...secrets, fetcher: async () => { throw new Error('network unavailable'); },
+    })).toBe(null);
+  });
+  it('uses the current key and existing webhook fast paths without an admin request', async () => {
+    expect(pushLogic.authenticatePushRequest).toBeTypeOf('function');
+    const fetcher = async () => { throw new Error('must not contact admin for fast path'); };
+    expect(await pushLogic.authenticatePushRequest(new Headers({ Authorization: 'Bearer current-service' }), body, { ...secrets, fetcher })).toBe('ingest_gap');
+    expect(await pushLogic.authenticatePushRequest(new Headers({ 'X-Push-Secret': 'webhook' }), { record: baseRow }, { ...secrets, fetcher })).toBe('webhook');
+    expect(await pushLogic.authenticatePushRequest(new Headers({ 'X-Push-Secret': 'webhook' }), body, { ...secrets, fetcher })).toBe(null);
+  });
+});

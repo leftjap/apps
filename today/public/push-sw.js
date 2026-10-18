@@ -45,9 +45,11 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       const scope = self.registration.scope;
+      const target = event.notification.data?.section === 'expense' ? new URL('#/expense', scope).href : null;
       const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const c of all) {
-        if ('focus' in c) {
+        if (c.url?.startsWith(scope) && 'focus' in c) {
+          if (target && 'navigate' in c) await c.navigate(target);
           try {
             if (self.navigator && self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
           } catch (e) {
@@ -56,7 +58,7 @@ self.addEventListener('notificationclick', (event) => {
           return c.focus();
         }
       }
-      if (self.clients.openWindow) return self.clients.openWindow(scope);
+      if (self.clients.openWindow) return self.clients.openWindow(target || scope);
     })(),
   );
 });

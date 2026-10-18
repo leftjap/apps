@@ -14,3 +14,8 @@ project_id = "tcbooffrdacfatywdzcm"
 # X-Ingest-Token (커스텀 헤더) 으로 함수 본체에서 인증 — gateway 의 JWT 검증 불필요.
 # true 시 Authorization: Bearer <JWT> 헤더 강제 → iOS 단축어/backfill 401 차단됨.
 verify_jwt = false
+
+[functions.send-push]
+# Preserve deployed webhook auth; private health requests additionally require
+# the service-role bearer key inside the handler.
+verify_jwt = false

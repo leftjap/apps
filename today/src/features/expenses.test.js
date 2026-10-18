@@ -44,6 +44,8 @@ import {
   clearExpensesFixture,
   quantileTier,
   detectIngestGapCards,
+  patchPasteExpenseSMSHandler,
+  __resetPasteSmsPatchState,
 } from './expenses.js';
 import { createTodayDB } from '../db/schema.js';
 import { Queries } from '../db/queries.js';
@@ -691,6 +693,36 @@ describe('saveExpenseFromForm — Dexie create/update', () => {
     // 보존된 필드 (read-only — amount/datetime/merchant)
     expect(result.row.amount_krw).toBe(50000);
     expect(result.row.merchant).toBe('회식 1차');
+  });
+
+  it('새 수동 입력의 음수는 지출 양수로 바꾸지 않고 거절한다', async () => {
+    const doc = makeFakeDoc({ amount: '-34,800', datetime: '2026-10-01T12:00', merchant: '테스트상점', category: 'etc' });
+    const result = await Expenses.saveExpenseFromForm({ mode: 'new' }, doc);
+    expect(result).toMatchObject({ ok: false, reason: 'validation', missing: ['amount'] });
+    expect(await globalThis.todayDB.expenses.count()).toBe(0);
+  });
+
+  it('기존 결제와 연결된 취소를 열고 메모를 저장해도 음수 금액이 보존된다', async () => {
+    const original = await Queries.createExpense({ owner_id: OWNER, amount_krw: 34800, spent_at: '2026-10-01T12:00:00Z', merchant: '테스트상점', category: 'etc', source: 'sms' });
+    const refund = await Queries.createExpense({ owner_id: OWNER, amount_krw: -34800, spent_at: '2026-10-02T12:00:00Z', merchant: '테스트상점', category: 'etc', source: 'sms', meta: { sms_kind: 'cancellation', cancelled_expense_id: original.id } });
+    const doc = makeFakeDoc({ category: 'etc' });
+    Expenses.populateExpenseForm(refund, doc);
+    expect(doc.getElementById('expModalAmount').value).toBe('-34,800');
+    doc.getElementById('expModalMemo').value = '환불 확인';
+    const result = await Expenses.saveExpenseFromForm({ mode: 'edit', editId: refund.id }, doc);
+    expect(result.ok).toBe(true);
+    const persisted = await Queries.getExpense(refund.id);
+    expect(persisted.amount_krw).toBe(-34800);
+    expect(persisted.memo).toBe('환불 확인');
+    expect(persisted.meta.cancelled_expense_id).toBe(original.id);
+  });
+
+  it('원 결제에 연결되지 않은 음수 행은 새 환불 편집 기능으로 허용하지 않는다', async () => {
+    const row = await Queries.createExpense({ owner_id: OWNER, amount_krw: -34800, spent_at: '2026-10-02T12:00:00Z', merchant: '테스트상점', category: 'etc', source: 'manual' });
+    const doc = makeFakeDoc({ amount: '-34,800', datetime: '2026-10-02T12:00', merchant: '테스트상점', category: 'etc', memo: '검증 안 됨' });
+    const result = await Expenses.saveExpenseFromForm({ mode: 'edit', editId: row.id }, doc);
+    expect(result).toMatchObject({ ok: false, reason: 'validation', missing: ['amount'] });
+    expect((await Queries.getExpense(row.id)).memo).toBe(null);
   });
 
   it('validation 실패 — missing 배열 반환', async () => {
@@ -1448,9 +1480,9 @@ describe('chipLabelHtml — 랭킹 카테고리 칩 4글자+ 균형 줄바꿈', 
 
 describe('detectIngestGapCards — 자동수집 끊김 감지 (2026-06-02 사각지대 fix)', () => {
   const NOW = new Date('2026-06-02T00:00:00.000Z'); // cutoff = 5/26 00:00, lookback = 3/4
-  const auto = (card, spent) => ({ card, source: 'sms', sms_raw: '[Web발신]' + card, spent_at: spent, deleted_at: null });
-  const imp = (card, spent) => ({ card, source: 'import', sms_raw: null, spent_at: spent, deleted_at: null });
-  const man = (card, spent) => ({ card, source: 'manual', sms_raw: null, spent_at: spent, deleted_at: null });
+  const auto = (card, spent) => ({ card, source: 'sms', sms_raw: '[Web발신]' + card, spent_at: spent, created_at: spent, amount_krw: 1000, deleted_at: null });
+  const imp = (card, spent) => ({ card, source: 'import', sms_raw: null, spent_at: spent, amount_krw: 1000, deleted_at: null });
+  const man = (card, spent) => ({ card, source: 'manual', sms_raw: null, spent_at: spent, amount_krw: 1000, deleted_at: null });
   const mockRows = (rows) => vi.spyOn(Queries, 'listExpensesByRange').mockResolvedValue(rows);
   afterEach(() => vi.restoreAllMocks());
 
@@ -1466,6 +1498,33 @@ describe('detectIngestGapCards — 자동수집 끊김 감지 (2026-06-02 사각
     expect(hit).toBeTruthy();
     expect(hit.lastSpentAt).toBe('2026-05-25T09:00:00.000Z');
     expect(hit.count).toBe(2); // 자동수집 건수
+  });
+
+  it('새 카드의 live 수집은 같은 삼성 이전 카드의 경고를 해소한다', async () => {
+    mockRows([
+      ...Array.from({ length: 12 }, () => auto('삼성1337', '2026-05-10T09:00:00.000Z')),
+      auto('삼성1595', '2026-06-01T09:00:00.000Z'),
+    ]);
+    expect(await detectIngestGapCards(NOW)).toEqual([]);
+  });
+
+  it('복구와 수동 문자 입력으로 live 경고를 해소하지 않는다', async () => {
+    mockRows([
+      ...Array.from({ length: 12 }, () => auto('삼성1337', '2026-05-10T09:00:00.000Z')),
+      { ...auto('삼성1595', '2026-06-01T09:00:00.000Z'), meta: { ingest_channel: 'backfill' } },
+      { ...auto('삼성1595', '2026-06-01T10:00:00.000Z'), meta: { ingest_channel: 'paste' } },
+    ]);
+    const gaps = await detectIngestGapCards(NOW);
+    expect(gaps).toHaveLength(1);
+    expect(gaps[0].lastSpentAt).toBe('2026-05-10T09:00:00.000Z');
+  });
+
+  it('최근 복구된 과거 문자와 해석 실패 문자는 live 이력으로 보지 않는다', async () => {
+    mockRows([
+      ...Array.from({ length: 12 }, () => ({ ...auto('신한카드 Air', '2026-05-10T09:00:00.000Z'), created_at: '2026-06-01T00:00:00.000Z' })),
+      ...Array.from({ length: 12 }, () => ({ ...auto('현대백화점카드', '2026-05-10T09:00:00.000Z'), meta: { sms_kind: 'unparsed' }, amount_krw: null })),
+    ]);
+    expect(await detectIngestGapCards(NOW)).toEqual([]);
   });
 
   it('삼성(자동수집 0건, 카톡 이전): 거래 많아도 미검출 (오탐 방지)', async () => {
@@ -1524,4 +1583,55 @@ describe('quantileTier — 캘린더 농도 분위수 (리디자인 §5.1)', () 
     expect(quantileTier(10000, sorted)).toBeGreaterThanOrEqual(1);
     expect(quantileTier(10000, sorted)).toBeLessThanOrEqual(5);
   });
+});
+
+
+describe('card SMS paste cancellation safety', () => {
+  afterEach(() => __resetPasteSmsPatchState());
+
+  function pasteForm(raw) {
+    const amount = { value: '', dispatchEvent() {} };
+    const merchant = { value: '', dispatchEvent() {} };
+    const datetime = { value: '2026-10-18T12:00', dispatchEvent() {} };
+    const messages = [];
+    const doc = {
+      getElementById: (id) => ({ expModalAmount: amount, expModalMerchant: merchant, expModalDatetime: datetime }[id] || null),
+      querySelectorAll: () => [],
+    };
+    const win = { prompt: () => raw, alert: (message) => messages.push(message) };
+    patchPasteExpenseSMSHandler({ win, doc });
+    return { win, amount, merchant, datetime, messages };
+  }
+
+  it.each([
+    '[Web발신]\n삼성1595취소 테*트\n8,200원 일시불\n10/02 13:00 테스트상점',
+    '삼성1595부분취소 테*트\n2,000원 일시불\n10/02 13:00 테스트상점',
+    '삼성1595해외승인취소 테*트\nUSD 10.00\n10/02 13:00 TEST SHOP',
+  ])('취소 붙여넣기는 양수 지출을 채우지 않고 원 결제 대조 안내를 표시한다', async (raw) => {
+    const form = pasteForm(raw);
+    await form.win.pasteExpenseSMS();
+    expect(form.amount.value).toBe('');
+    expect(form.merchant.value).toBe('');
+    expect(form.messages).toHaveLength(1);
+    expect(form.messages[0]).toContain('취소');
+    expect(form.messages[0]).toContain('기존 결제');
+  });
+
+  it('정상 승인 붙여넣기는 기존 금액/가맹점 입력을 유지한다', async () => {
+    const form = pasteForm('[Web발신]\n삼성1595승인 테*트\n8,200원 일시불\n10/02 13:00 테스트상점');
+    await form.win.pasteExpenseSMS();
+    expect(form.amount.value).toBe('8,200');
+    expect(form.merchant.value).toBe('테스트상점');
+    expect(form.messages).toEqual([]);
+  });
+});
+
+
+it('환불 표시와 폼 추출은 음수 부호를 보존한다', () => {
+  const amount = { value: '-34,800' };
+  const doc = { getElementById: (id) => id === 'expModalAmount' ? amount : null, querySelector: () => null };
+  expect(Expenses.extractExpenseFromForm(doc).amount_krw).toBe(-34800);
+  expect(formatAmount(-34800)).toContain('-34,800');
+  expect(rowToMockTx({ amount_krw: -34800 }).amount).toBe(-34800);
+  expect(summarizeMonth([{ amount_krw: 34800 }, { amount_krw: -34800 }], 1).total).toBe(0);
 });

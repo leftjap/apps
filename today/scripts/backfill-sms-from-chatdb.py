@@ -1,152 +1,211 @@
-"""
-chat.db 1,167건 카드 결제 SMS 를 sms-card-ingest endpoint 로 풀 backfill.
+#!/usr/bin/env python3
+"""Read-only card SMS extraction; dry-run by default, explicit --apply to ingest.
 
-전제:
-- 사용 카드: 삼성카드 1337 / KB국민카드 7007
-- chat.db 의 m.date 추출 시 'localtime' 옵션으로 시스템 타임존(KST) 적용됨
-- received_at 은 KST → ISO 8601 +09:00 (UTC 변환 안 함)
-- 호출 간 100ms (rate limit 보호)
-
-usage: python3 backfill-sms-from-chatdb.py
+Private output defaults to audit/sms-recovery (git-ignored). Tokens are resolved
+from the selected owner's existing server record, never embedded in this file.
 """
-import sqlite3, re, os, json, urllib.request, urllib.error, time
+import argparse
+import json
+import os
+import re
+import sqlite3
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections import Counter
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-URL = 'https://tcbooffrdacfatywdzcm.supabase.co/functions/v1/sms-card-ingest'
-TOKEN = 'de72f3361a68395a009769b2af6a2bbe266c7023244af179'
-# Supabase Edge Function gateway 의 platform-level JWT 검증 통과용.
-# 새 publishable anon key (sb_publishable_*) 는 JWT format 아니라 거절됨 → service_role JWT 필요.
-# .env.local 에서 읽어 하드코딩 회피. launchd 의 WorkingDirectory 가 today 라 가정.
-def _load_env(path):
-    env = {}
-    try:
-        with open(path) as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#') or '=' not in line: continue
-                k, v = line.split('=', 1)
-                env[k.strip()] = v.strip()
-    except FileNotFoundError:
-        pass
-    return env
-_env = _load_env(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env.local'))
-SERVICE_KEY = _env.get('SUPABASE_SERVICE_ROLE_KEY', '')
-if not SERVICE_KEY:
-    raise SystemExit("SUPABASE_SERVICE_ROLE_KEY 누락 — today/.env.local 확인")
-
-con = sqlite3.connect(os.path.expanduser('~/Library/Messages/chat.db'))
-con.text_factory = str
-
-# 사용 카드 발신번호 + reject 제외 동일 로직 (cardSmsParser 와 동기)
-SQL = """
-SELECT datetime(m.date/1000000000 + strftime('%s','2001-01-01'), 'unixepoch', 'localtime'),
-       m.text,
-       m.attributedBody
-FROM message m JOIN handle h ON m.handle_id=h.ROWID
-WHERE h.id IN ('+8215888900','+82220008100','+8215881688','+821063491949')
-  AND (m.text IS NOT NULL OR m.attributedBody IS NOT NULL)
-  AND datetime(m.date/1000000000 + strftime('%s','2001-01-01'), 'unixepoch', 'localtime')
-      >= date('now', '-1 year', 'localtime')
-ORDER BY m.date ASC
-"""
 
 def extract_attr_body(blob):
-    """attributedBody (typedstream NSAttributedString) 에서 본문 string 추출."""
-    if not blob: return None
+    """Decode the NSString payload used by Messages attributedBody."""
+    if not blob:
+        return None
     for prefix in (b'\x84\x01\x2b', b'\x94\x84\x01\x2b'):
         idx = blob.find(prefix)
-        if idx < 0: continue
+        if idx < 0:
+            continue
         pos = idx + len(prefix)
-        b = blob[pos]
-        # typedstream 길이는 little-endian (2026-06-11 실측: 0x81 0x8a 0x02 = 650.
-        # big 으로 읽으면 35330 → blob 범위 초과 → 추출 실패. 최근 macOS 는 m.text 가
-        # NULL 이고 attributedBody 만 있는 메시지가 늘어 이 추출기가 필수 경로)
-        if b == 0x81:
-            length = int.from_bytes(blob[pos+1:pos+3], 'little'); pos += 3
-        elif b == 0x82:
-            length = int.from_bytes(blob[pos+1:pos+5], 'little'); pos += 5
-        elif b < 0x80:
-            length = b; pos += 1
+        if pos >= len(blob):
+            continue
+        tag = blob[pos]
+        if tag in (0x81, 0x82):
+            size = 2 if tag == 0x81 else 4
+            if pos + 1 + size > len(blob):
+                continue
+            length = int.from_bytes(blob[pos + 1:pos + 1 + size], 'little')
+            pos += 1 + size
+        elif tag < 0x80:
+            length = tag
+            pos += 1
         else:
             continue
+        if pos + length > len(blob):
+            continue
         try:
-            return blob[pos:pos+length].decode('utf-8')
+            return blob[pos:pos + length].decode('utf-8')
         except UnicodeDecodeError:
-            pass
+            continue
     return None
 
-def card_of(t):
-    if re.search(r'삼성[^\d]{0,5}1337|\[삼성카드\]\s*1337', t): return 'samsung_1337'
-    if 'KB국민카드' in t and ('7007' in t or '후불하이패스' in t): return 'kb_7007'
+
+def card_of(text):
+    """Select actual card messages, independent of replacement-card numbers."""
+    for issuer, code in ((r'삼성(?:카드)?', 'samsung'), (r'KB국민카드', 'kb'), (r'KB국민체크\(?', 'kb_check'), (r'신한(?:카드)?', 'shinhan')):
+        match = re.search(issuer + r'\]?\s*(\d{4})', text)
+        if match:
+            return f'{code}_{match[1]}'
+    if 'KB국민카드' in text and '후불하이패스' in text:
+        return 'kb_hipass'
+    if '현대백화점카드' in text:
+        return 'hyundai_department'
     return None
 
-# Edge Function 응답이 status 알려주므로 클라이언트는 모두 보냄.
-# 단 chat.db filter: 사용 카드 매칭만 (다른 카드 noise 사전 차단)
-rows = []
-attr_recovered = 0
-for d, text, attr in con.execute(SQL):
-    body = text
-    if not body and attr:
-        body = extract_attr_body(attr)
-        if body: attr_recovered += 1
-    if not body: continue
-    if card_of(body):
-        rows.append((d, body))
-print(f"  (attributedBody 에서 추가 복구: {attr_recovered}건)")
 
-print(f"전송 대상: {len(rows)}건")
-
-stats = Counter()
-unparsed_samples = []
-errors = []
-
-for i, (d, t) in enumerate(rows):
-    # KST ISO 8601 — d 는 'YYYY-MM-DD HH:MM:SS' 형식 (KST localtime)
-    iso_kst = d.replace(' ', 'T') + '+09:00'
-    body = json.dumps({'text': t, 'received_at': iso_kst}).encode('utf-8')
-    req = urllib.request.Request(URL, data=body, method='POST', headers={
-        'X-Ingest-Token': TOKEN,
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {SERVICE_KEY}',
-    })
+def read_messages(db_path, since, until):
+    """Read only incoming, bounded card messages. Dates are inclusive in KST."""
+    kst = timezone(timedelta(hours=9))
+    start = datetime.fromisoformat(since).replace(tzinfo=kst)
+    end = datetime.fromisoformat(until).replace(tzinfo=kst) + timedelta(days=1)
+    if start >= end:
+        raise ValueError('since must not be after until')
+    epoch = datetime(2001, 1, 1, tzinfo=timezone.utc)
+    start_ns = int((start - epoch).total_seconds() * 1_000_000_000)
+    end_ns = int((end - epoch).total_seconds() * 1_000_000_000)
+    # SQL is parameterized; never open the user's Messages DB writable.
+    connection = sqlite3.connect(Path(db_path).expanduser().resolve().as_uri() + '?mode=ro', uri=True)
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            res = json.loads(r.read())
-            status = res.get('status', 'unknown')
-            stats[status] += 1
-            if status == 'unparsed' and len(unparsed_samples) < 5:
-                unparsed_samples.append({'received_at': iso_kst, 'text': t[:200]})
-    except urllib.error.HTTPError as e:
-        stats[f'http_{e.code}'] += 1
-        errors.append((iso_kst, e.code, t[:80]))
-    except Exception as e:
-        stats['exception'] += 1
-        errors.append((iso_kst, str(e)[:80], t[:80]))
-    if (i + 1) % 100 == 0:
-        print(f"  {i+1}/{len(rows)}: {dict(stats)}")
-    time.sleep(0.1)
+        connection.execute('PRAGMA query_only=ON')
+        rows = connection.execute('''
+          SELECT m.ROWID,m.date,m.text,m.attributedBody,h.id
+          FROM message m JOIN handle h ON h.ROWID=m.handle_id
+          WHERE m.is_from_me=0 AND m.date>=? AND m.date<?
+          ORDER BY m.date,m.ROWID
+        ''', (start_ns, end_ns))
+        selected = []
+        for message_id, stamp, text, attributed, sender in rows:
+            # Filter before decoding to avoid collecting unrelated conversations.
+            digits = re.sub(r'\D', '', sender or '')
+            if not any(digits.endswith(n) for n in ('15888900', '220008100', '15881688', '15447200', '15447000', '23101234', '15883650')):
+                continue
+            body = text or extract_attr_body(attributed)
+            card = card_of(body or '')
+            if not card:
+                continue
+            received = (epoch + timedelta(microseconds=stamp // 1000)).astimezone(kst).isoformat(timespec='seconds')
+            selected.append({'message_id': message_id, 'received_at': received, 'text': body, 'card_key': card})
+        return selected
+    finally:
+        connection.close()
 
-print("\n=== 최종 분포 ===")
-for k, v in stats.most_common():
-    print(f"  {k:20s} {v}")
 
-if unparsed_samples:
-    print("\n=== unparsed 샘플 5개 (또는 그 이하) ===")
-    for s in unparsed_samples:
-        print(f"  [{s['received_at']}] {s['text'].replace(chr(10),' / ')[:200]}")
+def build_payload(message):
+    return {'text': message['text'], 'received_at': message['received_at'], 'ingest_channel': 'backfill'}
 
-if errors:
-    print("\n=== 에러 5개 ===")
-    for e in errors[:5]:
-        print(f"  {e}")
 
-# 결과 저장
-out = '/Users/gio_c/apps/today/audit/sms-fixtures/backfill-result.json'
-with open(out, 'w') as f:
-    json.dump({
-        'sent': len(rows),
-        'stats': dict(stats),
-        'unparsed_samples': unparsed_samples,
-        'errors': errors[:20],
-    }, f, ensure_ascii=False, indent=2)
-print(f"\n저장: {out}")
+def load_env(path):
+    result = dict(os.environ)
+    if Path(path).exists():
+        for line in Path(path).read_text().splitlines():
+            match = re.match(r'^\s*([A-Z][A-Z0-9_]*)\s*=\s*(.*?)\s*$', line)
+            if match and match[1] not in result:
+                result[match[1]] = match[2].strip("'\"")
+    return result
+
+
+def api_json(url, headers, body=None):
+    data = None if body is None else json.dumps(body).encode('utf-8')
+    request = urllib.request.Request(url, data=data, headers=headers)
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+
+def owner_token(url, service_key, email):
+    headers = {'apikey': service_key, 'Authorization': f'Bearer {service_key}'}
+    user_id = None
+    for page in range(1, 101):
+        data = api_json(f'{url}/auth/v1/admin/users?page={page}&per_page=100', headers)
+        users = data.get('users', [])
+        user_id = next((u['id'] for u in users if u.get('email') == email), None)
+        if user_id or len(users) < 100:
+            break
+    if not user_id:
+        raise ValueError('selected owner was not found')
+    query = urllib.parse.urlencode({'owner_id': f'eq.{user_id}', 'select': 'token'})
+    tokens = api_json(f'{url}/rest/v1/today_sms_ingest_tokens?{query}', headers)
+    if len(tokens) != 1:
+        raise ValueError('expected exactly one existing ingest token for selected owner')
+    return tokens[0]['token']
+
+
+def write_private(path, data):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, 'w') as output:
+        os.chmod(path, 0o600)
+        json.dump(data, output, ensure_ascii=False, indent=2)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--db', default=str(Path.home() / 'Library/Messages/chat.db'))
+    parser.add_argument('--since', default=(datetime.now(timezone(timedelta(hours=9))) - timedelta(days=90)).date().isoformat())
+    parser.add_argument('--until', default=datetime.now(timezone(timedelta(hours=9))).date().isoformat())
+    parser.add_argument('--input-json', help='Private extracted messages instead of reading chat.db')
+    parser.add_argument('--output', default=str(Path(__file__).resolve().parent.parent / 'audit/sms-recovery' / (datetime.now().strftime('%Y%m%d-%H%M%S') + '.json')))
+    parser.add_argument('--env', default=str(Path(__file__).resolve().parent.parent / '.env.local'))
+    parser.add_argument('--owner-email', help='Required for apply: owner of the source phone')
+    parser.add_argument('--apply', action='store_true', help='Send selected messages to the hardened ingest endpoint')
+    args = parser.parse_args(argv)
+    if args.apply and not args.owner_email:
+        parser.error('--apply requires --owner-email matching the source phone')
+    try:
+        messages = json.loads(Path(args.input_json).read_text()) if args.input_json else read_messages(args.db, args.since, args.until)
+        if not isinstance(messages, list):
+            raise ValueError('input must be an array of messages')
+        for message in messages:
+            if not isinstance(message.get('text'), str) or not message['text'].strip():
+                raise ValueError('each message needs nonempty text')
+            stamp = datetime.fromisoformat(message['received_at'].replace('Z', '+00:00'))
+            if stamp.tzinfo is None:
+                raise ValueError('each received_at needs a timezone')
+        report = {'mode': 'apply' if args.apply else 'dry_run', 'owner_email': args.owner_email, 'selected': len(messages), 'messages': messages, 'results': [], 'stats': {}}
+        # Persist the complete private preview before the first network write.
+        write_private(args.output, report)
+        if not args.apply:
+            print(json.dumps({'mode': 'dry_run', 'selected': len(messages), 'output': args.output}))
+            return 0
+        env = load_env(args.env)
+        url = env.get('VITE_SUPABASE_URL', '').rstrip('/')
+        key = env.get('SUPABASE_SERVICE_ROLE_KEY')
+        if not url or not key:
+            raise ValueError('missing Supabase URL/service credentials in selected env')
+        token = owner_token(url, key, args.owner_email)
+        headers = {'X-Ingest-Token': token, 'Content-Type': 'application/json'}
+        counts = Counter()
+        for index, message in enumerate(messages):
+            try:
+                result = api_json(f'{url}/functions/v1/sms-card-ingest', headers, build_payload(message))
+            except urllib.error.HTTPError as error:
+                result = {'status': 'error', 'http_status': error.code}
+            except (OSError, ValueError):
+                result = {'status': 'error', 'reason': 'request_failed'}
+            counts[result.get('status', 'unknown')] += 1
+            report['results'].append({'index': index, **result})
+            report['stats'] = dict(counts)
+            write_private(args.output, report)
+            if result.get('status') == 'error':
+                break  # Stop on first failure; retry is safe after diagnosis.
+            time.sleep(0.1)
+        print(json.dumps({'mode': 'apply', 'selected': len(messages), 'processed': len(report['results']), 'stats': report['stats'], 'output': args.output}))
+        return 1 if counts.get('error') else 0
+    except (OSError, ValueError, sqlite3.Error) as error:
+        print(f'Recovery stopped: {type(error).__name__}: {error}', file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

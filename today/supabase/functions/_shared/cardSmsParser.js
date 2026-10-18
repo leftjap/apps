@@ -1,8 +1,8 @@
 /**
  * 카드사 SMS 본문 → 가계부 입력 객체 순수 파서.
  *
- * spent_at 은 호출자가 received_at 그대로 사용 — 파서는 본문에서 날짜 추출 안 함.
- * rejected (거절·취소·문자명세서·일반 결제예정) 은 null 반환.
+ * 날짜 추론·취소 대조는 호출자가 처리하며, 취소의 금액은 여기서는 양수로 유지.
+ * rejected (거절·문자명세서·일반 결제예정) 은 null 반환.
  * merchant_raw 는 정제 안 된 원본만 반환 — 호출자가 cleanMerchantName 후처리.
  *
  * kind: domestic / installment / overseas / auto / scheduled_hipass / transit
@@ -12,6 +12,7 @@ import { convertToKrw } from './fxRates.js';
 
 const ISSUER_PATTERNS = [
   { code: '삼성', re: /삼성(?:카드)?(?:해외)?\s*(\d{4})/ },
+  { code: 'KB국민체크', re: /KB국민체크\s*\(?(\d{4})\)?/ },
   { code: 'KB국민카드', re: /KB국민카드\s*(\d{4})/ },
   { code: '신한', re: /신한(?:카드)?\s*(\d{4})/ },
   { code: '하나', re: /하나(?:카드)?\s*(\d{4}|[\d*]+)/ },
@@ -123,8 +124,9 @@ function extractForeign(text) {
 export function parseCardSms(text) {
   if (!text || typeof text !== 'string') return null;
   const t = normalize(text);
-  if (/거절|취소/.test(t)) return null;
+  if (/거절/.test(t)) return null;
   if (/문자명세서/.test(t)) return null;
+  if (/카드대금/.test(t)) return null;
   // 0원 외화 결제 (사전승인 / 취소 처리된 거래) — 해외승인 SMS 형식이지만 실 결제 아님
   // 예: "KRW 0", "USD 0.00", "GBP 0.00", "0(USD)"
   if (/(USD|EUR|GBP|JPY|CNY|THB|VND|PHP|HUF|KHR|SGD|KRW|MYR|INR|CAD|AUD|AED|TWD|HKD)\s+0(?:\.0+)?\b/.test(t)) return null;
@@ -136,6 +138,15 @@ export function parseCardSms(text) {
   if (/비밀번호\s*변경/.test(t)) return null;
   if (/카드(발급|교부)/.test(t)) return null;
   const card = extractCard(t);
+  if (/취소/.test(t)) {
+    // 안내문에 포함된 '취소'로 원결제처럼 기록하지 않음. 거래시각과 명시적인
+    // 취소 헤더가 있는 카드 거래만 반환하고, 실제 차감 여부는 원결제와 대조.
+    if (!card || !/\d{1,2}\/\d{1,2}\s+\d{1,2}:\d{2}/.test(t)) return null;
+    if (!/(?:승인|부분)?취소(?:승인|접수)?|체크취소/.test(t.split('\n').slice(0, 2).join('\n')) || /취소\s*안내/.test(t)) return null;
+    const payment = _dispatch(t.replace(/(?:부분)?취소(?:접수)?/g, '승인'), card);
+    if (!payment) return null;
+    return { ...payment, kind: 'cancellation', cancellation_kind: payment.kind, partial: /부분\s*취소/.test(t) };
+  }
   return _dispatch(t, card);
 }
 
@@ -160,6 +171,16 @@ function _dispatch(t, card) {
 
   const inst = t.match(/([\d,]+)\s*원\s+(\d+)\s*개월/);
   if (inst || /할부/.test(t)) return _parseInstallment(t, card, inst);
+
+  // KB 체크는 '승인' 대신 별도 줄의 '가맹점 사용'으로 알린다.
+  // 카드번호·날짜시각·금액·가맹점의 전체 거래 형식이 있을 때만 허용.
+  if (/^KB국민체크\d{4}$/.test(card || '')) {
+    const usage = t.match(/\d{1,2}\/\d{1,2}\s+\d{1,2}:\d{2}\s+([\d,]+)\s*원\s+([^\n]+?)\s+사용\s*$/);
+    if (usage) {
+      const amount = parseInt(usage[1].replace(/,/g, ''), 10);
+      if (amount > 0) return { kind: 'domestic', amount_krw: amount, merchant_raw: usage[2].trim(), card };
+    }
+  }
 
   if (/일시불|\[체크\.승인\]|승인/.test(t)) {
     const amount = extractKrwAmount(t);

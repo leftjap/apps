@@ -373,9 +373,30 @@ export async function pushExpense(id) {
     // 새로고침 시 pullTable 이 옛 Supabase 데이터로 덮어쓰는 silent revert 발생.
     delete payload.is_shared;
     delete payload.pinned;
-    const { error } = await supabase
-      .from('today_expenses')
-      .upsert(payload, { onConflict: 'id' });
+    // Server-owned ingest evidence must survive an edit made from an older
+    // offline copy. CAS also prevents a simultaneous alert claim being erased.
+    let error = null;
+    let saved = false;
+    for (let attempt = 0; attempt < 3 && !saved; attempt++) {
+      const { data: current, error: readError } = await supabase.from('today_expenses')
+        .select('id,meta').eq('id', id).eq('owner_id', row.owner_id).maybeSingle();
+      if (readError) { error = readError; break; }
+      if (!current) {
+        const result = await supabase.from('today_expenses').insert(payload);
+        if (result.error?.code === '23505') continue;
+        error = result.error;
+        saved = !error;
+        break;
+      }
+      const before = current.meta || {};
+      payload.meta = { ...(row.meta || {}), ...before };
+      const result = await supabase.from('today_expenses').update(payload)
+        .eq('id', id).eq('owner_id', row.owner_id)
+        .eq('meta', JSON.stringify(before)).select('id');
+      if (result.error) { error = result.error; break; }
+      saved = result.data?.length === 1;
+    }
+    if (!saved && !error) error = new Error('Expense changed during upload; retry pending');
     if (error) {
       console.error('[sync] pushExpense 실패:', formatError(error));
       try {
@@ -384,7 +405,7 @@ export async function pushExpense(id) {
       return { id, status: 'error', error };
     }
     try {
-      await db.expenses.put({ ...row, pending_sync: 0 });
+      await db.expenses.put({ ...row, meta: payload.meta, pending_sync: 0 });
     } catch (_) { /* 무시 */ }
     return { id, status: 'ok' };
   } catch (e) {

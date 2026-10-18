@@ -44,6 +44,42 @@ describe('parseCardSms — 단위 케이스 (인라인)', () => {
     expect(r).toEqual({ kind: 'domestic', amount_krw: 16900, merchant_raw: '주식회사우아', card: '삼성1337' });
   });
 
+  it('replacement card: a new Samsung number keeps the payment fields', () => {
+    expect(parseCardSms('[Web발신]\n삼성1595승인 테*트\n8,200원 일시불\n10/01 12:34 테스트상점')).toEqual({
+      kind: 'domestic', amount_krw: 8200, merchant_raw: '테스트상점', card: '삼성1595',
+    });
+  });
+
+  it('KB debit: a dated usage message without an approval keyword is a payment', () => {
+    const result = parseCardSms('[Web발신]\nKB국민체크(1303)\n테*트님\n07/30 17:42\n18,000원\n테스트점 사용');
+    expect(result).toEqual({ kind: 'domestic', amount_krw: 18000, merchant_raw: '테스트점', card: 'KB국민체크1303' });
+  });
+
+  it('KB debit: a generic usage notice cannot become a payment', () => {
+    expect(parseCardSms('KB국민체크(1303)\n18,000원 이상 사용 시 혜택 안내')).toBeNull();
+  });
+
+  it('cancellation: preserve a dated full cancellation for reconciliation', () => {
+    expect(parseCardSms('[Web발신]\n삼성1595취소 테*트\n8,200원 일시불\n10/02 13:00 테스트상점')).toEqual({
+      kind: 'cancellation', cancellation_kind: 'domestic', partial: false,
+      amount_krw: 8200, merchant_raw: '테스트상점', card: '삼성1595',
+    });
+  });
+
+  it('cancellation: distinguish partial cancellation and keep foreign original currency', () => {
+    expect(parseCardSms('삼성1595부분취소 테*트\n2,000원 일시불\n10/02 13:00 테스트상점')).toMatchObject({
+      kind: 'cancellation', partial: true, amount_krw: 2000,
+    });
+    expect(parseCardSms('삼성1595해외승인취소 테*트\nUSD 10.00\n10/02 13:00 TEST SHOP')).toMatchObject({
+      kind: 'cancellation', cancellation_kind: 'overseas', currency: 'USD', foreign_amount: 10,
+    });
+  });
+
+  it('unrelated cancellation notices and monthly bills cannot become payments', () => {
+    expect(parseCardSms('[삼성카드] 취소 안내: 10/02까지 8,200원 승인 혜택 확인')).toBeNull();
+    expect(parseCardSms('[KB국민카드] 테*트님 10/02 카드대금 8,200원 승인내역 확인')).toBeNull();
+  });
+
   it('overseas: KB 7007 사진 샘플 — 13.19(USD)', () => {
     const r = parseCardSms('[Web발신]\nKB국민카드7007 해외승인\n고*진님\n13.19(USD) 04/01 22:44\n싱가  Google Dig');
     expect(r.kind).toBe('overseas');
@@ -145,6 +181,12 @@ describe('parseCardSms — fixture 회귀', () => {
     it(`${card}/${kind} — ${items.length}건 모두 expected_kind 일치`, () => {
       for (const item of items) {
         const result = parseCardSms(item.text);
+        if (kind === 'rejected' && /취소/.test(item.text) && result) {
+          // 취소는 이제 버리지 않고 원결제 대조 단계로 전달한다.
+          expect(result.kind).toBe('cancellation');
+          expect(result.amount_krw).toBeGreaterThan(0);
+          continue;
+        }
         if (REJECT_KINDS.has(kind)) {
           expect(result, `본문: ${item.text.slice(0, 60)}`).toBeNull();
         } else {

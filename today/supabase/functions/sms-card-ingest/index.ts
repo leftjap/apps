@@ -6,12 +6,13 @@
  * Request:
  *   Headers:  X-Ingest-Token: <per-device hex>
  *             Content-Type:    application/json
- *   Body:     { text: string, received_at: string (ISO8601) }
+ *   Body:     { text: string, received_at: string (original ISO8601), ingest_channel?: 'live' | 'backfill' | 'paste' }
  *
  * Response (200):
  *   ok        | duplicate                      → { status, expense_id, amount_krw, merchant, category, kind }
  *   rejected                                    → { status: 'rejected', reason }
- *   unparsed                                    → { status: 'unparsed', expense_id }
+ *   unparsed | review                           → { status, expense_id, reason? }
+ *   Review rows retain sms_raw with a null amount; no balance adjustment is invented.
  * Response (401): 토큰 무효 / 만료
  * Response (400): body invalid
  * Response (500): 내부 오류
@@ -20,6 +21,7 @@
 // @ts-ignore — Deno std (Supabase 환경)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { parseCardSms } from '../_shared/cardSmsParser.js';
+import { planSmsIngest, validateIngestBody } from './ingest.js';
 import {
   cleanMerchantName,
   autoMatchCategoryByKeyword,
@@ -45,122 +47,89 @@ Deno.serve(async (req: Request) => {
   const token = req.headers.get('X-Ingest-Token');
   if (!token) return json(401, { status: 'error', message: 'Missing X-Ingest-Token' });
 
-  let body: { text?: string; received_at?: string };
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return json(400, { status: 'error', message: 'Invalid JSON body' });
   }
-  const { text, received_at } = body;
-  if (!text || typeof text !== 'string') return json(400, { status: 'error', message: 'Missing text' });
-  if (!received_at) return json(400, { status: 'error', message: 'Missing received_at' });
+  const input = validateIngestBody(body);
+  if (!input.ok) return json(400, { status: 'error', message: input.reason });
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-  // 토큰 → owner_id
-  const { data: tokenRow, error: tokenErr } = await sb
-    .from('today_sms_ingest_tokens')
-    .select('owner_id')
-    .eq('token', token)
-    .maybeSingle();
-  if (tokenErr) return json(500, { status: 'error', message: tokenErr.message });
-  if (!tokenRow) return json(401, { status: 'error', message: 'Invalid token' });
-  const owner_id: string = tokenRow.owner_id;
-
-  // last_used_at 갱신 — await로 변경 (2026-05-26 v2): fire-and-forget이 Deno serverless
-  // process 종료로 abort 되어 항상 NULL 유지되던 spec §154 문제 해소. 자동화 발화 시점 추적 가능.
   try {
-    await sb.from('today_sms_ingest_tokens').update({ last_used_at: new Date().toISOString() }).eq('token', token);
-  } catch (_) { /* 실패해도 ingest 자체는 진행 */ }
+    const { data: tokenRow, error: tokenErr } = await sb
+      .from('today_sms_ingest_tokens')
+      .select('owner_id')
+      .eq('token', token)
+      .maybeSingle();
+    if (tokenErr) return json(500, { status: 'error', message: 'Token lookup failed' });
+    if (!tokenRow) return json(401, { status: 'error', message: 'Invalid token' });
 
-  return await handleIngest(sb, owner_id, text, received_at);
+    // 과거 복구·붙여넣기는 폰 자동화 정상 작동의 증거가 아니다.
+    if (input.ingest_channel === 'live') {
+      try {
+        await sb.from('today_sms_ingest_tokens').update({ last_used_at: new Date().toISOString() }).eq('token', token);
+      } catch (_) { /* health timestamp failure must not discard a payment */ }
+    }
+    return await handleIngest(sb, tokenRow.owner_id, input);
+  } catch (_) {
+    // Database errors may contain row contents. Return only an actionable generic error.
+    return json(500, { status: 'error', message: 'Ingest failed; retry safely' });
+  }
 });
 
-// ─── 메인 처리 ───
-async function handleIngest(sb: any, owner_id: string, text: string, received_at: string) {
-  const parsed: any = parseCardSms(text);
-
-  // 거절/취소/명세서/일반 결제예정 → 저장 안 함
-  if (parsed === null && isRejectPattern(text)) {
-    return json(200, { status: 'rejected', reason: '거절/취소/명세서/결제예정' });
+// Include tombstones and manually changed rows. The existing schema has no normalized
+// SMS index, so legacy matching must read the owner's rows, in bounded pages.
+async function loadExisting(sb: any, owner_id: string) {
+  const rows: any[] = [];
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await sb.from('today_expenses')
+      .select('id,owner_id,spent_at,received_at,created_at,deleted_at,source,sms_raw,amount_krw,merchant_raw,merchant,brand,category,card,currency,foreign_amount,meta')
+      .eq('owner_id', owner_id).order('id').range(offset, offset + pageSize - 1);
+    if (error || !Array.isArray(data)) throw new Error('Expense lookup failed');
+    rows.push(...data);
+    if (data.length < pageSize) return rows;
   }
+}
 
-  // unparsed: 진짜 미지원 패턴 — sms_raw 만 보존, amount_krw NULL
-  if (parsed === null) {
-    const { data, error } = await sb
-      .from('today_expenses')
-      .insert({
-        owner_id,
-        spent_at: received_at,
-        received_at,
-        source: 'sms',
-        sms_raw: text,
-        amount_krw: null,
-        meta: { sms_kind: 'unparsed' },
-      })
-      .select('id')
-      .single();
-    if (error) {
-      // unique conflict (동일 sms_raw 이미 unparsed 로 저장됨)
-      if (error.code === '23505') return json(200, { status: 'duplicate' });
-      return json(500, { status: 'error', message: error.message });
-    }
-    return json(200, { status: 'unparsed', expense_id: data.id });
-  }
-
-  // 정상 파싱 — kind별 후처리
-  const enriched = await enrichByKind(sb, owner_id, parsed);
-
-  const insertRow = {
-    owner_id,
-    spent_at: received_at,
-    received_at,
-    source: 'sms',
-    sms_raw: text,
-    amount_krw: parsed.amount_krw,
-    merchant_raw: parsed.merchant_raw ?? null,
-    merchant: enriched.merchant,
-    brand: enriched.brand,
-    category: enriched.category,
-    card: parsed.card ?? null,
-    currency: parsed.currency ?? null,
-    foreign_amount: parsed.foreign_amount ?? null,
-    installment_months: parsed.installment_months ?? null,
-    meta: { sms_kind: parsed.kind },
+function decisionBody(decision: any) {
+  if (!decision.row) return decision;
+  const row = decision.row;
+  return {
+    status: decision.status, reason: decision.reason, expense_id: row.id,
+    matched_expense_id: decision.matched_expense_id,
+    amount_krw: row.amount_krw, merchant: row.merchant, category: row.category, kind: row.meta.sms_kind,
   };
+}
 
-  const { data, error } = await sb.from('today_expenses').insert(insertRow).select('id').single();
+async function handleIngest(sb: any, owner_id: string, input: any) {
+  const options = { owner_id, ...input };
+  const initial = await planSmsIngest(options);
+  if (initial.status === 'rejected') return json(200, decisionBody(initial));
+  const existing = await loadExisting(sb, owner_id);
+  const decision = await planSmsIngest({ ...options, existing });
+  if (!('row' in decision) || !decision.row) return json(200, decisionBody(decision));
 
-  if (error) {
-    // unique (owner_id, sms_raw, spent_at) — 이미 처리됨
-    if (error.code === '23505') {
-      const { data: existing } = await sb
-        .from('today_expenses')
-        .select('id, amount_krw, merchant, category')
-        .eq('owner_id', owner_id)
-        .eq('sms_raw', text)
-        .eq('spent_at', received_at)
-        .maybeSingle();
-      return json(200, {
-        status: 'duplicate',
-        expense_id: existing?.id ?? null,
-        amount_krw: existing?.amount_krw ?? parsed.amount_krw,
-        merchant: existing?.merchant ?? enriched.merchant,
-        category: existing?.category ?? enriched.category,
-        kind: parsed.kind,
-      });
-    }
-    return json(500, { status: 'error', message: error.message });
+  const row = decision.row;
+  // A matched cancellation inherits the original's user-edited labels.
+  if (decision.status === 'ok' && row.meta.sms_kind !== 'cancellation') {
+    const enriched = await enrichByKind(sb, owner_id, parseCardSms(input.text));
+    Object.assign(row, enriched);
   }
-
-  return json(200, {
-    status: 'ok',
-    expense_id: data.id,
-    amount_krw: parsed.amount_krw,
-    merchant: enriched.merchant,
-    category: enriched.category,
-    kind: parsed.kind,
-  });
+  const { error } = await sb.from('today_expenses').insert(row).select('id').single();
+  if (error) {
+    if (error.code === '23505') {
+      // Resolve a concurrent deterministic-ID or legacy unique-key conflict by
+      // reading the stored row, never by overwriting it with an upsert.
+      const refreshed = await loadExisting(sb, owner_id);
+      const raced = await planSmsIngest({ ...options, existing: refreshed });
+      if (raced.status === 'duplicate') return json(200, decisionBody(raced));
+    }
+    return json(500, { status: 'error', message: 'Expense insert failed; retry safely' });
+  }
+  return json(200, decisionBody(decision));
 }
 
 // ─── kind 별 merchant/brand/category 결정 ───
@@ -230,25 +199,4 @@ async function enrichByKind(sb: any, owner_id: string, parsed: any) {
   }
 
   return { merchant: cleaned, brand, category };
-}
-
-// reject 패턴 — parser 가 null 반환한 게 거절/취소/명세서/결제예정 때문인지 판별 (저장 안 함)
-function isRejectPattern(text: string): boolean {
-  if (/거절|취소/.test(text)) return true;
-  if (/문자명세서/.test(text)) return true;
-  // 후불하이패스 결제예정은 parser 가 처리 → 여기 도달하면 일반 결제예정
-  if (/결제예정/.test(text) && !/후불하이패스/.test(text)) return true;
-  // 카드대금 청구 알림 (예: "[KB국민카드]고*진님 06/01 카드대금 12,800원") — 개별 승인의
-  // 월 합산 청구라 저장 시 이중계상. 키워드 자동화 전환(2026-06-11)으로 유입 시작.
-  if (/카드대금/.test(text)) return true;
-  // 카드사 비결제 안내·광고 (parser 의 reject 분기와 동기)
-  if (/\(광고\)/.test(text)) return true;
-  if (/,\s*[^\]\n]*안내\]/.test(text)) return true;
-  if (/차단\s*(신청|서비스)/.test(text)) return true;
-  if (/비밀번호\s*변경/.test(text)) return true;
-  if (/카드(발급|교부)/.test(text)) return true;
-  // 0원 외화 결제 — 사전승인/취소 케이스. parser 와 동기.
-  if (/(USD|EUR|GBP|JPY|CNY|THB|VND|PHP|HUF|KHR|SGD|KRW|MYR|INR|CAD|AUD|AED|TWD|HKD)\s+0(?:\.0+)?\b/.test(text)) return true;
-  if (/\b0(?:\.0+)?\s*\((?:US\$?|[A-Z]{3})\)/.test(text)) return true;
-  return false;
 }

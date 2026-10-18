@@ -2,33 +2,43 @@
 
 > 2026-05-13. 디버깅·단축어·backfill 운영 시 1차 참조. 매번 같은 질문 반복 방지.
 
-## 핵심 결론
+## 현재 운영 원칙 (2026-10-18)
 
-**iOS "메시지 수신 시" 자동화는 메시지 본문을 변수로 전달하지 않는다.** 트리거 종류 (특정 발신자 / "Message Contains") 와 무관 — Shortcut Input 이 비어있음.
-출처: [Apple Support](https://support.apple.com/guide/shortcuts/communication-triggers-apdd711f9dff/ios) · [Automators Talk](https://talk.automators.fm/t/automating-e-mail-content/16537) · [Apple Developer Forums #705659](https://developer.apple.com/forums/thread/705659)
+- iPhone 메시지 자동화 → `sms-card-ingest` → 가계부가 실시간 입력 경로다. iOS에서 본문 전달이 불가능하다는 과거 일반 단정은 운영 증거로 폐기했다.
+- 트리거는 재발급 카드 끝번호에 묶지 않는다. 지오는 **`삼성`**, **`KB국민`** 각 1개 자동화를 권장한다. 기존 번호 조건은 편집·대체하고 중복 자동화를 남기지 않는다. 소연은 `신한`·`현대백화점카드`를 유지한다. 폰의 실제 조건 변경은 사용자 확인이 필요하다.
+- 요청의 `ingest_channel`은 `live`(생략 기본값), `backfill`, `paste`다. 복구 호출에는 원래 수신시각과 `backfill`을 보낸다. 복구가 실시간 정상 수집 증거를 갱신하지 않는다.
+- 정규화 원문·거래 연도·소유자로 이벤트 ID를 결정한다. 기존 행·삭제 표시·수동 보정은 덮어쓰지 않는다. 수신시각·줄바꿈만 다른 재실행도 중복 처리한다.
+- 본문 이용일시를 사용한다. 후불하이패스의 미래 청구예정일과 월별 합계는 수신일을 유지한다. 연도 추론에는 원래 수신시각이 필요하다.
+- 단일 원결제와 확실히 대조되는 국내 전액 취소만 음수 조정을 저장한다. 부분·외화·미일치·불완전 취소는 금액 없이 `review`로 보존한다. 취소를 새 양수 지출로 붙여넣지 않는다.
+- 해외 결제 원화 환산은 기존 고정환율 추정치다. 최종 금액은 카드사 이용내역과 대조한다.
 
-→ realtime SMS forwarding 사실상 불가. **chat.db 주기 backfill** 이 현실적 ingest 경로.
+### 누락 복구
 
-## 운영 구조
+기본 실행은 서버에 쓰지 않는 미리보기다. `--apply`와 원본 폰의 `--owner-email`을 함께 지정해야 반영한다. 자격증명은 `.env.local`, 토큰은 선택한 소유자의 기존 서버 레코드에서 읽는다.
 
-```
-iPhone Messages 수신
-  → iOS 단축어 "Today 가계부 SMS" (자동화 트리거)
-  → POST + X-Ingest-Token
-  → sms-card-ingest Edge Function (verify_jwt=false)
-  → parseCardSms → enrichByKind → today_expenses INSERT
-  → (PWA 새로고침) → sync.js pullTable → Dexie → UI
-```
-
-**iOS 단축어가 핵심 경로**. 5/11 까지 실 작동 확인 (DB created_at 증거). 5/12 16:36 functions deploy 시 verify_jwt=true 활성화로 며칠간 차단됨. 5/13 verify_jwt=false redeploy 로 회복.
-
-**백업 (수동)**: 단축어 사고 시 Terminal 에서:
 ```bash
-cd ~/apps/today && python3 scripts/backfill-sms-from-chatdb.py
+cd ~/apps/today
+python3 scripts/backfill-sms-from-chatdb.py --since YYYY-MM-DD --until YYYY-MM-DD
+python3 scripts/backfill-sms-from-chatdb.py --since YYYY-MM-DD --until YYYY-MM-DD --owner-email <원본 폰 사용자 이메일> --apply
 ```
-chat.db (~/Library/Messages/chat.db) 에서 최근 1년 카드 SMS 풀 backfill. unique constraint 가 중복 차단.
 
-(launchd 30분 주기 자동 backfill 시도 — macOS TCC sandbox 정책으로 stub binary 권한 부여해도 실제 Python.app 호출이 차단됨. 2026-05-13 폐기.)
+- `chat.db`는 읽기 전용으로 열고, 수신 카드 문자만 추출한다. macOS 개인정보 보호가 차단하면 사용자 권한 조치나 메시지 앱에서 확인한 사본이 필요하다.
+- `--input-json <비공개 사본>`으로 메시지 배열(`text`, 시간대가 포함된 `received_at`)을 받을 수 있다. 승인 문자를 먼저, 취소를 다음에 처리한다.
+- 기본 결과 경로는 git-ignored `audit/sms-recovery/`, 파일 권한은 600이다. 원문·실거래·복구 결과를 공개 저장소에 넣지 않는다.
+- DB 관련 행을 별도 백업하고 중복·취소 미리보기를 확인한다. 불명확한 취소를 추정해 차감하지 않는다.
+- 기존 launchd 자동 복구는 macOS 접근 권한 문제로 운영하지 않는다. 실시간 입력을 대신하는 유일 경로로 취급하지 않는다.
+
+### 누락 경고
+
+- `scripts/check-ingest-gap.mjs`와 앱이 동일한 카드 family·live 증거 판정을 쓴다. 재발급 전후 삼성 카드는 한 채널로 묶는다. 현금·의도적 수동 채널·금액 미정·복구는 정상 수집 근거에서 제외한다.
+- 일일 GitHub Actions는 일반 집계만 출력한다. 이메일·카드별 내역을 담은 공개 이슈는 만들거나 갱신하지 않는다.
+- `--notify`는 기존 Web Push 구독 기기에 비공개 일반 문구를 보낸다. 서비스 인증을 요구하며 사용자별 한국시간 주 1회, 실패·무구독은 명시 보고한다.
+- 삭제 기록에도 경고 이력을 보존한다. 새 클라이언트는 지출 편집 시 서버의 수집 메타를 CAS로 유지한다. 갱신 전 구 클라이언트는 메타를 덮어쓸 수 있으므로 배포 후 앱을 완전히 닫았다 다시 연다.
+- **소연의 푸시 구독이 없는 상태에서는 휴대폰 경고가 전달되지 않는다.** 계정 설정에서 알림 활성화가 필요하다. 실제 수신·아이폰 자동화 최종 확인은 각 폰에서 한다.
+
+## 과거 운영 기록
+
+아래의 날짜별 진단과 과거 자동화 구성은 당시 기록이며, 상단 현재 운영 원칙과 다르면 상단을 우선한다.
 
 ## Edge Function deploy 영구화
 
@@ -99,8 +109,8 @@ insert into today_sms_ingest_tokens (token, owner_id, label)
 values (encode(gen_random_bytes(24), 'hex'), '<auth.users.id>', '단축어 / launchd')
 returning token;
 ```
-leftjap 토큰: `de72f3361a68395a009769b2af6a2bbe266c7023244af179` (단축어 + backfill 공통).
-soyoun 토큰: `52cdb054e11608778077461f27d797cb7b98df5845bf95a8` (소연 아이폰 단축어, 2026-05-14 발급).
+지오 토큰: 서버에서 해당 소유자의 기존 토큰을 조회한다. 문서에 값을 저장하지 않는다.
+소연 토큰: 서버에서 해당 소유자의 기존 토큰을 조회한다. 문서에 값을 저장하지 않는다.
 
 ## 아이폰 단축어·자동화 셋업 (지오·소연 공통 구조)
 
@@ -141,9 +151,11 @@ soyoun 토큰: `52cdb054e11608778077461f27d797cb7b98df5845bf95a8` (소연 아이
 
 | Keep 식별자 (raw) | 친화 카드명 | 발신처 | 채널 | 잡는 자동화 |
 |---|---|---|---|---|
-| 삼성1337 | (raw 그대로) | +8215888900 (1588-8900) | SMS | 키워드 "1337" (2026-06-11 전환) |
+| 삼성1595 | 삼성카드 1595 | +8215888900 (1588-8900) | SMS | 키워드 "삼성" (권장, 폰 적용 확인 필요) |
+| 삼성1337 | 기존 기록 보존 | +8215888900 (1588-8900) | SMS | 키워드 "삼성" |
 | 삼성1337 해외승인 | (raw 그대로) | +82220008100 (02-2000-8100) | SMS | 키워드 "1337" |
 | KB국민카드 7007 (후불하이패스 포함) | (raw 그대로) | +8215881688 (1588-1688) | SMS | 키워드 "KB국민카드" (2026-06-11 전환) |
+| KB국민체크1303 | KB국민 체크카드 1303 | +8215881688 | SMS | 키워드 "KB국민" (권장, 폰 적용 확인 필요) |
 | (외화·안내 fallback) | — | +821063491949 (지오 본인) | SMS | (자동화 제거 — 2026-06-11 키워드 전환으로 불필요) |
 
 **발신처 사전** (chat.db 분석 기반, 2026-05-26 갱신)
@@ -321,3 +333,5 @@ cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functio
 | 2026-06-03 | **근본 원인 확정 — keep 데이터·코드 분석** (`~/Downloads/soyoun_app_database.json` + keep GAS `~/code-archive/.scratch/today-source/gas/Code.js`). ① **keep에선 신한 자동수집이 정상이었다**: 체크 24 + Air 10건, `source=sms`, 3/16~5/2. → "신한 처음부터 불가"(2026-05-26 기록)는 **today-native 한정**이고 keep에선 됐음. ② **keep은 발신번호를 안 받음**: `doPost`가 SMS 처리에 `data.smsText`(본문)만 사용(Code.js:697), 카드식별도 본문에서 카드사명+4자리 추출(Code.js:1998). today edge도 본문 기반 → **발신번호는 원래 불필요**. today 전환 때 소연 폰 자동화를 발신번호별로 재구성한 게 신한 끊김 원인(현대는 키워드라 생존). ③ **화면 검증**: 발신번호 없이 신한 본문을 소연 토큰으로 edge POST(Authorization 없이 X-Ingest-Token만) → `200 ok` → `card='신한카드 Air'` 분류 → 소연 가계부 화면 표시 확인 → 검증거래 hard delete. **결론: 해결책은 발신번호가 아니라 본문 전달(키워드 "신한")** |
 | 2026-06-11 | **지오 ingest 정지 진단·복구**. 증상: 당일 해외승인 SMS 도착 + 단축어 실행 목격에도 앱 미반영. 증거: 토큰 last_used 6/5 16:57 정지 + gateway 로그(function_edge_logs) 25h 내 도달 0건 + 수동 POST 200 → **서버 전 구간 정상, 폰 자동화→POST 구간 단절 확정**. 함수 재배포도 5/26 이후 없음(v21). 30일 chat.db↔DB 전수 대조 → 누락 3건 backfill: 6/11 ANTHROPIC USD110(₩148,500) · 6/3 ANTHROPIC USD11.46(₩15,471) · 5/19 후불하이패스 12,800. 쿠팡 5/16 승인+취소 상쇄쌍은 의도적 미복원(취소가 reject라 승인만 넣으면 유령지출). **부분 고장 패턴**: 6/3 해외(02-2000-8100) 누락 ↔ 6/5 국내(1588-8900) 정상, 5/19 KB 누락 ↔ 5/21 KB 정상 — 발신번호 자동화가 산발 flaky하다 6/5 이후 전면 정지 의심. backfill 추출기 typedstream 길이 endian fix('big'→'little', 실측 0x81 0x8a02=650) — 최근 macOS 가 m.text NULL + attributedBody만 저장하는 추세라 추출기가 필수경로화(6/10·6/11 메시지 둘 다 m.text NULL). PWA 표시 e2e 검증(지오 세션 주입→가계부 6/11·6/3 행 + 월합계 갱신 확인). ⚠ backfill 행도 source='sms'라 gap 배너 타이머 리셋됨 — 폰 자동화 미수리 시 다음 감지는 6/18 |
 | 2026-06-11 | **지오 자동화 키워드 전환 + 카드대금 reject**. 폰 검증: 단축어 수동 실행(16:27·16:28 gateway 200) + 자동화 본인번호 셀프발송(16:36, 200 + 거절처리 행0 = 본문 전달 확인) — 둘 다 정상이나 실 카드 SMS(15:56)는 도달 0 → 조건부 실패(잠금/채널/사전 앱 실행 변수 미분리). 1년 chat.db 실측으로 키워드 재현율 검증(삼성 574건·KB 42건 — 결제 미포함 0, §자동화 트리거 참조) 후 발신번호→키워드(`1337`/`KB국민카드`) 전환 안내. 키워드 부작용(KB 카드대금 청구 알림 1899-0800 → unparsed 0원 행) 실측 → `isRejectPattern` `/카드대금/` 추가, `--no-verify-jwt` 재배포(v22). 배포 후 검증: 카드대금 본문 rejected·행0 + Authorization 없는 POST 200(verify_jwt 회귀 무) + 기존 결제 본문 duplicate 정상 파싱 |
+
+| 2026-10-18 | 재발급 번호 대응, KB 체크 파싱, 이벤트 중복 방지, 취소 원결제 대조, 복구/live 구분, 비공개 주간 경고, 안전 복구 CLI 보강. 현재 운영 원칙은 문서 상단 참조. |

@@ -46,8 +46,10 @@ describe('cardLabelFromValue', () => {
 });
 
 describe('getCardOptionsForEmail / getDefaultCardForEmail (회귀 가드)', () => {
-  it('leftjap 첫 옵션 = 삼성1337 (기본카드)', () => {
-    expect(getDefaultCardForEmail('leftjap@gmail.com')?.value).toBe('삼성1337');
+  it('재발급 카드가 기본값이며 이전 카드는 기존 기록 편집에 남는다', () => {
+    expect(getDefaultCardForEmail('leftjap@gmail.com')?.value).toBe('삼성1595');
+    expect(getCardOptionsForEmail('leftjap@gmail.com').some((o) => o.value === '삼성1337')).toBe(true);
+    expect(cardLabelFromValue('삼성1595', 'leftjap@gmail.com')).toContain('1595');
   });
   it('미등록 email → 현금 fallback', () => {
     const opts = getCardOptionsForEmail('nobody@example.com');

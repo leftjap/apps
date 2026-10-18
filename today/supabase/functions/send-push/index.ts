@@ -15,7 +15,7 @@
 // @ts-ignore Deno
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import * as webpush from 'jsr:@negrel/webpush@0.3';
-import { shouldPush, buildPushPayload } from './logic.js';
+import { shouldPush, buildPushPayload, authenticatePushRequest, buildIngestGapPayload, deliverPushMessages } from './logic.js';
 
 // @ts-ignore Deno globals
 declare const Deno: { env: { get(k: string): string | undefined }; serve: (h: (req: Request) => Response | Promise<Response>) => void };
@@ -62,64 +62,64 @@ async function getAppServer() {
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json(405, { error: 'method' });
-  if (req.headers.get('X-Push-Secret') !== WEBHOOK_SECRET) return json(401, { error: 'unauthorized' });
 
-  let body: { record?: Record<string, unknown> };
+  let body: { type?: string; recipient_id?: string; record?: Record<string, unknown> };
   try {
     body = await req.json();
   } catch {
     return json(400, { error: 'bad_json' });
   }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return json(400, { error: 'bad_body' });
+  const mode = await authenticatePushRequest(req.headers, body, { serviceKey: SERVICE_KEY, webhookSecret: WEBHOOK_SECRET, supabaseUrl: SUPABASE_URL });
+  if (!mode) return json(401, { error: 'unauthorized' });
   const record = body.record;
-  if (!shouldPush(record)) return json(200, { status: 'skipped' });
+  if (mode === 'webhook' && !shouldPush(record)) return json(200, { status: 'skipped' });
+  const recipientId = mode === 'ingest_gap' ? body.recipient_id : record!.recipient_id;
+  if (typeof recipientId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(recipientId)) {
+    return json(400, { error: 'invalid_recipient' });
+  }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data: subs, error } = await supabase
     .from('today_push_subscriptions')
     .select('endpoint, p256dh, auth')
-    .eq('user_id', record!.recipient_id);
-  if (error) return json(500, { error: 'subs_query', detail: error.message });
+    .eq('user_id', recipientId);
+  if (error) return json(500, { error: 'subs_query' });
   if (!subs || subs.length === 0) return json(200, { status: 'no_subscribers' });
 
   // 앱 아이콘 배지 정본 = "마지막 앱 확인(badge_seen_at) 이후" 생성된 수신자 미읽음 수.
   // 전체 미읽음 누적치는 알림함을 안 비우면 계속 자람(2026-07-17 배지 26→27 실측) → 기준점 도입.
   // badge_seen_at NULL(구버전 클라·미기록)이면 전체 미읽음 fallback. entry_unshared 는 background 신호라 제외.
-  const { data: prof } = await supabase
-    .from('today_profiles')
-    .select('badge_seen_at')
-    .eq('user_id', record!.recipient_id)
-    .maybeSingle();
-  let unreadQuery = supabase
-    .from('today_notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('recipient_id', record!.recipient_id)
-    .is('read_at', null)
-    .neq('kind', 'entry_unshared');
-  if (prof?.badge_seen_at) unreadQuery = unreadQuery.gt('created_at', prof.badge_seen_at);
-  const { count: unread } = await unreadQuery;
+  let unread: number | null = null;
+  if (mode === 'webhook') {
+    const { data: prof } = await supabase
+      .from('today_profiles')
+      .select('badge_seen_at')
+      .eq('user_id', recipientId)
+      .maybeSingle();
+    let unreadQuery = supabase
+      .from('today_notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('recipient_id', recipientId)
+      .is('read_at', null)
+      .neq('kind', 'entry_unshared');
+    if (prof?.badge_seen_at) unreadQuery = unreadQuery.gt('created_at', prof.badge_seen_at);
+    const { count } = await unreadQuery;
+    unread = count;
+  }
 
   const appServer = await getAppServer();
-  const payload = JSON.stringify(buildPushPayload(record, typeof unread === 'number' ? unread : undefined));
-  let sent = 0;
-  let pruned = 0;
-
-  for (const s of subs) {
-    const subscription = { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } };
-    try {
-      const subscriber = appServer.subscribe(subscription as unknown as PushSubscription);
-      await subscriber.pushTextMessage(payload, {});
-      sent++;
-    } catch (e) {
-      const msg = String((e as Error)?.message || e);
-      // 만료/무효 구독(404 Not Found / 410 Gone) → 정리.
-      if (/\b(404|410)\b|gone|not found/i.test(msg)) {
-        await supabase.from('today_push_subscriptions').delete().eq('endpoint', s.endpoint);
-        pruned++;
-      } else {
-        console.error('[send-push] 전송 실패', s.endpoint, msg);
-      }
-    }
-  }
-  // badge 는 관측·디버깅용 (pg_net 응답 로그에서 배지 계산값 확인 가능).
-  return json(200, { status: 'ok', sent, pruned, total: subs.length, badge: typeof unread === 'number' ? unread : null });
+  const payload = JSON.stringify(mode === 'ingest_gap' ? buildIngestGapPayload() : buildPushPayload(record, typeof unread === 'number' ? unread : undefined));
+  const result = await deliverPushMessages(subs, payload, {
+    send: async (s: { endpoint: string; p256dh: string; auth: string }, text: string) => {
+      const subscription = { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } };
+      const subscriber = appServer.subscribe(subscription as Parameters<typeof appServer.subscribe>[0]);
+      await subscriber.pushTextMessage(text, {});
+    },
+    prune: async (s: { endpoint: string }) => {
+      const { error } = await supabase.from('today_push_subscriptions').delete().eq('endpoint', s.endpoint);
+      if (error) throw new Error('prune_failed');
+    },
+  });
+  return json(result.sent === 0 && result.failed > 0 ? 502 : 200, { ...result, badge: typeof unread === 'number' ? unread : null });
 });

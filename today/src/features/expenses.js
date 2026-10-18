@@ -25,6 +25,7 @@ import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
+import { detectIngestGaps } from '../services/expense-ingest-health.js';
 import { getCurrentKind, setRecentsLabel } from './entries.js';
 import { getCardOptionsForEmail, getDefaultCardForEmail, cardLabelFromValue } from './card-options.js';
 
@@ -1017,7 +1018,8 @@ export function isoToDatetimeLocal(iso) {
 export function extractExpenseFromForm(doc = document) {
   const get = (id) => doc.getElementById(id);
   const amountStr = get('expModalAmount')?.value || '';
-  const amount_krw = parseInt(String(amountStr).replace(/[^\d]/g, ''), 10) || 0;
+  const signedAmount = String(amountStr).trim().replace(/,/g, '');
+  const amount_krw = /^-?\d+$/.test(signedAmount) ? Number(signedAmount) : 0;
   const dtVal = get('expModalDatetime')?.value || '';
   const spent_at = datetimeLocalToIso(dtVal);
   const merchant = (get('expModalMerchant')?.value || '').trim();
@@ -1145,6 +1147,10 @@ export function patchPasteExpenseSMSHandler({
     if (!raw.trim()) return;
     const parsed = parseCardSms(raw);
     if (!parsed) return;
+    if (parsed.kind === 'cancellation') {
+      win.alert?.('취소 문자는 기존 결제와 대조가 필요해 새 지출로 입력하지 않았어요. 기존 결제 내역을 확인해 주세요.');
+      return;
+    }
     if (parsed.amount_krw != null) {
       const a = doc.getElementById('expModalAmount');
       if (a) { a.value = parsed.amount_krw.toLocaleString('ko-KR'); a.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -1238,11 +1244,22 @@ export function validateExpenseForm(data) {
 export async function saveExpenseFromForm(opts = {}, doc = document) {
   if (!_currentUser?.id) return { ok: false, reason: 'no_user' };
   const data = extractExpenseFromForm(doc);
-  const missing = validateExpenseForm(data);
-  if (missing.length) return { ok: false, reason: 'validation', missing };
   const mode = opts.mode || 'new';
   const editId = opts.editId || null;
   try {
+    let validationData = data;
+    if (mode === 'edit' && editId && data.amount_krw < 0) {
+      const existing = await Queries.getExpense(editId);
+      // Only a persisted, reconciled cancellation can expose a negative amount.
+      // Its financial fields remain immutable; edits below touch metadata only.
+      if (existing?.owner_id === _currentUser.id && !existing.deleted_at &&
+          existing.source === 'sms' && existing.meta?.sms_kind === 'cancellation' &&
+          existing.meta?.cancelled_expense_id && existing.amount_krw === data.amount_krw) {
+        validationData = { ...data, amount_krw: -existing.amount_krw };
+      }
+    }
+    const missing = validateExpenseForm(validationData);
+    if (missing.length) return { ok: false, reason: 'validation', missing };
     if (mode === 'edit' && editId) {
       // 수정 모드: category / memo / merchant_url / card 변경 가능. amount/datetime/merchant 만 readonly.
       const row = await Queries.updateExpense(editId, {
@@ -1952,55 +1969,19 @@ export async function refreshSidebarExpenseTotal(doc = (typeof document !== 'und
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Ingest gap 감지 — 2026-05-26 신설(배너) → 2026-06-03 배너 UI 제거, 서버 cron 이관.
-// 화면 배너는 소연 미관 문제로 제거. 자동수집 끊김은 scripts/check-ingest-gap.mjs +
-// .github/workflows/ingest-gap-check.yml 가 service_role 로 양쪽 점검 → 지오 GitHub issue.
-// detectIngestGapCards 는 그 판정 로직의 클라이언트 reference (테스트 유지, UI 미연결).
+// Ingest gap reference — server monitor uses the same family/provenance rules.
+// Public workflow logs only counts; actual warnings go to private subscribed devices.
 // ───────────────────────────────────────────────────────────────────────────
-
-const INGEST_GAP_THRESHOLD_DAYS = 7;
-const INGEST_GAP_DOMINANT_COUNT = 10;
-const INGEST_GAP_LOOKBACK_DAYS = 90;
-
-/** 카드별 수집 통계 (최근 N일) → 자동수집 끊긴 카드 리스트.
- *  판정 (2026-06-02 개선 — 신한 사각지대 fix):
- *   - 주력 카드: 전체 거래(import/manual/sms 무관) ≥ DOMINANT_COUNT
- *   - 자동수집 가능 카드: today 자동수집(source='sms' && sms_raw) 이력 ≥1
- *     (삼성→카톡 이전처럼 SMS 자동을 아예 안 하는 카드 오탐 방지. source='sms'만으론
- *      keep 이관 행(sms_raw 無)이 섞이므로 sms_raw 필수)
- *   - 끊김: 자동수집 마지막 spent_at < (now - THRESHOLD_DAYS)
- *  기존(자동수집 ≥10 끊김)도 포함 — 자동수집 ⊆ 전체거래라 호환. 추가로 신한처럼
- *  "거래는 많지만 자동수집은 적게만 되다 끊긴" 카드까지 감지. */
 export async function detectIngestGapCards(now = new Date()) {
-  const lookbackFrom = new Date(now.getTime() - INGEST_GAP_LOOKBACK_DAYS * 86400000).toISOString();
-  const toISO = new Date(now.getTime() + 86400000).toISOString();
-  let rows;
   try {
-    rows = await Queries.listExpensesByRange(lookbackFrom, toISO);
+    const rows = await Queries.listExpensesByRange('1970-01-01T00:00:00.000Z', now.toISOString());
+    return detectIngestGaps(rows, now).map((gap) => ({
+      card: gap.card, lastSpentAt: gap.lastAutoAt, count: gap.autoCount, txCount: gap.txCount,
+    }));
   } catch (e) {
     console.warn('[expenses] ingest gap query 실패:', e?.message || e);
     return [];
   }
-  const byCard = new Map();
-  for (const r of rows) {
-    if (!r.card) continue;
-    const e = byCard.get(r.card) || { card: r.card, txCount: 0, autoCount: 0, lastAutoAt: '' };
-    e.txCount++;
-    if (r.source === 'sms' && r.sms_raw) {
-      e.autoCount++;
-      if ((r.spent_at || '') > e.lastAutoAt) e.lastAutoAt = r.spent_at;
-    }
-    byCard.set(r.card, e);
-  }
-  const cutoff = new Date(now.getTime() - INGEST_GAP_THRESHOLD_DAYS * 86400000).toISOString();
-  const gaps = [];
-  for (const e of byCard.values()) {
-    // 주력 거래량 + 자동수집 이력 있음(오탐 방지) + 자동수집 7일+ 끊김
-    if (e.txCount >= INGEST_GAP_DOMINANT_COUNT && e.autoCount >= 1 && e.lastAutoAt < cutoff) {
-      gaps.push({ card: e.card, lastSpentAt: e.lastAutoAt, count: e.autoCount, txCount: e.txCount });
-    }
-  }
-  return gaps;
 }
 
 // Wave 11.6.6 — popover/popup row 클릭 → 지출 수정 모달 통합 wiring.
