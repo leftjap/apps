@@ -106,9 +106,11 @@ export function authorNameOf(authorId, opts = {}) {
  */
 export function commentToHtml(comment, opts = {}) {
   const id = escapeHtml(comment?.id || '');
-  const body = escapeHtml(comment?.body || '');
   const time = escapeHtml(formatCommentTime(comment?.created_at));
   const isAi = comment?.author_id === CLAUDE_AUTHOR_ID;
+  // 이미 저장된 자동 댓글도 모델 접두사 없이 본문부터 표시한다.
+  const rawBody = String(comment?.body || '');
+  const body = escapeHtml(isAi ? rawBody.replace(/^\[GPT[‑-]6\.1 Sol\]\s*/, '') : rawBody);
   const mine = !isAi && (opts.mine === true || comment?.author_id === opts.currentUserId);
   const name = escapeHtml(authorNameOf(comment?.author_id, { mine, partnerName: opts.partnerName }));
   const deleteBtn = mine

@@ -188,6 +188,28 @@ describe('commentToHtml', () => {
     expect(html).not.toContain('cv-msg__del');
   });
 
+  it.each(['[GPT‑6.1 Sol]', '[GPT-6.1 Sol]'])('기존 자동 댓글의 %s 접두사와 빈 줄을 숨김', prefix => {
+    const html = commentToHtml(
+      { id: 'ai-sol', body: `${prefix}\n\n자동 댓글 <본문>`, author_id: CLAUDE_AUTHOR_ID },
+      { currentUserId: OWNER },
+    );
+    expect(html).toContain('>자동 댓글 &lt;본문&gt;</div>');
+    expect(html).not.toContain(prefix);
+  });
+
+  it('사람 댓글의 모델명과 자동 댓글 본문 중간의 모델명은 보존', () => {
+    const human = commentToHtml(
+      { id: 'human-sol', body: '[GPT‑6.1 Sol]\n\n인용', author_id: OWNER },
+      { currentUserId: OWNER },
+    );
+    const ai = commentToHtml(
+      { id: 'ai-quote', body: '본문에서 [GPT‑6.1 Sol] 언급', author_id: CLAUDE_AUTHOR_ID },
+      { currentUserId: OWNER },
+    );
+    expect(human).toContain('>[GPT‑6.1 Sol]\n\n인용</div>');
+    expect(ai).toContain('>본문에서 [GPT‑6.1 Sol] 언급</div>');
+  });
+
   it('XSS escape', () => {
     const html = commentToHtml(
       { id: 'x', body: '<script>alert(1)</script>', author_id: PARTNER },

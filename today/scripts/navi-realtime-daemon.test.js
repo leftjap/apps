@@ -128,7 +128,7 @@ describe('automatic comment fallback and submission guards', () => {
     state.entries[0].kind = kind;
     await run();
     expect(state.comments).toHaveLength(1);
-    expect(state.comments[0].body).toBe('[GPT‑6.1 Sol]\n\n산책 한 번에 오늘의 기분도 한 바퀴 돌았네요.');
+    expect(state.comments[0].body).toBe('산책 한 번에 오늘의 기분도 한 바퀴 돌았네요.');
     const calls = state.calls.filter(c => c.codex);
     expect(calls).toHaveLength(3);
     expect(calls.every(c => c.args[c.args.indexOf('--model') + 1] === 'gpt-6.1-sol')).toBe(true);
@@ -146,7 +146,7 @@ describe('automatic comment fallback and submission guards', () => {
     claudeFailure = failure;
     await run();
     expect(state.comments).toHaveLength(1);
-    expect(state.comments[0].body).toContain('[GPT‑6.1 Sol]');
+    expect(state.comments[0].body).toBe('산책 한 번에 오늘의 기분도 한 바퀴 돌았네요.');
   });
   it.each([null, '2026-01-01T04:00:00Z'])('does not recreate an existing or deleted AI comment (%s)', async deleted_at => {
     state.comments = [aiComment({ deleted_at })];
@@ -181,7 +181,7 @@ describe('automatic comment fallback and submission guards', () => {
     state.comments = [aiComment(), aiComment({ id: 'human-reply', author_id: 'human', created_at: '2026-01-01T04:00:00Z' })];
     await run('--reply');
     expect(state.comments).toHaveLength(3);
-    expect(state.comments[2].body).toContain('[GPT‑6.1 Sol]');
+    expect(state.comments[2].body).toBe('산책 한 번에 오늘의 기분도 한 바퀴 돌았네요.');
     vi.resetModules();
     await run('--reply');
     expect(state.comments).toHaveLength(3);

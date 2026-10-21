@@ -267,7 +267,7 @@ async function processPipeline(row, { mode = 'initial', ignoreSettle = false } =
           const decision = gateDecision(verdicts, { revisesLeft });
           log(`gate ${row.id} provider=${provider}: ${decision.action} (${decision.reason})`);
           if (decision.action === 'submit') {
-            body = provider === 'codex' ? `[GPT‑6.1 Sol]\n\n${draft}` : draft;
+            body = draft;
             break;
           }
           if (decision.action === 'hold') break;
