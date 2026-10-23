@@ -1519,6 +1519,45 @@ async function getActiveSet0() {
 }
 
 describe('applyTapDelta (spec §6-3)', () => {
+  async function seedHipMachine(exerciseId, weight) {
+    await seedActiveBench(weight, 12);
+    const row = await db.sessions.get('active-tap-test');
+    row.blocks[0].exerciseId = exerciseId;
+    row.tags = ['legs'];
+    await db.sessions.put(row);
+  }
+
+  it.each(['hip_adduction', 'hip_abduction'])('%s follows photographed labels in both directions', async exerciseId => {
+    await seedHipMachine(exerciseId, 25);
+    for (const [sign, expected] of [[1, 32], [1, 40], [-1, 32], [-1, 25]]) {
+      await applyTapDelta('weight', sign);
+      expect((await getActiveSet0()).weight).toBe(expected);
+      expect((await getActiveSet0()).preset).toBe(false);
+    }
+  });
+
+  it.each(['hip_adduction', 'hip_abduction'])('%s handles endpoints and manual off-grid weights', async exerciseId => {
+    for (const [weight, sign, expected] of [
+      [5, -1, 5], [100, 1, 100], [27.4, 1, 32], [27.4, -1, 25],
+      [2, 1, 5], [2, -1, 2], [120, 1, 120], [120, -1, 100],
+    ]) {
+      await seedHipMachine(exerciseId, weight);
+      await applyTapDelta('weight', sign);
+      expect((await getActiveSet0()).weight).toBe(expected);
+    }
+  });
+
+  it.each(['hip_adduction', 'hip_abduction'])('%s keeps manual keypad weights and one-rep stepping', async exerciseId => {
+    await seedHipMachine(exerciseId, 25);
+    await applyKeypadValue(makeFakeKeypadDoc({ mode: 'weight', buf: '27.4' }));
+    expect((await getActiveSet0()).weight).toBe(27.4);
+    await applyTapDelta('reps', 1);
+    expect((await getActiveSet0()).reps).toBe(13);
+    expect((await getActiveSet0()).weight).toBe(27.4);
+    await applyTapDelta('weight', 1);
+    expect((await getActiveSet0()).weight).toBe(32);
+  });
+
   it('barbell weight +1 → +5kg, preset:false', async () => {
     await seedActiveBench(60, 10);
     await applyTapDelta('weight', +1);

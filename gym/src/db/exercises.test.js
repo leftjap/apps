@@ -12,6 +12,7 @@ import {
   getBuiltinExercise,
   listBuiltinByPart,
   listAllBuiltin,
+  nextStackWeight,
 } from './exercises.js';
 
 describe('PARTS / PART_IDS', () => {
@@ -121,6 +122,59 @@ describe('getBuiltinExercise', () => {
   });
   it('cardio 운동 → weightIncrement 0', () => {
     const ex = getBuiltinExercise('treadmill');
+    expect(ex.weightIncrement).toBe(0);
+  });
+  it('좌식 자전거는 기존 사이클과 별도인 유산소 종목', () => {
+    const ex = getBuiltinExercise('recumbent_bike');
+    expect(ex.name).toBe('좌식 자전거');
+    expect(ex.part).toBe('cardio');
+    expect(ex.equipment).toBe('cardio');
+    expect(ex.defaultSets).toBe(1);
+    expect(ex.defaultReps).toBe(0);
+    expect(ex.defaultWeight).toBe(0);
+    expect(ex.weightIncrement).toBe(0);
+    expect(getBuiltinExercise('cycle').name).toBe('사이클');
+    expect(listBuiltinByPart('cardio').map(e => e.id)).toEqual([
+      'treadmill', 'cycle', 'recumbent_bike', 'elliptical', 'stair_climber',
+    ]);
+  });
+  it.each([
+    ['hip_adduction', '내전근(힙 어덕션)'],
+    ['hip_abduction', '외전근(힙 어브덕션)'],
+  ])('%s는 하체 머신이며 사진의 스택 중량 순서로 증감', (id, name) => {
+    const ex = getBuiltinExercise(id);
+    expect(ex.name).toBe(name);
+    expect(ex.part).toBe('legs');
+    expect(ex.equipment).toBe('machine');
+    expect(ex.defaultSets).toBe(3);
+    expect(ex.defaultReps).toBe(12);
+    expect(ex.defaultWeight).toBe(20);
+    const labels = [5, 10, 15, 20, 25, 32, 40, 47, 55, 62, 70, 78, 85, 92, 100];
+    expect(ex.weightSteps).toEqual(labels);
+    labels.forEach((weight, index) => {
+      expect(nextStackWeight(ex, weight, 1)).toBe(labels[Math.min(index + 1, labels.length - 1)]);
+      expect(nextStackWeight(ex, weight, -1)).toBe(labels[Math.max(index - 1, 0)]);
+    });
+    expect(nextStackWeight(ex, 27, 1)).toBe(32);
+    expect(nextStackWeight(ex, 27, -1)).toBe(25);
+    expect(nextStackWeight(ex, 2, 1)).toBe(5);
+    expect(nextStackWeight(ex, 2, -1)).toBe(2);
+    expect(nextStackWeight(ex, 120, 1)).toBe(120);
+    expect(nextStackWeight(ex, 120, -1)).toBe(100);
+    expect(nextStackWeight(ex, 25, 0)).toBe(25);
+    expect(Object.isFrozen(ex.weightSteps)).toBe(true);
+    expect(nextStackWeight(getBuiltinExercise('leg_curl'), 25, 1)).toBeNull();
+    expect(getBuiltinExercise('dumbbell_curl').weightIncrement).toBe(2);
+    expect(BUILTIN_EXERCISES.find(e => e.id === 'leg_curl').weightIncrement).toBeUndefined();
+  });
+  it('천국의계단은 트레드밀과 같은 단일 유산소 기록', () => {
+    const ex = getBuiltinExercise('stair_climber');
+    expect(ex.name).toBe('천국의계단');
+    expect(ex.part).toBe('cardio');
+    expect(ex.equipment).toBe('cardio');
+    expect(ex.defaultSets).toBe(1);
+    expect(ex.defaultReps).toBe(0);
+    expect(ex.defaultWeight).toBe(0);
     expect(ex.weightIncrement).toBe(0);
   });
   it('없는 id → null', () => {

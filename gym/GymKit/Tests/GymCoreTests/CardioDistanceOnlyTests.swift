@@ -15,28 +15,31 @@ import Foundation
         #expect(GymSessionLogic.cardioSummary(distanceKm: nil, durationSec: nil) == "—")
     }
 
-    @Test func dayDetailShowsDistanceOnlyRun() {
+    @Test(arguments: ["treadmill", "recumbent_bike", "stair_climber"])
+    func dayDetailShowsDistanceOnlyRun(exerciseId: String) {
         let s = GymSession(id: "d", date: "2026-09-26", blocks: [
-            GymBlock(exerciseId: "treadmill", sets: [GymSet(done: true, distance: 2.2)])],
+            GymBlock(exerciseId: exerciseId, sets: [GymSet(done: true, distance: 2.2)])],
                            status: .completed)
         #expect(GymDayDetailLogic.entry(for: s, custom: []).ex[0].s == "2.2km")
     }
 
     // 같은 날 두 세션을 합칠 때도 거리만 있는 기록은 "0분" 없이, 거리 먼저로.
-    @Test func dayDetailMergeOfDistanceOnlyRuns() {
+    @Test(arguments: ["treadmill", "recumbent_bike", "stair_climber"])
+    func dayDetailMergeOfDistanceOnlyRuns(exerciseId: String) {
         func run(_ id: String, _ km: Double) -> GymDayEntry {
             GymDayDetailLogic.entry(for: GymSession(id: id, date: "2026-09-26", blocks: [
-                GymBlock(exerciseId: "treadmill", sets: [GymSet(done: true, distance: km)])],
+                GymBlock(exerciseId: exerciseId, sets: [GymSet(done: true, distance: km)])],
                                                     status: .completed), custom: [])
         }
         #expect(GymDayDetailLogic.merged([run("a", 2.2), run("b", 1.0)]).ex[0].s == "3.2km")
     }
 
-    @Test func nextPreviewShowsDistanceOnlyOrDash() {
+    @Test(arguments: ["treadmill", "recumbent_bike", "stair_climber"])
+    func nextPreviewShowsDistanceOnlyOrDash(exerciseId: String) {
         let s = GymSession(id: "p", date: "2026-09-26", blocks: [
-            GymBlock(exerciseId: "treadmill", sets: [GymSet(distance: 2.2)])], status: .active)
+            GymBlock(exerciseId: exerciseId, sets: [GymSet(distance: 2.2)])], status: .active)
         #expect(GymHomeLogic.blockPreview(s.blocks[0], custom: []).summary == "2.2km")
-        let empty = GymBlock(exerciseId: "treadmill", sets: [GymSet(preset: true)])
+        let empty = GymBlock(exerciseId: exerciseId, sets: [GymSet(preset: true)])
         #expect(GymHomeLogic.blockPreview(empty, custom: []).summary == "—")
     }
 
@@ -51,5 +54,22 @@ import Foundation
         #expect(b?.distance == 2.1 && b?.done == true && b?.preset == false)
 
         #expect(GymSessionLogic.commitCardio(GymSet(preset: true), refDistance: nil) == nil)
+    }
+
+    @Test(arguments: ["recumbent_bike", "stair_climber"])
+    func newCardioDistanceSurvivesEncodingWithoutChangingCycleHistory(exerciseId: String) throws {
+        let session = GymSession(id: "bike", date: "2026-10-14", blocks: [
+            GymBlock(exerciseId: "cycle", sets: [GymSet(done: true, distance: 4)]),
+            GymBlock(exerciseId: exerciseId, sets: [GymSet(done: true, distance: 2.2)]),
+        ], status: .completed)
+        let decoded = try JSONDecoder().decode(GymSession.self, from: JSONEncoder().encode(session))
+        #expect(decoded.blocks.map(\.exerciseId) == ["cycle", exerciseId])
+        #expect(decoded.blocks[1].sets[0].distance == 2.2)
+        #expect(decoded.blocks[1].sets[0].duration == nil)
+        let detail = GymDayDetailLogic.entry(for: decoded, custom: [])
+        #expect(detail.ex.map(\.n) == ["사이클", GymExercises.resolveName(exerciseId)])
+        #expect(detail.ex.map(\.s) == ["4km", "2.2km"])
+        #expect(GymHomeLogic.cardioDays(sessions: [decoded], custom: [])[session.date]?.km == 6.2)
+        #expect(GymHomeLogic.liftDays(sessions: [decoded], custom: []).isEmpty)
     }
 }

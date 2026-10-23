@@ -22,7 +22,7 @@ import {
   weekRangeISO,
   getSessionsByRange,
 } from '../db/queries.js';
-import { PART_IDS, PARTS, getBuiltinExercise, resolveExerciseName, primeCustomExerciseCache } from '../db/exercises.js';
+import { PART_IDS, PARTS, getBuiltinExercise, resolveExerciseName, primeCustomExerciseCache, nextStackWeight } from '../db/exercises.js';
 import { mapNameToExerciseId, persistSetPR } from './session-pr.js';
 import { renderCardioCard, wireCardioCard, resetCardioMetric, currentCardioMetric } from './session-cardio-card.js';
 
@@ -1825,12 +1825,14 @@ export async function applyTapDelta(field, deltaSign) {
 
   // 장비별 증분
   let delta = 1;
+  let stackWeight = null;
   if (field === 'weight') {
     let ex;
     try { ex = await getExerciseDefaults(block.exerciseId); }
     catch (_) { ex = null; }
     const eq = ex?.equipment;
     if (eq === 'bodyweight' || eq === 'cardio') return; // 중량 증감 불가
+    stackWeight = nextStackWeight(ex, Number(set.weight) || 0, deltaSign);
     // 운동의 weightIncrement (명시 override 우선 — 예: 리스트 컬 5단위) → 없으면 장비 기본(덤벨 2 / 그 외 5).
     delta = Number.isFinite(ex?.weightIncrement) && ex.weightIncrement > 0
       ? ex.weightIncrement
@@ -1840,9 +1842,9 @@ export async function applyTapDelta(field, deltaSign) {
   const curVal = Number(set[field]) || 0;
   // 증분 그리드에 스냅 — 값이 delta 배수가 아니어도 다음(+)/이전(-) 배수로 이동.
   //   예: 리스트 컬(5단위) 19 +1 → 20, -1 → 15. 이미 배수면 정확히 ±delta (add 와 동일).
-  let nextVal = deltaSign > 0
+  let nextVal = stackWeight ?? (deltaSign > 0
     ? (Math.floor(curVal / delta) + 1) * delta
-    : (Math.ceil(curVal / delta) - 1) * delta;
+    : (Math.ceil(curVal / delta) - 1) * delta);
   if (nextVal < 0) nextVal = 0;
   if (nextVal === curVal) return; // no-op
 

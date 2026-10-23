@@ -19,14 +19,16 @@ public struct GymExerciseDef: Codable, Sendable, Identifiable, Hashable {
     public let defaultWeight: Double
     public let met: Double
     public let weightIncrementOverride: Double?   // 장비 기본 override (없으면 nil)
+    public let weightSteps: [Double]?             // 불균등 머신 스택의 표시 중량 (오름차순)
 
     public init(id: String, name: String, part: String, equipment: String,
                 defaultSets: Int, defaultReps: Int, defaultWeight: Double, met: Double,
-                weightIncrementOverride: Double? = nil) {
+                weightIncrementOverride: Double? = nil, weightSteps: [Double]? = nil) {
         self.id = id; self.name = name; self.part = part; self.equipment = equipment
         self.defaultSets = defaultSets; self.defaultReps = defaultReps
         self.defaultWeight = defaultWeight; self.met = met
         self.weightIncrementOverride = weightIncrementOverride
+        self.weightSteps = weightSteps
     }
 
     // 실효 중량 증분 — 명시 override 가 있으면 그것, 없으면 장비별 기본 (resolveWeightIncrement 정합).
@@ -37,6 +39,17 @@ public struct GymExerciseDef: Codable, Sendable, Identifiable, Hashable {
     // 중량 입력 종목 여부 (맨몸·유산소 제외).
     public var usesWeight: Bool { weightIncrement > 0 || (equipment != "bodyweight" && equipment != "cardio") }
     public var isCardio: Bool { equipment == "cardio" }
+
+    // 스택 종목은 다음/이전 표시 중량으로 이동. 수동 입력값은 유지하며 버튼을 누를 때만
+    // 해당 방향의 가장 가까운 값으로 간다. 범위 밖에서 더 바깥으로 누르면 값 그대로.
+    public func steppedWeight(from current: Double, direction: Int) -> Double {
+        guard direction != 0, usesWeight else { return current }
+        if let steps = weightSteps, !steps.isEmpty {
+            return direction > 0 ? (steps.first { $0 > current } ?? current)
+                : (steps.last { $0 < current } ?? current)
+        }
+        return max(0, current + Double(direction) * weightIncrement)
+    }
 }
 
 public enum GymExercises {
@@ -55,7 +68,10 @@ public enum GymExercises {
     ]
     public static func increment(forEquipment eq: String) -> Double { incrementTable[eq] ?? 0 }
 
-    // 기본 운동 41종 (exercises.js BUILTIN_EXERCISES 정합, 정의 순서 유지).
+    // 사용자 머신 사진의 kg 라벨. 내전·외전 두 종목에만 적용 (2026-10-14).
+    static let hipMachineWeightSteps: [Double] = [5, 10, 15, 20, 25, 32, 40, 47, 55, 62, 70, 78, 85, 92, 100]
+
+    // 기본 운동 45종 (exercises.js BUILTIN_EXERCISES 정합, 정의 순서 유지).
     public static let builtins: [GymExerciseDef] = [
         // chest (6)
         .init(id: "bench_press", name: "벤치프레스", part: "chest", equipment: "barbell", defaultSets: 5, defaultReps: 10, defaultWeight: 60, met: 5.0),
@@ -81,13 +97,15 @@ public enum GymExercises {
         .init(id: "side_lateral", name: "사이드 레터럴", part: "shoulder", equipment: "dumbbell", defaultSets: 3, defaultReps: 12, defaultWeight: 8, met: 3.5),
         .init(id: "front_raise", name: "프론트 레이즈", part: "shoulder", equipment: "dumbbell", defaultSets: 3, defaultReps: 12, defaultWeight: 8, met: 3.5),
         .init(id: "rear_lateral", name: "리어 레터럴", part: "shoulder", equipment: "dumbbell", defaultSets: 3, defaultReps: 12, defaultWeight: 8, met: 3.5),
-        // legs (7)
+        // legs (9)
         .init(id: "squat", name: "스쿼트", part: "legs", equipment: "barbell", defaultSets: 5, defaultReps: 10, defaultWeight: 70, met: 5.5),
         .init(id: "lunge", name: "런지", part: "legs", equipment: "dumbbell", defaultSets: 3, defaultReps: 12, defaultWeight: 14, met: 5.0),
         .init(id: "leg_press", name: "레그 프레스", part: "legs", equipment: "machine", defaultSets: 4, defaultReps: 10, defaultWeight: 100, met: 5.0),
         .init(id: "hip_thrust", name: "힙 쓰러스트", part: "legs", equipment: "barbell", defaultSets: 4, defaultReps: 10, defaultWeight: 60, met: 5.0),
         .init(id: "leg_extension", name: "레그 익스텐션", part: "legs", equipment: "machine", defaultSets: 3, defaultReps: 12, defaultWeight: 35, met: 4.0),
         .init(id: "leg_curl", name: "레그 컬", part: "legs", equipment: "machine", defaultSets: 3, defaultReps: 12, defaultWeight: 30, met: 4.0),
+        .init(id: "hip_adduction", name: "내전근(힙 어덕션)", part: "legs", equipment: "machine", defaultSets: 3, defaultReps: 12, defaultWeight: 20, met: 4.0, weightSteps: hipMachineWeightSteps),
+        .init(id: "hip_abduction", name: "외전근(힙 어브덕션)", part: "legs", equipment: "machine", defaultSets: 3, defaultReps: 12, defaultWeight: 20, met: 4.0, weightSteps: hipMachineWeightSteps),
         .init(id: "calf_raise", name: "카프 레이즈", part: "legs", equipment: "machine", defaultSets: 4, defaultReps: 15, defaultWeight: 50, met: 3.5),
         // arms (8)
         .init(id: "bicep_curl", name: "바벨 컬", part: "arms", equipment: "barbell", defaultSets: 4, defaultReps: 10, defaultWeight: 25, met: 3.5),
@@ -98,10 +116,14 @@ public enum GymExercises {
         .init(id: "tricep_pushdown", name: "트라이셉 푸시다운", part: "arms", equipment: "cable", defaultSets: 4, defaultReps: 12, defaultWeight: 25, met: 3.5),
         .init(id: "dips", name: "딥스", part: "arms", equipment: "bodyweight", defaultSets: 3, defaultReps: 10, defaultWeight: 0, met: 5.0),
         .init(id: "wrist_curl", name: "리스트 컬", part: "arms", equipment: "dumbbell", defaultSets: 3, defaultReps: 15, defaultWeight: 5, met: 3.0, weightIncrementOverride: 5),
-        // cardio (3)
+        // cardio (5)
         .init(id: "treadmill", name: "트레드밀", part: "cardio", equipment: "cardio", defaultSets: 1, defaultReps: 0, defaultWeight: 0, met: 7.0),
         .init(id: "cycle", name: "사이클", part: "cardio", equipment: "cardio", defaultSets: 1, defaultReps: 0, defaultWeight: 0, met: 6.5),
+        // 리컴번트 바이크: 등받이에 기대어 타는 좌식 자전거. 기존 cycle 기록과 별도 ID.
+        .init(id: "recumbent_bike", name: "좌식 자전거", part: "cardio", equipment: "cardio", defaultSets: 1, defaultReps: 0, defaultWeight: 0, met: 6.5),
         .init(id: "elliptical", name: "엘립티컬", part: "cardio", equipment: "cardio", defaultSets: 1, defaultReps: 0, defaultWeight: 0, met: 5.0),
+        // 거리 전용 입력은 트레드밀과 동일. MET: 2024 Compendium, activity 02065.
+        .init(id: "stair_climber", name: "천국의계단", part: "cardio", equipment: "cardio", defaultSets: 1, defaultReps: 0, defaultWeight: 0, met: 9.3),
         // core (2)
         .init(id: "hanging_leg_raise", name: "행잉 레그 레이즈", part: "core", equipment: "bodyweight", defaultSets: 3, defaultReps: 12, defaultWeight: 0, met: 4.0),
         .init(id: "decline_situp", name: "디클라인 싯업", part: "core", equipment: "bodyweight", defaultSets: 3, defaultReps: 15, defaultWeight: 0, met: 4.0),

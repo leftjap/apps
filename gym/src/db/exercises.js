@@ -39,6 +39,9 @@ export const INCREMENT = Object.freeze({
   cardio: 0,
 });
 
+// 사용자 머신 사진의 kg 라벨. 내전·외전 두 종목만 이 순서로 증감한다.
+const HIP_MACHINE_WEIGHT_STEPS = Object.freeze([5, 10, 15, 20, 25, 32, 40, 47, 55, 62, 70, 78, 85, 92, 100]);
+
 /**
  * 기본 운동 카탈로그. id 는 영문 snake_case (안정적 PK), name 은 한국어 표시명.
  * defaultSets·Reps·Weight 는 §6-3-3 프리셋 우선순위의 최후 fallback.
@@ -72,13 +75,15 @@ export const BUILTIN_EXERCISES = Object.freeze([
   { id: 'front_raise',     name: '프론트 레이즈',  part: 'shoulder', equipment: 'dumbbell',  defaultSets: 3, defaultReps: 12, defaultWeight: 8,  met: 3.5 },
   { id: 'rear_lateral',    name: '리어 레터럴',    part: 'shoulder', equipment: 'dumbbell',  defaultSets: 3, defaultReps: 12, defaultWeight: 8,  met: 3.5 },
 
-  // legs (8)
+  // legs (9)
   { id: 'squat',           name: '스쿼트',         part: 'legs',     equipment: 'barbell',   defaultSets: 5, defaultReps: 10, defaultWeight: 70, met: 5.5 },
   { id: 'lunge',           name: '런지',           part: 'legs',     equipment: 'dumbbell',  defaultSets: 3, defaultReps: 12, defaultWeight: 14, met: 5.0 },
   { id: 'leg_press',       name: '레그 프레스',    part: 'legs',     equipment: 'machine',   defaultSets: 4, defaultReps: 10, defaultWeight: 100, met: 5.0 },
   { id: 'hip_thrust',      name: '힙 쓰러스트',    part: 'legs',     equipment: 'barbell',   defaultSets: 4, defaultReps: 10, defaultWeight: 60, met: 5.0 },
   { id: 'leg_extension',   name: '레그 익스텐션',  part: 'legs',     equipment: 'machine',   defaultSets: 3, defaultReps: 12, defaultWeight: 35, met: 4.0 },
   { id: 'leg_curl',        name: '레그 컬',       part: 'legs',     equipment: 'machine',   defaultSets: 3, defaultReps: 12, defaultWeight: 30, met: 4.0 },
+  { id: 'hip_adduction',   name: '내전근(힙 어덕션)', part: 'legs',  equipment: 'machine',   defaultSets: 3, defaultReps: 12, defaultWeight: 20, met: 4.0, weightSteps: HIP_MACHINE_WEIGHT_STEPS },
+  { id: 'hip_abduction',   name: '외전근(힙 어브덕션)', part: 'legs', equipment: 'machine',  defaultSets: 3, defaultReps: 12, defaultWeight: 20, met: 4.0, weightSteps: HIP_MACHINE_WEIGHT_STEPS },
   { id: 'calf_raise',      name: '카프 레이즈',    part: 'legs',     equipment: 'machine',   defaultSets: 4, defaultReps: 15, defaultWeight: 50, met: 3.5 },
 
   // arms (8)
@@ -94,7 +99,11 @@ export const BUILTIN_EXERCISES = Object.freeze([
   // 유산소 (cardio) — 트레드밀·사이클·엘립티컬 (장비=cardio, 밸런스 제외·별도 줄)
   { id: 'treadmill',           name: '트레드밀',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 7.0 },
   { id: 'cycle',               name: '사이클',           part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 6.5 },
+  // 리컴번트 바이크 (좌식). 네이티브 카탈로그와 같은 ID — 기존 cycle 기록은 그대로 유지.
+  { id: 'recumbent_bike',      name: '좌식 자전거',      part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 6.5 },
   { id: 'elliptical',          name: '엘립티컬',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 5.0 },
+  // 2024 Compendium activity 02065 (stair treadmill ergometer): 9.3 MET.
+  { id: 'stair_climber',       name: '천국의계단',       part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 9.3 },
   // 코어 (core) — abs (작업지시서(3) 확정 [3] — cardio 에서 분리, 주근육 부위로 흡수)
   { id: 'hanging_leg_raise',   name: '행잉 레그 레이즈', part: 'core',     equipment: 'bodyweight', defaultSets: 3, defaultReps: 12, defaultWeight: 0, met: 4.0 },
   { id: 'decline_situp',       name: '디클라인 싯업',    part: 'core',     equipment: 'bodyweight', defaultSets: 3, defaultReps: 15, defaultWeight: 0, met: 4.0 },
@@ -113,6 +122,15 @@ export function resolveWeightIncrement(ex) {
   const explicit = ex && ex.weightIncrement;
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
   return getIncrementForEquipment(ex?.equipment);
+}
+
+/** 불균등 스택의 다음/이전 표시 중량. 해당 없는 종목은 null → 기존 증분 사용. */
+export function nextStackWeight(ex, current, direction) {
+  const steps = ex?.weightSteps;
+  if (!Array.isArray(steps) || steps.length === 0) return null;
+  if (direction > 0) return steps.find(weight => weight > current) ?? current;
+  if (direction < 0) return steps.slice().reverse().find(weight => weight < current) ?? current;
+  return current;
 }
 
 /** 빌트인 운동 id → 객체 (weightIncrement 합성 — 명시 override 우선) */

@@ -84,7 +84,8 @@ struct SessionHeader: View {
                 // 종목 전환 시 이름이 우측 소폭에서 착지 + crail 플래시 — "종목이 갈렸다"는 정체성 신호.
                 // 세트완료 히어로 스왑(dx 88)과 같은 모션 언어의 축소판이라 학습 비용 없이 구별된다.
                 Text(exName).font(.sans(25, 700)).tracking(-0.5)
-                    .foregroundStyle(GY.ink1).lineLimit(1).accessibilityIdentifier("session-exname")
+                    .foregroundStyle(GY.ink1).lineLimit(1).minimumScaleFactor(0.7)
+                    .accessibilityIdentifier("session-exname")
                     .modifier(HeroRowSwapIn(trigger: exSwapMoment, delay: 0, dxIn: 24,
                                             landScale: 1.03, landOvershoot: -2, baseColor: GY.ink1))
                 Text(part).font(.sans(12.5, 500))

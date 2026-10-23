@@ -18,11 +18,11 @@ final class GymCardioSwipeSaveUITests: XCTestCase {
     private func distanceLabel(_ app: XCUIApplication) -> String {
         cardioTexts(app).first { $0.label.hasPrefix("거리") && $0.frame.height < 40 }?.label ?? "(none)"
     }
-    private func openTreadmill(_ app: XCUIApplication) {
+    private func openCardio(_ app: XCUIApplication, exerciseId: String = "treadmill") {
         XCTAssertTrue(app.staticTexts["NEW SESSION"].waitForExistence(timeout: 15))
         app.buttons["유산소"].tap()
-        XCTAssertTrue(app.buttons["addex-treadmill"].waitForExistence(timeout: 5))
-        app.buttons["addex-treadmill"].tap()
+        XCTAssertTrue(app.buttons["addex-\(exerciseId)"].waitForExistence(timeout: 5))
+        app.buttons["addex-\(exerciseId)"].tap()
         Thread.sleep(forTimeInterval: 0.8)
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()   // 오버레이 시트 닫기
         Thread.sleep(forTimeInterval: 1.0)
@@ -36,7 +36,7 @@ final class GymCardioSwipeSaveUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]
         app.launch()
-        openTreadmill(app)
+        openCardio(app)
         let card = app.otherElements["cardio-card"].firstMatch
         let initialHero = heroValue(app), size = app.windows.firstMatch.frame
         app.coordinate(withNormalizedOffset: CGVector(dx: initialHero.frame.midX / size.width,
@@ -81,17 +81,91 @@ final class GymCardioSwipeSaveUITests: XCTestCase {
     }
 
     func testDistanceOnlySwipeSaveGhostAndUndo() {
+        assertDistanceOnlySwipeSaveGhostAndUndo(exerciseId: "treadmill")
+    }
+
+    func testRecumbentBikeDistanceOnlySwipeSaveGhostAndUndo() {
+        assertDistanceOnlySwipeSaveGhostAndUndo(exerciseId: "recumbent_bike")
+    }
+
+    func testStairClimberDistanceOnlySwipeSaveGhostAndUndo() {
+        assertDistanceOnlySwipeSaveGhostAndUndo(exerciseId: "stair_climber")
+    }
+
+    func testHipAdductionUsesMachineStackAndManualEntry() {
+        assertHipMachine(exerciseId: "hip_adduction", name: "내전근(힙 어덕션)")
+    }
+
+    func testHipAbductionUsesMachineStackAndManualEntry() {
+        assertHipMachine(exerciseId: "hip_abduction", name: "외전근(힙 어브덕션)")
+    }
+
+    private func assertHipMachine(exerciseId: String, name: String) {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]
         app.launch()
-        openTreadmill(app)
+        XCTAssertTrue(app.staticTexts["NEW SESSION"].waitForExistence(timeout: 15))
+        app.buttons["하체"].tap()
+        let exercise = app.buttons["addex-\(exerciseId)"]
+        XCTAssertTrue(exercise.waitForExistence(timeout: 5))
+        for _ in 0..<3 where !exercise.isHittable { app.swipeUp() }
+        XCTAssertTrue(exercise.isHittable)
+        XCTAssertTrue(exercise.label.contains(name))
+        shot(app, "picker-\(exerciseId)")
+        exercise.tap()
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        let weight = app.staticTexts["hero-weight"]
+        XCTAssertTrue(weight.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["session-exname"].label, name)
+        XCTAssertEqual(weight.label, "20")
+
+        func expectWeight(_ value: String) {
+            let match = expectation(for: NSPredicate(format: "label == %@", value), evaluatedWith: weight)
+            wait(for: [match], timeout: 3)
+        }
+        func step(_ id: String, _ value: String) {
+            let zones = app.descendants(matching: .any).matching(identifier: id).allElementsBoundByIndex
+            let zone = zones.min { $0.frame.minY < $1.frame.minY }!
+            zone.tap()
+            expectWeight(value)
+        }
+        func enter(_ value: String) {
+            weight.tap()
+            XCTAssertTrue(app.buttons["keypad-done"].waitForExistence(timeout: 5))
+            for key in value { app.buttons["keypad-key-\(key)"].tap() }
+            app.buttons["keypad-done"].tap()
+            expectWeight(value)
+        }
+        step("zone-plus", "25")
+        step("zone-plus", "32")
+        shot(app, "stack-32-\(exerciseId)")
+        step("zone-plus", "40")
+        step("zone-minus", "32")
+        step("zone-minus", "25")
+        enter("27.4")
+        step("zone-plus", "32")
+        enter("27.4")
+        step("zone-minus", "25")
+        enter("5")
+        step("zone-minus", "5")
+        enter("100")
+        step("zone-plus", "100")
+        shot(app, "stack-upper-bound-\(exerciseId)")
+    }
+
+
+    private func assertDistanceOnlySwipeSaveGhostAndUndo(exerciseId: String) {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]
+        app.launch()
+        openCardio(app, exerciseId: exerciseId)
         let card = app.otherElements["cardio-card"].firstMatch
 
         // ① 숫자 탭 → 거리 키패드. 시간 세그가 없어야 한다.
         let h = heroValue(app), sz = app.windows.firstMatch.frame
         app.coordinate(withNormalizedOffset: CGVector(dx: h.frame.midX / sz.width, dy: h.frame.midY / sz.height)).tap()
         XCTAssertTrue(app.buttons["keypad-done"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["시간"].exists, "트레드밀 키패드는 거리만 — 시간 세그 없음")
+        XCTAssertFalse(app.buttons["시간"].exists, "유산소 키패드는 거리만 — 시간 세그 없음")
         for k in ["2", ".", "2"] { app.buttons["keypad-key-\(k)"].tap() }
         app.buttons["keypad-done"].tap()
         Thread.sleep(forTimeInterval: 0.6)
@@ -119,7 +193,7 @@ final class GymCardioSwipeSaveUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--fake-signin", "--empty-session"]   // 이력 보존
         app.launch()
-        openTreadmill(app)
+        openCardio(app, exerciseId: exerciseId)
         XCTAssertEqual(distanceLabel(app), "거리 · 직전 기록")
         card.swipeLeft(); Thread.sleep(forTimeInterval: 0.8)
         XCTAssertEqual(distanceLabel(app), "거리 · 저장됨", "고스트를 밀면 직전 거리가 저장된다")

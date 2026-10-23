@@ -910,12 +910,14 @@ public final class GymAppModel: ObservableObject {
 
     // 현재 세트 중량 증감 — 장비별 증분 (spec §6-3). dir = ±1. 맨몸·유산소는 미동작.
     public func adjustWeight(_ dir: Int) {
-        let inc = increment(for: currentExerciseId)
-        guard inc > 0, !currentBlockLocked else { return }
+        guard let def = GymExercises.def(currentExerciseId, custom: custom),
+              def.weightIncrement > 0, !currentBlockLocked else { return }
         let bi = currentBlockIdx, si = currentSetIdx
         guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
         let cur = session.blocks[bi].sets[si].weight ?? 0
-        session.blocks[bi].sets[si].weight = max(0, cur + Double(dir) * inc)
+        let next = def.steppedWeight(from: cur, direction: dir)
+        if def.weightSteps != nil && next == cur { return }
+        session.blocks[bi].sets[si].weight = next
         session.blocks[bi].sets[si].preset = false   // 사용자 입력 → placeholder 해제 (§6-3-3)
         impact(.light)
     }

@@ -1,7 +1,8 @@
 import Testing
+import Foundation
 @testable import GymCore
 
-// 운동 카탈로그 — exercises.js 정합 (41종·7부위·증분·resolver).
+// 운동 카탈로그 — exercises.js 정합 (45종·7부위·증분·resolver).
 @Suite struct ExercisesTests {
     // 부위 칩 순서 — 등·가슴·어깨·하체·팔·코어 + 유산소 (사용자 2026-07-19 요청).
     // 운동 추가 바텀시트(SessionSheets)·관리 화면(AdminScreen)·빌트인 목록이 이 순서를 공유한다.
@@ -10,13 +11,13 @@ import Testing
     }
 
     @Test func catalogCounts() {
-        #expect(GymExercises.builtins.count == 41)
+        #expect(GymExercises.builtins.count == 45)
         #expect(GymExercises.partOrder.count == 7)
         #expect(GymExercises.listByPart("chest").count == 6)
         #expect(GymExercises.listByPart("back").count == 10)
-        #expect(GymExercises.listByPart("legs").count == 7)
+        #expect(GymExercises.listByPart("legs").count == 9)
         #expect(GymExercises.listByPart("arms").count == 8)
-        #expect(GymExercises.listByPart("cardio").count == 3)
+        #expect(GymExercises.listByPart("cardio").count == 5)
         #expect(GymExercises.listByPart("core").count == 2)
     }
 
@@ -29,10 +30,81 @@ import Testing
         #expect(GymExercises.increment(forEquipment: "cardio") == 0)
     }
 
+    @Test func recumbentBikeIsSeparateCardioWithOneEmptyDistanceSet() throws {
+        let bike = try #require(GymExercises.builtin("recumbent_bike"))
+        #expect(bike.name == "좌식 자전거")
+        #expect(bike.part == "cardio")
+        #expect(bike.isCardio)
+        #expect(!bike.usesWeight)
+        #expect(GymCardKind.from(equipment: bike.equipment) == .cardio)
+        #expect(GymExercises.resolveName(bike.id) == "좌식 자전거")
+        #expect(GymExercises.builtin("cycle")?.name == "사이클")
+        #expect(Set(GymExercises.builtins.map(\.id)).count == GymExercises.builtins.count)
+
+        let sets = GymSessionLogic.buildPresetSets(bike)
+        #expect(sets.count == 1)
+        let set = try #require(sets.first)
+        #expect(set.preset && !set.done)
+        #expect(set.weight == nil && set.reps == nil)
+        #expect(set.distance == nil && set.duration == nil && set.calories == nil)
+    }
+
     @Test func wristCurlIncrementOverride() {
         let w = GymExercises.builtin("wrist_curl")!
         #expect(w.equipment == "dumbbell")   // 장비 기본은 2
         #expect(w.weightIncrement == 5)       // 명시 override 5
+    }
+
+    @Test(arguments: ["hip_adduction", "hip_abduction"])
+    func hipMachinesUsePhotographedStackWeights(exerciseId: String) throws {
+        let def = try #require(GymExercises.builtin(exerciseId))
+        #expect(def.part == "legs" && def.equipment == "machine")
+        #expect(def.usesWeight && !def.isCardio)
+        let labels: [Double] = [5, 10, 15, 20, 25, 32, 40, 47, 55, 62, 70, 78, 85, 92, 100]
+        #expect(def.weightSteps == labels)
+        for (i, weight) in labels.enumerated() {
+            #expect(def.steppedWeight(from: weight, direction: 1) == labels[min(i + 1, labels.count - 1)])
+            #expect(def.steppedWeight(from: weight, direction: -1) == labels[max(i - 1, 0)])
+        }
+        #expect(def.steppedWeight(from: 27, direction: 1) == 32)
+        #expect(def.steppedWeight(from: 27, direction: -1) == 25)
+        #expect(def.steppedWeight(from: 2, direction: 1) == 5)
+        #expect(def.steppedWeight(from: 2, direction: -1) == 2)
+        #expect(def.steppedWeight(from: 120, direction: 1) == 120)
+        #expect(def.steppedWeight(from: 120, direction: -1) == 100)
+        #expect(GymCardKind.from(equipment: def.equipment) == .weight)
+        let sets = GymSessionLogic.buildPresetSets(def)
+        #expect(sets.count == 3)
+        #expect(sets.allSatisfy { $0.weight == 20 && $0.reps == 12 && $0.preset && !$0.done })
+        #expect(GymExercises.builtin("leg_curl")?.weightIncrementOverride == nil)
+        #expect(GymExercises.increment(forExercise: "dumbbell_curl") == 2)
+    }
+
+    @Test func regularWeightsAndOldCatalogDecodingStayCompatible() throws {
+        let oldJSON = #"{"id":"old","name":"기존 머신","part":"legs","equipment":"machine","defaultSets":3,"defaultReps":12,"defaultWeight":20,"met":4}"#
+        let old = try JSONDecoder().decode(GymExerciseDef.self, from: Data(oldJSON.utf8))
+        #expect(old.weightSteps == nil)
+        #expect(old.steppedWeight(from: 25, direction: 1) == 30)
+        #expect(old.steppedWeight(from: 2, direction: -1) == 0)
+        #expect(GymExercises.builtin("dumbbell_curl")?.steppedWeight(from: 20, direction: 1) == 22)
+        #expect(GymExercises.builtin("wrist_curl")?.steppedWeight(from: 19, direction: 1) == 24)
+        #expect(GymExercises.builtin("treadmill")?.steppedWeight(from: 0, direction: 1) == 0)
+        let bike = try #require(GymExercises.builtin("hip_abduction"))
+        let roundTrip = try JSONDecoder().decode(GymExerciseDef.self, from: JSONEncoder().encode(bike))
+        #expect(roundTrip.weightSteps == bike.weightSteps)
+    }
+
+    @Test func stairClimberUsesTheSameBlankCardioPresetAsTreadmill() throws {
+        let def = try #require(GymExercises.builtin("stair_climber"))
+        #expect(def.name == "천국의계단")
+        #expect(def.part == "cardio" && def.isCardio && !def.usesWeight)
+        #expect(GymCardKind.from(equipment: def.equipment) == .cardio)
+        let sets = GymSessionLogic.buildPresetSets(def)
+        #expect(sets.count == 1)
+        let set = try #require(sets.first)
+        #expect(set.preset && !set.done)
+        #expect(set.weight == nil && set.reps == nil)
+        #expect(set.distance == nil && set.duration == nil && set.calories == nil)
     }
 
     @Test func resolvers() {
