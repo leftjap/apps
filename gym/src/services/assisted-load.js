@@ -22,7 +22,8 @@ export function currentBodyWeight(weights = [], today = new Intl.DateTimeFormat(
 export function snapshotAssistance(set, exercise, bodyWeightKg) {
   if (!isAssistedSet(set, exercise)) return set;
   const out = { ...set, weightMode: 'assistance', pr: false };
-  if (out.bodyWeightKg == null && Number.isFinite(bodyWeightKg) && bodyWeightKg > 0) out.bodyWeightKg = bodyWeightKg;
+  const explicitlyUnknown = set?.weightMode === 'assistance' && set.bodyWeightKg == null;
+  if (!explicitlyUnknown && out.bodyWeightKg == null && Number.isFinite(bodyWeightKg) && bodyWeightKg > 0) out.bodyWeightKg = bodyWeightKg;
   return out;
 }
 export function projectAssistedSet(set, exercise, previewBodyWeight = null) {

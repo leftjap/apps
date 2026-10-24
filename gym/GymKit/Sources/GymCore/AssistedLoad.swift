@@ -47,7 +47,8 @@ public enum GymAssistedLoad {
     public static func snapshot(_ set: GymSet, bodyWeightKg: Double?) -> GymSet {
         var out = set
         out.weightMode = "assistance"
-        if out.bodyWeightKg == nil, let bodyWeightKg, bodyWeightKg.isFinite, bodyWeightKg > 0 {
+        let explicitlyUnknown = set.weightMode == "assistance" && set.bodyWeightKg == nil
+        if !explicitlyUnknown, out.bodyWeightKg == nil, let bodyWeightKg, bodyWeightKg.isFinite, bodyWeightKg > 0 {
             out.bodyWeightKg = bodyWeightKg
         }
         out.pr = false

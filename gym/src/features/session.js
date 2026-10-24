@@ -1020,7 +1020,7 @@ async function mountSessionActive(doc, block, session) {
   const sameEx = segWrap && segWrap.dataset.exId === String(block.exerciseId) && Number.isFinite(prevExNum);
   const isCommit = _justCommittedExId === block.exerciseId;
   const countUp = sameEx && exDoneVol > prevExNum && !RMV && isCommit;
-  const topBefore = sessionDoneVol - (exDoneVol - (Number.isFinite(prevExNum) ? prevExNum : exDoneVol));
+  const topBefore = externalVolumeDuringExerciseCountUp(sessionDoneVol, exDoneVol - (Number.isFinite(prevExNum) ? prevExNum : exDoneVol), assisted);
 
   // 세그먼트 렌더 (완료=잉크 5.2 / 진행=주황 6.3 맥동 / 예정=연톤 4). 직전기록 막대차트와 1:1 (§5.1).
   if (segWrap) {
@@ -1061,7 +1061,7 @@ async function mountSessionActive(doc, block, session) {
     setTextById(doc, 'cardSetProgress', Math.round(topBefore).toLocaleString());
     animNum(prevExNum, exDoneVol, 620, (v, isFinal) => {
       setTextById(doc, 'cardProgressVol', Math.round(isFinal ? exDoneVol : v).toLocaleString());
-      setTextById(doc, 'cardSetProgress', Math.round(isFinal ? sessionDoneVol : topBefore + (v - prevExNum)).toLocaleString());
+      setTextById(doc, 'cardSetProgress', Math.round(externalVolumeDuringExerciseCountUp(sessionDoneVol, isFinal ? 0 : exDoneVol - v, assisted)).toLocaleString());
     });
   } else {
     setTextById(doc, 'cardProgressVol', Math.round(exDoneVol).toLocaleString());
@@ -1460,6 +1460,10 @@ export function setBarVolumeMax(sets) {
 }
 
 /* ── 중앙 종목 세그먼트 링 (작업지시서 §5.1 · §6.3 — 시안 support.js 계산 이식) ── */
+export function externalVolumeDuringExerciseCountUp(externalTotal, remainingExerciseVolume, assisted = false) {
+  return externalTotal - (assisted ? 0 : remainingExerciseVolume);
+}
+
 const VOL_RING_C = 100.53; // 2π·16 (세그먼트 링 반지름 16)
 const VOL_SEG_GAP = 2.2;   // 세그먼트 사이 갭 (시안 실측 — #6b/#7b 회전 역산)
 const VOL_ARC_C = 131.95;  // 2π·21 (초과 아크 반지름 21, §6.3)
@@ -1885,7 +1889,7 @@ export async function applyTapDelta(field, deltaSign) {
   const blocks = session.blocks.slice();
   const blockIdx = blocks.indexOf(block);
   if (blockIdx === -1) return;
-  sets[effectiveCur] = { ...set, [field]: nextVal, preset: false };
+  sets[effectiveCur] = await captureAssistedSet({ ...set, [field]: nextVal, preset: false }, block.exerciseId);
   blocks[blockIdx] = { ...block, sets };
 
   try { await upsertSession({ ...session, blocks }); }
@@ -3711,7 +3715,7 @@ export async function handleRightSwipe(options = {}) {
   const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
   const prevIdx = effectiveCur - 1;
   if (prevIdx < 0 || prevIdx >= sets.length) return;
-  sets[prevIdx] = { ...sets[prevIdx], done: false };
+  sets[prevIdx] = { ...snapshotAssistance(sets[prevIdx], block.exerciseId, null), done: false };
   blocks[blockIdx] = { ...block, sets };
 
   // 우 스와이프 책장 넘김 (좌 스와이프 대칭) — OUT 우측 + IN 좌측에서 들어옴.

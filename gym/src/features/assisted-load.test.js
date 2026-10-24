@@ -4,7 +4,7 @@ import { createGymDB } from '../db/schema.js';
 import { primeCustomExerciseCache } from '../db/exercises.js';
 import { summarizeSession } from './session-summary.js';
 import { sessionToWorkoutEntry } from './stats.js';
-import { computeVolSegments, persistSetCommit, dumpActiveSessionFromState, finalizeActiveSession } from './session.js';
+import { computeVolSegments, persistSetCommit, dumpActiveSessionFromState, finalizeActiveSession, applyTapDelta, handleRightSwipe, handleLeftSwipe, persistKeypadEdit, externalVolumeDuringExerciseCountUp } from './session.js';
 import { persistSetPR } from './session-pr.js';
 import { currentBodyWeight, snapshotAssistance, estimatedSetVolume, assistanceReduction } from '../services/assisted-load.js';
 
@@ -61,6 +61,36 @@ describe('assisted record lifecycle in an isolated IndexedDB', () => {
     row = await db.sessions.get('old');
     expect(row.totalVolume).toBe(0);
     expect(summarizeSession(row).exercises[0].volume).toBe('추정 330kg');
+  });
+
+  it('captures bodyweight on tap edits before the set is committed', async () => {
+    await applyTapDelta('weight', 1);
+    const set = (await db.sessions.get('old')).blocks[0].sets[0];
+    expect(set.weight).toBe(45);
+    expect(set.bodyWeightKg).toBe(73);
+    expect(estimatedSetVolume(set)).toBe(280);
+  });
+
+  it('keeps unknown historical bodyweight when undoing, editing, and recommitting a legacy set', async () => {
+    const row = await db.sessions.get('old');
+    row.blocks[0].sets = [{ weight: 40, reps: 10, done: true }, { weight: 40, reps: 10, done: false, preset: true }];
+    await db.sessions.put(row);
+    await handleRightSwipe();
+    await persistKeypadEdit({ exerciseName: '어시스티드 친', setIdx: 0, field: 'weight', value: 35 });
+    await handleLeftSwipe();
+    const saved = (await db.sessions.get('old')).blocks[0].sets[0];
+    expect(saved.weight).toBe(35);
+    expect(saved.bodyWeightKg).toBeUndefined();
+    expect(estimatedSetVolume(saved)).toBe(null);
+  });
+
+  it('keeps the ordinary volume header unchanged throughout an assisted count-up', () => {
+    for (const remaining of [330, 200, 0]) {
+      expect(externalVolumeDuringExerciseCountUp(0, remaining, true)).toBe(0);
+      expect(externalVolumeDuringExerciseCountUp(500, remaining, true)).toBe(500);
+    }
+    expect(externalVolumeDuringExerciseCountUp(900, 400, false)).toBe(500);
+    expect(externalVolumeDuringExerciseCountUp(900, 0, false)).toBe(900);
   });
 
   it('does not store an ordinary max-weight PR for assistance', async () => {

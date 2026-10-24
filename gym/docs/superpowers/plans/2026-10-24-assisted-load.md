@@ -24,23 +24,29 @@
 
 ### Task 1: Native semantics and history-safe projections
 
-- [ ] RED: Decode assistance JSON with existing APIs and prove current volume/PR behavior is incorrect.
-- [ ] Add optional set metadata and a pure assisted-load calculator/projection, plus the precise legacy exercise resolver.
-- [ ] Wire new-set snapshot capture, ordinary-total exclusion, assisted estimate summaries, PR suppression, and labeled UI.
-- [ ] Verify regression tests including history immutability and bodyweight-change stability.
+- [x] RED: Decode assistance JSON with existing APIs and prove current volume/PR behavior is incorrect.
+- [x] Add optional set metadata and a pure assisted-load calculator/projection, plus the precise legacy exercise resolver.
+- [x] Wire new-set snapshot capture, ordinary-total exclusion, assisted estimate summaries, PR suppression, and labeled UI.
+- [x] Verify regression tests including history immutability and bodyweight-change stability.
 
 ### Task 2: Web parity
 
-- [ ] RED: Add numeric/persistence/PR tests for assisted semantics.
-- [ ] Share a pure calculator across session, summary, history and calendar totals; preserve new fields when editing/committing.
-- [ ] Label assistance/estimates and suppress e1RM/high-weight UI and PR persistence for assisted exercises.
-- [ ] Run affected web tests and production build.
+- [x] RED: Add numeric/persistence/PR tests for assisted semantics.
+- [x] Share a pure calculator across session, summary, history and calendar totals; preserve new fields when editing/committing.
+- [x] Label assistance/estimates and suppress e1RM/high-weight UI and PR persistence for assisted exercises.
+- [x] Run affected web tests and production build.
 
 ### Task 3: Native verification, review, and device update
 
-- [ ] Run isolated native suite, simulator-only assisted entry/save/summary/history UI checks, and visual QA.
-- [ ] Perform a fresh review of the complete change and fix material findings with regression tests.
+- [x] Run isolated native suite, simulator-only assisted entry/save/summary/history UI checks, and visual QA.
+- [x] Perform a fresh review of the complete change and fix material findings with regression tests.
 - [ ] Build/sign the physical target, inspect the current primary checkout, and integrate only this task's files.
 - [ ] Verify iPhone 11 Pro identity, make a fresh private record backup, update-install without reset, and compare all raw records.
 
 Ruling: A separate temporary worktree is used because the primary checkout has an automatic device re-sign/install job; unfinished code must not be eligible for that job. The approved checkout remains the integration target.
+
+Ruling: Undo/recommit is an edit of an existing set, so an explicit assistance mode with a missing bodyweight stays unknown. A newly added set/preset has no such marker and captures the current applicable bodyweight. This avoids inventing historical bodyweight; a user who actually performs another set records it as a new set.
+
+Verification: native 379 and web 716 initially passed; independent review found two web paths and the undo-provenance edge. Each now has a RED regression followed by a single fix pass and full-suite verification. Physical device availability is checked separately.
+
+Final fix pass: web 719/719 and native 88+292 = 380/380 passed. Ordinary exercises and prior additions remain covered. Existing OAuth URL test remains excluded under keychain isolation. Physical iPhone 11 Pro was unavailable; no device update was attempted.

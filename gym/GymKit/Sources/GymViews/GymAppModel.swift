@@ -941,6 +941,10 @@ public final class GymAppModel: ObservableObject {
               !GymSessionLogic.isBlockLocked(session.blocks[bi]) else { return }
         let sets = session.blocks[bi].sets
         guard let lastDone = sets.lastIndex(where: { $0.done }) else { return }
+        if GymAssistedLoad.isAssisted(session.blocks[bi], custom: custom) {
+            // Undo edits an existing record: preserve its unknown bodyweight provenance.
+            session.blocks[bi].sets[lastDone] = GymAssistedLoad.snapshot(session.blocks[bi].sets[lastDone], bodyWeightKg: nil)
+        }
         session.blocks[bi].sets[lastDone].done = false   // pr 플래그는 유지 (handleRightSwipe 정합)
         impact(.medium)
     }

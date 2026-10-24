@@ -62,6 +62,16 @@ import Testing
         #expect(GymAssistedLoad.assistanceReduction(current: GymSet(weight: 45, reps: 10), previous: legacy.blocks[0].sets) == nil)
     }
 
+    @Test func undoEditAndRecommitDoNotReplaceUnknownHistoricalBodyweight() {
+        let m = model()
+        m.session.blocks[0].sets = [GymSet(weight: 40, reps: 10, done: true), GymSet(weight: 40, reps: 10, preset: true)]
+        m.revertToPreviousSet()
+        m.applyKeypad(.weight, value: 35, setIdx: 0)
+        m.completeCurrentSet()
+        #expect(m.session.blocks[0].sets[0].bodyWeightKg == nil)
+        #expect(m.currentBlock?.sets[0].volume == 0)
+    }
+
     @Test func editingAnOldDoneSetDoesNotInventItsHistoricalBodyWeight() {
         let m = model()
         m.session.blocks[0].sets[0] = GymSet(weight: 40, reps: 10, done: true)
