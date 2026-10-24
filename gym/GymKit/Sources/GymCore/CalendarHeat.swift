@@ -22,7 +22,7 @@ public enum GymCalendarHeat {
             guard let day = Int(s.date.suffix(2)) else { continue }
             let vol = s.blocks
                 .filter { $0.type == "single" }
-                .reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0.0) { $0 + $1.volume } }
+                .reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0.0) { $0 + $1.externalVolume } }
             out[day, default: 0] += vol
         }
         return out

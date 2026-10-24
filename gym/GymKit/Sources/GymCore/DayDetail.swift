@@ -31,7 +31,8 @@ public enum GymDayDetailLogic {
     public static func loc(_ v: Double) -> String { nf.string(from: NSNumber(value: v.rounded())) ?? "\(Int(v))" }
 
     // 세션 → 상세 entry. done 0 종목 제외, cardio 는 시간·거리 표기 (stats.js formatExEntrySpec).
-    public static func entry(for session: GymSession, custom: [GymCustomExercise]) -> GymDayEntry {
+    public static func entry(for storedSession: GymSession, custom: [GymCustomExercise]) -> GymDayEntry {
+        let session = GymAssistedLoad.projected(storedSession, custom: custom)
         var ex: [GymDayEntryEx] = []
         var prCount = 0
         for b in session.blocks where b.type == "single" {
@@ -47,6 +48,14 @@ public enum GymDayDetailLogic {
                                                                                    durationSec: first.duration),
                                         key: b.exerciseId, kind: "cardio", setCount: doneSets.count,
                                         vol: 0, durSec: first.duration ?? 0, distKm: first.distance ?? 0))
+                continue
+            }
+            if GymAssistedLoad.isAssisted(b, custom: custom) {
+                let total = GymAssistedLoad.estimatedTotal(doneSets)
+                let label = total.map { "추정 \(loc($0))kg" } ?? "당시 체중 없음 · 추정값 없음"
+                ex.append(GymDayEntryEx(n: name, s: "\(doneSets.count)세트 · \(label)", key: b.exerciseId,
+                                       kind: total == nil ? "assisted-unknown" : "assisted", setCount: doneSets.count,
+                                       vol: total ?? 0, durSec: 0, distKm: 0))
                 continue
             }
             let total = doneSets.reduce(0.0) { $0 + $1.volume }
@@ -87,7 +96,12 @@ public enum GymDayDetailLogic {
                 } else {
                     existing.setCount += item.setCount
                     existing.vol += item.vol
-                    existing.s = "\(existing.setCount)세트 · \(loc(existing.vol))kg"
+                    if item.kind == "assisted-unknown" {
+                        existing.s = "\(existing.setCount)세트 · 당시 체중 없음 · 추정값 없음"
+                    } else {
+                        let prefix = item.kind == "assisted" ? "추정 " : ""
+                        existing.s = "\(existing.setCount)세트 · \(prefix)\(loc(existing.vol))kg"
+                    }
                 }
                 byKey[k] = existing
             }

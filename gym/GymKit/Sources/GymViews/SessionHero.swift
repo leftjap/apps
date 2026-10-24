@@ -15,6 +15,8 @@ struct SessionHero: View {
     let prChip: String?      // "+5kg" — 직전 세션 최대 무게 초과 넛지 (§6-11 progressive overload)
     var swapMoment: Int = 0  // 세트완료 커밋 — 히어로 수평 스왑 IN 재생 (§5.3 gHeroSwapW/R)
     var ghostOut: Bool? = nil   // 옛 값 고스트 — 값 = fromDrag (행별 OUT: 중량 -96 / 횟수 -88·55ms)
+    var assisted: Bool = false
+    var assistedBodyWeightKg: Double? = nil
     var flashTop: Bool = false     // ± 증감 직후 미세 플래시 (spec §6-3, PWA flashElement)
     var flashBottom: Bool = false
     var onTopTap: ((HeroZone) -> Void)? = nil     // 좌30 감소 / 중40 키패드 / 우30 증가
@@ -24,7 +26,9 @@ struct SessionHero: View {
          preset: Bool = false, locked: Bool = false, doneSetCount: Int = 0, pace: String? = nil,
          prChip: String? = nil, swapMoment: Int = 0, ghostOut: Bool? = nil,
          flashTop: Bool = false, flashBottom: Bool = false,
-         onTopTap: ((HeroZone) -> Void)? = nil, onBottomTap: ((HeroZone) -> Void)? = nil) {
+         onTopTap: ((HeroZone) -> Void)? = nil, onBottomTap: ((HeroZone) -> Void)? = nil,
+         assisted: Bool = false, assistedBodyWeightKg: Double? = nil) {
+        self.assisted = assisted; self.assistedBodyWeightKg = assistedBodyWeightKg
         self.kind = kind; self.topValue = topValue; self.bottomValue = bottomValue
         self.preset = preset; self.locked = locked; self.doneSetCount = doneSetCount; self.pace = pace
         self.prChip = prChip; self.swapMoment = swapMoment; self.ghostOut = ghostOut
@@ -63,8 +67,26 @@ struct SessionHero: View {
             } else {
                 switch kind {
                 case .weight:
+                    if assisted {
+                        Text("보조 중량").font(.sans(12, 600)).foregroundStyle(GY.ink3)
+                            .padding(.bottom, 8).accessibilityIdentifier("assistance-weight-label")
+                    }
                     big(topValue, unit: "kg", flash: flashTop).overlay { zones(onTopTap, numberWidth: Self.bigWidth(topValue)) }
                     repsRow(bottomValue, unit: "회", flash: flashBottom).overlay { zones(onBottomTap, numberWidth: Self.repsWidth(bottomValue)) }
+                    if assisted {
+                        if let body = assistedBodyWeightKg, let assistance = Double(topValue), let reps = Double(bottomValue) {
+                            let load = max(0, body - assistance)
+                            Text(String(format: "체중 %g − 보조 %g = 추정 부하 %gkg · 추정 볼륨 %gkg", body, assistance, load, load * reps))
+                                .font(.sans(10.5, 500)).foregroundStyle(GY.ink3).lineLimit(2)
+                                .multilineTextAlignment(.center).padding(.top, 9)
+                                .accessibilityIdentifier("assisted-load-estimate")
+                            Text("기구에 따라 실제 부하는 다를 수 있습니다")
+                                .font(.sans(10, 400)).foregroundStyle(GY.ink4).padding(.top, 3)
+                        } else {
+                            Text("당시 체중 없음 · 추정값 없음").font(.sans(11, 500)).foregroundStyle(GY.ink4)
+                                .padding(.top, 9).accessibilityIdentifier("assisted-load-estimate")
+                        }
+                    }
                     if let prChip {   // mocks #cardPrChip — ▲ +Nkg (crail-soft pill)
                         HStack(spacing: 6) {
                             Text("▲").font(.system(size: 9)).foregroundStyle(GY.crailDeep)

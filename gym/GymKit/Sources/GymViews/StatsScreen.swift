@@ -141,7 +141,7 @@ public struct StatsScreenView: View {
         let leadMon = (weekday + 5) % 7                       // Mon=0 기준 선행 빈칸
         let daysInMonth = cal.range(of: .day, in: .month, for: first)?.count ?? 30
         // 볼륨 히트맵 — stats.js applyWorkedToCalendar 정합 (완료 세션만, 0kg 운동일도 worked).
-        let vols = GymCalendarHeat.dayVolumes(sessions: model.history, year: year, month: month)
+        let vols = GymCalendarHeat.dayVolumes(sessions: model.metricHistory, year: year, month: month)
         let heatMax = vols.values.max() ?? 0
         let todayStr = GymAppModel.dayFmt.string(from: model.referenceToday)
         let cells = Array(repeating: 0, count: leadMon) + Array(1...daysInMonth)

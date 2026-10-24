@@ -1,3 +1,4 @@
+import { isAssistedExercise, isAssistedSet, snapshotAssistance, projectAssistedSet, currentBodyWeight, setLoadVolume, externalSetVolume, displayExternalVolume, assistanceReduction } from '../services/assisted-load.js';
 /**
  * Wave 11.9.1 — 운동 세션 코어 (시작 + 운동 추가).
  *
@@ -17,6 +18,7 @@ import {
   upsertSession,
   listExercisesForUser,
   listCustomExercises,
+  listAllWeights,
   getBestE1RM,
   toISODate,
   weekRangeISO,
@@ -66,6 +68,14 @@ export async function getOrCreateActiveSession() {
  * BUILTIN + customExercises 통합 조회. 누락 시 fallback (defaultSets=5/Reps=10/Weight=0, equipment=null).
  * 반환: { id, name?, part?, equipment, defaultSets, defaultReps, defaultWeight }
  */
+async function captureAssistedSet(set, exerciseId, isNewCommit = false) {
+  const def = await getExerciseDefaults(exerciseId);
+  if (!isAssistedSet(set, def)) return set;
+  let weights = [];
+  try { weights = await listAllWeights(); } catch (_) { /* approved current fallback; no fabricated weigh-in */ }
+  return snapshotAssistance(set, def, set.done && !isNewCommit && set.bodyWeightKg == null ? null : currentBodyWeight(weights));
+}
+
 export async function getExerciseDefaults(exerciseId) {
   if (!exerciseId) throw new Error('[gymSession] getExerciseDefaults: exerciseId 누락');
   const builtin = getBuiltinExercise(exerciseId);
@@ -73,7 +83,7 @@ export async function getExerciseDefaults(exerciseId) {
   try {
     const customs = await listCustomExercises();
     const c = customs.find((x) => x.id === exerciseId);
-    if (c) return c;
+    if (c) return isAssistedExercise(c) ? { ...c, equipment: 'assisted' } : c;
   } catch (_) { /* db 없음 fallback */ }
   return {
     id: exerciseId,
@@ -136,7 +146,7 @@ export async function getPrevSessionTotalVolume(excludeId) {
       if (da !== dbS) return da < dbS ? 1 : -1;
       return (b.endTime || 0) - (a.endTime || 0);
     });
-    return Number(completed[0].totalVolume) || 0;
+    return displayExternalVolume(completed[0]);
   } catch (e) {
     if (e && /window\.gymDB 미초기화/.test(String(e.message))) return 0;
     console.error('[gymSession] getPrevSessionTotalVolume', e);
@@ -306,6 +316,7 @@ export async function persistSetCommit({ exerciseName, setIdx, set } = {}) {
       preset: false,
       pr: !!set.pr,
     };
+    sets[setIdx] = await captureAssistedSet(sets[setIdx], exerciseId, true);
     const nextBlocks = blocks.slice();
     nextBlocks[blockIdx] = { ...block, sets };
     const nextSession = { ...session, blocks: nextBlocks };
@@ -432,6 +443,7 @@ function isBlockLocked(block) {
 }
 
 export async function finalizeActiveSession(opts = {}) {
+  try { primeCustomExerciseCache(await listCustomExercises()); } catch (_) { /* retain existing cache */ }
   try {
     // opts.session 명시 시 그 세션을 마감 (sweepStaleSessions 가 최신 아닌 고아 active 를 지정). 없으면 최신 active.
     const session = opts.session || await getActiveSession();
@@ -447,7 +459,7 @@ export async function finalizeActiveSession(opts = {}) {
       const sets = Array.isArray(b.sets) ? b.sets : [];
       return sum + sets.reduce((s, set) => {
         if (!set || !set.done) return s;
-        return s + (Number(set.weight) || 0) * (Number(set.reps) || 0);
+        return s + externalSetVolume(set, b.exerciseId);
       }, 0);
     }, 0);
 
@@ -562,6 +574,7 @@ export async function persistKeypadEdit({ exerciseName, setIdx, field, value } =
       [field]: value,
       preset: false,
     };
+    sets[setIdx] = await captureAssistedSet(sets[setIdx], exerciseId);
     const nextBlocks = blocks.slice();
     nextBlocks[blockIdx] = { ...block, sets };
     await upsertSession({ ...session, blocks: nextBlocks });
@@ -620,13 +633,19 @@ export async function dumpActiveSessionFromState(stateData) {
       if (blockIdx === -1) continue; // 매칭 없으면 무시
       blocks[blockIdx] = {
         ...blocks[blockIdx],
-        sets: snap.sets.map((s) => ({
-          weight: s?.weight ?? null,
-          reps: s?.reps ?? null,
-          done: !!s?.done,
-          preset: !!s?.preset,
-          pr: !!s?.pr,
-        })),
+        sets: snap.sets.map((s, i) => {
+          const previous = blocks[blockIdx].sets?.[i] || {};
+          return {
+            ...s,
+            weight: s?.weight ?? null,
+            reps: s?.reps ?? null,
+            done: !!s?.done,
+            preset: !!s?.preset,
+            pr: isAssistedSet(s, exerciseId) || isAssistedSet(previous, exerciseId) ? false : !!s?.pr,
+            ...(previous.weightMode != null ? { weightMode: previous.weightMode } : {}),
+            ...(previous.bodyWeightKg != null ? { bodyWeightKg: previous.bodyWeightKg } : {}),
+          };
+        }),
       };
       dumpedCount += 1;
     }
@@ -809,7 +828,10 @@ async function mountSessionEmpty(doc, dbUnavailable) {
  *  - currentSetIdx = 첫 un-done set. 모두 done 이면 마지막 set.
  */
 async function mountSessionActive(doc, block, session) {
-  const sets = Array.isArray(block.sets) ? block.sets : [];
+  let bodyWeight = currentBodyWeight();
+  try { bodyWeight = currentBodyWeight(await listAllWeights()); } catch (_) { /* fallback */ }
+  const assisted = isAssistedExercise(block.exerciseId) || (block.sets || []).some(s => isAssistedSet(s));
+  const sets = (Array.isArray(block.sets) ? block.sets : []).map(s => projectAssistedSet(s, block.exerciseId, bodyWeight));
   let cur = sets.findIndex((s) => s && !s.done);
   if (cur === -1) cur = Math.max(0, sets.length - 1);
   const currentSet = sets[cur] || {};
@@ -826,6 +848,15 @@ async function mountSessionActive(doc, block, session) {
     exPartLabel = PARTS[exDef?.part] || '';
   } catch (_) { /* graceful */ }
   applyCardKind(doc, exerciseEq);
+  const hero = doc.getElementById('cardHeroVals');
+  let assistanceNote = doc.getElementById('assistedLoadEstimate');
+  if (assisted && hero) {
+    if (!assistanceNote) { assistanceNote = doc.createElement('div'); assistanceNote.id = 'assistedLoadEstimate'; hero.appendChild(assistanceNote); }
+    const volume = setLoadVolume(currentSet, block.exerciseId);
+    assistanceNote.textContent = `보조 중량 ${currentSet.weight ?? 0}kg · 체중 ${currentSet.bodyWeightKg ?? '미상'}kg · 세트 추정 ${currentSet.bodyWeightKg != null ? volume + 'kg' : '값 없음'} (기구별 차이 있음)`;
+    assistanceNote.style.cssText = 'font-size:11px;color:var(--ink-3);text-align:center;margin-top:10px';
+  } else if (assistanceNote) assistanceNote.remove();
+
   // 작업지시서 §세션 — 타이틀에 부위 1단어.
   setTextById(doc, 'cardExPart', exPartLabel);
 
@@ -836,7 +867,7 @@ async function mountSessionActive(doc, block, session) {
   for (const b of (session.blocks || [])) {
     if (!b || b.type !== 'single' || !Array.isArray(b.sets)) continue;
     for (const s of b.sets) {
-      if (s && s.done) sessionDoneVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      if (s && s.done) sessionDoneVol += externalSetVolume(s, b.exerciseId);
     }
   }
   let prevSessionVol = 0;
@@ -917,7 +948,7 @@ async function mountSessionActive(doc, block, session) {
 
   // 작업지시서 §3 R1 — 역대 최고(e1RM) 세트 (무게×횟수 슬롯 + 막대 높이 정규화). 무게 종목만·없으면 null(§3-5).
   let bestE1RMRow = null;
-  if (exerciseEq === 'weight') {
+  if (exerciseEq === 'weight' && !assisted) {
     try { bestE1RMRow = await getBestE1RM(block.exerciseId); }
     catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) console.error('[gymSession] getBestE1RM', e);
@@ -965,19 +996,19 @@ async function mountSessionActive(doc, block, session) {
   //   분모 = 직전 세션 같은 종목 총 볼륨(고정 "지난번 넘기" 타깃). 분자(done)가 분모 초과 시 pct>100% = 돌파.
   let exDoneVol = 0;
   for (const s of sets) {
-    if (s && s.done) exDoneVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    if (s && s.done) exDoneVol += setLoadVolume(s, block.exerciseId);
   }
   let prevExVol = 0;
   if (Array.isArray(prevSessionSets)) {
     for (const s of prevSessionSets) {
       const r = Number(s?.reps) || 0;
-      if (r > 0) prevExVol += (Number(s?.weight) || 0) * r; // 의미값(reps>0) 만
+      if (r > 0) prevExVol += setLoadVolume(s, block.exerciseId); // 의미값(reps>0) 만
     }
   }
   // 직전 기록 없으면(첫 세션) 오늘 계획 볼륨으로 폴백.
   let denom = prevExVol;
   if (denom <= 0) {
-    for (const s of sets) denom += (Number(s?.weight) || 0) * (Number(s?.reps) || 0);
+    for (const s of sets) denom += setLoadVolume(s, block.exerciseId);
   }
   const pct = denom > 0 ? Math.round((exDoneVol / denom) * 100) : 0;
   const RMV = prefersReducedMotion();
@@ -1099,7 +1130,10 @@ async function mountSessionActive(doc, block, session) {
     const prChipVal = doc.getElementById('cardPrChipVal');
     if (prChip && prChipVal) {
       let show = false;
-      if (exerciseEq === 'weight' && !blockDone && Array.isArray(prevSessionSets)) {
+      if (assisted && !blockDone && Array.isArray(prevSessionSets)) {
+        const reduction = assistanceReduction(currentSet, prevSessionSets);
+        if (reduction != null) { prChipVal.textContent = `보조 ${reduction}kg 감소`; show = true; }
+      } else if (exerciseEq === 'weight' && !blockDone && Array.isArray(prevSessionSets)) {
         const curW = Number(currentSet.weight) || 0;
         let prevMax = 0;
         for (const s of prevSessionSets) {
@@ -1388,7 +1422,7 @@ export function formatSetSegment(display, kind = 'weight') {
 
 /** 세트 볼륨 = 중량 × 횟수 (0 방어). 사용자 결정 2026-07 — 막대 높이 기준. */
 function setVolume(set) {
-  return (Number(set?.weight) || 0) * (Number(set?.reps) || 0);
+  return setLoadVolume(set);
 }
 
 /** 최고(천장) 슬롯 막대 고정 높이 — working 볼륨 캡(SET_BAR_WORK_HI)보다 항상 높은 천장 (사용자 결정 2026-07 B안). */
@@ -1442,7 +1476,7 @@ const VOL_ARC_C = 131.95;  // 2π·21 (초과 아크 반지름 21, §6.3)
 export function computeVolSegments(sets, cur) {
   const list = Array.isArray(sets) ? sets : [];
   const N = list.length;
-  const vols = list.map((s) => (Number(s?.weight) || 0) * (Number(s?.reps) || 0));
+  const vols = list.map((s) => setLoadVolume(s));
   const planned = vols.reduce((a, b) => a + b, 0);
   const segs = [];
   let cumVol = 0;
@@ -2999,7 +3033,7 @@ function setupKeypadChrome(doc, field, prefill) {
   const unitText = field === 'weight' ? 'kg' : field === 'duration' ? '분' : field === 'distance' ? 'km' : '회';
   if (unit) unit.textContent = unitText;
   const isCardioField = field === 'duration' || field === 'distance';
-  const pair = isCardioField ? [['duration', '시간'], ['distance', '거리']] : [['weight', '무게'], ['reps', '횟수']];
+  const pair = isCardioField ? [['duration', '시간'], ['distance', '거리']] : [['weight', isAssistedExercise(_ctx?.block?.exerciseId) ? '보조 중량' : '무게'], ['reps', '횟수']];
   const kind = doc.getElementById('cardSwipeArea')?.getAttribute('data-card-kind') || 'weight';
   if (seg) {
     const btns = seg.querySelectorAll('button');
@@ -3455,6 +3489,8 @@ export async function handleLeftSwipe(options = {}) {
     }
   }
 
+  if (cur !== -1) sets[cur] = await captureAssistedSet(sets[cur], block.exerciseId, true);
+
   // (g) PR 판정 — cur 유효 + commit 시점만. cur===-1 (advance only) 분기는 PR 발화 없음.
   //   ① e1RM PR (persistSetPR): 통계 기록 + set.pr 영구 마크(renderSetDotHtml accent).
   //   ② PR 모먼트(팝+세그 crail 글로우+강햅틱): 작업지시서 §4 R2 = "역대 e1RM 신기록" 일 때만 (persistSetPR isPR 재사용).
@@ -3462,7 +3498,7 @@ export async function handleLeftSwipe(options = {}) {
   let prMoment = false;
   if (cur !== -1) {
     const committed = sets[cur];
-    if (committed && Number.isFinite(committed.weight) && Number.isFinite(committed.reps)
+    if (committed && !isAssistedSet(committed, block.exerciseId) && Number.isFinite(committed.weight) && Number.isFinite(committed.reps)
         && committed.weight > 0 && committed.reps > 0) {
       try {
         prResult = await persistSetPR({

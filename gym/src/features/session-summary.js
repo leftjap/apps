@@ -1,3 +1,4 @@
+import { isAssistedExercise, isAssistedSet, assistedVolumeLabel, displayExternalVolume } from '../services/assisted-load.js';
 /**
  * Wave 11.9.6 — 세션 요약 변환 어댑터.
  *
@@ -29,7 +30,7 @@ export function summarizeSession(session) {
     label: '운동 완료',
     title: '잘 끝냈다',
     subtitle,
-    volume: (Number(session.totalVolume) || 0).toLocaleString(),
+    volume: displayExternalVolume(session).toLocaleString(),
     time: Number(session.durationMin) || 0,
     pr: prCount,
     kcal: Number(session.totalCalories) || 0,
@@ -69,7 +70,7 @@ function formatSingleSpec(block) {
   if (firstSet && firstSet.duration != null) {
     return formatTimeBased(name, firstSet, doneSets.some((s) => s.pr), doneSets.length);
   }
-  return formatVolumeBased(name, doneSets);
+  return formatVolumeBased(name, doneSets, undefined, block.exerciseId);
 }
 
 function formatSingleMocks(ex) {
@@ -91,7 +92,11 @@ function formatTimeBased(name, firstSet, pr, setCount = 1) {
   return { name, sets: `${min}분${km}`, setCount, volume: `${min}분${km}`, pr: !!pr };
 }
 
-function formatVolumeBased(name, sets, pr) {
+function formatVolumeBased(name, sets, pr, exercise = name) {
+  if (isAssistedExercise(exercise) || sets.some(s => isAssistedSet(s))) {
+    const label = assistedVolumeLabel(sets);
+    return { name, sets: `${sets.length}세트 · ${label}`, setCount: sets.length, volume: label, pr: false };
+  }
   const total = sets.reduce(
     (s, x) => s + (Number(x.weight) || 0) * (Number(x.reps) || 0),
     0,
@@ -261,6 +266,8 @@ export async function mountSummaryView() {
   set('summaryReceiptNo', buildReceiptNo(session));
   set('summaryDate', formatReceiptDate(session));
   set('summaryTotal', data.volume);
+  const totalLabel = document.getElementById('summaryTotal')?.parentElement?.previousElementSibling;
+  if (totalLabel) totalLabel.textContent = data.exercises.some(e => e.volume?.includes('추정') || e.volume?.includes('당시 체중')) ? '일반 볼륨' : 'TOTAL';
   set('summaryDuration', `${data.time}분`);
   set('summaryPR', String(data.pr));
   set('summaryKcal', String(totalSets));

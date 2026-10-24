@@ -1,3 +1,4 @@
+import { isAssistedExercise, isAssistedSet, assistedVolumeLabel, estimatedSetVolume, displayExternalVolume, externalSetVolume } from '../services/assisted-load.js';
 /**
  * Wave 11.11 — 통계 화면 §9-2 볼륨 비교 (data layer + DOM hijack).
  *
@@ -27,7 +28,7 @@ import { EXERCISE_MUSCLES, WEIGHT_PRIMARY, WEIGHT_SYNERGIST } from '../data/exer
 function sumVolumeInRange(sessions, fromISO, toISO) {
   return sessions
     .filter((s) => s && s.date >= fromISO && s.date <= toISO)
-    .reduce((sum, s) => sum + (Number(s.totalVolume) || 0), 0);
+    .reduce((sum, s) => sum + displayExternalVolume(s), 0);
 }
 
 /** 비교 % 계산 — prev=0 (지난 주/달 0kg) 일 때:
@@ -175,7 +176,7 @@ export function sessionToWorkoutEntry(session) {
       const item = formatExEntrySpec(b);
       if (item) {
         ex.push(item);
-        prCount += b.sets.filter((s) => s && s.done && s.pr).length;
+        if (!isAssistedExercise(b.exerciseId) && !b.sets.some(s => isAssistedSet(s))) prCount += b.sets.filter((s) => s && s.done && s.pr).length;
       }
       continue;
     }
@@ -188,7 +189,7 @@ export function sessionToWorkoutEntry(session) {
     }
   }
 
-  const vol = Number(session.totalVolume) || 0;
+  const vol = displayExternalVolume(session);
   const level = vol < 3000 ? 'low' : vol < 6000 ? 'med' : 'high';
 
   // 날짜 상세 시트 표기 — 부위 풀네임 전체 (구현 레퍼런스 - 통계.html: "가슴 · 어깨").
@@ -222,6 +223,13 @@ function formatExEntrySpec(block) {
   // cardio 운동인데 duration 미입력(구버그 데이터) — 세트·kg 표기 부적절 → "—" (사용자 피드백 2026-06-10)
   if (getBuiltinExercise(block.exerciseId)?.equipment === 'cardio') {
     return { n: name, s: '—', key: block.exerciseId, kind: 'cardio', durSec: 0, distKm: 0, setCount: doneSets.length };
+  }
+  if (isAssistedExercise(block.exerciseId) || doneSets.some(s => isAssistedSet(s))) {
+    const label = assistedVolumeLabel(doneSets);
+    const unknown = doneSets.some(s => estimatedSetVolume(s) == null);
+    return { n: name, s: `${doneSets.length}세트 · ${label}`, key: block.exerciseId,
+      kind: unknown ? 'assisted-unknown' : 'assisted', setCount: doneSets.length,
+      vol: unknown ? 0 : doneSets.reduce((sum, s) => sum + estimatedSetVolume(s), 0) };
   }
   const total = doneSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
   // 값 미입력 done 세트(구 기록 — duration/weight 없이 완료만)는 "0kg" 표기 생략 (라이브 2026-06-10 발견).
@@ -280,7 +288,8 @@ export function mergeWorkoutEntries(entries) {
       } else {
         existing.setCount = (existing.setCount || 0) + (item.setCount || 0);
         existing.vol = (existing.vol || 0) + (item.vol || 0);
-        existing.s = `${existing.setCount}세트 · ${existing.vol.toLocaleString()}kg`;
+        existing.s = item.kind === 'assisted-unknown' ? `${existing.setCount}세트 · 당시 체중 없음 · 추정값 없음`
+          : `${existing.setCount}세트 · ${item.kind === 'assisted' ? '추정 ' : ''}${existing.vol.toLocaleString()}kg`;
       }
     }
   }
@@ -344,7 +353,7 @@ export function applyWorkedToCalendar(sessions, doc) {
     for (const b of (Array.isArray(s.blocks) ? s.blocks : [])) {
       if (!b || b.type !== 'single') continue;
       for (const st of (Array.isArray(b.sets) ? b.sets : [])) {
-        if (st && st.done) dayVol += (Number(st.weight) || 0) * (Number(st.reps) || 0);
+        if (st && st.done) dayVol += externalSetVolume(st, b.exerciseId);
       }
     }
     volByDay.set(d, (volByDay.get(d) || 0) + dayVol);
@@ -689,7 +698,7 @@ export function summarizeWeeklyTrend(sessions, weeks = 8, now = Date.now()) {
     const { from, to } = weekRangeISO(ref);
     const vol = list
       .filter((s) => s && s.date >= from && s.date <= to)
-      .reduce((sum, s) => sum + (Number(s.totalVolume) || 0), 0);
+      .reduce((sum, s) => sum + displayExternalVolume(s), 0);
     result.push({ weekStart: from, vol });
   }
   return result;

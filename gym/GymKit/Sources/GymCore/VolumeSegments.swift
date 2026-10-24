@@ -16,7 +16,7 @@ public enum VolumeRing {
 
     // 세트별 볼륨 세그먼트. cur = 현재(미완료) 세트 인덱스.
     public static func segments(_ sets: [GymSet], cur: Int) -> (segs: [VolSegment], planned: Double) {
-        let vols = sets.map { (Double($0.weight ?? 0)) * Double($0.reps ?? 0) }
+        let vols = sets.map(\.volume)
         let planned = vols.reduce(0, +)
         var segs: [VolSegment] = []
         var cumVol = 0.0

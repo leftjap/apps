@@ -64,7 +64,7 @@ public enum GymExercises {
 
     // 장비별 증분 (INCREMENT 정합).
     static let incrementTable: [String: Double] = [
-        "barbell": 5, "dumbbell": 2, "machine": 5, "cable": 5, "bodyweight": 0, "cardio": 0,
+        "barbell": 5, "dumbbell": 2, "machine": 5, "cable": 5, "assisted": 5, "bodyweight": 0, "cardio": 0,
     ]
     public static func increment(forEquipment eq: String) -> Double { incrementTable[eq] ?? 0 }
 
@@ -163,7 +163,8 @@ public enum GymExercises {
     public static func def(_ id: String, custom: [GymCustomExercise] = []) -> GymExerciseDef? {
         if let b = builtinIndex[id] { return b }
         if let c = custom.first(where: { $0.id == id }) {
-            return GymExerciseDef(id: c.id, name: c.name, part: c.part, equipment: c.equipment,
+            return GymExerciseDef(id: c.id, name: c.name, part: c.part,
+                                  equipment: GymAssistedLoad.isAssistedName(c.name) ? "assisted" : c.equipment,
                                   defaultSets: c.defaultSets, defaultReps: c.defaultReps,
                                   defaultWeight: c.defaultWeight, met: c.met)
         }

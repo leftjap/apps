@@ -113,7 +113,7 @@ public final class GymAppModel: ObservableObject {
     // 이 종목을 포함한 가장 최근 완료 세션의 블록 (현재 세션 제외). history 는 startTime desc.
     public func prevBlock(forExercise exId: String) -> GymBlock? {
         for s in history where s.id != session.id && s.status == .completed {
-            if let b = s.blocks.first(where: { $0.exerciseId == exId }) { return b }
+            if let b = s.blocks.first(where: { $0.exerciseId == exId }) { return GymAssistedLoad.projected(b, custom: custom) }
         }
         return nil
     }
@@ -123,7 +123,7 @@ public final class GymAppModel: ObservableObject {
     }
     // 가장 최근 완료 세션 (우상단 세션 볼륨 분모용).
     public var prevSession: GymSession? {
-        history.first { $0.id != session.id && $0.status == .completed }
+        history.first { $0.id != session.id && $0.status == .completed }.map { GymAssistedLoad.projected($0, custom: custom) }
     }
 
     // MARK: - 홈/통계 집계 (KST 기준)
@@ -148,7 +148,7 @@ public final class GymAppModel: ObservableObject {
         if session.status == .active, session.blocks.contains(where: { $0.sets.contains { $0.done } }) {
             xs.append(session)
         }
-        return xs
+        return xs.map { GymAssistedLoad.projected($0, custom: custom) }
     }
     // 특정 날짜에 운동한 세션들.
     public func sessionsOn(_ dayStr: String) -> [GymSession] {
@@ -214,7 +214,22 @@ public final class GymAppModel: ObservableObject {
     }
     // 세션의 완료 세트 볼륨 (active/completed 공통).
     public func doneVolume(_ s: GymSession) -> Double {
-        s.blocks.reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0.0) { $0 + $1.volume } }
+        GymAssistedLoad.projected(s, custom: custom).blocks.reduce(0.0) {
+            $0 + $1.sets.filter(\.done).reduce(0.0) { $0 + $1.externalVolume }
+        }
+    }
+    public var metricHistory: [GymSession] { history.map { GymAssistedLoad.projected($0, custom: custom) } }
+    public var assistedBodyWeightKg: Double? {
+        GymAssistedLoad.currentBodyWeight(weights: weights, today: Self.dayFmt.string(from: referenceToday))
+    }
+    public var currentIsAssisted: Bool {
+        session.blocks.indices.contains(currentBlockIdx) && GymAssistedLoad.isAssisted(session.blocks[currentBlockIdx], custom: custom)
+    }
+    private func captureAssistedSet(block: Int, set: Int, isNewCommit: Bool = false) {
+        guard GymAssistedLoad.isAssisted(session.blocks[block], custom: custom) else { return }
+        let stored = session.blocks[block].sets[set]
+        let body = stored.done && !isNewCommit && stored.bodyWeightKg == nil ? nil : assistedBodyWeightKg
+        session.blocks[block].sets[set] = GymAssistedLoad.snapshot(stored, bodyWeightKg: body)
     }
     // 날짜 상세 entry (§9-1·§5-2 바텀시트) — 같은 날 다중 세션 병합. 기록 없으면 nil.
     public func dayEntry(_ iso: String) -> GymDayEntry? {
@@ -501,7 +516,7 @@ public final class GymAppModel: ObservableObject {
         confirmEnteredCardio()   // 종목 완료를 안 눌렀어도 입력한 유산소 기록은 확정 (요약·홈 누락 방지)
         session.totalCalories = estimatedCalories()   // finalize 전 (유산소 실시간·done 세트 비례 배분)
         session.tags = sessionParts()
-        session = GymSessionLogic.finalize(session, endTime: nowMillis())
+        session = GymSessionLogic.finalize(GymAssistedLoad.projected(session, custom: custom), endTime: nowMillis())
         LocalStore.upsertSessionHistory(session)
         history = LocalStore.loadSessions()
         selectedBlockIdx = nil
@@ -536,7 +551,7 @@ public final class GymAppModel: ObservableObject {
             let endTime = last > 0 ? last : Int64(now.timeIntervalSince1970 * 1000)
             var stale = session
             stale.totalCalories = estimatedCalories()
-            stale = GymSessionLogic.finalize(stale, endTime: endTime)
+            stale = GymSessionLogic.finalize(GymAssistedLoad.projected(stale, custom: custom), endTime: endTime)
             LocalStore.upsertSessionHistory(stale)
             history = LocalStore.loadSessions()
         }
@@ -631,6 +646,25 @@ public final class GymAppModel: ObservableObject {
     // 검증 훅(시뮬 전용) — 유산소 카드를 실앱에서 눈으로 보기 위한 트레드밀 세션 (2026-09-17).
     // demoSession 은 근력 4종목뿐이라 유산소 화면이 뜨지 않는다. 거리 우선 전환을 실앱 화면으로
     // 확인하려고 둔다 (gymshot 은 ImageRenderer 라 실앱과 레이아웃이 다를 수 있다).
+    public func loadAssistedDemoForVerification() {
+        #if targetEnvironment(simulator)
+        referenceToday = Self.dayFmt.date(from: "2026-10-24")!
+        custom = [GymCustomExercise(id: "cust-assisted", name: "어시스티드 친", part: "back",
+                                    defaultSets: 1, defaultReps: 10, defaultWeight: 40)]
+        weights = []
+        history = [GymSession(id: "assisted-prev", date: "2026-10-23", blocks: [
+            GymBlock(exerciseId: "cust-assisted", sets: [GymSet(weight: 40, reps: 10, done: true, pr: true)])
+        ], totalVolume: 400, status: .completed)]
+        prs = [GymPR(exerciseId: "cust-assisted", weight: 40, reps: 10, e1rm: 53.3, date: "2026-10-23")]
+        LocalStore.saveCustomExercises(custom); LocalStore.saveSessions(history); LocalStore.saveWeights([])
+        session = GymSession(id: "assisted-demo", date: "2026-10-24", startTime: nowMillis(), blocks: [
+            GymBlock(exerciseId: "cust-assisted", sets: [GymSet(weight: 40, reps: 10, preset: true)])
+        ], tags: ["back"])
+        selectedBlockIdx = 0
+        route = .session
+        #endif
+    }
+
     public func loadCardioDemoForVerification() {
         #if targetEnvironment(simulator)
         let cal = GymAppModel.kst
@@ -721,7 +755,8 @@ public final class GymAppModel: ObservableObject {
         GymSessionLogic.activeBlockIdx(session: session, selected: selectedBlockIdx)
     }
     public var currentBlock: GymBlock? {
-        session.blocks.indices.contains(currentBlockIdx) ? session.blocks[currentBlockIdx] : nil
+        session.blocks.indices.contains(currentBlockIdx)
+            ? GymAssistedLoad.projected(session.blocks[currentBlockIdx], custom: custom, previewBodyWeightKg: assistedBodyWeightKg) : nil
     }
     // 커서 — 첫 미완료 세트, 전부 done 이면 -1 (session.js cur 정합).
     public var currentSetCursor: Int {
@@ -847,7 +882,8 @@ public final class GymAppModel: ObservableObject {
     private func blockVols(_ pred: (GymSet) -> Bool) -> Double {
         var total = 0.0
         for b in session.blocks {
-            for s in b.sets where pred(s) { total += s.volume }
+            let projected = GymAssistedLoad.projected(b, custom: custom)
+            for s in projected.sets where pred(s) { total += s.externalVolume }
         }
         return total
     }
@@ -864,7 +900,8 @@ public final class GymAppModel: ObservableObject {
                                             prevSessionSets: prevBlock(forExercise: exId)?.sets)
         session.blocks[bi].sets = r.sets
         guard let ci = r.committed else { impact(.light); return }
-        let committed = r.sets[ci]
+        captureAssistedSet(block: bi, set: ci, isNewCommit: true)
+        let committed = session.blocks[bi].sets[ci]
         if GymSessionLogic.isPRCandidate(committed) {
             let w = committed.weight ?? 0, reps = committed.reps ?? 0
             let res = GymPRLogic.evaluateSetPR(weight: w, reps: reps, prs: prs, exerciseId: exId)
@@ -918,6 +955,7 @@ public final class GymAppModel: ObservableObject {
         let next = def.steppedWeight(from: cur, direction: dir)
         if def.weightSteps != nil && next == cur { return }
         session.blocks[bi].sets[si].weight = next
+        captureAssistedSet(block: bi, set: si)
         session.blocks[bi].sets[si].preset = false   // 사용자 입력 → placeholder 해제 (§6-3-3)
         impact(.light)
     }
@@ -928,6 +966,7 @@ public final class GymAppModel: ObservableObject {
         guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
         let cur = session.blocks[bi].sets[si].reps ?? 0
         session.blocks[bi].sets[si].reps = max(0, cur + dir)
+        captureAssistedSet(block: bi, set: si)
         session.blocks[bi].sets[si].preset = false
         impact(.light)
     }
@@ -951,6 +990,7 @@ public final class GymAppModel: ObservableObject {
             impact(.light)
             return
         }
+        captureAssistedSet(block: bi, set: si)
         session.blocks[bi].sets[si].preset = false
         impact(.light)
     }

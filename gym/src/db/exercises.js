@@ -170,6 +170,12 @@ export function primeCustomExerciseCache(list) {
   }
 }
 
+/** Existing custom names resolve to their original ID, never a replacement exercise. */
+export function getCachedCustomExerciseByName(name) {
+  const key = String(name || '').replace(/\s+/g, '').toLowerCase();
+  return [..._customExerciseCache.values()].find(ex => String(ex.name || '').replace(/\s+/g, '').toLowerCase() === key) || null;
+}
+
 /** 캐시된 커스텀 운동 객체 (없으면 null) — equipment 등 부가정보 동기 조회용. */
 export function getCachedCustomExercise(id) {
   return id ? (_customExerciseCache.get(id) || null) : null;

@@ -72,6 +72,7 @@ struct SessionHeader: View {
     var recordAmt: Int = 0
     var pulseMoment: Int = 0      // 돌파 1회성 — 누적 숫자 펄스 (topRecordPulse)
     var exSwapMoment: Int = 0     // 종목 전환 1회성 — 이름 스왑 IN (로테이션 확인 신호, 2026-07-23)
+    var volumeTitle: String = "세션 볼륨"
     @State private var pulsing = false
     @State private var ringPulseOn = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -96,7 +97,7 @@ struct SessionHeader: View {
             Spacer(minLength: 0)
             HStack(spacing: 11) {
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text("세션 볼륨").font(.sans(10.5, 600)).tracking(0.42).foregroundStyle(GY.ink4)
+                    Text(volumeTitle).font(.sans(10.5, 600)).tracking(0.42).foregroundStyle(GY.ink4)
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         // 누적 숫자만 펄스 (mock topRecordPulse — #cardSetProgress 한정)
                         // numericText — 커밋 트랜잭션 크로스페이드 이중 노출 방지 + §7 숫자 롤 정합
@@ -240,7 +241,7 @@ public struct SessionScreenView: View {
             }()
             _keypad = State(initialValue: KeypadContext(
                 field: f, buffer: pre.map { Self.fmtW($0) } ?? "", fresh: pre != nil,
-                pairHidesWeight: model.currentCardKind == .bodyweight))
+                pairHidesWeight: model.currentCardKind == .bodyweight, weightLabel: model.currentIsAssisted ? "보조 중량" : "무게"))
         }
     }
     // 데모 편의 init (프리뷰/스냅샷) — 자체 모델 시드.
@@ -381,7 +382,7 @@ public struct SessionScreenView: View {
                               magnitude: kind == .bodyweight ? (Double(d.top) ?? 0) : sets[i].volume)
         }
         let bestPR = model.prs.first { $0.exerciseId == exId && $0.type == .e1rm }
-        let best: (top: String, bottom: String)? = kind == .weight
+        let best: (top: String, bottom: String)? = kind == .weight && !model.currentIsAssisted
             ? bestPR.map { ("\(Int($0.weight.rounded()))", "×\($0.reps)") } : nil
 
         // 히어로 표시 세트 — 커서 세트, 전부 done 이면 마지막 세트.
@@ -391,6 +392,10 @@ public struct SessionScreenView: View {
         // PR 칩 (progressive overload 넛지) — 현재 무게 > 직전 세션 최대 무게 (session.js 정합).
         let prChip: String? = {
             guard kind == .weight, !locked, let prevSets = prevBlk?.sets else { return nil }
+            if model.currentIsAssisted {
+                guard let current = dispSet, let delta = GymAssistedLoad.assistanceReduction(current: current, previous: prevSets) else { return nil }
+                return String(format: "보조 %gkg 감소", delta)
+            }
             let curW = dispSet?.weight ?? 0
             let prevMax = prevSets.filter { ($0.reps ?? 0) > 0 }.compactMap(\.weight).max() ?? 0
             let delta = curW - prevMax
@@ -406,14 +411,15 @@ public struct SessionScreenView: View {
                           volTotal: Self.fmt(sessDenom), pct: model.sessionPct,
                           record: topRecord,
                           recordAmt: Int((model.sessionDoneVolume - prevTotal).rounded()),
-                          pulseMoment: headerPulseMoment, exSwapMoment: exSwapMoment)
+                          pulseMoment: headerPulseMoment, exSwapMoment: exSwapMoment,
+                          volumeTitle: model.session.blocks.contains { GymAssistedLoad.isAssisted($0, custom: model.custom) } ? "일반 볼륨" : "세션 볼륨")
             let revealP = GymSwipeMath.revealProgress(Double(heroDragX))
             // 유산소 이번 주 값 — 2주 카드와 아래 이번 주 원 모듈이 이 값 하나를 같이 쓴다.
             // 저장(done) 세트만 넘긴다: 입력만으로는 바뀌지 않고 좌 스와이프 저장 때 함께 바뀐다 —
             // 근력 카드가 첫 세트 커밋에 채워지는 것과 같은 시점이다 (작업지시서 2026-09-28 §5).
             // 유산소 원의 채움은 지표와 무관하게 '그날 뛰었나' 이므로 지표는 실앱 기본값(.distance)으로 고정해 읽는다.
             let cardioWeek: GymSessionLogic.CardioMetricWeek? = kind == .cardio
-                ? GymSessionLogic.cardioMetricWeek(history: model.history, todaySets: sets.filter(\.done),
+                ? GymSessionLogic.cardioMetricWeek(history: model.metricHistory, todaySets: sets.filter(\.done),
                                                    exerciseId: exId, metric: .distance, now: model.sessionDay)
                 : nil
             // 이 종목 히스토리 카드 (작업지시서 2026-09-17). 카드가 자기 표면을 가지므로
@@ -425,7 +431,7 @@ public struct SessionScreenView: View {
                 // 유산소도 같은 카드를 쓴다 (사용자 2026-09-17). 색만 teal 계열이고, 원 안은
                 // 두 경우 모두 날짜다.
                 let lift = kind == .cardio ? nil
-                    : GymSessionLogic.liftMetricWeek(history: model.history, todaySets: sets,
+                    : GymSessionLogic.liftMetricWeek(history: model.metricHistory, todaySets: sets,
                                                      exerciseId: exId, kind: kind,
                                                      now: model.sessionDay)
                 SessionLiftHistoryCard(
@@ -464,7 +470,7 @@ public struct SessionScreenView: View {
             if kind == .cardio {
                 // 유산소 — 거리 하나만, 좌 스와이프 저장·우 스와이프 되돌리기 (사용자 2026-09-26).
                 // 이번 주 원 모듈 아래 남은 높이를 카드가 전부 쓴다.
-                CardioPanel(history: model.history, set: dispSet,
+                CardioPanel(history: model.metricHistory, set: dispSet,
                             exerciseId: exId, locked: locked,
                             onKeypad: { openKeypad(.distance) },
                             onSetValue: { v in model.applyKeypad(.distance, value: v) },
@@ -482,7 +488,8 @@ public struct SessionScreenView: View {
                             prChip: prChip, swapMoment: heroSwapMoment,
                             flashTop: flashRow == .top, flashBottom: flashRow == .bottom,
                             onTopTap: locked ? nil : { zone in heroTap(row: .top, zone: zone, kind: kind) },
-                            onBottomTap: locked ? nil : { zone in heroTap(row: .bottom, zone: zone, kind: kind) })
+                            onBottomTap: locked ? nil : { zone in heroTap(row: .bottom, zone: zone, kind: kind) },
+                            assisted: model.currentIsAssisted, assistedBodyWeightKg: dispSet?.bodyWeightKg)
                 .offset(x: heroDragX)   // 드래그 추종 — 히어로 값만 이동 (칩·링은 고정)
                 // 옛 값 고스트 — 좌향 퇴장 (드래그 커밋은 끌린 위치에서 제자리 페이드)
                 if let g = heroGhost {
@@ -551,11 +558,17 @@ public struct SessionScreenView: View {
             }
             if kind != .cardio { Spacer() }
             if kind != .cardio {   // 유산소는 볼륨 링 없음 (§6-4)
-                ExerciseVolumeRing(
-                    sets: sets, cur: model.currentSetIdx, pct: exPct,
-                    curVol: blockDone, totVol: Self.fmt(exDenom),
-                    exOver: prevExVol > 0 && blockDone >= prevExVol,
-                    over: ov, burstMoment: burstMoment)
+                VStack(spacing: 4) {
+                    if model.currentIsAssisted {
+                        Text("보조 운동 추정 볼륨").font(.sans(10.5, 500)).foregroundStyle(GY.ink4)
+                            .accessibilityIdentifier("assisted-volume-label")
+                    }
+                    ExerciseVolumeRing(
+                        sets: sets, cur: model.currentSetIdx, pct: exPct,
+                        curVol: blockDone, totVol: Self.fmt(exDenom),
+                        exOver: prevExVol > 0 && blockDone >= prevExVol,
+                        over: ov, burstMoment: burstMoment)
+                }
             }
             // 레일 순서 = [완료(완료순) 좌측 · 현재·미완료는 삽입 순서 유지] (2026-07-24).
             // 탭·꾹누르기는 원본 블록 인덱스(it.index)로 전달.
@@ -583,7 +596,7 @@ public struct SessionScreenView: View {
     // 현재 블록 완료 볼륨 (돌파 전/후 비교용).
     func blockDoneVol(_ bi: Int) -> Double {
         guard model.session.blocks.indices.contains(bi) else { return 0 }
-        return model.session.blocks[bi].sets.filter(\.done).reduce(0) { $0 + $1.volume }
+        return GymAssistedLoad.projected(model.session.blocks[bi], custom: model.custom).sets.filter(\.done).reduce(0) { $0 + $1.volume }
     }
     // 좌스와이프 커밋 — 카운트업은 커밋 트랜잭션만 애니 (PWA countUp 가드: 키패드 수정·리로드 미발화).
     func commitSwipe() {
@@ -700,7 +713,7 @@ public struct SessionScreenView: View {
     // 카드의 주간 집계는 limit 없이 주 경계로 조회한다 (GymSessionLogic.cardioDayTotals).
     var cardioRuns: [GymSessionLogic.GymCardioRun] {
         guard let exId = model.currentBlock?.exerciseId else { return [] }
-        return GymSessionLogic.recentCardioRuns(history: model.history, exerciseId: exId, limit: 1)
+        return GymSessionLogic.recentCardioRuns(history: model.metricHistory, exerciseId: exId, limit: 1)
     }
     func openKeypad(_ field: GymAppModel.KeypadField, setIdx: Int? = nil) {
         guard !model.currentBlockLocked else { return }
@@ -709,7 +722,7 @@ public struct SessionScreenView: View {
                                buffer: pre.map { Self.fmtW($0) } ?? "",
                                fresh: pre != nil,
                                pairHidesWeight: model.currentCardKind == .bodyweight,
-                               setIdx: setIdx)
+                               setIdx: setIdx, weightLabel: model.currentIsAssisted ? "보조 중량" : "무게")
     }
     func switchKeypadMode(_ field: GymAppModel.KeypadField) {
         guard var kp = keypad, kp.field != field else { return }

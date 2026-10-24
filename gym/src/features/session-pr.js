@@ -11,7 +11,7 @@
  * mocks 허브(iframe) 환경에서는 db() 호출이 throw → catch 해서 no-op 처리.
  */
 
-import { BUILTIN_EXERCISES } from '../db/exercises.js';
+import { BUILTIN_EXERCISES, getCachedCustomExerciseByName } from '../db/exercises.js';
 import {
   listPRsByExercise,
   upsertPR,
@@ -19,6 +19,7 @@ import {
   toISODate,
 } from '../db/queries.js';
 import { evaluateSetPR, buildPR } from '../services/pr.js';
+import { isAssistedExercise } from '../services/assisted-load.js';
 
 /** exerciseName(한국어) → exerciseId(영문 snake_case) 매핑. 매칭 없으면 name 자체 반환. */
 export function mapNameToExerciseId(name) {
@@ -32,6 +33,8 @@ export function mapNameToExerciseId(name) {
   const noSpace = trimmed.replace(/\s+/g, '');
   const partial = BUILTIN_EXERCISES.find(e => e.name.replace(/\s+/g, '') === noSpace);
   if (partial) return partial.id;
+  const custom = getCachedCustomExerciseByName(name);
+  if (custom) return custom.id;
   return name; // fallback (운동 마스터에 없는 사용자 입력 운동)
 }
 
@@ -47,6 +50,7 @@ export async function persistSetPR({ exerciseName, weight, reps, sessionId, date
   }
   const exerciseId = mapNameToExerciseId(exerciseName);
   if (!exerciseId) return { ok: false, reason: 'no-exercise-id' };
+  if (isAssistedExercise(exerciseId) || isAssistedExercise(exerciseName)) return { ok: true, isPR: false, e1rm: 0, exerciseId };
   try {
     const prs = await listPRsByExercise(exerciseId);
     const evalResult = evaluateSetPR({ weight, reps }, prs, exerciseId);
@@ -78,7 +82,7 @@ export async function persistSetPR({ exerciseName, weight, reps, sessionId, date
  */
 export async function getPrevBestE1RMForName(exerciseName) {
   const exerciseId = mapNameToExerciseId(exerciseName);
-  if (!exerciseId) return 0;
+  if (!exerciseId || isAssistedExercise(exerciseId) || isAssistedExercise(exerciseName)) return 0;
   try {
     const row = await getBestE1RM(exerciseId);
     return row ? Number(row.e1rm) || 0 : 0;

@@ -17,10 +17,13 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
     public var speed: Double?    // 유산소 — 콘솔 평균 속도 km/h (설계 2026-08-10 §1)
     public var incline: Double?  // 유산소 — 콘솔 평균 경사 %
     public var calories: Double? // 유산소 — 콘솔 칼로리 kcal (세션 총계에 입력값 우선 병합, 설계 §3)
+    public var weightMode: String? // "assistance" = 입력값은 보조 중량, 일반 외부 중량과 분리
+    public var bodyWeightKg: Double? // 새 보조 세트 저장 당시 체중 기준. 과거에 없던 값은 추정해 채우지 않음.
 
     public init(id: UUID = UUID(), weight: Double? = nil, reps: Int? = nil, done: Bool = false,
                 pr: Bool = false, preset: Bool = false, duration: Double? = nil, distance: Double? = nil,
-                speed: Double? = nil, incline: Double? = nil, calories: Double? = nil) {
+                speed: Double? = nil, incline: Double? = nil, calories: Double? = nil,
+                weightMode: String? = nil, bodyWeightKg: Double? = nil) {
         self.id = id
         self.weight = weight
         self.reps = reps
@@ -32,6 +35,8 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
         self.speed = speed
         self.incline = incline
         self.calories = calories
+        self.weightMode = weightMode
+        self.bodyWeightKg = bodyWeightKg
     }
 
     // 구 데이터(pr·preset·duration·distance 키 없음) 관용 디코딩 — 온디바이스 진행 세션 파손 방지.
@@ -48,10 +53,16 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
         speed = try c.decodeIfPresent(Double.self, forKey: .speed)
         incline = try c.decodeIfPresent(Double.self, forKey: .incline)
         calories = try c.decodeIfPresent(Double.self, forKey: .calories)
+        weightMode = try c.decodeIfPresent(String.self, forKey: .weightMode)
+        bodyWeightKg = try c.decodeIfPresent(Double.self, forKey: .bodyWeightKg)
     }
 
     // 세트 볼륨 = 중량 × 횟수 (nil 방어).
-    public var volume: Double { Double(weight ?? 0) * Double(reps ?? 0) }
+    public var volume: Double {
+        weightMode == "assistance" ? (GymAssistedLoad.estimatedVolume(self) ?? 0)
+            : Double(weight ?? 0) * Double(reps ?? 0)
+    }
+    public var externalVolume: Double { weightMode == "assistance" ? 0 : volume }
 }
 
 // 블록 — 현재 single 만 (circuit 폐기, spec §16). { type:'single', exerciseId, sets }.

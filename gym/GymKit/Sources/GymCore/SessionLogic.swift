@@ -111,7 +111,7 @@ public enum GymSessionLogic {
 
     // PR 평가 대상 — 유의미한 중량 세트만 (0·nil·맨몸 제외, session.js (g) 가드 정합).
     public static func isPRCandidate(_ set: GymSet) -> Bool {
-        (set.weight ?? 0) > 0 && (set.reps ?? 0) > 0
+        set.weightMode != "assistance" && (set.weight ?? 0) > 0 && (set.reps ?? 0) > 0
     }
 
     // MARK: - 블록 완료·잠금 (spec §6-8·§6-9)
@@ -426,7 +426,7 @@ public enum GymSessionLogic {
         s.blocks = s.blocks
             .map { b -> GymBlock in var x = b; x.sets = x.sets.filter(\.done); return x }
             .filter { !($0.type == "single" && $0.sets.isEmpty) }
-        s.totalVolume = s.blocks.reduce(0.0) { $0 + $1.sets.reduce(0.0) { $0 + $1.volume } }
+        s.totalVolume = s.blocks.reduce(0.0) { $0 + $1.sets.reduce(0.0) { $0 + $1.externalVolume } }
         s.endTime = endTime
         let start = s.startTime ?? endTime
         s.durationMin = max(1, Int((Double(endTime - start) / 60_000).rounded()))

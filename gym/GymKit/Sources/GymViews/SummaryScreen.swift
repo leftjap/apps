@@ -45,14 +45,14 @@ public struct SummaryScreenView: View {
 
     // 앱 경로 — 방금 완료된 model.session 구동.
     public init(model: GymAppModel, onHome: @escaping () -> Void = {}) {
-        session = model.session; custom = model.custom
+        session = GymAssistedLoad.projected(model.session, custom: model.custom); custom = model.custom
         sessionNo = model.history.count; totalCount = model.history.count
         self.onHome = onHome
     }
     // 스냅샷/데모 경로.
     public init(session: GymSession, custom: [GymCustomExercise] = [], sessionNo: Int = 42,
                 totalCount: Int = 42, onHome: @escaping () -> Void = {}) {
-        self.session = session; self.custom = custom; self.sessionNo = sessionNo
+        self.session = GymAssistedLoad.projected(session, custom: custom); self.custom = custom; self.sessionNo = sessionNo
         self.totalCount = totalCount; self.onHome = onHome
     }
 
@@ -72,13 +72,22 @@ public struct SummaryScreenView: View {
                                                                 durationSec: done[0].duration),
                              pr: b.sets.contains { $0.pr })
             }
+            if GymAssistedLoad.isAssisted(b, custom: custom) {
+                let label = GymAssistedLoad.estimatedTotal(done).map { "추정 \(Self.vf.string(from: NSNumber(value: $0.rounded())) ?? "0")kg" }
+                    ?? "당시 체중 없음"
+                return ExRow(name: name, sets: done.count, vol: label, pr: false)
+            }
             let total = done.reduce(0.0) { $0 + $1.volume }
             return ExRow(name: name, sets: done.count,
                          vol: "\(Self.vf.string(from: NSNumber(value: total.rounded())) ?? "0")kg",
                          pr: b.sets.contains { $0.pr })
         }
     }
-    var totalVolume: Int { Int(session.blocks.reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0) { $0 + $1.volume } }.rounded()) }
+    var totalVolume: Int { Int(session.blocks.reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0) { $0 + $1.externalVolume } }.rounded()) }
+    var hasAssisted: Bool { session.blocks.contains { GymAssistedLoad.isAssisted($0, custom: custom) } }
+    var assistedVolume: Double? {
+        GymAssistedLoad.estimatedTotal(session.blocks.filter { GymAssistedLoad.isAssisted($0, custom: custom) }.flatMap { $0.sets.filter(\.done) })
+    }
     var totalSets: Int { session.blocks.reduce(0) { $0 + $1.sets.filter(\.done).count } }
     var prCount: Int { session.blocks.filter { $0.sets.contains { $0.pr } }.count }
 
@@ -125,7 +134,7 @@ public struct SummaryScreenView: View {
                         }
                         Spacer()
                         Text("\(r.sets)세트").font(.mono(12, 400)).foregroundStyle(GY.ink4)
-                        Text(r.vol).font(.mono(13, 600)).foregroundStyle(GY.ink2).frame(minWidth: 56, alignment: .trailing)
+                        Text(r.vol).font(.mono(13, 600)).foregroundStyle(GY.ink2).lineLimit(1).minimumScaleFactor(0.8).frame(minWidth: 56, alignment: .trailing)
                     }
                     .padding(.vertical, 7)
                 }
@@ -133,11 +142,17 @@ public struct SummaryScreenView: View {
             DashedDivider()
             // TOTAL
             HStack(alignment: .firstTextBaseline) {
-                Text("TOTAL").font(.mono(12, 600)).tracking(1.44).foregroundStyle(GY.ink3)
+                Text(hasAssisted ? "일반 볼륨" : "TOTAL").font(.mono(12, 600)).tracking(1.44).foregroundStyle(GY.ink3)
                 Spacer()
                 (Text("\(totalVolume)").font(.mono(38, 500)).tracking(-1.14).foregroundStyle(GY.ink1)
                  + Text(" kg").font(.mono(15, 500)).foregroundStyle(GY.ink4))
             }.padding(.vertical, 14)
+            if hasAssisted {
+                Text(assistedVolume.map { "보조 운동 추정 볼륨 \(Self.vf.string(from: NSNumber(value: $0)) ?? "0")kg" }
+                     ?? "보조 운동 · 당시 체중 없어 추정값 없음")
+                    .font(.sans(12, 600)).foregroundStyle(GY.ink2)
+                    .padding(.bottom, 10).accessibilityIdentifier("summary-assisted-volume")
+            }
             // 칼로리 — TOTAL 다음가는 위계로 (사용자 2026-08-28 "더 키우고").
             // 10.5pt 한 줄은 영수증에서 사실상 안 읽혔다. 숫자만 키우고 접사는 작게 남겨
             // TOTAL(38pt)과 섞이지 않게 한다. (spec §7-3 "부각 안 함" → "읽히게" 로 갱신)

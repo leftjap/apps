@@ -1,3 +1,4 @@
+import { isAssistedExercise } from './assisted-load.js';
 /**
  * PR 감지 — Epley e1RM 공식 + 판정 (spec §6-11, §12).
  *
@@ -51,7 +52,8 @@ export function findBestE1RM(prs, exerciseId) {
  *  - e1rm: roundE1RM(epley(...)) — 0.1 단위 반올림.
  *  - prevBest: 이전 최고 row 또는 null.
  */
-export function evaluateSetPR({ weight, reps }, prs, exerciseId) {
+export function evaluateSetPR({ weight, reps, weightMode }, prs, exerciseId) {
+  if (weightMode === 'assistance' || isAssistedExercise(exerciseId)) return { isPR: false, e1rm: 0, prevBest: null };
   const e = roundE1RM(epley(weight, reps));
   if (e <= 0) return { isPR: false, e1rm: 0, prevBest: null };
   const prev = findBestE1RM(prs, exerciseId);
@@ -113,9 +115,9 @@ export function findBestSetsInSession(session) {
 }
 
 function considerSetsForBest(map, exerciseId, sets) {
-  if (!exerciseId || !Array.isArray(sets)) return;
+  if (!exerciseId || !Array.isArray(sets) || isAssistedExercise(exerciseId)) return;
   for (const s of sets) {
-    if (!s || s.done === false) continue;
+    if (!s || s.done === false || s.weightMode === 'assistance') continue;
     considerOne(map, exerciseId, s.weight, s.reps);
   }
 }

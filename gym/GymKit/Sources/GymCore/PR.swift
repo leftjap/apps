@@ -43,9 +43,10 @@ public enum GymPRLogic {
 
     // 세션 1건의 운동별 최고 e1RM 세트 (세트 삭제/수정 시 재계산용, findBestSetsInSession 정합).
     public struct BestSet: Sendable, Equatable { public let weight: Double; public let reps: Int; public let e1rm: Double }
-    public static func findBestSetsInSession(_ session: GymSession) -> [String: BestSet] {
+    public static func findBestSetsInSession(_ session: GymSession, custom: [GymCustomExercise] = []) -> [String: BestSet] {
         var out: [String: BestSet] = [:]
         for block in session.blocks {
+            guard !GymAssistedLoad.isAssisted(block, custom: custom) else { continue }
             let exId = block.exerciseId
             for s in block.sets where s.done {
                 let w = s.weight ?? 0, r = s.reps ?? 0

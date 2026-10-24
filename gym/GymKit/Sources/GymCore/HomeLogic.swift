@@ -226,6 +226,8 @@ public enum GymHomeLogic {
             return GymNextBlockPreview(name: name,
                                        summary: GymSessionLogic.cardioSummary(distanceKm: first?.distance,
                                                                               durationSec: first?.duration))
+        case "assisted":
+            return GymNextBlockPreview(name: name, summary: "보조 \(g(first?.weight ?? 0))kg × \(first?.reps ?? 0)회 · \(b.sets.count)세트")
         case "bodyweight":
             return GymNextBlockPreview(name: name,
                                        summary: "맨몸 \(first?.reps ?? 0)회 · \(b.sets.count)세트")

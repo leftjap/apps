@@ -17,6 +17,7 @@ struct AddExerciseSheet: View {
     static func meta(_ def: GymExerciseDef) -> String {
         switch def.equipment {
         case "cardio":     return "거리 (km)"
+        case "assisted":   return String(format: "보조 %gkg × %d회", def.defaultWeight, def.defaultReps)
         case "bodyweight": return "자체 × \(def.defaultReps)회"
         default:           return String(format: "%gkg × %d회", def.defaultWeight, def.defaultReps)
         }

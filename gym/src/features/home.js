@@ -1,3 +1,4 @@
+import { externalSetVolume } from '../services/assisted-load.js';
 /**
  * Wave 11.10.1 — 홈 화면 진행 중 세션 카드 (spec §5-5).
  *
@@ -93,7 +94,7 @@ export function summarizeActiveSession(session, now = Date.now()) {
   let totalVol = 0;
   for (const b of singles) {
     for (const s of (Array.isArray(b.sets) ? b.sets : [])) {
-      if (s && s.done) totalVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+      if (s && s.done) totalVol += externalSetVolume(s, b.exerciseId);
     }
   }
 
