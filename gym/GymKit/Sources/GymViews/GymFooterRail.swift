@@ -163,33 +163,19 @@ struct CurrentChip: View {
 //
 // 고친 방식:
 //  · 꾹누르기를 simultaneousGesture 로 — 팬과 동시 인식이라 스크롤을 지연시키지 않는다.
-//  · 눌림 표시는 손가락이 **머무를 때만**. 6pt 넘게 움직이면 그 즉시 해제해 스크롤 시작이
-//    깔끔하게 넘어간다.
+//  · 터치다운 크기 변경은 제거한다. 눌림 추적 제스처가 팬과 경쟁해 수동 스크롤을 끊었다.
+//    선택 피드백은 CurrentChipLandPop이 담당한다.
 struct RailChipPressable: ViewModifier {
     var onTap: () -> Void
     var onLongPress: () -> Void
-    @State private var pressed = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func body(content: Content) -> some View {
         content
-            .scaleEffect(pressed && !reduceMotion ? 0.96 : 1)
-            .animation(.easeOut(duration: 0.12), value: pressed)
             .onTapGesture { onTap() }
             .simultaneousGesture(
                 LongPressGesture(minimumDuration: 0.5, maximumDistance: 10)
                     .onEnded { _ in
-                        pressed = false
                         onLongPress()
                     }
-            )
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { v in
-                        // 스크롤로 넘어가는 순간 눌림을 뗀다 — 안 그러면 미는 동안 칩이 눌린 채 끌린다.
-                        let moved = abs(v.translation.width) > 6 || abs(v.translation.height) > 6
-                        if pressed == moved { pressed = !moved }
-                    }
-                    .onEnded { _ in pressed = false }
             )
     }
 }
@@ -275,8 +261,10 @@ public struct GymFooterRail: View {
         public var id: Int { blockIdx }
         public let name: String; public let state: RailState
         public let blockIdx: Int   // 원본 blocks 인덱스 (재정렬돼도 탭 타깃 보존)
-        public init(name: String, state: RailState, blockIdx: Int = 0) {
+        public let isDone: Bool    // 완료 종목도 선택하면 state 는 current 이므로 별도로 보존
+        public init(name: String, state: RailState, blockIdx: Int = 0, isDone: Bool? = nil) {
             self.name = name; self.state = state; self.blockIdx = blockIdx
+            self.isDone = isDone ?? (state == .done)
         }
     }
     let items: [Item]
@@ -290,39 +278,43 @@ public struct GymFooterRail: View {
         self.onTapItem = onTapItem; self.onLongPressItem = onLongPressItem; self.onAdd = onAdd
     }
 
-    // 현재 칩의 콘텐츠 좌표 x 범위 — 폭(maxX−minX)으로 scrollTo anchor 를 계산한다.
-    struct CurChipMaxXKey: PreferenceKey {
-        static let defaultValue: CGFloat = 0
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-            let n = nextValue(); if n > 0 { value = n }
+    // 칩 좌표는 콘텐츠 기준으로 한 번에 수집한다. 수동 스크롤로는 바뀌지 않는다.
+    struct ChipBoundsKey: PreferenceKey {
+        static let defaultValue: [Int: CGRect] = [:]
+        static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+            value.merge(nextValue(), uniquingKeysWith: { _, new in new })
         }
     }
-    struct CurChipMinXKey: PreferenceKey {
-        static let defaultValue: CGFloat = 0
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-            let n = nextValue(); if n > 0 { value = n }
+    struct ScrollOffsetKey: PreferenceKey {
+        static let defaultValue: CGFloat? = nil
+        static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+            if let next = nextValue() { value = next }
         }
     }
-    struct ChipsMaxXKey: PreferenceKey {
-        static let defaultValue: CGFloat = 0
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-            let n = nextValue(); if n > 0 { value = n }
-        }
+    // 스크롤 위치는 렌더링에 쓰지 않고 다음 정렬 계산에만 사용한다.
+    final class ScrollOffset {
+        var value: CGFloat = 0
     }
-    @State private var curMaxX: CGFloat = 0
-    @State private var curMinX: CGFloat = 0
-    @State private var chipsMaxX: CGFloat = 0
+    @State private var chipBounds: [Int: CGRect] = [:]
+    @State private var scrollOffset = ScrollOffset()
     @State private var viewportW: CGFloat = 0
     // 두 박자 이동 — 지연 정렬 예약의 세대 토큰(연타 시 이전 예약 무효화) + 머무름 종료 시각
     @State private var alignGen = 0
     @State private var dwellUntil: Date = .distantPast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // 마지막 종목처럼 현재 칩 뒤가 짧으면 scrollTo 가 클램프돼 좌측 inset 정렬이 실패한다 — 부족분만 채운다.
+    var currentItem: Item? { items.first { $0.state == .current } }
+    var leadingItem: Item? {
+        if let current = currentItem, current.isDone { return current }
+        return items.first { !$0.isDone }
+    }
+    var leadingMinX: CGFloat { leadingItem.flatMap { chipBounds[$0.id]?.minX } ?? 0 }
+
     var trailingSpacer: CGFloat {
         CGFloat(GymSessionLogic.railTrailingSpacer(
-            hasCurrent: items.contains { $0.state == .current },
-            currentChipMinX: Double(curMinX), chipsMaxX: Double(chipsMaxX),
+            hasCurrent: currentItem != nil,
+            leadingChipMinX: Double(leadingMinX),
+            chipsMaxX: Double(chipBounds.values.map(\.maxX).max() ?? 0),
             viewportWidth: Double(viewportW)))
     }
 
@@ -335,13 +327,6 @@ public struct GymFooterRail: View {
                         case .done: DoneChip(name: item.name)
                         case .current:
                             CurrentChip(name: item.name)
-                                .background(GeometryReader { g in
-                                    Color.clear
-                                        .preference(key: CurChipMaxXKey.self,
-                                                    value: g.frame(in: .named("railContent")).maxX)
-                                        .preference(key: CurChipMinXKey.self,
-                                                    value: g.frame(in: .named("railContent")).minX)
-                                })
                                 // 승격 순간 착지 팝 — identity 안정으로 onAppear = current 전환 시점
                                 .modifier(CurrentChipLandPop())
                         case .upcoming: UpcomingChip(name: item.name)
@@ -351,16 +336,17 @@ public struct GymFooterRail: View {
                     .accessibilityIdentifier("rail-\(item.state.idName)-\(item.name)")
                     .modifier(RailChipPressable(onTap: { onTapItem(item.blockIdx) },
                                                 onLongPress: { onLongPressItem(item.blockIdx) }))
+                    // 선택 효과 바깥의 레이아웃을 측정해 시각적 변형을 스크롤 정렬과 분리한다.
+                    .background(GeometryReader { g in
+                        Color.clear.preference(key: ChipBoundsKey.self,
+                                               value: [item.id: g.frame(in: .named("railContent"))])
+                    })
                 }
             }
             // 슬라이드·모프 — 추가/삭제 시 자리 이동 + 승격/강등 시 칩 폭·스타일 전환(제자리 모프).
             // 상태를 키에 포함해야 dwell 동안 승격 변형이 스냅이 아니라 부드러운 모프로 보인다.
             .animation(GymSnapshot.isActive || reduceMotion ? nil : .easeOut(duration: 0.25),
                        value: items.map { "\($0.blockIdx):\($0.state.idName)" }.joined(separator: "|"))
-            .background(GeometryReader { g in   // 칩 줄 우단 — 스페이서는 제외해야 되먹임이 없다
-                Color.clear.preference(key: ChipsMaxXKey.self,
-                                       value: g.frame(in: .named("railContent")).maxX)
-            })
             Color.clear.frame(width: trailingSpacer, height: 1)
         }
         .fixedSize(horizontal: true, vertical: false) // white-space:nowrap — 칩 자연폭 유지
@@ -370,12 +356,14 @@ public struct GymFooterRail: View {
         .padding(.horizontal, 4)
     }
 
-    // 현재 칩을 좌측 railLeftInset 위치로 (직전 완료 칩은 우측 끝 16px 만 노출).
+    // 완료 칩만 접고 미완료 묶음에서 선택 칩이 잘릴 때만 이동한다.
     // 전 종목 완료(current 없음)면 선두로 되돌려 완료 칩이 좌측에 잘리지 않게 한다.
     func align(_ proxy: ScrollViewProxy, viewportW: CGFloat, animated: Bool) {
+        let currentBounds = currentItem.flatMap { chipBounds[$0.id] } ?? .zero
         guard let target = GymSessionLogic.railScrollTarget(
             states: items.map(\.state.core),
-            currentChipMinX: Double(curMinX), currentChipMaxX: Double(curMaxX),
+            currentChipMinX: Double(currentBounds.minX), currentChipMaxX: Double(currentBounds.maxX),
+            leadingChipMinX: Double(leadingMinX), scrollOffset: Double(scrollOffset.value),
             viewportWidth: Double(viewportW)) else { return }
         let apply = {
             // scrollTo 타깃 = 칩의 안정 id(blockIdx) — railScrollTarget 의 위치 idx 를 매핑
@@ -405,22 +393,29 @@ public struct GymFooterRail: View {
                         .frame(maxWidth: .infinity, alignment: items.count <= 1 ? .center : .leading)
                         .clipped()
                 } else {
-                    // 실앱 — 가로 스크롤. 완료 칩이 없으면 선두 고정, 있으면 현재 칩을 좌측
-                    // railLeftInset 위치로 정렬해 직전 완료 칩 우측 끝 16px 만 남긴다 (PWA .fp-rail 정합).
-                    // scrollTo 초기 위치만 정하므로 사용자 스크롤은 자유(완료 칩 전체 열람 가능).
+                    // 수동 스크롤은 정렬을 유발하지 않아 완료 칩도 자유롭게 열람할 수 있다.
                     GeometryReader { vp in
                         ScrollViewReader { proxy in
                             ScrollView(.horizontal, showsIndicators: false) {
                                 chipsRow.coordinateSpace(name: "railContent")
+                                    .background(GeometryReader { g in
+                                        Color.clear.preference(key: ScrollOffsetKey.self,
+                                            value: -g.frame(in: .named("railViewport")).minX)
+                                    })
                             }
-                            .onPreferenceChange(CurChipMaxXKey.self) { curMaxX = $0 }
-                            .onPreferenceChange(CurChipMinXKey.self) { curMinX = $0 }
-                            .onPreferenceChange(ChipsMaxXKey.self) { chipsMaxX = $0 }
+                            .coordinateSpace(name: "railViewport")
+                            .onPreferenceChange(ChipBoundsKey.self) { chipBounds = $0 }
+                            .onPreferenceChange(ScrollOffsetKey.self) {
+                                if let offset = $0 { scrollOffset.value = offset }
+                            }
                             .onAppear {
                                 viewportW = vp.size.width
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
-                            .onChange(of: vp.size.width) { _, w in viewportW = w }
+                            .onChange(of: vp.size.width) { _, w in
+                                viewportW = w
+                                align(proxy, viewportW: w, animated: false)
+                            }
                             // 두 박자 — 탭 자리에서 dwell 만큼 머문 뒤 정렬 위치로 미끄러진다.
                             // reduce-motion 은 두 박자를 건너뛰고 즉시 정렬 (감사 확정 #3·#8 —
                             // 다른 모션은 전부 게이트돼 있는데 이 경로만 스프링이 남아 있었다).
@@ -441,11 +436,7 @@ public struct GymFooterRail: View {
                             }
                             // 측정값 변화로 인한 즉시 정렬은 dwell 중 차단 — 안 그러면 승격 직후
                             // 칩 폭 변화가 무애니 스냅으로 끝 그림을 선점해 머무름이 죽는다
-                            .onChange(of: curMaxX) { _, _ in
-                                guard Date() >= dwellUntil else { return }
-                                align(proxy, viewportW: vp.size.width, animated: false)
-                            }
-                            .onChange(of: curMinX) { _, _ in
+                            .onChange(of: chipBounds) { _, _ in
                                 guard Date() >= dwellUntil else { return }
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }

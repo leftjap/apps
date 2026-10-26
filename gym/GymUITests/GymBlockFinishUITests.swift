@@ -14,6 +14,17 @@ final class GymBlockFinishUITests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: "rail-\(state)-\(name)").firstMatch
     }
 
+    private func assertFullyVisible(_ element: XCUIElement, in app: XCUIApplication) {
+        let rightEdge = app.buttons["rail-add"].frame.minX - 8 - 22
+        let contained = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            // 투명해진 착지 링도 접근성 프레임에는 stroke 2.5pt의 반폭이 남는다.
+            let frame = element.frame.insetBy(dx: 1.25, dy: 0)
+            return frame.minX >= 12 && frame.maxX <= rightEdge + 1
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [contained], timeout: 3), .completed,
+                       "선택 칩은 착지 애니메이션 후 레일·우측 페이드 안쪽에 온전히 보여야 한다")
+    }
+
     // 액션시트에 '이동' 이 없어야 한다 (session.js:1952 — hold+drag 로 대체됨).
     func testActionSheetHasNoMoveItem() {
         let app = XCUIApplication()
@@ -185,14 +196,14 @@ final class GymBlockFinishUITests: XCTestCase {
         XCTAssertTrue(newCur.waitForExistence(timeout: 5), "레일 current 칩도 탭한 종목이어야 한다")
         Thread.sleep(forTimeInterval: 1.2)   // 전환 애니 정착 (두 박자: dwell 0.22 + 이동 + 스쿼시 ~0.99s)
 
-        // 삽입 순서 고정(2026-07-24) — 벤치프레스는 자리를 지킨 채 현재 칩 왼쪽으로 접힌다
+        // 미완료 종목의 삽입 순서는 유지한다. 폭이 넘치는 경우에만 앞 종목이 일부 접힐 수 있다.
         let bench = chip(app, "upcoming", "벤치프레스")
         XCTAssertTrue(bench.exists, "이전 종목은 미완료(upcoming) 상태로 남는다")
         XCTAssertLessThan(bench.frame.maxX, newCur.frame.minX + 1,
-                          "이전 종목 칩은 현재 칩 왼쪽에 접혀야 한다 (재정렬 아님)")
+                          "이전 종목은 현재 종목보다 왼쪽 순서를 유지해야 한다")
         shot(app, "80-rotation-switch")
 
-        // 되돌아가기 — 접힌 칩은 레일을 오른쪽으로 끌어 연 뒤 탭 (로테이션 왕복)
+        // 폭이 넘쳐 앞 종목이 가려졌을 때도 수동 스크롤로 왕복할 수 있다.
         let y = 0.908
         for _ in 1...3 {
             if bench.isHittable { break }
@@ -205,6 +216,76 @@ final class GymBlockFinishUITests: XCTestCase {
         XCTAssertTrue(chip(app, "current", "벤치프레스").waitForExistence(timeout: 5))
         XCTAssertEqual(exname.label, "벤치프레스", "재탭으로 원 종목 복귀")
         shot(app, "81-rotation-back")
+    }
+
+    func testUnfinishedPairStaysVisibleWhileDoneChipsRemainCollapsed() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--empty-session"]
+        app.launch()
+        XCTAssertTrue(app.buttons["팔"].waitForExistence(timeout: 15))
+        app.buttons["팔"].tap()
+        for id in ["bicep_curl", "hammer_curl", "wrist_curl"] {
+            let add = app.buttons["addex-\(id)"]
+            if !add.isHittable { app.swipeUp() }
+            XCTAssertTrue(add.waitForExistence(timeout: 5))
+            add.tap()
+        }
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        chip(app, "current", "바벨 컬").press(forDuration: 0.8)
+        XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+        app.buttons["action-finish"].tap()
+        XCTAssertTrue(chip(app, "current", "해머 컬").waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 1.2)
+
+        chip(app, "upcoming", "리스트 컬").tap()
+        XCTAssertTrue(chip(app, "current", "리스트 컬").waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 1.2)
+        let hammer = chip(app, "upcoming", "해머 컬")
+        let wrist = chip(app, "current", "리스트 컬")
+        XCTAssertGreaterThanOrEqual(hammer.frame.minX, 12, "미완료 앞 종목도 전체가 보여야 한다")
+        XCTAssertLessThan(wrist.frame.maxX, app.buttons["rail-add"].frame.minX - 8 - 21,
+                          "현재 종목은 우측 페이드 안쪽에 온전히 보여야 한다")
+        XCTAssertLessThanOrEqual(chip(app, "done", "바벨 컬").frame.maxX, 40,
+                                 "완료 종목은 끝부분만 남아야 한다")
+        XCTAssertTrue(hammer.isHittable)
+        shot(app, "73-pair-with-done-selected-last")
+        hammer.tap()
+        XCTAssertTrue(chip(app, "current", "해머 컬").waitForExistence(timeout: 5))
+
+        // 직접 펼친 완료 종목도 선택해 볼 수 있다. 미완료로 오인해 다시 숨기면 안 된다.
+        let done = chip(app, "done", "바벨 컬")
+        Thread.sleep(forTimeInterval: 1.2)
+        app.scrollViews.firstMatch.swipeRight()
+        XCTAssertTrue(done.isHittable)
+        done.tap()
+        XCTAssertTrue(chip(app, "current", "바벨 컬").waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["hero-done"].waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 1.2)
+        assertFullyVisible(chip(app, "current", "바벨 컬"), in: app)
+        shot(app, "74-done-selection-with-pending")
+    }
+
+    func testLongUnfinishedChipRemainsFullyVisibleWhenPairOverflows() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--empty-session"]
+        app.launch()
+        for id in ["lat_pulldown", "romanian_deadlift"] {
+            let add = app.buttons["addex-\(id)"]
+            XCTAssertTrue(add.waitForExistence(timeout: 15))
+            if !add.isHittable { app.swipeUp() }
+            add.tap()
+        }
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        chip(app, "upcoming", "루마니안 데드리프트").tap()
+        let current = chip(app, "current", "루마니안 데드리프트")
+        XCTAssertTrue(current.waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 1.2)
+        assertFullyVisible(current, in: app)
+        let lat = chip(app, "upcoming", "랫 풀다운")
+        let rightEdge = app.buttons["rail-add"].frame.minX - 8 - 22
+        XCTAssertGreaterThan(current.frame.width + lat.frame.width + 10, rightEdge - 12,
+                             "이 사례는 두 칩이 한 화면에 들어오지 않아야 한다")
+        shot(app, "75-long-unfinished-selection")
     }
 
     // 순서 밖 완료 — 완료한 종목은 앞의 미완료 종목을 지나 좌측으로 간다 (사용자 2026-07-24).
@@ -260,6 +341,18 @@ final class GymBlockFinishUITests: XCTestCase {
                       "첫 종목이 현재 칩이어야 한다")
         XCTAssertTrue(chip(app, "upcoming", "바벨 로우").exists, "둘째 종목이 예정 칩으로 붙어야 한다")
         shot(app, "71-rail-two-picked")
+
+        // 두 미완료 종목이 들어오면 뒤 종목을 골라도 앞 종목을 스크롤 없이 다시 누를 수 있다.
+        chip(app, "upcoming", "바벨 로우").tap()
+        XCTAssertTrue(chip(app, "current", "바벨 로우").waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 1.2)
+        let lat = chip(app, "upcoming", "랫 풀다운")
+        XCTAssertGreaterThanOrEqual(lat.frame.minX, 12, "앞의 미완료 종목도 전체가 보여야 한다")
+        XCTAssertTrue(lat.isHittable, "스크롤 없이 앞 종목을 누를 수 있어야 한다")
+        shot(app, "72-two-unfinished-selected-last")
+        lat.tap()
+        XCTAssertTrue(chip(app, "current", "랫 풀다운").waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["session-exname"].label, "랫 풀다운")
     }
 
     // 운동 추가 흐름 (사용자 2026-07-19) — + → 시트가 기본 '등' 으로 열림 → 종목 선택 시 레일에

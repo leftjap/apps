@@ -577,7 +577,8 @@ public struct SessionScreenView: View {
                                                         currentIdx: model.activeBlockIdx ?? -1)
             GymFooterRail(items: railItems.map {
                 GymFooterRail.Item(name: model.exerciseName(model.session.blocks[$0.index].exerciseId),
-                                   state: RailState(core: $0.state), blockIdx: $0.index)
+                                   state: RailState(core: $0.state), blockIdx: $0.index,
+                                   isDone: GymSessionLogic.isBlockDone(model.session.blocks[$0.index]))
             }, onTapItem: { model.selectBlock($0) },
                onLongPressItem: { actionTarget = .block($0) },
                onAdd: { addexOpen = true })

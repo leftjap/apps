@@ -269,7 +269,7 @@ public enum GymSessionLogic {
     /// - **현재·미완료는 자리 유지**: 로테이션 전환에서 순서가 흔들리면 재정렬·스크롤·승격이 동시에
     ///   일어나 "무슨 일이 났는지" 읽을 수 없다. current 를 pending 앞으로 당기지 않는 것이
     ///   구 동작(PWA computeFooterOrder)과의 유일한 차이.
-    /// 현재 칩의 좌측 쏠림·앞 칩 접힘은 railScrollTarget(스크롤)이 담당. 현재는 완료여도 current.
+    /// 완료 칩 접힘과 현재 칩 노출은 railScrollTarget(스크롤)이 담당. 현재는 완료여도 current.
     public static func footerOrder(blocks: [GymBlock], currentIdx: Int) -> [GymFooterItem] {
         let entries = blocks.enumerated().filter { $0.element.type == "single" }
         // 위치 그룹핑은 완료 여부만 본다 — current 를 완료군에서 빼면 완료 칩을 탭해 열람하는
@@ -290,48 +290,46 @@ public enum GymSessionLogic {
     // 레일 스크롤 정렬 대상. `.id(items 위치)` 로 스크롤한다.
     public enum GymRailScroll: Equatable, Sendable {
         case leading                             // 선두(완료 칩)부터 보이게 — 스크롤 안 함과 동치
-        case anchored(idx: Int, anchorX: Double) // idx 칩을 좌측 railLeftInset 위치에 (scrollTo anchor UnitPoint.x)
+        case anchored(idx: Int, anchorX: Double) // idx 칩의 scrollTo anchor UnitPoint.x
     }
 
     /// 완료 칩 우측 끝 노출폭(16) + 레일 gap(10). 16 은 완료 칩 corner radius(14) 의
     /// 둥근 우측 캡이 온전히 드러나는 최소치. PWA `FP_LEFT_INSET` 정합.
     public static let railLeftInset: Double = 26
+    private static let railRightInset: Double = 22 // 우측 페이드 안쪽까지 선택 칩을 노출
 
-    /// 현재 칩을 좌측 `railLeftInset` 위치에 고정한다 — 직전 완료 칩은 우측 끝 16px 만 남고,
-    /// 남는 우측 공간만큼 예정 종목이 더 보인다. 스크롤 초기 위치만 정하므로 사용자 스크롤은 자유.
-    ///
-    /// - `.anchored` 의 anchorX 는 `scrollTo(_:anchor:)` 용 UnitPoint.x.
-    ///   scrollTo 는 '아이템의 anchor 지점'을 '뷰포트의 같은 비율 지점'에 맞추므로
-    ///   scrollLeft = minX + a·w − a·vpW. 좌측 여백(minX − scrollLeft) = railLeftInset 이 되려면
-    ///   a = railLeftInset / (vpW − w).
-    /// - **현재 칩이 없으면(전 종목 완료) 선두로 되돌린다** — 안 그러면 SwiftUI ScrollView 가
-    ///   직전 오프셋을 유지해 완료 칩이 좌측으로 잘린다 (레일 작업지시서 §7 · PWA scrollLeft 0).
-    /// - 현재 칩이 선두면 가릴 게 없으므로 선두. 앞에 칩이 있으면(완료든 건너뛴 미완료든 —
-    ///   삽입 순서 고정, 2026-07-24) 좌측 inset 앵커로 접는다.
-    /// - 폭 미측정(preference 전)은 좌측 밀착 — 중앙으로 튀었다 되돌아오는 흔들림 방지.
+    /// 완료 종목만 접고, 이미 보이는 미완료 종목은 자리를 유지한다.
+    /// leadingChipMinX 는 첫 미완료 칩(완료 종목을 직접 선택한 경우 그 칩)의 콘텐츠 좌표.
+    /// 선택 칩이 잘릴 때만 현재 오프셋에서 최소한 이동하며 우측 페이드도 피한다.
+    /// 현재 칩이 없으면(전 종목 완료) 완료 목록 선두로 복귀한다.
     public static func railScrollTarget(states: [GymRailState],
                                         currentChipMinX: Double,
                                         currentChipMaxX: Double,
+                                        leadingChipMinX: Double,
+                                        scrollOffset: Double = 0,
                                         viewportWidth: Double) -> GymRailScroll? {
         guard !states.isEmpty else { return nil }
         guard let idx = states.firstIndex(of: .current) else { return .leading }
-        guard idx > 0 else { return .leading }
         let w = currentChipMaxX - currentChipMinX
         guard w > 0, viewportWidth > w else { return .anchored(idx: idx, anchorX: 0) }
-        return .anchored(idx: idx, anchorX: railLeftInset / (viewportWidth - w))
+        let base = max(0, leadingChipMinX - railLeftInset)
+        let rightInset = min(railRightInset, viewportWidth - w)
+        let lower = max(base, currentChipMaxX + rightInset - viewportWidth)
+        let upper = max(base, currentChipMinX - railLeftInset)
+        let offset = max(lower, min(scrollOffset, upper))
+        guard offset > 0 else { return .leading }
+        // scrollLeft = minX + a·w − a·vpW → a = (minX − scrollLeft) / (vpW − w).
+        return .anchored(idx: idx, anchorX: (currentChipMinX - offset) / (viewportWidth - w))
     }
 
-    /// 칩 줄 우측에 둘 투명 여백. `scrollTo` 는 콘텐츠 끝을 넘지 못하므로(클램프) 현재 칩 뒤에
-    /// 남은 콘텐츠가 `viewportWidth − railLeftInset` 보다 짧으면 좌측 inset 정렬이 실패하고
-    /// 완료 칩이 도로 드러난다 — 세션 후반(예정 종목 소진)에 재현. 부족분만 채운다.
-    /// - 여유가 충분하거나 현재 칩이 없으면(전 종목 완료 → 선두 복귀) 0 이라 레이아웃 불변.
-    /// - `chipsMaxX` 는 `currentChipMinX` 와 같은 콘텐츠 좌표계에서 잰 칩 줄의 우단.
+    /// 완료 종목을 접는 데 필요한 여백만 채운다. 미완료 앞부분을 숨기는 빈 공간은 만들지 않는다.
+    /// 마지막 선택 칩도 우측 페이드를 피할 수 있도록 최소 여백을 둔다.
     public static func railTrailingSpacer(hasCurrent: Bool,
-                                          currentChipMinX: Double,
+                                          leadingChipMinX: Double,
                                           chipsMaxX: Double,
                                           viewportWidth: Double) -> Double {
         guard hasCurrent, chipsMaxX > 0, viewportWidth > 0 else { return 0 }
-        return max(0, (viewportWidth - railLeftInset) - (chipsMaxX - currentChipMinX))
+        return max(railRightInset, (viewportWidth - railLeftInset) - (chipsMaxX - leadingChipMinX))
     }
 
     // MARK: - 칼로리 추정 (spec §7-3: MET × 체중 × 시간(시) × 1.05)

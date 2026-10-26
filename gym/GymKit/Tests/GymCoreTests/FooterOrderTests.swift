@@ -112,7 +112,7 @@ import Testing
     @Test func noCurrentScrollsToLeadingSoDoneChipsStayVisible() {
         let states: [GymSessionLogic.GymRailState] = [.done, .done, .done, .done]
         #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 0,
-                                                 currentChipMaxX: 0, viewportWidth: 300) == .leading)
+                                                 currentChipMaxX: 0, leadingChipMinX: 0, viewportWidth: 300) == .leading)
     }
 
     // 완료 칩을 다 보여주는 건 하단 공간 낭비 — 우측 끝 16px 만 남겨 '완료가 있다' 신호만 주고
@@ -121,7 +121,7 @@ import Testing
         let states: [GymSessionLogic.GymRailState] = [.done, .done, .current, .upcoming]
         // 현재 칩 minX 200 · maxX 342 (폭 142) · 뷰포트 300
         let t = GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 200,
-                                                 currentChipMaxX: 342, viewportWidth: 300)
+                                                 currentChipMaxX: 342, leadingChipMinX: 200, viewportWidth: 300)
         // anchorX = 26 / (300 - 142) = 0.16455…
         #expect(t == .anchored(idx: 2, anchorX: 26.0 / 158.0))
     }
@@ -132,7 +132,7 @@ import Testing
         let minX = 200.0, w = 142.0, vpW = 300.0
         let target = GymSessionLogic.railScrollTarget(
             states: [.done, .current], currentChipMinX: minX,
-            currentChipMaxX: minX + w, viewportWidth: vpW)
+            currentChipMaxX: minX + w, leadingChipMinX: minX, viewportWidth: vpW)
         guard case .anchored(_, let a) = target else {
             Issue.record("anchored 아님: \(String(describing: target))"); return
         }
@@ -144,16 +144,52 @@ import Testing
     @Test func currentAtFrontStaysLeading() {
         let states: [GymSessionLogic.GymRailState] = [.current, .upcoming, .upcoming]
         #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 4,
-                                                 currentChipMaxX: 146, viewportWidth: 300) == .leading)
+                                                 currentChipMaxX: 146, leadingChipMinX: 4, viewportWidth: 300) == .leading)
     }
 
-    // 삽입 순서 고정(2026-07-24) — 미완료 칩을 건너뛰고 뒤 종목을 현재로 잡아도(로테이션)
-    // 현재 칩은 좌측 inset 에 앵커, 앞의 미완료 칩은 완료 칩과 똑같이 좌측으로 접힌다.
-    @Test func currentBehindUnfinishedChipsStillAnchorsLeft() {
+    // 함께 들어오는 미완료 칩은 뒤 종목을 골라도 접지 않는다.
+    @Test func currentBehindUnfinishedChipsKeepsBothVisible() {
         let states: [GymSessionLogic.GymRailState] = [.upcoming, .current, .upcoming]
         let t = GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 140,
-                                                 currentChipMaxX: 282, viewportWidth: 300)
+                                                 currentChipMaxX: 282, leadingChipMinX: 4, viewportWidth: 330)
+        #expect(t == .leading)
+    }
+
+    @Test func laterUnfinishedChipKeepsEarlierOneVisibleAfterDoneGroup() {
+        let t = GymSessionLogic.railScrollTarget(
+            states: [.done, .upcoming, .current], currentChipMinX: 310,
+            currentChipMaxX: 430, leadingChipMinX: 200, scrollOffset: 174, viewportWidth: 300)
+        // 완료는 접힌 오프셋 174 유지 → 미완료 두 칩은 x26, x136에서 모두 보인다.
+        #expect(t == .anchored(idx: 2, anchorX: 136.0 / 180.0))
+    }
+
+    @Test func overflowingSelectionMovesOnlyUntilItsRightEdgeClearsFade() {
+        let t = GymSessionLogic.railScrollTarget(
+            states: [.upcoming, .upcoming, .current], currentChipMinX: 360,
+            currentChipMaxX: 500, leadingChipMinX: 4, viewportWidth: 300)
+        // offset 222 → 선택 칩은 x138...278. 왼쪽 고정(offset 334)까지 밀지 않는다.
+        #expect(t == .anchored(idx: 2, anchorX: 138.0 / 160.0))
+    }
+
+    @Test func alreadyVisibleSelectionKeepsManualScrollPosition() {
+        let t = GymSessionLogic.railScrollTarget(
+            states: [.upcoming, .current, .upcoming], currentChipMinX: 240,
+            currentChipMaxX: 360, leadingChipMinX: 4, scrollOffset: 200, viewportWidth: 300)
+        #expect(t == .anchored(idx: 1, anchorX: 40.0 / 180.0))
+    }
+
+    @Test func selectionClippedOnLeftMovesBackOnlyEnoughToRevealIt() {
+        let t = GymSessionLogic.railScrollTarget(
+            states: [.upcoming, .current, .upcoming], currentChipMinX: 140,
+            currentChipMaxX: 282, leadingChipMinX: 4, scrollOffset: 250, viewportWidth: 300)
         #expect(t == .anchored(idx: 1, anchorX: 26.0 / 158.0))
+    }
+
+    @Test func wideSelectionUsesAvailableWidthWithoutClippingItsLeftEdge() {
+        let t = GymSessionLogic.railScrollTarget(
+            states: [.done, .current], currentChipMinX: 200,
+            currentChipMaxX: 490, leadingChipMinX: 200, viewportWidth: 300)
+        #expect(t == .anchored(idx: 1, anchorX: 0))
     }
 
     // 폭 미측정(preference 전) — 중앙으로 튀었다가 되돌아오지 않게 좌측 밀착으로 두고,
@@ -161,12 +197,12 @@ import Testing
     @Test func unmeasuredChipFallsBackToFlushLeadingNotCenter() {
         let states: [GymSessionLogic.GymRailState] = [.done, .current]
         #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 0,
-                                                 currentChipMaxX: 0, viewportWidth: 300) == .anchored(idx: 1, anchorX: 0))
+                                                 currentChipMaxX: 0, leadingChipMinX: 0, viewportWidth: 300) == .anchored(idx: 1, anchorX: 0))
     }
 
     @Test func emptyRailHasNoTarget() {
         #expect(GymSessionLogic.railScrollTarget(states: [], currentChipMinX: 0,
-                                                 currentChipMaxX: 0, viewportWidth: 300) == nil)
+                                                 currentChipMaxX: 0, leadingChipMinX: 0, viewportWidth: 300) == nil)
     }
 }
 
@@ -176,31 +212,37 @@ import Testing
 // → 현재 칩 우측에 (뷰포트폭 − railLeftInset) 만큼의 콘텐츠가 늘 있도록 부족분만 채운다.
 @Suite struct RailTrailingSpacerTests {
 
-    // 예정 종목이 충분하면 스크롤 여유가 있다 — 스페이서 0 (기존 동작 불변).
-    @Test func enoughUpcomingNeedsNoSpacer() {
+    // 긴 미완료 묶음에는 우측 페이드 여백만 필요하다.
+    @Test func enoughUpcomingNeedsOnlyFadeInset() {
         // 현재 칩 minX 200, 칩영역 폭 700 → 우측 잔여 500 ≥ 307 − 26
         #expect(GymSessionLogic.railTrailingSpacer(
-            hasCurrent: true, currentChipMinX: 200, chipsMaxX: 700, viewportWidth: 307) == 0)
+            hasCurrent: true, leadingChipMinX: 200, chipsMaxX: 700, viewportWidth: 307) == 22)
     }
 
     // 마지막 종목 — 우측 잔여가 현재 칩 폭뿐이라 부족분을 채워야 좌측 inset 정렬이 가능하다.
     @Test func lastBlockGetsSpacerSoCurrentCanReachLeftInset() {
         // 현재 칩 minX 767.7 · 칩영역 폭 913 → 우측 잔여 145.3, 필요 281 → 부족 135.7
         let s = GymSessionLogic.railTrailingSpacer(
-            hasCurrent: true, currentChipMinX: 767.7, chipsMaxX: 913, viewportWidth: 307)
+            hasCurrent: true, leadingChipMinX: 767.7, chipsMaxX: 913, viewportWidth: 307)
         #expect(abs(s - 135.7) < 0.01)
+    }
+
+    @Test func spacerUsesUnfinishedGroupStartInsteadOfLastSelectedChip() {
+        let s = GymSessionLogic.railTrailingSpacer(
+            hasCurrent: true, leadingChipMinX: 200, chipsMaxX: 430, viewportWidth: 300)
+        #expect(s == 44)
     }
 
     // 현재 칩이 없으면(전 종목 완료) 선두로 되돌리므로 여유가 필요 없다.
     @Test func noCurrentNeedsNoSpacer() {
         #expect(GymSessionLogic.railTrailingSpacer(
-            hasCurrent: false, currentChipMinX: 0, chipsMaxX: 913, viewportWidth: 307) == 0)
+            hasCurrent: false, leadingChipMinX: 0, chipsMaxX: 913, viewportWidth: 307) == 0)
     }
 
     // 미측정(스냅샷·첫 패스) — 뷰포트/칩폭이 0이면 스페이서도 0이라 레이아웃이 흔들리지 않는다.
     @Test func unmeasuredLayoutNeedsNoSpacer() {
         #expect(GymSessionLogic.railTrailingSpacer(
-            hasCurrent: true, currentChipMinX: 0, chipsMaxX: 0, viewportWidth: 0) == 0)
+            hasCurrent: true, leadingChipMinX: 0, chipsMaxX: 0, viewportWidth: 0) == 0)
     }
 }
 
