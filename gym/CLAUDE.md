@@ -56,13 +56,17 @@
 네이티브는 PWA 처럼 자동 배포가 안 되지만 **폰이 WiFi 페어링돼 있으면 Claude 가 직접 무선 설치**한다.
 "Xcode 로 직접 설치하세요" 위임 금지 (2026-07-18 오위임 재발 방지, 실제로는 무선 설치 가능했음).
 
+**수정 배포는 자동 서명 갱신과 같은 DerivedData 경로를 사용한다.** 임시 경로에만 새 빌드를
+만들어 설치하면 `scripts/deploy-device.sh`가 기존 산출물을 다시 설치할 수 있다.
+
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 xcrun devicectl list devices                 # 'available (paired)' 인 폰의 Identifier(UUID) 확인
 DEV=<UUID>                                    # 예: iPhone 11 Pro
+GYM_DEVICE_DD=/Users/gio_c/Library/Developer/Xcode/DerivedData/Gym-device
 xcodebuild -project Gym.xcodeproj -scheme Gym -destination "id=$DEV" \
-  -derivedDataPath <DD> -allowProvisioningUpdates build          # 코드사이닝 Automatic + 팀 FNXM5SF6PX
-xcrun devicectl device install app --device $DEV <DD>/Build/Products/Debug-iphoneos/Gym.app
+  -derivedDataPath "$GYM_DEVICE_DD" -allowProvisioningUpdates build  # Automatic + 팀 FNXM5SF6PX
+xcrun devicectl device install app --device $DEV "$GYM_DEVICE_DD/Build/Products/Debug-iphoneos/Gym.app"
 ```
 
 폰이 목록에 없거나 페어링 안 됐으면 그때만 사용자 안내. destructive 아님(설치는 데이터 무영향).
