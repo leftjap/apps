@@ -135,6 +135,17 @@ describe('automatic comment fallback and submission guards', () => {
     expect(calls.every(c => c.args[c.args.indexOf('--sandbox') + 1] === 'read-only')).toBe(true);
     expect(calls.every(c => !c.options.env.CLAUDE_CODE_OAUTH_TOKEN && !c.options.env.SUPABASE_SERVICE_ROLE_KEY)).toBe(true);
   });
+  it('logs the CLI error Claude prints to stdout, not only the command line', async () => {
+    const ok = state.behavior;
+    state.behavior = async (file, args, options) => {
+      if (file.endsWith('/codex')) return ok(file, args, options);
+      throw Object.assign(new Error(`Command failed: ${file} -p ${args[1]}\n`), { stdout: 'Claude AI usage limit reached\n', stderr: '' });
+    };
+    await run();
+    const lines = logSpy.mock.calls.map(c => c.join(' '));
+    expect(lines.find(l => l.includes('MODEL-FALLBACK'))).toContain('Claude AI usage limit reached');
+    expect(lines.find(l => l.includes('generation failed') && l.includes('provider=claude'))).toContain('Claude AI usage limit reached');
+  });
   it('keeps successful Claude comments and does not call Sol', async () => {
     claudeFailure = null;
     await run();

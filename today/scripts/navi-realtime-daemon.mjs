@@ -100,6 +100,11 @@ async function checkReplyForEntry(entryId) {
 
 function readMaybe(p) { try { return fs.readFileSync(p, 'utf8').trim(); } catch { return ''; } }
 
+// 실패 사유 한 줄. claude -p 는 오류를 stdout 에 쓰고 e.message 는 긴 프롬프트 명령줄이라 stderr → stdout → message 순.
+function failReason(e) {
+  return String(e.stderr?.trim() || e.stdout?.trim() || e.message).replace(/\s*\n\s*/g, ' | ').slice(-400);
+}
+
 // claude -p 1패스 실행 → stdout 반환. 에이전트엔 토큰 미주입(파일 Read + WebSearch 만).
 // CLAUDE_MODEL 고정 실행, 실패 시 opus(최신 alias)로 1회 폴백 — 발동 시 MODEL-FALLBACK 로그.
 async function claudePass(prompt, allowedTools, cwd) {
@@ -117,7 +122,7 @@ async function claudePass(prompt, allowedTools, cwd) {
     const { stdout } = await run(CLAUDE_MODEL);
     return stdout;
   } catch (e) {
-    log(`MODEL-FALLBACK: ${CLAUDE_MODEL} 실패 → opus 재시도 (원인: ${String(e.message).split('\n').slice(0, 3).join(' | ').slice(0, 300)})`);
+    log(`MODEL-FALLBACK: ${CLAUDE_MODEL} 실패 → opus 재시도 (원인: ${failReason(e)})`);
     const { stdout } = await run('opus');
     return stdout;
   }
@@ -282,7 +287,7 @@ async function processPipeline(row, { mode = 'initial', ignoreSettle = false } =
           fs.writeFileSync(path.join(work, 'draft.txt'), draft);
         }
       } catch (e) {
-        log(`generation failed ${row.id} provider=${provider}: ${String(e.stderr || e.message).slice(-400)}`);
+        log(`generation failed ${row.id} provider=${provider}: ${failReason(e)}`);
       } finally {
         fs.rmSync(work, { recursive: true, force: true });
       }
