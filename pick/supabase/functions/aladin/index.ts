@@ -8,6 +8,9 @@
 //   카카오도 실패 → 504 {"error":"upstream unavailable"}. 키가 없으면 종전 계약: 시간 초과 504 {"error":"aladin upstream timeout"},
 //   연결 실패 502 {"error":"aladin upstream unreachable"}, 알라딘이 준 응답(503 "서비스를 사용할 수 없습니다." 포함)은 상태·본문 그대로.
 //   알라딘이 준 4xx 는 키와 무관하게 그대로 전달(잘못된 요청은 알라딘 몫). ALADIN_FORCE_FAIL=1 이면 상류를 건너뛴다(페일오버 검증용 임시 env).
+// 알라딘 OpenAPI 전면 종료(2026-10-30, 기존 TTB 키도 호출 불가 — 200 + errorCode "www.aladin.co.kr 도메인을 통한 OpenAPI 서비스는 종료되었습니다.").
+//   → KAKAO_REST_API_KEY 가 있으면 알라딘을 부르지 않고 카카오 책 검색만 쓴다(응답은 알라딘 모양 + source:"kakao", 경로·계약 유지).
+//   카카오 실패 → 504 {"error":"upstream unavailable"}. 아래 알라딘 경로는 카카오 키가 없을 때의 종전 동작으로만 남는다.
 // 단위 테스트: index_test.ts (deno test --allow-env; vitest 의 *.test.* 패턴을 피하는 이름)
 const ALLOW = /^Item(Search|LookUp)\.aspx$/;
 // 상류(알라딘) 무응답 실측 40~90초 (2026-09-10, lessons/aladin-proxy-upstream-hang.md). 리딩타임 클라이언트 제한이 20초라
@@ -22,7 +25,6 @@ const CORS = {
 };
 const JSON_HEADERS = { ...CORS, 'Content-Type': 'application/json; charset=utf-8' };
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
-const isJson = (text: string) => { try { JSON.parse(text); return true; } catch { return false; } };
 
 type KakaoDoc = { title?: string; authors?: string[]; publisher?: string; datetime?: string; thumbnail?: string; isbn?: string };
 type KakaoBooks = { documents?: KakaoDoc[]; meta?: { total_count?: number } };
@@ -74,9 +76,13 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.match(/\/aladin\/([^/]+)$/)?.[1] ?? '';
   if (req.method !== 'GET' || !ALLOW.test(path)) return json(404, { error: 'not found' });
+  const kakaoKey = Deno.env.get('KAKAO_REST_API_KEY') ?? '';
+  if (kakaoKey) {
+    const books = await kakao(path, url.searchParams, kakaoKey);
+    return books ? json(200, books) : json(504, { error: 'upstream unavailable' });
+  }
   const key = Deno.env.get('ALADIN_TTB_KEY') ?? '';
   if (!key) return json(500, { error: 'ALADIN_TTB_KEY secret 미설정' });
-  const kakaoKey = Deno.env.get('KAKAO_REST_API_KEY') ?? '';
   const target = new URL(`https://www.aladin.co.kr/ttb/api/${path}`);
   url.searchParams.forEach((v, k) => { if (k.toLowerCase() !== 'ttbkey') target.searchParams.set(k, v); });
   target.searchParams.set('ttbkey', key);
@@ -96,14 +102,5 @@ Deno.serve(async (req) => {
       up = { error: timedOut ? json(504, { error: 'aladin upstream timeout' }) : json(502, { error: 'aladin upstream unreachable' }) };
     }
   }
-  if ('status' in up) {
-    // 2xx JSON 은 정상. 4xx 는 알라딘이 준 오류(잘못된 요청 등)라 페일오버 대상이 아니다 → 그대로 전달
-    const usable = up.status < 500 && (up.status >= 400 || isJson(up.body));
-    if (usable || !kakaoKey) return new Response(up.body, { status: up.status, headers: JSON_HEADERS });
-  } else if (!kakaoKey) {
-    return up.error;
-  }
-  console.warn('aladin unusable, failover to kakao:', 'status' in up ? up.status : up.error.status);
-  const fallback = await kakao(path, url.searchParams, kakaoKey);
-  return fallback ? json(200, fallback) : json(504, { error: 'upstream unavailable' });
+  return 'status' in up ? new Response(up.body, { status: up.status, headers: JSON_HEADERS }) : up.error;
 });

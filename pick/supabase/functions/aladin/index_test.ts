@@ -2,6 +2,7 @@
 // 배경(2026-09-10 실측, lessons/aladin-proxy-upstream-hang.md): ItemSearch 상류가 40~90초 무응답이면
 // 프록시 fetch 에 시간 제한이 없어 Book·Pick·리딩타임 세 앱이 같이 멈췄다. 검색 소스가 알라딘 하나라 장애 중엔
 // 결과가 없으므로 카카오 책 검색으로 페일오버한다(readingtime/README.md "알라딘 장애 대처" ①, 2026-09-11).
+// 2026-10-30 알라딘 OpenAPI 전면 종료 → 카카오 키가 있으면 알라딘을 부르지 않고 카카오만 쓴다(알라딘 경로는 키 없을 때만).
 //   deno test --allow-env pick/supabase/functions/aladin/index_test.ts   (저장소 루트에서. pick/ 안에서 돌리면 package.json 감지로 @types/node 해석 실패)
 // index.ts 는 최상위에서 Deno.serve(handler) 를 부르므로 import 전에 Deno.serve 를 가로채 handler 를 얻고,
 // fetch·AbortSignal.timeout·console.error·env 는 테스트마다 바꿔 끼운 뒤 원복한다.
@@ -152,7 +153,7 @@ Deno.test('카카오 키 없음: 알라딘이 준 503 은 상태·본문 그대�
   });
 });
 
-Deno.test('카카오 키 있음: 상류 시간 초과 → 카카오 책 검색으로 재조회해 알라딘 응답 모양 + source:"kakao"', async () => {
+Deno.test('카카오 키 있음: 알라딘을 부르지 않고 카카오 책 검색 → 알라딘 응답 모양 + source:"kakao"', async () => {
   const { impl, seen } = route(async () => { throw timeoutError(); }, kakaoOk);
   await withEnv({ KAKAO_REST_API_KEY: 'test-kakao-key' }, async () => {
     await withUpstream(impl, async () => {
@@ -171,7 +172,7 @@ Deno.test('카카오 키 있음: 상류 시간 초과 → 카카오 책 검색�
       assert.ok(!('itemId' in body.item[0]), 'itemId 는 생략 — 클라이언트 정규화가 isbn13 → isbn → itemId 로 폴백');
     });
   });
-  assert.equal(seen.aladin, 1);
+  assert.equal(seen.aladin, 0, '알라딘은 종료됐으므로 부르지 않는다');
   assert.equal(seen.kakao, 1);
   // ItemSearch 파라미터 매핑: Query → query, MaxResults → size, start → page
   assert.equal(`${seen.kakaoUrl!.origin}${seen.kakaoUrl!.pathname}`, 'https://dapi.kakao.com/v3/search/book');
@@ -180,26 +181,38 @@ Deno.test('카카오 키 있음: 상류 시간 초과 → 카카오 책 검색�
   assert.ok(seen.kakaoInit?.signal instanceof AbortSignal, '카카오 호출에도 시간 제한 신호를 건다');
 });
 
-Deno.test('카카오 키 있음: 알라딘 5xx·JSON 아닌 200 은 카카오로, 4xx 는 그대로 전달(카카오 미호출)', async () => {
+Deno.test('카카오 키 있음: 알라딘이 종료 응답(200 + errorCode)·4xx·5xx 를 주는 상황이어도 결과는 카카오', async () => {
+  // 2026-10-30 실기기: 프록시가 알라딘의 200 + errorCode 를 정상으로 보고 그대로 넘겨 리딩타임에 "알라딘 오류: … 종료되었습니다" 노출
+  const ended = '{"errorCode":0,"errorMessage":"www.aladin.co.kr 도메인을 통한 OpenAPI 서비스는 종료되었습니다."}';
   await withEnv({ KAKAO_REST_API_KEY: 'test-kakao-key' }, async () => {
-    const cases: [string, Response, number, boolean][] = [
-      ['503', new Response('서비스를 사용할 수 없습니다.', { status: 503 }), 200, true],
-      ['200 HTML', new Response('<html><body>504 Gateway Time-out</body></html>', { status: 200 }), 200, true],
-      ['400', new Response('{"errorCode":10,"errorMessage":"invalid"}', { status: 400 }), 400, false],
-    ];
-    for (const [name, upstream, status, viaKakao] of cases) {
-      const { impl, seen } = route(async () => upstream, kakaoOk);
+    for (const [name, status] of [['200 errorCode', 200], ['400', 400], ['503', 503]] as const) {
+      const { impl, seen } = route(async () => new Response(ended, { status }), kakaoOk);
       await withUpstream(impl, async () => {
         const res = await handler!(search());
-        assert.equal(res.status, status, name);
+        assert.equal(res.status, 200, name);
         assert.equal(res.headers.get('access-control-allow-origin'), ORIGIN, name);
         const body = await res.json();
-        assert.equal(body.source === 'kakao', viaKakao, `${name}: source`);
-        if (!viaKakao) assert.deepEqual(body, { errorCode: 10, errorMessage: 'invalid' }, name);
+        assert.equal(body.source, 'kakao', name);
+        assert.ok(!('errorCode' in body), name);
       });
-      assert.equal(seen.kakao, viaKakao ? 1 : 0, `${name}: 카카오 호출 횟수`);
+      assert.equal(seen.aladin, 0, `${name}: 알라딘 미호출`);
+      assert.equal(seen.kakao, 1, `${name}: 카카오 호출`);
     }
   });
+});
+
+Deno.test('카카오 키 있음: ALADIN_TTB_KEY 가 없어도 카카오로 동작', async () => {
+  Deno.env.delete('ALADIN_TTB_KEY');
+  try {
+    const { impl } = route(async () => new Response('{"item":[]}', { status: 200 }), kakaoOk);
+    await withEnv({ KAKAO_REST_API_KEY: 'test-kakao-key' }, async () => {
+      await withUpstream(impl, async () => {
+        const res = await handler!(search());
+        assert.equal(res.status, 200);
+        assert.equal((await res.json()).source, 'kakao');
+      });
+    });
+  } finally { Deno.env.set('ALADIN_TTB_KEY', 'test-ttb-key'); }
 });
 
 Deno.test('ItemLookUp.aspx?ItemId=<isbn13> → 카카오 target=isbn&query=<isbn13>', async () => {

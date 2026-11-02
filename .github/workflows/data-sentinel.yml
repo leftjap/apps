@@ -49,7 +49,8 @@ jobs:
 
   # 알라딘 프록시(pick/supabase/functions/aladin) 헬스 게이트 — Book·Pick·리딩타임이 같이 쓰는 검색 경로.
   # 2026-09-10 알라딘 자체 장애 때 세 앱 검색이 모두 죽었는데 앱에서만 알 수 있었다 → 아침에 CI 가 먼저 안다.
-  # 프록시는 알라딘이 죽으면 카카오로 페일오버해 source:"kakao" 를 붙인다 → 결과는 나오므로 FAIL 이 아니라 경고만.
+  # 알라딘 OpenAPI 는 2026-10-30 전면 종료 → 프록시는 카카오 책 검색만 쓰고 source:"kakao" 를 붙인다(정상).
+  # source 가 없으면 카카오 키가 빠져 종료된 알라딘으로 떨어진 것 → 경고.
   aladin-proxy:
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +67,7 @@ jobs:
             echo "::error::알라딘 프록시 응답이 item 배열 JSON 이 아님"; head -c 300 resp.json; echo; exit 1
           fi
           if [ "$(jq -r '.source // empty' resp.json)" = "kakao" ]; then
-            echo "::warning::알라딘 장애, 카카오로 운영 중 (프록시 페일오버, $(jq '.item | length' resp.json)건)"
+            echo "카카오 정상 ($(jq '.item | length' resp.json)건)"
           else
-            echo "알라딘 정상 ($(jq '.item | length' resp.json)건)"
+            echo "::warning::카카오가 아닌 응답 — Supabase secret KAKAO_REST_API_KEY 확인 (알라딘은 2026-10-30 종료)"
           fi
