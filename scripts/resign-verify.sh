@@ -33,6 +33,16 @@ _rv_alert() {
   _rv_log "ALERT: $*"
   /usr/bin/osascript -e "display notification \"$1\" with title \"⚠️ 재서명 경보\" sound name \"Basso\"" 2>/dev/null || true
 }
+# 수동 개입이 필요한 경보 — 주기 실행마다 실패해도 알림은 6시간에 1회만 띄운다(로그는 매번).
+# readingtime 은 2분 주기라 2026-11-02 Apple ID 로그아웃 때 2분마다 경보음이 울렸다.
+_rv_alert_throttled() {
+  local mark=$1; shift
+  if [[ -f $mark ]] && (( $(date +%s) - $(/usr/bin/stat -f %m "$mark") < 21600 )); then
+    _rv_log "ALERT(알림 생략 — 6시간 내 재발): $*"; return
+  fi
+  /bin/mkdir -p "${mark:h}"; /usr/bin/touch "$mark"
+  _rv_alert "$@"
+}
 
 # 빌드 산출물 embedded 프로파일의 만료 epoch (없으면 0)
 _rv_embedded_exp() {
@@ -102,21 +112,28 @@ resign_verify() {
   if (( need_rebuild )); then
     _rv_log "재서명 재빌드 (캐시 프로파일 purge + clean → 새 프로파일 강제 발급)"
     _rv_purge_profiles "$bundle"
+    local logsize; logsize=$(/usr/bin/stat -f %z "$LOG" 2>/dev/null || echo 0)
     /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" -derivedDataPath "$dd" clean >> "$LOG" 2>&1
     if ! /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" \
            -destination 'generic/platform=iOS' -derivedDataPath "$dd" \
            -allowProvisioningUpdates CURRENT_PROJECT_VERSION=$(date +%Y%m%d%H%M) build >> "$LOG" 2>&1; then
-      _rv_alert "$appname 재빌드 실패 — 로그 확인 ($LOG)"
+      # Xcode 에서 Apple ID 가 빠지면(2026-11-02 사고) 빌드가 "No Accounts" 로 실패한다 — 원인을 알림에 직접 적는다.
+      if /usr/bin/tail -c +$(( logsize + 1 )) "$LOG" | /usr/bin/grep -q "No Accounts"; then
+        _rv_alert_throttled "$state_dir/alerted-resign" "$appname 재서명 불가: Xcode 에서 Apple ID 로그아웃됨. Xcode 설정 > Apple Accounts 에서 재로그인 필요"
+      else
+        _rv_alert_throttled "$state_dir/alerted-resign" "$appname 재빌드 실패 — 로그 확인 ($LOG)"
+      fi
       return 3
     fi
     # 검증: 새로 박힌 프로파일이 실제로 미래 만료인가
     exp=$(_rv_embedded_exp "$prof")
     remain_days=$(( (exp - now) / 86400 ))
     if (( remain_days < FRESH_MIN_DAYS )); then
-      _rv_alert "$appname 재서명 실패: 새 프로파일 미발급(잔여 ${remain_days}d). Xcode 열어 Apple ID 재로그인 후 재실행 필요"
+      _rv_alert_throttled "$state_dir/alerted-resign" "$appname 재서명 실패: 새 프로파일 미발급(잔여 ${remain_days}d). Xcode 열어 Apple ID 재로그인 후 재실행 필요"
       _rv_log "검증 실패 remain=${remain_days}d — 설치 중단"
       return 3
     fi
+    /bin/rm -f "$state_dir/alerted-resign"   # 복구됐으니 다음 실패는 바로 알린다
     _rv_log "재서명 성공 remain=${remain_days}d"
   fi
 
