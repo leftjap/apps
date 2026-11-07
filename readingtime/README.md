@@ -114,6 +114,7 @@
 - 검증: 알라딘 URL 을 일부러 깨뜨린 상태에서 "서성이다" → isbn13 `9791167903792`·장강명·현대문학이 카카오 경유로 나와야 한다. 정상 시엔 응답이 기존과 동일(`source` 외).
 - ✅ 완료(2026-09-11, v11 배포): 상류 8초 제한 + 카카오 페일오버. `ALADIN_FORCE_FAIL=1` 시크릿으로 상류를 건너뛴 상태에서 curl·Book·Pick·리딩타임(`rtapp --verify-search 서성이다`) 모두 카카오 경유로 "서성이다"(장강명·현대문학·9791167903792)를 냈고, 해제 후 알라딘 응답으로 복귀. 카카오 앱 ID 1573685(카카오디벨로퍼스 "앱 > 플랫폼 키" 페이지), 키는 Supabase secret `KAKAO_REST_API_KEY`(repo 기록 금지). 단위 테스트 `deno test --allow-env pick/supabase/functions/aladin/index_test.ts`(저장소 루트에서).
 - ⚠️ 2026-10-30 알라딘 OpenAPI 전면 종료(기존 TTB 키도 불가, 200 + errorCode "…OpenAPI 서비스는 종료되었습니다."). 프록시가 그 200 을 정상으로 넘겨 책 추가 검색이 막힘(2026-11-02 실기기). → 프록시를 **카카오 키가 있으면 알라딘 미호출·카카오 직행**으로 변경. 경로(`functions/v1/aladin/*`)·응답 모양은 그대로라 앱 재빌드 불필요, 함수 재배포만 필요.
+  - ✅ 배포(2026-11-07, v15): CI 배포(`deploy-aladin-proxy.yml`)는 repo secret `SUPABASE_ACCESS_TOKEN` 미설정으로 11-02 두 번 다 실패해 v14(09-10)가 그대로였다. Mac 의 로그인된 CLI 로 `cd pick && supabase functions deploy aladin --project-ref tcbooffrdacfatywdzcm --use-api`. 실서버 "예술원에 드리는 보고"·"서성이다" → `source:"kakao"` 결과, `BookSearch.swift` 원본을 묶어 컴파일한 클라이언트로도 검색·ISBN 조회 정상, data-sentinel 수동 실행 통과.
 - 키 없이 되는 Google Books 는 공용 발신 IP 에서 429 가 나와(실측) 채택하지 않는다.
 
 ② **앱 직접 입력** — 검색이 완전히 죽어도 타이머는 돌아야 한다 (리딩타임)
