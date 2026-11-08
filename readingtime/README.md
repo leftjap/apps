@@ -31,7 +31,7 @@
 | └ `rtapp` | macOS 데모 셸(390×844 창, 모션 on, 알라딘 라이브 검색) — `rtapp --verify-search <q>` |
 | `SETUP.md` | 실기기 배포·검증 절차 |
 | `../.github/workflows/readingtime-ios.yml` | **CI 검증**(macOS 러너): `swift test` + iPhone 시뮬레이터 XCUITest(책 추가 검색 상태). 클라우드 Claude 세션(리눅스)의 시뮬레이터 대체 경로 — 스크린샷은 아티팩트 + 로그 base64 |
-| `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 — 공용 코어 `~/apps/scripts/resign-verify.sh` 위임. launchd `com.leftjap.readingtime.resign` 2분마다 확인. 잔여 <6일(서명 약 1일 경과) 시 **캐시 프로파일 purge + clean 재빌드로 새 프로파일 강제 발급** → **embedded 만료일 사후 검증** → 두 기기(지오 11 Pro·소연 iPhone 17) 설치. 미접속·잠김이면 다음 주기에 재시도. 갱신 실패 시 macOS 알림. 로그 `~/Library/Logs/readingtime-resign.log` |
+| `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 — 공용 코어 `~/apps/scripts/resign-verify.sh` 위임. **빌드 소스 = 푸시된 `origin/main` 의 `readingtime/` 스냅샷**(`~/.local/share/readingtime-resign/src`, 2026-11-08 — 작업 트리의 미커밋 변경·로컬 WIP 커밋은 폰에 안 깔린다). launchd `com.leftjap.readingtime.resign` 2분마다 확인. 잔여 <6일(서명 약 1일 경과) 시 **캐시 프로파일 purge + clean 재빌드로 새 프로파일 강제 발급** → **embedded 만료일 사후 검증** → 두 기기(지오 11 Pro·소연 iPhone 17) 설치. 미접속·잠김이면 다음 주기에 재시도. 갱신 실패 시 macOS 알림. 로그 `~/Library/Logs/readingtime-resign.log` |
 
 ## 기록 화면 (주 · 월 · 지도)
 - 시안 정본 = `design-ref/design_handoff_record_stats/`. 화면 = `Screen10Stats`(주) / `Screen11Month`(월) / `Screen15Map`(지도) + `RecordSheets`(장소 시트·책 상세). 로직·데이터는 전부 `RTRecordData.swift`(순수 엔진 + §12 데모 데이터).
@@ -101,6 +101,22 @@
 - 복원: 기록 중이던 세션은 마지막 틱까지 넣고 일시정지로 되살린 뒤, 꺼져 있던 시간이 1분 이상이면 "N분 넣기 / 넣지 않기"로 묻는다(`restoredGap`). 저장 시각은 마지막 기록 시각(일시정지 시각·"여기까지 읽기" 시각). 기준점이 없는 예전 저장본은 종전 동작.
 - 검증: `RTSessionWallClockTests`(모델), `FlipTapResumeUITests`(합성 모션으로 엎기→들기→화면 탭 재개→들기, 수정 전 코드에서는 실패), `RestoredGapUITests`(시드 `restoreRecording:<초>`). 실기기 미검증.
 - 검은 덮개: 04 화면 탭으로 이어 읽으면 손에 든 채로 검은 덮개(엎힘 화면)가 씌워져 '여기까지 읽기'도 눌리지 않았다(`faceDownDark` 가 '기록 중' 상태만 봄, 시뮬레이터 재현). 덮개 조건에 엔진의 실제 엎힘(`FlipEngine.isFaceDown`)을 더했다(`testScreenTapResumeInHandKeepsScreenUsable`, 수정 전 실패). 03 폰 그림 탭(프로토타입용 엎기 흉내)은 남겼다 — 이제 덮개 없이 04 기록 화면이 보이는 수동 시작이 된다.
+
+### 전체 검토 후속 수정 (2026-11-08)
+두 에이전트의 전체 검토에서 남은 항목을 우선순위대로 고쳤다. 같은 날 앞선 커밋(서재 ▶·로그아웃 확인·탭 복귀·기록 시간·검은 덮개)의 후속이다.
+- **07 시간 직접 추가가 시안 그대로였다.** 책 행이 "몰입 · 미하이 칙센트미하이", 일시가 "오늘 · 14:14" 고정이었고, 열 때마다 시안 데모 상태(35분·+15 선택)였으며 날짜를 고를 수 없었다(저장은 지금 시각). → 실데이터면 상세에서 연 그 책(`selectedBook`)과 실제 일시를 보이고, 일시 행을 누르면 한국어 날짜·시간 휠이 펼쳐진다(지난 시각만, 미래는 모델이 한 번 더 막는다). 기본값은 30분·선택 없음·일시 = 저장하는 순간(`addtimeDate == nil`). ›(책 변경)은 아직 없어 실데이터에선 그리지 않는다. 데모(rtshot)는 시안 그대로.
+- **저장된 기록을 고치거나 지울 수 없었다.** → 08 기록 행을 누르면 같은 시트가 '기록 고치기'로 열린다(`openRecordEditor`): 분·일시 수정, "이 기록 삭제"(alert 확인). 방식·일시정지·위치는 그대로 두고, 분을 안 바꾸면 원래 초를 유지한다(표시값으로 덮으면 초가 사라진다). 세션에 ID 가 없어 값이 같은 첫 기록을 찾는다 — 완전히 같은 기록 둘 중 하나만 지운다. 08 은 그 책의 기록 **전부**를 스크롤로 보인다(예전엔 최근 5건만이라 그 앞은 고칠 수 없었다). 스테퍼 하한 5분은 이미 5분 미만인 값을 올리지 않는다.
+- **1분 미만 종이 기록도 연속일을 이었다.** → 종이도 그날 합 1분 이상만 읽은 날(밀리 `ebookMinSeconds` 와 같은 기준). 기록 화면 '읽은 날'도 같은 기준.
+- **책을 지우면 기록 화면만 그 시간을 뺐다.** 삭제 확인창은 "읽기 기록은 남아요"라고 하고 홈 합계·캘린더는 그 시간을 셌다. → 기록 화면에 '삭제한 책'(서재에 없는 ISBN)·'책 미지정'(ISBN 없음) 한 줄로 모은다. 탭은 안 된다(08 이 없다). 파트너 통계도 같은 규칙.
+- **서버 업로드 실패가 안 보였고, 순서가 뒤집힐 수 있었다.** 변경마다 `Task { try? upload }` 를 따로 띄웠다. → `RTSnapshotUploader` 가 한 번에 하나만 올리고, 올리는 동안 들어온 것 중 마지막 것만 이어서 올린다. 실패하면 설정 시트에 "동기화 · ○○부터 실패" 행이 생기고(누르면 다시 올림), 앱이 다시 활성화될 때도 다시 올린다. 정상이면 행이 없다(시안 불변).
+- **로컬 사본을 못 읽으면 원본을 버렸다.** → `RTUserData.loadLocal` 이 못 읽은 원본을 돌려주고 앱이 `Documents/rt-userData-unreadable-<epoch>.json` 에 보관한 뒤 서버 복원 절차를 탄다(복원 전 업로드 차단은 종전 그대로).
+- **밀리 숨김·완독 표시가 기기에만 있었다.** → 스냅샷 JSON(`readingtime_userdata.data`)에 `hiddenEbooks`·`finishedEbooks` 로 함께 싣는다(SQL 변경 없음, 없으면 예전 모양 그대로). 스냅샷을 바꾸는 모든 저장(`mutateUserData`)이 현재 표시를 싣고, 앱 시작·서버 복원 때 기기 표시와 합친다(숨김은 합집합, 완독 시각은 늦은 쪽).
+- **서버 행이 사용자당 하나라 이력이 없다**는 지적은 DB 를 바꾸지 않았다 — 맥미니 `com.gio.supabase-backup`(매일 04:00, `scripts/supabase-backup.py`)이 전 테이블을 `~/backups/supabase/<날짜>/` 에 덤프하고 있어 `readingtime_userdata` 도 하루 단위 이력이 있다(2026-11-08 기준 07-14 부터 날짜 폴더 116개 중 115개에 `readingtime_userdata.json`). 하루 안의 변경은 남지 않는다.
+- **06 막대가 1시간 고정이었다** — 1시간 넘게 읽은 날엔 기존 구간이 막대를 채워 이번 세션 구간이 0 이 됐다. → 축을 1시간 단위로 늘린다(`Screen06Done.barScale`, 축 라벨 "N시간").
+- **표지 없는 책이 서재·지도에서 빈 사각형이었다** → `RTRemoteCover` 에 `title` 을 넘겨 대체 표지(09 와 같은 이유).
+- **작은 터치 영역** — 08 "직접 추가"(글자 16pt)와 서재 필터·정렬 칩(28pt)을 그린 크기 그대로 두고 누르는 영역만 44pt 로(`rtHitArea`: padding → contentShape → 음수 padding). 실측: SwiftUI 는 접촉 반경만큼 너그럽게 받아 고치기 전에도 '직접 추가' 글자 위 12pt 까지는 눌렸고 16pt 부터 안 눌렸다. 넓힌 뒤 접근성 프레임이 44 캔버스pt 가 되고 16pt 위도 눌린다. 같은 방식인 홈 '전체 통계' 테스트가 늘 실패하던 것은 기준값이 기기 배율(375/390)을 빼먹었기 때문이었다 — 고쳤다.
+- **자동 재설치가 작업 트리를 빌드했다.** 세션이 고치던 미커밋 변경이 매일 폰에 깔렸다. → 재빌드 직전에만 `origin/main` 의 `readingtime/` 을 `git archive` 로 꺼내 빌드한다(폰트는 작업 트리에서 복사). 공용 코어엔 선택 항목 둘(`rv_prepare_source` 훅·`BUILD_CONFIG`)만 넣어 gym 동작은 그대로다(`scripts/tests/resign-verify-source-test.sh`). 푸시하지 않은 변경은 폰에 안 간다. 같은 때 폰 설치본을 **Release** 로 바꿨다(예전엔 최적화 없는 Debug). 시뮬레이터 UI 테스트 50개를 Release 로 돌려 기존 실패 1건(`testMonthNavigation`) 외 통과, 기기용 Release 빌드 컴파일 확인. 실기기 동작은 확인 안 함 — 이상하면 스크립트의 `BUILD_CONFIG=Release` 한 줄을 지우면 Debug 로 돌아간다.
+- 검증: 단위 `RTRecordEditTests`·`RTSnapshotUploaderTests`·`RTEbookMarksSyncTests`, UI `RecordEditUITests`(07 실데이터·피커로 날짜 바꿔 저장 / 고치기·삭제 / 동기화 행)·`HitAreaUITests`(고치기 전 코드에서 실패 확인). rtshot 13화면 정적·앱 경로 26장이 직전 커밋과 바이트 단위로 같다. 실기기는 확인 안 함.
 
 ### 홈 밀리 카드 삭제 (2026-09-15, 사용자 결정)
 밀리 카드를 홈에서 뺄 방법이 완독 처리뿐이었는데, 완독은 서재에 편입시키는 반대 동작이다.

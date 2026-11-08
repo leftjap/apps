@@ -14,6 +14,7 @@ struct ReadingTimeApp: App {
     /// 키보드 윗변(화면 좌표). 숨으면 화면 아래로 나가 RTKeyboard.canvasInset 이 0 이 된다.
     @State private var keyboardMinY: CGFloat = .greatestFiniteMagnitude
     private let cloud: CloudStore
+    private let uploader: RTSnapshotUploader
     private let liveActivity = LiveActivityController()
     private let location: LocationCapture
 
@@ -30,17 +31,25 @@ struct ReadingTimeApp: App {
         let model = RTAppModel()
         model.sessionSeed = 0   // 실앱: 세션은 0초부터 (데모 시드 26:14 는 rtshot/rtapp 전용)
 
+        // 서버 스냅샷 업로드 — 한 번에 하나, 마지막 것 우선. 실패하면 설정 시트에 '동기화 … 부터 실패' 가 뜬다.
+        let uploader = RTSnapshotUploader(upload: { try await cloud.uploadUserData($0) },
+                                          onResult: { [weak model] ok in
+            model?.noteSyncResult(ok)
+            if !ok { Logger(subsystem: "com.leftjap.readingtime", category: "sync").error("스냅샷 업로드 실패") }
+        })
+        self.uploader = uploader
+
         // 실데이터 정본 (§6-④) — UserDefaults JSON 영속 (개인 앱: 로컬이 정본)
         let dec = JSONDecoder()
         dec.dateDecodingStrategy = .iso8601
         if sequenceLaunch {
             model.userData = RTUserData()
-        } else if let raw = UserDefaults.standard.data(forKey: "rt.userData"),
-           let saved = try? dec.decode(RTUserData.self, from: raw) {
-            model.userData = saved
         } else {
-            model.userData = RTUserData()
-            model.needsUserDataRestore = true
+            let local = RTUserData.loadLocal(UserDefaults.standard.data(forKey: "rt.userData"))
+            model.userData = local.data
+            model.needsUserDataRestore = local.needsRestore
+            // 못 읽은 원본은 서버 복원이 rt.userData 를 덮기 전에 Documents 에 따로 둔다 (devicectl 로 회수 가능)
+            if let raw = local.unreadable { Self.keepUnreadable(raw) }
         }
         if !sequenceLaunch {
             model.onUserDataChange = { [weak model] data in
@@ -50,10 +59,11 @@ struct ReadingTimeApp: App {
                     UserDefaults.standard.set(raw, forKey: "rt.userData")
                     // 함께 읽기 — 파트너가 읽도록 스냅샷 업로드 (로그인 시에만 실동작)
                     if model?.needsUserDataRestore == false, let json = String(data: raw, encoding: .utf8) {
-                        Task { try? await cloud.uploadUserData(json) }
+                        uploader.submit(json)
                     }
                 }
             }
+            model.onSyncRetry = { [weak model] in Self.uploadSnapshot(from: model, to: uploader) }
         }
         // 읽는 중 프레즌스 — 세션 시작/정지 시 reading_since 갱신 + 시작 시 읽은 위치 캡처(§13)
         let location = LocationCapture()
@@ -95,6 +105,10 @@ struct ReadingTimeApp: App {
                 }
             }
         }
+
+        // 밀리 숨김·완독 표시를 스냅샷과 맞춘다 — 업데이트 뒤 첫 실행이면 기기에만 있던 표시를 스냅샷에 싣는다.
+        // 스냅샷을 바꾸는 다른 동작(아래 복구 등)보다 먼저 해야 스냅샷에 있던 표시를 잃지 않는다.
+        if !sequenceLaunch { model.mergeEbookMarks() }
 
         // 책 없이 저장된 과거 기록 복구 — 2026-09-15 에 89분 탭 세션이 isbn:null 로 남았다.
         // 재발은 startSession 의 currentBook 폴백이 막고, 여기선 기존 기록만 되살린다.
@@ -175,7 +189,7 @@ struct ReadingTimeApp: App {
                         Self.applyDisplayName(from: cloud, to: model)
                         if let model {
                             try await Self.restoreSnapshot(from: cloud, to: model)
-                            Self.uploadSnapshot(from: model, to: cloud)
+                            Self.uploadSnapshot(from: model, to: uploader)
                             await Self.loadPartner(from: cloud, to: model)
                             await Self.loadEbook(from: cloud, to: model)
                         }
@@ -271,12 +285,25 @@ struct ReadingTimeApp: App {
         }
     }
 
-    /// 내 RTUserData 스냅샷을 클라우드에 1회 업로드 (앱 시작 시 — 파트너가 최신 상태를 읽도록).
-    @MainActor private static func uploadSnapshot(from model: RTAppModel?, to cloud: CloudStore) {
+    /// 내 RTUserData 스냅샷을 클라우드에 1회 업로드 (앱 시작·실패 후 복귀·설정 시트 재시도 — 파트너가 최신 상태를 읽도록).
+    @MainActor private static func uploadSnapshot(from model: RTAppModel?, to uploader: RTSnapshotUploader) {
         guard model?.needsUserDataRestore == false, let data = model?.userData else { return }
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
         guard let raw = try? enc.encode(data), let json = String(data: raw, encoding: .utf8) else { return }
-        Task { try? await cloud.uploadUserData(json) }
+        uploader.submit(json)
+    }
+
+    /// 디코딩 못 한 로컬 사본 보관 — Documents/rt-userData-unreadable-<epoch>.json
+    private static func keepUnreadable(_ raw: Data) {
+        let log = Logger(subsystem: "com.leftjap.readingtime", category: "sync")
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("rt-userData-unreadable-\(Int(Date().timeIntervalSince1970)).json")
+        do {
+            try raw.write(to: url)
+            log.error("로컬 기록을 읽지 못해 원본을 보관함: \(url.lastPathComponent, privacy: .public)")
+        } catch {
+            log.error("못 읽은 로컬 기록 보관 실패: \(String(describing: error), privacy: .public)")
+        }
     }
 
     /// 밀리(전자책) 일별 초 로드 — book_reading_seconds 읽기 전용, 통계 표시 계층 합산.
@@ -471,7 +498,7 @@ struct ReadingTimeApp: App {
                         Self.applyDisplayName(from: cloud, to: model)
                         do {
                             try await Self.restoreSnapshot(from: cloud, to: model)
-                            Self.uploadSnapshot(from: model, to: cloud)
+                            Self.uploadSnapshot(from: model, to: uploader)
                             await Self.loadPartner(from: cloud, to: model)
                             await Self.loadEbook(from: cloud, to: model)
                         } catch {
@@ -526,6 +553,9 @@ struct ReadingTimeApp: App {
                         model.refreshElapsed()   // 백그라운드 동안 멈춘 틱을 세션 벽시계 기준점으로 보정 (엎기·탭 공통)
                         // 홈으로 복귀 시 그 날짜 첫 진입이면 집어드는 안무 (§4)
                         if model.route == .home { Self.armPickupIfFirstToday(model) }
+                        // 지난 업로드가 실패했으면 복귀할 때 다시 올린다 (네트워크가 돌아왔을 수 있다)
+                        // (onSyncRetry 는 --seq 검증 실행엔 배선하지 않는다 — 로그인 없는 업로드가 '성공'으로 끝나 실패 표시를 지운다)
+                        if model.syncFailedAt != nil { model.onSyncRetry?() }
                         // 함께 읽기 — 포그라운드 복귀마다 파트너 프레즌스 갱신
                         Task {
                             await Self.loadPartner(from: cloud, to: model)

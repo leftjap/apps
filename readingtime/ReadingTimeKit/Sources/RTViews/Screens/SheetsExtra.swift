@@ -10,6 +10,7 @@ public struct SheetSettings: View {
     // init 스냅샷 — model 을 평범한 var 로 들면 SwiftUI 가 "저장값 불변"으로 보고 본문 재평가를 건너뛴다.
     // 아바타를 저장 프로퍼티로 잡아야 사진 선택 직후 미리보기가 갱신된다 (Screen14EmptyHome 의 stats 와 같은 이유)
     private let avatar: CGImage?
+    private let syncFailedAt: Date?
     @State private var confirmLogout = false
     @State private var editingName = false
     @State private var nameDraft = ""
@@ -17,6 +18,7 @@ public struct SheetSettings: View {
     public init(model: RTAppModel? = nil) {
         self.model = model
         self.avatar = model?.avatarImage
+        self.syncFailedAt = model?.syncFailedAt
     }
 
     public var body: some View {
@@ -39,6 +41,17 @@ public struct SheetSettings: View {
                     }
                 settingRow(label: "밀리의서재", value: "연결됨", valueColor: RT.green)
                     .padding(.top, 10)
+                // 서버 업로드가 실패하고 있을 때만 — 로컬이 정본이라 읽기 기록은 안전하지만, 서버 사본(기기 교체 복원·
+                // 함께 읽기)이 멈춘 것을 알아야 한다. 누르면 지금 스냅샷을 다시 올린다.
+                if let t = syncFailedAt, let m = model {
+                    settingRow(label: "동기화", value: "\(RTAppModel.recentWhen(t, now: m.now()))부터 실패",
+                               valueColor: Color(hex: 0xB56A55))
+                        .padding(.top, 10)
+                        .contentShape(Rectangle())
+                        .onTapGesture { m.onSyncRetry?() }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("settings.syncRow")
+                }
                 Text("로그아웃").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xB56A55))
                     .frame(maxWidth: .infinity)
                     .padding(.top, 20)

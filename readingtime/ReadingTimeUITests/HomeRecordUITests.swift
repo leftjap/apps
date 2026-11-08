@@ -41,7 +41,10 @@ final class HomeRecordUITests: XCTestCase {
         let btn = app.descendants(matching: .any)["home.statsButton"]
         XCTAssertTrue(btn.waitForExistence(timeout: 15))
         let f = btn.frame
-        XCTAssertGreaterThanOrEqual(f.height, 36, "히트 영역 세로가 36pt 미만")
+        // 앱은 390pt 캔버스를 기기 폭에 맞춰 줄인다(11 Pro 375pt → ×0.96). 36 캔버스pt = 34.6 기기pt.
+        // 배율 없이 36 과 비교해 늘 실패하던 기준값을 고쳤다(2026-11-08).
+        let scale = app.windows.firstMatch.frame.width / 390
+        XCTAssertGreaterThanOrEqual(f.height, 36 * scale - 0.5, "히트 영역 세로가 36 캔버스pt 미만")
         // 프레임 하단 바로 안쪽(캡슐 하단보다 약 5pt 아래) — 하향 확장 구간
         tapAbsolute(app, x: f.midX, y: f.maxY - 4)
         XCTAssertTrue(app.staticTexts[weeklyMarker].waitForExistence(timeout: 15),

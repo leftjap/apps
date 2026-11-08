@@ -9,8 +9,17 @@ public struct Screen06Done: View {
         let startHM: String
         let endHM: String
         let pauseLabel: String     // "2회 · 3분"
-        let baseFrac: CGFloat      // 진행바 기존 구간 (1시간 기준)
+        let baseFrac: CGFloat      // 진행바 기존 구간 (axisHours 기준)
         let addFrac: CGFloat       // 이번 세션 구간
+        let axisHours: Int         // 축 오른쪽 끝 (시간)
+    }
+
+    /// 오늘 막대 축 — 1시간 단위로 늘린다. 1시간에 고정하면 1시간 넘게 읽은 날 기존 구간이 막대를 다 채워
+    /// 이번 세션 구간이 0 이 된다(2026-11-08 검토).
+    static func barScale(todaySeconds: Int, sessionSeconds: Int) -> (hours: Int, base: CGFloat, add: CGFloat) {
+        let hours = max(1, (todaySeconds + sessionSeconds + 3599) / 3600)
+        let span = Double(hours * 3600)
+        return (hours, CGFloat(Double(todaySeconds) / span), CGFloat(Double(sessionSeconds) / span))
     }
 
     var model: RTAppModel?
@@ -29,15 +38,16 @@ public struct Screen06Done: View {
             f.dateFormat = "HH:mm"
             let today = m.todaySeconds
             let pausedSec = max(0, Int(m.now().timeIntervalSince(s.startedAt)) - s.elapsed)
-            let base = min(1.0, Double(today) / 3600)
+            let scale = Self.barScale(todaySeconds: today, sessionSeconds: s.elapsed)
             self.live = Live(
                 bookTitle: m.sessionBook?.title ?? m.currentBook?.title ?? "기록",
                 todayMin: today / 60,
                 startHM: f.string(from: s.startedAt),
                 endHM: f.string(from: m.now()),
                 pauseLabel: s.pauseCount > 0 ? "\(s.pauseCount)회 · \(pausedSec / 60)분" : "없음",
-                baseFrac: CGFloat(base),
-                addFrac: CGFloat(min(1.0 - base, Double(s.elapsed) / 3600)))
+                baseFrac: scale.base,
+                addFrac: scale.add,
+                axisHours: scale.hours)
         } else {
             self.live = nil
         }
@@ -135,7 +145,7 @@ public struct Screen06Done: View {
             HStack {
                 Text("0분").font(.mono(10, 400)).foregroundColor(RT.ghost)
                 Spacer()
-                Text("1시간").font(.mono(10, 400)).foregroundColor(RT.ghost)
+                Text("\(live?.axisHours ?? 1)시간").font(.mono(10, 400)).foregroundColor(RT.ghost)
             }
             .padding(.top, 12)
         }

@@ -343,7 +343,8 @@ struct RTMapPin: View {
                 RoundedRectangle(cornerRadius: cr).fill(b.fill.paint(CGSize(width: cw, height: ch)))
                     .frame(width: cw, height: ch)
             } else {
-                RTRemoteCover(url: b.coverUrl, size: CGSize(width: cw, height: ch), radius: cr)
+                RTRemoteCover(url: b.coverUrl, size: CGSize(width: cw, height: ch), radius: cr, title: b.title)
+                    .accessibilityHidden(true)
             }
         }
         .padding(3)

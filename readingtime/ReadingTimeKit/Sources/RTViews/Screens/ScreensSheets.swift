@@ -44,56 +44,120 @@ struct SheetHead: View {
 }
 
 // ── 07 시간 직접 추가 ──
+// 실데이터(userData)면 책 행·일시가 실제 값이고, 일시 행을 누르면 날짜·시간 피커가 펼쳐진다.
+// 08 기록 행을 누르면 같은 시트가 '기록 고치기'로 열린다(분·일시 수정 + 이 기록 삭제).
+// 데모(rtshot 픽셀 오라클)는 시안 그대로 — 몰입 · 오늘 14:14 · 35분 · +15.
 public struct Sheet07AddTime: View {
     var model: RTAppModel?
     private let value: Int
     private let selPreset: Int?
+    private let live: Bool
+    private let editing: Bool
+    private let book: RTBook?
+    private let when: String
+    @State private var pickingDate = false
+    @State private var confirmDelete = false
 
     public init(model: RTAppModel? = nil) {
         self.model = model
         self.value = model?.addtimeValue ?? 35
         // model 없음(정적 데모) = +15 선택 / model 있고 preset nil = 미선택 (이중 옵셔널 구분)
         self.selPreset = model.map(\.addtimePreset) ?? 15
+        if let m = model, let data = m.userData {
+            live = true
+            editing = m.editingRecord != nil
+            if let rec = m.editingRecord {
+                book = rec.isbn.flatMap { isbn in data.books.first { $0.isbn == isbn } }
+            } else {
+                book = m.selectedBook
+            }
+            when = Self.whenLabel(m.addtimeDate ?? m.now(), now: m.now())
+        } else {
+            live = false; editing = false; book = nil
+            when = "오늘 · 14:14"
+        }
+    }
+
+    /// "오늘 · 09:05" / "어제 · 21:40" / "11.3 · 08:00"
+    static func whenLabel(_ date: Date, now: Date) -> String {
+        let c = Calendar(identifier: .gregorian)
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm"
+        let day: String
+        if c.isDate(date, inSameDayAs: now) { day = "오늘" }
+        else if let y = c.date(byAdding: .day, value: -1, to: now), c.isDate(date, inSameDayAs: y) { day = "어제" }
+        else { day = "\(c.component(.month, from: date)).\(c.component(.day, from: date))" }
+        return "\(day) · \(f.string(from: date))"
     }
 
     public var body: some View {
         SheetShell {
             VStack(spacing: 0) {
-                SheetHead(title: "시간 직접 추가", onClose: { model?.closeSheet() })
+                SheetHead(title: editing ? "기록 고치기" : "시간 직접 추가", onClose: { model?.closeSheet() })
                 bookRow.padding(.top, 18)
                 stepper.padding(.top, 24)
                 presets.padding(.top, 20)
                 whenRow.padding(.top, 20)
-                RTCTAPlain("\(value)분 추가하기")
+                if pickingDate { datePicker }
+                RTCTAPlain(editing ? "\(value)분으로 고치기" : "\(value)분 추가하기")
                     .contentShape(Rectangle())
                     .onTapGesture { model?.addTime() }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("addtime.cta")
                     .padding(.top, 18)
+                if editing {
+                    Text("이 기록 삭제").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xB56A55))
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture { confirmDelete = true }
+                        .accessibilityIdentifier("addtime.delete")
+                        // alert(중앙 배치)이어야 취소가 렌더된다 — lessons/swiftui-confirmation-dialog-scaled-shell.md
+                        .alert("이 기록을 삭제할까요?", isPresented: $confirmDelete) {
+                            Button("삭제", role: .destructive) { model?.deleteEditingRecord() }
+                            Button("취소", role: .cancel) {}
+                        } message: {
+                            Text("삭제한 기록은 되돌릴 수 없어요.")
+                        }
+                }
             }
         }
     }
 
     var bookRow: some View {
         HStack(spacing: 11) {
-            ZStack(alignment: .topLeading) {
-                RT.kraftGrad(CGSize(width: 30, height: 42))
-                Rectangle().fill(Color.black.opacity(0.16)).frame(width: 2)
-                Text("몰입").font(.sans(8, 900)).foregroundColor(Color(hex: 0x241C0D))
-                    .frame(maxWidth: .infinity).padding(.top, 12)
+            if live {
+                RTRemoteCover(url: book?.coverUrl ?? "", size: .init(width: 30, height: 42), radius: 3,
+                              title: book?.title ?? "", author: book?.author)
+                    .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.3), radius: 3, x: 0, y: 3)
+            } else {
+                ZStack(alignment: .topLeading) {
+                    RT.kraftGrad(CGSize(width: 30, height: 42))
+                    Rectangle().fill(Color.black.opacity(0.16)).frame(width: 2)
+                    Text("몰입").font(.sans(8, 900)).foregroundColor(Color(hex: 0x241C0D))
+                        .frame(maxWidth: .infinity).padding(.top, 12)
+                }
+                .frame(width: 30, height: 42)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.3), radius: 3, x: 0, y: 3)
             }
-            .frame(width: 30, height: 42)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
-            .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.3), radius: 3, x: 0, y: 3)
             VStack(alignment: .leading, spacing: 2) {
-                Text("몰입").font(.sans(13.5, 700)).foregroundColor(RT.ink)
-                Text("미하이 칙센트미하이").font(.sans(11, 500)).foregroundColor(RT.faint)
+                Text(live ? (book?.title ?? "책 미지정") : "몰입").font(.sans(13.5, 700)).foregroundColor(RT.ink)
+                    .lineLimit(1)
+                Text(live ? (book?.author ?? "") : "미하이 칙센트미하이").font(.sans(11, 500)).foregroundColor(RT.faint)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6))
+            // ›(책 변경)은 아직 없다 — 실데이터에선 누를 수 없는 꺽쇠를 그리지 않는다 (상세에서 연 그 책에 기록)
+            if !live { ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6)) }
         }
         .padding(EdgeInsets(top: 10, leading: 13, bottom: 10, trailing: 13))
         .background(RT.surface)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.hair, lineWidth: 1))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("addtime.book")
     }
 
     var stepper: some View {
@@ -105,6 +169,7 @@ public struct Sheet07AddTime: View {
                 .shadow(color: Color(hex: 0x16140F, alpha: 0.15), radius: 4, x: 0, y: 3)
                 .contentShape(Circle())
                 .onTapGesture { model?.step(-5) }
+                .accessibilityIdentifier("addtime.minus")
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text("\(value)").font(.mono(56, 700)).tracking(56 * -0.04).foregroundColor(RT.ink)
                 Text("분").font(.sans(19, 700)).foregroundColor(RT.muted)
@@ -116,6 +181,7 @@ public struct Sheet07AddTime: View {
                 .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
                 .contentShape(Circle())
                 .onTapGesture { model?.step(5) }
+                .accessibilityIdentifier("addtime.plus")
         }
     }
 
@@ -143,14 +209,35 @@ public struct Sheet07AddTime: View {
             Text("일시").font(.sans(13, 500)).foregroundColor(RT.muted)
             Spacer()
             HStack(spacing: 7) {
-                Text("오늘 · 14:14").font(.mono(13, 600)).foregroundColor(RT.ink)
+                Text(when).font(.mono(13, 600)).foregroundColor(RT.ink)
                 ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6))
+                    .rotationEffect(.degrees(pickingDate ? 90 : 0))
             }
         }
         .padding(EdgeInsets(top: 13, leading: 15, bottom: 13, trailing: 15))
         .background(RT.surface)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.hair, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture { if live { pickingDate.toggle() } }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("addtime.when")
+    }
+
+    /// 일시 피커 — 지난 시각만 (미래 기록 금지는 모델 addTime 도 한 번 더 막는다)
+    @ViewBuilder var datePicker: some View {
+        if let m = model {
+            DatePicker("", selection: Binding(get: { m.addtimeDate ?? m.now() },
+                                              set: { m.addtimeDate = $0 }),
+                       in: ...m.now(), displayedComponents: [.date, .hourAndMinute])
+                .labelsHidden()
+                #if os(iOS)
+                .datePickerStyle(.wheel)
+                #endif
+                .environment(\.locale, Locale(identifier: "ko_KR"))
+                .frame(maxWidth: .infinity)
+                .accessibilityIdentifier("addtime.picker")
+        }
     }
 }
 

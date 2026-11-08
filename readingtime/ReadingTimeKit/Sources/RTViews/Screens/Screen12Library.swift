@@ -171,7 +171,7 @@ public struct Screen12Library: View {
             }
             .padding(EdgeInsets(top: 7, leading: 11, bottom: 7, trailing: 11))
             .background(Capsule().fill(RT.segBg))
-            .contentShape(Capsule())
+            .rtHitArea(top: 8, bottom: 8)   // 28pt 칩 → 44pt
             .onTapGesture { model?.openSheet(.sort) }
         }
     }
@@ -183,7 +183,7 @@ public struct Screen12Library: View {
             .padding(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14))
             .background(Capsule().fill(on ? RT.surface : Color.clear))
             .shadow(color: on ? Color(hex: 0x16140F, alpha: 0.06) : .clear, radius: 1, x: 0, y: 1)
-            .contentShape(Capsule())
+            .rtHitArea(top: 8, bottom: 8)   // 28pt 세그먼트 → 44pt (위 12pt 틈·아래 목록 여백 안)
             .onTapGesture { model?.setLibraryFilter(f) }
     }
 
@@ -222,7 +222,9 @@ public struct Screen12Library: View {
     // 라이브 읽는 중 카드 — 데모 readingCard 와 동일 레이아웃, 원격 표지·실 메타
     func liveReadingCard(_ b: RTBook) -> some View {
         HStack(spacing: 14) {
-            RTRemoteCover(url: b.coverUrl, size: .init(width: 54, height: 79), radius: 4)
+            RTRemoteCover(url: b.coverUrl, size: .init(width: 54, height: 79), radius: 4,
+                          title: b.title, author: b.author)   // 표지 없는 책 = 제목 찍힌 대체 표지 (빈 사각형 금지)
+                .accessibilityHidden(true)   // 표지 안 제목이 옆 제목과 겹쳐 두 번 읽히지 않게 (장식)
                 .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.4), radius: 7, x: 0, y: 8)
             VStack(alignment: .leading, spacing: 0) {
                 Text(b.title).font(.sans(15.5, 800)).foregroundColor(RT.ink).lineLimit(1)
@@ -296,7 +298,9 @@ public struct Screen12Library: View {
                         HStack(spacing: 12) {
                             ForEach(Array(row.enumerated()), id: \.offset) { c, b in
                                 VStack(spacing: 7) {
-                                    RTRemoteCover(url: b.coverUrl, size: .init(width: 86, height: 124), radius: 4)
+                                    RTRemoteCover(url: b.coverUrl, size: .init(width: 86, height: 124), radius: 4,
+                                                  title: b.title, author: b.author)
+                                        .accessibilityHidden(true)
                                         .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.42), radius: 9, x: 0, y: 10)
                                     stars(b.rating ?? 0)
                                 }

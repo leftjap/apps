@@ -314,3 +314,14 @@ public struct RTPlaceholderCover: View {
         .frame(width: size.width, height: size.height)
     }
 }
+
+public extension View {
+    /// 그려진 크기·자리는 그대로 두고 누르는 영역만 넓힌다 (padding → contentShape → 음수 padding).
+    /// 홈 '전체 통계' 캡슐과 같은 방식 — 접근성 프레임이 넓어진 영역을 포함하는 것으로 확인했다(HomeRecordUITests).
+    /// 탭 제스처는 이 수식어 뒤에 붙여야 넓어진 영역을 받는다.
+    func rtHitArea(top: CGFloat = 0, leading: CGFloat = 0, bottom: CGFloat = 0, trailing: CGFloat = 0) -> some View {
+        padding(EdgeInsets(top: top, leading: leading, bottom: bottom, trailing: trailing))
+            .contentShape(Rectangle())
+            .padding(EdgeInsets(top: -top, leading: -leading, bottom: -bottom, trailing: -trailing))
+    }
+}

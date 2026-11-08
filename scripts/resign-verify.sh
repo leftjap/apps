@@ -22,11 +22,14 @@
 #       3 = 재서명 실패(수동 개입 필요, 알림 발송됨)
 #
 # 호출자는 LOG 환경변수로 앱별 로그 경로를 지정한다(미지정 시 공용 기본).
+# 선택: BUILD_CONFIG(기본 Debug) = 빌드 구성. rv_prepare_source 함수를 정의하면 재빌드 직전에만 불러
+#       빌드할 소스를 준비한다(readingtime: 푸시된 origin/main 스냅샷 — 작업 트리의 미커밋 변경 제외).
 
 export DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}
 : ${LOG:=$HOME/Library/Logs/resign-verify.log}
 : ${REBUILD_THRESHOLD_DAYS:=4}   # 잔여 이 일수 미만 → 재서명 재빌드 (신규=7d 기준 6 = 서명 ~1일 경과 시 매일 재서명)
 : ${FRESH_MIN_DAYS:=5}           # 재빌드 후 잔여가 이 미만이면 갱신 실패로 판정(정상 신규=6d)
+: ${BUILD_CONFIG:=Debug}         # 빌드 구성 — 산출물 경로(<구성>-iphoneos)도 따라간다
 
 _rv_log()   { echo "[$(date '+%F %T')] $*" >> "$LOG"; }
 _rv_alert() {
@@ -78,7 +81,7 @@ resign_verify() {
   local proj=$1 scheme=$2 bundle=$3 dd=$4 appname=$5
   shift 5
   local -a devices=("$@")
-  local app="$dd/Build/Products/Debug-iphoneos/$scheme.app"
+  local app="$dd/Build/Products/${BUILD_CONFIG}-iphoneos/$scheme.app"
   local prof="$app/embedded.mobileprovision"
   local now exp remain_days
   now=$(date +%s)
@@ -110,11 +113,15 @@ resign_verify() {
   _rv_log "── $appname 시작 (embedded 잔여 ${remain_days}d)"
 
   if (( need_rebuild )); then
+    if (( ${+functions[rv_prepare_source]} )) && ! rv_prepare_source; then
+      _rv_alert_throttled "$state_dir/alerted-resign" "$appname 빌드 소스 준비 실패 — 로그 확인 ($LOG)"
+      return 3
+    fi
     _rv_log "재서명 재빌드 (캐시 프로파일 purge + clean → 새 프로파일 강제 발급)"
     _rv_purge_profiles "$bundle"
     local logsize; logsize=$(/usr/bin/stat -f %z "$LOG" 2>/dev/null || echo 0)
-    /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" -derivedDataPath "$dd" clean >> "$LOG" 2>&1
-    if ! /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" \
+    /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" -configuration "$BUILD_CONFIG" -derivedDataPath "$dd" clean >> "$LOG" 2>&1
+    if ! /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" -configuration "$BUILD_CONFIG" \
            -destination 'generic/platform=iOS' -derivedDataPath "$dd" \
            -allowProvisioningUpdates CURRENT_PROJECT_VERSION=$(date +%Y%m%d%H%M) build >> "$LOG" 2>&1; then
       # Xcode 에서 Apple ID 가 빠지면(2026-11-02 사고) 빌드가 "No Accounts" 로 실패한다 — 원인을 알림에 직접 적는다.

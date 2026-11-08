@@ -58,8 +58,10 @@ private func day(_ s: String, hour: Int = 12) -> Date {
                                                     endedAt: day("2026-07-11"), pauseCount: 0)])
         m.statsSubject = .partner
         let mo = RTStats.month(m.statsDataset, year: 2026, month: 7)
-        #expect(mo.totalSec == 0, "isbn 없는 파트너 세션은 책 귀속이 없어 집계 제외, 내 밀리 36분도 없음")
-        #expect(m.statsDataset.books.isEmpty)
+        // 2026-11-08: 책 없는 기록도 '책 미지정' 한 줄로 센다(통계 합계 = 홈 합계). 내 밀리 36분은 여전히 없어야 한다.
+        #expect(mo.totalSec == 600, "파트너 종이 10분만, 내 밀리 36분은 없음")
+        #expect(m.statsDataset.books.map(\.title) == ["책 미지정"])
+        #expect(!m.statsDataset.books.contains { $0.millie })
     }
 
     // 내 통계는 종이 + 밀리 합산 (구 RTMonthStatsTests.meMonthIncludesMillie 후계)

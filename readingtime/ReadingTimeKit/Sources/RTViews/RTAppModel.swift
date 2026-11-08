@@ -237,6 +237,12 @@ public final class RTAppModel: ObservableObject {
     @Published public var sheet: RTSheet?
     @Published public var addtimeValue = 35          // 시안 데모 상태
     @Published public var addtimePreset: Int? = 15
+    /// 07 일시 — nil = 저장하는 순간(지금). 피커로 고르면 그 시각이 기록의 끝 시각이 된다.
+    @Published public var addtimeDate: Date?
+    /// 07 을 '기록 고치기'로 연 대상 (08 기록 행 탭). nil = 새 기록 추가.
+    @Published public private(set) var editingRecord: RTSessionRecord?
+    /// 고치기 시트를 열 때 채운 분 — 분을 안 바꾸고 저장하면 원래 초를 그대로 둔다(표시값으로 덮으면 초가 사라진다)
+    private var editPrefillMinutes: Int?
     @Published public var rating = 4                 // 09 데모: 4★
     @Published public var added: Set<String> = ["flow"]  // 13 데모: 첫 행 추가됨
     @Published public var libraryFilter: RTLibraryFilter = .all
@@ -408,6 +414,14 @@ public final class RTAppModel: ObservableObject {
     }
     /// 변경 영속 훅 (앱: UserDefaults JSON 저장)
     public var onUserDataChange: ((RTUserData) -> Void)?
+    /// 서버에 스냅샷을 못 올리기 시작한 시각 — nil = 정상. 설정 시트가 보여 주고, 누르면 다시 올린다.
+    @Published public private(set) var syncFailedAt: Date?
+    /// 설정 시트 '동기화' 행 탭 (앱: 현재 스냅샷 다시 업로드)
+    public var onSyncRetry: (() -> Void)?
+    /// 업로드 결과 — 실패가 이어지는 동안은 처음 실패한 시각을 유지한다
+    public func noteSyncResult(_ ok: Bool) {
+        if ok { syncFailedAt = nil } else if syncFailedAt == nil { syncFailedAt = now() }
+    }
     /// 로컬 사본이 없는 기기는 서버 복원 전까지 스냅샷 업로드를 막는다.
     public var needsUserDataRestore = false
     public func restoreUserDataIfNeeded(fetch: () async throws -> String?) async throws {
@@ -419,6 +433,7 @@ public final class RTAppModel: ObservableObject {
             let restored = try decoder.decode(RTUserData.self, from: Data(json.utf8))
             userData = restored
             onUserDataChange?(restored)
+            mergeEbookMarks()   // 서버에 실린 밀리 숨김·완독 표시를 이 기기에도
         }
         needsUserDataRestore = false
     }
@@ -428,6 +443,10 @@ public final class RTAppModel: ObservableObject {
     private func mutateUserData(_ mutate: (inout RTUserData) -> Void) {
         guard var d = userData else { return }
         mutate(&d)
+        // 밀리 숨김·완독 표시는 늘 스냅샷에 함께 싣는다 — 서버로 올라가 기기를 바꿔 복원할 때 되살아난다(2026-11-08)
+        let hidden = hiddenEbooks.sorted()
+        d.hiddenEbooks = hidden.isEmpty ? nil : hidden
+        d.finishedEbooks = finishedEbooks.isEmpty ? nil : finishedEbooks
         userData = d
         onUserDataChange?(d)
     }
@@ -570,7 +589,7 @@ public final class RTAppModel: ObservableObject {
     public func finishEbook(_ title: String) {
         finishedEbooks[title] = now()
         onFinishedEbooksChange?(finishedEbooks)
-        adoptFinishedEbook(title)
+        adoptFinishedEbook(title)   // 편입이 스냅샷을 바꾸며 완독 표시도 함께 싣는다
     }
     /// 완독 처리 영속 훅 (앱: UserDefaults JSON)
     public var onFinishedEbooksChange: (([String: Date]) -> Void)?
@@ -585,6 +604,21 @@ public final class RTAppModel: ObservableObject {
     public func deleteEbook(_ title: String) {
         hiddenEbooks.insert(title)
         onHiddenEbooksChange?(hiddenEbooks)
+        mutateUserData { _ in }   // 숨김 표시를 스냅샷에 싣는다
+    }
+
+    /// 앱 시작·서버 복원 때 — 기기(UserDefaults) 표시와 스냅샷 표시를 합쳐 양쪽을 같게 맞춘다.
+    /// 숨김은 합집합(되살리는 동작이 없다), 완독 시각은 더 늦은 쪽.
+    public func mergeEbookMarks() {
+        guard let d = userData else { return }
+        let hidden = hiddenEbooks.union(d.hiddenEbooks ?? [])
+        var finished = finishedEbooks
+        for (title, at) in d.finishedEbooks ?? [:] { finished[title] = max(finished[title] ?? at, at) }
+        if hidden != hiddenEbooks { hiddenEbooks = hidden; onHiddenEbooksChange?(hidden) }
+        if finished != finishedEbooks { finishedEbooks = finished; onFinishedEbooksChange?(finished) }
+        if (d.hiddenEbooks ?? []) != hidden.sorted() || (d.finishedEbooks ?? [:]) != finished {
+            mutateUserData { _ in }
+        }
     }
 
     /// 홈에서 현재 카드를 삭제 (밀리 전용 — UI 진입점). 인덱스가 배열 밖으로 나가지 않게 보정.
@@ -750,10 +784,13 @@ public final class RTAppModel: ObservableObject {
     public var countedEbookDayCount: Int {
         userData == nil ? 0 : visibleEbookDaily.values.filter { $0 >= Self.ebookMinSeconds }.count
     }
-    /// 기록 있는 날(startOfDay) — 종이 세션 ∪ 밀리(>0초). 연속·체인 판정 정본.
+    /// 기록 있는 날(startOfDay) — 종이 그날 합 1분 이상 ∪ 밀리(1분 이상). 연속·체인 판정 정본.
+    /// 종이도 밀리와 같은 기준이다: 실수로 눌렀다 끈 몇 초짜리 탭 세션이 연속일을 이어 주면 안 된다(2026-11-08 검토).
     private var readDays: Set<Date> {
         guard let d = userData else { return [] }
-        var days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        var paper: [Date: Int] = [:]
+        for s in d.sessions { paper[cal.startOfDay(for: s.endedAt), default: 0] += s.seconds }
+        var days = Set(paper.filter { $0.value >= Self.ebookMinSeconds }.keys)
         let f = dayFormatter
         for (k, sec) in visibleEbookDaily where sec >= Self.ebookMinSeconds {
             if let dt = f.date(from: k) { days.insert(cal.startOfDay(for: dt)) }
@@ -1149,9 +1186,14 @@ public final class RTAppModel: ObservableObject {
         // 책 추가: 검색창은 열 때마다 공란. 결과(searchResults)는 유지 = "공란이면 최신 검색 표시".
         // 실패 안내는 결과가 아니므로 지운다 (다시 열면 최신 결과부터).
         if s == .addbook { searchQuery = ""; searchError = nil }
+        // 시간 직접 추가: 실데이터에선 시안 데모 상태(35분·+15 선택)로 열지 않는다. 일시 기본값은 지금.
+        if s == .addtime {
+            editingRecord = nil; editPrefillMinutes = nil
+            if userData != nil { addtimeValue = 30; addtimePreset = nil; addtimeDate = nil }
+        }
         sheet = s
     }
-    public func closeSheet() { sheet = nil }
+    public func closeSheet() { sheet = nil; editingRecord = nil; editPrefillMinutes = nil }
 
     // ── 액션 (app.js data-act 대응) ──
     public func login() {
@@ -1306,22 +1348,24 @@ public final class RTAppModel: ObservableObject {
     /// 밀리 편입 책은 세션이 무의미(자동 수집) — 완독 마커까지 해제해 홈 카드를 부활시킨다.
     public func rereadBook() {
         guard let b = selectedBook, b.finished else { return }
+        // 완독 표시를 먼저 지운다 — 스냅샷 저장(mutateUserData)이 그 표시를 함께 싣는다
+        if b.millieBookId != nil {
+            finishedEbooks.removeValue(forKey: b.title)
+            onFinishedEbooksChange?(finishedEbooks)
+        }
         mutateUserData { d in
             if let i = d.books.firstIndex(where: { $0.isbn == b.isbn }) {
                 d.books[i].finished = false
             }
         }
-        if b.millieBookId != nil {
-            finishedEbooks.removeValue(forKey: b.title)
-            onFinishedEbooksChange?(finishedEbooks)
-            return
-        }
+        if b.millieBookId != nil { return }
         start(isbn: b.isbn)
     }
 
     // ── 07 시간 직접 추가 ──
     public func step(_ d: Int) {
-        addtimeValue = max(5, addtimeValue + d)
+        // 하한 5분 — 이미 5분 미만(고치기로 연 짧은 기록)이면 빼기가 값을 올리지 않게 그 값에서 멈춘다
+        addtimeValue = max(min(5, addtimeValue), addtimeValue + d)
         addtimePreset = nil
     }
 
@@ -1332,16 +1376,49 @@ public final class RTAppModel: ObservableObject {
 
     public func addTime() {
         if userData != nil {
-            let fix = locationProvider?()
-            let rec = RTSessionRecord(isbn: selectedBook?.isbn, mode: "manual",
-                                      seconds: addtimeValue * 60, endedAt: now(), pauseCount: 0,
-                                      latitude: fix?.latitude, longitude: fix?.longitude,
-                                      placeId: fix?.placeId, placeName: fix?.placeName,
-                                      country: fix?.country)
-            mutateUserData { $0.sessions.append(rec) }
+            let t = now()
+            let endedAt = min(addtimeDate ?? t, t)   // 미래 시각으로는 기록하지 않는다
+            if let old = editingRecord {
+                let seconds = addtimeValue == editPrefillMinutes ? old.seconds : addtimeValue * 60
+                mutateUserData { d in
+                    guard let i = d.sessions.firstIndex(of: old) else { return }
+                    d.sessions[i].seconds = seconds
+                    d.sessions[i].endedAt = endedAt
+                }
+            } else {
+                let fix = locationProvider?()
+                let rec = RTSessionRecord(isbn: selectedBook?.isbn, mode: "manual",
+                                          seconds: addtimeValue * 60, endedAt: endedAt, pauseCount: 0,
+                                          latitude: fix?.latitude, longitude: fix?.longitude,
+                                          placeId: fix?.placeId, placeName: fix?.placeName,
+                                          country: fix?.country)
+                mutateUserData { $0.sessions.append(rec) }
+            }
         }
         addtimeValue = 35
         addtimePreset = 15
+        addtimeDate = nil
+        closeSheet()
+    }
+
+    /// 08 기록 행 탭 → 07 시트를 '기록 고치기'로 연다. 서재 기록에 없는 값이면(이미 지워짐) 무시.
+    public func openRecordEditor(_ rec: RTSessionRecord) {
+        guard userData?.sessions.contains(rec) == true else { return }
+        openSheet(.addtime)
+        editingRecord = rec
+        addtimeValue = max(1, rec.seconds / 60)
+        editPrefillMinutes = addtimeValue
+        addtimePreset = nil
+        addtimeDate = rec.endedAt
+    }
+
+    /// 고치기 시트의 '이 기록 삭제' — 같은 값의 기록이 여럿이면 하나만 지운다.
+    public func deleteEditingRecord() {
+        if let old = editingRecord {
+            mutateUserData { d in
+                if let i = d.sessions.firstIndex(of: old) { d.sessions.remove(at: i) }
+            }
+        }
         closeSheet()
     }
 
@@ -1349,17 +1426,18 @@ public final class RTAppModel: ObservableObject {
     public func rate(_ n: Int) { rating = n }
     public func saveFinished() {
         if let cur = selectedBook {
+            // 밀리 편입 책은 홈 카드 제외 마커도 같이 — 없으면 완독했는데 카드가 계속 뜬다.
+            // 스냅샷 저장보다 먼저 세워야 그 저장에 함께 실린다.
+            if cur.millieBookId != nil {
+                finishedEbooks[cur.title] = now()
+                onFinishedEbooksChange?(finishedEbooks)
+            }
             mutateUserData { d in
                 if let i = d.books.firstIndex(where: { $0.isbn == cur.isbn }) {
                     d.books[i].finished = true
                     d.books[i].rating = rating
                     d.books[i].finishedAt = now()
                 }
-            }
-            // 밀리 편입 책은 홈 카드 제외 마커도 같이 — 없으면 완독했는데 카드가 계속 뜬다
-            if cur.millieBookId != nil {
-                finishedEbooks[cur.title] = now()
-                onFinishedEbooksChange?(finishedEbooks)
             }
         }
         closeSheet()
@@ -1710,6 +1788,7 @@ public final class RTAppModel: ObservableObject {
         case "demoPartnerIdle": loadDemoPartner(reading: false)   // idle 상태 검증
         case "demoPartnerStale": loadDemoPartner(reading: false, daysAgo: 28)  // 오래 안 읽은 상태 검증
         case "clearAvatar": avatarImage = nil       // UI 테스트 시작 상태 격리(저장 파일 잔존 무시)
+        case "syncFailed": noteSyncResult(false)    // 설정 시트 동기화 실패 행 (검증)
         case "demoEbook":   // 밀리 일별 시드(오늘 29분·어제 10분·그제 20분) — 통계 합산 검증
             let t = now()
             let f = dayFormatter

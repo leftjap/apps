@@ -89,10 +89,24 @@ public struct RTPlaceFix: Equatable, Sendable {
 public struct RTUserData: Codable, Equatable, Sendable {
     public var books: [RTBook]
     public var sessions: [RTSessionRecord]
+    /// 홈에서 지운 밀리 책 제목(정렬) · 완독 처리한 밀리 책(제목 → 시각). 2026-11-08 까지는 기기 UserDefaults 에만 있어
+    /// 기기를 바꾸고 서버에서 복원하면 지운·완독한 밀리 카드가 되살아났다. nil = 없음 — 예전 스냅샷과 같은 모양이다.
+    public var hiddenEbooks: [String]?
+    public var finishedEbooks: [String: Date]?
 
     public init(books: [RTBook] = [], sessions: [RTSessionRecord] = []) {
         self.books = books
         self.sessions = sessions
+    }
+
+    /// 로컬 사본(rt.userData) 해석. 없거나 못 읽으면 빈 데이터로 시작하되 서버 복원 전까지 업로드를 막는다.
+    /// 못 읽은 원본은 unreadable 로 돌려준다 — 앱이 따로 보관해야 다음 저장이 그 원본을 덮어써도 되살릴 수 있다.
+    public static func loadLocal(_ raw: Data?) -> (data: RTUserData, needsRestore: Bool, unreadable: Data?) {
+        guard let raw else { return (RTUserData(), true, nil) }
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .iso8601
+        guard let saved = try? dec.decode(RTUserData.self, from: raw) else { return (RTUserData(), true, raw) }
+        return (saved, false, nil)
     }
 }
 

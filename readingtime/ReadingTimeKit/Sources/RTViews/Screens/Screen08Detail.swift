@@ -8,7 +8,8 @@ public struct Screen08Detail: View {
         let count: Int               // 종이책 세션 수 / 밀리 편입 책은 읽은 날 수
         let days: Int
         let isMillie: Bool           // 밀리 편입 책 — 기록은 일별, CTA 는 '밀리의 서재' 비활성
-        let rows: [(tile: Tile, min: String, label: String, right: Right)]
+        /// 기록 행 — 종이책은 그 책의 기록 전부(최신순, 행 탭 = 고치기·지우기). 밀리는 최근 5일(record nil).
+        let rows: [(tile: Tile, min: String, label: String, right: Right, record: RTSessionRecord?)]
     }
 
     var model: RTAppModel?
@@ -37,15 +38,15 @@ public struct Screen08Detail: View {
                 // 않는다 — 남기면 혼자 읽은 날이 '다른 책과 함께'로 오표기된다(1권인데 시간만 미달).
                 // 파트너의 밀리 책은 히스토리를 받지 않는다(스냅샷은 책 목록뿐) — 내 기록을 붙이면 안 됨
                 let myDays = partner ? [] : m.ebookReadDays(title: book.title)
-                let rows = myDays.prefix(5).map { d -> (Tile, String, String, Right) in
+                let rows = myDays.prefix(5).map { d -> (Tile, String, String, Right, RTSessionRecord?) in
                     let mine = m.ebookBreakdown(on: d).first { $0.title == book.title }
                     let right: Right = cal.isDate(d, inSameDayAs: m.now())
                         ? .today
                         : .date("\(cal.component(.month, from: d)).\(cal.component(.day, from: d))")
                     if let mine {
-                        return (.millie, "\(max(1, mine.seconds / 60))분", "밀리 · 자동 기록", right)
+                        return (.millie, "\(max(1, mine.seconds / 60))분", "밀리 · 자동 기록", right, nil)
                     }
-                    return (.millie, "—", "밀리 · 다른 책과 함께", right)
+                    return (.millie, "—", "밀리 · 다른 책과 함께", right, nil)
                 }
                 self.live = Live(book: book,
                                  total: RTAppModel.hmString(totals.seconds),
@@ -58,14 +59,13 @@ public struct Screen08Detail: View {
                 let rows = data.sessions
                     .filter { $0.isbn == book.isbn }
                     .sorted { $0.endedAt > $1.endedAt }
-                    .prefix(5)
-                    .map { r -> (Tile, String, String, Right) in
+                    .map { r -> (Tile, String, String, Right, RTSessionRecord?) in
                         let tile: Tile = r.mode == "flip" ? .flip : (r.mode == "tap" ? .tap : .manual)
                         let label = r.mode == "manual" ? "직접 추가" : "\(modeLabel[r.mode] ?? r.mode) · \(f.string(from: r.endedAt))"
                         let right: Right = cal.isDate(r.endedAt, inSameDayAs: m.now())
                             ? .today
                             : .date("\(cal.component(.month, from: r.endedAt)).\(cal.component(.day, from: r.endedAt))")
-                        return (tile, "\(max(1, r.seconds / 60))분", label, right)
+                        return (tile, "\(max(1, r.seconds / 60))분", label, right, r)
                     }
                 self.live = Live(book: book,
                                  total: RTAppModel.hmString(totals.seconds),
@@ -87,9 +87,21 @@ public struct Screen08Detail: View {
                 if !readOnly { ctas.padding(.top, 18) }   // 파트너 책 = 읽기전용, CTA 숨김
                 logHead.padding(EdgeInsets(top: readOnly ? 20 : 26, leading: 0, bottom: 6, trailing: 0))
                 if let live {
-                    ForEach(Array(live.rows.enumerated()), id: \.offset) { i, r in
-                        logRow(tile: r.tile, min: r.min, label: r.label, right: r.right,
-                               divider: i < live.rows.count - 1)
+                    // 기록 전부를 스크롤로 보인다 (최근 5건만 보이면 그 앞 기록은 고칠 수 없었다).
+                    // 데모(rtshot)는 아래 고정 5행 — 헤드리스 렌더는 ScrollView 를 그리지 못한다.
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            ForEach(Array(live.rows.enumerated()), id: \.offset) { i, r in
+                                logRow(tile: r.tile, min: r.min, label: r.label, right: r.right,
+                                       divider: i < live.rows.count - 1)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        if !readOnly, let rec = r.record { model?.openRecordEditor(rec) }
+                                    }
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityIdentifier("detail.record.\(i)")
+                            }
+                        }
                     }
                 } else {
                     logRow(tile: .flip, min: "26분", label: "엎기 · 14:14", right: .today, divider: true)
@@ -243,7 +255,8 @@ public struct Screen08Detail: View {
                     }
                     Text("직접 추가").font(.sans(11.5, 600)).foregroundColor(RT.muted)
                 }
-                .contentShape(Rectangle())
+                // 글자 높이(16pt)만 눌리던 것을 44pt 로 — 위는 CTA 행과의 26pt 틈, 아래는 첫 기록 행과의 6pt 틈까지만
+                .rtHitArea(top: 20, leading: 12, bottom: 8, trailing: 12)
                 .onTapGesture { model?.openSheet(.addtime) }
             }
         }

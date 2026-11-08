@@ -137,7 +137,7 @@ public enum RTStats {
             .map { Rank(book: $0, sec: perBook[$0]!, days: daysPerBook[$0]!.count, done: doneHere.contains($0)) }
         return Month(year: year, month: month, isCurrent: isCur, offset: off, cells: cells,
                      totalSec: ss.reduce(0) { $0 + $1.sec },
-                     readDays: Set(ss.map(\.day)).count,
+                     readDays: (1...days).filter { daySec[$0] >= 60 }.count,   // 1분 미만인 날은 읽은 날이 아니다 (홈 연속일과 같은 기준)
                      denomDays: isCur ? ds.today.day : days,
                      ranked: ranked)
     }
@@ -388,11 +388,24 @@ public enum RTStats {
             return i
         }
 
+        // 서재에 없는 책의 기록 — 책을 지워도 "읽기 기록은 남는다"고 안내했고 홈 합계·캘린더는 이 시간을 센다.
+        // 통계만 빼면 같은 날 숫자가 화면마다 달라진다(2026-11-08 검토). 지운 책 / 책 없이 저장된 기록을 각각 한 줄로 모은다.
+        var orphanIdx: [String: Int] = [:]
+        func orphanIndex(_ title: String) -> Int {
+            if let i = orphanIdx[title] { return i }
+            let i = books.count
+            orphanIdx[title] = i
+            books.append(RTStatsBook(title: title, author: "", short: title,
+                                     fill: .solid(0xE8E2D2), tc: 0x3A2C1C, millie: false))
+            return i
+        }
+
         var places: [RTStatsPlace] = []
         var placeIdx: [String: Int] = [:]
         var sessions: [RTStatsSession] = []
         for s in data.sessions.sorted(by: { $0.endedAt < $1.endedAt }) {
-            guard let isbn = s.isbn, let bi = paperIndex(isbn), s.seconds > 0 else { continue }
+            guard s.seconds > 0 else { continue }
+            let bi = s.isbn.map { paperIndex($0) ?? orphanIndex("삭제한 책") } ?? orphanIndex("책 미지정")
             var pi: Int?
             if let pid = s.placeId, let lat = s.latitude, let lng = s.longitude {
                 if let i = placeIdx[pid] { pi = i }
