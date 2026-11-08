@@ -270,3 +270,31 @@ Deno.test('ALADIN_FORCE_FAIL=1(페일오버 검증용) → 알라딘을 부르�
   });
   assert.equal(seen.aladin, 0);
 });
+
+Deno.test('카카오 표지: 120×174 썸네일 대신 fname 원본(458×687 등)을 https 로, 원본 주소가 없으면 썸네일 그대로', async () => {
+  const thumb = (fname: string) => `https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=${encodeURIComponent(fname)}`;
+  const body = {
+    documents: [
+      { title: 'A', authors: [], publisher: '', datetime: '', isbn: ' 9791141690960',
+        thumbnail: thumb('http://t1.daumcdn.net/lbook/image/7322495?timestamp=20261016142748') },
+      { title: 'B', authors: [], publisher: '', datetime: '', isbn: ' 9791141690961',
+        thumbnail: thumb('https://t1.daumcdn.net/lbook/image/1?timestamp=1') },
+      { title: 'C', authors: [], publisher: '', datetime: '', isbn: ' 9791141690962', thumbnail: thumb('a') },
+      { title: 'D', authors: [], publisher: '', datetime: '', isbn: ' 9791141690963', thumbnail: '' },
+    ],
+    meta: { total_count: 4 },
+  };
+  const kakao: Upstream = async () => new Response(JSON.stringify(body), { status: 200 });
+  const { impl } = route(async () => { throw timeoutError(); }, kakao);
+  await withEnv({ KAKAO_REST_API_KEY: 'test-kakao-key' }, async () => {
+    await withUpstream(impl, async () => {
+      const covers = (await (await handler!(search())).json()).item.map((i: { cover: string }) => i.cover);
+      assert.deepEqual(covers, [
+        'https://t1.daumcdn.net/lbook/image/7322495?timestamp=20261016142748',   // http → https (앱 ATS·웹 혼합 콘텐츠)
+        'https://t1.daumcdn.net/lbook/image/1?timestamp=1',
+        thumb('a'),                                                             // fname 이 URL 이 아니면 썸네일 유지
+        '',
+      ]);
+    });
+  });
+});

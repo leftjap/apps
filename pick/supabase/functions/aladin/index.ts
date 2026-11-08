@@ -29,6 +29,20 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 type KakaoDoc = { title?: string; authors?: string[]; publisher?: string; datetime?: string; thumbnail?: string; isbn?: string };
 type KakaoBooks = { documents?: KakaoDoc[]; meta?: { total_count?: number } };
 
+// 카카오 thumbnail 은 120×174 축소본(kakaocdn thumb). fname 의 원본(daumcdn, 실측 458×687)을 https 로 쓴다 —
+// 원본 주소는 http 로 오는데 iOS ATS·웹 혼합 콘텐츠가 막으므로 https 로 바꾼다(https 응답 실측 200). 원본이 없으면 썸네일 그대로.
+function coverOf(thumbnail: string): string {
+  try {
+    const fname = new URL(thumbnail).searchParams.get('fname') ?? '';
+    const orig = new URL(fname);
+    if (orig.protocol !== 'http:' && orig.protocol !== 'https:') return thumbnail;
+    orig.protocol = 'https:';
+    return orig.toString();
+  } catch {
+    return thumbnail;
+  }
+}
+
 // 카카오 documents[] → 알라딘 item[] 모양. itemId 는 생략 — 클라이언트 정규화(book/src/db/aladin.js·BookSearch.swift normalize)가
 // isbn13 → isbn → itemId 순으로 폴백한다. 카카오 isbn 은 "10자리 13자리" 공백 구분(979 도서는 10자리 칸이 비어 있음).
 function toAladin(data: KakaoBooks, query: string, startIndex: number, itemsPerPage: number) {
@@ -39,7 +53,7 @@ function toAladin(data: KakaoBooks, query: string, startIndex: number, itemsPerP
       author: (d.authors ?? []).join(', '),
       publisher: d.publisher ?? '',
       pubDate: (d.datetime ?? '').slice(0, 10),
-      cover: d.thumbnail ?? '',
+      cover: coverOf(d.thumbnail ?? ''),
       isbn: isbns.find((s) => s.length !== 13) ?? '',
       isbn13: isbns.find((s) => s.length === 13) ?? '',
       categoryName: '',
