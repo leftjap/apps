@@ -133,10 +133,29 @@ public struct RTSession: Sendable, Codable {   // Codable: 진행 중 세션 영
     public var pauseCount: Int
     public var startedAt: Date       // 세션 시작 시각 (06 원장 표시용 — 데모 렌더는 미사용)
     public var isbn: String? = nil   // 세션 대상 책 (시작 시점 캡처 — 기록 귀속·다크/완료/LA 표기)
+    /// 벽시계 기준점 — 상태가 마지막으로 바뀐 시각과 그때의 경과. 기록 중 경과 = anchorElapsed + (지금 − anchorAt).
+    /// 엎기 엔진·화면 탭·앱 복원이 모두 이 기준점 하나로 계산한다 (2026-11-08: 엔진이 따로 둔 시계가 화면 탭 재개를
+    /// 몰라, 폰을 들 때 그 값으로 덮어써 탭 이후 시간이 지워졌다). 일시정지 중이면 anchorAt = 멈춘 시각(저장 시각에 쓴다).
+    /// 예전 저장본엔 없다(nil) — 그때는 종전 동작(틱 누적)만 한다.
+    public var anchorAt: Date? = nil
+    public var anchorElapsed: Int? = nil
 
-    public init(mode: RTMode, status: RTSessionStatus, elapsed: Int, pauseCount: Int, startedAt: Date, isbn: String? = nil) {
+    public init(mode: RTMode, status: RTSessionStatus, elapsed: Int, pauseCount: Int, startedAt: Date, isbn: String? = nil,
+                anchorAt: Date? = nil, anchorElapsed: Int? = nil) {
         self.mode = mode; self.status = status; self.elapsed = elapsed; self.pauseCount = pauseCount
         self.startedAt = startedAt; self.isbn = isbn
+        self.anchorAt = anchorAt; self.anchorElapsed = anchorElapsed
+    }
+
+    /// t 시점의 경과 — 기록 중이면 벽시계, 틱이 앞서 있으면 틱 값 (경과는 줄지 않는다)
+    public func wallElapsed(at t: Date) -> Int {
+        guard status == .recording, let a = anchorAt, let e = anchorElapsed else { return elapsed }
+        return max(elapsed, e + max(0, Int(t.timeIntervalSince(a))))
+    }
+
+    mutating func anchor(at t: Date) {
+        anchorAt = t
+        anchorElapsed = elapsed
     }
 }
 
@@ -1155,12 +1174,22 @@ public final class RTAppModel: ObservableObject {
         else { startSession(.tap); nav(.tapTimer) }
     }
 
-    public func cancelSession() { session = nil; nextSessionISBN = nil; mode = .flip; emitPresence(); nav(.home) }
+    public func cancelSession() { session = nil; restoredGap = nil; nextSessionISBN = nil; mode = .flip; emitPresence(); nav(.home) }
 
     /// 앱 기동 시 영속된 세션 복원 — 종료 시점을 알 수 없으므로 **일시정지**로 되살려 타이머 화면에 둔다.
     /// 프레즌스는 즉시 해제(매달린 reading_since 정리). 사용자가 재개하거나 저장하면 정상 경로를 탄다.
     public func restoreSession(_ saved: RTSession) {
         var s = saved
+        // 기록 중에 종료된 세션: 마지막 틱(마지막으로 살아 있던 시각)까지만 넣고, 꺼져 있던 시간은 넣을지 묻는다.
+        // 1분 미만은 묻지 않는다. 기준점 없는 예전 저장본은 종전대로.
+        var gap: Int?
+        if s.status == .recording, let a = s.anchorAt, let e = s.anchorElapsed {
+            let lastAlive = a.addingTimeInterval(TimeInterval(max(0, s.elapsed - e)))
+            let g = Int(now().timeIntervalSince(lastAlive))
+            if g >= 60 { gap = g }
+            s.anchor(at: lastAlive)   // 일시정지 기준 = 마지막으로 살아 있던 시각 (저장 시각)
+        }
+        restoredGap = gap
         s.status = .paused
         mode = s.mode
         session = s
@@ -1168,20 +1197,56 @@ public final class RTAppModel: ObservableObject {
         nav(s.mode == .flip ? .flipTimer : .tapTimer)
     }
 
-    public func simFlip() { startSession(.flip); nav(.flipTimer) }
+    /// 엎어서 기록 시작. at = 엎은 시각 (잠금 확인 뒤 소급 시작이면 과거 시각)
+    public func simFlip(at: Date? = nil) { startSession(.flip, at: at); nav(.flipTimer) }
 
     public func switchTap() { mode = .tap; startSession(.tap); nav(.tapTimer) }
 
-    public func togglePause() {
+    /// 일시정지↔재개. at = 엎기 엔진이 감지한 시각 (화면 탭이면 지금)
+    public func togglePause(at: Date? = nil) {
         guard var s = session else { return }
-        if s.status == .recording { s.status = .paused; s.pauseCount += 1 }
-        else { s.status = .recording; justResumed = true }
+        let t = at ?? now()
+        if s.status == .recording {
+            s.elapsed = s.wallElapsed(at: t)
+            s.status = .paused; s.pauseCount += 1
+        } else { s.status = .recording; justResumed = true }
+        s.anchor(at: t)
         session = s
         emitPresence()
     }
 
+    /// 앱 활성 복귀 등 — 기록 중이면 벽시계 경과로 화면 값을 맞춘다 (틱은 백그라운드에서 멈출 수 있다)
+    public func refreshElapsed() {
+        guard var s = session, s.status == .recording else { return }
+        let w = s.wallElapsed(at: now())
+        guard w != s.elapsed else { return }
+        s.elapsed = w
+        session = s
+    }
+
+    /// 앱이 꺼져 있던 동안의 시간(초) — 복원한 세션이 기록 중이었을 때만. 화면이 넣을지 묻는다.
+    @Published public private(set) var restoredGap: Int?
+
+    public func includeRestoredGap() {
+        guard let g = restoredGap, var s = session else { restoredGap = nil; return }
+        s.elapsed += g
+        s.anchor(at: now())
+        restoredGap = nil
+        session = s
+    }
+
+    public func dismissRestoredGap() { restoredGap = nil }
+
     public func endSession() {
-        if var s = session { s.status = .paused; session = s }
+        if var s = session {
+            if s.status == .recording {
+                let t = now()
+                s.elapsed = s.wallElapsed(at: t)
+                s.anchor(at: t)
+            }
+            s.status = .paused
+            session = s
+        }
         emitPresence()
         nav(.done)
     }
@@ -1191,8 +1256,10 @@ public final class RTAppModel: ObservableObject {
             onSessionSaved?(s.mode, s.elapsed)
             if userData != nil {
                 let fix = locationProvider?()
+                // 저장 시각 = 마지막 기록 시각 — 밤에 멈추고 다음 날 저장해도 읽은 날로 남는다
+                let endedAt = (s.status == .paused ? s.anchorAt : nil) ?? now()
                 let rec = RTSessionRecord(isbn: s.isbn, mode: s.mode.rawValue,
-                                          seconds: s.elapsed, endedAt: now(),
+                                          seconds: s.elapsed, endedAt: endedAt,
                                           pauseCount: s.pauseCount,
                                           latitude: fix?.latitude, longitude: fix?.longitude,
                                           placeId: fix?.placeId, placeName: fix?.placeName,
@@ -1201,12 +1268,13 @@ public final class RTAppModel: ObservableObject {
             }
         }
         session = nil
+        restoredGap = nil
         mode = .flip   // 세션이 끝나면 다음 기록 시작(홈 CTA·서재 ▶·이어서 읽기)은 다시 엎기 — 탭은 '탭 시작'으로만
         emitPresence()
         nav(.home)
     }
 
-    public func deleteSession() { session = nil; mode = .flip; nav(.home) }
+    public func deleteSession() { session = nil; restoredGap = nil; mode = .flip; nav(.home) }
 
     /// 책 없이 저장된 과거 세션 복구 — 그 기록이 끝난 시점에 읽는 중이던 종이책에 붙인다
     /// (currentBook 과 같은 규칙을 그 시각 기준으로 적용). 붙일 책이 없으면 그대로 둔다.
@@ -1474,15 +1542,18 @@ public final class RTAppModel: ObservableObject {
     private var nextSessionISBN: String?
 
     // ── 세션 시작 (app.js startSession — 시드는 sessionSeed) ──
-    public func startSession(_ mode: RTMode) {
+    public func startSession(_ mode: RTMode, at: Date? = nil) {
         // 세션 대상: start(isbn:) 이 보류한 책 > 홈 카드에서 고른 책 (캐러셀 도입 2026-08-25).
         // flipTargetISBN 은 카드 범위 밖이면 currentBook 으로 폴백한다.
         // 마지막 폴백은 읽는 중 책 — 대상이 비어도 기록이 어느 책에도 안 붙는 일은 없어야 한다
         // (실사고 2026-09-15: 89분이 isbn:null 로 저장돼 통계·마지막 기록에서 사라짐).
         // flipTargetISBN 자체엔 폴백을 두지 않는다 — FlipEngine 의 밀리 카드 엎기 차단 기준이다.
-        session = RTSession(mode: mode, status: .recording,
-                            elapsed: sessionSeed, pauseCount: 0, startedAt: now(),
-                            isbn: nextSessionISBN ?? flipTargetISBN ?? currentBook?.isbn)
+        let t = at ?? now()
+        var s = RTSession(mode: mode, status: .recording,
+                          elapsed: sessionSeed, pauseCount: 0, startedAt: t,
+                          isbn: nextSessionISBN ?? flipTargetISBN ?? currentBook?.isbn)
+        s.anchor(at: t)
+        session = s
         nextSessionISBN = nil
         emitPresence()
     }
@@ -1672,6 +1743,13 @@ public final class RTAppModel: ObservableObject {
         case "start": start()
         case "cancelSession": cancelSession()
         case "simFlip": simFlip()
+        case "restoreRecording":   // 검증: arg 초 동안 꺼져 있던 '기록 중' 엎기 세션 복원 (마지막 틱 = 지금 − arg)
+            Int(arg).map { gap in
+                let t = now().addingTimeInterval(TimeInterval(-gap - 60))
+                restoreSession(RTSession(mode: .flip, status: .recording, elapsed: 160, pauseCount: 0,
+                                         startedAt: t.addingTimeInterval(-100), isbn: currentBook?.isbn,
+                                         anchorAt: t, anchorElapsed: 100))
+            }
         case "switchTap": switchTap()
         case "togglePause": togglePause()
         case "endSession": endSession()

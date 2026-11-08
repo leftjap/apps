@@ -435,7 +435,7 @@ import SwiftUI
     }
 }
 
-// FlipDetector(히스테리시스+디바운스) · WallClockSession(실측 누적) — FlipEngine 의 순수 코어
+// FlipDetector(히스테리시스+디바운스) — FlipEngine 의 순수 코어
 @Suite struct FlipCoreTests {
     let t0 = Date(timeIntervalSinceReferenceDate: 1_000_000)
 
@@ -464,19 +464,6 @@ import SwiftUI
         #expect(d.isFaceDown)
         #expect(d.process(z: 0.5, at: t0.addingTimeInterval(3)) == .up)     // stop 미만 → 즉시 up
         #expect(!d.isFaceDown)
-    }
-
-    @Test func wallClockAccumulatesAcrossPauses() {
-        var s = WallClockSession()
-        s.start(at: t0)
-        #expect(s.elapsed(at: t0.addingTimeInterval(90)) == 90)
-        s.pause(at: t0.addingTimeInterval(100))
-        #expect(s.elapsed(at: t0.addingTimeInterval(170)) == 100)      // 일시정지 중 동결
-        s.resume(at: t0.addingTimeInterval(150))
-        #expect(s.elapsed(at: t0.addingTimeInterval(170)) == 120)      // 100 + 20
-        s.pause(at: t0.addingTimeInterval(180))
-        s.pause(at: t0.addingTimeInterval(999))                        // 중복 pause 무시
-        #expect(s.elapsed(at: t0.addingTimeInterval(999)) == 130)
     }
 }
 

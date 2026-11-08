@@ -35,6 +35,12 @@ final class LiveActivityController {
             Task { await activity.update(ActivityContent(state: state, staleDate: nil)) }
         } else {
             RTDbg.p("la: 등록 시도 (\(key), enabled=\(ActivityAuthorizationInfo().areActivitiesEnabled))")
+            // 이 프로세스엔 활동이 없는데 남아 있는 것 = 앱 종료 전 프로세스의 활동 — 복원 세션이 새로 등록하면
+            // 예전 '기록 중' 활동이 잠금 화면에 같이 남아 계속 흘렀다 (2026-11-08 검토). 등록 전에 정리한다.
+            for a in Activity<RTReadingActivityAttributes>.activities {
+                RTDbg.p("la: 이전 프로세스 활동 정리 id=\(a.id)")
+                Task { await a.end(nil, dismissalPolicy: .immediate) }
+            }
             do {
                 let a = try Activity.request(
                     attributes: RTReadingActivityAttributes(bookTitle: bookTitle ?? "리딩타임"),

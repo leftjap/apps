@@ -7,16 +7,10 @@ import os.log
 // 여기선 실서비스 배선만: 알라딘 검색·클라우드 저장·엎기 센서·keep-alive.
 @main
 struct ReadingTimeApp: App {
-    // 탭 세션 wall-clock 홀더 — 잠금/서스펜드로 UI 틱이 멈춰도 실제 경과 보전
-    @MainActor final class TapClock: ObservableObject {
-        var clock = RTTapSessionClock()
-    }
-
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var model: RTAppModel
     @StateObject private var flip: FlipEngine
     @StateObject private var keepAlive = KeepAlive()
-    @StateObject private var tapClock = TapClock()
     /// 키보드 윗변(화면 좌표). 숨으면 화면 아래로 나가 RTKeyboard.canvasInset 이 0 이 된다.
     @State private var keyboardMinY: CGFloat = .greatestFiniteMagnitude
     private let cloud: CloudStore
@@ -513,7 +507,6 @@ struct ReadingTimeApp: App {
                 .onReceive(model.$session) { session in
                     // 잠금 화면 Live Activity — 상태 전환만 반영(초 틱은 시스템 자동 타이머)
                     liveActivity.sync(session: session, bookTitle: model.sessionBook?.title ?? model.currentBook?.title)
-                    tapClock.clock.track(session, at: Date())
                 }
                 .onChange(of: scenePhase) { _, phase in
                     // 근접 센서는 포그라운드 전용 — 비잠금 엎힘의 화면 오프용이며 잠금 시엔
@@ -529,10 +522,7 @@ struct ReadingTimeApp: App {
                     }
                     if phase == .active {
                         flip.setUnlockedOnActive()   // 포그라운드 = 확실한 비잠금 (lockstate 오발화 보정)
-                        flip.syncModel()   // 백그라운드 경과 wall-clock 보정 (flip)
-                        if model.session?.mode == .tap, tapClock.clock.isTracking {
-                            model.syncElapsed(tapClock.clock.elapsed(at: Date()))   // tap 보정
-                        }
+                        model.refreshElapsed()   // 백그라운드 동안 멈춘 틱을 세션 벽시계 기준점으로 보정 (엎기·탭 공통)
                         // 홈으로 복귀 시 그 날짜 첫 진입이면 집어드는 안무 (§4)
                         if model.route == .home { Self.armPickupIfFirstToday(model) }
                         // 함께 읽기 — 포그라운드 복귀마다 파트너 프레즌스 갱신

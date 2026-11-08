@@ -68,28 +68,4 @@ import Foundation
         #expect(back.mode == .tap && back.status == .paused && back.elapsed == 42 && back.pauseCount == 2 && back.isbn == "B")
         #expect(back.startedAt == s.startedAt)
     }
-
-    // 복원 후 시계 — 벽시계(WallClockSession)·탭 시계는 복원된 경과를 기준값으로 깔고 이어 세야 한다.
-    // 그러지 않으면 재개 순간 0 부터 다시 세어 복원값을 덮어쓴다(FlipEngine.syncModel · TapClock 보정 경로).
-    @Test func wallClockStartsFromRestoredBaseline() {
-        let t0 = Date(timeIntervalSinceReferenceDate: 1_000)
-        var c = WallClockSession()
-        #expect(!c.hasStarted)
-        c.start(at: t0, base: 754)
-        c.pause(at: t0)
-        #expect(c.hasStarted && c.elapsed(at: t0.addingTimeInterval(100)) == 754, "일시정지 중엔 기준값 유지")
-        c.resume(at: t0.addingTimeInterval(100))
-        #expect(c.elapsed(at: t0.addingTimeInterval(105)) == 759)
-    }
-
-    @Test func tapClockSeedsRestoredElapsed() {
-        let t0 = Date(timeIntervalSinceReferenceDate: 2_000)
-        var clock = RTTapSessionClock()
-        let restored = RTSession(mode: .tap, status: .paused, elapsed: 30, pauseCount: 0, startedAt: t0, isbn: nil)
-        clock.track(restored, at: t0)
-        #expect(clock.elapsed(at: t0.addingTimeInterval(60)) == 30, "복원 직후(일시정지)는 30 유지")
-        var resumed = restored; resumed.status = .recording
-        clock.track(resumed, at: t0.addingTimeInterval(60))
-        #expect(clock.elapsed(at: t0.addingTimeInterval(65)) == 35)
-    }
 }

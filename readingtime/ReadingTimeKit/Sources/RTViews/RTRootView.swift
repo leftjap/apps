@@ -59,6 +59,15 @@ public struct RTRootView: View {
             }
         }
         .frame(width: 390, height: 844)
+        // 기록 중에 앱이 종료됐다 복원된 세션 — 꺼져 있던 시간을 넣을지 묻는다 (alert: 축소 셸에서 취소가 렌더되는 형식)
+        .alert("기록이 중간에 멈췄어요", isPresented: Binding(
+            get: { model.restoredGap != nil },
+            set: { if !$0 { model.dismissRestoredGap() } })) {
+            Button("\(Self.gapLabel(model.restoredGap ?? 0)) 넣기") { model.includeRestoredGap() }
+            Button("넣지 않기", role: .cancel) { model.dismissRestoredGap() }
+        } message: {
+            Text("앱이 꺼져 있던 \(Self.gapLabel(model.restoredGap ?? 0)) 동안에도 읽으셨다면 기록에 넣을 수 있어요.")
+        }
         .simultaneousGesture(backRoute == nil ? nil : swipeBack)
         .onReceive(ticker) { _ in
             // app.js startTick: 04·05 에서 recording 일 때만
@@ -95,6 +104,12 @@ public struct RTRootView: View {
                     withAnimation(Self.swipeCurve) { swipeX = 0 }
                 }
             }
+    }
+
+    /// 540 → "9분", 3900 → "1시간 5분"
+    static func gapLabel(_ seconds: Int) -> String {
+        let m = seconds / 60
+        return m < 60 ? "\(m)분" : (m % 60 == 0 ? "\(m / 60)시간" : "\(m / 60)시간 \(m % 60)분")
     }
 
     private static let swipeCurve = Animation.timingCurve(

@@ -37,7 +37,7 @@ enum RTDbg {
 }
 
 // 엎기(face-down) 감지 → RTAppModel 브리지.
-// 감지·누적 로직은 순수 코어(FlipDetector·WallClockSession — RTViews, 유닛 테스트됨)로 분리,
+// 감지 로직은 순수 코어(FlipDetector — RTViews, 유닛 테스트됨)로, 경과는 모델 세션의 벽시계 기준점(RTSession.anchorAt)으로 분리,
 // 여기는 CMMotionManager 어댑터 + 모델 액션 매핑만.
 // v8 UX: 엎으면 기록 시작/재개, 들면 '일시정지'(종료는 04 CTA "여기까지 읽기").
 //
@@ -53,7 +53,6 @@ final class FlipEngine: ObservableObject {
     private let motion = CMMotionManager()
     private let queue = OperationQueue()
     private var detector = FlipDetector()
-    private var session = WallClockSession()
     private let signals = RTFlipSignals()
 
     // 합성 모션 스크립트 (시뮬레이터/검증 전용)
@@ -232,19 +231,9 @@ final class FlipEngine: ObservableObject {
         startUpdates()
     }
 
-    /// wall-clock 기준 경과를 모델 UI 에 반영 (백그라운드 복귀 시 호출)
-    func syncModel() {
-        guard let s = model.session, s.mode == .flip else { return }
-        guard session.hasStarted else { return }   // 복원된 세션(엔진 시계 미시작)의 경과를 0 으로 덮지 않는다
-        model.syncElapsed(session.elapsed(at: Date()))
-    }
-
-    /// 복원된(앱 종료 후 되살린) 세션을 재개할 때 — 엔진 시계를 저장된 경과로 시드하고 일시정지 상태로 맞춘다
-    private func seedIfRestored(at now: Date) {
-        guard !session.hasStarted, let s = model.session, s.elapsed > 0 else { return }
-        session.start(at: now, base: TimeInterval(s.elapsed))
-        session.pause(at: now)
-    }
+    // 경과 시간은 엔진이 따로 세지 않는다 — 모델 세션의 벽시계 기준점(RTSession.anchorAt)이 정본이고, 엔진은 감지한
+    // 시각을 넘겨 상태만 바꾼다(simFlip/togglePause(at:)). 엔진 시계를 따로 두면 04 화면 탭 재개를 몰라 폰을 들 때
+    // 그 값으로 덮어써 시간이 지워졌다 (2026-11-08 검토).
 
 
     private func startUpdates() {
@@ -294,9 +283,7 @@ final class FlipEngine: ObservableObject {
             pendingDown = nil   // 판정 전 들어올림 → 보류 취소
             if model.route == .flipTimer, model.session?.mode == .flip,
                model.session?.status == .recording {
-                session.pause(at: now)
-                model.togglePause()   // 들어올림 → 일시정지
-                model.syncElapsed(session.elapsed(at: now))
+                model.togglePause(at: now)   // 들어올림 → 일시정지
                 signals.signalPause()
             }
         }
@@ -311,15 +298,11 @@ final class FlipEngine: ObservableObject {
         if model.route == .flipWait || (model.route == .home && model.flipTargetISBN != nil) {
             // 읽기 뎁스 제거(§4-1): 홈(책 있음, 포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
             // 빈 홈(책 없음)은 기록 대상이 없으므로 시작하지 않는다 (수용기준#1 — 빈 홈은 책 추가 유도).
-            session.start(at: now)
-            model.simFlip()
+            model.simFlip(at: now)   // now = 엎은 시각 (보류 소급이면 과거)
             if signal { signals.signalStart() }   // 화면이 안 보이는 상태의 "기록 시작" 신호
         } else if model.route == .flipTimer, model.session?.mode == .flip,
                   model.session?.status == .paused {
-            seedIfRestored(at: now)
-            session.resume(at: now)
-            model.togglePause()   // 다시 엎으면 이어서
-            model.syncElapsed(session.elapsed(at: now))
+            model.togglePause(at: now)   // 다시 엎으면 이어서
             if signal { signals.signalStart() }
         }
     }
