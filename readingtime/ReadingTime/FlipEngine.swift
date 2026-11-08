@@ -48,6 +48,10 @@ final class FlipEngine: ObservableObject {
     // 주의: @Published 금지 — 0.1s 마다 갱신되면 앱 body 재평가로 RTRootView 의
     // 초시계가 매번 재생성돼 타이머가 영원히 발화하지 않는다 (시뮬 합성모션 검증에서 발견)
     private(set) var gravityZ: Double = 0   // 실기기 임계 캘리브레이션용
+    /// 지금 실제로 엎혀 있는가 — 검은 덮개(ReadingTimeApp.faceDownDark)는 '기록 중' 상태가 아니라 이것으로 켠다.
+    /// 화면 탭으로 이어 읽으면 기록 중이지만 폰은 손에 있다 (2026-11-08: 검은 화면이 덮여 '여기까지 읽기'도 못 눌렀다).
+    /// 엎기·들기 전환 때만 바뀌므로 gravityZ 와 달리 @Published 여도 body 재평가가 잦지 않다.
+    @Published private(set) var isFaceDown = false
 
     private let model: RTAppModel
     private let motion = CMMotionManager()
@@ -218,6 +222,7 @@ final class FlipEngine: ObservableObject {
         scriptTimer = nil
         scriptStart = nil
         detector.reset()
+        if isFaceDown { isFaceDown = false }
         // 세션 경계 넘는 소급 방지 — 이전 세션의 보류 엎힘이 새 세션 시작 후
         // 잠금 신호에 소급 적용되면 세션이 과거 시점으로 오기록된다
         pendingDown = nil
@@ -247,6 +252,7 @@ final class FlipEngine: ObservableObject {
         gravityZ = z
         let now = Date()
         guard let transition = detector.process(z: z, at: now) else { return }
+        if isFaceDown != detector.isFaceDown { isFaceDown = detector.isFaceDown }
         switch transition {
         case .down:
             RTDbg.p("flip: 엎힘 감지 (locked=\(deviceLocked), armed=\(armed), state=\(UIApplication.shared.applicationState.rawValue))")

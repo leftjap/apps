@@ -10,6 +10,7 @@ final class FlipTapResumeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--seq", "login,demoCards,start", "--sim-motion", "1:0.95,5:0.2,30:0.95,32:0.2"]
         app.launch()
+        dismissLocationPrompt()
 
         let hint = app.staticTexts["탭하여 이어 읽기"]
         XCTAssertTrue(hint.waitForExistence(timeout: 15), "5초 들기 뒤 일시정지 화면이 안 뜸\n\(app.debugDescription)")
@@ -23,6 +24,30 @@ final class FlipTapResumeUITests: XCTestCase {
         let seconds = p[0] * 3600 + p[1] * 60 + p[2]
         // 탭(약 6~10초)부터 32초 들기까지 20초 넘게 읽었다. 종전엔 엎기 엔진 값(약 3초)으로 덮였다.
         XCTAssertGreaterThanOrEqual(seconds, 15, "들어 올릴 때 탭 이후 시간이 지워짐: \(timer.label)")
+    }
+
+    // 화면 탭으로 이어 읽으면 폰은 손에 있다 — 엎었을 때 쓰는 검은 덮개가 씌워지면 안 된다 (2026-11-08: 덮개가
+    // '기록 중' 상태만 보고 켜져 화면이 검게 막히고 '여기까지 읽기'도 눌리지 않았다)
+    func testScreenTapResumeInHandKeepsScreenUsable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--seq", "login,demoCards,start", "--sim-motion", "1:0.95,5:0.2"]
+        app.launch()
+        dismissLocationPrompt()
+
+        let hint = app.staticTexts["탭하여 이어 읽기"]
+        XCTAssertTrue(hint.waitForExistence(timeout: 15), "5초 들기 뒤 일시정지 화면이 안 뜸")
+        hint.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: -88)).tap()
+        XCTAssertTrue(waitGone(hint, timeout: 5), "화면 탭으로 이어 읽기가 안 됨")
+
+        app.staticTexts["여기까지 읽기"].tap()
+        XCTAssertTrue(app.staticTexts["기록됐어요"].waitForExistence(timeout: 5),
+                      "손에 든 채 이어 읽는 중 '여기까지 읽기'가 눌리지 않음 (검은 덮개가 막음)\n\(app.debugDescription)")
+    }
+
+    /// 03 진입 시 위치 권한 대화상자(시뮬레이터 권한 미정일 때)가 화면 탭을 가로챈다 — 떠 있으면 거절한다
+    private func dismissLocationPrompt() {
+        let deny = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["허용 안 함"]
+        if deny.waitForExistence(timeout: 4) { deny.tap() }
     }
 
     private func waitGone(_ e: XCUIElement, timeout: TimeInterval) -> Bool {

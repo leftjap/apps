@@ -426,8 +426,9 @@ struct ReadingTimeApp: App {
 
     /// 엎혀서 기록 중 = 화면이 바닥을 향한 상태 — 완전 검은 오버레이로 OLED 픽셀 오프(절전).
     /// 근접 센서(하드웨어 오프)의 백업이자, 센서가 안 덮이는 표면에서도 배터리를 지킨다.
+    /// 실제 엎힘(flip.isFaceDown)까지 봐야 한다 — 화면 탭으로 이어 읽으면 손에 든 채 기록 중이다.
     private var faceDownDark: Bool {
-        model.route == .flipTimer && model.session?.status == .recording
+        model.route == .flipTimer && model.session?.status == .recording && flip.isFaceDown
     }
 
     var body: some Scene {
