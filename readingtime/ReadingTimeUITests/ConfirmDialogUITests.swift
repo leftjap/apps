@@ -40,6 +40,26 @@ final class ConfirmDialogUITests: XCTestCase {
         assertHasCancel(app, confirmLabel: "로그아웃", what: "로그아웃")
     }
 
+    // 홈 아바타 메뉴의 로그아웃도 설정 시트와 같이 확인을 거친다 (2026-11-08 검토: 한 번에 로그아웃·사진 삭제)
+    func testHomeMenuLogoutDialogHasCancel() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--seq", "login,demoCards"]
+        app.launch()
+        let avatar = app.descendants(matching: .any)["home.avatar"]
+        guard avatar.waitForExistence(timeout: 10) else {
+            return XCTFail("홈 아바타가 없음\n\(app.debugDescription)")
+        }
+        avatar.tap()
+        let out = app.staticTexts["로그아웃"]
+        guard out.waitForExistence(timeout: 5) else {
+            return XCTFail("아바타 메뉴의 로그아웃이 없음\n\(app.debugDescription)")
+        }
+        out.tap()
+        assertHasCancel(app, confirmLabel: "로그아웃", what: "홈 메뉴 로그아웃")
+        app.buttons["취소"].tap()
+        XCTAssertTrue(avatar.waitForExistence(timeout: 5), "취소했는데 홈을 벗어났다(로그아웃됨)")
+    }
+
     func testLibraryBookDeleteDialogHasCancel() {
         let app = XCUIApplication()
         app.launchArguments = ["--seq", "login,demoCards,nav:12,sel:P1,sheet:bookmenu"]

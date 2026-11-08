@@ -187,3 +187,36 @@ private func near(_ a: Double, _ b: Double) -> Bool { abs(a - b) < 1e-9 }
         #expect(s.streak == 3)      // 9.25 · 9.26 · 9.27
     }
 }
+
+// 탭 세션이 끝나면 다음 기록 시작은 다시 엎기 — 탭 모드를 한 번 쓰면 홈 "엎으면 이어 읽어요"·서재 ▶·상세 "이어서 읽기" 가
+// 앱을 다시 켤 때까지 탭 타이머를 열던 문제 (2026-11-08 검토). 세션 도중의 mode == .tap 은 종전대로 유지한다.
+@MainActor
+@Suite struct RTTapModeResetTests {
+    @Test func savedTapSessionStartsFlipNext() {
+        let m = RTAppModel()
+        m.switchTap()
+        m.endSession()
+        m.saveSession()
+        m.start()
+        #expect(m.route == .flipWait)
+    }
+
+    @Test func deletedTapSessionStartsFlipNext() {
+        let m = RTAppModel()
+        m.switchTap()
+        m.endSession()
+        m.deleteSession()
+        m.start()
+        #expect(m.route == .flipWait)
+    }
+
+    @Test func restoredTapSessionStartsFlipAfterSave() {
+        let m = RTAppModel()
+        m.restoreSession(RTSession(mode: .tap, status: .paused, elapsed: 30, pauseCount: 0, startedAt: Date(), isbn: nil))
+        #expect(m.mode == .tap)
+        m.endSession()
+        m.saveSession()
+        m.start()
+        #expect(m.route == .flipWait)
+    }
+}

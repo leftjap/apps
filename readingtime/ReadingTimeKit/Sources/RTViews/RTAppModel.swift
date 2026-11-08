@@ -1155,7 +1155,7 @@ public final class RTAppModel: ObservableObject {
         else { startSession(.tap); nav(.tapTimer) }
     }
 
-    public func cancelSession() { session = nil; nextSessionISBN = nil; emitPresence(); nav(.home) }
+    public func cancelSession() { session = nil; nextSessionISBN = nil; mode = .flip; emitPresence(); nav(.home) }
 
     /// 앱 기동 시 영속된 세션 복원 — 종료 시점을 알 수 없으므로 **일시정지**로 되살려 타이머 화면에 둔다.
     /// 프레즌스는 즉시 해제(매달린 reading_since 정리). 사용자가 재개하거나 저장하면 정상 경로를 탄다.
@@ -1201,11 +1201,12 @@ public final class RTAppModel: ObservableObject {
             }
         }
         session = nil
+        mode = .flip   // 세션이 끝나면 다음 기록 시작(홈 CTA·서재 ▶·이어서 읽기)은 다시 엎기 — 탭은 '탭 시작'으로만
         emitPresence()
         nav(.home)
     }
 
-    public func deleteSession() { session = nil; nav(.home) }
+    public func deleteSession() { session = nil; mode = .flip; nav(.home) }
 
     /// 책 없이 저장된 과거 세션 복구 — 그 기록이 끝난 시점에 읽는 중이던 종이책에 붙인다
     /// (currentBook 과 같은 규칙을 그 시각 기준으로 적용). 붙일 책이 없으면 그대로 둔다.

@@ -238,7 +238,7 @@ public struct Screen12Library: View {
                     .overlay(RTIcon(RTIconPath.play, size: 15, fill: RT.ctaText))
                     .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
                     .contentShape(Circle())
-                    .onTapGesture { model?.start() }
+                    .onTapGesture { model?.start(isbn: b.isbn) }   // 누른 카드의 책 (isbn 없이 부르면 홈에서 고른 책으로 기록됐다)
                     .accessibilityIdentifier("library.play.\(b.isbn)")
             }
         }

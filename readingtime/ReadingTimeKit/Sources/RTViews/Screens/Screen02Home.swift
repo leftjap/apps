@@ -671,6 +671,8 @@ struct RTHomeMenu: View {
     var model: RTAppModel?
     let avatar: CGImage?
     let close: () -> Void
+    /// 로그아웃 확인 — 설정 시트와 같은 alert. 한 번 누르면 로그아웃되고 아바타 사진·이름까지 지워졌다 (2026-11-08 검토)
+    @State private var confirmLogout = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -720,7 +722,7 @@ struct RTHomeMenu: View {
                     }
                     Text("로그아웃").font(.sans(13.5, 700)).foregroundColor(Color(hex: 0xB56A55))
                     Spacer(minLength: 0)
-                } action: { close(); model?.logout() }
+                } action: { confirmLogout = true }
             }
             .frame(width: 234)
             .background(RT.surface)
@@ -731,6 +733,11 @@ struct RTHomeMenu: View {
             .padding(.trailing, 20)
         }
         .frame(width: 390, height: 844)
+        // alert(중앙 배치)이어야 취소가 렌더된다 — lessons/swiftui-confirmation-dialog-scaled-shell.md
+        .alert("로그아웃할까요?", isPresented: $confirmLogout) {
+            Button("로그아웃", role: .destructive) { close(); model?.logout() }
+            Button("취소", role: .cancel) {}
+        }
     }
 
     @ViewBuilder func menuRow<C: View>(bg: Color = .clear,
