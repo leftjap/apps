@@ -17,6 +17,8 @@ struct ReadingTimeApp: App {
     @StateObject private var flip: FlipEngine
     @StateObject private var keepAlive = KeepAlive()
     @StateObject private var tapClock = TapClock()
+    /// 키보드 윗변(화면 좌표). 숨으면 화면 아래로 나가 RTKeyboard.canvasInset 이 0 이 된다.
+    @State private var keyboardMinY: CGFloat = .greatestFiniteMagnitude
     private let cloud: CloudStore
     private let liveActivity = LiveActivityController()
     private let location: LocationCapture
@@ -221,7 +223,21 @@ struct ReadingTimeApp: App {
                           publisher: $0.publisher, isbn: $0.isbn, coverUrl: $0.coverUrl)
             }
         }
-        // --stub-search <ok|empty|timeout|flaky>: 시뮬레이터 UI 검증용 검색 스텁 (XCUITest 전용 —
+        // 마지막 검색 결과 영속 — 다시 켜도 책 추가 시트에 "최근 검색" 으로 보인다(0건은 저장 안 함).
+        // --seq(검증 실행)는 userData 와 같은 이유로 미배선.
+        if !sequenceLaunch {
+            if let q = UserDefaults.standard.string(forKey: "rt.lastSearch.query"),
+               let raw = UserDefaults.standard.data(forKey: "rt.lastSearch.hits"),
+               let hits = try? JSONDecoder().decode([RTBookHit].self, from: raw) {
+                model.restoreLastSearch(query: q, hits: hits)
+            }
+            model.onSearchResults = { q, hits in
+                guard !hits.isEmpty, let raw = try? JSONEncoder().encode(hits) else { return }
+                UserDefaults.standard.set(q, forKey: "rt.lastSearch.query")
+                UserDefaults.standard.set(raw, forKey: "rt.lastSearch.hits")
+            }
+        }
+        // --stub-search <ok|many|empty|timeout|flaky>: 시뮬레이터 UI 검증용 검색 스텁 (XCUITest 전용 —
         // 실기기 실행엔 이 인자가 없어 항상 라이브 프록시). flaky = 첫 호출 시간 초과 → "다시 시도" 성공.
         if let i = launchArgs.firstIndex(of: "--stub-search"), launchArgs.count > i + 1 {
             model.searchProvider = Self.stubSearch(mode: launchArgs[i + 1])
@@ -343,6 +359,9 @@ struct ReadingTimeApp: App {
             try await Task.sleep(nanoseconds: 1_500_000_000)
             switch mode {
             case "ok": return [hit]
+            case "many":   // 목록이 키보드 아래까지 내려가는 길이 (키보드 위 스크롤 검증)
+                return (1...10).map { RTBookHit(title: "책 \($0)", author: "저자", publisher: "출판사",
+                                                 isbn: "stub-\($0)", coverUrl: "") }
             case "empty": return []
             case "timeout": throw URLError(.timedOut)
             case "flaky":
@@ -426,11 +445,16 @@ struct ReadingTimeApp: App {
                 let scale = min(geo.size.width / 390, geo.size.height / 844)
                 RTRootView(model: model)
                     .rtMotion(!faceDownDark)   // 엎힘(검은 화면) 중 무한 모션 동결 — GPU 절전
+                    .environment(\.rtKeyboardInset, RTKeyboard.canvasInset(
+                        screenHeight: geo.size.height, keyboardMinY: keyboardMinY, scale: scale))
                     .frame(width: 390, height: 844)
                     .scaleEffect(scale)
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
             }
             .ignoresSafeArea()
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
+                if let end = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect { keyboardMinY = end.minY }
+            }
             .overlay {
                 if faceDownDark {
                     Color.black.ignoresSafeArea()

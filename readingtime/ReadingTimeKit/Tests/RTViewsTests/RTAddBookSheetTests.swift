@@ -113,7 +113,7 @@ import Foundation
 
     // 시간 초과(상류 무응답)·연결 없음·5xx 문장·기타 → 각각의 안내 문구
     @Test func searchErrorMessages() {
-        #expect(RTAppModel.searchErrorMessage(URLError(.timedOut)) == "알라딘이 응답하지 않아요. 잠시 후 다시 시도해 주세요.")
+        #expect(RTAppModel.searchErrorMessage(URLError(.timedOut)) == "검색 서버가 응답하지 않아요. 잠시 후 다시 시도해 주세요.")
         #expect(RTAppModel.searchErrorMessage(URLError(.notConnectedToInternet)) == "인터넷 연결을 확인해 주세요.")
         #expect(RTAppModel.searchErrorMessage(URLError(.cancelled)) == "검색에 실패했어요. 다시 시도해 주세요.")
         #expect(RTAppModel.searchErrorMessage(AddBookDescribedError()) == "알라딘 서버 오류 (503). 다시 시도해 주세요.")

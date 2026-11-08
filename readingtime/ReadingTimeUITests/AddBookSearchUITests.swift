@@ -99,6 +99,49 @@ final class AddBookSearchUITests: XCTestCase {
         XCTAssertNotEqual(outcome, "none", "라이브 검색이 35초 동안 무반응 (count=\(count.exists ? count.label : "-"))")
     }
 
+    // 시트를 열면 검색칸을 누르지 않아도 선택되고 키보드가 뜬다 (2026-11-08: 첫 탭 뒤 0.3~0.43초 무반응 —
+    // iOS 의 첫 키보드 준비 시간 — 을 시트가 올라오는 동안에 치르게 한다)
+    func testSheetOpensWithSearchFocused() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--seq", "login,nav:12,sheet:addbook", "--stub-search", "ok"]
+        app.launch()
+
+        let field = app.textFields["addbook.search"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "검색창이 없다")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5),
+                      "검색칸을 누르지 않았는데 키보드가 안 뜸\n\(app.debugDescription)")
+        XCTAssertEqual(field.value(forKey: "hasKeyboardFocus") as? Bool, true, "검색칸이 선택되지 않았다")
+        shot("06-autofocus")
+    }
+
+    // 키보드가 떠 있어도 결과 목록 끝까지 키보드 위로 스크롤된다 (최근 검색이 키보드에 가려지지 않게)
+    func testResultsScrollAboveKeyboard() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--seq", "login,nav:12,sheet:addbook,query:이기호", "--stub-search", "many"]
+        app.launch()
+
+        let field = app.textFields["addbook.search"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "검색창이 없다")
+        field.tap()
+        field.typeText("\n")
+        let count = app.staticTexts["addbook.count"]
+        XCTAssertTrue(waitForLabel(count, "검색 결과 · 10건", timeout: 10), "결과 10건이 아님: \(count.exists ? count.label : "-")")
+
+        field.tap()   // 결과를 본 상태에서 다시 키보드를 올린다
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5), "키보드가 안 뜸")
+        let last = app.staticTexts["책 10"]
+        // 시트 목록 안(결과 카운트 아래)에서 위로 끈다 — scrollViews.firstMatch 는 시트 뒤 서재 목록일 수 있다
+        for _ in 0..<5 where !(last.exists && last.frame.maxY <= keyboard.frame.minY) {
+            let start = count.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(CGVector(dx: 0, dy: 160))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -140)))
+        }
+        shot("07-above-keyboard")
+        XCTAssertTrue(last.exists, "마지막 결과 행이 없다\n\(app.debugDescription)")
+        XCTAssertLessThanOrEqual(last.frame.maxY, keyboard.frame.minY,
+                                 "마지막 결과가 키보드에 가려짐: 행 아래끝 \(last.frame.maxY) > 키보드 윗변 \(keyboard.frame.minY)")
+    }
+
     /// 접근성 라벨이 기대값이 될 때까지 폴링
     private func waitForLabel(_ element: XCUIElement, _ expected: String, timeout: TimeInterval) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)

@@ -107,8 +107,8 @@ public enum AladinError: Error, Equatable, LocalizedError {
     // 화면 안내용 한 문장 — 프록시는 상류(알라딘) 상태를 그대로 전달하므로 5xx 는 알라딘 쪽 장애다
     public var errorDescription: String? {
         switch self {
-        case .badStatus(let code): return "알라딘 서버 오류 (\(code))"
-        case .api(let message): return "알라딘 오류: \(message)"
+        case .badStatus(let code): return "검색 서버 오류 (\(code))"
+        case .api(let message): return "검색 오류: \(message)"
         }
     }
 }

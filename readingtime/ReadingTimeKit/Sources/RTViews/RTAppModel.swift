@@ -159,7 +159,7 @@ public struct RTMillieMeta: Equatable, Sendable {
     }
 }
 
-public struct RTBookHit: Equatable, Sendable {
+public struct RTBookHit: Equatable, Sendable, Codable {
     public let title: String
     public let author: String
     public let publisher: String
@@ -373,6 +373,8 @@ public final class RTAppModel: ObservableObject {
     public var onAuthChange: ((Bool) -> Void)?
     /// 검색 프로바이더 (알라딘 라이브) — nil 이면 시트 13 은 시안 데모 rows 유지
     public var searchProvider: ((String) async throws -> [RTBookHit])?
+    /// 성공한 검색 (검색어, 결과) — 앱이 UserDefaults 에 저장해 다시 켠 뒤 "최근 검색" 으로 복원한다
+    public var onSearchResults: ((String, [RTBookHit]) -> Void)?
     /// 로그인 버튼 핸들러 (iOS OAuth 배선) — nil 이면 즉시 login() (rtshot/rtapp 데모 경로)
     public var loginHandler: (() -> Void)?
     /// 읽는 중 프레즌스 변화 (true=recording 시작, false=정지/종료) — 앱이 CloudStore.setReadingSince 배선
@@ -1018,6 +1020,8 @@ public final class RTAppModel: ObservableObject {
     }
     @Published public var searchQuery = ""
     @Published public var searchResults: [RTBookHit]?
+    /// searchResults 를 낸 검색어 — 검색칸 글자와 다르면(공란 포함) 시트가 "최근 검색 · 검색어" 로 표시
+    @Published public private(set) var resultsQuery: String?
     /// 검색 진행 중 — 시트 13 이 "검색 중…" 을 보인다. 프록시 상류가 느릴 때 아무 표시가 없으면
     /// 사용자는 검색 자체가 안 되는 것으로 본다 (실기기 보고 2026-09-10: "서성이다" 무반응).
     @Published public var searching = false
@@ -1044,12 +1048,20 @@ public final class RTAppModel: ObservableObject {
             let hits = try await searchProvider(trimmed)
             guard generation == searchGeneration else { return }   // 더 새 검색이 시작됨 — 늦은 결과 폐기
             searchResults = hits                                    // 0건도 [] 로 반영 (nil = 이력 없음과 구분)
+            resultsQuery = trimmed
+            onSearchResults?(trimmed, hits)
         } catch {
             guard generation == searchGeneration else { return }
             // 실패를 삼키지 않는다 — try? 로 삼키던 시절엔 상류 무응답이 "검색이 안 됨" 으로 보였다
             searchError = Self.searchErrorMessage(error)
         }
         searching = false
+    }
+
+    /// 앱을 다시 켰을 때 저장해 둔 지난 검색을 되살린다 (onSearchResults 의 짝)
+    public func restoreLastSearch(query: String, hits: [RTBookHit]) {
+        searchResults = hits
+        resultsQuery = query
     }
 
     /// 실패한 마지막 검색을 같은 쿼리로 다시 시도 (시트 13 "다시 시도").
@@ -1065,7 +1077,7 @@ public final class RTAppModel: ObservableObject {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .timedOut:
-                return "알라딘이 응답하지 않아요. 잠시 후 다시 시도해 주세요."
+                return "검색 서버가 응답하지 않아요. 잠시 후 다시 시도해 주세요."
             case .notConnectedToInternet, .networkConnectionLost, .dnsLookupFailed,
                  .cannotFindHost, .cannotConnectToHost:
                 return "인터넷 연결을 확인해 주세요."
@@ -1287,6 +1299,9 @@ public final class RTAppModel: ObservableObject {
 
     // ── 13 책 추가 (라이브: userData 책 목록 동기, 데모: added 집합만) ──
     public func toggleAdd(_ key: String) {
+        // 기록(완독·별점·세션·밀리 연결)이 있는 책은 검색 시트에서 해제하지 않는다 — ✓ 한 번에 완독·별점이 지워지던 경로.
+        // 서재에서 빼려면 책 메뉴의 삭제(deleteBook)를 쓴다. 기록 없는 책(방금 잘못 추가한 책)은 종전대로 해제.
+        if added.contains(key), let d = userData, Self.hasRecords(key, in: d) { return }
         if added.contains(key) { added.remove(key) } else { added.insert(key) }
         guard userData != nil else { return }
         if added.contains(key) {
@@ -1301,6 +1316,12 @@ public final class RTAppModel: ObservableObject {
         } else {
             mutateUserData { $0.books.removeAll { $0.isbn == key } }
         }
+    }
+
+    static func hasRecords(_ isbn: String, in d: RTUserData) -> Bool {
+        let book = d.books.first { $0.isbn == isbn }
+        return book?.finished == true || book?.rating != nil || book?.millieBookId != nil
+            || d.sessions.contains { $0.isbn == isbn }
     }
 
     // ── 설정·책 메뉴 ──

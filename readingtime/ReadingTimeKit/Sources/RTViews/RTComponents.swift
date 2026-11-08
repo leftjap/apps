@@ -208,6 +208,19 @@ public struct TopRoundedOpenRect: Shape {
 // 원격 표지 이미지 (실데이터 책 — 알라딘 coverUrl).
 // coverUrl 이 비었거나 로드 실패 시: title 이 주어지면 디자인된 대체 표지, 아니면 베이지 플레이스홀더.
 // (표지 없는 책이 홈 3D 히어로에서 "빈 사각형"으로 보여 입체감이 전혀 안 읽히던 문제 — 실기기 확인)
+/// 카카오 책 검색 썸네일(kakaocdn /thumb/, 120×174) → fname 원본(daumcdn, 실측 458×687)을 https 로.
+/// 프록시가 2026-11-08 부터 원본을 주지만, 그 전에 저장된 책은 썸네일 주소를 갖고 있어 그릴 때 바꾼다. 그 밖의 주소는 그대로.
+public enum RTCoverURL {
+    public static func fullSize(_ s: String) -> String {
+        guard let u = URLComponents(string: s), u.host?.hasSuffix("kakaocdn.net") == true, u.path.hasPrefix("/thumb/"),
+              let fname = u.queryItems?.first(where: { $0.name == "fname" })?.value,
+              var orig = URLComponents(string: fname), orig.scheme == "http" || orig.scheme == "https", orig.host != nil
+        else { return s }
+        orig.scheme = "https"
+        return orig.string ?? s
+    }
+}
+
 public struct RTRemoteCover: View {
     let url: String
     let size: CGSize
@@ -225,7 +238,7 @@ public struct RTRemoteCover: View {
     }
 
     public var body: some View {
-        AsyncImage(url: URL(string: url)) { phase in
+        AsyncImage(url: URL(string: RTCoverURL.fullSize(url))) { phase in
             if case .success(let img) = phase {
                 img.resizable().aspectRatio(contentMode: .fill)
             } else if let title {

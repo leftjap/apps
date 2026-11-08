@@ -360,8 +360,16 @@ public struct Sheet13AddBook: View {
     // (lessons/swiftui-observableobject-child-skip.md)
     private let searching: Bool
     private let searchError: String?
+    /// 결과를 낸 검색어와 지금 검색칸 글자 — 다르면(공란 포함) 결과를 "최근 검색 · 검색어" 로 표시
+    private let resultsQuery: String?
+    private let typedQuery: String
     /// 라이브(실 검색 배선) vs 데모(rtshot 오라클). 데모만 시안 정적 렌더(몰입/32건/5권).
     let isLive: Bool
+    /// 시트가 다 올라오면 검색칸을 자동 선택 — 앱을 켠 뒤 첫 키보드는 iOS 준비 시간(시뮬레이터 실측 0.3~0.43초) 동안
+    /// 무반응이라, 검색칸을 누른 뒤에 기다리지 않게 한다 (2026-11-08)
+    @FocusState private var searchFocused: Bool
+    /// 키보드가 가린 캔버스 높이 — 결과 목록 끝을 키보드 위까지 스크롤하기 위한 아래 여백
+    @Environment(\.rtKeyboardInset) private var keyboardInset
 
     public init(model: RTAppModel? = nil) {
         self.model = model
@@ -369,6 +377,8 @@ public struct Sheet13AddBook: View {
         self.results = model?.searchResults
         self.searching = model?.searching ?? false
         self.searchError = model?.searchError
+        self.resultsQuery = model?.resultsQuery
+        self.typedQuery = model?.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         self.isLive = model?.searchProvider != nil
     }
 
@@ -379,7 +389,9 @@ public struct Sheet13AddBook: View {
     var countLabel: String? {
         if isLive {
             if searching { return "검색 중…" }
-            return results.map { "검색 결과 · \($0.count)건" }
+            guard let results else { return nil }
+            if let resultsQuery, resultsQuery != typedQuery { return "최근 검색 · \(resultsQuery)" }
+            return "검색 결과 · \(results.count)건"
         }
         return "검색 결과 · 32건"
     }
@@ -451,6 +463,10 @@ public struct Sheet13AddBook: View {
                                 .font(.sans(15, 500)).foregroundColor(RT.ink)
                                 .submitLabel(.search)   // 키보드 리턴 키 = "검색" (제출이 트리거임을 드러냄)
                                 .onSubmit { Task { await model.search(model.searchQuery) } }
+                                .focused($searchFocused)
+                                // 시트가 다 올라온 뒤(rtSheetUp 0.55초) 선택 — 바로 선택하면 키보드 준비가 시트 첫 프레임을 막아
+                                // + 를 누른 뒤 189ms 동안 무반응이었다(시뮬레이터 실측)
+                                .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) { searchFocused = true } }
                                 .accessibilityIdentifier("addbook.search")
                         } else {
                             // 데모(rtshot 오라클) — 시안 "몰입" 프리필 + 커서
@@ -473,6 +489,7 @@ public struct Sheet13AddBook: View {
                                 ProgressView().controlSize(.small)
                             }
                             Text(countLabel)
+                                .lineLimit(1)
                                 .font(.mono(10.5, 500)).tracking(10.5 * 0.06)
                                 .foregroundColor(RT.faint)
                                 .accessibilityIdentifier("addbook.count")
@@ -497,6 +514,7 @@ public struct Sheet13AddBook: View {
                                             toggle: { model?.toggleAdd(hit.isbn) })
                                     }
                                 }
+                                .padding(.bottom, keyboardInset)   // 키보드가 떠도 마지막 행까지 키보드 위로 스크롤
                             }
                         }
                     } else {
@@ -551,7 +569,7 @@ public struct Sheet13AddBook: View {
 
     // 라이브 검색 표지 — 알라딘 커버 URL (실패 시 크라프트 그라데이션)
     func liveCover(_ hit: RTBookHit) -> some View {
-        AsyncImage(url: URL(string: hit.coverUrl)) { image in
+        AsyncImage(url: URL(string: RTCoverURL.fullSize(hit.coverUrl))) { image in
             image.resizable().aspectRatio(contentMode: .fill)
         } placeholder: {
             RT.kraftGrad(CGSize(width: 46, height: 64))
@@ -589,5 +607,8 @@ public struct Sheet13AddBook: View {
         }
         .padding(EdgeInsets(top: 11, leading: 8, bottom: 11, trailing: 8))
         .background(RoundedRectangle(cornerRadius: 13).fill(added ? RT.greenTint : Color.clear))
+        // 행 어디를 눌러도 추가 (32pt 원만 눌리던 것 — 축소 배율 적용 시 약 31pt). 해제는 ✓ 원으로만.
+        .contentShape(Rectangle())
+        .onTapGesture { if !added { toggle() } }
     }
 }
