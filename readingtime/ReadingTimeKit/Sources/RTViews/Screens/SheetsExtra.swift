@@ -39,7 +39,8 @@ public struct SheetSettings: View {
                         Button("저장") { model?.rename(nameDraft) }
                         Button("취소", role: .cancel) {}
                     }
-                settingRow(label: "밀리의서재", value: "연결됨", valueColor: RT.green)
+                // 누를 동작이 없다 — 꺽쇠를 그리지 않는다 (밀리 연동은 맥미니 데몬이 하고 앱에서 끊을 수 없다)
+                settingRow(label: "밀리의서재", value: "연결됨", valueColor: RT.green, chevron: false)
                     .padding(.top, 10)
                 // 서버 업로드가 실패하고 있을 때만 — 로컬이 정본이라 읽기 기록은 안전하지만, 서버 사본(기기 교체 복원·
                 // 함께 읽기)이 멈춘 것을 알아야 한다. 누르면 지금 스냅샷을 다시 올린다.
@@ -98,13 +99,13 @@ public struct SheetSettings: View {
         }
     }
 
-    func settingRow(label: String, value: String, valueColor: Color) -> some View {
+    func settingRow(label: String, value: String, valueColor: Color, chevron: Bool = true) -> some View {
         HStack {
             Text(label).font(.sans(13, 500)).foregroundColor(RT.muted)
             Spacer()
             HStack(spacing: 7) {
                 Text(value).font(.mono(13, 600)).foregroundColor(valueColor)
-                ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6))
+                if chevron { ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6)) }
             }
         }
         .padding(EdgeInsets(top: 13, leading: 15, bottom: 13, trailing: 15))

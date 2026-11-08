@@ -6,6 +6,9 @@ public struct Screen14EmptyHome: View {
     var model: RTAppModel?
     private let stats: (today: Int, week: String, streak: Int)?   // init 스냅샷
     private let avatar: CGImage?                                  // init 스냅샷 (사진 선택 즉시 반영용)
+    /// 읽는 책은 없어도 기록은 있다(전부 완독 등) — 그땐 값이 실제 기록이라 흐리게 그리지 않고 통계로 가는 길을 둔다.
+    /// 흐린 띠와 통계 버튼 부재로 기록이 없는 것처럼 보였다(2026-11-08 검토). 데모(시안)는 흐린 띠 그대로.
+    private let hasRecords: Bool
     let nextBook: Bool   // 서재에 책 존재(전부 완독) = "다음 책" 문맥, 없으면 온보딩 카피
     @State private var menuOpen = false
 
@@ -15,8 +18,10 @@ public struct Screen14EmptyHome: View {
         self.nextBook = model?.userData?.books.isEmpty == false
         if let m = model, m.userData != nil {
             self.stats = (m.todaySeconds / 60, RTAppModel.hmString(m.weekSeconds), m.streakDays)
+            self.hasRecords = m.userData?.sessions.isEmpty == false || m.countedEbookTotalSeconds > 0
         } else {
             self.stats = nil
+            self.hasRecords = false
         }
     }
 
@@ -28,6 +33,8 @@ public struct Screen14EmptyHome: View {
                     .contentShape(Rectangle())
                     // 02와 동일 메뉴 — 설정 시트 직행이면 서재 진입 경로가 없음 (실기기 보고 2026-07-13)
                     .onTapGesture { menuOpen = true }
+                    .accessibilityLabel("메뉴")
+                    .accessibilityAddTraits(.isButton)
                     .accessibilityIdentifier("home.avatar")
                     .accessibilityValue(avatar == nil ? "initial" : "photo")
             }
@@ -37,14 +44,31 @@ public struct Screen14EmptyHome: View {
                     (.init("\(stats?.today ?? 0)", unit: "분"), "오늘"),
                     (.init(stats?.week ?? "0:00"), "이번 주"),
                     (stats.map { $0.streak > 0 ? .init("\($0.streak)", unit: "일") : .init("—") } ?? .init("—"), "연속"),
-                ], ghost: true)
+                ], ghost: !hasRecords)
                 .padding(.top, 13)
+                if hasRecords { statsButton.padding(.top, 12) }
             }
             .padding(.horizontal, 24)
             .padding(.top, 128)
             if menuOpen { RTHomeMenu(model: model, avatar: avatar) { menuOpen = false } }
         }
         .frame(width: 390, height: 844)
+    }
+
+    /// 홈(02) '전체 통계' 캡슐과 같은 모양 — 아바타 메뉴를 거치지 않고 기록 화면으로
+    var statsButton: some View {
+        HStack(spacing: 6) {
+            RTIcon(["M5 20V11M12 20V4M19 20v-6"], size: 13, stroke: RT.green, lineWidth: 1.9)
+            Text("전체 통계").font(.sans(11.5, 700)).foregroundColor(RT.green)
+        }
+        .padding(EdgeInsets(top: 5, leading: 9, bottom: 5, trailing: 11))
+        .background(Capsule().fill(RT.greenTint))
+        .rtHitArea(top: 8, bottom: 8)
+        .onTapGesture { model?.openMyStats() }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("emptyHome.statsButton")
     }
 
     var hero: some View {

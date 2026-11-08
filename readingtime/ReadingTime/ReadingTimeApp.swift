@@ -15,6 +15,7 @@ struct ReadingTimeApp: App {
     @State private var keyboardMinY: CGFloat = .greatestFiniteMagnitude
     private let cloud: CloudStore
     private let uploader: RTSnapshotUploader
+    private let dailySync: RTSnapshotUploader
     private let liveActivity = LiveActivityController()
     private let location: LocationCapture
 
@@ -38,6 +39,14 @@ struct ReadingTimeApp: App {
             if !ok { Logger(subsystem: "com.leftjap.readingtime", category: "sync").error("스냅샷 업로드 실패") }
         })
         self.uploader = uploader
+        // readingtime_daily(Cue 앱이 읽음)를 앱 기록 합에 맞춘다 — 서버 값과 다른 행만, 한 번에 하나씩
+        let dailySync = RTSnapshotUploader(upload: { [weak model] _ in
+            guard let model else { return }
+            try await Self.syncPaperDaily(model: model, cloud: cloud)
+        }, onResult: { ok in
+            if !ok { Logger(subsystem: "com.leftjap.readingtime", category: "sync").error("readingtime_daily 맞추기 실패") }
+        })
+        self.dailySync = dailySync
 
         // 실데이터 정본 (§6-④) — UserDefaults JSON 영속 (개인 앱: 로컬이 정본)
         let dec = JSONDecoder()
@@ -60,6 +69,7 @@ struct ReadingTimeApp: App {
                     // 함께 읽기 — 파트너가 읽도록 스냅샷 업로드 (로그인 시에만 실동작)
                     if model?.needsUserDataRestore == false, let json = String(data: raw, encoding: .utf8) {
                         uploader.submit(json)
+                        dailySync.submit("")
                     }
                 }
             }
@@ -70,9 +80,10 @@ struct ReadingTimeApp: App {
         self.location = location
         if !sequenceLaunch {
             model.onReadingPresence = { reading in
-                if reading { Task { @MainActor in location.capture() } }
                 Task { try? await cloud.setReadingSince(reading ? Date() : nil) }
             }
+            // 읽은 위치는 세션을 새로 시작할 때만 잡는다 (재개마다 잡으면 마지막 재개 위치가 세션 위치가 됐다)
+            model.onSessionStart = { location.capture() }
             // 저장 시점에 세션에 부착할 위치 스냅샷 (미확보면 nil → 위치 없이 저장)
             model.locationProvider = { location.fix }
         }
@@ -190,6 +201,7 @@ struct ReadingTimeApp: App {
                         if let model {
                             try await Self.restoreSnapshot(from: cloud, to: model)
                             Self.uploadSnapshot(from: model, to: uploader)
+                            if !model.needsUserDataRestore { dailySync.submit("") }
                             await Self.loadPartner(from: cloud, to: model)
                             await Self.loadEbook(from: cloud, to: model)
                         }
@@ -250,12 +262,13 @@ struct ReadingTimeApp: App {
         if let i = launchArgs.firstIndex(of: "--stub-search"), launchArgs.count > i + 1 {
             model.searchProvider = Self.stubSearch(mode: launchArgs[i + 1])
         }
-        if !sequenceLaunch {
-            model.onSessionSaved = { mode, seconds in
-                Task {
-                    try? await cloud.addPaperSeconds(seconds, source: mode == .flip ? .flip : .tap, on: Date())
-                }
-            }
+        // 잠금 화면 탭 모드 버튼(RTToggleReadingIntent) — 앱 프로세스에서 실행된다. 백그라운드에선 화면의
+        // onReceive 가 늦을 수 있어 Live Activity 도 여기서 바로 맞춘다.
+        let la = liveActivity
+        RTLiveActivityBridge.toggle = { [weak model] in
+            guard let model, model.session?.mode == .tap else { return }
+            model.togglePause()
+            la.sync(session: model.session, bookTitle: model.sessionBook?.title ?? model.currentBook?.title)
         }
         _model = StateObject(wrappedValue: model)
         _flip = StateObject(wrappedValue: FlipEngine(model: model, motionScript: motionScript))
@@ -291,6 +304,18 @@ struct ReadingTimeApp: App {
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
         guard let raw = try? enc.encode(data), let json = String(data: raw, encoding: .utf8) else { return }
         uploader.submit(json)
+    }
+
+    /// readingtime_daily 를 앱 기록 합(RTDailyMirror)에 맞춘다. 서버에서 내 행을 읽어 값이 다른 행만 덮어쓰고,
+    /// 서버에만 있는 행(지운 기록)은 0 으로 둔다. 로컬 사본이 복원되기 전엔 하지 않는다 — 빈 기록으로 서버를 0 으로 만든다.
+    @MainActor private static func syncPaperDaily(model: RTAppModel, cloud: CloudStore) async throws {
+        guard cloud.signedIn, !model.needsUserDataRestore, let data = model.userData else { return }
+        let server = try await cloud.fetchPaperDaily()
+        let have = Dictionary(server.map { (RTDailyMirror.Key(day: $0.day, source: $0.source), $0.seconds) },
+                              uniquingKeysWith: +)
+        for (k, sec) in RTDailyMirror.changes(want: RTDailyMirror.rows(data), server: have) {
+            try await cloud.setPaperDaily(day: k.day, source: k.source, seconds: sec)
+        }
     }
 
     /// 디코딩 못 한 로컬 사본 보관 — Documents/rt-userData-unreadable-<epoch>.json
@@ -384,6 +409,10 @@ struct ReadingTimeApp: App {
                 return (1...10).map { RTBookHit(title: "책 \($0)", author: "저자", publisher: "출판사",
                                                  isbn: "stub-\($0)", coverUrl: "") }
             case "empty": return []
+            case "millieSlow":   // demoCards 밀리 책과 같은 책을 4.5초 늦게 — 편입 뒤 ISBN 승격이 상세를 연 뒤에 오는 경우 재현
+                try await Task.sleep(nanoseconds: 4_500_000_000)
+                return [RTBookHit(title: "삼미 슈퍼스타즈의 마지막 팬클럽", author: "박민규", publisher: "한겨레출판",
+                                  isbn: "9788984319700", coverUrl: "")]
             case "timeout": throw URLError(.timedOut)
             case "flaky":
                 if calls.n == 1 { throw URLError(.timedOut) }
@@ -451,6 +480,8 @@ struct ReadingTimeApp: App {
         UIApplication.shared.isIdleTimerDisabled = keepAwake
     }
 
+    static func isDarkRoute(_ r: RTRoute) -> Bool { r == .flipWait || r == .flipTimer || r == .tapTimer }
+
     /// 엎혀서 기록 중 = 화면이 바닥을 향한 상태 — 완전 검은 오버레이로 OLED 픽셀 오프(절전).
     /// 근접 센서(하드웨어 오프)의 백업이자, 센서가 안 덮이는 표면에서도 배터리를 지킨다.
     /// 실제 엎힘(flip.isFaceDown)까지 봐야 한다 — 화면 탭으로 이어 읽으면 손에 든 채 기록 중이다.
@@ -484,6 +515,10 @@ struct ReadingTimeApp: App {
             }
             .animation(.easeOut(duration: 0.25), value: faceDownDark)
             .statusBarHidden(faceDownDark)
+            // 어두운 타이머 화면(03~05)은 밝은 상태 표시줄, 나머지는 어두운 상태 표시줄 — 정해 두지 않으면 기본(어두운 글자)이라
+            // 03~05 에서 시계·배터리가 배경에 묻혔다. 밝은 화면을 .light 로 고정하면 기기를 다크 모드로 써도 경고창·
+            // 날짜 휠·키보드가 종이 배경 위에서 흰 글자로 그려지지 않는다(2026-11-08 검토).
+            .preferredColorScheme(Self.isDarkRoute(model.route) ? .dark : .light)
                 .task {
                     let demoLaunch = ProcessInfo.processInfo.arguments.contains("--seq")
                     // --seq 데모/테스트는 로컬 상태를 명시 주입하므로 클라우드가 덮어쓰지 않게 격리한다.
@@ -499,6 +534,7 @@ struct ReadingTimeApp: App {
                         do {
                             try await Self.restoreSnapshot(from: cloud, to: model)
                             Self.uploadSnapshot(from: model, to: uploader)
+                            if !model.needsUserDataRestore { dailySync.submit("") }
                             await Self.loadPartner(from: cloud, to: model)
                             await Self.loadEbook(from: cloud, to: model)
                         } catch {

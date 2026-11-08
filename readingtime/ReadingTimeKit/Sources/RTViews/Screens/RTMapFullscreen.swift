@@ -65,6 +65,12 @@ public struct RTMapFullscreen: View {
             .frame(width: Self.size.width, height: Self.size.height)
             .clipped()
             chip.padding(EdgeInsets(top: 58, leading: 14, bottom: 0, trailing: 0))
+            if model?.userData != nil && ds.places.isEmpty {
+                RTMapEmptyNote(compact: false)
+                    .frame(width: Self.size.width, height: Self.size.height)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("stats.mapEmpty")
+            }
         }
         .frame(width: Self.size.width, height: Self.size.height)
         .overlay(alignment: .topTrailing) {

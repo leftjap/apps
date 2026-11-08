@@ -47,7 +47,7 @@ public struct ScreenStats: View {
                 .padding(EdgeInsets(top: 16, leading: 2, bottom: 4, trailing: 2))
             if ranked.isEmpty {
                 Text(mo.isCurrent ? "최근 4주 기록이 없어요" : "\(ym.month)월에는 기록이 없어요")
-                    .font(.sans(12, 500)).foregroundColor(RT.faint).rtLB(RTLB.n12)
+                    .font(.sans(12, 500)).foregroundColor(RT.faintText).rtLB(RTLB.n12)
                     .frame(maxWidth: .infinity)
                     .padding(EdgeInsets(top: 20, leading: 0, bottom: 12, trailing: 0))
             } else {
@@ -59,7 +59,7 @@ public struct ScreenStats: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("독서 지도").font(.sans(14, 800)).foregroundColor(RT.ink).rtLB(RTLB.n14)
                 Spacer(minLength: 0)
-                Text("전체 기간").font(.mono(9.5, 400)).foregroundColor(RT.ghost)
+                Text("전체 기간").font(.mono(9.5, 400)).foregroundColor(RT.faintText)
             }
             .padding(EdgeInsets(top: 18, leading: 2, bottom: 8, trailing: 2))
             mapCard
@@ -77,7 +77,7 @@ public struct ScreenStats: View {
                 Text("\(ym.month)월").font(.sans(26, 900)).tracking(26 * -0.04).foregroundColor(RT.ink)
                     .lineLimit(1).fixedSize().rtLB(RTLB.n26h)
                     .accessibilityIdentifier("stats.monthTitle")
-                Text(String(ym.year)).font(.mono(13, 600)).tracking(13 * 0.02).foregroundColor(RT.ghost)   // "2,026" 방지
+                Text(String(ym.year)).font(.mono(13, 600)).tracking(13 * 0.02).foregroundColor(RT.faintText)   // "2,026" 방지
                     .lineLimit(1).fixedSize()
             }
             Spacer(minLength: 0)
@@ -107,6 +107,9 @@ public struct ScreenStats: View {
             .opacity(enabled ? 1 : 0.35)
             .contentShape(Rectangle())
             .onTapGesture { if enabled { action() } }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(back ? "이전 달" : "다음 달")
+            .accessibilityAddTraits(.isButton)
     }
 
     // ── ② 서머리 (1줄) — "14:52 총 시간 · 19 / 27일 읽음" + 하단 hair3 ──
@@ -138,7 +141,7 @@ public struct ScreenStats: View {
         HStack(spacing: 6) {
             ForEach(Array(["월", "화", "수", "목", "금", "토", "일"].enumerated()), id: \.offset) { i, d in
                 Text(d).font(.mono(10, 500))
-                    .foregroundColor(i == 6 ? RT.terra : RT.faint)
+                    .foregroundColor(i == 6 ? RT.terra : RT.faintText)
                     .rtLB(RTLB.m10)
                     .frame(maxWidth: .infinity)
             }
@@ -264,12 +267,16 @@ public struct ScreenStats: View {
         .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(RT.hair, lineWidth: 1))
         .overlay(alignment: .bottomLeading) { chip.padding(EdgeInsets(top: 0, leading: 13, bottom: 13, trailing: 0)) }
         .overlay(alignment: .bottomTrailing) { expandBtn.padding(EdgeInsets(top: 0, leading: 0, bottom: 13, trailing: 13)) }
+        .overlay { if noPlaces { RTMapEmptyNote(compact: true) } }
         .contentShape(RoundedRectangle(cornerRadius: 20))
         .onTapGesture { model?.openMapFullscreen() }
         .accessibilityElement(children: .ignore)
         .accessibilityIdentifier("stats.mapCard")
-        .accessibilityLabel("독서 지도 전체 화면")
+        .accessibilityLabel(noPlaces ? "독서 지도 — \(RTMapEmptyNote.title)" : "독서 지도 전체 화면")
     }
+
+    /// 실데이터인데 위치가 남은 기록이 하나도 없다 — 빈 지도만 보이면 고장으로 읽힌다(2026-11-08 검토)
+    private var noPlaces: Bool { model?.userData != nil && ds.places.isEmpty }
 
     // 목업 카드 뷰: 월드 1000×500 을 translate(-2308,-357) scale(3) — 카드 내부(border 안쪽) 기준
     var headlessCard: some View {
@@ -319,6 +326,26 @@ public struct ScreenStats: View {
                             size: 15, stroke: skin.ctrlIcon, lineWidth: 2.2))
             .rtBoxShadow(RoundedRectangle(cornerRadius: 11), color: Color.black.opacity(0.4),
                          blur: 14, y: 6, spread: -6)
+    }
+}
+
+/// 위치가 남은 기록이 없을 때 지도 위 안내 (카드·전체 화면 공용)
+struct RTMapEmptyNote: View {
+    let compact: Bool
+    static let title = "아직 지도에 남은 곳이 없어요"
+    static let sub = "기록을 시작할 때 위치를 허용하면 읽은 곳이 여기에 모여요"
+
+    var body: some View {
+        VStack(spacing: compact ? 3 : 5) {
+            Text(Self.title).font(.sans(compact ? 12.5 : 14, 700)).foregroundColor(RT.ink)
+            Text(Self.sub).font(.sans(compact ? 10.5 : 12, 500)).foregroundColor(RT.muted)
+                .multilineTextAlignment(.center)
+        }
+        .padding(EdgeInsets(top: 10, leading: 14, bottom: 10, trailing: 14))
+        .background(RoundedRectangle(cornerRadius: 14).fill(RT.surface.opacity(0.94)))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(RT.hair, lineWidth: 1))
+        .padding(.horizontal, 22)
+        .allowsHitTesting(false)
     }
 }
 

@@ -54,7 +54,7 @@ public struct Screen12Library: View {
                         VStack(alignment: .leading, spacing: 0) {
                             if filter != .finished, live == nil || !(live!.reading.isEmpty) {
                                 Text("읽는 중").font(.mono(10, 600)).tracking(10 * 0.18)
-                                    .foregroundColor(RT.faint)
+                                    .foregroundColor(RT.faintText)
                                     .padding(EdgeInsets(top: 16, leading: 2, bottom: 10, trailing: 0))
                                 if let live {
                                     VStack(spacing: 10) {
@@ -68,9 +68,9 @@ public struct Screen12Library: View {
                             }
                             if filter != .reading, live == nil || !(live!.finished.isEmpty) {
                                 HStack(spacing: 4) {
-                                    Text("완독").font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.faint)
+                                    Text("완독").font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.faintText)
                                     Text(live.map { "\($0.finished.count)" } ?? "13")
-                                        .font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.ghost)
+                                        .font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.faintText)
                                 }
                                 .padding(EdgeInsets(top: 20, leading: 2, bottom: 12, trailing: 0))
                                 grid
@@ -101,9 +101,12 @@ public struct Screen12Library: View {
                     .frame(width: 38, height: 38)
                     .contentShape(Rectangle())
                     .onTapGesture { model?.nav(.home) }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("뒤로")
+                    .accessibilityAddTraits(.isButton)
                 Text("서재").font(.sans(17, 800)).foregroundColor(RT.ink)
                 Text(live.map { "\($0.total)" } ?? "14")
-                    .font(.mono(12, 600)).foregroundColor(RT.faint).padding(.leading, 3)
+                    .font(.mono(12, 600)).foregroundColor(RT.faintText).padding(.leading, 3)
             }
             Spacer()
             RoundedRectangle(cornerRadius: 11).fill(RT.ctaGrad(CGSize(width: 36, height: 36)))
@@ -112,6 +115,9 @@ public struct Screen12Library: View {
                 .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
                 .contentShape(Rectangle())
                 .onTapGesture { model?.openSheet(.addbook) }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("책 추가")
+                .accessibilityAddTraits(.isButton)
                 .padding(.trailing, 2)
         }
         .padding(EdgeInsets(top: 52, leading: 18, bottom: 0, trailing: 18))
@@ -198,7 +204,7 @@ public struct Screen12Library: View {
                 Text("몰입").font(.sans(15.5, 800)).foregroundColor(RT.ink)
                 Text("미하이 칙센트미하이").font(.sans(11.5, 500)).foregroundColor(RT.muted)
                     .padding(.top, 3)
-                Text("4:12 · 8회 · 18일째").font(.mono(11, 600)).foregroundColor(RT.faint)
+                Text("4:12 · 8회 · 18일째").font(.mono(11, 600)).foregroundColor(RT.faintText)
                     .padding(.top, 9)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -230,7 +236,7 @@ public struct Screen12Library: View {
                 Text(b.title).font(.sans(15.5, 800)).foregroundColor(RT.ink).lineLimit(1)
                 Text(b.author).font(.sans(11.5, 500)).foregroundColor(RT.muted)
                     .padding(.top, 3).lineLimit(1)
-                Text(live?.readingMeta[b.isbn] ?? "").font(.mono(11, 600)).foregroundColor(RT.faint)
+                Text(live?.readingMeta[b.isbn] ?? "").font(.mono(11, 600)).foregroundColor(RT.faintText)
                     .padding(.top, 9)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -374,6 +380,8 @@ public struct Sheet13AddBook: View {
     @FocusState private var searchFocused: Bool
     /// 키보드가 가린 캔버스 높이 — 결과 목록 끝을 키보드 위까지 스크롤하기 위한 아래 여백
     @Environment(\.rtKeyboardInset) private var keyboardInset
+    @Environment(\.rtSheetDismiss) private var dismiss
+    @State private var dragY: CGFloat = 0   // 손잡이 끌어내리기 (SheetShell 과 같은 규칙)
 
     public init(model: RTAppModel? = nil) {
         self.model = model
@@ -448,6 +456,9 @@ public struct Sheet13AddBook: View {
                         .overlay(RTIcon(["M6 6l12 12M18 6L6 18"], size: 14, stroke: RT.muted, lineWidth: 2.4, cap: .round, join: .miter))
                         .contentShape(Rectangle())
                         .onTapGesture { model?.closeSheet() }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("닫기")
+                        .accessibilityAddTraits(.isButton)
                 }
                 .padding(EdgeInsets(top: 15, leading: 24, bottom: 14, trailing: 24))
                 VStack(alignment: .leading, spacing: 11) {
@@ -495,7 +506,7 @@ public struct Sheet13AddBook: View {
                             Text(countLabel)
                                 .lineLimit(1)
                                 .font(.mono(10.5, 500)).tracking(10.5 * 0.06)
-                                .foregroundColor(RT.faint)
+                                .foregroundColor(RT.faintText)
                                 .accessibilityIdentifier("addbook.count")
                         }
                     }
@@ -542,6 +553,25 @@ public struct Sheet13AddBook: View {
                     .fill(RT.sheet)
                     .shadow(color: Color.black.opacity(0.28), radius: 23, x: 0, y: -14)
             )
+            .overlay(alignment: .top) {
+                if let dismiss {
+                    Color.clear
+                        .frame(height: 26)
+                        .contentShape(Rectangle())
+                        .gesture(DragGesture(minimumDistance: 4)
+                            .onChanged { dragY = max(0, $0.translation.height) }
+                            .onEnded { v in
+                                if v.translation.height > 90 || v.predictedEndTranslation.height > 220 {
+                                    dismiss()
+                                    dragY = 0
+                                } else {
+                                    withAnimation(.easeOut(duration: 0.2)) { dragY = 0 }
+                                }
+                            })
+                        .accessibilityIdentifier("sheet.handle")
+                }
+            }
+            .offset(y: dragY)
         }
     }
 

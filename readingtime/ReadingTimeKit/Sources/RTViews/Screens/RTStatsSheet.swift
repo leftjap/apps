@@ -123,7 +123,7 @@ struct RTStatsSheetView: View {
             HStack(spacing: 13) {
                 if let rank = r.rank {
                     Text("\(rank)").font(.mono(12, 700))
-                        .foregroundColor(rank == 1 ? RT.ink : RT.ghost)
+                        .foregroundColor(rank == 1 ? RT.ink : RT.faintText)
                         .frame(width: 14)
                 }
                 RTStatsCover(book: b, size: CGSize(width: 36, height: 52), radius: 4,

@@ -11,11 +11,14 @@ public struct RTReadingActivityAttributes: ActivityAttributes {
         public var startedAt: Date
         /// 일시정지 시 고정 표시할 경과(초)
         public var pausedElapsed: Int
+        /// 탭 모드 — 잠금 화면에 일시정지·재개 버튼을 둔다 (엎기는 폰을 엎고 들어 제어한다). 옵셔널 = 예전 상태와 호환.
+        public var tapMode: Bool?
 
-        public init(paused: Bool, startedAt: Date, pausedElapsed: Int) {
+        public init(paused: Bool, startedAt: Date, pausedElapsed: Int, tapMode: Bool = false) {
             self.paused = paused
             self.startedAt = startedAt
             self.pausedElapsed = pausedElapsed
+            self.tapMode = tapMode
         }
     }
 

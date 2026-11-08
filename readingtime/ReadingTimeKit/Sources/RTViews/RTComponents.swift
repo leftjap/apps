@@ -151,7 +151,7 @@ public struct RTStatsStrip: View {
                         }
                     }
                     Text(pair.1).font(.sans(10.5, 500))
-                        .foregroundColor(ghost ? RT.ghost : RT.faint)
+                        .foregroundColor(ghost ? RT.ghost : RT.faintText)
                 }
                 .frame(maxWidth: .infinity)
                 if i < items.count - 1 {

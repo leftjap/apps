@@ -40,7 +40,7 @@ final class FlipTapResumeUITests: XCTestCase {
         XCTAssertTrue(waitGone(hint, timeout: 5), "화면 탭으로 이어 읽기가 안 됨")
 
         app.staticTexts["여기까지 읽기"].tap()
-        XCTAssertTrue(app.staticTexts["기록됐어요"].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.staticTexts["이만큼 읽었어요"].waitForExistence(timeout: 5),
                       "손에 든 채 이어 읽는 중 '여기까지 읽기'가 눌리지 않음 (검은 덮개가 막음)\n\(app.debugDescription)")
     }
 

@@ -2,10 +2,22 @@ import SwiftUI
 
 // v8 바텀시트 — 스펙: frames/07·09·13.html. rtshot 은 베이스 화면 + 딤 + 시트 합성.
 
+/// 시트 닫기 동작 — RTRootView 가 넣는다. 손잡이를 끌어내려 닫을 때 쓴다(헤드리스 렌더엔 없음).
+public struct RTSheetDismissKey: EnvironmentKey { public static let defaultValue: (() -> Void)? = nil }
+public extension EnvironmentValues {
+    var rtSheetDismiss: (() -> Void)? {
+        get { self[RTSheetDismissKey.self] }
+        set { self[RTSheetDismissKey.self] = newValue }
+    }
+}
+
 // 시트 셸 (bottom-anchored, r26 top, v8Up 종료 상태)
 struct SheetShell<Content: View>: View {
     var topPadding: CGFloat = 12
     @ViewBuilder var content: () -> Content
+    @Environment(\.rtSheetDismiss) private var dismiss
+    /// 손잡이 끌어내리기 — 손잡이가 있는데 끌리지 않았다(2026-11-08 검토). 목록·휠과 겹치지 않게 손잡이 줄(위 32pt)에서만 받는다.
+    @State private var dragY: CGFloat = 0
 
     var body: some View {
         VStack {
@@ -23,6 +35,25 @@ struct SheetShell<Content: View>: View {
                     .fill(RT.sheet)
                     .shadow(color: Color(hex: 0x14100A, alpha: 0.4), radius: 24, x: 0, y: -20)
             )
+            .overlay(alignment: .top) {
+                if let dismiss {
+                    Color.clear
+                        .frame(height: topPadding + 20)
+                        .contentShape(Rectangle())
+                        .gesture(DragGesture(minimumDistance: 4)
+                            .onChanged { dragY = max(0, $0.translation.height) }
+                            .onEnded { v in
+                                if v.translation.height > 90 || v.predictedEndTranslation.height > 220 {
+                                    dismiss()
+                                    dragY = 0
+                                } else {
+                                    withAnimation(.easeOut(duration: 0.2)) { dragY = 0 }
+                                }
+                            })
+                        .accessibilityIdentifier("sheet.handle")
+                }
+            }
+            .offset(y: dragY)
         }
     }
 }
@@ -39,6 +70,9 @@ struct SheetHead: View {
                 .overlay(RTIcon(["M6 6l12 12M18 6L6 18"], size: 14, stroke: RT.muted, lineWidth: 2.4, cap: .round, join: .miter))
                 .contentShape(Rectangle())
                 .onTapGesture { onClose?() }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("닫기")
+                .accessibilityAddTraits(.isButton)
         }
     }
 }
@@ -54,8 +88,10 @@ public struct Sheet07AddTime: View {
     private let live: Bool
     private let editing: Bool
     private let book: RTBook?
+    private let choices: [RTBook]    // 책 고르기 목록 (종이책)
     private let when: String
     @State private var pickingDate = false
+    @State private var pickingBook = false
     @State private var confirmDelete = false
 
     public init(model: RTAppModel? = nil) {
@@ -63,17 +99,14 @@ public struct Sheet07AddTime: View {
         self.value = model?.addtimeValue ?? 35
         // model 없음(정적 데모) = +15 선택 / model 있고 preset nil = 미선택 (이중 옵셔널 구분)
         self.selPreset = model.map(\.addtimePreset) ?? 15
-        if let m = model, let data = m.userData {
+        if let m = model, m.userData != nil {
             live = true
             editing = m.editingRecord != nil
-            if let rec = m.editingRecord {
-                book = rec.isbn.flatMap { isbn in data.books.first { $0.isbn == isbn } }
-            } else {
-                book = m.selectedBook
-            }
+            book = m.addtimeBook ?? (m.editingRecord == nil ? m.selectedBook : nil)
+            choices = m.addtimeBookChoices
             when = Self.whenLabel(m.addtimeDate ?? m.now(), now: m.now())
         } else {
-            live = false; editing = false; book = nil
+            live = false; editing = false; book = nil; choices = []
             when = "오늘 · 14:14"
         }
     }
@@ -96,6 +129,7 @@ public struct Sheet07AddTime: View {
             VStack(spacing: 0) {
                 SheetHead(title: editing ? "기록 고치기" : "시간 직접 추가", onClose: { model?.closeSheet() })
                 bookRow.padding(.top, 18)
+                if pickingBook { bookList.padding(.top, 8) }
                 stepper.padding(.top, 24)
                 presets.padding(.top, 20)
                 whenRow.padding(.top, 20)
@@ -145,19 +179,63 @@ public struct Sheet07AddTime: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(live ? (book?.title ?? "책 미지정") : "몰입").font(.sans(13.5, 700)).foregroundColor(RT.ink)
                     .lineLimit(1)
-                Text(live ? (book?.author ?? "") : "미하이 칙센트미하이").font(.sans(11, 500)).foregroundColor(RT.faint)
+                Text(live ? (book?.author ?? "") : "미하이 칙센트미하이").font(.sans(11, 500)).foregroundColor(RT.faintText)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            // ›(책 변경)은 아직 없다 — 실데이터에선 누를 수 없는 꺽쇠를 그리지 않는다 (상세에서 연 그 책에 기록)
-            if !live { ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6)) }
+            // ›(책 변경) — 실데이터에선 고를 책이 둘 이상일 때만 그린다 (고치기면 잘못 붙은 기록을 다른 책으로 옮긴다)
+            if !live || choices.count > 1 {
+                ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6))
+                    .rotationEffect(.degrees(pickingBook ? 90 : 0))
+            }
         }
         .padding(EdgeInsets(top: 10, leading: 13, bottom: 10, trailing: 13))
         .background(RT.surface)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.hair, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture { if live && choices.count > 1 { pickingBook.toggle() } }
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(live && choices.count > 1 ? "기록할 책 바꾸기" : "")
         .accessibilityIdentifier("addtime.book")
+    }
+
+    /// 책 고르기 목록 — 읽는 중 → 완독. 넷까지 보이고 나머지는 스크롤.
+    var bookList: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                ForEach(Array(choices.enumerated()), id: \.element.isbn) { i, b in
+                    HStack(spacing: 10) {
+                        RTRemoteCover(url: b.coverUrl, size: .init(width: 22, height: 32), radius: 2, title: b.title)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(b.title).font(.sans(12.5, 700)).foregroundColor(RT.ink).lineLimit(1)
+                            Text(b.finished ? "완독" : "읽는 중").font(.sans(10.5, 500)).foregroundColor(RT.muted)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        if b.isbn == book?.isbn {
+                            RTIcon(RTIconPath.check, size: 14, stroke: RT.green, lineWidth: 2.4)
+                        }
+                    }
+                    .padding(EdgeInsets(top: 7, leading: 13, bottom: 7, trailing: 13))
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        model?.chooseAddtimeBook(b.isbn)
+                        pickingBook = false
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(b.isbn == book?.isbn ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityIdentifier("addtime.bookOption.\(b.isbn)")
+                    if i < choices.count - 1 { Rectangle().fill(RT.hair2).frame(height: 1).padding(.horizontal, 13) }
+                }
+            }
+        }
+        .frame(maxHeight: 4 * 45)
+        .background(RT.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.hair, lineWidth: 1))
     }
 
     var stepper: some View {
@@ -169,6 +247,8 @@ public struct Sheet07AddTime: View {
                 .shadow(color: Color(hex: 0x16140F, alpha: 0.15), radius: 4, x: 0, y: 3)
                 .contentShape(Circle())
                 .onTapGesture { model?.step(-5) }
+                .accessibilityLabel("5분 빼기")
+                .accessibilityAddTraits(.isButton)
                 .accessibilityIdentifier("addtime.minus")
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text("\(value)").font(.mono(56, 700)).tracking(56 * -0.04).foregroundColor(RT.ink)
@@ -181,6 +261,8 @@ public struct Sheet07AddTime: View {
                 .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
                 .contentShape(Circle())
                 .onTapGesture { model?.step(5) }
+                .accessibilityLabel("5분 더하기")
+                .accessibilityAddTraits(.isButton)
                 .accessibilityIdentifier("addtime.plus")
         }
     }
@@ -358,6 +440,9 @@ public struct Sheet09Finish: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { model?.rate(i + 1) }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("별점 \(i + 1)점")
+                .accessibilityAddTraits(i < rating ? [.isButton, .isSelected] : .isButton)
             }
         }
     }
@@ -377,7 +462,7 @@ public struct Sheet09Finish: View {
                 Text(value).font(.mono(16, 700)).tracking(16 * -0.02).foregroundColor(RT.ink)
                 if let unit { Text(unit).font(.sans(11, 400)).foregroundColor(RT.muted) }
             }
-            Text(label).font(.sans(10, 600)).foregroundColor(RT.faint)
+            Text(label).font(.sans(10, 600)).foregroundColor(RT.faintText)
         }
         .frame(maxWidth: .infinity)
         .padding(EdgeInsets(top: 13, leading: 6, bottom: 13, trailing: 6))

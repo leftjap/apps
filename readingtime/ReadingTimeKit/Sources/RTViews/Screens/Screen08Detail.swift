@@ -125,6 +125,9 @@ public struct Screen08Detail: View {
                 .frame(width: 38, height: 38)
                 .contentShape(Rectangle())
                 .onTapGesture { model.map { $0.nav($0.detailOrigin) } }   // 진입 출처로 복귀 (홈/서재)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("뒤로")
+                .accessibilityAddTraits(.isButton)
             Spacer()
             if !readOnly {   // 파트너 책엔 책 메뉴(삭제) 없음
                 VStack(spacing: 3.2) {
@@ -135,6 +138,9 @@ public struct Screen08Detail: View {
                 .frame(width: 38, height: 38)
                 .contentShape(Rectangle())
                 .onTapGesture { model?.openSheet(.bookmenu) }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("책 메뉴")
+                .accessibilityAddTraits(.isButton)
             } else {
                 Color.clear.frame(width: 38, height: 38)
             }
@@ -178,7 +184,7 @@ public struct Screen08Detail: View {
                     Text(live?.total ?? "4:12").font(.mono(28, 700)).tracking(28 * -0.03).foregroundColor(RT.ink)
                     Text(live.map { "누적 · \($0.count)\($0.isMillie ? "일 읽음" : "회") · \($0.days)일째" }
                          ?? "누적 · 8회 · 18일째")
-                        .font(.mono(11, 500)).foregroundColor(RT.faint)
+                        .font(.mono(11, 500)).foregroundColor(RT.faintText)
                 }
                 .padding(.top, 14)
             }
@@ -208,7 +214,7 @@ public struct Screen08Detail: View {
                     // 이어서 읽기 자리를 비활성으로 두고 '밀리의 서재' 표기. 홈 readCTADisabled 문법.
                     HStack(spacing: 8) {
                         RTIcon(RTIconPath.check, size: 15, stroke: RT.faint, lineWidth: 2.2)
-                        Text("밀리의 서재").font(.sans(15, 800)).foregroundColor(RT.faint)
+                        Text("밀리의 서재").font(.sans(15, 800)).foregroundColor(RT.faintText)  // 비활성 CTA 지만 왜 비활성인지 알려 주는 글자 — 읽혀야 한다
                     }
                     .frame(width: mainW, height: 52)
                     .background(RoundedRectangle(cornerRadius: 15).fill(RT.segBg))
@@ -281,7 +287,7 @@ public struct Screen08Detail: View {
                 case .today:
                     Text("오늘").font(.sans(12, 600)).foregroundColor(RT.body)
                 case .date(let d):
-                    Text(d).font(.mono(11.5, 500)).foregroundColor(RT.faint)
+                    Text(d).font(.mono(11.5, 500)).foregroundColor(RT.faintText)
                 }
             }
             .padding(EdgeInsets(top: 13, leading: 2, bottom: 13, trailing: 2))

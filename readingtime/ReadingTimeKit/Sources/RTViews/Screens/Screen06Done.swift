@@ -74,7 +74,8 @@ public struct Screen06Done: View {
                         .rtPop(duration: 0.45)
                 }
                 .frame(width: 88, height: 88)
-                Text("기록됐어요").font(.sans(14, 700)).foregroundColor(RT.muted)
+                // 저장 전이다 — "기록됐어요" 는 저장된 것처럼 읽혔다(2026-11-08 검토). 저장은 아래 '저장하기'.
+                Text("이만큼 읽었어요").font(.sans(14, 700)).foregroundColor(RT.muted)
                     .padding(.top, 20)
                     .rtEntrance(delay: 0.5, duration: 0.6)
                 Text("\(minutes):\(String(format: "%02d", seconds))")
@@ -111,9 +112,7 @@ public struct Screen06Done: View {
             .padding(.top, 406)
             VStack(spacing: 0) {
                 Spacer()
-                RTCTAPlain("저장하기")
-                    .contentShape(Rectangle())
-                    .onTapGesture { model?.saveSession() }
+                ctaRow
                 Text("이 기록 삭제").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xB56A55))
                     .padding(.top, 12)
                     .contentShape(Rectangle())
@@ -132,20 +131,49 @@ public struct Screen06Done: View {
         .frame(width: 390, height: 844)
     }
 
+    /// 저장하기(주) + 이어 읽기(보조) — 08 상세 CTA 행과 같은 1.6 : 1. 이어 읽기 = 실수로 끝냈을 때
+    /// 저장하지 않고 일시정지 상태로 타이머에 돌아간다(2026-11-08 검토).
+    var ctaRow: some View {
+        GeometryReader { row in
+            let mainW = (row.size.width - 9) * 1.6 / 2.6
+            HStack(spacing: 9) {
+                RTCTAPlain("저장하기")
+                    .frame(width: mainW)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.saveSession() }
+                    .accessibilityIdentifier("done.save")
+                HStack(spacing: 6) {
+                    RTIcon(RTIconPath.play, size: 13, fill: RT.green)
+                    Text("이어 읽기").font(.sans(13.5, 700)).foregroundColor(Color(hex: 0x4A5A44))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(RoundedRectangle(cornerRadius: 16).fill(RT.surface))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(hex: 0xE5DFCD), lineWidth: 1))
+                .contentShape(Rectangle())
+                .onTapGesture { model?.resumeFromDone() }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("done.resume")
+            }
+        }
+        .frame(height: 54)
+    }
+
     var todayCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 Text("오늘의 리딩타임").font(.sans(14, 800)).foregroundColor(RT.ink)
                 Spacer()
-                (Text("\(live?.todayMin ?? 32)분 → ").foregroundColor(RT.faint)
+                (Text("\(live?.todayMin ?? 32)분 → ").foregroundColor(RT.faintText)
                     + Text("\((live?.todayMin ?? 32) + minutes)분").fontWeight(.bold).foregroundColor(RT.green))
                     .font(.mono(12, 500))
             }
             bar.padding(.top, 28)
             HStack {
-                Text("0분").font(.mono(10, 400)).foregroundColor(RT.ghost)
+                Text("0분").font(.mono(10, 400)).foregroundColor(RT.faintText)
                 Spacer()
-                Text("\(live?.axisHours ?? 1)시간").font(.mono(10, 400)).foregroundColor(RT.ghost)
+                Text("\(live?.axisHours ?? 1)시간").font(.mono(10, 400)).foregroundColor(RT.faintText)
             }
             .padding(.top, 12)
         }

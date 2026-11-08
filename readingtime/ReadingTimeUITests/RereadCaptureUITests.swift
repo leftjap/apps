@@ -70,7 +70,7 @@ final class RereadCaptureUITests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: "tap.end").firstMatch.tap()
 
         // 06 완료 — 책 칩 = 세션 책
-        XCTAssertTrue(app.staticTexts["기록됐어요"].waitForExistence(timeout: 5), "06 미진입")
+        XCTAssertTrue(app.staticTexts["이만큼 읽었어요"].waitForExistence(timeout: 5), "06 미진입")
         XCTAssertTrue(app.staticTexts["돈의 심리학"].exists, "06 책 칩이 세션 책이 아님")
         shot("A5-done-session-chip")
         app.staticTexts["저장하기"].tap()

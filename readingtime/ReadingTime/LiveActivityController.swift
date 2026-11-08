@@ -25,8 +25,9 @@ final class LiveActivityController {
 
         let state = RTReadingActivityAttributes.ContentState(
             paused: s.status == .paused,
-            startedAt: now.addingTimeInterval(-TimeInterval(s.elapsed)),
-            pausedElapsed: s.elapsed
+            startedAt: now.addingTimeInterval(-TimeInterval(s.wallElapsed(at: now))),
+            pausedElapsed: s.wallElapsed(at: now),
+            tapMode: s.mode == .tap
         )
         if let activity {
             // alertConfiguration 제거 — 실기기 실측(2026-07-04): 화면 웨이크 효과는 없고

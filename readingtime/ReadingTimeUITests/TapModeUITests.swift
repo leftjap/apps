@@ -49,13 +49,13 @@ final class TapModeUITests: XCTestCase {
 
         center(ring).doubleTap()
         sleep(1)
-        XCTAssertFalse(app.staticTexts["기록됐어요"].exists, "더블탭으로 06 에 감")
+        XCTAssertFalse(app.staticTexts["이만큼 읽었어요"].exists, "더블탭으로 06 에 감")
         XCTAssertTrue(ring.exists)
         XCTAssertEqual(ring.label, "일시정지")   // 두 번 토글 → 다시 기록 중
 
         // 두 탭이 모두 들어갔는지 — 빗나갔어도 위 단언은 통과하므로 06 원장의 일시정지 횟수로 가린다
         element(app, "tap.end").tap()
-        XCTAssertTrue(app.staticTexts["기록됐어요"].waitForExistence(timeout: 5), "06 미진입")
+        XCTAssertTrue(app.staticTexts["이만큼 읽었어요"].waitForExistence(timeout: 5), "06 미진입")
         XCTAssertTrue(app.staticTexts["1회 · 0분"].exists, "더블탭이 두 번 토글되지 않음(일시정지 1회여야 함)")
     }
 }

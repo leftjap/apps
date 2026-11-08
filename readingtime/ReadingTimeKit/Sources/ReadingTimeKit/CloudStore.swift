@@ -165,14 +165,52 @@ public final class CloudStore: ObservableObject {
         return f.date(from: s)
     }
 
-    // 종이책 일별 (내 readingtime_daily — RLS로 본인 것만)
-    public func fetchPaperDaily() async throws -> [DailyRow] {
-        try await client.from("readingtime_daily").select("day,seconds").execute().value
+    /// PostgREST 는 한 번에 최대 1000행만 준다 — 짧은 페이지가 나올 때까지 이어 받는다 (2026-11-08 검토).
+    /// 호출자는 정렬 기준을 고정해야 페이지 경계에서 행이 겹치거나 빠지지 않는다.
+    static func fetchAllPages<T>(pageSize: Int = 1000,
+                                 _ fetch: (ClosedRange<Int>) async throws -> [T]) async throws -> [T] {
+        var out: [T] = []
+        var from = 0
+        while true {
+            let page = try await fetch(from...(from + pageSize - 1))
+            out += page
+            if page.count < pageSize { return out }
+            from += pageSize
+        }
+    }
+
+    // 종이책 일별 (내 readingtime_daily — RLS로 본인 것만). Cue 앱이 읽는 표 — 앱 기록에서 계산해 맞춘다(RTDailyMirror).
+    public struct PaperDailySourceRow: Decodable, Sendable {
+        public let day: String
+        public let source: String
+        public let seconds: Int
+    }
+    public func fetchPaperDaily() async throws -> [PaperDailySourceRow] {
+        guard let owner = ownerID else { return [] }
+        return try await Self.fetchAllPages { r in
+            try await client.from("readingtime_daily").select("day,source,seconds")
+                .eq("owner_id", value: owner.uuidString)
+                .order("day").order("source")
+                .range(from: r.lowerBound, to: r.upperBound).execute().value
+        }
+    }
+
+    /// 그날·그 방식의 초를 정해진 값으로 (더하기가 아니라 덮어쓰기 — 앱 기록 합이 정본)
+    public func setPaperDaily(day: String, source: String, seconds: Int) async throws {
+        guard let owner = ownerID else { return }
+        let row = PaperDailyRow(owner_id: owner.uuidString, day: day, seconds: seconds, source: source)
+        try await client.from("readingtime_daily")
+            .upsert(row, onConflict: "owner_id,day,source")
+            .execute()
     }
 
     // 전자책(밀리) 일별 (book_reading_seconds 전체 = 전부 밀리, 읽기 전용)
     public func fetchEbookDaily() async throws -> [DailyRow] {
-        try await client.from("book_reading_seconds").select("day,seconds").execute().value
+        try await Self.fetchAllPages { r in
+            try await client.from("book_reading_seconds").select("day,seconds")
+                .order("day").order("source")
+                .range(from: r.lowerBound, to: r.upperBound).execute().value
+        }
     }
 
     // 밀리 일별×책별 (book_reading_books, 읽기 전용) — 일별 시간의 책 귀속
@@ -184,7 +222,11 @@ public final class CloudStore: ObservableObject {
         public let read_at: Date?
     }
     public func fetchEbookBooks() async throws -> [EbookBookRow] {
-        try await client.from("book_reading_books").select("day,title,cover_url,read_at").execute().value
+        try await Self.fetchAllPages { r in
+            try await client.from("book_reading_books").select("day,title,cover_url,read_at")
+                .order("day").order("title")
+                .range(from: r.lowerBound, to: r.upperBound).execute().value
+        }
     }
 
     // 밀리 책 단위 메타 (book_millie_books, 읽기 전용) — 서재 편입·알라딘 ISBN 매칭 재료.
@@ -197,8 +239,12 @@ public final class CloudStore: ObservableObject {
         public let cover_url: String?
     }
     public func fetchMillieBooks() async throws -> [MillieBookRow] {
-        try await client.from("book_millie_books")
-            .select("book_id,title,author,publisher,cover_url").execute().value
+        try await Self.fetchAllPages { r in
+            try await client.from("book_millie_books")
+                .select("book_id,title,author,publisher,cover_url")
+                .order("book_id")
+                .range(from: r.lowerBound, to: r.upperBound).execute().value
+        }
     }
 
 }

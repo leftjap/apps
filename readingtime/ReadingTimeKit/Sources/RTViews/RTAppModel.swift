@@ -243,6 +243,23 @@ public final class RTAppModel: ObservableObject {
     @Published public private(set) var editingRecord: RTSessionRecord?
     /// 고치기 시트를 열 때 채운 분 — 분을 안 바꾸고 저장하면 원래 초를 그대로 둔다(표시값으로 덮으면 초가 사라진다)
     private var editPrefillMinutes: Int?
+    /// 07 에서 기록할 책 — 시트를 열 때 상세의 책(고치기면 그 기록의 책)으로 채우고, 책 행에서 바꿀 수 있다.
+    @Published public var addtimeISBN: String?
+    public var addtimeBook: RTBook? {
+        guard let isbn = addtimeISBN else { return nil }
+        return userData?.books.first { $0.isbn == isbn }
+    }
+    /// 07 책 고르기 목록 — 종이책만(밀리 편입 책은 기록이 자동이다). 읽는 중(최근 읽은·추가한 순) → 완독(최근 완독순).
+    public var addtimeBookChoices: [RTBook] {
+        guard let d = userData else { return [] }
+        var lastRead = [String: Date]()
+        for s in d.sessions { if let i = s.isbn, s.endedAt > (lastRead[i] ?? .distantPast) { lastRead[i] = s.endedAt } }
+        func key(_ b: RTBook) -> Date { max(b.addedAt, lastRead[b.isbn] ?? .distantPast) }
+        let paper = d.books.filter { $0.millieBookId == nil }
+        return paper.filter { !$0.finished }.sorted { key($0) > key($1) }
+            + paper.filter(\.finished).sorted { ($0.finishedAt ?? $0.addedAt) > ($1.finishedAt ?? $1.addedAt) }
+    }
+    public func chooseAddtimeBook(_ isbn: String) { addtimeISBN = isbn }
     @Published public var rating = 4                 // 09 데모: 4★
     @Published public var added: Set<String> = ["flow"]  // 13 데모: 첫 행 추가됨
     @Published public var libraryFilter: RTLibraryFilter = .all
@@ -488,10 +505,24 @@ public final class RTAppModel: ObservableObject {
         nav(.detail)
     }
 
-    private var cal: Calendar {
+    private var cal: Calendar { dateTools().cal }
+
+    /// Calendar·DateFormatter 캐시 — 접근할 때마다 새로 만들던 것이 홈 한 번 그리기 38ms·타이머 1초 갱신 9.5ms 의
+    /// 대부분이었다(2026-11-08 맥 측정, 기록 700건·밀리 400일). 시간대가 바뀌면(여행) 새로 만든다.
+    private var dateToolsCache: (tz: TimeZone, cal: Calendar, day: DateFormatter)?
+    private func dateTools() -> (cal: Calendar, day: DateFormatter) {
+        let tz = TimeZone.current
+        if let t = dateToolsCache, t.tz == tz { return (t.cal, t.day) }
         var c = Calendar(identifier: .gregorian)
         c.firstWeekday = 2   // 월요일 시작 (v8 주간 통계)
-        return c
+        c.timeZone = tz
+        let f = DateFormatter()
+        f.calendar = c
+        f.timeZone = tz
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        dateToolsCache = (tz, c, f)
+        return (c, f)
     }
 
     /// 전자책(밀리) 일별 초 — "yyyy-MM-dd"(실발생일) → seconds. book_reading_seconds 읽기 전용,
@@ -547,15 +578,20 @@ public final class RTAppModel: ObservableObject {
                        isbn: b.isbn, isEbook: false,
                        lastReadAt: max(b.addedAt, lastRead[b.isbn] ?? .distantPast))
         }
-        // 밀리: 완독 처리 이후 더 최신 기록이 없으면 제외
+        // 밀리: 완독 처리 이후 더 최신 기록이 없으면 제외. 30일 넘게 안 읽은 책도 제외 — 밀리에서 한 번 열어 본
+        // 책이 홈에 끝없이 쌓였다(2026-11-08 검토). 다시 읽으면 read_at 이 갱신돼 돌아온다.
+        let cutoff = now().addingTimeInterval(-Double(Self.millieCardDays) * 86_400)
         let ebook = ebookReadAt.compactMap { (title, readAt) -> RTHomeCard? in
-            if hiddenEbooks.contains(title) { return nil }
+            if hiddenEbooks.contains(title) || readAt < cutoff { return nil }
             if let finishedAt = finishedEbooks[title], readAt <= finishedAt { return nil }
             return RTHomeCard(title: title, author: nil, coverUrl: ebookCovers[title] ?? "",
                               isbn: nil, isEbook: true, lastReadAt: readAt)
         }
         return (paper + ebook).sorted { $0.lastReadAt > $1.lastReadAt }
     }
+
+    /// 밀리 홈 카드 유지 기간(일)
+    public static let millieCardDays = 30
 
     /// 엎기 기록 대상 — 선택된 카드가 종이책이면 그 ISBN, 밀리 카드면 nil(기록 시작 안 함).
     public var flipTargetISBN: String? {
@@ -635,11 +671,17 @@ public final class RTAppModel: ObservableObject {
     /// 그 시간은 남은 책 몫으로 둔다. 어느 책이 그날 읽혔는지 모르는 날(ebookBooks 없음)도 유지.
     private var visibleEbookDaily: [String: Int] {
         guard !hiddenEbooks.isEmpty else { return ebookDaily }
-        return ebookDaily.filter { day, _ in
+        if let c = visibleEbookCache, c.stamp == statsStamp { return c.daily }
+        let v = ebookDaily.filter { day, _ in
             guard let titles = ebookBooks[day], !titles.isEmpty else { return true }
             return !titles.allSatisfy { hiddenEbooks.contains($0) }
         }
+        visibleEbookCache = (statsStamp, v)
+        return v
     }
+    /// 입력(기록·밀리·숨김)이 바뀌면 statsStamp 가 오른다 — 그때만 다시 계산한다 (매초 타이머 갱신마다 훑지 않게)
+    private var visibleEbookCache: (stamp: Int, daily: [String: Int])?
+    private var readDaysCache: (stamp: Int, tz: TimeZone, days: Set<Date>)?
 
     // ── 밀리 서재 편입 (사용자 결정 2026-09-01) ────────────────────────────
 
@@ -697,6 +739,14 @@ public final class RTAppModel: ObservableObject {
     /// 빈 저자·출판사만 알라딘으로 보강한다. 같은 ISBN 이 서재에 이미 있으면(종이로도 보유)
     /// 중복을 만들지 않도록 포기한다 — 병합은 별건.
     public func upgradeMillieBook(key: String, to hit: RTBookHit) {
+        // 이 책 상세가 열려 있으면 새 키를 따라간다 — 옛 키로 남으면 selectedBook 이 읽는 중 종이책으로 넘어가
+        // 상세가 다른 책으로 바뀌었다(2026-11-08, MillieLibraryUITests 가 검색 응답 속도에 따라 실패한 원인)
+        let followSelection = selectedISBN == key
+        defer {
+            if followSelection, userData?.books.contains(where: { $0.isbn == hit.isbn && $0.millieBookId != nil }) == true {
+                selectedISBN = hit.isbn
+            }
+        }
         mutateUserData { d in
             guard let i = d.books.firstIndex(where: { $0.isbn == key }),
                   !d.books.contains(where: { $0.isbn == hit.isbn }) else { return }
@@ -758,14 +808,7 @@ public final class RTAppModel: ObservableObject {
         return [("밀리의서재", total)]
     }
 
-    private var dayFormatter: DateFormatter {
-        let f = DateFormatter()
-        f.calendar = cal
-        f.timeZone = cal.timeZone
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }
+    private var dayFormatter: DateFormatter { dateTools().day }
     /// 밀리 하루 최소 인정 시간(초). 이 미만은 앱을 잠깐 띄운 것으로 보고 기록에서 뺀다.
     /// 실측(2026-08-28): 62일 중 25일이 1~56초라 연속·읽은 날 수가 그만큼 부풀어 있었다.
     /// 원본은 book_reading_seconds 에 그대로 두고 표시 계층에서만 거른다(비가역 손실 방지).
@@ -788,6 +831,8 @@ public final class RTAppModel: ObservableObject {
     /// 종이도 밀리와 같은 기준이다: 실수로 눌렀다 끈 몇 초짜리 탭 세션이 연속일을 이어 주면 안 된다(2026-11-08 검토).
     private var readDays: Set<Date> {
         guard let d = userData else { return [] }
+        let tz = TimeZone.current
+        if let c = readDaysCache, c.stamp == statsStamp, c.tz == tz { return c.days }
         var paper: [Date: Int] = [:]
         for s in d.sessions { paper[cal.startOfDay(for: s.endedAt), default: 0] += s.seconds }
         var days = Set(paper.filter { $0.value >= Self.ebookMinSeconds }.keys)
@@ -795,6 +840,7 @@ public final class RTAppModel: ObservableObject {
         for (k, sec) in visibleEbookDaily where sec >= Self.ebookMinSeconds {
             if let dt = f.date(from: k) { days.insert(cal.startOfDay(for: dt)) }
         }
+        readDaysCache = (statsStamp, tz, days)
         return days
     }
 
@@ -1058,14 +1104,18 @@ public final class RTAppModel: ObservableObject {
               let week = cal.dateInterval(of: .weekOfYear, for: now()),
               let start = cal.date(byAdding: .day, value: -7, to: week.start) else { return [] }
         let today = cal.startOfDay(for: now())
+        // 기록을 한 번만 훑어 날짜별로 묶는다 — 14칸마다 전체 기록을 비교하던 것이 홈 그리기 시간의 대부분이었다(2026-11-08 측정)
+        let end = cal.date(byAdding: .day, value: 14, to: start) ?? start
+        var paperByDay: [Date: Int] = [:]
+        for s in d.sessions where s.endedAt >= start && s.endedAt < end {
+            paperByDay[cal.startOfDay(for: s.endedAt), default: 0] += s.seconds
+        }
         return (0..<14).compactMap { i in
             guard let date = cal.date(byAdding: .day, value: i, to: start) else { return nil }
             let day = cal.startOfDay(for: date)
             let future = day > today
             // 분 = (종이 세션 초 합 + 밀리 초) / 60, 내림 — todaySeconds 와 동일 규칙
-            let paper = future ? 0 : d.sessions
-                .filter { cal.isDate($0.endedAt, inSameDayAs: date) }
-                .reduce(0) { $0 + $1.seconds }
+            let paper = future ? 0 : paperByDay[day] ?? 0
             return HomeCalCell(date: day,
                                day: cal.component(.day, from: date),
                                minutes: future ? 0 : (paper + ebookSeconds(on: date)) / 60,
@@ -1189,7 +1239,7 @@ public final class RTAppModel: ObservableObject {
         // 시간 직접 추가: 실데이터에선 시안 데모 상태(35분·+15 선택)로 열지 않는다. 일시 기본값은 지금.
         if s == .addtime {
             editingRecord = nil; editPrefillMinutes = nil
-            if userData != nil { addtimeValue = 30; addtimePreset = nil; addtimeDate = nil }
+            if userData != nil { addtimeValue = 30; addtimePreset = nil; addtimeDate = nil; addtimeISBN = selectedBook?.isbn }
         }
         sheet = s
     }
@@ -1297,7 +1347,7 @@ public final class RTAppModel: ObservableObject {
         if let s = session {
             onSessionSaved?(s.mode, s.elapsed)
             if userData != nil {
-                let fix = locationProvider?()
+                let fix = locationProvider?().map(Self.coarse)
                 // 저장 시각 = 마지막 기록 시각 — 밤에 멈추고 다음 날 저장해도 읽은 날로 남는다
                 let endedAt = (s.status == .paused ? s.anchorAt : nil) ?? now()
                 let rec = RTSessionRecord(isbn: s.isbn, mode: s.mode.rawValue,
@@ -1317,6 +1367,13 @@ public final class RTAppModel: ObservableObject {
     }
 
     public func deleteSession() { session = nil; restoredGap = nil; mode = .flip; nav(.home) }
+
+    /// 06 '이어 읽기' — 실수로 끝냈을 때. 저장하지 않고 일시정지 상태로 타이머 화면에 돌아간다.
+    public func resumeFromDone() {
+        guard let s = session else { return }
+        mode = s.mode
+        nav(s.mode == .flip ? .flipTimer : .tapTimer)
+    }
 
     /// 책 없이 저장된 과거 세션 복구 — 그 기록이 끝난 시점에 읽는 중이던 종이책에 붙인다
     /// (currentBook 과 같은 규칙을 그 시각 기준으로 적용). 붙일 책이 없으면 그대로 둔다.
@@ -1380,14 +1437,16 @@ public final class RTAppModel: ObservableObject {
             let endedAt = min(addtimeDate ?? t, t)   // 미래 시각으로는 기록하지 않는다
             if let old = editingRecord {
                 let seconds = addtimeValue == editPrefillMinutes ? old.seconds : addtimeValue * 60
+                let isbn = addtimeISBN ?? old.isbn
                 mutateUserData { d in
                     guard let i = d.sessions.firstIndex(of: old) else { return }
                     d.sessions[i].seconds = seconds
                     d.sessions[i].endedAt = endedAt
+                    d.sessions[i].isbn = isbn
                 }
             } else {
-                let fix = locationProvider?()
-                let rec = RTSessionRecord(isbn: selectedBook?.isbn, mode: "manual",
+                let fix = locationProvider?().map(Self.coarse)
+                let rec = RTSessionRecord(isbn: addtimeISBN ?? selectedBook?.isbn, mode: "manual",
                                           seconds: addtimeValue * 60, endedAt: endedAt, pauseCount: 0,
                                           latitude: fix?.latitude, longitude: fix?.longitude,
                                           placeId: fix?.placeId, placeName: fix?.placeName,
@@ -1410,6 +1469,7 @@ public final class RTAppModel: ObservableObject {
         editPrefillMinutes = addtimeValue
         addtimePreset = nil
         addtimeDate = rec.endedAt
+        addtimeISBN = rec.isbn
     }
 
     /// 고치기 시트의 '이 기록 삭제' — 같은 값의 기록이 여럿이면 하나만 지운다.
@@ -1607,6 +1667,16 @@ public final class RTAppModel: ObservableObject {
     /// 위치 픽스 공급 훅 — 앱 셸이 CoreLocation 배선 (§16: 세션 시작·시간추가 시트 열림 시 캡처).
     /// nil 반환 = 위치 미확보 → 세션은 위치 없이 저장 (지도 미표시).
     public var locationProvider: (() -> RTPlaceFix?)?
+    /// 세션을 새로 시작할 때만 (재개 제외) — 앱이 여기서 위치를 잡는다. 재개마다 잡으면 마지막 재개 위치가 세션 위치가 됐다.
+    public var onSessionStart: (() -> Void)?
+
+    /// 저장 좌표는 소수 셋째 자리(위도 약 110m)까지 — 기록은 서버 스냅샷으로 올라가고 파트너도 읽는다.
+    /// 지도는 동 단위 장소 키로 묶고 120m 안을 같은 자리로 합치므로 이 정밀도로 충분하다(2026-11-08 검토).
+    static func coarse(_ f: RTPlaceFix) -> RTPlaceFix {
+        func r(_ x: Double) -> Double { (x * 1000).rounded() / 1000 }
+        return RTPlaceFix(latitude: r(f.latitude), longitude: r(f.longitude), placeId: f.placeId,
+                          placeName: f.placeName, country: f.country)
+    }
 
     // ── 타이머 틱 (app.js startTick — recording 일 때만 1초 증가) ──
     public func tick() {
@@ -1633,6 +1703,7 @@ public final class RTAppModel: ObservableObject {
         s.anchor(at: t)
         session = s
         nextSessionISBN = nil
+        onSessionStart?()
         emitPresence()
     }
 

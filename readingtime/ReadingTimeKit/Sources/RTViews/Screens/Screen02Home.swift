@@ -162,8 +162,13 @@ public struct Screen02Home: View {
                     .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 4)
                     .contentShape(Circle())
                     .onTapGesture { model?.openSheet(.addbook) }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("책 추가")
+                    .accessibilityAddTraits(.isButton)
                 // 우상단은 아바타 (SCREENS.md §02 "아바타(이니셜 34)") — 탭하면 설정 메뉴
                 RTAvatar(model?.displayInitial ?? "지", photo: avatar)
+                    .accessibilityLabel("메뉴")
+                    .accessibilityAddTraits(.isButton)
                     .accessibilityIdentifier("home.avatar")
                     .accessibilityValue(avatar == nil ? "initial" : "photo")
                     .contentShape(Circle())
@@ -260,7 +265,7 @@ public struct Screen02Home: View {
                         .lineLimit(1).minimumScaleFactor(0.65)   // 긴 책 제목이 2줄로 카드 깨뜨리던 것
                 }
                 Spacer(minLength: 0)
-                Text(live?.lastWhen ?? "오늘 21:47").font(.mono(11, 600)).foregroundColor(RT.faint)
+                Text(live?.lastWhen ?? "오늘 21:47").font(.mono(11, 600)).foregroundColor(RT.faintText)
             }
             .padding(EdgeInsets(top: 9, leading: 4, bottom: 9, trailing: 4))
             .overlay(alignment: .top) { Rectangle().fill(RT.hair2).frame(height: 1) }
@@ -354,15 +359,15 @@ public struct Screen02Home: View {
                         .foregroundColor(streakColor).rtLB(RTLB.m13)
                     Spacer(minLength: 0)
                     Text("이번 주 \(weekHMVal)").font(.mono(11, 500))
-                        .foregroundColor(RT.faint).rtLB(RTLB.m11)
+                        .foregroundColor(RT.faintText).rtLB(RTLB.m11)
                 }
                 gauge.padding(.top, 7)
                 // 과거 완료 구간이 없으면(best == 0) 하단 행 전체를 숨긴다 — 빈 트랙만 남는다.
                 if gaugeState.showsBest {
                     HStack(spacing: 5) {
-                        Text("역대 최고").font(.sans(10, 600)).foregroundColor(RT.faint).rtLB(RTLB.n10)
+                        Text("역대 최고").font(.sans(10, 600)).foregroundColor(RT.faintText).rtLB(RTLB.n10)
                         Text("\(bestVal)일").font(.mono(10.5, 600)).foregroundColor(RT.muted).rtLB(RTLB.m10_5)
-                        Text("· \(bestMonthVal)").font(.sans(10, 500)).foregroundColor(RT.faint).rtLB(RTLB.n10)
+                        Text("· \(bestMonthVal)").font(.sans(10, 500)).foregroundColor(RT.faintText).rtLB(RTLB.n10)
                         Spacer(minLength: 0)
                         Text(remainLabel).font(.mono(10.5, 700)).foregroundColor(streakColor).rtLB(RTLB.m10_5)
                     }
@@ -422,7 +427,7 @@ public struct Screen02Home: View {
         HStack(spacing: 6) {
             ForEach(Array(["월", "화", "수", "목", "금", "토", "일"].enumerated()), id: \.offset) { i, d in
                 Text(d).font(.mono(10, 500))
-                    .foregroundColor(i == 6 ? RT.terra : RT.faint)
+                    .foregroundColor(i == 6 ? RT.terra : RT.faintText)
                     .rtLB(RTLB.m10)
                     .frame(maxWidth: .infinity)
             }
@@ -517,7 +522,7 @@ public struct Screen02Home: View {
                     if p.reading {
                         Text("지금 읽는 중").font(.sans(11, 600)).foregroundColor(RT.green)
                     } else {
-                        Text(p.idleText).font(.mono(11, 500)).foregroundColor(RT.faint)
+                        Text(p.idleText).font(.mono(11, 500)).foregroundColor(RT.faintText)
                     }
                 }
                 if let book = p.book {
@@ -531,7 +536,7 @@ public struct Screen02Home: View {
                     Text("\(p.minutes)").font(.mono(13, 700)).foregroundColor(RT.ink)
                     Text("분").font(.sans(10, 600)).foregroundColor(RT.muted)
                 }
-                Text(p.minutesLabel).font(.sans(9.5, 500)).foregroundColor(RT.faint)
+                Text(p.minutesLabel).font(.sans(9.5, 500)).foregroundColor(RT.faintText)
             }
         }
         .padding(EdgeInsets(top: 9, leading: 4, bottom: 9, trailing: 4))
@@ -566,7 +571,7 @@ public struct Screen02Home: View {
     var readCTADisabled: some View {
         HStack(spacing: 8) {
             RTIcon(RTIconPath.check, size: 15, stroke: RT.faint, lineWidth: 2.2)
-            Text("밀리에서 자동 기록 중").font(.sans(14, 700)).foregroundColor(RT.faint)
+            Text("밀리에서 자동 기록 중").font(.sans(14, 700)).foregroundColor(RT.faintText)  // 비활성 CTA 지만 왜 비활성인지 알려 주는 글자 — 읽혀야 한다
         }
         .frame(maxWidth: .infinity).frame(height: 60)
         .background(RoundedRectangle(cornerRadius: 16).fill(RT.segBg))
@@ -702,7 +707,7 @@ struct RTHomeMenu: View {
                     }
                     Text("서재").font(.sans(13.5, 700)).foregroundColor(RT.ink)
                     Spacer(minLength: 0)
-                    Text("\(model?.userData?.books.count ?? 24)").font(.mono(12, 600)).foregroundColor(RT.faint)
+                    Text("\(model?.userData?.books.count ?? 24)").font(.mono(12, 600)).foregroundColor(RT.faintText)
                     chev(RT.ghost)
                 } action: { close(); model?.nav(.library) }
                 menuDivider

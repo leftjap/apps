@@ -164,7 +164,7 @@ struct RTHeatCell: View {
         if filledToday { return .white }
         if c.isFuture { return Color(hex: 0xD3CBB6) }
         // 오늘 미기록은 테두리와 같은 terra 로 — 굵기 700 만으로는 안 잡힌다(실기기 피드백)
-        if c.minutes == 0 { return (c.isToday || c.isSunday) ? RT.terra : RT.faint }
+        if c.minutes == 0 { return (c.isToday || c.isSunday) ? RT.terra : RT.faintText }
         return Color(hex: 0x2E1C15)
     }
     private func bg(filledToday: Bool) -> Color {

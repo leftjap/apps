@@ -54,7 +54,7 @@ final class LocationCapture: NSObject, CLLocationManagerDelegate {
         pending = false
         // 좌표는 즉시 확보 — 역지오코딩(네트워크) 실패 시 좌표 그리드가 클러스터 키 폴백
         let grid = String(format: "%.3f,%.3f", loc.coordinate.latitude, loc.coordinate.longitude)
-        RTDbg.p("loc: 픽스 확보 (\(grid))")
+        RTDbg.p("loc: 픽스 확보")   // 좌표는 남기지 않는다 — rtdbg.log 는 기기 Documents 에 쌓이고 회수해 읽는다
         fix = RTPlaceFix(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude,
                          placeId: grid)
         CLGeocoder().reverseGeocodeLocation(loc) { [weak self] placemarks, _ in

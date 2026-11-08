@@ -9,13 +9,18 @@ public struct RTLiveActivityLockView: View {
     let startedAt: Date       // 기록 기준 시각(now − elapsed) — 시스템 자동 타이머
     let pausedElapsed: Int    // 일시정지 시 고정 표시
     let staticElapsed: Int?   // rtshot 헤드리스 렌더 전용: 자동 타이머 대신 고정 초 표시
+    let tapMode: Bool         // 탭 모드 — '다시 엎으면' 안내 대신 버튼(위젯이 trailing 으로 넣는다)
+    let trailing: AnyView?
 
-    public init(bookTitle: String, paused: Bool, startedAt: Date, pausedElapsed: Int, staticElapsed: Int? = nil) {
+    public init(bookTitle: String, paused: Bool, startedAt: Date, pausedElapsed: Int, staticElapsed: Int? = nil,
+                tapMode: Bool = false, trailing: AnyView? = nil) {
         self.bookTitle = bookTitle
         self.paused = paused
         self.startedAt = startedAt
         self.pausedElapsed = pausedElapsed
         self.staticElapsed = staticElapsed
+        self.tapMode = tapMode
+        self.trailing = trailing
     }
 
     static let gold = Color(red: 0.886, green: 0.812, blue: 0.62)
@@ -36,7 +41,7 @@ public struct RTLiveActivityLockView: View {
                     .foregroundStyle(.white)
                 HStack(spacing: 5) {
                     Circle().fill(paused ? Self.amber : Self.gold).frame(width: 6, height: 6)
-                    Text(paused ? "일시정지됨 · 다시 엎으면 이어서" : "기록 중")
+                    Text(paused ? (tapMode ? "일시정지됨" : "일시정지됨 · 다시 엎으면 이어서") : "기록 중")
                         .font(.caption)
                         .foregroundStyle(paused ? Self.amber : Self.gold)
                 }
@@ -46,6 +51,7 @@ public struct RTLiveActivityLockView: View {
                 .font(.title2.weight(.semibold).monospacedDigit())
                 .foregroundStyle(Self.timerColor)
                 .frame(maxWidth: 110, alignment: .trailing)
+            if let trailing { trailing }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)

@@ -44,6 +44,7 @@ public struct RTRootView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { model.closeSheet() }
                 sheetView(sheet)
+                    .environment(\.rtSheetDismiss, { model.closeSheet() })
                     .rtSheetUp()
             }
             // 기록 원페이지 — 전체 화면 지도(원페이지 위) + 바텀시트(지도 위에도 겹침)

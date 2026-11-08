@@ -10,7 +10,12 @@ public enum RT {
     public static let hair3 = Color(hex: 0xE8E1CD)
     public static let ink = Color(hex: 0x17150F)
     public static let body = Color(hex: 0x3F3A2D)
-    public static let muted = Color(hex: 0x8C8570)
+    // 글자 대비 (2026-11-08 검토) — 종이 #F6F3EA 위 muted 3.3:1, faint 2.0:1, ghost 1.7:1 로 작은 글자 기준(4.5:1)에
+    // 못 미쳤다. muted 를 6.3:1 로, 정보가 담긴 흐린 글자는 faintText(4.9:1, 세그먼트 배경 위 4.55:1)로 올렸다.
+    // faint·ghost 는 장식(아이콘·점·꺽쇠)과 비활성 표시에만 남긴다. muted 를 함께 올린 이유: faint 만 올리면
+    // 보조 글자(muted)보다 흐린 글자가 더 진해져 위계가 뒤집힌다. 시안 원래 값: muted #8C8570.
+    public static let muted = Color(hex: 0x5E5947)
+    public static let faintText = Color(hex: 0x6F6957)
     public static let faint = Color(hex: 0xB5AD97)
     public static let ghost = Color(hex: 0xC6BEA8)
     public static let green = Color(hex: 0x2C4A3C)

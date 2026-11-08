@@ -22,7 +22,9 @@ struct ReadingLiveActivity: Widget {
                 bookTitle: context.attributes.bookTitle,
                 paused: context.state.paused,
                 startedAt: context.state.startedAt,
-                pausedElapsed: context.state.pausedElapsed
+                pausedElapsed: context.state.pausedElapsed,
+                tapMode: context.state.tapMode == true,
+                trailing: context.state.tapMode == true ? AnyView(toggleButton(paused: context.state.paused)) : nil
             )
             .activityBackgroundTint(Color(red: 0.075, green: 0.11, blue: 0.09))
             .activitySystemActionForegroundColor(gold)
@@ -43,6 +45,19 @@ struct ReadingLiveActivity: Widget {
                 Image(systemName: "book.fill").foregroundStyle(gold)
             }
         }
+    }
+
+    /// 탭 모드 일시정지·재개 — RTToggleReadingIntent 가 앱 프로세스에서 세션을 바꾼다
+    func toggleButton(paused: Bool) -> some View {
+        Button(intent: RTToggleReadingIntent()) {
+            Image(systemName: paused ? "play.fill" : "pause.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color(red: 0.075, green: 0.11, blue: 0.09))
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(gold))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(paused ? "이어 읽기" : "일시정지")
     }
 
     @ViewBuilder
