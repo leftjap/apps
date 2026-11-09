@@ -121,9 +121,25 @@ resign_verify() {
     _rv_purge_profiles "$bundle"
     local logsize; logsize=$(/usr/bin/stat -f %z "$LOG" 2>/dev/null || echo 0)
     /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" -configuration "$BUILD_CONFIG" -derivedDataPath "$dd" clean >> "$LOG" 2>&1
-    if ! /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" -configuration "$BUILD_CONFIG" \
-           -destination 'generic/platform=iOS' -derivedDataPath "$dd" \
-           -allowProvisioningUpdates CURRENT_PROJECT_VERSION=$(date +%Y%m%d%H%M) build >> "$LOG" 2>&1; then
+    local version; version=$(date +%Y%m%d%H%M)
+    _rv_build() {
+      /usr/bin/xcodebuild -project "$proj" -scheme "$scheme" -configuration "$BUILD_CONFIG" \
+        -destination 'generic/platform=iOS' -derivedDataPath "$dd" \
+        -allowProvisioningUpdates CURRENT_PROJECT_VERSION=$version build >> "$LOG" 2>&1
+    }
+    local ok=1
+    _rv_build || ok=0
+    # 같은 빌드 안에서 한 앱(또는 위젯)의 프로파일이 두 번 발급되면 Xcode 가 앞의 파일을 지운 뒤 그 경로로 포장하려다
+    # '파일 없음'으로 실패한다(2026-11-08 readingtime 두 번 연속 실측 — 위젯 c20c6178·앱 dee660f0). 실패한 빌드가 받은
+    # 새 프로파일은 디스크에 남으므로, 프로파일을 다시 지우지 않고 한 번만 더 빌드한다.
+    if (( ! ok )) && /usr/bin/tail -c +$(( logsize + 1 )) "$LOG" \
+         | /usr/bin/grep -E "(cannot be found|unable to read input file).*Provisioning Profiles/" -q; then
+      _rv_log "프로파일 파일 없음으로 빌드 실패 — 받아 둔 프로파일로 한 번 더 빌드"
+      logsize=$(/usr/bin/stat -f %z "$LOG" 2>/dev/null || echo 0)
+      ok=1
+      _rv_build || ok=0
+    fi
+    if (( ! ok )); then
       # Xcode 에서 Apple ID 가 빠지면(2026-11-02 사고) 빌드가 "No Accounts" 로 실패한다 — 원인을 알림에 직접 적는다.
       if /usr/bin/tail -c +$(( logsize + 1 )) "$LOG" | /usr/bin/grep -q "No Accounts"; then
         _rv_alert_throttled "$state_dir/alerted-resign" "$appname 재서명 불가: Xcode 에서 Apple ID 로그아웃됨. Xcode 설정 > Apple Accounts 에서 재로그인 필요"

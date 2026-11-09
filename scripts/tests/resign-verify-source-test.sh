@@ -38,4 +38,33 @@ T=$(run_case "" "")
 check "훅·구성 미지정(gym) → Debug 로 빌드"   'grep -q "^xcodebuild .*-configuration Debug .*build" $T/calls.log'
 rm -r "$T"
 
+# ④ 빌드가 '프로파일 파일 없음'으로 실패하면(같은 빌드 안에서 프로파일이 두 번 발급돼 앞의 것이 지워짐, 2026-11-08 실측)
+#    프로파일을 다시 지우지 않고 한 번만 더 빌드한다 — 실패한 빌드가 받아 둔 새 프로파일이 디스크에 남아 있다.
+T=$(mktemp -d)
+HOME=$T LOG=$T/resign.log NOTES=$T/notes.log CALLS=$T/calls.log zsh -c '
+  n=0
+  function /usr/bin/xcodebuild {
+    print -r -- "xcodebuild $*" >> "$CALLS"
+    [[ " $* " == *" build "* ]] || return 0
+    n=$((n+1))
+    if (( n == 1 )); then
+      print -r -- "error: Build input file cannot be found: '"'"'$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/dee660f0.mobileprovision'"'"'"
+      return 65
+    fi
+    return 0
+  }
+  function /usr/bin/osascript { print -r -- "$*" >> "$NOTES"; }
+  source '"$CORE"'
+  resign_verify /x/P.xcodeproj P com.example.p $HOME/dd P UDID-1
+'
+check "프로파일 파일 없음 → 한 번 더 빌드"     '[[ $(grep -c " build" $T/calls.log) == 2 ]]'
+check "재시도는 clean 없이"                    '[[ $(grep -c " clean" $T/calls.log) == 1 ]]'
+check "재시도 기록"                            'grep -q "프로파일 파일 없음" $T/resign.log'
+check "재빌드 실패 알림은 없음"                '! grep -q "재빌드 실패" $T/notes.log'
+rm -r "$T"
+
+T=$(run_case "" "")
+check "다른 빌드 실패는 재시도 안 함"          '[[ $(grep -c " build" $T/calls.log) == 1 ]]'
+rm -r "$T"
+
 exit $fail
