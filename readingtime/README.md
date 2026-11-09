@@ -31,7 +31,7 @@
 | └ `rtapp` | macOS 데모 셸(390×844 창, 모션 on, 알라딘 라이브 검색) — `rtapp --verify-search <q>` |
 | `SETUP.md` | 실기기 배포·검증 절차 |
 | `../.github/workflows/readingtime-ios.yml` | **CI 검증**(macOS 러너): `swift test` + iPhone 시뮬레이터 XCUITest(책 추가 검색 상태). 클라우드 Claude 세션(리눅스)의 시뮬레이터 대체 경로 — 스크린샷은 아티팩트 + 로그 base64 |
-| `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 — 공용 코어 `~/apps/scripts/resign-verify.sh` 위임. **빌드 소스 = 푸시된 `origin/main` 의 `readingtime/` 스냅샷**(`~/.local/share/readingtime-resign/src`, 2026-11-08 — 작업 트리의 미커밋 변경·로컬 WIP 커밋은 폰에 안 깔린다). launchd `com.leftjap.readingtime.resign` 2분마다 확인. 잔여 <6일(서명 약 1일 경과) 시 **캐시 프로파일 purge + clean 재빌드로 새 프로파일 강제 발급** → **embedded 만료일 사후 검증** → 두 기기(지오 11 Pro·소연 iPhone 17) 설치. 미접속·잠김이면 다음 주기에 재시도. 갱신 실패 시 macOS 알림. 로그 `~/Library/Logs/readingtime-resign.log` |
+| `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 — 공용 코어 `~/apps/scripts/resign-verify.sh` 위임. **빌드 소스 = 푸시된 `origin/main` 의 `readingtime/` 스냅샷**(`~/.local/share/readingtime-resign/src`, 2026-11-08 — 작업 트리의 미커밋 변경·로컬 WIP 커밋은 폰에 안 깔린다). launchd `com.leftjap.readingtime.resign` 2분마다 확인. 잔여 <6일(서명 약 1일 경과) 시 **캐시 프로파일 purge + clean 재빌드로 새 프로파일 강제 발급** → **embedded 만료일 사후 검증** → 두 기기(지오 11 Pro·소연 iPhone 17) 설치. 미접속·잠김이면 다음 주기에 재시도. 설치가 0xe8008012(프로파일에 기기 없음)로 거부되면 그 기기를 팀에 등록해 다시 빌드한다(2026-11-10). 갱신 실패 시 macOS 알림. 로그 `~/Library/Logs/readingtime-resign.log` |
 
 ## 기록 화면 (주 · 월 · 지도)
 - 시안 정본 = `design-ref/design_handoff_record_stats/`. 화면 = `Screen10Stats`(주) / `Screen11Month`(월) / `Screen15Map`(지도) + `RecordSheets`(장소 시트·책 상세). 로직·데이터는 전부 `RTRecordData.swift`(순수 엔진 + §12 데모 데이터).
@@ -139,7 +139,13 @@
 ### 재설치 빌드 '프로파일 파일 없음' 실패 (2026-11-08~09)
 - 11-08 20:57·21:00 에 `814c6389` 를 폰용으로 빌드하다 두 번 연속 실패했다: 위젯(20:57)·앱(21:00)이 디스크에 없는 프로파일 파일(`c20c6178`·`dee660f0`)로 포장하려 했다. 같은 빌드에서 위젯은 그 빌드가 새로 받은 프로파일을 썼고, 실패 뒤 폴더엔 그 빌드가 받은 새 프로파일만 남아 있었다. 같은 빌드 안에서 한 대상의 프로파일이 두 번 발급돼 앞의 파일이 지워진 것으로 보인다(추정 — 확인 안 함). 그날 19:30 에 한 번 재서명한 뒤 한 시간 반 안에 강제로 두 번 더 재서명한 것이 계기로 보인다.
 - 대처: 공용 코어가 빌드 실패 출력에 `Provisioning Profiles/` 의 '파일 없음'이 있으면 프로파일을 다시 지우지 않고 한 번만 더 빌드한다(`scripts/tests/resign-verify-source-test.sh` ④). 11-09 19:04 재빌드는 첫 시도에 성공해 이 재시도는 실제로는 아직 쓰이지 않았다.
-- 결과: 11-09 19:05 지오 폰에 `814c6389` 빌드(번호 202611091904) 설치 — `devicectl device info apps` 로 확인. 소연 폰은 잠겨 있어 다음 주기 재시도.
+- 결과: 11-09 19:05 지오 폰에 `814c6389` 빌드(번호 202611091904) 설치 — `devicectl device info apps` 로 확인. 소연 폰은 잠겨 있어 다음 주기 재시도(정정: 잠김이 아니었다 — 아래 절).
+
+### 소연 폰 설치 거부 0xe8008012 (2026-11-07~10)
+- 증상: 11-07 08:27 부터 소연 폰 설치가 매번 `0xe8008012 (This provisioning profile cannot be installed on this device.)` 로 거부됐는데, 로그와 경보는 "설치 실패(미접속/잠금 추정)"로 적었다. 소연 폰의 마지막 설치는 11-01 16:59 라 그 앱은 7일 서명이 끝나 11-08 무렵부터 열리지 않았을 것이다(추정).
+- 원인: 무료 팀 프로파일에는 팀에 등록된 기기만 들어간다. 11-10 빌드 때 Xcode 가 Apple 서버에서 받은 팀 기기 목록에는 지오 폰 하나만 있었고 그 등록 시각이 11-07 08:10(Xcode 재로그인 시각)이었다. 재로그인 무렵 팀 기기 목록이 지오 폰만으로 다시 만들어진 것이다. 무엇이 목록을 비웠는지는 확인하지 못했다. 11-07 08:11 빌드의 프로파일부터 소연 폰이 빠졌으므로 11-08 Release 전환이나 11-09 purge 는 원인이 아니다. `-destination 'generic/platform=iOS'` 빌드는 기기를 등록하지 못한다.
+- 복구: 소연 폰이 연결돼 있던 11-10 02:22 에 `-destination id=<하드웨어 UDID> -allowProvisioningDeviceRegistration` 으로 빌드 → Xcode 가 소연 폰을 팀에 등록하고 두 기기가 든 프로파일(`17f88846`, 11-17 만료)을 받았다. 02:23 소연 폰, 02:44 지오 폰 설치(번호 202611100222, `devicectl device info apps` 로 확인). 한 번 등록되면 이후 매일 재서명(generic)도 두 기기를 넣을 것이다(지오 폰은 11-07 등록 뒤 그렇게 들어갔다. 소연 폰은 11-11 재서명에서 확인 필요).
+- 재발 대처(공용 코어, `scripts/tests/resign-verify-register-test.sh`): 설치가 0xe8008012 로 거부되면 원인을 그대로 적고 재시도하지 않는다. 그 기기가 연결돼 있으면 하드웨어 UDID 를 `devicectl` 로 찾아(저장소에 적지 않고, xcodebuild 출력에서도 가려 로그에 남김) 위 등록 빌드를 별도 폴더에서 하고 버린다. 기기 지정 빌드는 에셋을 그 기기 iOS 버전에 맞춰 거르기 때문이다(`actool --filter-for-device-os-version 26.6` 실측. 11-10 설치본은 generic 빌드와 에셋 항목·RTViews 번들·Info.plist 가 같아 영향 없음을 확인). 이어 설치용 산출물을 받아 둔 프로파일로 generic 재빌드하고(재발급 없음), 앱·위젯 프로파일 모두에 기기가 들었는지 확인한 뒤 전 기기에 다시 설치한다. 등록 빌드가 실패하면 설치용 산출물은 그대로 두고 원인을 알린다. 설치용 재빌드가 서명이 깨진 앱을 남기면(`codesign --verify`) 지워서 다음 주기에 정규 재빌드를 탄다. 등록 뒤에도 거절되면 따로 알린다. 같은 기기는 그 기기 설치가 성공할 때까지 1시간에 한 번만 등록 빌드를 한다. 잠긴 기기는 '잠김'으로 적는다. 기기 하나만 쓰는 gym 은 이 경로를 타지 않는다.
 
 ### 홈 밀리 카드 삭제 (2026-09-15, 사용자 결정)
 밀리 카드를 홈에서 뺄 방법이 완독 처리뿐이었는데, 완독은 서재에 편입시키는 반대 동작이다.
