@@ -370,9 +370,11 @@ public struct Sheet13AddBook: View {
     // (lessons/swiftui-observableobject-child-skip.md)
     private let searching: Bool
     private let searchError: String?
-    /// 결과를 낸 검색어와 지금 검색칸 글자 — 다르면(공란 포함) 결과를 "최근 검색 · 검색어" 로 표시
+    /// 결과를 낸 검색어와 지금 검색칸 글자 — 다르면 결과를 "이전 검색 · 검색어" 로 표시
     private let resultsQuery: String?
     private let typedQuery: String
+    /// 최근 검색어 — 검색칸이 비어 있으면 결과 대신 목록으로 (누르면 다시 검색, × 로 지우기)
+    private let recentQueries: [String]
     /// 라이브(실 검색 배선) vs 데모(rtshot 오라클). 데모만 시안 정적 렌더(몰입/32건/5권).
     let isLive: Bool
     /// 시트가 다 올라오면 검색칸을 자동 선택 — 앱을 켠 뒤 첫 키보드는 iOS 준비 시간(시뮬레이터 실측 0.3~0.43초) 동안
@@ -391,18 +393,31 @@ public struct Sheet13AddBook: View {
         self.searchError = model?.searchError
         self.resultsQuery = model?.resultsQuery
         self.typedQuery = model?.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        self.recentQueries = model?.recentQueries ?? []
         self.isLive = model?.searchProvider != nil
     }
 
     /// 검색 진행 중 표시 (라이브 한정 — 데모 오라클 불변).
     var isSearching: Bool { isLive && searching }
 
-    /// "검색 결과 · N건" 라벨 (nil = 숨김). 라이브: 검색 중 "검색 중…" / 이력없음 숨김 / 결과 실제 개수. 데모는 시안 32.
+    /// 검색칸이 비어 있으면(라이브) 결과 대신 최근 검색어 목록 — 목록이 없으면 공란.
+    /// 검색 중이면 search() 가 검색칸을 채우므로 여기 해당하지 않는다.
+    var showsRecent: Bool { isLive && typedQuery.isEmpty }
+
+    /// 렌더되는 최근 검색어 (실패 안내가 떠 있으면 안내가 먼저)
+    var recentRows: [String] {
+        guard showsRecent, !searching, searchError == nil else { return [] }
+        return recentQueries
+    }
+
+    /// "검색 결과 · N건" 라벨 (nil = 숨김). 라이브: 검색 중 "검색 중…" / 최근 검색어 / 이력없음 숨김 / 결과 실제 개수.
+    /// 데모는 시안 32.
     var countLabel: String? {
         if isLive {
             if searching { return "검색 중…" }
+            if showsRecent { return recentRows.isEmpty ? nil : "최근 검색" }
             guard let results else { return nil }
-            if let resultsQuery, resultsQuery != typedQuery { return "최근 검색 · \(resultsQuery)" }
+            if let resultsQuery, resultsQuery != typedQuery { return "이전 검색 · \(resultsQuery)" }
             return "검색 결과 · \(results.count)건"
         }
         return "검색 결과 · 32건"
@@ -416,13 +431,13 @@ public struct Sheet13AddBook: View {
 
     /// 0건 안내 (라이브 한정 — 검색이 정상 완료됐는데 비었을 때만. nil 이력없음과 구분).
     var emptyLabel: String? {
-        guard isLive, !searching, searchError == nil, let results, results.isEmpty else { return nil }
+        guard isLive, !showsRecent, !searching, searchError == nil, let results, results.isEmpty else { return nil }
         return "검색 결과가 없어요"
     }
 
     /// 렌더되는 행 제목 — 라이브는 실 결과(없으면 공란), 데모는 시안 5권.
     var rowTitles: [String] {
-        if isLive { return results?.map(\.title) ?? [] }
+        if isLive { return showsRecent ? [] : results?.map(\.title) ?? [] }
         return Self.searchRows.map(\.title)
     }
 
@@ -517,6 +532,13 @@ public struct Sheet13AddBook: View {
                         // 라이브: 실패 안내(+다시 시도) > 0건 안내 > 실 결과. 이력 없으면(nil) 공란.
                         if let errorLabel {
                             statusBlock(errorLabel, retry: true)
+                        } else if showsRecent {
+                            ScrollView(showsIndicators: false) {
+                                VStack(spacing: 0) {
+                                    ForEach(recentRows, id: \.self) { recentRow($0) }
+                                }
+                                .padding(.bottom, keyboardInset)
+                            }
                         } else if let emptyLabel {
                             statusBlock(emptyLabel, retry: false)
                         } else if let results {
@@ -599,6 +621,31 @@ public struct Sheet13AddBook: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
+    }
+
+    // 최근 검색어 한 줄 — 누르면 그 검색어로 다시 검색, × 는 그 검색어만 지운다 (44pt 터치 영역)
+    func recentRow(_ q: String) -> some View {
+        HStack(spacing: 12) {
+            RTIcon(["M20 20l-3.6-3.6"], size: 15, stroke: RT.faint, lineWidth: 2)
+                .overlay(Circle().stroke(RT.faint, lineWidth: 2 * 15 / 24)
+                    .frame(width: 14 * 15 / 24, height: 14 * 15 / 24).offset(x: -15 / 24, y: -15 / 24))
+            Text(q).font(.sans(15, 500)).foregroundColor(RT.ink).lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("addbook.recent")
+            RTIcon(["M6 6l12 12M18 6L6 18"], size: 12, stroke: RT.faintText, lineWidth: 2.2, cap: .round, join: .miter)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.removeRecentQuery(q) }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(q) 지우기")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("addbook.recent.remove")
+        }
+        .padding(.leading, 8)
+        .frame(height: 48)
+        .overlay(alignment: .bottom) { Rectangle().fill(RT.hair).frame(height: 1).padding(.leading, 8) }
+        .contentShape(Rectangle())
+        .onTapGesture { if let model { Task { await model.search(q) } } }
     }
 
     // 라이브 검색 표지 — 알라딘 커버 URL (실패 시 크라프트 그라데이션)

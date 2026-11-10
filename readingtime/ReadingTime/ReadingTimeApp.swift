@@ -243,19 +243,18 @@ struct ReadingTimeApp: App {
                           publisher: $0.publisher, isbn: $0.isbn, coverUrl: $0.coverUrl)
             }
         }
-        // 마지막 검색 결과 영속 — 다시 켜도 책 추가 시트에 "최근 검색" 으로 보인다(0건은 저장 안 함).
+        // 최근 검색어 영속 — 다시 켜도 책 추가 시트(검색칸 공란)에 목록으로 보인다. 11-08 판이 저장한
+        // 마지막 검색(rt.lastSearch.*)은 검색어만 첫 항목으로 옮기고 지운다.
         // --seq(검증 실행)는 userData 와 같은 이유로 미배선.
         if !sequenceLaunch {
-            if let q = UserDefaults.standard.string(forKey: "rt.lastSearch.query"),
-               let raw = UserDefaults.standard.data(forKey: "rt.lastSearch.hits"),
-               let hits = try? JSONDecoder().decode([RTBookHit].self, from: raw) {
-                model.restoreLastSearch(query: q, hits: hits)
-            }
-            model.onSearchResults = { q, hits in
-                guard !hits.isEmpty, let raw = try? JSONEncoder().encode(hits) else { return }
-                UserDefaults.standard.set(q, forKey: "rt.lastSearch.query")
-                UserDefaults.standard.set(raw, forKey: "rt.lastSearch.hits")
-            }
+            let d = UserDefaults.standard
+            model.restoreRecentQueries(RTAppModel.loadRecentQueries(
+                saved: d.stringArray(forKey: "rt.recentQueries"),
+                legacyQuery: d.string(forKey: "rt.lastSearch.query")))
+            d.set(model.recentQueries, forKey: "rt.recentQueries")
+            d.removeObject(forKey: "rt.lastSearch.query")
+            d.removeObject(forKey: "rt.lastSearch.hits")
+            model.onRecentQueriesChange = { d.set($0, forKey: "rt.recentQueries") }
         }
         // --stub-search <ok|many|empty|timeout|flaky>: 시뮬레이터 UI 검증용 검색 스텁 (XCUITest 전용 —
         // 실기기 실행엔 이 인자가 없어 항상 라이브 프록시). flaky = 첫 호출 시간 초과 → "다시 시도" 성공.

@@ -60,12 +60,13 @@ import Foundation
     }
 
     // ③ 라이브 + 결과 있음 → 카운트 = 실제 개수, 행 = 실제 결과
-    @Test func liveWithResultsShowsAccurateCount() {
+    @Test func liveWithResultsShowsAccurateCount() async {
         let m = liveModel()
-        m.searchResults = [
+        m.searchProvider = { _ in [
             RTBookHit(title: "몰입", author: "a", publisher: "p", isbn: "1", coverUrl: ""),
             RTBookHit(title: "그릿", author: "b", publisher: "q", isbn: "2", coverUrl: ""),
-        ]
+        ] }
+        await m.search("몰입")
         let s = Sheet13AddBook(model: m)
         #expect(s.countLabel == "검색 결과 · 2건")
         #expect(s.rowTitles == ["몰입", "그릿"])

@@ -178,7 +178,7 @@ public struct RTMillieMeta: Equatable, Sendable {
     }
 }
 
-public struct RTBookHit: Equatable, Sendable, Codable {
+public struct RTBookHit: Equatable, Sendable {
     public let title: String
     public let author: String
     public let publisher: String
@@ -191,6 +191,21 @@ public struct RTBookHit: Equatable, Sendable, Codable {
         self.publisher = publisher
         self.isbn = isbn
         self.coverUrl = coverUrl
+    }
+
+    /// 같은 책은 한 줄만 — 먼저 나온 것을 남긴다. 제목·저자·출판사가 같으면(카카오가 판을 따로 준다: 「예술원에 드리는
+    /// 보고」 10-16판·10-29판, 2026-11-10 실기기) 또는 ISBN 이 같으면(잡지 호수는 ISBN 하나를 같이 쓴다 — 앱은 ISBN 으로
+    /// 책을 구분해서 두 줄을 두면 하나를 추가할 때 나머지도 ✓) 같은 책으로 본다. 띄어쓰기·대소문자는 무시한다.
+    public static func deduped(_ hits: [RTBookHit]) -> [RTBookHit] {
+        func norm(_ s: String) -> String { s.lowercased().filter { !$0.isWhitespace } }
+        var names = Set<String>(), isbns = Set<String>()
+        return hits.filter { h in
+            let name = norm(h.title) + "|" + norm(h.author) + "|" + norm(h.publisher)
+            if names.contains(name) || (!h.isbn.isEmpty && isbns.contains(h.isbn)) { return false }
+            names.insert(name)
+            if !h.isbn.isEmpty { isbns.insert(h.isbn) }
+            return true
+        }
     }
 }
 
@@ -415,8 +430,8 @@ public final class RTAppModel: ObservableObject {
     public var onAuthChange: ((Bool) -> Void)?
     /// 검색 프로바이더 (알라딘 라이브) — nil 이면 시트 13 은 시안 데모 rows 유지
     public var searchProvider: ((String) async throws -> [RTBookHit])?
-    /// 성공한 검색 (검색어, 결과) — 앱이 UserDefaults 에 저장해 다시 켠 뒤 "최근 검색" 으로 복원한다
-    public var onSearchResults: ((String, [RTBookHit]) -> Void)?
+    /// 최근 검색어가 바뀜 — 앱이 UserDefaults 에 저장해 다시 켠 뒤 restoreRecentQueries 로 되살린다
+    public var onRecentQueriesChange: (([String]) -> Void)?
     /// 로그인 버튼 핸들러 (iOS OAuth 배선) — nil 이면 즉시 login() (rtshot/rtapp 데모 경로)
     public var loginHandler: (() -> Void)?
     /// 읽는 중 프레즌스 변화 (true=recording 시작, false=정지/종료) — 앱이 CloudStore.setReadingSince 배선
@@ -1126,8 +1141,11 @@ public final class RTAppModel: ObservableObject {
     }
     @Published public var searchQuery = ""
     @Published public var searchResults: [RTBookHit]?
-    /// searchResults 를 낸 검색어 — 검색칸 글자와 다르면(공란 포함) 시트가 "최근 검색 · 검색어" 로 표시
+    /// searchResults 를 낸 검색어 — 검색칸 글자와 다르면 시트가 "이전 검색 · 검색어" 로 표시
     @Published public private(set) var resultsQuery: String?
+    /// 최근 검색어 (최신 먼저, 최대 8개) — 결과가 있었던 검색만. 검색칸이 비면 시트 13 이 목록으로 보여 준다.
+    @Published public private(set) var recentQueries: [String] = []
+    static let recentQueryLimit = 8
     /// 검색 진행 중 — 시트 13 이 "검색 중…" 을 보인다. 프록시 상류가 느릴 때 아무 표시가 없으면
     /// 사용자는 검색 자체가 안 되는 것으로 본다 (실기기 보고 2026-09-10: "서성이다" 무반응).
     @Published public var searching = false
@@ -1151,11 +1169,13 @@ public final class RTAppModel: ObservableObject {
         searching = true
         searchError = nil
         do {
-            let hits = try await searchProvider(trimmed)
+            let hits = RTBookHit.deduped(try await searchProvider(trimmed))
             guard generation == searchGeneration else { return }   // 더 새 검색이 시작됨 — 늦은 결과 폐기
             searchResults = hits                                    // 0건도 [] 로 반영 (nil = 이력 없음과 구분)
             resultsQuery = trimmed
-            onSearchResults?(trimmed, hits)
+            if !hits.isEmpty {
+                setRecentQueries([trimmed] + recentQueries.filter { $0 != trimmed })
+            }
         } catch {
             guard generation == searchGeneration else { return }
             // 실패를 삼키지 않는다 — try? 로 삼키던 시절엔 상류 무응답이 "검색이 안 됨" 으로 보였다
@@ -1164,10 +1184,32 @@ public final class RTAppModel: ObservableObject {
         searching = false
     }
 
-    /// 앱을 다시 켰을 때 저장해 둔 지난 검색을 되살린다 (onSearchResults 의 짝)
-    public func restoreLastSearch(query: String, hits: [RTBookHit]) {
-        searchResults = hits
-        resultsQuery = query
+    /// 앱을 다시 켰을 때 저장해 둔 최근 검색어를 되살린다 (onRecentQueriesChange 의 짝 — 복원은 알리지 않는다)
+    public func restoreRecentQueries(_ queries: [String]) {
+        recentQueries = Self.cleanedQueries(queries)
+    }
+
+    /// 최근 검색어 × — 그 검색어만 지운다
+    public func removeRecentQuery(_ query: String) {
+        setRecentQueries(recentQueries.filter { $0 != query })
+    }
+
+    /// 저장된 목록, 없으면 11-08 판이 남긴 마지막 검색어(rt.lastSearch.query)를 첫 항목으로
+    public static func loadRecentQueries(saved: [String]?, legacyQuery: String?) -> [String] {
+        cleanedQueries(saved ?? (legacyQuery.map { [$0] } ?? []))
+    }
+
+    private func setRecentQueries(_ queries: [String]) {
+        recentQueries = Self.cleanedQueries(queries)
+        onRecentQueriesChange?(recentQueries)
+    }
+
+    /// 공백 제거·빈 칸 제외·중복 제거(앞쪽 우선)·최대 8개
+    private static func cleanedQueries(_ queries: [String]) -> [String] {
+        var seen = Set<String>()
+        return Array(queries.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+            .prefix(recentQueryLimit))
     }
 
     /// 실패한 마지막 검색을 같은 쿼리로 다시 시도 (시트 13 "다시 시도").
@@ -1233,7 +1275,7 @@ public final class RTAppModel: ObservableObject {
         // 재완독은 그 책 별점을 프리셋, 평가 없는 책은 기본 4★ 로 되돌린다.
         // ?? 를 안 두면 직전에 평가한 다른 책의 별점이 남아 그대로 저장된다.
         if s == .finish { rating = selectedBook?.rating ?? 4 }
-        // 책 추가: 검색창은 열 때마다 공란. 결과(searchResults)는 유지 = "공란이면 최신 검색 표시".
+        // 책 추가: 검색창은 열 때마다 공란 → 최근 검색어 목록. 결과(searchResults)는 유지(최근 검색어를 다 지우면 보인다).
         // 실패 안내는 결과가 아니므로 지운다 (다시 열면 최신 결과부터).
         if s == .addbook { searchQuery = ""; searchError = nil }
         // 시간 직접 추가: 실데이터에선 시안 데모 상태(35분·+15 선택)로 열지 않는다. 일시 기본값은 지금.

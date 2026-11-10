@@ -142,6 +142,55 @@ final class AddBookSearchUITests: XCTestCase {
                                  "마지막 결과가 키보드에 가려짐: 행 아래끝 \(last.frame.maxY) > 키보드 윗변 \(keyboard.frame.minY)")
     }
 
+    // 검색칸이 비면 최근 검색어 — 시트를 다시 열어도 보이고, 누르면 다시 검색, × 로 지운다
+    // (2026-11-10 실기기 보고: 지난 결과 한 묶음만 다시 보여 주던 판은 검색한 적이 없으면 시트가 비어 있었다)
+    func testRecentQueriesResearchAndRemove() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--seq", "login,nav:12,sheet:addbook,query:서성이다", "--stub-search", "ok"]
+        app.launch()
+
+        let field = app.textFields["addbook.search"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "검색창이 없다")
+        field.tap()
+        field.typeText("\n")
+        let count = app.staticTexts["addbook.count"]
+        XCTAssertTrue(waitForLabel(count, "검색 결과 · 1건", timeout: 10), "첫 검색 결과가 아님: \(count.exists ? count.label : "-")")
+
+        // ① 닫았다 다시 열면 검색칸은 비고, 결과 대신 최근 검색어
+        reopenSheet(app)
+        XCTAssertTrue(waitForLabel(count, "최근 검색", timeout: 5),
+                      "다시 연 시트에 '최근 검색' 이 없다 (\(count.exists ? count.label : "-"))\n\(app.debugDescription)")
+        let recent = app.staticTexts.matching(identifier: "addbook.recent").firstMatch
+        XCTAssertEqual(recent.label, "서성이다", "최근 검색어가 다르다")
+        XCTAssertFalse(app.staticTexts["장강명 · 현대문학"].exists, "검색칸이 비었는데 지난 결과 행이 보인다")
+        shot("08-recent")
+
+        // ② 최근 검색어를 누르면 그 검색어로 다시 검색
+        recent.tap()
+        XCTAssertTrue(waitForLabel(count, "검색 결과 · 1건", timeout: 10),
+                      "최근 검색어를 눌렀는데 검색 결과가 아님: \(count.exists ? count.label : "-")")
+        XCTAssertEqual(field.value as? String, "서성이다", "검색칸에 최근 검색어가 채워지지 않았다")
+        XCTAssertTrue(app.staticTexts["서성이다"].exists, "다시 검색한 결과 행이 없다")
+
+        // ③ × 로 지우면 목록이 사라지고 시트는 공란
+        reopenSheet(app)
+        XCTAssertTrue(waitForLabel(count, "최근 검색", timeout: 5), "다시 연 시트에 '최근 검색' 이 없다")
+        app.buttons["addbook.recent.remove"].tap()
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline, recent.exists { Thread.sleep(forTimeInterval: 0.2) }
+        XCTAssertFalse(recent.exists, "× 를 눌렀는데 최근 검색어가 남아 있다")
+        XCTAssertFalse(count.exists, "최근 검색어를 다 지웠는데 라벨이 남아 있다: \(count.exists ? count.label : "-")")
+        shot("09-recent-removed")
+    }
+
+    /// 닫기 → 서재 + 로 책 추가 시트를 다시 연다 (열 때마다 검색칸은 공란)
+    private func reopenSheet(_ app: XCUIApplication) {
+        app.buttons["닫기"].tap()
+        let add = app.buttons["책 추가"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5), "서재의 책 추가 버튼이 없다\n\(app.debugDescription)")
+        add.tap()
+    }
+
     /// 접근성 라벨이 기대값이 될 때까지 폴링
     private func waitForLabel(_ element: XCUIElement, _ expected: String, timeout: TimeInterval) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
