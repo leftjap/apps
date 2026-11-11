@@ -1,0 +1,4 @@
+raw/
+tools/shots*/
+tools/*.jpg
+__pycache__/

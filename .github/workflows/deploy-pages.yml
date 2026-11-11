@@ -166,6 +166,14 @@ jobs:
           pnpm build
           cp dist/index.html dist/404.html
 
+      # 라이투미 (2026-11-11) — 의존성 없는 표정 판독 게임 시제품. 테스트가 통과해야 dist 를 만든다.
+      - name: Build lietome
+        continue-on-error: true
+        run: |
+          cd lietome
+          node --test test/*.test.js
+          node build.mjs
+
       - name: Combine into _site
         run: |
           mkdir -p _site
@@ -176,6 +184,7 @@ jobs:
           [ -d pick/dist ] && cp -r pick/dist _site/pick || echo "::warning::pick build missing — skipping"
           [ -d cue/dist ] && cp -r cue/dist _site/cue || echo "::warning::cue build missing — skipping"
           [ -d best/dist ] && cp -r best/dist _site/best || echo "::warning::best build missing — skipping"
+          [ -d lietome/dist ] && cp -r lietome/dist _site/lietome || echo "::warning::lietome build missing — skipping"
           # 정식 경로 이관 (2026-06-10): pick/dist → /apps/pick/ (vite base 도 /apps/pick/). 폴더도 taste→pick 리네임 완료.
           # 구 /apps/taste/ 는 redirect 스텁 + kill-SW — 구 SW 가 캐시된 옛 앱을 계속 서빙하는 것 차단.
           # (한 origin 을 6개 앱이 공유 → kill-SW 캐시 삭제는 /apps/taste/ 스코프 키만 한정)
