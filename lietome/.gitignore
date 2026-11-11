@@ -2,3 +2,4 @@ raw/
 tools/shots*/
 tools/*.jpg
 __pycache__/
+docs/exploration-notes.md
