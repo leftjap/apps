@@ -1,7 +1,7 @@
 // src 의 ES 모듈을 한 파일로 묶는다. 의존성 없이 import 줄과 export 키워드만 지운다.
 // dist/index.html 하나를 만들고, 오늘 나오는 사건의 사진은 dist/img 로 복사한다.
 // GitHub Pages 배포 워크플로가 dist 를 /apps/lietome/ 으로 올린다.
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync, cpSync } from 'node:fs';
 import { CASES, DAYS, img } from './src/cases.js';
 
 const here = (p) => new URL(p, import.meta.url);
@@ -33,4 +33,7 @@ for (const c of CASES.filter((x) => used.has(x.id))) {
     }
   }
 }
+// lab 은 탐색용 임시 화면이다. 그대로 dist/lab 으로 옮겨 /apps/lietome/lab/... 주소로 연다.
+cpSync(here('lab'), here('dist/lab'), { recursive: true });
+
 console.log(`dist/index.html ${Buffer.byteLength(page)} bytes, 사진 ${n}장`);

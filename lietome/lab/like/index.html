@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>라이투미 시안: 호감 읽기</title>
+<style>
+  :root { color-scheme: dark; --bg: #0C0F12; --panel: #141A1F; --ink: #E8ECEF; --muted: #8B96A2; --line: #27303A; --signal: #FF4B3E; --ok: #3BD68C; --mid: #F2B33D; }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif; font-size: 15px; line-height: 1.55; }
+  button { font: inherit; color: inherit; }
+  h1, p { margin: 0; }
+  main { max-width: 460px; margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-right, 0px)) 28px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 12px; }
+  h1 { font-size: 1.35rem; letter-spacing: -0.01em; }
+  .guide, .note { color: var(--muted); }
+  .note { font-size: 0.82rem; }
+  .say { min-height: 1.6em; text-align: center; font-size: 1.05rem; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .cell { position: relative; padding: 0; border: 2px solid var(--line); border-radius: 8px; background: var(--panel); overflow: hidden; cursor: pointer; aspect-ratio: 1; }
+  .face { position: absolute; inset: 0; background-size: 900% 100%; background-position: 0 0; background-repeat: no-repeat; }
+  .num { position: absolute; left: 6px; top: 6px; min-width: 22px; padding: 0 5px; border-radius: 5px; background: rgba(12, 15, 18, 0.8); font-size: 0.82rem; }
+  .cell[aria-pressed="true"] { border-color: var(--mid); box-shadow: inset 0 0 0 2px var(--mid); }
+  .tag { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 4px; text-align: center; font-size: 0.8rem; background: rgba(12, 15, 18, 0.82); }
+  .tag.G { color: var(--ok); }
+  .tag.F { color: var(--signal); }
+  .cell:focus-visible, .bar button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .bar { display: flex; gap: 8px; }
+  .bar button { flex: 1; padding: 11px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); cursor: pointer; }
+  .bar button.main { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+  .bar button:disabled { opacity: 0.45; cursor: default; }
+  .status { min-height: 3.1em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>호감으로 반응한 사람은?</h1>
+  <p class="guide">말을 걸면 아홉 명이 반응합니다. 호감으로 반응했다고 생각하는 사람을 모두 고르세요. 여러 번 말을 걸어도 됩니다.</p>
+  <p class="say" id="say" aria-live="polite"></p>
+  <div class="grid" id="grid"></div>
+  <div class="bar">
+    <button type="button" class="main" id="talk" disabled>말 걸기</button>
+    <button type="button" id="check" disabled>정답 확인</button>
+  </div>
+  <p class="status" id="status" aria-live="polite"></p>
+  <p class="note">시안입니다. 얼굴은 모두 AI로 만든 가상의 인물입니다.</p>
+</main>
+<script>
+// 화면에 놓인 순서대로의 반응 종류. G 호감, F 거짓 호감, O 그 밖.
+const KIND = ['F', 'G', 'F', 'O', 'F', 'G', 'G', 'O', 'F'];
+// 80ms 단위의 (나타남, 머묾, 사라짐) 길이. 호감은 천천히, 거짓 호감은 갑자기.
+const DYN = { G: [6, 9, 6], F: [2, 6, 2], O: [3, 7, 3] };
+const LABEL = { G: '호감', F: '거짓 호감', O: '그 밖' };
+const STEP = 80;
+const FRAMES = 9;
+
+const grid = document.getElementById('grid');
+const talk = document.getElementById('talk');
+const check = document.getElementById('check');
+const say = document.getElementById('say');
+const statusEl = document.getElementById('status');
+let plays = 0;
+let playing = false;
+let revealed = false;
+
+const cells = KIND.map((kind, i) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'cell';
+  b.setAttribute('aria-pressed', 'false');
+  b.setAttribute('aria-label', `${i + 1}번`);
+  b.innerHTML = `<span class="face" style="background-image:url(p${i + 1}.jpg)"></span><span class="num">${i + 1}</span>`;
+  b.addEventListener('click', () => {
+    if (revealed) return;
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+  });
+  grid.appendChild(b);
+  return b;
+});
+
+function level(kind, step) {
+  const [on, apex, off] = DYN[kind];
+  if (step < on) return (step + 1) / on;
+  if (step < on + apex) return 1;
+  if (step < on + apex + off) return 1 - (step - on - apex + 1) / off;
+  return 0;
+}
+
+function show(i, lv) {
+  const frame = Math.round(lv * (FRAMES - 1));
+  cells[i].firstChild.style.backgroundPosition = `${(frame / (FRAMES - 1)) * 100}% 0`;
+}
+
+function play() {
+  if (playing) return;
+  playing = true;
+  talk.disabled = true;
+  say.textContent = '“안녕하세요”';
+  const total = Math.max(...Object.values(DYN).map((d) => d[0] + d[1] + d[2]));
+  let step = 0;
+  setTimeout(function tick() {
+    KIND.forEach((k, i) => show(i, level(k, step)));
+    step += 1;
+    if (step <= total) { setTimeout(tick, STEP); return; }
+    playing = false;
+    plays += 1;
+    talk.disabled = false;
+    check.disabled = false;
+    say.textContent = '';
+    if (!revealed) statusEl.textContent = `말을 건 횟수 ${plays}번. 호감으로 반응한 사람을 고른 뒤 정답을 확인하세요.`;
+  }, 240);
+}
+
+function reveal() {
+  revealed = true;
+  let hit = 0;
+  let wrong = 0;
+  KIND.forEach((k, i) => {
+    const picked = cells[i].getAttribute('aria-pressed') === 'true';
+    if (picked && k === 'G') hit += 1;
+    if (picked && k !== 'G') wrong += 1;
+    const t = document.createElement('span');
+    t.className = `tag ${k}`;
+    t.textContent = LABEL[k];
+    cells[i].appendChild(t);
+  });
+  const all = KIND.filter((k) => k === 'G').length;
+  statusEl.textContent = `호감 ${all}명 중 ${hit}명을 맞혔고, ${wrong}명을 잘못 골랐습니다. 말을 건 횟수는 ${plays}번입니다.`;
+  check.textContent = '다시 하기';
+}
+
+function reset() {
+  revealed = false;
+  plays = 0;
+  cells.forEach((c) => { c.setAttribute('aria-pressed', 'false'); c.querySelector('.tag')?.remove(); });
+  check.textContent = '정답 확인';
+  check.disabled = true;
+  statusEl.textContent = '';
+}
+
+talk.addEventListener('click', play);
+check.addEventListener('click', () => (revealed ? reset() : reveal()));
+
+// 사진을 모두 받은 뒤에 말 걸기를 켠다.
+Promise.all(KIND.map((_, i) => new Promise((res) => {
+  const im = new Image();
+  im.onload = im.onerror = res;
+  im.src = `p${i + 1}.jpg`;
+}))).then(() => { talk.disabled = false; });
+</script>
+</body>
+</html>
