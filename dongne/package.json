@@ -1,0 +1,11 @@
+{
+  "name": "dongne",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20.12" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "gazetteer": "node probe/gazetteer.mjs",
+    "measure": "node probe/measure.mjs"
+  }
+}
