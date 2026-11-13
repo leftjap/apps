@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { LEVELS, makeSimProvider } from '../src/sim/provider.ts';
+
+const p = makeSimProvider();
+const at = (h: number, dow: number) => ({ tod: h * 3600, dow, doy: 317 });
+const area = (id: string, h: number, dow: number) => p.areas(at(h, dow)).find((a) => a.id === id)!;
+
+describe('시뮬레이션 자료', () => {
+  it('판 안의 다섯 곳', () => {
+    const names = p.areas(at(12, 2)).map((a) => a.name);
+    expect(names).toEqual(['홍대 관광특구', '홍대입구역(2호선)', '연남동', '합정역', '망원한강공원']);
+  });
+  it('홍대는 금요일 21시가 화요일 10시보다 붐빈다', () => {
+    expect(area('hongdae', 21, 5).pplMin).toBeGreaterThan(area('hongdae', 10, 2).pplMin * 1.5);
+    expect(area('hongdae', 21, 5).level).toBeGreaterThan(area('hongdae', 10, 2).level);
+  });
+  it('한강공원은 토요일 낮이 화요일 새벽보다 붐빈다', () =>
+    expect(area('mangwon', 15, 6).pplMin).toBeGreaterThan(area('mangwon', 4, 2).pplMin * 3));
+  it('단계 라벨과 인구 범위', () => {
+    for (const a of p.areas(at(19, 5))) {
+      expect(a.label).toBe(LEVELS[a.level]);
+      expect(a.pplMax).toBeGreaterThan(a.pplMin);
+    }
+    expect(LEVELS).toEqual(['여유', '보통', '약간 붐빔', '붐빔']);
+  });
+  it('큰길은 출근 시간이 새벽보다 느리다', () => {
+    expect(p.roadSpeed(at(8.5, 2), 1, 7)).toBeLessThan(p.roadSpeed(at(3, 2), 1, 7) - 0.2);
+    expect(p.roadSpeed(at(8.5, 2), 1, 7)).toBeGreaterThanOrEqual(0.15);
+    expect(p.roadSpeed(at(3, 2), 1, 7)).toBeLessThanOrEqual(1);
+  });
+  it('하차 인원: 퇴근 시간 홍대입구가 한낮보다 많고 운행 시간 밖은 0', () => {
+    expect(p.alighting(at(18.5, 2), '홍대입구')).toBeGreaterThan(p.alighting(at(14, 2), '홍대입구'));
+    expect(p.alighting(at(3, 2), '홍대입구')).toBe(0);
+  });
+});

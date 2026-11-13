@@ -36,6 +36,7 @@ jobs:
             pick/pnpm-lock.yaml
             cue/pnpm-lock.yaml
             best/pnpm-lock.yaml
+            mapo/pnpm-lock.yaml
 
       # 인증 게이트 (2026-07-11) — Supabase signOut() 의 기본 scope 는 global 이라
       # 한 기기 로그아웃이 그 계정의 모든 기기 세션을 서버에서 삭제한다(폰의 study·today 동반 로그아웃).
@@ -174,6 +175,18 @@ jobs:
           node --test test/*.test.js
           node build.mjs
 
+      # 마포 라이브 3D (2026-11-13) — 마포구 미니어처 웹 토이. 테스트가 통과해야 dist 를 만든다.
+      # 지도 자료(public/data)는 구워서 커밋해 두므로 CI 에서는 OSM 을 받지 않는다.
+      - name: Build mapo
+        continue-on-error: true
+        env:
+          TZ: Asia/Seoul
+        run: |
+          cd mapo
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+
       - name: Combine into _site
         run: |
           mkdir -p _site
@@ -185,6 +198,7 @@ jobs:
           [ -d cue/dist ] && cp -r cue/dist _site/cue || echo "::warning::cue build missing — skipping"
           [ -d best/dist ] && cp -r best/dist _site/best || echo "::warning::best build missing — skipping"
           [ -d lietome/dist ] && cp -r lietome/dist _site/lietome || echo "::warning::lietome build missing — skipping"
+          [ -d mapo/dist ] && cp -r mapo/dist _site/mapo || echo "::warning::mapo build missing — skipping"
           # 정식 경로 이관 (2026-06-10): pick/dist → /apps/pick/ (vite base 도 /apps/pick/). 폴더도 taste→pick 리네임 완료.
           # 구 /apps/taste/ 는 redirect 스텁 + kill-SW — 구 SW 가 캐시된 옛 앱을 계속 서빙하는 것 차단.
           # (한 origin 을 6개 앱이 공유 → kill-SW 캐시 삭제는 /apps/taste/ 스코프 키만 한정)

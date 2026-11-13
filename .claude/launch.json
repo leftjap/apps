@@ -329,6 +329,27 @@
       ],
       "port": 5340,
       "autoPort": false
+    },
+    {
+      "name": "mapo-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev"
+      ],
+      "cwd": "/Users/gio_c/apps/mapo",
+      "port": 5197
+    },
+    {
+      "name": "mapo-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "preview",
+        "--port",
+        "4197",
+        "--strictPort"
+      ],
+      "cwd": "/Users/gio_c/apps/mapo",
+      "port": 4197
     }
   ]
 }
