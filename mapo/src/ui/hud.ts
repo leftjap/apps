@@ -84,7 +84,7 @@ export function makeHud(ev: HudEvents) {
        <div class="badge"><span class="dot"></span><b data-top-name></b><span data-top-level></span><i><span data-top-time></span> · 시뮬레이션</i></div>
        <div class="chips"><button type="button" data-lab-toggle>설정</button>${tourButtons}${presetButtons}</div>
      </div>
-     <p id="credit">© OpenStreetMap contributors</p>
+     <p id="credit">© OpenStreetMap contributors · 일부 건물 Overture Maps, Shi 외(2023)</p>
      <div id="card" hidden>
        <button type="button" class="close" aria-label="닫기">×</button>
        <p class="tag" data-card-tag></p>
@@ -120,7 +120,7 @@ export function makeHud(ev: HudEvents) {
          <section class="areas"><h2>지금 붐비는 곳</h2><ol data-areas></ol></section>
          <section class="about">
            <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 캐릭터 한 명은 약 ${PEOPLE_PER_FIGURE}명을 대신합니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다.</p>
-           <p>지도 자료 © OpenStreetMap contributors</p>
+           <p>지도 자료 © OpenStreetMap contributors. 일부 건물 © Overture Maps Foundation, Qian Shi 외(2023) CC BY 4.0.</p>
          </section>
        </div>
        <div class="ad" aria-hidden="true"><span>광고 자리</span></div>

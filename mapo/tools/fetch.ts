@@ -45,6 +45,8 @@ const QUERIES: Record<string, [number, (b: string) => string]> = {
   // 버스 노선은 판 근처 구간의 선형만 받는다(out geom 뒤의 bbox 가 선형을 자른다)
   buses: [1, (b) => `relation["route"~"^(bus|minibus)$"]${b};out geom${b};`],
   busstops: [1, (b) => `node["highway"="bus_stop"]${b};out;`],
+  // 학교 부지(초·중·고). 이름표와 부지 바닥을 칠하는 데 쓴다
+  schools: [1, (b) => `(way["amenity"="school"]${b};relation["amenity"="school"]${b};);out geom;`],
 };
 const RADIUS: Record<string, number> = { buses: R + 300, busstops: R + 100, railways: R + 400, routes: R + 400, stations: R + 400, water: R + 600, green: R + 300 };
 

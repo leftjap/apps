@@ -17,6 +17,8 @@ export interface BoardJson {
   buses?: { ref: string; kind: number; to: number; segs: number[]; stops: number[] }[];
   /** 홍익대 캠퍼스 외곽선 [x,z, ...] */
   campus?: number[];
+  /** 학교 부지: 이름과 외곽선 [x,z, ...] */
+  schools?: { name: string; ring: number[] }[];
   /** 한강 물길 가운데 [x,z, ...](서쪽 → 동쪽) */
   river?: number[];
   /** 망원한강공원 피크닉 자리 [x,z, ...] */
@@ -90,6 +92,7 @@ export interface Board {
   trees: Float32Array;
   buses: BusRun[];
   campus: Float32Array;
+  schools: { name: string; ring: Float32Array }[];
   /** [x,0,z, ...] */
   river: Float32Array;
   riverCum: Float32Array;
@@ -102,6 +105,7 @@ export function decodeBoard(j: BoardJson): Board {
   const river = Float32Array.from((j.river ?? []).flatMap((v, i, a) => (i % 2 === 0 ? [v / 10, 0, a[i + 1] / 10] : [])));
   return {
     campus: m(j.campus ?? []),
+    schools: (j.schools ?? []).map((s) => ({ name: s.name.replace(/,\s*/g, ' · '), ring: m(s.ring) })),
     river,
     riverCum: cumLen(river),
     picnic: m(j.picnic ?? []),

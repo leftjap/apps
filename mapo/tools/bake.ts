@@ -1,6 +1,6 @@
 // tools/raw/ 의 OSM 원자료를 모형판 자료(public/data/board.json, mask.png)로 굽는다.
 // 실행: node tools/bake.ts
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { BOARD_R, toXZ } from '../src/geo.ts';
 import { cumLen, nearestS } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
@@ -53,11 +53,16 @@ function inside(rings: [number, number][][], x: number, z: number): boolean {
 const campus = raw('campus');
 const hongikRings = campus.filter((e) => (e.tags?.name ?? '').includes('홍익대학교')).flatMap(ringsOf);
 
+// ───────────────────────── 학교 부지 ─────────────────────────
+// OSM 학교 부지(amenity=school). 판 안에 들어오는 부지만 쓰고, 부지 안 건물은 학교 건물(6)로 칠한다
+const schoolSites = raw('schools')
+  .filter((e) => e.type === 'way' && e.geometry && e.tags?.name)
+  .map((e) => ({ name: e.tags!.name.replace(/\s+/g, ' ').trim(), ring: xz(e.geometry!) }))
+  .filter((s) => s.ring.every(([x, z]) => inBoard(x, z, 4)));
+
 // ───────────────────────── 건물 ─────────────────────────
-/** 이름으로 고르는 랜드마크 건물 번호(1 = 홍익대 캠퍼스 안, 2~5 는 역·다리가 쓴다) */
+/** 이름으로 고르는 랜드마크 건물 번호(1 = 홍익대 캠퍼스 안, 2~5 는 역·다리, 6 은 학교가 쓴다) */
 const NAMED_LM: [RegExp, number][] = [
-  [/경성(중학교|고등학교)/, 6],
-  [/홍익대학교사범대학부속/, 7],
   [/마포소방서/, 8],
   [/마포중앙도서관/, 9],
   [/상상마당/, 10],
@@ -97,9 +102,72 @@ for (const el of raw('buildings')) {
     if (Math.abs(area) < 12 || !pts.every(([x, z]) => inBoard(x, z, 4))) continue;
     if (area < 0) pts.reverse(); // 넓이가 양수가 되는 방향으로 통일
     const h = Math.max(3, Math.min(260, estimateHeight(tags, Math.abs(area), el.id)));
-    const lm = inside(hongikRings, cx, cz) ? 1 : (NAMED_LM.find(([re]) => re.test(tags.name ?? ''))?.[1] ?? 0);
+    const isSchool = schoolSites.some((sc) => inside([sc.ring], cx, cz)) || tags.building === 'school' || /(초등|중|고등)학교/.test(tags.name ?? '');
+    const lm = inside(hongikRings, cx, cz) ? 1 : isSchool ? 6 : (NAMED_LM.find(([re]) => re.test(tags.name ?? ''))?.[1] ?? 0);
+    // 부지 자료가 없는 학교(이름이 붙은 학교 건물): 건물 외곽선을 부지로 삼는다
+    if (/(초등|중|고등)학교$/.test(tags.name ?? '') && !schoolSites.some((sc) => inside([sc.ring], cx, cz)))
+      schoolSites.push({ name: tags.name!.replace(/^홍익대학교사범대학부속/, '홍익대 사범대 부속 '), ring: [...pts, pts[0]] });
     buildings.push([dm(h), lm, ...pts.flatMap(([x, z]) => [dm(x), dm(z)])]);
     footprints.push(pts);
+  }
+}
+const osmBuildings = buildings.length;
+
+// ───────────────────────── 건물: OSM 이 비어 있는 곳 채우기 ─────────────────────────
+// Overture Maps 건물 자료(tools/overture.py 로 받는다) 가운데 OSM 이 아닌 출처만 쓴다. 한국은 대부분
+// Qian Shi 외(2023) 동아시아 건물 자료(CC BY 4.0)다. OSM 건물과 겹치는 것(중심이 OSM 건물 안이거나 OSM 건물의 첫 점을 품는 것)은 뺀다.
+// 높이·층수가 없으면 다세대 주택 기준으로 추정한다. 파일이 없으면 건너뛴다.
+{
+  const file = new URL('./raw/overture.jsonl', import.meta.url);
+  if (existsSync(file)) {
+    const CELL = 50;
+    const grid = new Map<string, [number, number][][]>();
+    const ck = (x: number, z: number) => `${Math.floor(x / CELL)},${Math.floor(z / CELL)}`;
+    for (const f of footprints) {
+      const xs = f.map((p) => p[0]);
+      const zs = f.map((p) => p[1]);
+      for (let gx = Math.floor(Math.min(...xs) / CELL); gx <= Math.floor(Math.max(...xs) / CELL); gx++)
+        for (let gz = Math.floor(Math.min(...zs) / CELL); gz <= Math.floor(Math.max(...zs) / CELL); gz++) {
+          const k = `${gx},${gz}`;
+          (grid.get(k) ?? grid.set(k, []).get(k)!).push(f);
+        }
+    }
+    const strHash = (str: string) => {
+      let h = 2166136261;
+      for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+      return h >>> 0;
+    };
+    for (const line of readFileSync(file, 'utf8').split('\n')) {
+      if (!line) continue;
+      const r = JSON.parse(line) as { id: string; height: number | null; floors: number | null; src: string[] | null; g: { type: string; coordinates: number[][][] | number[][][][] } };
+      if ((r.src ?? []).includes('OpenStreetMap')) continue;
+      const outer = (r.g.type === 'Polygon' ? r.g.coordinates[0] : (r.g.coordinates as number[][][][])[0][0]) as number[][];
+      let pts = outer.map(([lon, lat]) => toXZ(lat, lon));
+      if (pts.length > 1 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < 0.5) pts = pts.slice(0, -1);
+      pts = pts.filter((p, i, a) => i === 0 || Math.hypot(p[0] - a[i - 1][0], p[1] - a[i - 1][1]) > 0.3);
+      if (pts.length < 3 || !pts.every(([x, z]) => inBoard(x, z, 4))) continue;
+      let area = 0;
+      let cx = 0;
+      let cz = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const [ax, az] = pts[i];
+        const [bx, bz] = pts[(i + 1) % pts.length];
+        area += ax * bz - bx * az;
+        cx += ax / pts.length;
+        cz += az / pts.length;
+      }
+      area /= 2;
+      if (Math.abs(area) < 12) continue;
+      const near = grid.get(ck(cx, cz)) ?? [];
+      const ring = [...pts, pts[0]];
+      if (near.some((f) => inside([[...f, f[0]]], cx, cz) || inside([ring], f[0][0], f[0][1]))) continue;
+      if (area < 0) pts.reverse();
+      const id = strHash(r.id);
+      const h = r.height && r.height > 0 ? r.height : r.floors && r.floors > 0 ? r.floors * 3.2 + 1 : estimateHeight({ building: 'residential' }, Math.abs(area), id);
+      const isSchool = schoolSites.some((sc) => inside([sc.ring], cx, cz));
+      buildings.push([dm(Math.max(3, Math.min(260, h))), isSchool ? 6 : 0, ...pts.flatMap(([x, z]) => [dm(x), dm(z)])]);
+      footprints.push(pts);
+    }
   }
 }
 
@@ -605,6 +673,7 @@ const out = {
   trees,
   buses: busRuns,
   campus: campusRing.flatMap(([x, z]) => [dm(x), dm(z)]),
+  schools: schoolSites.map((sc) => ({ name: sc.name, ring: sc.ring.flatMap(([x, z]) => [dm(x), dm(z)]) })),
   river,
   picnic,
 };
@@ -613,11 +682,13 @@ writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));
 
 const waterPx = mask.reduce((s, v, i) => s + (i % 4 === 0 && v ? 1 : 0), 0);
+console.log(`Overture(OSM 밖) 건물 ${buildings.length - osmBuildings}동 더함`);
 console.log(`건물 ${buildings.length}동 (홍익대 ${buildings.filter((b) => b[1] === 1).length}동)`);
 console.log(`도로 ${roads.length}조각, 교량 조각 ${roads.filter((r) => r[3]).length}, 가장 높은 지점 ${Math.max(...roads.flatMap((r) => r.filter((_, i) => i >= 6 && i % 3 === 1))) / 10}m`);
 console.log(`물 ${((waterPx * 4) / 1e6).toFixed(2)}㎢, 나무 ${trees.length / 2}그루, 출구 ${exits.length}곳, 역 ${stations.map((s) => s.name).join('·')}`);
 for (const l of lines) console.log(`${l.name}: 선로 조각 ${l._ways}개 → ${l._len}m, 역 ${l.stops.map((s) => `${s.name}(${s.s})`).join(' ')}`);
 console.log(`버스 노선 ${busRuns.length}개(${[...new Set(busRuns.map((b) => b.ref))].length}개 번호), 정류장 ${busRuns.reduce((n, b) => n + b.stops.length / 2, 0)}곳(노선별 합), 버스가 지나는 조각 ${roads.filter((r) => r[2] & 2).length}개`);
+console.log(`학교 ${schoolSites.length}곳(${schoolSites.map((s) => s.name).join(', ')}), 학교 건물 ${buildings.filter((b) => b[1] === 6).length}동`);
 console.log(`이름 랜드마크 건물 ${NAMED_LM.map(([re, n]) => `${re.source.slice(0, 6)}:${buildings.filter((b) => b[1] === n).length}`).join(' ')}, 캠퍼스 고리 ${campusRing.length}점, 물길 ${river.length / 2}점, 피크닉 ${picnic.length / 2}곳`);
 console.log(`랜드마크 ${landmarks.map((l) => `${l.id}(${l.x / 10},${l.z / 10})`).join(' ')}`);
 console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB`);

@@ -15,6 +15,7 @@ import { makeGroundLabels, makeMarker, makeRings, type GroundLabel } from './ren
 import { makeRoads } from './render/roads.ts';
 import { makeSignalMarks } from './render/signals.ts';
 import { makeView } from './render/scene.ts';
+import { makeSchools } from './render/schools.ts';
 import { makeStations } from './render/stations.ts';
 import { makeTrees } from './render/trees.ts';
 import { makeWalkerMesh } from './render/walkers.ts';
@@ -82,6 +83,7 @@ const roads = makeRoads(board.roads, LM_COLORS);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);
+const schools = makeSchools(board);
 const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(small ? 900 : 1500);
 const walkerMesh = makeWalkerMesh(small ? 800 : 1500);
@@ -151,6 +153,7 @@ view.scene.add(
   picnic,
   makeBuildings(board.buildings),
   landmarks.group,
+  schools.group,
   trees.mesh,
   carMeshes.group,
   walkerMesh.mesh,
@@ -167,7 +170,8 @@ type Target =
   | { kind: 'cat'; i: number }
   | { kind: 'train'; key: number }
   | { kind: 'bus'; uid: number }
-  | { kind: 'boat'; i: number };
+  | { kind: 'boat'; i: number }
+  | { kind: 'school'; i: number };
 let selected: Target | null = null;
 let followed: Target | null = null;
 const same = (a: Target | null, b: Target | null) => JSON.stringify(a) === JSON.stringify(b);
@@ -249,6 +253,7 @@ function select(t: Target | null) {
   selected = t;
   landmarks.setSelected(t?.kind === 'landmark' ? t.id : '');
   stations.setSelected(t?.kind === 'station' ? t.name : '');
+  schools.setSelected(t?.kind === 'school' ? t.i : -1);
   catMeshes.setPicked(t?.kind === 'cat' ? t.i : -1);
   if (!t && followed) unfollow();
   refreshCard();
@@ -307,6 +312,9 @@ function refreshCard() {
       note: '열차 위치는 배차 간격과 주행 곡선으로 만든 시뮬레이션입니다.',
       follow: following,
     };
+  } else if (selected.kind === 'school') {
+    const sc = board.schools[selected.i];
+    card = { tag: '학교', title: sc.name, color: '#c4b2f2', lines: [], note: '학교 부지와 이름은 OpenStreetMap 자료입니다.' };
   } else if (selected.kind === 'boat') {
     const b = BOATS[selected.i];
     const at = boatAt(b, now.tod, board.riverCum[board.riverCum.length - 1] ?? 0);
@@ -467,9 +475,12 @@ function pickAt(clientX: number, clientY: number): Target | null {
   }
   ndc.set((px / r.width) * 2 - 1, 1 - (py / r.height) * 2);
   ray.setFromCamera(ndc, view.camera);
-  const hit = ray.intersectObjects([...landmarks.pickables, ...stations.pickables], false)[0];
+  const hit = ray.intersectObjects([...landmarks.pickables, ...stations.pickables, ...schools.pickables], false)[0];
   if (!hit) return null;
-  return hit.object.userData.station ? { kind: 'station', name: hit.object.userData.station } : { kind: 'landmark', id: hit.object.userData.id };
+  const u = hit.object.userData;
+  if (u.station) return { kind: 'station', name: u.station };
+  if (u.school !== undefined) return { kind: 'school', i: u.school };
+  return { kind: 'landmark', id: u.id };
 }
 
 let downAt: [number, number] | null = null;
@@ -506,17 +517,20 @@ canvas.addEventListener('pointermove', (e) => {
   const t = pickAt(e.clientX, e.clientY);
   landmarks.setHover(t?.kind === 'landmark' ? t.id : '');
   stations.setHover(t?.kind === 'station' ? t.name : '');
+  schools.setHover(t?.kind === 'school' ? t.i : -1);
   canvas.style.cursor = t ? 'pointer' : '';
 });
 canvas.addEventListener('pointerleave', () => {
   landmarks.setHover('');
   stations.setHover('');
+  schools.setHover(-1);
 });
 const tags = makeTags(
   stage,
   stations.labels,
   stations.exits,
   landmarks.labels,
+  schools.labels,
   (name) => {
     poke();
     select({ kind: 'station', name });
@@ -524,6 +538,10 @@ const tags = makeTags(
   (id) => {
     poke();
     select({ kind: 'landmark', id });
+  },
+  (i) => {
+    poke();
+    select({ kind: 'school', i });
   },
 );
 
@@ -604,6 +622,7 @@ function frame(t: number) {
   signalMarks.update(now.tod);
   landmarks.update(dt);
   stations.update(dt);
+  schools.update(dt);
   view.update(dt);
   if (followed && !view.following) unfollow();
   const dist = view.viewDist();

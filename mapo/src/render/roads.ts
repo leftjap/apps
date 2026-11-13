@@ -79,7 +79,7 @@ const FRAG = /* glsl */ `
     float beads = 0.55 + 0.45 * step(0.5, fract(vUV.y / 9.0));
     col += uLmCol[lm] * rail * beads * (0.25 + uNight * 0.9 + glow * 0.8);
     col += uLmCol[lm] * isLm * glow * 0.16;
-    col = mix(col, col * 0.3 + vec3(0.012, 0.02, 0.035), focusIn(vXZ) * 0.85 * (1.0 - uDeck));
+    col = mix(col, mix(vec3(0.37, 0.42, 0.49), col * 0.3 + vec3(0.012, 0.02, 0.035), uNight), focusIn(vXZ) * 0.85 * (1.0 - uDeck));
     gl_FragColor = vec4(fogged(col, vDist), 1.0);
   }`;
 

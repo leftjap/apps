@@ -2,19 +2,23 @@
 // 건물에 가려지지 않도록 화면 좌표로 옮긴 HTML 로 그린다.
 import * as THREE from 'three';
 import type { PlaceLabel } from '../render/landmarks.ts';
+import type { SchoolLabel } from '../render/schools.ts';
 import type { StationLabel } from '../render/stations.ts';
 
 const EXIT_NEAR = 1500; // 카메라가 보는 지점에서 이만큼(m) 안으로 들어오면 출구 번호를 보인다
 const EXIT_FAR = 1800; // 카메라에서 이보다 먼 출구 번호는 감춘다(지평선 쪽 역)
 const PLACE_FAR = 3200; // 카메라에서 이보다 먼 랜드마크 이름표는 감춘다
+const SCHOOL_FAR = 2600; // 학교 이름은 동네 크기로 볼 때 보인다(판 전체를 볼 때는 감춘다)
 
 export function makeTags(
   stage: HTMLElement,
   stations: StationLabel[],
   exits: { st: string; ref: string; x: number; z: number }[],
   places: PlaceLabel[],
+  schools: SchoolLabel[],
   onStation: (name: string) => void,
   onPlace: (id: string) => void,
+  onSchool: (i: number) => void,
 ) {
   const layer = document.createElement('div');
   layer.id = 'tags';
@@ -39,6 +43,16 @@ export function makeTags(
     layer.append(el);
     return { el, x: p.x, y: p.y, z: p.z };
   });
+  // 학교 이름: 배지 없이 흰 글씨로(역 배지보다 가볍게)
+  const sc = schools.map((s) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'sc-tag';
+    el.textContent = s.name;
+    el.addEventListener('click', () => onSchool(s.i));
+    layer.append(el);
+    return { el, x: s.x, y: s.y, z: s.z };
+  });
   const ex = exits.map((e) => {
     const el = document.createElement('span');
     el.className = 'ex-tag';
@@ -60,7 +74,7 @@ export function makeTags(
   }
 
   // 이름표가 겹치면 앞 순서(환승역 → 역 → 랜드마크)만 남긴다
-  const order = [...[...st].sort((a, b) => b.el.childElementCount - a.el.childElementCount), ...pl];
+  const order = [...[...st].sort((a, b) => b.el.childElementCount - a.el.childElementCount), ...pl, ...sc];
   const boxes: [number, number, number, number][] = [];
   function declutter() {
     boxes.length = 0;
@@ -79,6 +93,7 @@ export function makeTags(
       if (!visible) return;
       place(st, cam, w, h, true);
       place(pl, cam, w, h, true, PLACE_FAR);
+      place(sc, cam, w, h, true, SCHOOL_FAR);
       declutter();
       place(ex, cam, w, h, viewDist < EXIT_NEAR, EXIT_FAR);
     },

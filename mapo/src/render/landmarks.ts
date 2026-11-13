@@ -26,8 +26,6 @@ export const LANDMARKS: LandmarkInfo[] = [
   { id: 'hapjeong-stn', n: 3, name: '합정역', kind: '환승역', color: '#ffcf7a', desc: '2호선과 6호선이 만나는 역입니다. 양화대교 북단과 이어집니다.', station: '합정' },
   { id: 'seogang-br', n: 4, name: '서강대교', kind: '한강 다리', color: '#ff8d78', desc: '밤섬 위를 지나는 다리입니다. 붉은 아치가 표지입니다.' },
   { id: 'yanghwa-br', n: 5, name: '양화대교', kind: '한강 다리', color: '#8ec5ff', desc: '합정과 영등포를 잇는 다리입니다. 가운데에 선유도가 있습니다.' },
-  { id: 'kyungsung', n: 6, name: '경성중·고등학교', kind: '학교', color: '#c9b8f0', desc: '경성중학교와 서울경성고등학교입니다.' },
-  { id: 'hongbu', n: 7, name: '홍익대 사범대 부속학교', kind: '학교', color: '#c9b8f0', desc: '홍익대학교 사범대학 부속 초등학교·여자중학교·여자고등학교입니다.' },
   { id: 'fire', n: 8, name: '마포소방서', kind: '공공기관', color: '#f0907e', desc: '마포구를 맡는 소방서입니다.' },
   { id: 'library', n: 9, name: '마포중앙도서관', kind: '공공기관', color: '#86d3c3', desc: '마포구가 운영하는 공공도서관입니다.' },
   { id: 'sangsang', n: 10, name: 'KT&G 상상마당 홍대', kind: '문화 공간', color: '#f2c27a', desc: '공연장과 전시장, 영화관이 있는 복합 문화 공간입니다.' },
@@ -60,8 +58,8 @@ export function makeLandmarks(board: Board, roadGlow: number[]) {
   for (const info of LANDMARKS) {
     const list = board.buildings.filter((b) => b.lm === info.n);
     if (!list.length) continue;
-    // 평소에는 옅게: 흰색 쪽으로 섞는다(홍익대는 조금 진하게)
-    const tint = new THREE.Color('#ffffff').lerp(new THREE.Color(info.color), info.n === 1 ? 0.8 : 0.5);
+    // 평소에는 옅게: 흰색 쪽으로 섞되 일반 건물과 구분될 만큼은 칠한다(홍익대는 조금 더 진하게)
+    const tint = new THREE.Color('#ffffff').lerp(new THREE.Color(info.color), info.n === 1 ? 0.8 : 0.72);
     const mat = buildingMaterial(`#${tint.getHexString()}`);
     const mesh = new THREE.Mesh(prismGeometry(list), mat);
     mesh.frustumCulled = false;
