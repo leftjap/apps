@@ -27,30 +27,34 @@ export interface Edge {
   name: string;
   /** 자료 공급자에게 넘기는 구간 고유값 */
   key: number;
+  /** 원래 도로 조각 번호와, 저장된 방향을 거슬러 가는가 */
+  road: number;
+  rev: boolean;
 }
 
 export function buildCarGraph(roads: Road[]): Edge[] {
   const edges: Edge[] = [];
   const twin: number[] = [];
-  const add = (r: Road, p: Float32Array, lanes: number, off0: number) => {
+  const add = (r: Road, road: number, p: Float32Array, lanes: number, off0: number, rev: boolean) => {
     const cum = cumLen(p);
-    edges.push({ id: edges.length, p, cum, len: cum[cum.length - 1], cls: r.cls, lanes, off0, next: [], nextW: [], entry: false, name: r.name, key: edges.length });
+    edges.push({ id: edges.length, p, cum, len: cum[cum.length - 1], cls: r.cls, lanes, off0, next: [], nextW: [], entry: false, name: r.name, key: edges.length, road, rev });
   };
-  for (const r of roads) {
-    if (r.cls > 3 || r.p.length < 6) continue;
+  roads.forEach((r, road) => {
+    // 골목·진입로는 버스가 지나는 곳만 차가 다닌다
+    if ((r.cls > 3 && !(r.bus && r.cls <= 5)) || r.p.length < 6) return;
     if (r.oneway) {
       const lanes = Math.max(1, r.lanes);
-      add(r, r.p, lanes, (-(lanes - 1) / 2) * LANE);
+      add(r, road, r.p, lanes, (-(lanes - 1) / 2) * LANE, false);
       twin.push(-1);
     } else {
       const lanes = Math.max(1, Math.ceil(r.lanes / 2));
       const rev = new Float32Array(r.p.length);
       for (let i = 0; i < r.p.length; i += 3) rev.set(r.p.subarray(i, i + 3), r.p.length - 3 - i);
-      add(r, r.p, lanes, LANE / 2);
-      add(r, rev, lanes, LANE / 2);
+      add(r, road, r.p, lanes, LANE / 2, false);
+      add(r, road, rev, lanes, LANE / 2, true);
       twin.push(edges.length - 1, edges.length - 2);
     }
-  }
+  });
   const starts = new Map<number, number[]>();
   for (const e of edges) {
     const k = nodeKey(e.p[0], e.p[2]);

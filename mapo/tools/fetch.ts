@@ -42,8 +42,11 @@ const QUERIES: Record<string, [number, (b: string) => string]> = {
       `(way["leisure"~"^(park|garden|pitch|playground)$"]${b};relation["leisure"~"^(park|garden)$"]${b};way["landuse"~"^(grass|forest|meadow|recreation_ground|village_green)$"]${b};relation["landuse"~"^(grass|forest|meadow)$"]${b};way["natural"~"^(wood|scrub|grassland)$"]${b};relation["natural"~"^(wood|scrub)$"]${b};);out geom;`,
   ],
   campus: [1, (b) => `(way["amenity"="university"]${b};relation["amenity"="university"]${b};);out geom;`],
+  // 버스 노선은 판 근처 구간의 선형만 받는다(out geom 뒤의 bbox 가 선형을 자른다)
+  buses: [1, (b) => `relation["route"~"^(bus|minibus)$"]${b};out geom${b};`],
+  busstops: [1, (b) => `node["highway"="bus_stop"]${b};out;`],
 };
-const RADIUS: Record<string, number> = { railways: R + 400, routes: R + 400, stations: R + 400, water: R + 600, green: R + 300 };
+const RADIUS: Record<string, number> = { buses: R + 300, busstops: R + 100, railways: R + 400, routes: R + 400, stations: R + 400, water: R + 600, green: R + 300 };
 
 const ENDPOINTS = [
   'https://overpass.openstreetmap.fr/api/interpreter',

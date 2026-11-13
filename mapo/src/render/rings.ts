@@ -131,3 +131,48 @@ export function makeGroundLabels(labels: GroundLabel[]): THREE.Mesh {
   mesh.renderOrder = -2;
   return mesh;
 }
+
+/** 고른 대상(고양이·버스·열차) 발밑의 고리. 건물에 가려져도 보이도록 깊이를 보지 않고 맨 나중에 그린다 */
+export function makeMarker() {
+  const uniforms = { uPos: { value: new THREE.Vector3() }, uCol: { value: new THREE.Color('#ffffff') }, uOn: { value: 0 } };
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2),
+    material({
+      transparent: true,
+      depthWrite: false,
+      doubleSide: true,
+      uniforms,
+      vertex: /* glsl */ `
+        uniform vec3 uPos;
+        varying vec2 vP;
+        void main() {
+          vec4 cv = viewMatrix * vec4(uPos, 1.0);
+          float r = 30.0 * -cv.z / uProjK;                 // 화면에서 반지름 30px
+          vP = position.xz;
+          gl_Position = projectionMatrix * viewMatrix * vec4(uPos + vec3(position.x * r, 0.6, position.z * r), 1.0);
+        }`,
+      fragment: /* glsl */ `
+        uniform vec3 uCol; uniform float uOn;
+        varying vec2 vP;
+        void main() {
+          float r = length(vP);
+          float ring = smoothstep(0.1, 0.0, abs(r - 0.78));
+          float t = fract(uTime * 0.6);
+          float wave = smoothstep(0.07, 0.0, abs(r - t)) * (1.0 - t) * 0.6;
+          gl_FragColor = vec4(mix(uCol, vec3(1.0), 0.35), (ring * 0.85 + wave) * uOn * step(r, 1.0));
+        }`,
+    }),
+  );
+  (mesh.material as THREE.ShaderMaterial).depthTest = false;
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 10;
+  return {
+    mesh,
+    /** pos 가 null 이면 감춘다 */
+    set(pos: { x: number; y: number; z: number } | null, color = '#ffffff') {
+      uniforms.uOn.value = pos ? 1 : 0;
+      if (pos) uniforms.uPos.value.set(pos.x, pos.y, pos.z);
+      uniforms.uCol.value.set(color);
+    },
+  };
+}

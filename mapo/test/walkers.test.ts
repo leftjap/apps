@@ -75,3 +75,24 @@ describe('보행자', () => {
     expect(sim.w.n).toBeGreaterThan(30);
   });
 });
+
+describe('멈춰 서서 구경하기', () => {
+  it('붙잡힌 사람은 멈춰 서서 대상을 보며 휴대폰을 들고, 시간이 지나면 다시 걷는다', () => {
+    const g = buildWalkGraph([road([[0, 0], [400, 0]], { cls: 4, lanes: 1 })]);
+    const sim = makeWalkers(g, [{ st: 'x', x: 100, z: 0 }], fixedProvider(1, 0), 3, 10);
+    sim.burst('x', 1);
+    for (let k = 0; k < 20; k++) sim.step(0.1, at(14), false);
+    const w = sim.w;
+    const id = w.id[0];
+    sim.hold(id, 5, w.x[0], w.z[0] + 2);
+    sim.step(0.1, at(14), false);
+    const x0 = w.x[0];
+    for (let k = 0; k < 30; k++) sim.step(0.1, at(14), false);
+    expect(Math.abs(w.x[0] - x0)).toBeLessThan(0.05);
+    expect(Math.abs(w.yaw[0] - Math.PI / 2)).toBeLessThan(0.2);
+    expect(w.photo[0]).toBeGreaterThan(0.5);
+    for (let k = 0; k < 60; k++) sim.step(0.1, at(14), false);
+    expect(Math.abs(w.x[0] - x0)).toBeGreaterThan(1);
+    expect(w.photo[0]).toBeLessThan(0.5);
+  });
+});

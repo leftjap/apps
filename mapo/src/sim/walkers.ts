@@ -17,6 +17,10 @@ export interface Walkers {
   fade: Float32Array;
   /** 캐릭터마다 다른 0~1 값(색) */
   tint: Float32Array;
+  /** 고유 번호(배열 자리가 바뀌어도 그대로) */
+  id: Int32Array;
+  /** 휴대폰을 든 정도 0~1(멈춰 서서 고양이를 찍는 중) */
+  photo: Float32Array;
 }
 
 export interface Exit {
@@ -54,7 +58,13 @@ export function makeWalkers(g: WalkGraph, exits: Exit[], provider: DataProvider,
     phase: new Float32Array(max),
     fade: new Float32Array(max),
     tint: new Float32Array(max),
+    id: new Int32Array(max),
+    photo: new Float32Array(max),
   };
+  let nextId = 1;
+  const holdT = new Float32Array(max); // 멈춰 서 있을 남은 시간(초)
+  const faceX = new Float32Array(max);
+  const faceZ = new Float32Array(max);
   // 걷는 구간: (sx,sz) → 노드 b
   const from = new Int32Array(max);
   const to = new Int32Array(max);
@@ -107,13 +117,16 @@ export function makeWalkers(g: WalkGraph, exits: Exit[], provider: DataProvider,
     w.phase[i] = rand() * 6.28;
     w.fade[i] = 0;
     w.tint[i] = rand();
+    w.id[i] = nextId++;
+    w.photo[i] = 0;
+    holdT[i] = 0;
     place(i);
     return i;
   }
   function remove(i: number) {
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, w.x, w.z, w.yaw, w.phase, w.fade, w.tint]) a[i] = a[j];
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, holdT, faceX, faceZ]) a[i] = a[j];
   }
   function place(i: number) {
     const ex = g.nx[to[i] * 2];
@@ -142,8 +155,27 @@ export function makeWalkers(g: WalkGraph, exits: Exit[], provider: DataProvider,
     }
   }
 
+  /** id 인 사람을 secs 초 동안 세워 (fx, fz) 쪽을 보게 한다 */
+  function hold(id: number, secs: number, fx: number, fz: number) {
+    for (let i = 0; i < w.n; i++)
+      if (w.id[i] === id) {
+        holdT[i] = secs;
+        faceX[i] = fx;
+        faceZ[i] = fz;
+        life[i] = Math.max(life[i], secs + 20);
+        return;
+      }
+  }
+
   function step(dt: number, now: Now, ambient = true) {
     for (let i = w.n - 1; i >= 0; i--) {
+      if (holdT[i] > 0) {
+        holdT[i] -= dt;
+        w.photo[i] = Math.min(1, w.photo[i] + dt * 2);
+        w.yaw[i] = Math.atan2(faceZ[i] - w.z[i], faceX[i] - w.x[i]);
+        continue;
+      }
+      w.photo[i] = Math.max(0, w.photo[i] - dt * 2);
       life[i] -= dt;
       if (life[i] <= 0) {
         w.fade[i] -= dt * 1.6;
@@ -191,5 +223,5 @@ export function makeWalkers(g: WalkGraph, exits: Exit[], provider: DataProvider,
     }
   }
 
-  return { w, step, burst };
+  return { w, step, burst, hold };
 }

@@ -51,6 +51,16 @@ export function makeView(canvas: HTMLCanvasElement) {
 
   let fly: { t: number; from: { target: THREE.Vector3; pos: THREE.Vector3 }; to: { target: THREE.Vector3; pos: THREE.Vector3 } } | null = null;
   const tmp = { target: new THREE.Vector3(), pos: new THREE.Vector3() };
+  /** 따라가기: 매 프레임 대상 위치를 묻고, 보는 거리를 dist 로 천천히 맞춘다 */
+  let follow: { get: () => THREE.Vector3 | null; dist: number; sync: boolean; t: number } | null = null;
+  /** 따라가기를 시작하면 처음 3초 동안 이 각도(수직에서 기운 각)로 세워 건물에 덜 가리게 한다 */
+  const FOLLOW_TILT = (26 * Math.PI) / 180;
+  const sph = new THREE.Spherical();
+  /** 드론 산책: 닫힌 곡선을 따라 보는 지점을 옮기고 카메라는 그 뒤에서 따라간다 */
+  let drone: { curve: THREE.CatmullRomCurve3; u: number; t: number; turn: number; blend: number } | null = null;
+  const v1 = new THREE.Vector3();
+  const v2 = new THREE.Vector3();
+  const ease = (rate: number, dt: number) => 1 - Math.exp(-rate * dt);
 
   function resize() {
     const w = canvas.clientWidth;
@@ -80,6 +90,46 @@ export function makeView(canvas: HTMLCanvasElement) {
       fly = { t: 0, from: { target: controls.target.clone(), pos: camera.position.clone() }, to };
     },
     update(dt: number) {
+      if (follow) {
+        const p = follow.get();
+        if (!p) follow = null;
+        else {
+          v1.copy(controls.target);
+          controls.target.x += (p.x - controls.target.x) * ease(5, dt);
+          controls.target.z += (p.z - controls.target.z) * ease(5, dt);
+          camera.position.add(v2.subVectors(controls.target, v1));
+          const off = v1.subVectors(camera.position, controls.target);
+          if (follow.sync) (follow.dist = off.length()), (follow.sync = false);
+          off.setLength(off.length() + (follow.dist - off.length()) * ease(1.6, dt));
+          follow.t += dt;
+          if (follow.t < 3) {
+            sph.setFromVector3(off);
+            sph.phi += (FOLLOW_TILT - sph.phi) * ease(2, dt);
+            off.setFromSpherical(sph);
+          }
+          camera.position.copy(controls.target).add(off);
+        }
+      }
+      if (drone) {
+        const d = drone;
+        d.t += dt;
+        d.blend = Math.min(1, d.blend + dt / 4);
+        d.u = (d.u + (20 * dt) / d.curve.getLength()) % 1;
+        const p = d.curve.getPointAt(d.u, v1);
+        const tan = d.curve.getTangentAt(d.u, v2);
+        // 진행 방향 뒤에서, 조금씩 좌우로 흔들리며 본다
+        const want = Math.atan2(-tan.x, -tan.z) + 0.45 * Math.sin(d.t * 0.045);
+        let diff = want - d.turn;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        d.turn += diff * ease(0.35, dt);
+        const dist = 720 + 260 * Math.sin(d.t * 0.06);
+        const tilt = ((60 + 6 * Math.sin(d.t * 0.04)) * Math.PI) / 180;
+        tmp.target.set(p.x, 0, p.z);
+        tmp.pos.set(p.x + dist * Math.sin(tilt) * Math.sin(d.turn), dist * Math.cos(tilt), p.z + dist * Math.sin(tilt) * Math.cos(d.turn));
+        const k = d.blend < 1 ? ease(1.2, dt) : 1;
+        controls.target.lerp(tmp.target, k);
+        camera.position.lerp(tmp.pos, k);
+      }
       if (fly) {
         fly.t = Math.min(1, fly.t + dt / 1.5);
         const k = fly.t < 0.5 ? 4 * fly.t ** 3 : 1 - (-2 * fly.t + 2) ** 3 / 2;
@@ -108,6 +158,43 @@ export function makeView(canvas: HTMLCanvasElement) {
     cancelFly() {
       fly = null;
     },
+    follow(get: () => THREE.Vector3 | null, dist: number) {
+      fly = null;
+      drone = null;
+      follow = { get, dist, sync: false, t: 0 };
+    },
+    unfollow() {
+      follow = null;
+    },
+    get following() {
+      return !!follow;
+    },
+    /** 따라가는 중에 휠로 거리를 바꾸면 그 거리를 새 목표로 삼는다 */
+    keepZoom() {
+      if (follow) follow.sync = true;
+    },
+    startDrone(points: [number, number][]) {
+      fly = null;
+      follow = null;
+      const curve = new THREE.CatmullRomCurve3(points.map(([x, z]) => new THREE.Vector3(x, 0, z)), true, 'centripetal');
+      // 지금 보는 곳에서 가장 가까운 지점부터 시작한다
+      let u = 0;
+      let best = Infinity;
+      for (let k = 0; k < 200; k++) {
+        const d = curve.getPointAt(k / 200, v1).distanceTo(controls.target);
+        if (d < best) (best = d), (u = k / 200);
+      }
+      const off = v2.subVectors(camera.position, controls.target);
+      drone = { curve, u, t: 0, turn: Math.atan2(off.x, off.z), blend: 0 };
+    },
+    stopDrone() {
+      drone = null;
+    },
+    get droning() {
+      return !!drone;
+    },
+    /** 보는 지점까지의 거리 */
+    viewDist: () => camera.position.distanceTo(controls.target),
   };
 }
 

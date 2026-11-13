@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { nearestS } from '../src/poly.ts';
-import { CAT_SPOTS, catAt, catName, makeCats } from '../src/sim/cats.ts';
+import { makeCatReactor } from '../src/sim/catReact.ts';
+import { CAT_SPOTS, catAt, catName, makeCats, SLOT, type CatState } from '../src/sim/cats.ts';
 import { buildWalkGraph } from '../src/sim/graph.ts';
-import { at, road } from './helpers.ts';
+import { road } from './helpers.ts';
 
 // 판 전체에 50m 간격 골목 격자를 깐 시험용 그래프
 const grid = () => {
@@ -15,57 +15,121 @@ const grid = () => {
 };
 const building = (x: number, z: number) => ({ h: 9, lm: 0, pts: Float32Array.from([x - 5, z - 5, x + 5, z - 5, x + 5, z + 5, x - 5, z + 5]) });
 const cats = makeCats(CAT_SPOTS, grid(), CAT_SPOTS.map((s) => building(s.x + 12, s.z + 12)));
+const sec = (t: number) => ({ tod: ((t % 86400) + 86400) % 86400, dow: 2, doy: 317 });
+const home = (s: CatState, c: (typeof cats)[number]) => Math.hypot(s.x - c.loaf[0], s.z - c.loaf[1]);
 
-describe('길고양이', () => {
-  it('18마리, 네 가지 색, 이름은 "{동} {색}냥"이고 겹치지 않는다', () => {
+const STATUSES = [
+  '식빵 굽는 중',
+  '낮잠 중',
+  '그루밍 중',
+  '급식소로 가는 중',
+  '급식소에서 밥 먹는 중',
+  '물 마시는 중',
+  '집으로 돌아가는 중',
+  '영역 순찰 중',
+  '주변을 살피는 중',
+  '친구 고양이에게 가는 중',
+  '친구 고양이와 장난치는 중',
+  '쉬는 중',
+];
+
+describe('길고양이 일정', () => {
+  it('18마리, 네 가지 색, 두 가지 성격, 이름은 "{동} {색}냥"이고 겹치지 않는다', () => {
     expect(cats.length).toBe(18);
     expect(new Set(cats.map((c) => c.coat)).size).toBe(4);
+    expect(new Set(cats.map((c) => c.personality))).toEqual(new Set(['shy', 'friendly']));
     const names = cats.map(catName);
     expect(new Set(names).size).toBe(18);
     for (const n of names) expect(n).toMatch(/^\S+ (치즈|삼색|고등어|턱시도)냥$/);
-    expect(names).toContain('연남동 치즈냥');
   });
-  it('한낮에는 모두 건물 남쪽 옆 자리에서 식빵 자세로 쉰다', () => {
-    for (const c of cats) {
-      const s = catAt(c, at(13));
-      expect(s.pose).toBe(0);
-      expect(Math.hypot(s.x - c.loaf[0], s.z - c.loaf[1])).toBeLessThan(0.01);
-      expect(['식빵 굽는 중', '낮잠 중', '그루밍 중']).toContain(s.status);
-    }
-    // 식빵 자리는 가장 가까운 건물의 남쪽(z가 큰 쪽) 벽 바로 밖
+  it('쉬는 자리는 가장 가까운 건물의 남쪽 벽 바로 밖이다', () => {
     const c = cats[0];
     expect(c.loaf[1]).toBeGreaterThan(CAT_SPOTS[0].z + 17);
     expect(c.loaf[1]).toBeLessThan(CAT_SPOTS[0].z + 19);
   });
-  it('밤 11시에는 절반 넘게 걷고 있고 모두 자기 경로 가까이에 있다', () => {
-    let walking = 0;
-    for (const c of cats) {
-      const s = catAt(c, at(23));
-      if (s.pose > 0.5) walking++;
-      expect(nearestS(c.route, c.cum, s.x, s.z).d).toBeLessThan(3);
-    }
-    expect(walking).toBeGreaterThan(9);
+  it('30분 칸이 바뀌는 순간에는 모두 쉬는 자리에 있다', () => {
+    for (const c of cats) for (let k = 0; k < 48; k += 5) expect(home(catAt(c, sec(k * SLOT)), c)).toBeLessThan(0.01);
   });
-  it('밤 상태는 정해진 말 가운데 하나', () => {
-    const seen = new Set<string>();
-    for (let t = 22; t < 28; t += 0.05) for (const c of cats) seen.add(catAt(c, at(t % 24)).status);
-    for (const s of seen) expect(['어슬렁거리는 중', '주변을 살피는 중', '급식소에서 밥 먹는 중', '쉬는 중']).toContain(s);
-    expect(seen.has('어슬렁거리는 중')).toBe(true);
-    expect(seen.has('급식소에서 밥 먹는 중')).toBe(true);
+  it('한낮에는 대부분 쉬는 자리에서 쉰다', () => {
+    let resting = 0;
+    for (let k = 0; k < 6; k++) for (const c of cats) if (home(catAt(c, sec(12 * 3600 + k * 600 + 300)), c) < 0.01) resting++;
+    expect(resting).toBeGreaterThan(18 * 6 * 0.6);
   });
-  it('같은 시각은 같은 결과이고 1초에 1.5m 넘게 움직이지 않는다', () => {
+  it('밤에는 급식소에서 밥을 먹고, 친구와 만나 함께 논다', () => {
+    let ate = false;
+    let played = false;
+    for (let t = 20 * 3600; t < 30 * 3600; t += 20)
+      for (const c of cats) {
+        const s = catAt(c, sec(t));
+        if (s.status === '급식소에서 밥 먹는 중') {
+          ate = true;
+          expect(Math.hypot(s.x - c.feed!.at[0], s.z - c.feed!.at[1])).toBeLessThan(2);
+        }
+        if (s.status === '친구 고양이와 장난치는 중') {
+          played = true;
+          const b = catAt(cats[c.buddy], sec(t));
+          expect(b.status).toBe('친구 고양이와 장난치는 중');
+          expect(Math.hypot(s.x - b.x, s.z - b.z)).toBeLessThan(2.5);
+        }
+      }
+    expect(ate).toBe(true);
+    expect(played).toBe(true);
+  });
+  it('상태는 정해진 말 가운데 하나이고, 같은 시각은 같은 결과, 1초에 1.5m 넘게 움직이지 않는다', () => {
     for (const c of cats)
-      for (const h of [5.5, 7.2, 13, 17.4, 23, 2]) {
-        const a = catAt(c, at(h));
-        expect(catAt(c, at(h))).toEqual(a);
-        const b = catAt(c, { tod: h * 3600 + 1, dow: 2, doy: 317 });
+      for (let t = 0; t < 86400; t += 997) {
+        const a = catAt(c, sec(t));
+        expect(STATUSES).toContain(a.status);
+        expect(catAt(c, sec(t))).toEqual(a);
+        const b = catAt(c, sec(t + 1));
         expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeLessThan(1.5);
       }
   });
-  it('해 질 녘에 식빵 자리에서 조금씩 멀어진다', () => {
-    // 11월 13일 일몰은 17:23 무렵
-    const far = (h: number) => Math.max(...cats.map((c) => { const s = catAt(c, at(h)); return Math.hypot(s.x - c.loaf[0], s.z - c.loaf[1]); }));
-    expect(far(16)).toBeLessThan(0.01);
-    expect(far(19)).toBeGreaterThan(8);
+});
+
+describe('사람에 대한 반응', () => {
+  const shy = cats.find((c) => c.personality === 'shy')!;
+  const friendly = cats.find((c) => c.personality === 'friendly')!;
+  const walkersAt = (pts: [number, number][]) => ({
+    n: pts.length,
+    x: Float32Array.from(pts.map((p) => p[0])),
+    z: Float32Array.from(pts.map((p) => p[1])),
+    id: Int32Array.from(pts.map((_, i) => 100 + i)),
+    fade: new Float32Array(pts.length).fill(1),
+  });
+  const base = (c: (typeof cats)[number]): CatState => ({ x: c.loaf[0], z: c.loaf[1], yaw: 0, walk: 0, pose: 0, status: '낮잠 중', alpha: 1 });
+
+  it('경계심 많은 고양이는 사람이 다가오면 숨었다가, 사람이 떠나면 제자리에 다시 나타난다', () => {
+    const r = makeCatReactor(cats);
+    const states = cats.map(base);
+    const near = walkersAt([[shy.loaf[0] + 3, shy.loaf[1]]]);
+    let out = states;
+    for (let k = 0; k < 30; k++) out = r.step(0.1, states, near, () => {});
+    expect(out[shy.id].alpha).toBeLessThan(0.3);
+    const none = walkersAt([]);
+    for (let k = 0; k < 250; k++) out = r.step(0.1, states, none, () => {});
+    expect(out[shy.id].alpha).toBeGreaterThan(0.95);
+    expect(Math.hypot(out[shy.id].x - shy.loaf[0], out[shy.id].z - shy.loaf[1])).toBeLessThan(0.5);
+  });
+
+  it('개냥이는 사람에게 다가가고, 그 사람을 멈춰 세워 구경하게 한다', () => {
+    const r = makeCatReactor(cats);
+    const states = cats.map(base);
+    const p: [number, number] = [friendly.loaf[0] + 7, friendly.loaf[1]];
+    const holds: number[] = [];
+    let out = states;
+    for (let k = 0; k < 120; k++) out = r.step(0.1, states, walkersAt([p]), (id) => holds.push(id));
+    expect(holds).toEqual([100]);
+    expect(Math.hypot(out[friendly.id].x - p[0], out[friendly.id].z - p[1])).toBeLessThan(1.3);
+    expect(out[friendly.id].status).toContain('다가가');
+  });
+
+  it('개냥이는 한 번 놀고 나면 한동안 다시 다가가지 않는다', () => {
+    const r = makeCatReactor(cats);
+    const states = cats.map(base);
+    const p: [number, number] = [friendly.loaf[0] + 7, friendly.loaf[1]];
+    let holds = 0;
+    for (let k = 0; k < 700; k++) r.step(0.1, states, walkersAt([p]), () => holds++);
+    expect(holds).toBe(1);
   });
 });

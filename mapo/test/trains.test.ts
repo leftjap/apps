@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cumLen } from '../src/poly.ts';
-import { arrivals, departures, headway, makeProfile, trainsAt, type LineDef } from '../src/sim/trains.ts';
+import { arrivals, departures, headway, makeProfile, stationBoard, trainsAt, type LineDef } from '../src/sim/trains.ts';
 
 const line = (id: string, len: number, stops: number[]): LineDef => {
   const p = new Float32Array([0, 0, 0, len, 0, 0]);
@@ -78,4 +78,33 @@ describe('열차 위치', () => {
     expect(parts).toBe(whole);
   });
   it('도착 사건에는 역 이름이 있다', () => expect(arrivals(lines, 30000, 31200)[0].name).toMatch(/^역\d$/));
+});
+
+describe('역 도착 안내', () => {
+  const l = line('2', 4000, [1000, 2600]);
+  const prof = makeProfile(4000, [1000, 2600]);
+  const arr = departures('2', 0)[40] + prof.arrive[0]; // 낮 시간 열차 하나가 역0에 서는 시각
+
+  it('정차 중인 열차를 먼저 알린다', () => {
+    const b = stationBoard([l], '역0', arr + 5).find((x) => x.dir === 0)!;
+    expect(b.state).toBe('정차 중');
+  });
+  it('90초 안에 오면 곧 도착, 그보다 멀면 몇 분 후', () => {
+    const soon = stationBoard([l], '역0', arr - 40).find((x) => x.dir === 0)!;
+    expect(soon.state).toBe('곧 도착');
+    expect(soon.inSec).toBeCloseTo(40, 0);
+    const later = stationBoard([l], '역0', arr - 100).find((x) => x.dir === 0)!;
+    expect(later.state).toMatch(/^\d+분 후$/);
+  });
+  it('두 방향을 모두 알리고 방향 이름을 붙인다', () => {
+    const b = stationBoard([l], '역0', arr);
+    expect(b.map((x) => x.dir).sort()).toEqual([0, 1]);
+    expect(b[0].toward).toContain('방면');
+  });
+  it('새벽 3시에는 운행이 끝났다고 알린다', () => {
+    expect(stationBoard([l], '역0', 3 * 3600)[0].state).toMatch(/^운행 종료 · 첫차 05:/);
+  });
+  it('서지 않는 역이면 빈 목록', () => {
+    expect(stationBoard([l], '없는역', arr)).toEqual([]);
+  });
 });

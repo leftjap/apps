@@ -52,7 +52,16 @@ export const env = {
   uTime: { value: 0 },
   /** 깊이 1m 지점에서 1m가 차지하는 화면 픽셀 수 */
   uProjK: { value: 1000 },
+  /** 비(0~1): 길이 젖고 빗줄기가 내린다 */
+  uRain: { value: 0 },
+  /** 안개(0~1): 먼 곳이 더 흐려진다 */
+  uHaze: { value: 0 },
 };
+
+/** 날씨 세기. 전환이 부드럽도록 updateEnv 가 목표값 쪽으로 천천히 옮긴다 */
+export const weather = { rain: 0, fog: 0, wantRain: 0, wantFog: 0 };
+const grey = new THREE.Color('#9aa3ad');
+const greyNight = new THREE.Color('#1b2029');
 
 const mix3 = (out: THREE.Color, k: THREE.Color[], day: number, dusk: number) => out.copy(k[2]).lerp(k[0], day).lerp(k[1], dusk * 0.85);
 const mixN = (k: [number, number, number], day: number, dusk: number) => {
@@ -63,18 +72,27 @@ const mixN = (k: [number, number, number], day: number, dusk: number) => {
 const moon = new THREE.Vector3(-0.35, 0.72, 0.6).normalize();
 const sunV = new THREE.Vector3();
 
-export function updateEnv(now: Now, time: number, sky: HTMLElement): void {
+export function updateEnv(now: Now, time: number, sky: HTMLElement, dt = 0): void {
   const { elev, azim } = sunAngles(now.tod, now.doy);
   const day = daylight(elev);
   const dusk = duskiness(elev);
   for (const k in pal) mix3(pal[k], parsed[k], day, dusk);
+  const k = 1 - Math.exp(-dt * 0.8);
+  weather.rain += (weather.wantRain - weather.rain) * k;
+  weather.fog += (weather.wantFog - weather.fog) * k;
+  // 흐린 날: 하늘·안개 색을 잿빛 쪽으로, 햇빛을 약하게
+  const overcast = Math.max(weather.rain * 0.8, weather.fog * 0.7);
+  const g = grey.clone().lerp(greyNight, 1 - day);
+  for (const key of ['bgTop', 'bgBottom', 'fog'] as const) pal[key].lerp(g, overcast * (key === 'fog' ? 1 : 0.75));
+  env.uRain.value = weather.rain;
+  env.uHaze.value = weather.fog;
 
   // 빛 방향: 해가 떠 있으면 해, 지면 달(고정 방향)
   const el = (Math.max(elev, 9) * Math.PI) / 180;
   const az = (azim * Math.PI) / 180;
   sunV.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
   env.uSunDir.value.copy(moon).lerp(sunV, day).normalize();
-  env.uSunCol.value.copy(pal.sun).multiplyScalar(mixN(NUMS.sunPower, day, dusk));
+  env.uSunCol.value.copy(pal.sun).multiplyScalar(mixN(NUMS.sunPower, day, dusk) * (1 - 0.55 * overcast));
   env.uSkyCol.value.copy(pal.ambSky).multiplyScalar(mixN(NUMS.ambSkyPower, day, dusk));
   env.uGroundCol.value.copy(pal.ambGround).multiplyScalar(mixN(NUMS.ambGroundPower, day, dusk));
   env.uNight.value = 1 - day;
@@ -84,16 +102,19 @@ export function updateEnv(now: Now, time: number, sky: HTMLElement): void {
   sky.style.background = `linear-gradient(#${pal.bgTop.getHexString()}, #${pal.bgBottom.getHexString()})`;
 }
 
+/** 지하 층의 높이(m). 노선·구내·지하 열차를 이 깊이에 그려 기울여 볼 때 지상과 어긋나 보이게 한다 */
+export const UNDER_Y = -8;
+
 /** 모든 셰이더 앞에 붙이는 공통 조각 */
 export const GLSL = /* glsl */ `
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGroundCol, uFogCol;
-uniform float uFogK, uNight, uDusk, uLit, uTime, uProjK;
+uniform float uFogK, uNight, uDusk, uLit, uTime, uProjK, uRain, uHaze;
 vec3 lit(vec3 albedo, vec3 n) {
   vec3 amb = mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5);
   return albedo * (amb + uSunCol * max(dot(n, uSunDir), 0.0));
 }
 vec3 fogged(vec3 c, float dist) {
-  float f = dist * uFogK;
+  float f = dist * uFogK * (1.0 + 2.6 * uHaze + 0.6 * uRain);
   return mix(c, uFogCol, 1.0 - exp(-f * f));
 }
 float hash21(vec2 p) {
@@ -117,6 +138,8 @@ export function material(opts: {
   depthWrite?: boolean;
   doubleSide?: boolean;
   offset?: number;
+  /** 지하 층: 깊이를 보지 않고 땅·도로 위에 비쳐 보이게 그린다. 불투명 목록에 두어 지상 물체가 나중에 덮게 한다(renderOrder 로 순서를 정한다) */
+  under?: boolean;
 }): THREE.ShaderMaterial {
   const m = new THREE.ShaderMaterial({
     uniforms: { ...env, ...opts.uniforms },
@@ -131,6 +154,15 @@ export function material(opts: {
     m.blending = THREE.CustomBlending;
     m.blendSrc = THREE.OneFactor;
     m.blendDst = THREE.OneFactor;
+    m.blendSrcAlpha = THREE.ZeroFactor;
+    m.blendDstAlpha = THREE.OneFactor;
+  }
+  if (opts.under) {
+    m.depthTest = false;
+    m.depthWrite = false;
+    m.blending = THREE.CustomBlending;
+    m.blendSrc = THREE.SrcAlphaFactor;
+    m.blendDst = THREE.OneMinusSrcAlphaFactor;
     m.blendSrcAlpha = THREE.ZeroFactor;
     m.blendDstAlpha = THREE.OneFactor;
   }

@@ -5,6 +5,7 @@ import { BOARD_R, toXZ } from '../src/geo.ts';
 import { cumLen, nearestS } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
+import { busKind, traceRuns } from './lib/bus.ts';
 import { stitch } from './lib/rail.ts';
 import { encodePng, fillPolygon, strokeLine } from './lib/raster.ts';
 
@@ -21,7 +22,7 @@ interface El {
   lon?: number;
   nodes?: number[];
   geometry?: LL[];
-  members?: { type: string; ref: number; role: string; geometry?: LL[] }[];
+  members?: { type: string; ref: number; role: string; geometry?: LL[]; lat?: number; lon?: number }[];
 }
 
 const raw = (name: string): El[] => JSON.parse(readFileSync(new URL(`./raw/${name}.json`, import.meta.url), 'utf8')).elements;
@@ -196,6 +197,8 @@ const nameIdx = (s?: string) => {
 const bridgeLm = (t: Tags) => (t['bridge:name'] === '양화대교' ? 5 : t.name === '서강로' || t['bridge:name'] === '서강대교' ? 4 : 0);
 
 const roads: number[][] = [];
+/** 길 id → 판 안에서 잘린 조각들. s→e 는 저장된 방향의 첫 노드와 끝 노드. 버스 노선을 조각 순서로 바꿀 때 쓴다 */
+const piecesOf = new Map<number, { road: number; s: number; e: number; oneway: boolean }[]>();
 for (const w of hw) {
   const t = w.tags!;
   const cls = CLS[t.highway];
@@ -209,8 +212,12 @@ for (const w of hw) {
   const head = [cls, lanes, oneway || rev ? 1 : 0, bridge, nameIdx(t.name), lm];
   // 교차점마다 끊고, 판 밖으로 나간 부분은 버린다
   let cur: number[] = [];
+  let curN: number[] = [];
   const flush = () => {
     if (cur.length >= 6) {
+      const list = piecesOf.get(w.id) ?? piecesOf.set(w.id, []).get(w.id)!;
+      const [a, b] = [curN[0], curN[curN.length - 1]];
+      list.push({ road: roads.length, s: rev ? b : a, e: rev ? a : b, oneway: !!(oneway || rev) });
       if (rev) {
         const r: number[] = [];
         for (let i = cur.length - 3; i >= 0; i -= 3) r.push(cur[i], cur[i + 1], cur[i + 2]);
@@ -219,18 +226,111 @@ for (const w of hw) {
       roads.push([...head, ...cur]);
     }
     cur = [];
+    curN = [];
   };
   pts.forEach(([x, z], i) => {
     const n = w.nodes![i];
     if (!inBoard(x, z, 2)) return flush();
     cur.push(dm(x), dm(nodeY.get(n) ?? 0), dm(z));
+    curN.push(n);
     if (i > 0 && i < pts.length - 1 && use.get(n)! > 1) {
       flush();
       cur.push(dm(x), dm(nodeY.get(n) ?? 0), dm(z));
+      curN.push(n);
     }
   });
   flush();
 }
+
+// ───────────────────────── 버스 노선 ─────────────────────────
+// 관계에 속한 길들의 조각만 따라 이어 달릴 수 있는 길을 찾는다(관계의 길 순서는 뒤섞인 경우가 많아 쓰지 않는다).
+// 정류장은 노선 오른쪽 18m 안의 버스 정류장 노드로 정한다(노선마다 실제로 서는 정류장과 다를 수 있다).
+const busStops = raw('busstops').filter((e) => e.type === 'node' && e.tags?.name);
+const roadPts = (signed: number): number[] => {
+  const r = roads[Math.abs(signed) - 1];
+  const out: number[] = [];
+  for (let i = 6; i < r.length; i += 3) out.push(r[i] / 10, r[i + 1] / 10, r[i + 2] / 10);
+  if (signed > 0) return out;
+  const back: number[] = [];
+  for (let i = out.length - 3; i >= 0; i -= 3) back.push(out[i], out[i + 1], out[i + 2]);
+  return back;
+};
+const runLine = (run: number[]) => {
+  const p: number[] = [];
+  for (const v of run) {
+    const q = roadPts(v);
+    p.push(...(p.length ? q.slice(3) : q));
+  }
+  return p;
+};
+const straight = (a: number, b: number) => {
+  const p = roadPts(a);
+  const q = roadPts(b);
+  const n = p.length;
+  const ax = p[n - 3] - p[n - 6];
+  const az = p[n - 1] - p[n - 4];
+  const bx = q[3] - q[0];
+  const bz = q[5] - q[2];
+  return (ax * bx + az * bz) / ((Math.hypot(ax, az) || 1) * (Math.hypot(bx, bz) || 1));
+};
+const busRels = raw('buses').filter((r) => r.type === 'relation' && r.tags?.ref && !/셔틀/.test(r.tags.name ?? ''));
+const busRuns: { ref: string; kind: number; to: number; segs: number[]; stops: number[] }[] = [];
+const runKeys: { ref: string; a: number[]; b: number[]; len: number }[] = [];
+for (const rel of busRels) {
+  const t = rel.tags!;
+  const memberOf = new Map<number, number>(); // 조각 → 관계에서 그 길의 순번
+  const segs = rel.members!.flatMap((m, i) => {
+    if (m.type !== 'way' || /^platform/.test(m.role)) return [];
+    const ps = piecesOf.get(m.ref) ?? [];
+    for (const p of ps) memberOf.set(p.road, i);
+    return ps;
+  });
+  const toName = t.to ?? t.name?.split(/→|->/)[1]?.trim() ?? '';
+  for (const r of traceRuns(segs, straight)) {
+    const line = runLine(r);
+    const cum = cumLen(line);
+    const len = cum[cum.length - 1];
+    if (len < 300) continue;
+    const a = [line[0], line[2]];
+    const b = [line[line.length - 3], line[line.length - 1]];
+    const near = (p: number[], q: number[]) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 60;
+    if (runKeys.some((k) => k.ref === t.ref && near(k.a, a) && near(k.b, b) && Math.abs(k.len - len) < len * 0.15)) continue;
+    runKeys.push({ ref: t.ref, a, b, len });
+    // 관계에 적힌 순서대로 지나면 to 쪽, 거꾸로 지나면 from 쪽으로 간다
+    const forward = memberOf.get(Math.abs(r[r.length - 1]) - 1)! >= memberOf.get(Math.abs(r[0]) - 1)!;
+    const to = forward ? toName : (t.from ?? '');
+    const stops: [number, number][] = [];
+    for (const st of busStops) {
+      const [x, z] = toXZ(st.lat!, st.lon!);
+      const q = nearestS(line, cum, x, z);
+      if (q.d > 18 || q.s < 20 || q.s > len - 20) continue;
+      let seg = 0;
+      while (seg < cum.length - 2 && cum[seg + 1] < q.s) seg++;
+      const dx = line[seg * 3 + 3] - line[seg * 3];
+      const dz = line[seg * 3 + 5] - line[seg * 3 + 2];
+      const right = (x - line[seg * 3]) * -dz + (z - line[seg * 3 + 2]) * dx;
+      if (right < 0 && q.d > 3) continue;
+      if (stops.some(([s]) => Math.abs(s - q.s) < 60)) continue;
+      stops.push([q.s, nameIdx(st.tags!.name)]);
+    }
+    stops.sort((p, q) => p[0] - q[0]);
+    busRuns.push({ ref: t.ref, kind: busKind(t.ref, t.colour), to: nameIdx(to.replace(/\(.*?\)/g, '').trim()), segs: r, stops: stops.flatMap(([s, n]) => [dm(s), n]) });
+  }
+}
+// 같은 번호에서 이미 고른 길과 조각이 60% 넘게 겹치는 갈래는 뺀다(긴 것부터 고른다). 버스가 겹쳐 두 배로 다니지 않게 한다
+{
+  const kept: typeof busRuns = [];
+  const order = [...busRuns].sort((p, q) => q.segs.length - p.segs.length);
+  for (const run of order) {
+    const mine = new Set(run.segs);
+    const dup = kept.some((k) => k.ref === run.ref && k.segs.filter((v) => mine.has(v)).length > run.segs.length * 0.6);
+    if (!dup) kept.push(run);
+  }
+  busRuns.length = 0;
+  busRuns.push(...kept);
+}
+// 버스가 지나는 골목·진입로도 차가 달릴 수 있게 표시한다(세 번째 칸의 둘째 비트)
+for (const run of busRuns) for (const v of run.segs) roads[Math.abs(v) - 1][2] |= 2;
 
 // ───────────────────────── 마스크 (빨강 = 물, 초록 = 녹지, 파랑 = 건물 그늘) ─────────────────────────
 const SIZE = 2048;
@@ -400,7 +500,7 @@ for (const st of stationNodes) {
   stationPos.set(name, a);
 }
 const stations = [...stationPos].map(([name, a]) => ({ name, x: dm(a.x / a.n), z: dm(a.z / a.n) }));
-const exits: { st: string; x: number; z: number }[] = [];
+const exits: { st: string; x: number; z: number; ref: string }[] = [];
 for (const e of raw('stations').filter((e) => e.tags?.railway === 'subway_entrance')) {
   const [x, z] = toXZ(e.lat!, e.lon!);
   if (!inBoard(x, z, 20)) continue;
@@ -410,7 +510,7 @@ for (const e of raw('stations').filter((e) => e.tags?.railway === 'subway_entran
     const d = Math.hypot(s.x / 10 - x, s.z / 10 - z);
     if (d < bestD) (bestD = d), (bestName = s.name);
   }
-  if (bestName) exits.push({ st: bestName, x: dm(x), z: dm(z) });
+  if (bestName) exits.push({ st: bestName, x: dm(x), z: dm(z), ref: e.tags?.ref ?? '' });
 }
 
 // ───────────────────────── 랜드마크 중심 ─────────────────────────
@@ -446,6 +546,7 @@ const out = {
   exits,
   landmarks,
   trees,
+  buses: busRuns,
 };
 const json = JSON.stringify(out);
 writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
@@ -456,5 +557,6 @@ console.log(`건물 ${buildings.length}동 (홍익대 ${buildings.filter((b) => 
 console.log(`도로 ${roads.length}조각, 교량 조각 ${roads.filter((r) => r[3]).length}, 가장 높은 지점 ${Math.max(...roads.flatMap((r) => r.filter((_, i) => i >= 6 && i % 3 === 1))) / 10}m`);
 console.log(`물 ${((waterPx * 4) / 1e6).toFixed(2)}㎢, 나무 ${trees.length / 2}그루, 출구 ${exits.length}곳, 역 ${stations.map((s) => s.name).join('·')}`);
 for (const l of lines) console.log(`${l.name}: 선로 조각 ${l._ways}개 → ${l._len}m, 역 ${l.stops.map((s) => `${s.name}(${s.s})`).join(' ')}`);
+console.log(`버스 노선 ${busRuns.length}개(${[...new Set(busRuns.map((b) => b.ref))].length}개 번호), 정류장 ${busRuns.reduce((n, b) => n + b.stops.length / 2, 0)}곳(노선별 합), 버스가 지나는 조각 ${roads.filter((r) => r[2] & 2).length}개`);
 console.log(`랜드마크 ${landmarks.map((l) => `${l.id}(${l.x / 10},${l.z / 10})`).join(' ')}`);
 console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB`);

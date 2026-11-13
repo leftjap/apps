@@ -194,3 +194,47 @@ export function arrivals(lines: LineDef[], t0: number, t1: number): Arrival[] {
   }
   return out;
 }
+
+/** 노선별 [거리 값이 커지는 방향, 작아지는 방향]의 행선 안내 */
+const TOWARD: Record<string, [string, string]> = {
+  '2': ['내선 · 시청 방면', '외선 · 당산 방면'],
+  '6': ['응암 방면', '봉화산 방면'],
+  K: ['용산 방면', '문산 방면'],
+  A: ['인천공항 방면', '서울역 방면'],
+};
+
+export interface BoardRow {
+  line: string;
+  dir: 0 | 1;
+  toward: string;
+  /** '정차 중' · '곧 도착' · 'n분 후' · '운행 종료 · 첫차 hh:mm' */
+  state: string;
+  /** 다음 열차가 서기까지 남은 초(정차 중이면 0) */
+  inSec: number;
+}
+
+/** 역의 노선·방향별 다음 열차 */
+export function stationBoard(lines: LineDef[], station: string, tod: number): BoardRow[] {
+  const out: BoardRow[] = [];
+  for (const l of lines) {
+    const prof = profiles(l);
+    for (const dir of [0, 1] as const) {
+      const names = dir ? [...l.stopNames].reverse() : l.stopNames;
+      const k = names.indexOf(station);
+      if (k < 0) continue;
+      let best = Infinity;
+      for (const dep of departures(l.id, dir))
+        for (const off of [0, 86400]) {
+          const t = dep + prof[dir].arrive[k] - off;
+          if (t + DWELL > tod && t - tod < best) best = t - tod;
+        }
+      const toward = (TOWARD[l.id] ?? ['', ''])[dir] || `${names[names.length - 1]} 방면`;
+      const first = (tod + best) % 86400;
+      const hhmm = `${String(Math.floor(first / 3600)).padStart(2, '0')}:${String(Math.floor((first % 3600) / 60)).padStart(2, '0')}`;
+      const state =
+        best === Infinity ? '운행 종료' : best > 1800 ? `운행 종료 · 첫차 ${hhmm}` : best <= 0 ? '정차 중' : best < 90 ? '곧 도착' : `${Math.ceil(best / 60)}분 후`;
+      out.push({ line: l.id, dir, toward, state, inSec: Math.max(0, best) });
+    }
+  }
+  return out;
+}

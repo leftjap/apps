@@ -67,3 +67,25 @@ describe('시간대 곡선', () => {
     expect(nightlife(9 * 3600)).toBeLessThan(0.05);
   });
 });
+
+describe('시계 조작', () => {
+  // 2026-11-14 12:00 KST
+  const noon = () => Date.UTC(2026, 10, 14, 3, 0, 0);
+  it('시각을 정하면 그 시각부터 흐르고 실시간 표시가 꺼진다', () => {
+    const c = makeClock('', noon);
+    expect(c.live).toBe(true);
+    c.set(20 * 3600);
+    expect(c.live).toBe(false);
+    expect(c.now().tod).toBe(20 * 3600);
+    c.tick(10);
+    expect(c.now().tod).toBeCloseTo(20 * 3600 + 10);
+    expect(c.now().dow).toBe(6);
+  });
+  it('실시간으로 돌아가면 실제 시각을 따른다', () => {
+    const c = makeClock('?t=08:00', noon);
+    expect(c.live).toBe(false);
+    c.setLive();
+    expect(c.live).toBe(true);
+    expect(c.now().tod).toBe(12 * 3600);
+  });
+});

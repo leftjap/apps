@@ -12,7 +12,11 @@ export interface Clock {
   now(): Now;
   tick(dtReal: number): void;
   /** 실제 시각을 그대로 따르는 중인가 */
-  live: boolean;
+  readonly live: boolean;
+  /** 오늘 날짜 그대로 시각만 바꾼다(초). 그 뒤로는 배속대로 흐른다 */
+  set(tod: number): void;
+  /** 실제 시각으로 돌아간다 */
+  setLive(): void;
 }
 
 const KST = 9 * 3600_000;
@@ -29,16 +33,16 @@ export function makeClock(search: string, nowMs: () => number = Date.now): Clock
   const t = q.get('t')?.match(/^(\d{1,2}):(\d{2})$/);
   const speed = Number(q.get('speed')) || 1;
   const dowParam = q.get('dow');
-  const live = !t && speed === 1 && dowParam === null;
-  if (live) return { now: real, tick() {}, live };
+  let live = !t && speed === 1 && dowParam === null;
 
   const start = real();
   let tod = t ? Number(t[1]) * 3600 + Number(t[2]) * 60 : start.tod;
   let dow = dowParam !== null ? Number(dowParam) % 7 : start.dow;
   let doy = start.doy;
   return {
-    now: () => ({ tod, dow, doy }),
+    now: () => (live ? real() : { tod, dow, doy }),
     tick(dtReal) {
+      if (live) return;
       tod += dtReal * speed;
       while (tod >= 86400) {
         tod -= 86400;
@@ -46,6 +50,16 @@ export function makeClock(search: string, nowMs: () => number = Date.now): Clock
         doy = (doy % 365) + 1;
       }
     },
-    live,
+    get live() {
+      return live;
+    },
+    set(v) {
+      if (live) ({ dow, doy } = real());
+      live = false;
+      tod = ((v % 86400) + 86400) % 86400;
+    },
+    setLive() {
+      live = true;
+    },
   };
 }

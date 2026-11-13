@@ -41,13 +41,23 @@ const FRAG = /* glsl */ `
     vec3 col = lit(alb, vec3(0.0, 1.0, 0.0));
     col = mix(col, col * 0.62, side);
 
-    // 밤: 큰길은 양쪽 가장자리, 골목은 가운데에 가로등 빛
+    // 비: 길이 젖어 어두워지고 물웅덩이에 하늘빛이 비친다
+    float wet = uRain * (1.0 - side);
+    vec2 q = vec2(vUV.x * 1.6 + 7.0, vUV.y / 7.0);
+    vec2 qi = floor(q), qf = fract(q);
+    qf = qf * qf * (3.0 - 2.0 * qf);
+    float nz = mix(mix(hash21(qi), hash21(qi + vec2(1.0, 0.0)), qf.x), mix(hash21(qi + vec2(0.0, 1.0)), hash21(qi + vec2(1.0, 1.0)), qf.x), qf.y);
+    float puddle = smoothstep(0.5, 0.8, nz);
+    col = mix(col, col * 0.6, wet);
+    col += uFogCol * 0.18 * wet * puddle;
+
+    // 밤: 큰길은 양쪽 가장자리, 골목은 가운데에 가로등 빛. 젖은 길에서는 빛이 길 방향으로 길게 번진다
     float along = abs(fract(vUV.y / 34.0) - 0.5) * 34.0;
     float edge = (1.0 - abs(vUV.x)) * width * 0.5;
-    float lamp = exp(-(along * along + edge * edge) / 70.0) * major;
+    float lamp = exp(-(along * along / (1.0 + 2.0 * wet) + edge * edge) / 70.0) * major;
     float along2 = abs(fract(vUV.y / 26.0 + 0.37) - 0.5) * 26.0;
-    float lamp2 = exp(-(along2 * along2) / 42.0) * (1.0 - major) * (1.0 - side) * step(cls, 6.5) * 0.55;
-    col += vec3(1.0, 0.70, 0.36) * (lamp * 0.62 + lamp2 * 0.42 + major * 0.05) * uNight;
+    float lamp2 = exp(-(along2 * along2) / (42.0 * (1.0 + 1.5 * wet))) * (1.0 - major) * (1.0 - side) * step(cls, 6.5) * 0.55;
+    col += vec3(1.0, 0.70, 0.36) * (lamp * 0.62 + lamp2 * 0.42 + major * 0.05) * uNight * (1.0 + 0.5 * wet * (0.3 + puddle));
 
     // 랜드마크 다리: 고유 색을 입히고 밤에는 난간에 불을 켠다
     int lm = int(vInfo.w + 0.5);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { busHeadway, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
@@ -80,5 +81,83 @@ describe('차 이동', () => {
   it('새벽 3시의 목표 대수는 출근 시간보다 적다', () => {
     const sim = makeCars(ring(), makeSimProvider(), 1, 500);
     expect(sim.target(at(3))).toBeLessThan(sim.target(at(8.5)) * 0.5);
+  });
+});
+
+describe('버스', () => {
+  // 0→100→300 동서로 곧은 양방향 2차로와, 100에서 남쪽으로 꺾는 길
+  const tee = () => [
+    road([[0, 0], [100, 0]], { bus: true }),
+    road([[100, 0], [300, 0]]),
+    road([[100, 0], [100, 200]], { cls: 4, lanes: 1, bus: true }),
+  ];
+
+  it('버스가 지나는 골목은 차 그래프에 들어간다', () => {
+    const g = buildCarGraph(tee());
+    expect(g.some((e) => e.road === 2)).toBe(true);
+    expect(buildCarGraph([road([[0, 0], [0, 100]], { cls: 4 })]).length).toBe(0);
+  });
+
+  it('노선의 조각 번호를 차 구간으로 바꾸고 구간마다 시작 거리를 적는다', () => {
+    const g = buildCarGraph(tee());
+    const [fwd, back] = makeBusRoutes(
+      [
+        { ref: '271', kind: 0, to: '', segs: [1, 2], stops: [], stopNames: [] },
+        { ref: '271', kind: 0, to: '', segs: [-2, -1], stops: [], stopNames: [] },
+      ],
+      g,
+    );
+    expect(fwd.edges.map((e) => g[e].p[0])).toEqual([0, 100]);
+    expect(back.edges.map((e) => g[e].p[0])).toEqual([300, 100]);
+    expect(fwd.start).toEqual([0, 100]);
+    expect(fwd.len).toBeCloseTo(300);
+  });
+
+  it('갈림길에서 노선을 따라 꺾고, 노선이 끝나면 사라진다', () => {
+    const g = buildCarGraph(tee());
+    const routes = makeBusRoutes([{ ref: '마포09', kind: 3, to: '', segs: [1, 3], stops: [], stopNames: [] }], g);
+    const sim = makeCars(g, fixedProvider(1), 2, 20, routes);
+    sim.addBus(0, 1);
+    let maxZ = 0;
+    let maxX = 0;
+    for (let k = 0; k < 400 && sim.cars.n; k++) {
+      sim.step(0.1, at(14), false);
+      if (sim.cars.n) (maxZ = Math.max(maxZ, sim.cars.z[0])), (maxX = Math.max(maxX, sim.cars.x[0]));
+    }
+    expect(maxZ).toBeGreaterThan(150);
+    expect(maxX).toBeLessThan(110);
+    expect(sim.cars.n).toBe(0);
+  });
+
+  it('정류장에서 잠시 멈췄다가 다시 간다', () => {
+    const g = buildCarGraph([road([[0, 0], [600, 0]], { oneway: true })]);
+    const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [300], stopNames: ['홍대입구역'] }], g);
+    const sim = makeCars(g, fixedProvider(1), 4, 20, routes);
+    sim.addBus(0, 1);
+    let still = 0;
+    for (let k = 0; k < 2000 && sim.cars.n; k++) {
+      sim.step(0.1, at(14), false);
+      if (sim.cars.n && Math.abs(sim.cars.x[0] - 300) < 3 && sim.speedOf(0) < 0.2) still += 0.1;
+    }
+    expect(still).toBeGreaterThan(7);
+    expect(sim.cars.n).toBe(0);
+  });
+
+  it('버스는 진행 방향 맨 오른쪽 차로로 달린다', () => {
+    const g = buildCarGraph([road([[0, 0], [600, 0]], { oneway: true, lanes: 3 })]);
+    const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [], stopNames: [] }], g);
+    const sim = makeCars(g, fixedProvider(1), 4, 20, routes);
+    sim.addBus(0, 1);
+    sim.step(0.1, at(14), false);
+    expect(sim.cars.z[0]).toBeCloseTo(3.3, 1); // 동쪽으로 갈 때 오른쪽은 남쪽(+z)
+  });
+});
+
+describe('버스 배차', () => {
+  it('심야 버스는 밤에만, 다른 버스는 새벽에 쉰다', () => {
+    expect(busHeadway({ kind: 0, ref: 'N26' }, 3 * 3600)).toBeGreaterThan(0);
+    expect(busHeadway({ kind: 0, ref: 'N26' }, 14 * 3600)).toBe(0);
+    expect(busHeadway({ kind: 0, ref: '271' }, 3 * 3600)).toBe(0);
+    expect(busHeadway({ kind: 0, ref: '271' }, 8 * 3600)).toBeLessThan(busHeadway({ kind: 0, ref: '271' }, 14 * 3600));
   });
 });

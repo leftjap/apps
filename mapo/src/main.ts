@@ -1,36 +1,46 @@
 import * as THREE from 'three';
+import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
+import { toXZ } from './geo.ts';
 import { makeBuildings } from './render/buildings.ts';
 import { makeCarMeshes } from './render/cars.ts';
 import { makeCatMeshes } from './render/cats.ts';
-import { updateEnv } from './render/env.ts';
+import { updateEnv, weather } from './render/env.ts';
 import { makeGround } from './render/ground.ts';
 import { LANDMARKS, LM_COLORS, makeLandmarks } from './render/landmarks.ts';
-import { makeRails } from './render/rails.ts';
-import { makeGroundLabels, makeRings, type GroundLabel } from './render/rings.ts';
+import { makeRails, type TrainSpot } from './render/rails.ts';
+import { makeGroundLabels, makeMarker, makeRings, type GroundLabel } from './render/rings.ts';
 import { makeRoads } from './render/roads.ts';
 import { makeView } from './render/scene.ts';
+import { makeStations } from './render/stations.ts';
 import { makeTrees } from './render/trees.ts';
 import { makeWalkerMesh } from './render/walkers.ts';
+import { makeRain } from './render/weather.ts';
+import { BUS_KINDS, makeBusRoutes } from './sim/buses.ts';
 import { makeCars } from './sim/cars.ts';
-import { CAT_SPOTS, catAt, catName, feeders, makeCats } from './sim/cats.ts';
+import { makeCatReactor } from './sim/catReact.ts';
+import { CAT_SPOTS, catAt, catName, feeders, makeCats, PERSONALITY_KO, type CatState } from './sim/cats.ts';
 import { makeClock } from './sim/clock.ts';
+import { sunAngles } from './sim/curves.ts';
 import { buildCarGraph, buildWalkGraph } from './sim/graph.ts';
 import { makeSimProvider } from './sim/provider.ts';
-import { arrivals, trainsAt } from './sim/trains.ts';
+import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
 import { makeWalkers } from './sim/walkers.ts';
-import { makeHud, type Card } from './ui/hud.ts';
+import { makeHud, type Card, type CardLine, type Layer, type Weather } from './ui/hud.ts';
+import { makeTags } from './ui/tags.ts';
 import './ui/hud.css';
 
 const BASE = import.meta.env.BASE_URL;
 const query = new URLSearchParams(location.search);
 const canvas = document.querySelector<HTMLCanvasElement>('#view')!;
 const sky = document.querySelector<HTMLElement>('#sky')!;
+const stage = document.querySelector<HTMLElement>('#stage')!;
 const small = matchMedia('(max-width: 760px)').matches;
 
 const view = makeView(canvas);
 const clock = makeClock(location.search);
 const provider = makeSimProvider();
+const ambience = makeAmbience();
 const loading = document.querySelector<HTMLElement>('#loading')!;
 const [board, mask] = await Promise.all([loadBoard(BASE), new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`)]).catch((e) => {
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
@@ -40,22 +50,27 @@ const [board, mask] = await Promise.all([loadBoard(BASE), new THREE.TextureLoade
 // ── 시뮬레이션 ──
 const start = clock.now();
 const walkGraph = buildWalkGraph(board.roads);
-const cars = makeCars(buildCarGraph(board.roads), provider, 11, small ? 900 : 1500);
+const carGraph = buildCarGraph(board.roads);
+const cars = makeCars(carGraph, provider, 11, small ? 900 : 1500, makeBusRoutes(board.buses, carGraph));
 cars.fill(cars.target(start));
+cars.fillBuses(start);
 const walkers = makeWalkers(walkGraph, board.exits, provider, 5, small ? 800 : 1500);
 for (let i = 0; i < 260; i++) walkers.step(0.2, start); // 처음부터 길에 사람이 있도록 미리 돌려 둔다
 const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
+const reactor = makeCatReactor(cats);
 
 // ── 장면 ──
 const roads = makeRoads(board.roads, LM_COLORS);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
+const stations = makeStations(board);
 const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(small ? 900 : 1500);
 const walkerMesh = makeWalkerMesh(small ? 800 : 1500);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
+const rain = makeRain(small ? 3500 : 6000);
+const marker = makeMarker();
 const labels: GroundLabel[] = [
-  ...board.stations.map((s) => ({ text: `${s.name}역`, x: s.x, z: s.z + 30, size: 17 })),
   { text: '한강', x: -260, z: 1560, size: 130, turn: -0.05 },
   { text: '밤섬', x: 1010, z: 1600, size: 44 },
   { text: '선유도', x: -1290, z: 1250, size: 44 },
@@ -63,6 +78,7 @@ const labels: GroundLabel[] = [
 view.scene.add(
   makeGround(mask),
   roads.group,
+  stations.group,
   rails.group,
   rings.mesh,
   makeGroundLabels(labels),
@@ -71,41 +87,160 @@ view.scene.add(
   makeTrees(board.trees, start.doy),
   carMeshes.group,
   walkerMesh.mesh,
+  walkerMesh.flash,
   catMeshes.group,
+  rain.mesh,
+  marker.mesh,
 );
 
-// ── 사이드바 ──
+// ── 고르기 대상과 카드 ──
+type Target =
+  | { kind: 'landmark'; id: string }
+  | { kind: 'station'; name: string }
+  | { kind: 'cat'; i: number }
+  | { kind: 'train'; key: number }
+  | { kind: 'bus'; uid: number };
+let selected: Target | null = null;
+let followed: Target | null = null;
+const same = (a: Target | null, b: Target | null) => JSON.stringify(a) === JSON.stringify(b);
+
 const hud = makeHud({
-  live: clock.live,
-  onPreset: (name) => view.flyTo(name),
+  onPreset: (name) => {
+    stopTour();
+    view.flyTo(name);
+  },
   onClose: () => select(null),
+  onFollow: () => (followed && same(followed, selected) ? unfollow() : selected && followTarget(selected)),
+  onDrone: () => (view.droning ? stopTour() : startTour()),
+  onSound: () => hud.setSound(ambience.toggle()),
+  onTime: (tod) => {
+    if (tod === null) clock.setLive();
+    else clock.set(tod);
+    prevTod = clock.now().tod;
+  },
+  onTimePreset: (name) => {
+    if (name === 'live') clock.setLive();
+    else clock.set(name === 'morning' ? 8 * 3600 : name === 'noon' ? 13 * 3600 : name === 'night' ? 22 * 3600 : sunsetTod() - 8 * 60);
+    prevTod = clock.now().tod;
+  },
+  onWeather: setWeather,
+  onLayer: setLayer,
+  onRandomCat: () => {
+    let i = Math.floor(Math.random() * cats.length);
+    if (selected?.kind === 'cat' && selected.i === i) i = (i + 1) % cats.length;
+    select({ kind: 'cat', i });
+    followTarget({ kind: 'cat', i });
+  },
 });
 
-hud.setClock(start);
-hud.setAreas(provider.areas(start));
+/** 오늘 해 지는 시각(초): 해 고도가 0 아래로 내려가는 때 */
+function sunsetTod() {
+  const doy = clock.now().doy;
+  for (let t = 15 * 3600; t < 21 * 3600; t += 60) if (sunAngles(t, doy).elev < 0) return t;
+  return 18 * 3600;
+}
 
-type Target = { kind: 'landmark'; id: string } | { kind: 'cat'; i: number };
-let selected: Target | null = null;
+function setWeather(w: Weather) {
+  weather.wantRain = w === 'rain' ? 1 : 0;
+  weather.wantFog = w === 'fog' ? 1 : 0;
+  hud.setWeather(w);
+}
+const layers: Record<Layer, boolean> = { cats: true, people: true, cars: true, subway: true };
+function setLayer(l: Layer, on: boolean) {
+  layers[l] = on;
+  catMeshes.group.visible = layers.cats;
+  walkerMesh.mesh.visible = layers.people;
+  walkerMesh.flash.visible = layers.people;
+  carMeshes.group.visible = layers.cars;
+  rails.setUnderVisible(layers.subway);
+  stations.setUnderVisible(layers.subway);
+}
+setWeather(query.get('weather') === 'rain' ? 'rain' : query.get('weather') === 'fog' ? 'fog' : 'clear');
+
 function select(t: Target | null) {
   selected = t;
   landmarks.setSelected(t?.kind === 'landmark' ? t.id : '');
+  stations.setSelected(t?.kind === 'station' ? t.name : '');
   catMeshes.setPicked(t?.kind === 'cat' ? t.i : -1);
+  if (!t && followed) unfollow();
   refreshCard();
 }
+
+// 열차는 매 프레임 놓을 때 받은 가운데 칸 위치로 고르고 따라간다
+let trainSpots: TrainSpot[] = [];
+const lineOf = new Map(board.lines.map((l) => [l.id, l]));
+const busIndex = (uid: number) => {
+  for (let i = 0; i < cars.cars.n; i++) if (cars.cars.uid[i] === uid) return i;
+  return -1;
+};
+
 const SPEED = ['막힘', '느림', '조금 느림', '원활'];
 function refreshCard() {
   if (!selected) return hud.setCard(null);
   const now = clock.now();
-  let card: Card;
+  const following = !!followed && same(followed, selected) && view.following;
+  let card: Card | null = null;
   if (selected.kind === 'cat') {
     const c = cats[selected.i];
-    card = { tag: '길고양이', title: catName(c), color: '#f2b35d', lines: [catAt(c, now).status], note: '고양이는 연출입니다. 실제 급식소 위치와는 관계없습니다.' };
+    card = {
+      tag: `길고양이 · ${PERSONALITY_KO[c.personality]}`,
+      title: catName(c),
+      color: '#f2b35d',
+      lines: [catStates[selected.i].status],
+      note: `${c.personality === 'shy' ? '사람이 다가오면 골목 틈이나 수풀로 숨습니다.' : '사람을 보면 다가가고, 사람들은 멈춰 서서 사진을 찍습니다.'} 고양이와 급식소는 연출이며 실제 위치와는 관계없습니다.`,
+      follow: following,
+    };
+  } else if (selected.kind === 'station') {
+    const name = selected.name;
+    const info = LANDMARKS.find((l) => l.station === name);
+    const rows: CardLine[] = stationBoard(board.lines, name, now.tod).map((r) => ({ dot: lineOf.get(r.line)!.color, text: `${lineOf.get(r.line)!.name} ${r.toward} · ${r.state}` }));
+    rows.push(`최근 5분 하차 약 ${provider.alighting(now, name).toLocaleString('ko-KR')}명`);
+    card = { tag: info?.kind ?? '지하철역', title: `${name}역`, color: info?.color ?? '#8fd3ff', lines: rows, note: `${info ? `${info.desc} ` : ''}열차 도착 시각은 배차 간격으로 만든 시뮬레이션입니다.` };
+  } else if (selected.kind === 'train') {
+    const key = selected.key;
+    const spot = trainSpots.find((t) => t.key === key);
+    const tp = lastTrains.find((t) => t.key === key);
+    if (!spot || !tp) {
+      selected = null;
+      return hud.setCard(null);
+    }
+    const l = lineOf.get(spot.line)!;
+    const row = l.stopNames.length ? stationBoard([l], l.stopNames[0], now.tod).find((r) => r.dir === spot.dir) : undefined;
+    // 진행 방향 앞쪽의 가장 가까운 역
+    const ahead = l.stops.map((s, i) => ({ s, n: l.stopNames[i] })).filter((x) => (spot.dir ? x.s < tp.s + 5 : x.s > tp.s - 5));
+    const next = spot.dir ? ahead[ahead.length - 1] : ahead[0];
+    const stopped = next && Math.abs(next.s - tp.s) < 6;
+    card = {
+      tag: '지하철',
+      title: `${l.name} 열차`,
+      color: l.color,
+      lines: [row?.toward ?? '', next ? (stopped ? `${next.n}역 정차 중` : `다음 역 ${next.n}`) : '판 밖으로 나가는 중'],
+      note: '열차 위치는 배차 간격과 주행 곡선으로 만든 시뮬레이션입니다.',
+      follow: following,
+    };
+  } else if (selected.kind === 'bus') {
+    const i = busIndex(selected.uid);
+    if (i < 0) {
+      selected = null;
+      return hud.setCard(null);
+    }
+    const r = cars.routes[cars.cars.route[i]];
+    const kind = BUS_KINDS[r.kind] ?? BUS_KINDS[1];
+    const toward = r.to || r.stopNames[r.stopNames.length - 1] || '';
+    const next = cars.nextStop(i);
+    card = {
+      tag: kind.name,
+      title: `${r.ref}번`,
+      color: kind.color,
+      lines: [toward ? `${toward} 방면` : '', next ? `다음 정류장 ${next}` : '판 밖으로 나가는 중'].filter(Boolean),
+      note: '노선과 정류장은 OpenStreetMap 자료입니다. 버스 위치와 배차는 시뮬레이션입니다.',
+      follow: following,
+    };
   } else {
     const id = selected.id;
     const info = LANDMARKS.find((l) => l.id === id)!;
     const lines: string[] = [];
-    if (info.station) lines.push(`최근 5분 하차 약 ${provider.alighting(now, info.station).toLocaleString('ko-KR')}명`);
-    else if (info.kind === '한강 다리') {
+    if (info.kind === '한강 다리') {
       const k = provider.roadSpeed(now, 1, info.n * 31);
       lines.push(`차량 흐름 ${SPEED[k < 0.45 ? 0 : k < 0.65 ? 1 : k < 0.85 ? 2 : 3]}`);
     } else {
@@ -117,55 +252,166 @@ function refreshCard() {
   hud.setCard(card);
 }
 
-// ── 고르기: 랜드마크는 광선으로, 고양이는 화면에서의 거리로 ──
+// ── 따라가기·드론 산책 ──
+const followPos = new THREE.Vector3();
+function positionOf(t: Target): THREE.Vector3 | null {
+  if (t.kind === 'cat') {
+    const s = catStates[t.i];
+    return followPos.set(s.x, 0, s.z);
+  }
+  if (t.kind === 'train') {
+    const s = trainSpots.find((x) => x.key === t.key);
+    return s ? followPos.set(s.x, 0, s.z) : null;
+  }
+  if (t.kind === 'bus') {
+    const i = busIndex(t.uid);
+    return i < 0 ? null : followPos.set(cars.cars.x[i], 0, cars.cars.z[i]);
+  }
+  return null;
+}
+function followTarget(t: Target) {
+  if (t.kind !== 'cat' && t.kind !== 'train' && t.kind !== 'bus') return;
+  stopTour();
+  followed = t;
+  view.follow(() => (followed ? positionOf(followed) : null), t.kind === 'cat' ? 60 : t.kind === 'bus' ? 190 : 320);
+  refreshCard();
+}
+function unfollow() {
+  followed = null;
+  view.unfollow();
+  refreshCard();
+}
+
+/** 드론 산책 경로: 홍대 거리 → 홍대입구역 → 연트럴파크 → 망원 → 강변북로 → 당산철교 → 합정 */
+const tourPoints = (() => {
+  const st = (n: string) => board.stations.find((s) => s.name === n)!;
+  const deck = board.lines.find((l) => l.id === '2')!;
+  let dx = 0;
+  let dz = 0;
+  let dn = 0;
+  for (let i = 0; i < deck.p.length; i += 3) if (deck.p[i + 1] > 6) (dx += deck.p[i]), (dz += deck.p[i + 2]), dn++;
+  const bridge: [number, number] = dn ? [dx / dn, dz / dn] : [-900, 1300];
+  const pts: [number, number][] = [
+    [350, -250],
+    [st('홍대입구').x, st('홍대입구').z],
+    toXZ(37.5622, 126.9232),
+    toXZ(37.5575, 126.9075),
+    toXZ(37.5535, 126.8985),
+    toXZ(37.5465, 126.9025),
+    bridge,
+    [st('합정').x, st('합정').z],
+  ];
+  return pts;
+})();
+let idle = 0;
+function startTour() {
+  if (followed) unfollow();
+  view.startDrone(tourPoints);
+  hud.setDrone(true);
+}
+function stopTour() {
+  if (!view.droning) return;
+  view.stopDrone();
+  hud.setDrone(false);
+}
+
+// ── 고르기: 고양이·버스·열차는 화면에서의 거리로, 랜드마크·역은 광선으로 ──
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 const proj = new THREE.Vector3();
-let catStates = cats.map((c) => catAt(c, start));
-function pickAt(clientX: number, clientY: number): Target | null {
-  const r = canvas.getBoundingClientRect();
-  const px = clientX - r.left;
-  const py = clientY - r.top;
+let catStates: CatState[] = cats.map((c) => catAt(c, start));
+let lastTrains = trainsAt(board.lines, start.tod);
+function nearestOnScreen(pts: { x: number; y: number; z: number }[], px: number, py: number, r: DOMRect, lim: number): [number, number] {
   let best = -1;
-  let bd = small ? 34 : 26;
-  catStates.forEach((s, i) => {
-    proj.set(s.x, 1, s.z).project(view.camera);
+  let bd = lim;
+  pts.forEach((p, i) => {
+    proj.set(p.x, p.y, p.z).project(view.camera);
     if (proj.z > 1) return;
     const d = Math.hypot(((proj.x + 1) / 2) * r.width - px, ((1 - proj.y) / 2) * r.height - py);
     if (d < bd) (bd = d), (best = i);
   });
-  if (best >= 0) return { kind: 'cat', i: best };
+  return [best, bd];
+}
+function pickAt(clientX: number, clientY: number): Target | null {
+  const r = canvas.getBoundingClientRect();
+  const px = clientX - r.left;
+  const py = clientY - r.top;
+  const lim = small ? 34 : 26;
+  if (layers.cats) {
+    const [i] = nearestOnScreen(catStates.map((s) => ({ x: s.x, y: 1, z: s.z })), px, py, r, lim);
+    if (i >= 0) return { kind: 'cat', i };
+  }
+  if (layers.cars) {
+    const buses: { x: number; y: number; z: number; uid: number }[] = [];
+    const c = cars.cars;
+    for (let i = 0; i < c.n; i++) if (c.route[i] >= 0) buses.push({ x: c.x[i], y: c.y[i] + 2, z: c.z[i], uid: c.uid[i] });
+    const [i] = nearestOnScreen(buses, px, py, r, lim);
+    if (i >= 0) return { kind: 'bus', uid: buses[i].uid };
+  }
+  if (layers.subway) {
+    const [i] = nearestOnScreen(trainSpots, px, py, r, lim);
+    if (i >= 0) return { kind: 'train', key: trainSpots[i].key };
+  }
   ndc.set((px / r.width) * 2 - 1, 1 - (py / r.height) * 2);
   ray.setFromCamera(ndc, view.camera);
-  const hit = ray.intersectObjects(landmarks.pickables, false)[0];
-  return hit ? { kind: 'landmark', id: hit.object.userData.id } : null;
+  const hit = ray.intersectObjects([...landmarks.pickables, ...stations.pickables], false)[0];
+  if (!hit) return null;
+  return hit.object.userData.station ? { kind: 'station', name: hit.object.userData.station } : { kind: 'landmark', id: hit.object.userData.id };
 }
+
 let downAt: [number, number] | null = null;
+const touches = new Set<number>();
+const poke = () => {
+  idle = 0;
+  stopTour();
+};
 canvas.addEventListener('pointerdown', (e) => {
+  touches.add(e.pointerId);
   downAt = [e.clientX, e.clientY];
   view.cancelFly();
+  poke();
 });
-canvas.addEventListener('wheel', () => view.cancelFly(), { passive: true });
+canvas.addEventListener('wheel', () => {
+  view.cancelFly();
+  view.keepZoom();
+  poke();
+}, { passive: true });
+window.addEventListener('keydown', poke);
+// 사이드바를 만지는 동안에도 드론 산책이 저절로 시작되지 않게 한다(진행 중인 산책은 그 버튼으로만 멈춘다)
+document.addEventListener('pointerdown', () => (idle = 0));
 canvas.addEventListener('pointerup', (e) => {
+  touches.delete(e.pointerId);
   // 끌지 않고 뗀 것만 누른 것으로 본다
   if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 6) select(pickAt(e.clientX, e.clientY));
   downAt = null;
 });
+canvas.addEventListener('pointercancel', (e) => touches.delete(e.pointerId));
 canvas.addEventListener('pointermove', (e) => {
+  // 한 손가락·왼쪽 버튼으로 끌면 지도를 옮기는 것이므로 따라가기를 멈춘다(돌리기·확대는 그대로 따라간다)
+  if (downAt && followed && touches.size === 1 && (e.buttons & 1) && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) unfollow();
   if (e.pointerType !== 'mouse' || e.buttons) return;
   const t = pickAt(e.clientX, e.clientY);
   landmarks.setHover(t?.kind === 'landmark' ? t.id : '');
+  stations.setHover(t?.kind === 'station' ? t.name : '');
   canvas.style.cursor = t ? 'pointer' : '';
 });
-canvas.addEventListener('pointerleave', () => landmarks.setHover(''));
+canvas.addEventListener('pointerleave', () => {
+  landmarks.setHover('');
+  stations.setHover('');
+});
+const tags = makeTags(stage, stations.labels, stations.exits, (name) => {
+  poke();
+  select({ kind: 'station', name });
+});
 
 // 개발 중 화면 확인용 손잡이(배포본에는 들어가지 않는다)
-if (import.meta.env.DEV) Object.assign(window, { __dbg: { view, cats, states: () => catStates, cars, walkers, board, select } });
+if (import.meta.env.DEV) Object.assign(window, { __dbg: { view, cats, states: () => catStates, cars, walkers, board, select, followTarget, clock, trains: () => trainSpots } });
 
 // ── 프레임 ──
 view.resize();
 view.jumpTo(query.get('view') ?? 'all');
 new ResizeObserver(() => view.resize()).observe(canvas);
+if (query.has('tour')) startTour();
 
 loading.remove();
 let last = performance.now();
@@ -181,30 +427,57 @@ function frame(t: number) {
   clock.tick(dt);
   const now = clock.now();
 
-  // 열차가 역에 서면 출구에서 사람들이 나온다
-  for (const a of arrivals(board.lines, prevTod, now.tod)) {
+  // 열차가 역에 서면 출구에서 사람들이 나온다. 보는 곳 가까운 역이면 먼 전철 소리를 낸다
+  const target = view.controls.target;
+  for (const a of arrivals(board.lines, prevTod, now.tod).slice(0, 12)) {
     walkers.burst(a.name, Math.max(1, Math.min(14, Math.round(provider.alighting(now, a.name) / 150))));
     rings.flash(a.name);
+    const st = board.stations.find((s) => s.name === a.name);
+    if (st) ambience.train(1 - Math.hypot(st.x - target.x, st.z - target.z) / 1600);
   }
   prevTod = now.tod;
   cars.step(dt, now);
   walkers.step(dt, now);
-  catStates = cats.map((c) => catAt(c, now));
+  // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
+  // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더의 zoomScale 과 같은 식)
+  const projK = view.renderer.domElement.clientHeight / (2 * Math.tan((32 * Math.PI) / 360));
+  const vd = view.viewDist();
+  reactor.setGap(0.32 * Math.min(15, Math.max(4, (15 * vd) / (projK * 0.5))) + 0.36 * Math.min(6.5, Math.max(1.6, (8 * vd) / (projK * 1.6))));
+  catStates = reactor.step(dt, cats.map((c) => catAt(c, now)), layers.people ? walkers.w : { ...walkers.w, n: 0 }, walkers.hold);
 
-  updateEnv(now, time, sky);
-  rails.update(trainsAt(board.lines, now.tod));
-  carMeshes.update(cars.cars);
-  walkerMesh.update(walkers.w);
-  catMeshes.update(catStates);
+  updateEnv(now, time, sky, dt);
+  lastTrains = trainsAt(board.lines, now.tod);
+  trainSpots = rails.update(lastTrains);
+  carMeshes.update(cars.cars, selected?.kind === 'bus' ? selected.uid : 0);
+  walkerMesh.update(walkers.w, view.camera);
+  catMeshes.update(catStates, dt);
   rings.update(dt);
   landmarks.update(dt);
+  stations.update(dt);
   view.update(dt);
+  if (followed && !view.following) unfollow();
+  const dist = view.viewDist();
+  rain.update(target, dist);
+  // 고른 고양이·버스·열차 자리에 고리를 띄운다(지하 열차는 지하 층 높이에)
+  if (selected && (selected.kind === 'cat' || selected.kind === 'bus' || selected.kind === 'train')) {
+    const sel = selected;
+    const p = positionOf(sel);
+    const spot = sel.kind === 'train' ? trainSpots.find((x) => x.key === sel.key) : undefined;
+    const color = sel.kind === 'cat' ? '#f2b35d' : sel.kind === 'bus' ? BUS_KINDS[cars.routes[cars.cars.route[busIndex(sel.uid)]]?.kind ?? 1].color : (lineOf.get(spot?.line ?? '')?.color ?? '#ffffff');
+    marker.set(p ? { x: p.x, y: spot?.y ?? 0, z: p.z } : null, color);
+  } else marker.set(null);
   view.renderer.render(view.scene, view.camera);
+  tags.update(view.camera, canvas.clientWidth, canvas.clientHeight, dist, true);
+  ambience.update({ night: 1 - Math.min(1, Math.max(0, sunAngles(now.tod, now.doy).elev / 6 + 0.5)), rain: weather.rain }, dt);
+
+  // 한동안 손대지 않으면 드론 산책을 시작한다
+  idle += dt;
+  if (idle > 120 && !view.droning && !followed) startTour();
 
   hudAge += dt;
-  if (hudAge > 1) {
+  if (hudAge > 0.5) {
     hudAge = 0;
-    hud.setClock(now);
+    hud.setClock(now, clock.live);
     hud.setAreas(provider.areas(now));
     refreshCard();
   }
