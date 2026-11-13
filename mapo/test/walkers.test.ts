@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildWalkGraph } from '../src/sim/graph.ts';
-import { makeWalkers, walkerTarget } from '../src/sim/walkers.ts';
+import { buildCarGraph, buildWalkGraph } from '../src/sim/graph.ts';
+import { makeSignals, RED } from '../src/sim/signals.ts';
+import { makeWalkers, walkerTarget, type Portal } from '../src/sim/walkers.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { at, fixedProvider, road } from './helpers.ts';
 
@@ -13,7 +14,7 @@ const lanes = () => {
   }
   return out;
 };
-const exits = [{ st: '합정', x: 102, z: 98 }, { st: '상수', x: 0, z: 200 }];
+const exits: Portal[] = [{ kind: 'exit', key: '합정', x: 102, z: 98 }, { kind: 'exit', key: '상수', x: 0, z: 200 }];
 const offGrid = (x: number, z: number) => {
   const d = (v: number) => Math.min(...[0, 100, 200].map((k) => Math.abs(v - k)));
   return Math.min(d(x), d(z));
@@ -79,7 +80,7 @@ describe('보행자', () => {
 describe('멈춰 서서 구경하기', () => {
   it('붙잡힌 사람은 멈춰 서서 대상을 보며 휴대폰을 들고, 시간이 지나면 다시 걷는다', () => {
     const g = buildWalkGraph([road([[0, 0], [400, 0]], { cls: 4, lanes: 1 })]);
-    const sim = makeWalkers(g, [{ st: 'x', x: 100, z: 0 }], fixedProvider(1, 0), 3, 10);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 100, z: 0 }], fixedProvider(1, 0), 3, 10);
     sim.burst('x', 1);
     for (let k = 0; k < 20; k++) sim.step(0.1, at(14), false);
     const w = sim.w;
@@ -94,5 +95,95 @@ describe('멈춰 서서 구경하기', () => {
     for (let k = 0; k < 60; k++) sim.step(0.1, at(14), false);
     expect(Math.abs(w.x[0] - x0)).toBeGreaterThan(1);
     expect(w.photo[0]).toBeLessThan(0.5);
+  });
+});
+
+describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
+  const portals = (): Portal[] => [
+    { kind: 'exit', key: '합정', x: 102, z: 98 },
+    { kind: 'exit', key: '상수', x: 3, z: 200 },
+    { kind: 'stop', key: 'stop-1', x: 150, z: 103 },
+  ];
+  const near = (x: number, z: number, lim: number) => portals().some((p) => Math.hypot(p.x - x, p.z - z) < lim);
+
+  it('평소에 생기는 사람도 출구나 정류장에서만 나타난다', () => {
+    const sim = makeWalkers(buildWalkGraph(lanes()), portals(), fixedProvider(1, 50000), 4, 300);
+    sim.step(0.1, at(14), true);
+    expect(sim.w.n).toBeGreaterThan(0);
+    for (let i = 0; i < sim.w.n; i++) expect(near(sim.w.x[i], sim.w.z[i], 8)).toBe(true);
+  });
+
+  it('사라질 때는 출구나 정류장까지 걸어가서 사라진다', () => {
+    const left: [number, number][] = [];
+    const sim = makeWalkers(buildWalkGraph(lanes()), portals(), fixedProvider(1, 0), 5, 300, (x, z) => left.push([x, z]));
+    sim.burst('합정', 25);
+    for (let k = 0; k < 6000 && sim.w.n; k++) sim.step(0.1, at(14), false);
+    expect(left.length).toBe(25 - sim.w.n);
+    expect(left.length).toBeGreaterThan(15);
+    for (const [x, z] of left) expect(near(x, z, 6)).toBe(true);
+  });
+
+  it('정류장에 간 사람은 버스를 기다렸다가 타고, 버스에서 내린 사람이 나타난다', () => {
+    const sim = makeWalkers(buildWalkGraph(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 6, 50);
+    sim.alight('s', 6);
+    expect(sim.w.n).toBe(6);
+    for (let k = 0; k < 6000 && sim.waitingAt('s') === 0; k++) sim.step(0.1, at(14), false);
+    const waiting = sim.waitingAt('s');
+    expect(waiting).toBeGreaterThan(0);
+    sim.board('s');
+    sim.step(0.1, at(14), false);
+    expect(sim.waitingAt('s')).toBe(0);
+    for (let k = 0; k < 20; k++) sim.step(0.1, at(14), false);
+    expect(sim.w.n).toBe(6 - waiting);
+  });
+
+  it('큰길 옆 출구에서 나온 사람은 찻길로 들어가지 않고 그쪽 보도로 걷는다', () => {
+    // 동서로 놓인 4차로 길(폭 14.2m), 출구는 남쪽 보도(z = +10)
+    const g = buildWalkGraph([road([[0, 0], [300, 0]], { cls: 2, lanes: 4 }), road([[300, 0], [600, 0]], { cls: 2, lanes: 4 })]);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 280, z: 10 }], fixedProvider(1, 0), 7, 50);
+    sim.burst('x', 20);
+    for (let k = 0; k < 100; k++) {
+      sim.step(0.1, at(14), false);
+      for (let i = 0; i < sim.w.n; i++) expect(sim.w.z[i]).toBeGreaterThan(7.1);
+    }
+  });
+});
+
+describe('찻길과 신호', () => {
+  it('한 방향 큰길(중앙분리대가 있는 길의 한쪽)에서는 바깥쪽 보도로만 걷는다', () => {
+    // 동쪽으로만 가는 3차로. 바깥쪽은 진행 방향 오른쪽 = 남쪽(+z)
+    const g = buildWalkGraph([road([[0, 0], [60, 0]], { cls: 1, lanes: 3, oneway: true }), road([[60, 0], [120, 0]], { cls: 1, lanes: 3, oneway: true })]);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 50, z: 9 }], fixedProvider(1, 0), 8, 60);
+    sim.burst('x', 40);
+    for (let k = 0; k < 2000; k++) {
+      sim.step(0.1, at(14), false);
+      for (let i = 0; i < sim.w.n; i++) expect(sim.w.z[i]).toBeGreaterThan(5);
+    }
+  });
+
+  it('신호 교차로에서는 건너는 방향이 빨간불이면 횡단보도 앞에서 기다린다', () => {
+    const roads = [
+      road([[-300, 0], [0, 0]], { cls: 1, lanes: 4 }),
+      road([[0, 0], [300, 0]], { cls: 1, lanes: 4 }),
+      road([[0, -300], [0, 0]], { cls: 2, lanes: 4 }),
+      road([[0, 0], [0, 300]], { cls: 2, lanes: 4 }),
+    ];
+    const signals = makeSignals(buildCarGraph(roads));
+    const g = buildWalkGraph(roads);
+    // 동서 방향(무리 0)이 빨간불인 시각
+    const grp = signals.groupOf(0, 0);
+    let t0 = 0;
+    while (!(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 40) === RED)) t0 += 1;
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -40, z: 9 }], fixedProvider(1, 0), 9, 40, undefined, signals);
+    sim.burst('x', 30);
+    let tod = t0;
+    let inside = 0;
+    for (let k = 0; k < 400; k++) {
+      sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
+      tod += 0.1;
+      // 남쪽 보도를 따라 동쪽으로 가던 사람은 남북 찻길(|x| < 7.1)을 가로지르는 횡단보도(보도 연장선)에 들어가지 않는다
+      for (let i = 0; i < sim.w.n; i++) if (Math.abs(sim.w.x[i]) < 7.1 && sim.w.z[i] > 7.1 && sim.w.z[i] < 11) inside++;
+    }
+    expect(inside).toBe(0);
   });
 });

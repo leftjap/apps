@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      mapo: ${{ steps.mapo.outcome }}
     steps:
       - uses: actions/checkout@v4
 
@@ -177,7 +179,9 @@ jobs:
 
       # 마포 라이브 3D (2026-11-13) — 마포구 미니어처 웹 토이. 테스트가 통과해야 dist 를 만든다.
       # 지도 자료(public/data)는 구워서 커밋해 두므로 CI 에서는 OSM 을 받지 않는다.
+      # 실패해도 다른 앱 배포는 막지 않되, 아래 deploy 잡 끝에서 실행 결과를 실패로 표시한다
       - name: Build mapo
+        id: mapo
         continue-on-error: true
         env:
           TZ: Asia/Seoul
@@ -256,3 +260,9 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+      # mapo 빌드·테스트가 실패했으면(이번 배포에서 mapo 가 빠졌으면) 다른 앱을 배포한 뒤 실행을 실패로 끝내 눈에 띄게 한다
+      - name: Fail if mapo build failed
+        if: needs.build.outputs.mapo == 'failure'
+        run: |
+          echo "::error::mapo 빌드 또는 테스트가 실패해 이번 배포에서 /apps/mapo/ 가 빠졌습니다."
+          exit 1

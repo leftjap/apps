@@ -44,6 +44,7 @@ export function makeGround(mask: THREE.Texture): THREE.Group {
           col = lit(col, vec3(0.0, 1.0, 0.0));
           // 판 가장자리 테두리
           col *= 1.0 + 0.07 * smoothstep(${(BOARD_R - 16).toFixed(1)}, ${(BOARD_R - 9).toFixed(1)}, length(vW.xz));
+          col = mix(col, col * 0.28 + vec3(0.012, 0.02, 0.035), focusIn(vW.xz) * 0.88);  // 지하 들여다보기: 땅을 어둡게
           gl_FragColor = vec4(fogged(col, vDist), 1.0);
         }`,
     }),

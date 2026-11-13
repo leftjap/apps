@@ -16,7 +16,8 @@ export interface Card {
 }
 
 export type Weather = 'clear' | 'rain' | 'fog';
-export type Layer = 'cats' | 'people' | 'cars' | 'subway';
+export type Layer = 'cats' | 'people' | 'cars' | 'subway' | 'names';
+export type SeasonPick = 'live' | 'blossom' | 'green' | 'autumn' | 'winter';
 
 const DAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 const LEVEL_COLOR = ['#5fd08a', '#f0cf5a', '#f59b4b', '#f0605d'];
@@ -42,6 +43,14 @@ const LAYERS: [Layer, string][] = [
   ['people', '사람'],
   ['cars', '차량'],
   ['subway', '지하철'],
+  ['names', '지명'],
+];
+const SEASONS: [SeasonPick, string][] = [
+  ['live', '실시간'],
+  ['blossom', '봄 벚꽃'],
+  ['green', '여름'],
+  ['autumn', '가을 단풍'],
+  ['winter', '겨울'],
 ];
 
 const people = (n: number) => (n >= 10000 ? `${(n / 10000).toFixed(1)}만 명` : `${(Math.round(n / 100) * 100).toLocaleString('ko-KR')}명`);
@@ -59,6 +68,7 @@ export interface HudEvents {
   onTimePreset(name: string): void;
   onWeather(w: Weather): void;
   onLayer(layer: Layer, on: boolean): void;
+  onSeason(s: SeasonPick): void;
   onRandomCat(): void;
 }
 
@@ -92,6 +102,7 @@ export function makeHud(ev: HudEvents) {
          </div>
          <div class="seg" role="group" aria-label="시간대">${TIME_PRESETS.map(([id, l]) => `<button type="button" data-tp="${id}">${l}</button>`).join('')}</div>
          <div class="seg" role="group" aria-label="날씨">${WEATHERS.map(([id, l]) => `<button type="button" data-weather="${id}">${l}</button>`).join('')}</div>
+         <div class="seg" role="group" aria-label="계절">${SEASONS.map(([id, l]) => `<button type="button" data-season="${id}">${l}</button>`).join('')}</div>
          <div class="toggles">${LAYERS.map(([id, l]) => `<label><input type="checkbox" data-layer="${id}" checked>${l}</label>`).join('')}</div>
          <button type="button" class="find-cat" data-random-cat>길냥이 랜덤 찾기</button>
        </div>
@@ -142,6 +153,7 @@ export function makeHud(ev: HudEvents) {
     else if (b.hasAttribute('data-follow')) ev.onFollow();
     else if (b.dataset.tp) ev.onTimePreset(b.dataset.tp);
     else if (b.dataset.weather) ev.onWeather(b.dataset.weather as Weather);
+    else if (b.dataset.season) ev.onSeason(b.dataset.season as SeasonPick);
     else if (b.hasAttribute('data-random-cat')) ev.onRandomCat();
     else if (b.hasAttribute('data-lab-toggle')) {
       lab.hidden = !lab.hidden;
@@ -167,6 +179,9 @@ export function makeHud(ev: HudEvents) {
       q('[data-range-out]').textContent = t;
       if (document.activeElement !== range) range.value = String(Math.floor(now.tod / 60));
       for (const b of qa('[data-tp]')) b.classList.toggle('on', b.dataset.tp === 'live' && live);
+    },
+    setSeason(s: SeasonPick) {
+      for (const b of qa('[data-season]')) b.classList.toggle('on', b.dataset.season === s);
     },
     setWeather(w: Weather) {
       for (const b of qa('[data-weather]')) b.classList.toggle('on', b.dataset.weather === w);

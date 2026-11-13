@@ -54,6 +54,17 @@ const campus = raw('campus');
 const hongikRings = campus.filter((e) => (e.tags?.name ?? '').includes('홍익대학교')).flatMap(ringsOf);
 
 // ───────────────────────── 건물 ─────────────────────────
+/** 이름으로 고르는 랜드마크 건물 번호(1 = 홍익대 캠퍼스 안, 2~5 는 역·다리가 쓴다) */
+const NAMED_LM: [RegExp, number][] = [
+  [/경성(중학교|고등학교)/, 6],
+  [/홍익대학교사범대학부속/, 7],
+  [/마포소방서/, 8],
+  [/마포중앙도서관/, 9],
+  [/상상마당/, 10],
+  [/절두산/, 11],
+  [/양화진외국인선교사묘원/, 12],
+  [/메세나폴리스/, 13],
+];
 const buildings: number[][] = [];
 /** 마스크에 바닥 그늘을 칠할 건물 외곽선 */
 const footprints: [number, number][][] = [];
@@ -86,7 +97,7 @@ for (const el of raw('buildings')) {
     if (Math.abs(area) < 12 || !pts.every(([x, z]) => inBoard(x, z, 4))) continue;
     if (area < 0) pts.reverse(); // 넓이가 양수가 되는 방향으로 통일
     const h = Math.max(3, Math.min(260, estimateHeight(tags, Math.abs(area), el.id)));
-    const lm = inside(hongikRings, cx, cz) ? 1 : 0;
+    const lm = inside(hongikRings, cx, cz) ? 1 : (NAMED_LM.find(([re]) => re.test(tags.name ?? ''))?.[1] ?? 0);
     buildings.push([dm(h), lm, ...pts.flatMap(([x, z]) => [dm(x), dm(z)])]);
     footprints.push(pts);
   }
@@ -536,6 +547,52 @@ const landmarks = [
 ];
 
 // ───────────────────────── 쓰기 ─────────────────────────
+// ───────────────────────── 홍익대 캠퍼스 바닥, 한강 물길, 피크닉 자리 ─────────────────────────
+// 캠퍼스: 가장 넓은 외곽 고리
+const campusRing = [...hongikRings].sort((a, b) => b.length - a.length)[0] ?? [];
+// 물길: 판 남쪽 한강에서 20m 간격 세로줄마다 가장 긴 물 구간의 가운데
+const river: number[] = [];
+{
+  const cz: [number, number][] = [];
+  for (let x = -1990; x <= 1990; x += 20) {
+    const col = Math.round(px(x));
+    let best = [0, 0];
+    let run = -1;
+    for (let zz = 300; zz <= 2040; zz += 2) {
+      const water = mask[(Math.round(px(zz)) * SIZE + col) * 4] > 0;
+      if (water && run < 0) run = zz;
+      if ((!water || zz >= 2038) && run >= 0) {
+        if (zz - run > best[1] - best[0]) best = [run, zz];
+        run = -1;
+      }
+    }
+    if (best[1] - best[0] > 200) cz.push([x, (best[0] + best[1]) / 2]);
+  }
+  cz.forEach(([x], i) => {
+    let sum = 0;
+    let n = 0;
+    for (let k = Math.max(0, i - 4); k <= Math.min(cz.length - 1, i + 4); k++) (sum += cz[k][1]), n++;
+    if (inBoard(x, sum / n, 40)) river.push(dm(x), dm(sum / n));
+  });
+}
+// 피크닉 자리: 망원한강공원(OSM 공원 중심) 둘레 230m 안의 녹지 칸에서 12m 넘게 떨어진 자리 24곳
+const picnic: number[] = [];
+{
+  const park = raw('green').find((e) => e.tags?.name === '망원한강공원');
+  const g = park?.geometry ?? [];
+  const pc = g.length ? xz(g).reduce((a, p) => [a[0] + p[0] / g.length, a[1] + p[1] / g.length], [0, 0]) : [-1573, 44];
+  for (let k = 0; k < 4000 && picnic.length < 48; k++) {
+    const a = hash01(k, 31) * Math.PI * 2;
+    const r = Math.sqrt(hash01(k, 37)) * 230;
+    const x = pc[0] + Math.cos(a) * r;
+    const z = pc[1] + Math.sin(a) * r;
+    const i = (Math.round(px(z)) * SIZE + Math.round(px(x))) * 4;
+    if (!mask[i + 1] || mask[i] || mask[i + 2] > 40) continue; // 녹지이고 물·건물 그늘이 아닌 칸
+    if (picnic.some((v, j) => j % 2 === 0 && Math.hypot(v / 10 - x, picnic[j + 1] / 10 - z) < 12)) continue;
+    picnic.push(dm(x), dm(z));
+  }
+}
+
 const out = {
   v: 1,
   names,
@@ -547,6 +604,9 @@ const out = {
   landmarks,
   trees,
   buses: busRuns,
+  campus: campusRing.flatMap(([x, z]) => [dm(x), dm(z)]),
+  river,
+  picnic,
 };
 const json = JSON.stringify(out);
 writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
@@ -558,5 +618,6 @@ console.log(`도로 ${roads.length}조각, 교량 조각 ${roads.filter((r) => r
 console.log(`물 ${((waterPx * 4) / 1e6).toFixed(2)}㎢, 나무 ${trees.length / 2}그루, 출구 ${exits.length}곳, 역 ${stations.map((s) => s.name).join('·')}`);
 for (const l of lines) console.log(`${l.name}: 선로 조각 ${l._ways}개 → ${l._len}m, 역 ${l.stops.map((s) => `${s.name}(${s.s})`).join(' ')}`);
 console.log(`버스 노선 ${busRuns.length}개(${[...new Set(busRuns.map((b) => b.ref))].length}개 번호), 정류장 ${busRuns.reduce((n, b) => n + b.stops.length / 2, 0)}곳(노선별 합), 버스가 지나는 조각 ${roads.filter((r) => r[2] & 2).length}개`);
+console.log(`이름 랜드마크 건물 ${NAMED_LM.map(([re, n]) => `${re.source.slice(0, 6)}:${buildings.filter((b) => b[1] === n).length}`).join(' ')}, 캠퍼스 고리 ${campusRing.length}점, 물길 ${river.length / 2}점, 피크닉 ${picnic.length / 2}곳`);
 console.log(`랜드마크 ${landmarks.map((l) => `${l.id}(${l.x / 10},${l.z / 10})`).join(' ')}`);
 console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB`);

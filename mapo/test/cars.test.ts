@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { busHeadway, makeBusRoutes } from '../src/sim/buses.ts';
+import { busHeadway, busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
@@ -159,5 +159,35 @@ describe('버스 배차', () => {
     expect(busHeadway({ kind: 0, ref: 'N26' }, 14 * 3600)).toBe(0);
     expect(busHeadway({ kind: 0, ref: '271' }, 3 * 3600)).toBe(0);
     expect(busHeadway({ kind: 0, ref: '271' }, 8 * 3600)).toBeLessThan(busHeadway({ kind: 0, ref: '271' }, 14 * 3600));
+  });
+});
+
+describe('버스 정류장과 승하차', () => {
+  it('정류장은 진행 방향 오른쪽 보도에 놓이고, 같은 자리의 정류장은 하나로 합친다', () => {
+    const g = buildCarGraph([road([[0, 0], [600, 0]], { oneway: true, lanes: 2 })]);
+    const routes = makeBusRoutes(
+      [
+        { ref: '603', kind: 0, to: '', segs: [1], stops: [300], stopNames: ['홍대입구역'] },
+        { ref: '604', kind: 0, to: '', segs: [1], stops: [305], stopNames: ['홍대입구역'] },
+      ],
+      g,
+    );
+    const { portals, keyOf } = busStopPortals(routes, g);
+    expect(portals).toHaveLength(1);
+    expect(keyOf(0, 0)).toBe(keyOf(1, 0));
+    expect(portals[0].x).toBeCloseTo(300, -1);
+    expect(portals[0].z).toBeGreaterThan(3.3); // 동쪽으로 가는 길의 오른쪽(남쪽) 보도
+  });
+  it('버스가 정류장에 서는 순간을 알린다', () => {
+    const g = buildCarGraph([road([[0, 0], [600, 0]], { oneway: true })]);
+    const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [300], stopNames: ['홍대입구역'] }], g);
+    const sim = makeCars(g, fixedProvider(1), 4, 20, routes);
+    sim.addBus(0, 1);
+    const seen: [number, number][] = [];
+    for (let k = 0; k < 2000 && sim.cars.n; k++) {
+      sim.step(0.1, at(14), false);
+      seen.push(...sim.dwells);
+    }
+    expect(seen).toEqual([[0, 0]]);
   });
 });

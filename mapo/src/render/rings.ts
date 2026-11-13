@@ -1,6 +1,6 @@
 // 역 출구의 바닥 링과 바닥 글씨. 핀 대신 땅에 그린 빛과 글자로 위치를 알린다.
 import * as THREE from 'three';
-import type { Exit } from '../sim/walkers.ts';
+import type { Exit } from '../data/board.ts';
 import { material } from './env.ts';
 import { instanced } from './util.ts';
 
@@ -70,8 +70,8 @@ export interface GroundLabel {
   turn?: number;
 }
 
-/** 바닥에 눕힌 글씨. 글자들을 캔버스 한 장에 모아 그린다. */
-export function makeGroundLabels(labels: GroundLabel[]): THREE.Mesh {
+/** 바닥에 눕힌 글씨. 글자들을 캔버스 한 장에 모아 그린다. overlay 면 건물에 가려지지 않는 옅은 워터마크로 그린다(동네 이름) */
+export function makeGroundLabels(labels: GroundLabel[], overlay = false): THREE.Mesh {
   const ROW = 72;
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
@@ -116,19 +116,22 @@ export function makeGroundLabels(labels: GroundLabel[]): THREE.Mesh {
       depthWrite: false,
       offset: 6,
       doubleSide: true,
-      uniforms: { uMap: { value: tex } },
+      uniforms: { uMap: { value: tex }, uOverlay: { value: overlay ? 1 : 0 } },
       vertex: /* glsl */ `varying vec2 vUv; varying float vDist;
         void main() { vUv = uv; vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
-      fragment: /* glsl */ `uniform sampler2D uMap; varying vec2 vUv; varying float vDist;
+      fragment: /* glsl */ `uniform sampler2D uMap; uniform float uOverlay; varying vec2 vUv; varying float vDist;
         void main() {
           float a = texture2D(uMap, vUv).a;
           vec3 col = mix(vec3(0.30, 0.36, 0.44), vec3(0.80, 0.87, 1.0), uNight);
-          gl_FragColor = vec4(col, a * mix(0.5, 0.62, uNight));
+          // 워터마크: 아주 가까이서는 흐려지고 넓게 볼 때 옅게 보인다
+          float k = mix(mix(0.5, 0.62, uNight), mix(0.42, 0.5, uNight) * smoothstep(250.0, 900.0, vDist), uOverlay);
+          gl_FragColor = vec4(col, a * k);
         }`,
     }),
   );
   mesh.frustumCulled = false;
-  mesh.renderOrder = -2;
+  mesh.renderOrder = overlay ? 8 : -2;
+  if (overlay) (mesh.material as THREE.ShaderMaterial).depthTest = false;
   return mesh;
 }
 

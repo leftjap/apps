@@ -56,6 +56,8 @@ export const env = {
   uRain: { value: 0 },
   /** 안개(0~1): 먼 곳이 더 흐려진다 */
   uHaze: { value: 0 },
+  /** 지하 들여다보기: (x, z, 반지름, 세기). 고른 역·열차 둘레의 땅과 건물을 걷어 내 지하가 보이게 한다 */
+  uFocus: { value: new THREE.Vector4(0, 0, 1, 0) },
 };
 
 /** 날씨 세기. 전환이 부드럽도록 updateEnv 가 목표값 쪽으로 천천히 옮긴다 */
@@ -109,6 +111,14 @@ export const UNDER_Y = -8;
 export const GLSL = /* glsl */ `
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGroundCol, uFogCol;
 uniform float uFogK, uNight, uDusk, uLit, uTime, uProjK, uRain, uHaze;
+uniform vec4 uFocus;
+/** 4×4 규칙 무늬 문턱값(0~1). 점을 성기게 버려 반투명처럼 보이게 할 때 잡음 대신 쓴다 */
+float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
+float dither(vec2 p) { return bayer2(0.5 * p) * 0.25 + bayer2(p); }
+/** 지하 들여다보기 원 안이면 세기(0~1), 가장자리 20%에서 부드럽게 줄어든다 */
+float focusIn(vec2 p) {
+  return uFocus.w * (1.0 - smoothstep(uFocus.z * 0.8, uFocus.z, length(p - uFocus.xy)));
+}
 vec3 lit(vec3 albedo, vec3 n) {
   vec3 amb = mix(uGroundCol, uSkyCol, n.y * 0.5 + 0.5);
   return albedo * (amb + uSunCol * max(dot(n, uSunDir), 0.0));

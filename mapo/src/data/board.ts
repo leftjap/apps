@@ -15,6 +15,12 @@ export interface BoardJson {
   trees: number[];
   /** 버스 노선: 부호 있는 도로 조각 번호 열, 정류장 [거리(dm), 이름 번호, ...] */
   buses?: { ref: string; kind: number; to: number; segs: number[]; stops: number[] }[];
+  /** 홍익대 캠퍼스 외곽선 [x,z, ...] */
+  campus?: number[];
+  /** 한강 물길 가운데 [x,z, ...](서쪽 → 동쪽) */
+  river?: number[];
+  /** 망원한강공원 피크닉 자리 [x,z, ...] */
+  picnic?: number[];
 }
 
 export interface Building {
@@ -83,12 +89,22 @@ export interface Board {
   /** [x,z, ...] */
   trees: Float32Array;
   buses: BusRun[];
+  campus: Float32Array;
+  /** [x,0,z, ...] */
+  river: Float32Array;
+  riverCum: Float32Array;
+  picnic: Float32Array;
 }
 
 const m = (a: number[], from = 0) => Float32Array.from(a.slice(from), (v) => v / 10);
 
 export function decodeBoard(j: BoardJson): Board {
+  const river = Float32Array.from((j.river ?? []).flatMap((v, i, a) => (i % 2 === 0 ? [v / 10, 0, a[i + 1] / 10] : [])));
   return {
+    campus: m(j.campus ?? []),
+    river,
+    riverCum: cumLen(river),
+    picnic: m(j.picnic ?? []),
     buildings: j.b.map((b) => ({ h: b[0] / 10, lm: b[1], pts: m(b, 2) })),
     roads: j.r.map((r) => ({ cls: r[0], lanes: r[1], oneway: !!(r[2] & 1), bus: !!(r[2] & 2), bridge: !!r[3], name: j.names[r[4]] ?? '', lm: r[5], p: m(r, 6) })),
     lines: j.lines.map((l) => {

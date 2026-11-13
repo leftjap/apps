@@ -84,6 +84,16 @@ export function makeView(canvas: HTMLCanvasElement) {
       camera.position.copy(tmp.pos);
       controls.update();
     },
+    /** (x, z)를 보는 지점으로, 지금 돌린 방향은 그대로 두고 거리·기울기만 바꿔 날아간다 */
+    flyAt(x: number, z: number, dist: number, tiltDeg: number) {
+      const off = v1.subVectors(camera.position, controls.target);
+      const turn = Math.atan2(off.x, off.z);
+      const tilt = (tiltDeg * Math.PI) / 180;
+      const to = { target: new THREE.Vector3(x, 0, z), pos: new THREE.Vector3(x + dist * Math.sin(tilt) * Math.sin(turn), dist * Math.cos(tilt), z + dist * Math.sin(tilt) * Math.cos(turn)) };
+      fly = { t: 0, from: { target: controls.target.clone(), pos: camera.position.clone() }, to };
+      follow = null;
+      drone = null;
+    },
     flyTo(name: string) {
       const to = { target: new THREE.Vector3(), pos: new THREE.Vector3() };
       place(PRESETS[name], to);

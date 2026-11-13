@@ -10,9 +10,9 @@ import { addRibbon, instanced, merge, ribbon, ribbonGeometry } from './util.ts';
 
 const VERT = /* glsl */ `
   attribute vec2 aUV; attribute vec4 aInfo;
-  varying vec2 vUV; varying vec4 vInfo; varying float vDist;
+  varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
   void main() {
-    vUV = aUV; vInfo = aInfo;
+    vUV = aUV; vInfo = aInfo; vXZ = position.xz;
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     vDist = -mv.z;
     gl_Position = projectionMatrix * mv;
@@ -74,14 +74,16 @@ export function makeRails(lines: Line[]) {
       under: true,
       doubleSide: true,
       fragment: /* glsl */ `
-        varying vec2 vUV; varying vec4 vInfo; varying float vDist;
+        varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
         void main() {
           float x = abs(vUV.x);
           float core = 1.0 - smoothstep(0.26, 0.36, x);                  // 가운데 약 3m 의 선명한 선
           float halo = (1.0 - x) * (1.0 - x);
           float flow = 0.85 + 0.15 * sin(vUV.y * 0.06 - uTime * 2.2);
           vec3 col = mix(vInfo.rgb * 0.92, mix(vInfo.rgb, vec3(1.0), 0.35), uNight) * flow;
-          float a = core * (0.88 + 0.1 * uNight) + halo * (0.10 + 0.14 * uNight);
+          float fi = focusIn(vXZ);
+          float a = core * (0.88 + 0.1 * uNight) + halo * (0.10 + 0.14 * uNight + 0.35 * fi);
+          col *= 1.0 + 0.5 * fi;
           gl_FragColor = vec4(fogged(col, vDist), a);
         }`,
     }),
@@ -98,7 +100,7 @@ export function makeRails(lines: Line[]) {
       uniforms: { uMajor: { value: pal.roadMajor } },
       fragment: /* glsl */ `
         uniform vec3 uMajor;
-        varying vec2 vUV; varying vec4 vInfo; varying float vDist;
+        varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
         void main() {
           float rail = step(0.25, abs(vUV.x)) * step(abs(vUV.x), 0.36) + step(0.62, abs(vUV.x)) * step(abs(vUV.x), 0.73);
           float tie = step(0.5, fract(vUV.y / 2.4)) * step(abs(vUV.x), 0.86);

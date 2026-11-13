@@ -3,6 +3,7 @@
 // 버스는 노선의 구간 열을 따라 맨 오른쪽 차로로 달리고, 정류장마다 잠시 선다.
 import { headingAt, pointAt } from '../poly.ts';
 import { busHeadway, type BusRoute } from './buses.ts';
+import { GREEN, YELLOW, type Signals } from './signals.ts';
 import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { LANE, type Edge } from './graph.ts';
@@ -34,7 +35,7 @@ const BUS_LEN = [11.5, 11.5, 12, 7.5]; // 종류별 버스 길이(m)
 const A_MAX = 1.6;
 const B_COMF = 2.5;
 
-export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 1400, routes: BusRoute[] = []) {
+export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 1400, routes: BusRoute[] = [], signals?: Signals) {
   const rand = rng(seed);
   const cars: Cars = {
     n: 0,
@@ -185,7 +186,11 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
     }
   }
 
+  /** 이번 단계에 정류장에 막 선 버스들: [노선 번호, 정류장 번호] */
+  const dwells: [number, number][] = [];
+
   function step(dt: number, now: Now, spawn = true) {
+    dwells.length = 0;
     speedAge += dt;
     if (speedAge > 1) {
       speedAge = 0;
@@ -232,12 +237,24 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
         gap -= (size[front] + size[i]) / 2;
         dv = v[i] - v[front];
       }
+      // 신호: 빨간불(멈출 수 있으면 노란불도)이면 정지선을 멈춰 선 앞차처럼 다룬다
+      const ap = signals?.approach.get(e.id);
+      if (ap) {
+        const st = signals!.state(ap.c, ap.group, now.tod);
+        const toLine = e.len - ap.setback - s[i] - size[i] / 2;
+        if (st !== GREEN && toLine > -0.5 && !(st === YELLOW && toLine < (v[i] * v[i]) / 6) && toLine + 2 < gap) {
+          gap = toLine + 2;
+          dv = v[i];
+          front = i;
+        }
+      }
       if (r >= 0 && stopK[i] < routes[r].stops.length) {
         // 다음 정류장을 멈춰 선 앞차처럼 다룬다. 앞에 2m를 두고 서므로 2m를 더해 정류장 바로 위에 서게 한다
         const toStop = routes[r].stops[stopK[i]] - (routes[r].start[rpos[i]] + s[i]);
         if (toStop < 2.5 && v[i] < 0.6) {
           dwell[i] = 9 + rand() * 6;
           v[i] = 0;
+          dwells.push([r, stopK[i]]);
           continue;
         }
         if (toStop + 2 < gap) {
@@ -306,8 +323,17 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
     fill,
     fillBuses,
     addBus,
+    /** 구간 edgeId 의 at(m) 지점, lane 차로에 승용차 한 대를 놓는다(시험용) */
+    put(edgeId: number, at: number, lane: number) {
+      if (cars.n >= max) return;
+      put(cars.n, edges[edgeId], at, lane);
+      cars.kind[cars.n] = 0;
+      size[cars.n] = 4.6;
+      locate(cars.n++);
+    },
     target,
     routes,
+    dwells,
     /** i번 차의 속도(m/s) */
     speedOf: (i: number) => v[i],
     /** i번 버스가 다음에 설 정류장 이름 */

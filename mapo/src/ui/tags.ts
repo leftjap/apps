@@ -1,12 +1,21 @@
-// 3D 화면 위에 겹치는 글자: 지붕 위에 뜬 역 이름표와 가까이 볼 때만 보이는 출구 번호.
+// 3D 화면 위에 겹치는 글자: 지붕 위에 뜬 역·랜드마크 이름표와 가까이 볼 때만 보이는 출구 번호.
 // 건물에 가려지지 않도록 화면 좌표로 옮긴 HTML 로 그린다.
 import * as THREE from 'three';
+import type { PlaceLabel } from '../render/landmarks.ts';
 import type { StationLabel } from '../render/stations.ts';
 
 const EXIT_NEAR = 1500; // 카메라가 보는 지점에서 이만큼(m) 안으로 들어오면 출구 번호를 보인다
 const EXIT_FAR = 1800; // 카메라에서 이보다 먼 출구 번호는 감춘다(지평선 쪽 역)
+const PLACE_FAR = 3200; // 카메라에서 이보다 먼 랜드마크 이름표는 감춘다
 
-export function makeTags(stage: HTMLElement, stations: StationLabel[], exits: { st: string; ref: string; x: number; z: number }[], onStation: (name: string) => void) {
+export function makeTags(
+  stage: HTMLElement,
+  stations: StationLabel[],
+  exits: { st: string; ref: string; x: number; z: number }[],
+  places: PlaceLabel[],
+  onStation: (name: string) => void,
+  onPlace: (id: string) => void,
+) {
   const layer = document.createElement('div');
   layer.id = 'tags';
   stage.append(layer);
@@ -19,6 +28,16 @@ export function makeTags(stage: HTMLElement, stations: StationLabel[], exits: { 
     el.addEventListener('click', () => onStation(s.name));
     layer.append(el);
     return { el, x: s.x, y: s.y, z: s.z };
+  });
+  const pl = places.map((p) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'lm-tag';
+    el.style.setProperty('--c', p.color);
+    el.textContent = p.name;
+    el.addEventListener('click', () => onPlace(p.id));
+    layer.append(el);
+    return { el, x: p.x, y: p.y, z: p.z };
   });
   const ex = exits.map((e) => {
     const el = document.createElement('span');
@@ -40,8 +59,8 @@ export function makeTags(stage: HTMLElement, stations: StationLabel[], exits: { 
     }
   }
 
-  // 이름표가 겹치면 앞 순서(환승역 먼저)만 남긴다
-  const order = [...st].sort((a, b) => b.el.childElementCount - a.el.childElementCount);
+  // 이름표가 겹치면 앞 순서(환승역 → 역 → 랜드마크)만 남긴다
+  const order = [...[...st].sort((a, b) => b.el.childElementCount - a.el.childElementCount), ...pl];
   const boxes: [number, number, number, number][] = [];
   function declutter() {
     boxes.length = 0;
@@ -59,6 +78,7 @@ export function makeTags(stage: HTMLElement, stations: StationLabel[], exits: { 
       layer.hidden = !visible;
       if (!visible) return;
       place(st, cam, w, h, true);
+      place(pl, cam, w, h, true, PLACE_FAR);
       declutter();
       place(ex, cam, w, h, viewDist < EXIT_NEAR, EXIT_FAR);
     },

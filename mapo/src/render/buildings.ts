@@ -71,11 +71,11 @@ export function prismGeometry(list: Building[]): THREE.BufferGeometry {
 const VERT = /* glsl */ `
   attribute vec2 aWall; attribute float aSeed;
   uniform float uLift;
-  varying vec3 vN; varying vec2 vWall; varying float vSeed; varying float vDist;
+  varying vec3 vN; varying vec2 vWall; varying float vSeed; varying float vDist; varying vec2 vXZ;
   void main() {
     vec3 p = position;
     p.y += uLift * step(0.01, position.y);
-    vN = normal; vWall = aWall; vSeed = aSeed;
+    vN = normal; vWall = aWall; vSeed = aSeed; vXZ = position.xz;
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     vDist = -mv.z;
     gl_Position = projectionMatrix * mv;
@@ -83,8 +83,11 @@ const VERT = /* glsl */ `
 
 const FRAG = /* glsl */ `
   uniform vec3 uBld, uRoof, uTint; uniform float uGlow;
-  varying vec3 vN; varying vec2 vWall; varying float vSeed; varying float vDist;
+  varying vec3 vN; varying vec2 vWall; varying float vSeed; varying float vDist; varying vec2 vXZ;
   void main() {
+    // 지하 들여다보기: 원 안의 건물은 성기게 그려 유리처럼 비치게 한다
+    float fi = focusIn(vXZ);
+    if (fi > 0.01 && dither(gl_FragCoord.xy) < fi * 0.82) discard;
     float roof = step(vWall.x, -0.5);
     float wallF = 1.0 - roof;
     vec3 alb = mix(uBld, uRoof, roof) * (0.93 + 0.13 * fract(vSeed * 7.31));
@@ -107,6 +110,7 @@ const FRAG = /* glsl */ `
     e += shop * min(1.0, uLit * 2.4) * mix(0.5, 0.45 + 0.55 * win, aa);
     col += warm * e * uNight * (0.45 + 0.5 * fract(rnd * 31.0));
     col += uTint * uGlow * (0.10 + 0.28 * uNight + 0.5 * roof * uNight * 0.3);
+    col = mix(col, col * 0.7 + vec3(0.04, 0.07, 0.11), fi * 0.5);
     gl_FragColor = vec4(fogged(col, vDist), 1.0);
   }`;
 

@@ -92,6 +92,8 @@ export interface WalkGraph {
   cls: number[][];
   /** 이웃별 걷는 자리: 중심선에서 떨어진 거리의 최소·최대 */
   lat: [number, number][][];
+  /** 이웃별 걸을 수 있는 쪽: +1 진행 방향 오른쪽만, −1 왼쪽만, 0 양쪽. 한 방향 큰길(중앙분리대가 있는 길의 한쪽)은 바깥쪽 보도만 쓴다 */
+  dir: number[][];
   /** 가장 가까운 노드. alley 가 참이면 골목·보행로에 닿은 노드만 본다 */
   nearest(x: number, z: number, alley?: boolean): number;
 }
@@ -113,6 +115,7 @@ export function buildWalkGraph(roads: Road[]): WalkGraph {
   const aw: number[][] = [];
   const cls: number[][] = [];
   const lat: [number, number][][] = [];
+  const dir: number[][] = [];
   const node = (x: number, z: number) => {
     const k = nodeKey(x, z);
     let i = ids.get(k);
@@ -124,6 +127,7 @@ export function buildWalkGraph(roads: Road[]): WalkGraph {
       aw.push([]);
       cls.push([]);
       lat.push([]);
+      dir.push([]);
     }
     return i;
   };
@@ -146,6 +150,10 @@ export function buildWalkGraph(roads: Road[]): WalkGraph {
         cls[n].push(r.cls);
         lat[prev].push(l);
         lat[n].push(l);
+        // 한 방향 큰길: 차가 가는 방향으로 걸으면 오른쪽, 거슬러 걸으면 왼쪽이 바깥쪽 보도다
+        const one = r.oneway && r.cls <= 3 ? 1 : 0;
+        dir[prev].push(one);
+        dir[n].push(-one);
       }
       prev = n;
     }
@@ -166,6 +174,7 @@ export function buildWalkGraph(roads: Road[]): WalkGraph {
     aw,
     cls,
     lat,
+    dir,
     nearest(x, z, alley = false) {
       const cx = Math.floor(x / CELL);
       const cz = Math.floor(z / CELL);

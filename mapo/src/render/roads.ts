@@ -13,9 +13,9 @@ export function roadWidth(r: Road): number {
 
 const VERT = /* glsl */ `
   attribute vec2 aUV; attribute vec4 aInfo;
-  varying vec2 vUV; varying vec4 vInfo; varying float vDist;
+  varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
   void main() {
-    vUV = aUV; vInfo = aInfo;
+    vUV = aUV; vInfo = aInfo; vXZ = position.xz;
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     vDist = -mv.z;
     gl_Position = projectionMatrix * mv;
@@ -25,7 +25,7 @@ const VERT = /* glsl */ `
 const FRAG = /* glsl */ `
   uniform vec3 uMajor, uMinor, uWalk; uniform float uDeck;
   uniform vec3 uLmCol[6]; uniform float uLmGlow[6];
-  varying vec2 vUV; varying vec4 vInfo; varying float vDist;
+  varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
   void main() {
     float cls = vInfo.x; float width = vInfo.y;
     float major = step(cls, 3.5);
@@ -38,6 +38,17 @@ const FRAG = /* glsl */ `
     float du = abs(vUV.x) * width * 0.5;
     float centre = (1.0 - smoothstep(0.12, 0.3, du)) * step(cls, 3.5) * (1.0 - vInfo.z);
     alb = mix(alb, vec3(0.93, 0.76, 0.32), centre * near * 0.7 * (1.0 - 0.6 * uNight));
+    // 차로 경계: 큰길에 흰 점선. 차로 수는 폭(차로 × 3.3m + 1m)에서 되돌려 구한다
+    float nL = floor((width - 1.0) / 3.3 + 0.5);
+    float lane = 0.0;
+    if (major > 0.5 && width > 7.5) {
+      float x = vUV.x * width * 0.5;
+      float q = vInfo.z > 0.5 ? x / 3.3 + nL * 0.5 : abs(x) / 3.3;
+      float lim = vInfo.z > 0.5 ? nL - 0.6 : ceil(nL * 0.5) - 0.4;
+      float f = abs(fract(q + 0.5) - 0.5) * 3.3;
+      lane = (1.0 - smoothstep(0.07, 0.15, f)) * step(0.6, q) * step(q, lim) * step(0.45, fract(vUV.y / 9.0));
+    }
+    alb = mix(alb, vec3(0.95, 0.95, 0.93), lane * near * 0.7 * (1.0 - 0.5 * uNight));
     vec3 col = lit(alb, vec3(0.0, 1.0, 0.0));
     col = mix(col, col * 0.62, side);
 
@@ -68,6 +79,7 @@ const FRAG = /* glsl */ `
     float beads = 0.55 + 0.45 * step(0.5, fract(vUV.y / 9.0));
     col += uLmCol[lm] * rail * beads * (0.25 + uNight * 0.9 + glow * 0.8);
     col += uLmCol[lm] * isLm * glow * 0.16;
+    col = mix(col, col * 0.3 + vec3(0.012, 0.02, 0.035), focusIn(vXZ) * 0.85 * (1.0 - uDeck));
     gl_FragColor = vec4(fogged(col, vDist), 1.0);
   }`;
 

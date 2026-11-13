@@ -85,18 +85,18 @@ export function makeStations(board: Board) {
       uniforms,
       vertex: /* glsl */ `
         attribute vec2 aUV; attribute vec4 aInfo;
-        varying vec2 vUV; varying vec4 vInfo; varying float vDist;
+        varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
         void main() {
-          vUV = aUV; vInfo = aInfo;
+          vUV = aUV; vInfo = aInfo; vXZ = position.xz;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vDist = -mv.z;
           gl_Position = projectionMatrix * mv;
         }`,
       fragment: /* glsl */ `
         uniform float uHi[16];
-        varying vec2 vUV; varying vec4 vInfo; varying float vDist;
+        varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
         void main() {
-          float h = uHi[int(vInfo.w + 0.5)];
+          float h = max(uHi[int(vInfo.w + 0.5)], focusIn(vXZ));
           float x = abs(vUV.x);
           float edge = smoothstep(0.78, 0.9, x) * (1.0 - smoothstep(0.96, 1.0, x));
           float tile = step(0.92, fract(vUV.y / 6.0)) * 0.5;
