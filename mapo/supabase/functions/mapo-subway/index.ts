@@ -68,18 +68,23 @@ if (import.meta.main)
     const key = Deno.env.get('SEOUL_SUBWAY_KEY');
     if (!key) return json(503, { error: 'no api key' });
     if (cache && Date.now() - cache.at < 110_000) return json(200, cache.body);
+    // 노선마다 상류가 준 열차 수(판 둘레만 고르기 전)와 오류 코드도 함께 준다(자료가 비었을 때 원인을 보려고)
+    const all: Record<string, number | string> = {};
     const got = await Promise.all(
       LINES.map(async ([id, name]) => {
         try {
           const res = await fetch(`http://swopenapi.seoul.go.kr/api/subway/${key}/json/realtimePosition/0/200/${encodeURIComponent(name)}`, { signal: AbortSignal.timeout(8_000) });
-          return res.ok ? trim(id, await res.json()) : null;
+          const raw = res.ok ? await res.json() : null;
+          all[id] = Array.isArray(raw?.realtimePositionList) ? raw.realtimePositionList.length : String(raw?.code ?? raw?.errorMessage?.code ?? res.status);
+          return raw ? trim(id, raw) : null;
         } catch {
+          all[id] = 'timeout';
           return null;
         }
       }),
     );
-    if (got.every((g) => g === null)) return json(502, { error: 'upstream unavailable' });
-    const body = { trains: got.flatMap((g) => g ?? []), at: Date.now() };
+    if (got.every((g) => g === null)) return json(502, { error: 'upstream unavailable', all });
+    const body = { trains: got.flatMap((g) => g ?? []), all, at: Date.now() };
     cache = { at: Date.now(), body };
     return json(200, body);
   });
