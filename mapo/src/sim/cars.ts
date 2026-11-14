@@ -109,11 +109,13 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
   // 구간 가운데 자리(도로 속도는 장소 둘레 혼잡에 따라 달라진다)
   const midX = new Float32Array(edges.length);
   const midZ = new Float32Array(edges.length);
+  const midH = new Float32Array(edges.length); // 그 자리의 진행 방향(방향마다 다른 실제 도로 속도를 고른다)
   for (const e of edges) {
     const m = [0, 0, 0];
-    pointAt(e.p, e.cum, e.len / 2, m);
+    const seg = pointAt(e.p, e.cum, e.len / 2, m);
     midX[e.id] = m[0];
     midZ[e.id] = m[2];
+    midH[e.id] = headingAt(e.p, seg);
   }
   let speedAge = Infinity;
   const lists: number[][] = edges.map(() => []);
@@ -341,7 +343,7 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
     let F = 0;
     let O = 0;
     for (const e of edges) {
-      const r = provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id]);
+      const r = provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id], midH[e.id]);
       const k = Math.min(base + (JAM - base) * Math.max(0, Math.min(1, (0.65 - r) / 0.5)), 1000 / (6.6 + 1.3 * r * VFREE[e.cls]));
       real[e.id] = (k * e.len * e.lanes) / 1000;
       F += real[e.id] * inF[e.id];
@@ -584,7 +586,7 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
     speedAge += dt;
     if (speedAge > 1) {
       speedAge = 0;
-      for (const e of edges) speed[e.id] = VFREE[e.cls] * provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id]);
+      for (const e of edges) speed[e.id] = VFREE[e.cls] * provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id], midH[e.id]);
       allot(now);
     }
     // 구간·차로별로 줄 세우고 맨 뒤 차를 적어 둔다

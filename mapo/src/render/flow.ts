@@ -45,7 +45,7 @@ export function makeFlow(edges: Edge[]) {
     }
   }
   start.push(pos.length / 3);
-  const mid = used.map((e) => Math.floor(e.p.length / 6)); // 구간 가운데 점 번호(도로 속도를 구간 가운데 자리로 묻는다)
+  const mid = used.map((e) => Math.min(e.p.length / 3 - 2, Math.floor(e.p.length / 6))); // 구간 가운데 조각의 시작 점 번호(도로 속도를 그 자리와 방향으로 묻는다)
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('aSide', new THREE.Float32BufferAttribute(side, 1));
@@ -92,7 +92,11 @@ export function makeFlow(edges: Edge[]) {
   /** 공급자의 지금 속도 비율로 색을 다시 칠한다(몇 초에 한 번이면 충분하다) */
   function update(provider: DataProvider, now: Now) {
     const a = speed.array as Float32Array;
-    used.forEach((e, k) => a.fill(provider.roadSpeed(now, e.cls, e.key, e.p[mid[k] * 3], e.p[mid[k] * 3 + 2]), start[k], start[k + 1]));
+    used.forEach((e, k) => {
+      const m = mid[k] * 3;
+      const h = Math.atan2(e.p[m + 5] - e.p[m + 2], e.p[m + 3] - e.p[m]);
+      a.fill(provider.roadSpeed(now, e.cls, e.key, e.p[m], e.p[m + 2], h), start[k], start[k + 1]);
+    });
     speed.needsUpdate = true;
   }
   return { mesh, update };

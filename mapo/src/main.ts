@@ -30,6 +30,7 @@ import { makeClock } from './sim/clock.ts';
 import { sunAngles } from './sim/curves.ts';
 import { buildCarGraph, buildWalkGraph, clearWalkFromCars, laneTest } from './sim/graph.ts';
 import { makeSimProvider } from './sim/provider.ts';
+import { makeLiveProvider } from './data/live.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
@@ -50,7 +51,20 @@ const MAX_CARS = small ? 1500 : 5000;
 
 const view = makeView(canvas);
 const clock = makeClock(location.search);
-const provider = makeSimProvider();
+// 실시간 도시데이터: 중계 함수 주소(VITE_CITYDATA_URL)가 빌드에 들어 있을 때만 5분마다 받아 시뮬레이션 위에 덧씌운다(지금 시각으로 볼 때만)
+const live = makeLiveProvider(makeSimProvider());
+const provider = live.provider;
+live.use(clock.live);
+const LIVE_URL = import.meta.env.VITE_CITYDATA_URL as string | undefined;
+if (LIVE_URL) {
+  const pull = () =>
+    fetch(LIVE_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.places?.length && live.set(d))
+      .catch(() => {});
+  pull();
+  setInterval(pull, 5 * 60_000);
+}
 const ambience = makeAmbience();
 const loading = document.querySelector<HTMLElement>('#loading')!;
 const [board, mask] = await Promise.all([loadBoard(BASE), new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`)]).catch((e) => {
@@ -697,7 +711,9 @@ function frame(t: number) {
   hudAge += dt;
   if (hudAge > 0.5) {
     hudAge = 0;
-    hud.setClock(now, clock.live);
+    live.use(clock.live);
+    const pplTime = live.data?.places[0]?.time.slice(11);
+    hud.setClock(now, clock.live, provider.mode === 'live' ? `실시간 · 인구 ${pplTime} 기준` : undefined);
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));
     hud.setScale(walkerScale(provider, now, MAX_PEOPLE), cars.scale()[0]);

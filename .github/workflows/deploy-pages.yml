@@ -185,6 +185,8 @@ jobs:
         continue-on-error: true
         env:
           TZ: Asia/Seoul
+          # 실시간 도시데이터 중계 함수 주소(repo 변수). 비어 있으면 시뮬레이션만 쓴다
+          VITE_CITYDATA_URL: ${{ vars.MAPO_CITYDATA_URL }}
         run: |
           cd mapo
           pnpm install --frozen-lockfile

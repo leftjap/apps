@@ -1,0 +1,7 @@
+# 마포 라이브 3D 실시간 도시데이터 중계 함수. 앱들이 함께 쓰는 Supabase 프로젝트(pick 과 같은 프로젝트)에 둔다.
+# 브라우저가 인증 없이 부르므로 gateway JWT 검사를 끈다(키는 함수 안 secret SEOUL_OPENAPI_KEY).
+#   배포: cd mapo && supabase functions deploy mapo-citydata --project-ref tcbooffrdacfatywdzcm --use-api
+project_id = "tcbooffrdacfatywdzcm"
+
+[functions.mapo-citydata]
+verify_jwt = false

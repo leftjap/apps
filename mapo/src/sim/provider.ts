@@ -24,8 +24,8 @@ export interface DataProvider {
   mode: 'sim' | 'live';
   /** 구역별 추정 인구와 혼잡 단계 */
   areas(now: Now): AreaStatus[];
-  /** 도로 구간의 속도 비율(자유 속도 대비 0.15~1). cls 는 도로 등급, edgeKey 는 구간마다 다른 정수, (x, z)는 구간 가운데 */
-  roadSpeed(now: Now, cls: number, edgeKey: number, x?: number, z?: number): number;
+  /** 도로 구간의 속도 비율(자유 속도 대비 0.15~1). cls 는 도로 등급, edgeKey 는 구간마다 다른 정수, (x, z)는 구간 가운데, h 는 그 자리의 진행 방향 */
+  roadSpeed(now: Now, cls: number, edgeKey: number, x?: number, z?: number, h?: number): number;
   /** 역의 최근 5분 하차 인원 */
   alighting(now: Now, station: string): number;
 }

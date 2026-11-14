@@ -171,13 +171,14 @@ export function makeHud(ev: HudEvents) {
   let areaKey = '';
   let live = true;
   return {
-    setClock(now: Now, isLive: boolean) {
+    /** source 를 주면(실시간 자료를 쓰는 중) 오른쪽 위 표시를 그 글로 바꾼다 */
+    setClock(now: Now, isLive: boolean, source?: string) {
       live = isLive;
       const t = hhmm(now.tod);
       q('[data-time]').textContent = t;
       q('[data-top-time]').textContent = t;
       q('[data-date]').textContent = `${DAYS[now.dow]} · ${live ? '한국 시각' : '시험 시각'}`;
-      q('[data-mode]').textContent = live ? '시뮬레이션' : '시뮬레이션 · 시험 시각';
+      q('[data-mode]').textContent = source ?? (live ? '시뮬레이션' : '시뮬레이션 · 시험 시각');
       q('[data-range-out]').textContent = t;
       if (document.activeElement !== range) range.value = String(Math.floor(now.tod / 60));
       for (const b of qa('[data-tp]')) b.classList.toggle('on', b.dataset.tp === 'live' && live);
