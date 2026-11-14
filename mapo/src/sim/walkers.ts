@@ -6,7 +6,7 @@
 import type { Now } from './clock.ts';
 import { clamp01, commute, daytime, nightlife } from './curves.ts';
 import type { Road } from '../data/board.ts';
-import { turnRules, type CrossLink, type WalkGraph } from './graph.ts';
+import { ISLAND_BACK, ISLAND_L, turnRules, type CrossLink, type WalkGraph } from './graph.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
 import type { Signals } from './signals.ts';
@@ -42,6 +42,24 @@ export interface Portal {
   z: number;
   poly?: Float32Array;
   h?: number;
+  /** 중앙버스정류장: (x, z)는 버스가 서는 자리(승강장 가운데에서 버스 진행 방향으로 ISLAND_BACK 앞), yaw 는 버스 진행 방향(승강장은 버스 오른쪽) */
+  median?: boolean;
+  yaw?: number;
+}
+
+/** 중앙버스정류장으로 건너가는 자리: 승강장을 지나는 횡단보도 연결과 그 이쪽 보도 끝(e), 축 위 승강장 자리(i),
+ *  승강장 가운데(c)와 버스 진행 방향(u), 승강장 가운데에서 i 까지 진행 방향 거리(s) */
+interface Island {
+  l: number;
+  ex: number;
+  ez: number;
+  ix: number;
+  iz: number;
+  cx: number;
+  cz: number;
+  ux: number;
+  uz: number;
+  s: number;
 }
 
 /** 구역 id → 판 위의 중심과 반지름(m). 실시간 도시데이터 장소의 대략적인 범위. 겹치는 곳은 작은 구역이 먼저다 */
@@ -127,6 +145,8 @@ interface Dock extends Portal {
   /** 건물 출입구: 건물 벽 위 문 자리와 드나드는 사람의 몫(바닥 넓이 × 층수) */
   door?: [number, number];
   weight?: number;
+  /** 중앙버스정류장으로 건너가는 자리 */
+  island?: Island;
 }
 
 const WANDER = 0;
@@ -301,6 +321,16 @@ export function makeWalkers(
   const queued = new Uint8Array(max); // 신호를 기다리는 사람 뒤에 줄을 서서 멈췄다
   const xSlot = new Uint8Array(max); // 횡단보도 앞에서 빈자리를 찾아 옮겨 간 횟수
   const xLat = new Float32Array(max); // 횡단보도에서 축 오른쪽으로 비켜 걷는 거리(m)
+  // 중앙버스정류장 오가기: 1 승강장으로 감, 2 승강장에서 보도로 나옴. 네 자리(rx·rz 의 0~3)를 차례로 걷는다(rLeg).
+  // rLeg 1 을 시작하기 전에 신호·차를 보고(rHold), rCross 번째 구간이 찻길을 건너는 구간이다.
+  // 승강장은 버스 쪽 가장자리에 줄을 서고, 반대쪽 가장자리로 걸어 다닌다
+  const rt = new Uint8Array(max);
+  const rLeg = new Uint8Array(max);
+  const rHold = new Uint8Array(max);
+  const rCross = new Uint8Array(max);
+  const rLink = new Int32Array(max);
+  const rx = [0, 1, 2, 3].map(() => new Float32Array(max));
+  const rz = [0, 1, 2, 3].map(() => new Float32Array(max));
   let frame = 0;
   // 보행 노드마다 25m·30m 안의 신호 묶음(−2 = 아직 안 찾음)
   const site25 = new Int16Array(g.adj.length).fill(-2);
@@ -348,8 +378,41 @@ export function makeWalkers(
   const looks = Array.from({ length: ZONE_IDS.length + 1 }, () => ({ ages: [0.05, 0.4, 0.85, 1], female: 0.5 }));
 
   // ── 출구·정류장을 가장 가까운 길 조각에 붙인다 ──
-  const docks: Dock[] = [];
+  // 중앙버스정류장은 승강장을 지나는 횡단보도(축이 승강장 가운데선과 만나는 자리가 승강장 끝에서 20m 안인 것 가운데 가장 가까운 것)의
+  // 양 끝 보도에 같은 정류장으로 건너가는 자리 둘을 붙인다. 그런 횡단보도가 없으면 그 정류장은 쓰지 않는다
+  const places: (Portal & { island?: Island })[] = [];
   for (const p of portals) {
+    if (!p.median) {
+      places.push(p);
+      continue;
+    }
+    const ux = Math.cos(p.yaw ?? 0);
+    const uz = Math.sin(p.yaw ?? 0);
+    const cx = p.x - ux * ISLAND_BACK;
+    const cz = p.z - uz * ISLAND_BACK;
+    let best: { l: number; s: number; la: number } | null = null;
+    links.list.forEach((l, li) => {
+      const la = Math.hypot(l.bx - l.ax, l.bz - l.az) || 1;
+      const vx = (l.bx - l.ax) / la;
+      const vz = (l.bz - l.az) / la;
+      const den = ux * vz - uz * vx;
+      if (Math.abs(den) < 0.8) return; // 승강장과 비스듬히 0~53° 로 만나는 축은 승강장을 건너지 않는다
+      const wx = l.ax - cx;
+      const wz = l.az - cz;
+      const s = (wx * vz - wz * vx) / den;
+      const t = (wx * uz - wz * ux) / den;
+      if (t < 1 || t > la - 1 || Math.abs(s) > ISLAND_L / 2 + 20) return;
+      if (!best || Math.abs(s) < Math.abs(best.s)) best = { l: li, s, la };
+    });
+    if (!best) continue;
+    const { l: li, s } = best;
+    const l = links.list[li];
+    const base = { l: li, ix: cx + ux * s, iz: cz + uz * s, cx, cz, ux, uz, s };
+    places.push({ ...p, x: l.ax, z: l.az, island: { ...base, ex: l.ax, ez: l.az } });
+    places.push({ ...p, x: l.bx, z: l.bz, island: { ...base, ex: l.bx, ez: l.bz } });
+  }
+  const docks: Dock[] = [];
+  for (const p of places) {
     const n0 = g.nearest(p.x, p.z);
     if (n0 < 0) continue;
     let best: Dock | null = null;
@@ -565,6 +628,7 @@ export function makeWalkers(
     if (w.age[i] === 3) speed[i] *= 0.75; // 나이 든 사람은 천천히 걷는다
     w.moving[i] = 1;
     queued[i] = 0;
+    rt[i] = 0;
     place(i);
     w.yaw[i] = head[i];
     if (d.door) {
@@ -580,7 +644,7 @@ export function makeWalkers(
     onLeave?.(w.x[i], w.z[i]);
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, curK, inLanes, inMajor, laneHold, head, queued, xSlot, xLat, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, curK, inLanes, inMajor, laneHold, head, queued, xSlot, xLat, rt, rLeg, rHold, rCross, rLink, ...rx, ...rz, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
       a[i] = a[j];
   }
 
@@ -600,14 +664,72 @@ export function makeWalkers(
     count += Math.min(6, Math.floor(Math.max(0, short[z])));
     short[z] -= count;
     for (let k = 0; k < count; k++) {
-      const i = spawnAt(ds[Math.floor(rand() * ds.length)]);
+      const dk = ds[Math.floor(rand() * ds.length)];
+      const i = spawnAt(dk);
       if (i < 0) return;
+      const isl = docks[dk].island;
+      if (isl) {
+        // 중앙버스정류장: 버스 문 쪽 승강장 가장자리에 내려 승강장을 따라 횡단보도 자리로 가고, 신호를 기다렸다가
+        // 나머지를 건너 이쪽 보도 끝으로, 그다음 보도 자리(지금 놓인 자리)로 간다
+        const sd = (doorX - isl.cx) * isl.ux + (doorZ - isl.cz) * isl.uz + (k - (count - 1) / 2) * 0.8;
+        const [px, pz] = [w.x[i], w.z[i]];
+        [w.x[i], w.z[i]] = islandAt(isl, sd, -0.55);
+        // 승강장 걷는 쪽에서 신호를 기다릴 빈자리 → 축 위 승강장 자리(건너는 방향 오른쪽으로 비켜) → 이쪽 보도 끝 → 보도 자리
+        const [cx, cz] = crossPair(isl.ix, isl.iz, isl.ex, isl.ez);
+        startRoute(i, 2, isl, [waitSpot(i, isl), [cx[0], cz[0]], [cx[1], cz[1]], [px, pz]], 2);
+        continue;
+      }
       // 버스 문에서 보도 자리까지 ALIGHT_T 초 동안 걸어 나온다(사람마다 조금씩 늦게)
       ox[i] = doorX - w.x[i];
       oz[i] = doorZ - w.z[i];
       alightT[i] = ALIGHT_T + k * 0.5;
       lift(i);
     }
+  }
+  /** 중앙버스정류장 오가기를 시작한다. pts 네 자리를 차례로 걷고, cross 번째 구간이 찻길을 건넌다(그 앞 구간을 시작하기 전에 신호를 본다) */
+  function startRoute(i: number, kind: number, isl: Island, pts: [number, number][], cross: number) {
+    rt[i] = kind;
+    rLeg[i] = 0;
+    rHold[i] = 0;
+    rCross[i] = cross;
+    rLink[i] = isl.l;
+    pts.forEach(([x, z], k) => ((rx[k][i] = x), (rz[k][i] = z)));
+  }
+  /** 승강장 위 자리: 승강장 가운데선에서 진행 방향으로 sd, 버스 쪽(왼쪽)으로 lat. 승강장 길이 안으로 자른다 */
+  const islandAt = (isl: Island, sd: number, lat: number): [number, number] => {
+    const c = Math.max(-ISLAND_L / 2 + 0.5, Math.min(ISLAND_L / 2 - 0.5, sd));
+    return [isl.cx + isl.ux * c + isl.uz * lat, isl.cz + isl.uz * c - isl.ux * lat];
+  };
+  /** 횡단보도 축 위 두 점 a → b 를 건너는 방향 오른쪽으로 0.7m 비킨 두 점(우측통행) */
+  const crossPair = (ax: number, az: number, bx: number, bz: number): [number[], number[]] => {
+    const l = Math.hypot(bx - ax, bz - az) || 1;
+    const ox = (-(bz - az) / l) * 0.7;
+    const oz = ((bx - ax) / l) * 0.7;
+    return [
+      [ax + ox, bx + ox],
+      [az + oz, bz + oz],
+    ];
+  };
+  /** 승강장에서 줄 설 자리: 축 위 승강장 자리에서 승강장 가운데 쪽으로, 먼저 와 기다리거나 줄 자리로 가는 사람 수만큼 QUEUE_GAP 씩, 버스 쪽 가장자리 */
+  function islandSpot(i: number, isl: Island): number {
+    const key = docks[dockOf[i]].key;
+    let n = 0;
+    for (let j = 0; j < w.n; j++) if (j !== i && docks[dockOf[j]]?.key === key && (mode[j] === WAITING || (rt[j] === 1 && rLeg[j] >= 2))) n++;
+    return isl.s + (isl.s > 0 ? -1 : 1) * (1.2 + n * QUEUE_GAP);
+  }
+  /** 내린 사람이 신호를 기다릴 승강장 걷는 쪽 빈자리: 축 위 승강장 자리에서 가운데 쪽으로 1.2m 부터 0.75m 씩 */
+  function waitSpot(i: number, isl: Island): [number, number] {
+    const dir = isl.s > 0 ? -1 : 1;
+    let first: [number, number] | null = null;
+    for (let m = 0; m < 8; m++)
+      for (const lat of [-0.55, 0.05]) {
+        const p = islandAt(isl, isl.s + dir * (1.2 + m * 0.75), lat);
+        first ??= p;
+        let taken = !freeAt(i, p[0], p[1]);
+        for (let j = 0; j < w.n && !taken; j++) if (j !== i && rt[j] === 2 && rLeg[j] === 0 && Math.hypot(rx[0][j] - p[0], rz[0][j] - p[1]) < 0.7) taken = true;
+        if (!taken) return p;
+      }
+    return first!;
   }
   /** 막 내린 사람을 버스 문 쪽으로 옮겨 그린다 */
   function lift(i: number) {
@@ -858,6 +980,16 @@ export function makeWalkers(
           if (j !== i && j < w.n && Math.hypot(w.x[j] - w.x[i], w.z[j] - w.z[i]) < 0.6) return true;
     return false;
   }
+  /** 건너는 사람이 있는 횡단보도 자리를 표시한다: 축 위 자리(2m 칸)와 양옆 칸(차가 보고 선다) */
+  function markBusy(i: number, l: CrossLink) {
+    if (!cross.busy) return;
+    const ax = l.bx - l.ax;
+    const az = l.bz - l.az;
+    const al = Math.hypot(ax, az) || 1;
+    const bin = Math.floor((((w.x[i] - l.ax) * ax + (w.z[i] - l.az) * az) / al) / 2);
+    if (!cross.busy[l.xw]) marked.push(l.xw);
+    for (let k = Math.max(0, bin - 1); k <= Math.min(31, bin + 1); k++) cross.busy[l.xw] |= 1 << k;
+  }
   /** (x, z) 0.7m 안에 i 말고 다른 사람이 없는가 */
   function freeAt(i: number, x: number, z: number): boolean {
     const cx = Math.floor(x / 1.5);
@@ -1025,6 +1157,66 @@ export function makeWalkers(
       }
       w.photo[i] = Math.max(0, w.photo[i] - dt * 2);
       w.moving[i] = 1;
+      if (rt[i]) {
+        // 중앙버스정류장 오가기
+        const l = links.list[rLink[i]];
+        const gx = rx[rLeg[i]][i];
+        const gz = rz[rLeg[i]][i];
+        let dx = gx - w.x[i];
+        let dz = gz - w.z[i];
+        const dd = Math.hypot(dx, dz);
+        if (rHold[i]) {
+          // 건너는 구간 끝까지 걸을 거리만큼 초록불이 남았는지 본다
+          let span = dd;
+          for (let k = rLeg[i]; k < rCross[i]; k++) span += Math.hypot(rx[k + 1][i] - rx[k][i], rz[k + 1][i] - rz[k][i]);
+          xFx[i] = rx[rCross[i]][i];
+          xFz[i] = rz[rCross[i]][i];
+          if (!mayStart(i, l, span, now.tod)) {
+            w.moving[i] = 0;
+            if (dd > 1e-3) head[i] = Math.atan2(dz, dx);
+            continue;
+          }
+          rHold[i] = 0;
+        }
+        let d = Math.min(dd, speed[i] * dt);
+        if (dd > 1e-3) {
+          dx /= dd;
+          dz /= dd;
+          const f = follow(i, dx, dz);
+          d *= rLeg[i] === rCross[i] ? Math.max(0.25, f) : f;
+          if (d === 0) w.moving[i] = 0;
+          head[i] = Math.atan2(dz, dx);
+          w.x[i] += dx * d;
+          w.z[i] += dz * d;
+        }
+        w.phase[i] += d * 4.6;
+        if (rLeg[i] === rCross[i]) markBusy(i, l);
+        if (dd - d < 0.05) {
+          if (rLeg[i] < 3) {
+            rLeg[i]++;
+            if (rLeg[i] === 1) rHold[i] = 1;
+            if (rLeg[i] === 2 && rt[i] === 1) {
+              // 승강장에 올라섰다: 걷는 쪽 가장자리로 줄 자리 앞까지 가서, 버스 쪽 가장자리 줄 자리로 옮겨 선다
+              const isl = docks[dockOf[i]].island!;
+              const sd = islandSpot(i, isl);
+              [rx[2][i], rz[2][i]] = islandAt(isl, sd, -0.55);
+              [rx[3][i], rz[3][i]] = islandAt(isl, sd, 0.5);
+            }
+          } else if (rt[i] === 1) {
+            // 승강장 줄에 서서 버스 쪽(진행 방향 왼쪽)을 보고 기다린다
+            rt[i] = 0;
+            const isl = docks[dockOf[i]].island!;
+            mode[i] = WAITING;
+            w.moving[i] = 0;
+            life[i] = MAX_WAIT * (0.5 + rand() * 0.5);
+            head[i] = Math.atan2(-isl.ux, isl.uz);
+          } else {
+            rt[i] = 0;
+            place(i);
+          }
+        }
+        continue;
+      }
       if (xing[i]) {
         // 횡단보도: 이쪽 끝(N)으로 가서 신호·차를 보고 기다렸다가, 축을 따라 건너편 끝(F)으로 건너고, 나갈 보도 자리(D)로 간다
         const l = links.list[xLink[i]];
@@ -1069,15 +1261,7 @@ export function makeWalkers(
           w.x[i] += (dx / dd) * d;
           w.z[i] += (dz / dd) * d;
         }
-        if (xing[i] === 3 && cross.busy) {
-          // 축 위 자리(2m 칸)와 양옆 칸을 표시한다
-          const ax = l.bx - l.ax;
-          const az = l.bz - l.az;
-          const al = Math.hypot(ax, az) || 1;
-          const bin = Math.floor((((w.x[i] - l.ax) * ax + (w.z[i] - l.az) * az) / al) / 2);
-          if (!cross.busy[l.xw]) marked.push(l.xw);
-          for (let k = Math.max(0, bin - 1); k <= Math.min(31, bin + 1); k++) cross.busy[l.xw] |= 1 << k;
-        }
+        if (xing[i] === 3) markBusy(i, l);
         if (dd - d < 0.05) {
           if (xing[i] === 4) {
             xing[i] = 0;
@@ -1147,7 +1331,14 @@ export function makeWalkers(
         // 출구·정류장에 닿았다
         t[i] = endT[i];
         place(i);
-        if (docks[dockOf[i]].kind === 'stop') {
+        const isl = docks[dockOf[i]].island;
+        if (isl) {
+          // 중앙버스정류장: 횡단보도 이쪽 끝에서 신호를 기다렸다가 승강장까지 건너, 승강장 줄 자리로 간다
+          const [cx, cz] = crossPair(isl.ex, isl.ez, isl.ix, isl.iz);
+          startRoute(i, 1, isl, [[cx[0], cz[0]], [cx[1], cz[1]], [cx[1], cz[1]], [cx[1], cz[1]]], 1);
+          endT[i] = -1;
+          continue;
+        } else if (docks[dockOf[i]].kind === 'stop') {
           // 먼저 온 사람 뒤에 줄을 선다: 정류장 자리에서 길 조각 안쪽(더 긴 쪽)으로 QUEUE_GAP 씩 물러난다
           const n = waitingOn(dockOf[i]);
           if (n >= 12) mode[i] = LEAVING; // 줄이 너무 길면 다른 길로 간 셈 친다

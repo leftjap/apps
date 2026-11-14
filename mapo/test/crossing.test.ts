@@ -242,3 +242,65 @@ describe('차와 횡단보도', () => {
     expect(sim.cars.x[0]).toBeGreaterThan(5);
   });
 });
+
+describe('중앙버스정류장', () => {
+  // 동서 큰길(4차로, 찻길 반폭 7.1m) 가운데 x 0~30m 에 승강장(가운데 (15, 0), 폭 2.2m). 버스는 +x 로 가며 승강장 북쪽(−z), x = 18 에 선다.
+  // 승강장 서쪽 끝 x = 0 에 남북으로 건너는 폭 5m 신호 횡단보도
+  const setup = () => {
+    const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })];
+    const cars = buildCarGraph(rs);
+    const xws = [crosswalk(0, 0, 0, 1, 9, [[0, 0]], true, 5)];
+    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const g = buildWalkGraph(rs);
+    const sim = makeWalkers(g, [{ kind: 'stop', key: 'm', x: 18, z: 0, median: true, yaw: 0 }], fixedProvider(1, 0), 6, 50, undefined, signals, laneTest(cars), laneTest(cars, 1.2), {
+      links: crossLinks(g, xws),
+    });
+    return { sim, signals };
+  };
+  const onIsland = (x: number, z: number) => Math.abs(z) < 1.3 && x > -1 && x < 31;
+  const onCrossing = (x: number) => Math.abs(x) < 2.7;
+
+  it('버스에서 내린 사람은 승강장에서 신호를 기다렸다가 횡단보도 나머지를 건너 보도로 가고, 찻길은 횡단보도로만 지난다', () => {
+    const { sim, signals } = setup();
+    sim.alight('m', 6, 18, -2.6);
+    expect(sim.w.n).toBe(6);
+    let wrong = 0;
+    let onRed = 0;
+    let tod = 0;
+    for (let k = 0; k < 2400; k++) {
+      sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
+      tod += 0.1;
+      const walkGreen = signals.state(0, 1, tod) === GREEN;
+      for (let i = 0; i < sim.w.n; i++) {
+        const { x, z } = { x: sim.w.x[i], z: sim.w.z[i] };
+        if (Math.abs(z) > 7.1 || onIsland(x, z)) continue;
+        if (!onCrossing(x)) wrong++;
+        else if (!walkGreen && signals.state(0, 0, tod) === GREEN) onRed++;
+      }
+    }
+    expect(wrong).toBe(0);
+    expect(onRed).toBe(0);
+    // 모두 보도로 나왔다
+    for (let i = 0; i < sim.w.n; i++) expect(Math.abs(sim.w.z[i])).toBeGreaterThan(7.1);
+  });
+
+  it('정류장으로 가는 사람은 횡단보도를 건너 승강장에서 줄을 서 기다렸다가 버스를 탄다', () => {
+    const { sim } = setup();
+    sim.alight('m', 6, 18, -2.6);
+    let tod = 0;
+    for (let k = 0; k < 9000 && sim.waitingAt('m') < 2; k++) sim.step(0.1, { tod: (tod += 0.1), dow: 2, doy: 317 }, false);
+    const waiting = sim.waitingAt('m');
+    expect(waiting).toBeGreaterThan(1);
+    // 서 있는 사람은 모두 승강장 위에 있고, 서로 겹치지 않는다
+    const stand: number[] = [];
+    for (let i = 0; i < sim.w.n; i++) if (!sim.w.moving[i] && Math.abs(sim.w.z[i]) < 7.1) stand.push(i);
+    expect(stand.length).toBeGreaterThanOrEqual(waiting);
+    for (const i of stand) expect(onIsland(sim.w.x[i], sim.w.z[i])).toBe(true);
+    for (const i of stand) for (const j of stand) if (i < j) expect(Math.hypot(sim.w.x[i] - sim.w.x[j], sim.w.z[i] - sim.w.z[j])).toBeGreaterThan(0.7);
+    sim.board('m', 18, -2.6);
+    sim.step(0.1, { tod: (tod += 0.1), dow: 2, doy: 317 }, false);
+    expect(sim.waitingAt('m')).toBe(0);
+    for (let k = 0; k < 200; k++) sim.step(0.1, { tod: (tod += 0.1), dow: 2, doy: 317 }, false);
+    expect(sim.w.n).toBe(6 - waiting);
+  });
+});

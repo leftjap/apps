@@ -108,8 +108,8 @@ const walkers = makeWalkers(
   walkGraph,
   [
     ...board.exits.map((e) => ({ kind: 'exit' as const, key: e.st, x: e.x, z: e.z })),
-    // 중앙 정류장(길 가운데 승강장)으로 횡단보도를 건너 가는 길은 아직 사람 쪽에 없어 길가 정류장만 넘긴다
-    ...stops.portals.filter((p) => !p.median),
+    // 버스 정류장. 중앙 정류장(길 가운데 승강장)은 승강장 끝 횡단보도를 건너 오간다
+    ...stops.portals,
     // 망원한강공원 인구는 공원 안에 있는 사람이다. 공원 안(피크닉 자리)에서 나타나 공원 길을 걷고, 일부만 강변북로 밑 나들목으로 들고 난다
     ...underpasses(board.roads, ...ZONES.mangwon).map(([x, z]) => ({ kind: 'exit' as const, key: '망원나들목', x, z })),
     ...Array.from({ length: board.picnic.length / 2 }, (_, i) => ({ kind: 'exit' as const, key: '망원한강공원', x: board.picnic[i * 2], z: board.picnic[i * 2 + 1] })),
@@ -661,7 +661,6 @@ function frame(t: number) {
   // 버스가 정류장에 서면 기다리던 사람이 타고 몇 명이 내린다
   for (const [r, k, i] of cars.dwells) {
     const key = stops.keyOf(r, k);
-    if (medStop.has(key)) continue;
     const [dx, dz] = cars.door(i);
     walkers.board(key, dx, dz);
     walkers.alight(key, Math.floor(Math.random() * 4), dx, dz);
