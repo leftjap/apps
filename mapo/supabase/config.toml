@@ -5,3 +5,8 @@ project_id = "tcbooffrdacfatywdzcm"
 
 [functions.mapo-citydata]
 verify_jwt = false
+
+# 실시간 열차 위치 중계(키는 함수 안 secret SEOUL_SUBWAY_KEY)
+#   배포: cd mapo && supabase functions deploy mapo-subway --project-ref tcbooffrdacfatywdzcm --use-api
+[functions.mapo-subway]
+verify_jwt = false

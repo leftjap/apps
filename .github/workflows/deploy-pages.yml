@@ -187,6 +187,8 @@ jobs:
           TZ: Asia/Seoul
           # 실시간 도시데이터 중계 함수 주소(repo 변수). 비어 있으면 시뮬레이션만 쓴다
           VITE_CITYDATA_URL: ${{ vars.MAPO_CITYDATA_URL }}
+          # 실시간 열차 위치 중계 함수 주소(repo 변수). 비어 있으면 시간표 열차만 쓴다
+          VITE_SUBWAY_URL: ${{ vars.MAPO_SUBWAY_URL }}
         run: |
           cd mapo
           pnpm install --frozen-lockfile

@@ -31,6 +31,7 @@ import { sunAngles } from './sim/curves.ts';
 import { buildCarGraph, buildWalkGraph, clearWalkFromCars, laneTest } from './sim/graph.ts';
 import { makeSimProvider } from './sim/provider.ts';
 import { makeLiveProvider } from './data/live.ts';
+import { makeLiveSubway } from './data/subway.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
@@ -341,9 +342,11 @@ function refreshCard() {
   } else if (selected.kind === 'station') {
     const name = selected.name;
     const info = LANDMARKS.find((l) => l.station === name);
-    const rows: CardLine[] = stationBoard(board.lines, name, now.tod).map((r) => ({ dot: lineOf.get(r.line)!.color, text: `${lineOf.get(r.line)!.name} ${r.toward} · ${r.state}` }));
+    const sim = stationBoard(board.lines, name, now.tod);
+    const rows: CardLine[] = (liveRail ? subway.board(name, sim) : sim).map((r) => ({ dot: lineOf.get(r.line)!.color, text: `${lineOf.get(r.line)!.name} ${r.toward} · ${r.state}` }));
     rows.push(`최근 5분 하차 약 ${provider.alighting(now, name).toLocaleString('ko-KR')}명`);
-    card = { tag: info?.kind ?? '지하철역', title: `${name}역`, color: info?.color ?? '#8fd3ff', lines: rows, note: `${info ? `${info.desc} ` : ''}열차 도착 시각은 배차 간격으로 만든 시뮬레이션입니다.` };
+    const when = liveRail ? '열차 위치는 실시간 열차 위치(1~4분 전 값)에서 이어 움직인 것이고, 그 열차가 없는 방향은 배차 간격으로 만든 시뮬레이션입니다.' : '열차 도착 시각은 배차 간격으로 만든 시뮬레이션입니다.';
+    card = { tag: info?.kind ?? '지하철역', title: `${name}역`, color: info?.color ?? '#8fd3ff', lines: rows, note: `${info ? `${info.desc} ` : ''}${when}` };
   } else if (selected.kind === 'train') {
     const key = selected.key;
     const spot = trainSpots.find((t) => t.key === key);
@@ -491,6 +494,22 @@ const ndc = new THREE.Vector2();
 const proj = new THREE.Vector3();
 let catStates: CatState[] = cats.map((c) => catAt(c, start));
 let lastTrains = trainsAt(board.lines, start.tod);
+// 실시간 열차 위치: 중계 함수 주소(VITE_SUBWAY_URL)가 빌드에 들어 있을 때만, 화면을 보고 있는 동안 2분마다 받는다(실시간 지하철 키는 하루 1,000번까지)
+const subway = makeLiveSubway(board.lines);
+let liveRail = false;
+const SUBWAY_URL = import.meta.env.VITE_SUBWAY_URL as string | undefined;
+if (SUBWAY_URL) {
+  const pull = () => {
+    if (document.visibilityState !== 'visible') return;
+    fetch(SUBWAY_URL)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.trains && subway.set(d.trains, Date.now()))
+      .catch(() => {});
+  };
+  pull();
+  setInterval(pull, 120_000);
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && !subway.ready(Date.now()) && pull());
+}
 function nearestOnScreen(pts: { x: number; y: number; z: number }[], px: number, py: number, r: DOMRect, lim: number): [number, number] {
   let best = -1;
   let bd = lim;
@@ -624,7 +643,11 @@ function frame(t: number) {
 
   // 열차가 역에 서면 출구에서 사람들이 나온다. 보는 곳 가까운 역이면 먼 전철 소리를 낸다
   const target = view.controls.target;
-  for (const a of arrivals(board.lines, prevTod, now.tod).slice(0, 12)) {
+  // 실시간 열차 위치가 있고 지금 시각으로 볼 때는 실제 열차를, 아니면 시간표 열차를 쓴다
+  liveRail = clock.live && subway.ready(Date.now());
+  subway.step(dt);
+  const arrived = liveRail ? subway.takeArrivals() : (subway.takeArrivals(), arrivals(board.lines, prevTod, now.tod));
+  for (const a of arrived.slice(0, 12)) {
     walkers.burst(a.name, Math.max(1, Math.min(14, Math.round(provider.alighting(now, a.name) / 150))));
     rings.flash(a.name);
     const st = board.stations.find((s) => s.name === a.name);
@@ -673,7 +696,7 @@ function frame(t: number) {
     }
     f.w += (want - f.w) * Math.min(1, dt * 3);
   }
-  lastTrains = trainsAt(board.lines, now.tod);
+  lastTrains = liveRail ? subway.positions() : trainsAt(board.lines, now.tod);
   trainSpots = rails.update(lastTrains);
   {
     const len = board.riverCum[board.riverCum.length - 1] ?? 0;

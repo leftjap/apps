@@ -26,7 +26,7 @@ export interface RunProfile {
 
 const VMAX = 22; // m/s
 const ACC = 1; // m/s²
-const DWELL = 25; // 초
+export const DWELL = 25; // 초
 
 interface Seg {
   t: number;
