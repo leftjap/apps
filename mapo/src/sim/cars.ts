@@ -127,21 +127,34 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
   const cellAt = (x: number) => Math.max(0, Math.min(GW - 1, Math.floor((x + BOARD_R + 200) / CELL)));
   const tmp = [0, 0, 0];
 
+  /** 막힌 길일수록 덜 고른다: 들어설 첫머리에 빈 길이(가장 넉넉한 차로의 맨 뒤 차까지)가 60m 보다 짧을수록,
+   *  그 구간 차들의 평균 속도가 제 속도의 절반보다 느릴수록 무게를 줄인다 */
+  const meanV = new Float32Array(edges.length).fill(-1); // 구간 차들의 평균 속도(1초마다, 차가 없으면 −1)
+  function avoid(k: number): number {
+    const e = edges[k];
+    let room = 0;
+    for (let l = 0; l < e.lanes; l++) {
+      const t = tail[k * 8 + l];
+      room = Math.max(room, t >= 0 ? s[t] - size[t] / 2 : e.len);
+    }
+    const slow = meanV[k] < 0 ? 1 : Math.max(0.1, Math.min(1, meanV[k] / (0.5 * VFREE[e.cls])));
+    return Math.max(0.01, Math.min(1, room / 60) ** 2 * slow);
+  }
   function chooseNext(i: number, e: Edge, ahead = 1, leave = -1): number {
     const r = cars.route[i];
     if (r >= 0) return rpos[i] + ahead < routes[r].edges.length ? routes[r].edges[rpos[i] + ahead] : -1;
     if (!e.next.length) return -1;
     const ok = e.next.filter((k) => canLeave[k]);
     if (ok.length && ok.length < e.next.length) {
-      const w = ok.map((k) => e.nextW[e.next.indexOf(k)]);
+      const w = ok.map((k) => e.nextW[e.next.indexOf(k)] * avoid(k));
       return ok[pick(w, rand())];
     }
     // 교차로 안을 맴돌지 않도록, 묶인 교차로 안 구간에서는 빠져나가는 쪽을 고른다
     if (leave >= 0) {
       const out = e.next.filter((k) => jn.groupOfEnd[k] !== leave);
-      if (out.length) return out[Math.floor(rand() * out.length)];
+      if (out.length) return out[pick(out.map(avoid), rand())];
     }
-    return e.next[pick(e.nextW, rand())];
+    return e.next[pick(e.nextW.map((w, j) => w * avoid(e.next[j])), rand())];
   }
 
   /** 차 i 가 구간 from(다음 구간부터 k−1 칸 뒤) 다음에 갈 구간. 정해 둔 경로·노선이 없는데 갈림길이면 −1 */
@@ -333,14 +346,27 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
       real[e.id] = (k * e.len * e.lanes) / 1000;
       F += real[e.id] * inF[e.id];
       O += real[e.id] * (1 - inF[e.id]);
-      cumIn[e.id] = (e.id ? cumIn[e.id - 1] : 0) + (placeable[e.id] ? real[e.id] * inF[e.id] : 0);
-      cumOut[e.id] = (e.id ? cumOut[e.id - 1] : 0) + (placeable[e.id] ? real[e.id] * (1 - inF[e.id]) : 0);
     }
     const B = max - reserve;
     nIn = Math.min(F, B * 0.85);
     ratioIn = nIn > 0 ? F / nIn : 1;
     nOut = Math.min(O / ratioIn, B - nIn);
     ratioOut = nOut > 0 ? O / nOut : ratioIn;
+    // 차를 놓을 구간의 무게: 그 구간 목표보다 모자란 만큼. 이미 막혀 차들이 제 속도의 40%도 못 내는 구간에는 놓지 않는다
+    let ci = 0;
+    let co = 0;
+    for (const e of edges) {
+      const l = lists[e.id];
+      let vm = 0;
+      for (const j of l) vm += v[j];
+      meanV[e.id] = l.length ? vm / l.length : -1;
+      const jammed = l.length > 0 && vm / l.length < 0.4 * speed[e.id];
+      const w = !placeable[e.id] || jammed ? 0 : Math.max(0, real[e.id] * (inF[e.id] / ratioIn + (1 - inF[e.id]) / ratioOut) - l.length);
+      ci += w * inF[e.id];
+      co += w * (1 - inF[e.id]);
+      cumIn[e.id] = ci;
+      cumOut[e.id] = co;
+    }
     return Math.round(nIn + nOut);
   }
   const target = (now: Now) => allot(now);
@@ -756,6 +782,11 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
             held[G].push(i);
           } else if (toBox > -0.5) {
             if (v[i] < 0.5) waitT[i] += dt;
+            // 20초 넘게 못 들어가면 막힌 쪽을 피해 빠져나갈 길을 다시 고른다(4초에 한 번꼴)
+            if (waitT[i] > 20 && cars.route[i] < 0 && rand() < dt / 4) {
+              planN[i] = 0;
+              onEdge(i, e);
+            }
             if (toBox + 1.7 < gap) {
               gap = toBox + 1.7;
               dv = v[i];

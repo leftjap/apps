@@ -114,3 +114,35 @@ describe('꼬리 물기', () => {
     expect(stuck).toBe(0);
   });
 });
+
+describe('막힌 길 피하기', () => {
+  it('갈림길에서 차가 꽉 찬 갈래보다 빈 갈래를 두 배 넘게 고른다', () => {
+    // 서쪽 판 가장자리에서 들어와 (0,0)에서 북동·남동 두 갈래로 똑같이 갈라져 판 가장자리로 나간다
+    const g = buildCarGraph([
+      road([[-R, 0], [0, 0]], { cls: 0, oneway: true, lanes: 1 }),
+      road([[0, 0], [1400, -1400]], { cls: 3, oneway: true, lanes: 1 }),
+      road([[0, 0], [1400, 1400]], { cls: 3, oneway: true, lanes: 1 }),
+    ]);
+    const north = g.find((e) => e.p[0] === 0 && e.p[e.p.length - 1] < 0)!;
+    const south = g.find((e) => e.p[0] === 0 && e.p[e.p.length - 1] > 0)!;
+    const sim = makeCars(g, slowOn(new Set([north.key]), 0.04), 8, 400);
+    // 북동 갈래 첫머리 660m 에 거의 서 있는 차 100대
+    for (let k = 0; k < 100; k++) sim.put(north.id, 20 + k * 6.6, 0);
+    const counted = new Set<number>();
+    let n = 0;
+    let s = 0;
+    for (let k = 0; k < 6000; k++) {
+      sim.step(0.1, now(k * 0.1));
+      const c = sim.cars;
+      for (let i = 0; i < c.n; i++) {
+        if (counted.has(c.uid[i]) || c.x[i] < 40 || c.x[i] > 80) continue;
+        counted.add(c.uid[i]);
+        if (c.z[i] < 0) n++;
+        else s++;
+      }
+    }
+    expect(n + s).toBeGreaterThan(30);
+    expect(s).toBeGreaterThan(n * 2);
+  });
+});
+

@@ -46,7 +46,7 @@ const sky = document.querySelector<HTMLElement>('#sky')!;
 const stage = document.querySelector<HTMLElement>('#stage')!;
 const small = matchMedia('(max-width: 760px)').matches;
 const MAX_PEOPLE = small ? 2000 : 8000;
-const MAX_CARS = small ? 1000 : 2500;
+const MAX_CARS = small ? 1500 : 5000;
 
 const view = makeView(canvas);
 const clock = makeClock(location.search);
