@@ -4,12 +4,15 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { BOARD_R, toXZ } from '../src/geo.ts';
 import { cumLen, nearestS, pointAt } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
+import { buildingInfo, packInfo } from './lib/building.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
 import { analysePiece, laneIndex, type LaneSeg, type PieceLanes } from './lib/lanes.ts';
 import { stitch } from './lib/rail.ts';
-import { encodePng, fillPolygon, strokeLine } from './lib/raster.ts';
+import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
+import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
+import { GK } from '../src/data/board.ts';
 
 type Tags = Record<string, string>;
 interface LL {
@@ -73,45 +76,80 @@ const NAMED_LM: [RegExp, number][] = [
   [/메세나폴리스/, 13],
 ];
 const buildings: number[][] = [];
+/** 건물마다 용도·층수·지붕·아래 높이(packInfo) */
+const binfo: number[] = [];
 /** 마스크에 바닥 그늘을 칠할 건물 외곽선 */
 const footprints: [number, number][][] = [];
+/** 닫힌 외곽선을 판 좌표로 고르고 넓이가 양수인 방향으로 맞춘다. 쓸 수 없으면 null */
+function cleanRing(g: LL[]): { pts: [number, number][]; area: number; cx: number; cz: number } | null {
+  let pts = xz(g);
+  if (pts.length < 4) return null;
+  const [fx, fz] = pts[0];
+  const [lx, lz] = pts[pts.length - 1];
+  if (Math.hypot(fx - lx, fz - lz) > 0.5) return null; // 닫히지 않은 조각
+  pts = pts.slice(0, -1).filter((p, i, a) => i === 0 || Math.hypot(p[0] - a[i - 1][0], p[1] - a[i - 1][1]) > 0.3);
+  if (pts.length < 3) return null;
+  let area = 0;
+  let cx = 0;
+  let cz = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const [ax, az] = pts[i];
+    const [bx, bz] = pts[(i + 1) % pts.length];
+    area += ax * bz - bx * az;
+    cx += ax / pts.length;
+    cz += az / pts.length;
+  }
+  area /= 2;
+  if (Math.abs(area) < 12 || !pts.every(([x, z]) => inBoard(x, z, 4))) return null;
+  if (area < 0) pts.reverse();
+  return { pts, area: Math.abs(area), cx, cz };
+}
+// 건물 부분(building:part, tools/fetch-parts.ts 로 받는다): 층이 나뉜 건물의 덩어리. 부분이 바닥의 절반 넘게 덮는 건물은 외곽선 대신 부분들을 세운다
+const parts = (existsSync(new URL('./raw/parts.json', import.meta.url)) ? raw('parts') : [])
+  .filter((e) => e.type === 'way' && e.geometry && Number(e.tags?.layer ?? 0) >= 0)
+  .flatMap((e) => {
+    const r = cleanRing(e.geometry!);
+    return r ? [{ ...r, tags: e.tags ?? {}, id: e.id, used: false }] : [];
+  });
+const pushBuilding = (h: number, lm: number, pts: [number, number][], info: ReturnType<typeof buildingInfo>) => {
+  buildings.push([dm(h), lm, ...pts.flatMap(([x, z]) => [dm(x), dm(z)])]);
+  binfo.push(packInfo(info));
+  footprints.push(pts);
+};
 for (const el of raw('buildings')) {
   const tags = el.tags ?? {};
   if (tags.location === 'underground' || Number(tags.layer) < 0) continue;
   const outers =
     el.type === 'way' ? [el.geometry!] : (el.members ?? []).filter((m) => m.role === 'outer' && m.geometry).map((m) => m.geometry!);
   for (const g of outers) {
-    let pts = xz(g);
-    if (pts.length < 4) continue;
-    const [fx, fz] = pts[0];
-    const [lx, lz] = pts[pts.length - 1];
-    if (Math.hypot(fx - lx, fz - lz) > 0.5) continue; // 닫히지 않은 조각
-    pts = pts.slice(0, -1).filter((p, i, a) => i === 0 || Math.hypot(p[0] - a[i - 1][0], p[1] - a[i - 1][1]) > 0.3);
-    if (pts.length < 3) continue;
-    let area = 0;
-    let cx = 0;
-    let cz = 0;
-    for (let i = 0; i < pts.length; i++) {
-      const [ax, az] = pts[i];
-      const [bx, bz] = pts[(i + 1) % pts.length];
-      area += ax * bz - bx * az;
-      cx += ax;
-      cz += az;
-    }
-    area /= 2;
-    cx /= pts.length;
-    cz /= pts.length;
-    if (Math.abs(area) < 12 || !pts.every(([x, z]) => inBoard(x, z, 4))) continue;
-    if (area < 0) pts.reverse(); // 넓이가 양수가 되는 방향으로 통일
+    const ring = cleanRing(g);
+    if (!ring) continue;
+    const { pts, area, cx, cz } = ring;
     const h = Math.max(3, Math.min(260, estimateHeight(tags, Math.abs(area), el.id)));
     const isSchool = schoolSites.some((sc) => inside([sc.ring], cx, cz)) || tags.building === 'school' || /(초등|중|고등)학교/.test(tags.name ?? '');
     const lm = inside(hongikRings, cx, cz) ? 1 : isSchool ? 6 : (NAMED_LM.find(([re]) => re.test(tags.name ?? ''))?.[1] ?? 0);
     // 부지 자료가 없는 학교(이름이 붙은 학교 건물): 건물 외곽선을 부지로 삼는다
     if (/(초등|중|고등)학교$/.test(tags.name ?? '') && !schoolSites.some((sc) => inside([sc.ring], cx, cz)))
       schoolSites.push({ name: tags.name!.replace(/^홍익대학교사범대학부속/, '홍익대 사범대 부속 '), ring: [...pts, pts[0]] });
-    buildings.push([dm(h), lm, ...pts.flatMap(([x, z]) => [dm(x), dm(z)])]);
-    footprints.push(pts);
+    const info = buildingInfo(tags);
+    const mine = parts.filter((p) => !p.used && inside([[...pts, pts[0]]], p.cx, p.cz));
+    if (mine.reduce((a, p) => a + p.area, 0) > Math.abs(area) * 0.5) {
+      for (const p of mine) {
+        p.used = true;
+        const pi = buildingInfo(p.tags);
+        if (!pi.use) pi.use = info.use;
+        const ph = Math.max(pi.minH + 2, Math.min(260, estimateHeight(p.tags, p.area, p.id)));
+        pushBuilding(ph, lm, p.pts, pi);
+      }
+      continue;
+    }
+    pushBuilding(h, lm, pts, info);
   }
+}
+// 감싸는 건물 없이 떨어진 부분(감싸는 건물이 부분보다 작게 그려진 곳 등)도 세운다
+for (const p of parts.filter((p) => !p.used)) {
+  const pi = buildingInfo(p.tags);
+  pushBuilding(Math.max(pi.minH + 2, Math.min(260, estimateHeight(p.tags, p.area, p.id))), inside(hongikRings, p.cx, p.cz) ? 1 : 0, p.pts, pi);
 }
 const osmBuildings = buildings.length;
 
@@ -141,7 +179,7 @@ const osmBuildings = buildings.length;
     };
     for (const line of readFileSync(file, 'utf8').split('\n')) {
       if (!line) continue;
-      const r = JSON.parse(line) as { id: string; height: number | null; floors: number | null; src: string[] | null; g: { type: string; coordinates: number[][][] | number[][][][] } };
+      const r = JSON.parse(line) as { id: string; height: number | null; floors: number | null; class?: string | null; roof_shape?: string; src: string[] | null; g: { type: string; coordinates: number[][][] | number[][][][] } };
       if ((r.src ?? []).includes('OpenStreetMap')) continue;
       const outer = (r.g.type === 'Polygon' ? r.g.coordinates[0] : (r.g.coordinates as number[][][][])[0][0]) as number[][];
       let pts = outer.map(([lon, lat]) => toXZ(lat, lon));
@@ -167,8 +205,10 @@ const osmBuildings = buildings.length;
       const id = strHash(r.id);
       const h = r.height && r.height > 0 ? r.height : r.floors && r.floors > 0 ? r.floors * 3.2 + 1 : estimateHeight({ building: 'residential' }, Math.abs(area), id);
       const isSchool = schoolSites.some((sc) => inside([sc.ring], cx, cz));
-      buildings.push([dm(Math.max(3, Math.min(260, h))), isSchool ? 6 : 0, ...pts.flatMap(([x, z]) => [dm(x), dm(z)])]);
-      footprints.push(pts);
+      const tags: Record<string, string> = { building: r.class ?? '' };
+      if (r.floors) tags['building:levels'] = String(r.floors);
+      if (r.roof_shape) tags['roof:shape'] = r.roof_shape;
+      pushBuilding(Math.max(3, Math.min(260, h)), isSchool ? 6 : 0, pts, buildingInfo(tags));
     }
   }
 }
@@ -793,19 +833,48 @@ const px = (v: number) => (v + HALF) / ((2 * HALF) / SIZE);
 const mask = new Uint8Array(SIZE * SIZE * 4);
 const toPx = (r: [number, number][]) => r.flatMap(([x, z]) => [px(x), px(z)]);
 
+// 서울 생태현황도(개별비오톱, tools/ground.py 가 받는다). 없으면 OSM 만 쓴다
+interface Biotope {
+  lu: string;
+  use: string;
+  veg: string;
+  /** 녹지율·불투수 포장율·투수 포장율(%) */
+  green: number;
+  imp: number;
+  perm: number;
+  r: [number, number][][];
+}
+const bioFile = new URL('./raw/seoul-biotope.json', import.meta.url);
+const biotopes: Biotope[] = existsSync(bioFile) ? JSON.parse(readFileSync(bioFile, 'utf8')).areas : [];
+const bioRings = (b: Biotope) => b.r.map((r) => r.map(([lat, lon]) => toXZ(lat, lon)));
+// 물과 녹지는 칸마다 덮인 비율로 칠해 경계를 매끈하게 한다(셰이더가 선형 보간 값에 문턱을 준다)
 for (const el of raw('water')) {
   const t = el.tags ?? {};
   if (t.tunnel || t.covered === 'yes' || t.location === 'underground') continue;
   if (t.waterway && t.waterway !== 'riverbank') {
-    if (el.geometry && (t.waterway === 'stream' || t.waterway === 'canal')) strokeLine(mask, SIZE, toPx(xz(el.geometry)), 5, 0);
+    // 개울(경의선숲길 실개천 등)은 폭 3m
+    if (el.geometry && (t.waterway === 'stream' || t.waterway === 'canal')) strokeLineAA(mask, SIZE, toPx(xz(el.geometry)), 1.5, 0);
     continue;
   }
   const rings = ringsOf(el).map(toPx);
-  if (rings.length) fillPolygon(mask, SIZE, rings, 0);
+  if (rings.length) fillPolygonAA(mask, SIZE, rings, 0);
 }
+for (const b of biotopes) if (b.lu.toUpperCase() === 'J1' && b.veg === '수면') fillPolygonAA(mask, SIZE, bioRings(b).map(toPx), 0);
+// 녹지: 경기장·놀이터는 녹지에서 뺀다(바닥 면이 흙·코트·고무 바닥으로 칠하고, 나무도 심지 않는다)
 for (const el of raw('green')) {
+  if (el.tags?.leisure === 'pitch' || el.tags?.leisure === 'playground') continue;
   const rings = ringsOf(el).map(toPx);
-  if (rings.length) fillPolygon(mask, SIZE, rings, 1);
+  if (rings.length) fillPolygonAA(mask, SIZE, rings, 1);
+}
+for (const b of biotopes) {
+  const k = biotopeKind(b);
+  if (k === GK.FOREST || k === GK.GREEN || k === GK.RIVER_GREEN) fillPolygonAA(mask, SIZE, bioRings(b).map(toPx), 1);
+}
+{
+  // 경기장·놀이터 자리는 비오톱 녹지에 들었어도 비운다
+  const pitch = new Uint8Array(SIZE * SIZE * 4);
+  for (const el of raw('green')) if (el.tags?.leisure === 'pitch' || el.tags?.leisure === 'playground') fillPolygon(pitch, SIZE, ringsOf(el).map(toPx), 1);
+  for (let i = 1; i < pitch.length; i += 4) if (pitch[i]) mask[i] = 0;
 }
 for (const f of footprints) fillPolygon(mask, SIZE, [toPx([...f, f[0]])], 2);
 // 건물 그늘을 번지게 한다(반지름 3칸 상자 흐림 두 번)
@@ -842,18 +911,74 @@ for (const f of footprints) fillPolygon(mask, SIZE, [toPx([...f, f[0]])], 2);
 // ───────────────────────── 나무: 녹지 칸에 고정 난수로 뿌린다 ─────────────────────────
 const trees: number[] = [];
 {
+  // 마스크는 덮인 비율이라 반 넘게 덮인 칸만 녹지·물로 본다
+  const isGreen = (i: number) => mask[i * 4 + 1] >= 128 && mask[i * 4] < 128;
   let green = 0;
-  for (let i = 0; i < SIZE * SIZE; i++) if (mask[i * 4 + 1] && !mask[i * 4]) green++;
+  for (let i = 0; i < SIZE * SIZE; i++) if (isGreen(i)) green++;
   const prob = Math.min(0.03, 5200 / Math.max(1, green));
   for (let iz = 0; iz < SIZE; iz++)
     for (let ix = 0; ix < SIZE; ix++) {
       const i = iz * SIZE + ix;
-      if (!mask[i * 4 + 1] || mask[i * 4] || mask[i * 4 + 2] > 40) continue;
+      if (!isGreen(i) || mask[i * 4 + 2] > 40) continue;
       if (hash01(i, 5) > prob) continue;
       const x = (ix + hash01(i, 6)) * 2 - HALF;
       const z = (iz + hash01(i, 7)) * 2 - HALF;
       if (inBoard(x, z, 12)) trees.push(dm(x), dm(z));
     }
+  console.log(`녹지 ${((green * 4) / 1e6).toFixed(2)}㎢, 녹지에 뿌린 나무 ${trees.length / 2}그루`);
+}
+// 가로수: 서울시 가로수 위치정보(tools/ground.py 가 받는다). 건물 한가운데·물 위에 찍힌 점은 뺀다
+const streetTreeFile = new URL('./raw/seoul-trees.json', import.meta.url);
+if (existsSync(streetTreeFile)) {
+  let n = 0;
+  for (const [lat, lon] of JSON.parse(readFileSync(streetTreeFile, 'utf8')).trees as [number, number][]) {
+    const [x, z] = toXZ(lat, lon);
+    if (!inBoard(x, z, 12)) continue;
+    const i = (Math.floor(px(z)) * SIZE + Math.floor(px(x))) * 4;
+    if (mask[i] >= 128 || mask[i + 2] > 200) continue;
+    trees.push(dm(x), dm(z));
+    n++;
+  }
+  console.log(`가로수 ${n}그루 더함`);
+}
+
+// ───────────────────────── 바닥 면: 서울 비오톱(땅 쓰임새·보도·둔치) 위에 OSM 면(공원·광장·주차장·운동장·놀이터 등) ─────────────────────────
+// 그리는 순서대로 늘어놓는다: 비오톱 면(서로 겹치지 않는다) → OSM 면(종류 순, 같은 종류는 넓은 것 먼저)
+const groundAreas: (number | number[])[][] = [];
+{
+  type Pt = [number, number];
+  const RECT_KINDS = new Set<number>([GK.PITCH_DIRT, GK.PITCH_TURF, GK.COURT, GK.TRACK, GK.PARKING]);
+  const nearBoard = (r: Pt[]) => r.some(([x, z]) => inBoard(x, z, -20));
+  const items: { kind: number; param: number; outer: Pt[]; holes: Pt[][]; area: number }[] = [];
+  const add = (kind: number, param: number, rings: Pt[][], tol: number) => {
+    for (const p of groupRings(rings.map((r) => simplifyRing(r, tol)))) {
+      const area = Math.abs(ringArea(p.outer)) - p.holes.reduce((s, h) => s + Math.abs(ringArea(h)), 0);
+      if (area < 2 || !nearBoard(p.outer)) continue;
+      items.push({ kind, param, outer: p.outer, holes: p.holes, area });
+    }
+  };
+  for (const b of biotopes) {
+    const k = biotopeKind(b);
+    if (k) add(k, b.green, bioRings(b), 0.3);
+  }
+  const areaFile = new URL('./raw/areas.json', import.meta.url);
+  const osm: El[] = existsSync(areaFile) ? JSON.parse(readFileSync(areaFile, 'utf8')).elements : [];
+  for (const el of osm) {
+    const { kind, sport } = osmKind(el.tags ?? {});
+    if (!kind) continue;
+    let rings: Pt[][] = [];
+    if (el.type === 'way' && el.geometry && el.geometry.length >= 4) {
+      const r = xz(el.geometry);
+      if (r[0][0] === r[r.length - 1][0] && r[0][1] === r[r.length - 1][1]) rings = [r];
+    } else if (el.type === 'relation') rings = assembleRings((el.members ?? []).filter((m) => m.type === 'way' && m.geometry).map((m) => xz(m.geometry!)));
+    if (rings.length) add(kind, sport, rings, 0.15);
+  }
+  items.sort((a, b) => (a.kind < 20 && b.kind < 20 ? 0 : a.kind - b.kind || b.area - a.area));
+  for (const it of items) groundAreas.push(encodeArea(it.kind, it.param, RECT_KINDS.has(it.kind) ? minRect(it.outer) : null, it.outer, it.holes));
+  const count = new Map<number, number>();
+  for (const it of items) count.set(it.kind, (count.get(it.kind) ?? 0) + 1);
+  const name = Object.fromEntries(Object.entries(GK).map(([k, v]) => [v, k]));
+  console.log(`바닥 면 ${items.length}개(비오톱 ${items.filter((i) => i.kind < 20).length}, OSM ${items.filter((i) => i.kind >= 20).length}): ${[...count].sort((a, b) => a[0] - b[0]).map(([k, n]) => `${name[k]} ${n}`).join(', ')}, ${(JSON.stringify(groundAreas).length / 1e6).toFixed(2)}MB`);
 }
 
 // ───────────────────────── 노선 ─────────────────────────
@@ -1008,6 +1133,52 @@ for (const e of exits) {
   }
 }
 
+// 용도를 모르는 건물: 큰길(집산도로 이상, 등급 3 이하)의 찻길 가장자리에서 12m 안에 꼭짓점이 있으면 상가로 본다(서울 큰길가는 1층이 가게인 근린생활시설이 대부분)
+{
+  const CELL = 40;
+  const segs = new Map<string, [number, number, number, number, number][]>();
+  roads.forEach((r, i) => {
+    if (r[0] > 3 || r[3]) return;
+    const P = ptsOf(r);
+    const half = carriageway(i) / 2;
+    for (let k = 0; k + 1 < P.length; k++) {
+      const [ax, az] = P[k];
+      const [bx, bz] = P[k + 1];
+      for (let gx = Math.floor(Math.min(ax, bx) / CELL) - 1; gx <= Math.floor(Math.max(ax, bx) / CELL) + 1; gx++)
+        for (let gz = Math.floor(Math.min(az, bz) / CELL) - 1; gz <= Math.floor(Math.max(az, bz) / CELL) + 1; gz++) {
+          const key = `${gx},${gz}`;
+          (segs.get(key) ?? segs.set(key, []).get(key)!).push([ax, az, bx, bz, half]);
+        }
+    }
+  });
+  let n = 0;
+  buildings.forEach((b, i) => {
+    if (binfo[i] % 8 !== 0) return;
+    for (let k = 2; k < b.length; k += 2) {
+      const x = b[k] / 10;
+      const z = b[k + 1] / 10;
+      for (const [ax, az, bx, bz, half] of segs.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`) ?? []) {
+        const dx = bx - ax;
+        const dz = bz - az;
+        const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+        if (Math.hypot(ax + dx * t - x, az + dz * t - z) - half < 12) {
+          binfo[i] += 4; // USE.commercial
+          n++;
+          return;
+        }
+      }
+    }
+  });
+  console.log(`큰길가라 상가로 본 건물 ${n}동`);
+}
+
+// 역 엘리베이터: 지하층(level 에 음수)과 이어지는 OSM 엘리베이터 노드 가운데 역에서 250m 안(tools/fetch-parts.ts 로 받는다)
+const elevators = (existsSync(new URL('./raw/elevators.json', import.meta.url)) ? raw('elevators') : []).flatMap((e) => {
+  const [x, z] = toXZ(e.lat!, e.lon!);
+  if (!inBoard(x, z, 20) || !/(^|;)-\d/.test(e.tags?.level ?? '')) return [];
+  return stations.some((s) => Math.hypot(s.x / 10 - x, s.z / 10 - z) < 250) ? [dm(x), dm(z)] : [];
+});
+
 // ───────────────────────── 랜드마크 중심 ─────────────────────────
 const center = (pts: number[][]) => {
   const n = Math.max(1, pts.length);
@@ -1081,6 +1252,8 @@ const out = {
   v: 1,
   names,
   b: buildings,
+  bi: binfo,
+  ev: elevators,
   r: roads,
   lines: lines.map(({ _ways, _len, ...l }) => l),
   stations,
@@ -1110,6 +1283,8 @@ const out = {
   schools: schoolSites.map((sc) => ({ name: sc.name, ring: sc.ring.flatMap(([x, z]) => [dm(x), dm(z)]) })),
   river,
   picnic,
+  // 바닥 면 [종류, 값, 직사각형, 바깥 고리, 구멍...] (src/data/board.ts 의 GK)
+  ga: groundAreas,
 };
 const json = JSON.stringify(out);
 writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
@@ -1124,6 +1299,7 @@ for (const l of lines) console.log(`${l.name}: 선로 조각 ${l._ways}개 → $
 console.log(`버스 노선 ${busRuns.length}개(${[...new Set(busRuns.map((b) => b.ref))].length}개 번호), 정류장 ${busRuns.reduce((n, b) => n + b.stops.length / 2, 0)}곳(노선별 합), 버스가 지나는 조각 ${roads.filter((r) => r[2] & 2).length}개`);
 console.log(`학교 ${schoolSites.length}곳(${schoolSites.map((s) => s.name).join(', ')}), 학교 건물 ${buildings.filter((b) => b[1] === 6).length}동`);
 console.log(`이름 랜드마크 건물 ${NAMED_LM.map(([re, n]) => `${re.source.slice(0, 6)}:${buildings.filter((b) => b[1] === n).length}`).join(' ')}, 캠퍼스 고리 ${campusRing.length}점, 물길 ${river.length / 2}점, 피크닉 ${picnic.length / 2}곳`);
+console.log(`건물 부분 ${parts.filter((p) => p.used).length}/${parts.length}개를 감싸는 건물 대신 세움, 역 엘리베이터 ${elevators.length / 2}곳, 용도 ${[0, 1, 2, 3, 4, 5, 6, 7].map((u) => binfo.filter((v) => v % 8 === u).length).join('/')}`);
 console.log(`출구 ${exits.length}곳 가운데 찻길 위에 있어 보도로 밀어낸 곳 ${exitsPushed}곳`);
 console.log(`랜드마크 ${landmarks.map((l) => `${l.id}(${l.x / 10},${l.z / 10})`).join(' ')}`);
 console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB`);

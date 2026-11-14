@@ -6,6 +6,10 @@ export interface BoardJson {
   names: string[];
   /** 건물: [높이, 랜드마크 번호, x0,z0, x1,z1, ...] */
   b: number[][];
+  /** 건물마다 용도·층수·지붕·아래 높이를 묶은 숫자(tools/lib/building.ts packInfo). 0 = 모름 */
+  bi?: number[];
+  /** 역 둘레의 지하↔지상 엘리베이터 [x,z, ...] */
+  ev?: number[];
   /** 도로 조각: [등급, 차로 수, 일방통행, 교량, 이름 번호, 랜드마크 번호, x,y,z, ...] */
   r: number[][];
   lines: { id: string; name: string; color: string; cars: number; p: number[]; stops: { name: string; s: number }[] }[];
@@ -33,9 +37,29 @@ export interface BoardJson {
   xwd?: number[];
   /** 정지선 [x0, z0, x1, z1, ...] */
   stop?: number[];
+  /** 바닥 면: [종류(GK), 값, [가운데 x, z, 긴 변 방향 ×1000 (x, z), 반 길이, 반 폭] 또는 [], [바깥 고리 x,z, ...], [구멍 x,z, ...], ...] */
+  ga?: (number | number[])[][];
 }
 
-export interface Building {
+/** 건물 용도(구울 때 태그로 정한다. 모르면 0, 그리기에서 자리와 높이로 어림한다) */
+export const USE = { unknown: 0, house: 1, villa: 2, apartments: 3, commercial: 4, office: 5, civic: 6, religious: 7 } as const;
+
+export interface BuildingInfo {
+  use: number;
+  /** 지상 층수(태그가 없으면 0) */
+  levels: number;
+  /** 0 모름 1 평지붕 2 맞배 3 모임 4 피라미드 5 외쪽 6 돔 7 둥근 */
+  roof: number;
+  /** 건물 부분이 시작하는 높이(m). 아래가 비어 있는 덩어리(building:part) */
+  minH: number;
+}
+
+export function unpackInfo(v: number): BuildingInfo {
+  return { use: v % 8, levels: Math.floor(v / 8) % 128, roof: Math.floor(v / 1024) % 8, minH: Math.floor(v / 8192) / 10 };
+}
+
+/** 용도·층수·지붕·아래 높이는 구운 자료에 없으면 비어 있다 */
+export interface Building extends Partial<BuildingInfo> {
   h: number;
   /** 0 = 일반, 1 = 홍익대 */
   lm: number;
@@ -161,6 +185,10 @@ export interface Board {
   crosswalkMarks: Float32Array[];
   /** 정지선 [x0, z0, x1, z1, ...] */
   stopLines: Float32Array;
+  /** 바닥 면(땅 쓰임새·보도·광장·주차장·운동장·놀이터·물가 등). 그리는 순서대로 */
+  groundAreas: GroundArea[];
+  /** 역 엘리베이터 [x,z, ...] */
+  elevators: Float32Array;
 }
 
 const m = (a: number[], from = 0) => Float32Array.from(a.slice(from), (v) => v / 10);
@@ -179,7 +207,8 @@ export function decodeBoard(j: BoardJson): Board {
     river,
     riverCum: cumLen(river),
     picnic: m(j.picnic ?? []),
-    buildings: j.b.map((b) => ({ h: b[0] / 10, lm: b[1], pts: m(b, 2) })),
+    buildings: j.b.map((b, i) => ({ h: b[0] / 10, lm: b[1], pts: m(b, 2), ...unpackInfo(j.bi?.[i] ?? 0) })),
+    elevators: m(j.ev ?? []),
     roads: j.r.map((r, i) => {
       const oneway = !!(r[2] & 1);
       const rl = j.rl?.[i] || null;
@@ -227,6 +256,7 @@ export function decodeBoard(j: BoardJson): Board {
     })),
     crosswalkMarks: rings(j.xwd ?? []),
     stopLines: m(j.stop ?? []),
+    groundAreas: decodeGroundAreas(j.ga ?? []),
     landmarks: j.landmarks.map((l) => ({ id: l.id, x: l.x / 10, z: l.z / 10 })),
     trees: m(j.trees),
     buses: (j.buses ?? []).map((b) => ({
@@ -238,6 +268,94 @@ export function decodeBoard(j: BoardJson): Board {
       stopNames: b.stops.filter((_, i) => i % 2 === 1).map((n) => j.names[n] ?? ''),
     })),
   };
+}
+
+/**
+ * 바닥 면 종류. 1~19 는 서울 생태현황도(개별비오톱) 면, 20 이상은 OSM 면이다. 굽기는 이 순서(작은 값 먼저)로 늘어놓아 뒤의 면이 앞의 면을 덮는다.
+ */
+export const GK = {
+  /** 단독주택지 */
+  HOUSE: 1,
+  /** 공동주택(아파트 단지) */
+  APT: 2,
+  /** 주거·상업 혼합지 */
+  MIXED: 3,
+  /** 상업·업무지 */
+  COMMERCE: 4,
+  /** 공공용도지(학교·관공서) */
+  PUBLIC: 5,
+  /** 철도·역 부지 */
+  RAIL: 6,
+  /** 도로 부지: 찻길 띠가 덮지 않은 부분이 보도로 남는다 */
+  ROADSIDE: 7,
+  /** 공업·기반시설·특수 지역 */
+  UTILITY: 8,
+  /** 나지(맨땅), 공사장 */
+  BARE: 9,
+  /** 산림 */
+  FOREST: 10,
+  /** 조경 녹지·풀밭 */
+  GREEN: 11,
+  /** 경작지 */
+  FARM: 12,
+  /** 한강 둔치 녹지 */
+  RIVER_GREEN: 13,
+  /** 한강 둔치 포장(산책로·자전거길·시설) */
+  RIVER_PAVED: 14,
+  /** 호안 블록(물가 돌 쌓기) */
+  REVETMENT: 15,
+  /** 공원 잔디 */
+  PARK: 20,
+  /** 숲 */
+  WOOD: 21,
+  /** 철도 선로 부지 */
+  RAILWAY: 22,
+  /** 보행 광장·보행자 길 면 */
+  PLAZA: 23,
+  /** 지상 주차장 */
+  PARKING: 24,
+  /** 흙 운동장 */
+  PITCH_DIRT: 25,
+  /** 잔디(인조 잔디) 운동장 */
+  PITCH_TURF: 26,
+  /** 테니스·농구·배드민턴 등 포장 코트 */
+  COURT: 27,
+  /** 육상 트랙 */
+  TRACK: 28,
+  /** 놀이터 */
+  PLAYGROUND: 29,
+  /** 관람석·계단식 스탠드 */
+  BLEACHERS: 30,
+  /** 교통섬 */
+  ISLAND: 31,
+  /** 부두·데크 */
+  PIER: 32,
+  /** 수영장·분수 */
+  POOL: 33,
+} as const;
+
+export interface GroundArea {
+  kind: number;
+  /** 종류마다 쓰는 값: 경기장은 종목(1 축구, 2 테니스, 3 농구, 4 야구, 5 배드민턴·배구), 비오톱 면은 녹지율(%) */
+  param: number;
+  /** 감싸는 직사각형(경기장 선·주차 칸을 긋는 데 쓴다). hl·hw 는 긴 변·짧은 변의 반(m) */
+  rect: { cx: number; cz: number; ux: number; uz: number; hl: number; hw: number } | null;
+  /** 바깥 고리 [x,z, ...](닫는 점 없이) */
+  outer: Float32Array;
+  holes: Float32Array[];
+}
+
+export function decodeGroundAreas(ga: (number | number[])[][]): GroundArea[] {
+  return ga.map((a) => {
+    const r = a[2] as number[];
+    return {
+      kind: a[0] as number,
+      param: a[1] as number,
+      rect: r.length ? { cx: r[0] / 10, cz: r[1] / 10, ux: r[2] / 1000, uz: r[3] / 1000, hl: r[4] / 10, hw: r[5] / 10 } : null,
+      outer: m(a[3] as number[]),
+      holes: (a.slice(4) as number[][]).map((h) => m(h)),
+    };
+  });
 }
 
 export async function loadBoard(base: string): Promise<Board> {

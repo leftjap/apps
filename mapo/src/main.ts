@@ -183,7 +183,7 @@ const namesMesh = makeGroundLabels(nameLabels, true);
 const boats = makeBoats(board.river, board.riverCum);
 const picnic = makePicnic(board.picnic);
 view.scene.add(
-  makeGround(mask),
+  makeGround(mask, board.groundAreas),
   roads.group,
   flow.mesh,
   signalMarks.group,

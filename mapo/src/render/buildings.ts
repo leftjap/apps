@@ -1,81 +1,380 @@
-// 건물. 외곽선을 높이만큼 세운 기둥들을 메시 하나로 합친다.
-// 낮에는 면 방향 명암과 바닥 쪽 그늘, 밤에는 창문·가게 불빛을 셰이더에서 만든다.
+// 건물. 외곽선을 세운 벽, 옥상 난간과 그 안쪽의 낮은 옥상 바닥(태그가 있으면 경사 지붕)을 메시 하나로 합치고,
+// 옥탑·실외기·물탱크·기계실·차양·돌출 간판은 상자 하나를 인스턴스로 그린다.
+// 외벽은 셰이더가 용도별(다세대 빌라 벽돌, 상가, 유리 커튼월, 아파트, 주택, 공공 건물)로 층마다 창과 창틀, 층 사이 띠,
+// 1층 가게 유리와 간판 띠·필로티 주차장을 그리고, 밤에는 창과 가게·간판에 불을 켠다. 옆 건물과 붙은 벽에는 창을 내지 않는다.
 import * as THREE from 'three';
-import type { Building } from '../data/board.ts';
+import { USE, type Building } from '../data/board.ts';
 import { material, pal } from './env.ts';
 
-export function prismGeometry(list: Building[]): THREE.BufferGeometry {
-  let nv = 0;
-  let ni = 0;
+/** 외벽 모양(셰이더의 style 값). 6 부터는 명소 건물 전용이고 BASE 의 기본 모양을 따르되 색·창이 다르다 */
+export const STYLE = { villa: 0, shop: 1, glass: 2, apt: 3, house: 4, civic: 5, stone: 6, greenGrid: 7, sangsang: 8, mallPanel: 9, blueGlass: 10, tower: 11 } as const;
+const BASE = [0, 1, 2, 3, 4, 5, 5, 2, 5, 1, 2, 2];
+
+/** 명소 건물에서 외벽 모양을 정해 둔 건물 */
+type Hot = Building & { style?: number };
+
+const centroid = (p: Float32Array): [number, number] => {
+  let x = 0;
+  let z = 0;
+  for (let i = 0; i < p.length; i += 2) (x += p[i]), (z += p[i + 1]);
+  return [(x * 2) / p.length, (z * 2) / p.length];
+};
+
+/**
+ * 명소 건물 다듬기(사진·항공사진으로 확인한 것). 고친 목록을 돌려준다.
+ * - AK&홍대(양화로 188): OSM 은 바닥 전체를 79m 한 덩어리로 그려 두었다. 지상 1~5층 쇼핑몰 기단(약 30m) 위에 안쪽 부분(OSM building:part 17층)만 79.5m 탑으로 세운다.
+ * - KT&G 상상마당: 노출 콘크리트 벽에 굽이치는 유리 띠.
+ * - 홍익대 홍문관: OSM building:part 의 두 기둥(45m)과 20m 위에 걸친 다리(정문이 뚫린 모양)에 베이지 석재 기둥·녹색 유리 격자.
+ * - 메세나폴리스: OSM 의 세 주거 탑(101·102동 39층 137m, 103동 29층 102m, building:colour #394EAA, building:material glass)을 푸른 유리 탑으로.
+ */
+export function refine(list: Building[]): Building[] {
+  const out: Hot[] = [];
   for (const b of list) {
-    const n = b.pts.length / 2;
-    nv += n * 5;
-    ni += n * 6 + (n - 2) * 3;
+    const [cx, cz] = centroid(b.pts);
+    const near = (x: number, z: number, r: number) => Math.hypot(cx - x, cz - z) < r;
+    if (b.lm === 0 && near(661, -699, 6) && b.h > 70) out.push({ ...b, h: 30, levels: 5, style: STYLE.mallPanel });
+    else if (b.lm === 0 && near(659, -697, 6) && b.h > 40 && b.h < 70) out.push({ ...b, h: 79.5, levels: 17, style: STYLE.blueGlass });
+    else if (b.lm === 10) out.push({ ...b, style: STYLE.sangsang });
+    else if (b.lm === 1 && near(510, -100, 50) && (b.minH ?? 0) > 1) out.push({ ...b, style: STYLE.greenGrid });
+    else if (b.lm === 1 && near(510, -100, 50) && b.h > 40) out.push({ ...b, style: STYLE.stone });
+    else if (b.lm === 13) out.push({ ...b, style: STYLE.tower });
+    else out.push(b);
   }
-  const pos = new Float32Array(nv * 3);
-  const nor = new Float32Array(nv * 3);
-  const wall = new Float32Array(nv * 2);
-  const seed = new Float32Array(nv);
-  const idx = new Uint32Array(ni);
-  let v = 0;
-  let k = 0;
-  const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, u: number, w: number, s: number) => {
-    pos.set([x, y, z], v * 3);
-    nor.set([nx, ny, nz], v * 3);
-    wall.set([u, w], v * 2);
-    seed[v] = s;
-    return v++;
+  return out;
+}
+
+/** 0~1 고정 난수 */
+const rnd = (a: number, b = 0) => {
+  const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+  return v - Math.floor(v);
+};
+
+/** 건물 바닥 외곽선 격자: 옆 건물과 붙은 벽, 앞이 트인 정도를 재는 데 쓴다 */
+function footGrid(list: Building[]) {
+  const CELL = 24;
+  const cells = new Map<number, number[]>();
+  const key = (gx: number, gz: number) => (gx + 500) * 1000 + gz + 500;
+  list.forEach((b, i) => {
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (let k = 0; k < b.pts.length; k += 2) {
+      x0 = Math.min(x0, b.pts[k]);
+      x1 = Math.max(x1, b.pts[k]);
+      z0 = Math.min(z0, b.pts[k + 1]);
+      z1 = Math.max(z1, b.pts[k + 1]);
+    }
+    for (let gx = Math.floor(x0 / CELL); gx <= Math.floor(x1 / CELL); gx++)
+      for (let gz = Math.floor(z0 / CELL); gz <= Math.floor(z1 / CELL); gz++) {
+        const k = key(gx, gz);
+        (cells.get(k) ?? cells.set(k, []).get(k)!).push(i);
+      }
+  });
+  /** (x, z)가 self 가 아닌 건물(높이 2.5m 넘게 서 있는) 안인가. 그 건물이 (ix, iz)(self 안쪽 점)까지 덮으면 겹친 건물이라 치지 않는다 */
+  return (x: number, z: number, self: number, ix: number, iz: number) => {
+    for (const i of cells.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) ?? []) {
+      if (i === self) continue;
+      const b = list[i];
+      const mh = b.minH ?? 0;
+      if (b.h - mh < 2.5 || mh > 4) continue;
+      if (inPoly(b.pts, x, z) && !inPoly(b.pts, ix, iz)) return true;
+    }
+    return false;
   };
-  for (const b of list) {
+}
+
+export function inPoly(p: ArrayLike<number>, x: number, z: number): boolean {
+  let c = false;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const ax = p[i], az = p[i + 1], bx = p[j], bz = p[j + 1];
+    if (az > z !== bz > z && x < ax + ((z - az) / (bz - az)) * (bx - ax)) c = !c;
+  }
+  return c;
+}
+
+/** 점에서 외곽선 변까지 가장 가까운 거리 */
+function edgeDist(p: ArrayLike<number>, x: number, z: number): number {
+  let d = Infinity;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const ax = p[j], az = p[j + 1], dx = p[i] - ax, dz = p[i + 1] - az;
+    const L2 = dx * dx + dz * dz || 1;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2));
+    d = Math.min(d, Math.hypot(ax + dx * t - x, az + dz * t - z));
+  }
+  return d;
+}
+
+/** 외곽선을 안쪽으로 d 만큼 들인 고리. 들이다 뒤집히거나 너무 줄면 null */
+function inset(p: Float32Array, d: number): Float32Array | null {
+  const n = p.length / 2;
+  const out = new Float32Array(p.length);
+  let area0 = 0;
+  let area1 = 0;
+  for (let i = 0; i < n; i++) {
+    const a = (i + n - 1) % n;
+    const c = (i + 1) % n;
+    let e1x = p[i * 2] - p[a * 2], e1z = p[i * 2 + 1] - p[a * 2 + 1];
+    let e2x = p[c * 2] - p[i * 2], e2z = p[c * 2 + 1] - p[i * 2 + 1];
+    const l1 = Math.hypot(e1x, e1z) || 1;
+    const l2 = Math.hypot(e2x, e2z) || 1;
+    (e1x /= l1), (e1z /= l1), (e2x /= l2), (e2z /= l2);
+    // 안쪽 법선(넓이가 양수인 방향에서 바깥 법선은 (dz, −dx))
+    const n1x = -e1z, n1z = e1x, n2x = -e2z, n2z = e2x;
+    const k = 1 + n1x * n2x + n1z * n2z;
+    let mx = ((n1x + n2x) / Math.max(0.15, k)) * d;
+    let mz = ((n1z + n2z) / Math.max(0.15, k)) * d;
+    const ml = Math.hypot(mx, mz);
+    if (ml > 2.5 * d) (mx *= (2.5 * d) / ml), (mz *= (2.5 * d) / ml);
+    out[i * 2] = p[i * 2] + mx;
+    out[i * 2 + 1] = p[i * 2 + 1] + mz;
+  }
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    area0 += p[j * 2] * p[i * 2 + 1] - p[i * 2] * p[j * 2 + 1];
+    area1 += out[j * 2] * out[i * 2 + 1] - out[i * 2] * out[j * 2 + 1];
+  }
+  if (area1 * area0 <= 0 || Math.abs(area1) < Math.abs(area0) * 0.45) return null;
+  for (let i = 0; i < n; i++) if (!inPoly(p, out[i * 2], out[i * 2 + 1])) return null;
+  return out;
+}
+
+/** 가장 긴 변 방향으로 잰 바닥 상자: 가운데, 축(단위), 축 방향 길이 L, 가로 W */
+function obb(p: Float32Array) {
+  let best = 0;
+  let ax = 1;
+  let az = 0;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const dx = p[i] - p[j], dz = p[i + 1] - p[j + 1];
+    const l = Math.hypot(dx, dz);
+    if (l > best) (best = l), (ax = dx / l), (az = dz / l);
+  }
+  let s0 = Infinity, s1 = -Infinity, t0 = Infinity, t1 = -Infinity;
+  for (let i = 0; i < p.length; i += 2) {
+    const s = p[i] * ax + p[i + 1] * az;
+    const t = -p[i] * az + p[i + 1] * ax;
+    (s0 = Math.min(s0, s)), (s1 = Math.max(s1, s)), (t0 = Math.min(t0, t)), (t1 = Math.max(t1, t));
+  }
+  const sc = (s0 + s1) / 2, tc = (t0 + t1) / 2;
+  return { cx: sc * ax - tc * az, cz: sc * az + tc * ax, ax, az, L: s1 - s0, W: t1 - t0 };
+}
+
+export interface Look {
+  style: number;
+  /** 기본 모양(명소 전용 모양이면 그것이 따르는 기본 모양) */
+  base: number;
+  seed: number;
+  /** 층 높이와 1층 높이(0 이면 1층도 같은 높이, 바닥부터 센다) */
+  fh: number;
+  gh: number;
+  /** 창을 낼 수 있는 벽 꼭대기(난간 아래) */
+  top: number;
+  parapet: number;
+  floors: number;
+  /** 변마다 0 = 옆 건물과 붙음, 1 = 좁은 틈·골목, 2 = 넓게 트임(큰길·광장) */
+  open: Uint8Array;
+}
+
+/** 골목 안까지 가게가 들어찬 곳(홍대 앞·홍대입구역·합정역·상수역·연남동 경의선숲길 둘레) */
+const CORES: [number, number, number][] = [[350, -250, 480], [573, -643, 200], [-470, 240, 220], [343, 415, 160], [330, -1150, 180]];
+const inCore = (x: number, z: number) => CORES.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r);
+
+/** 붙은 벽·트인 정도와 태그로 건물마다 외벽 모양과 층을 정한다 */
+export function looks(list: Building[]): Look[] {
+  const hit = footGrid(list);
+  return list.map((b, bi) => {
     const p = b.pts;
     const n = p.length / 2;
-    const s = Math.abs(Math.sin(p[0] * 12.9898 + p[1] * 78.233) * 43758.5453) % 1;
-    let u = 0;
+    const seed = rnd(p[0], p[1]);
+    const open = new Uint8Array(n);
+    let area = 0;
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      const ax = p[i * 2];
-      const az = p[i * 2 + 1];
-      const bx = p[j * 2];
-      const bz = p[j * 2 + 1];
+      const ax = p[i * 2], az = p[i * 2 + 1], bx = p[j * 2], bz = p[j * 2 + 1];
+      area += ax * bz - bx * az;
       const len = Math.hypot(bx - ax, bz - az) || 1;
-      const nx = (bz - az) / len;
-      const nz = -(bx - ax) / len;
-      const v0 = put(ax, 0, az, nx, 0, nz, u, 0, s);
-      put(bx, 0, bz, nx, 0, nz, u + len, 0, s);
-      put(bx, b.h, bz, nx, 0, nz, u + len, b.h, s);
-      put(ax, b.h, az, nx, 0, nz, u, b.h, s);
-      idx.set([v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3], k);
-      k += 6;
-      u += len;
+      const nx = (bz - az) / len, nz = -(bx - ax) / len;
+      const probe = (t: number, d: number) => {
+        const x = ax + (bx - ax) * t;
+        const z = az + (bz - az) * t;
+        return hit(x + nx * d, z + nz * d, bi, x - nx * 0.5, z - nz * 0.5);
+      };
+      const at = (d: number) => probe(0.5, d) || (len > 6 && probe(0.2, d) && probe(0.8, d));
+      open[i] = at(0.7) ? 0 : at(5) || at(9) ? 1 : 2;
     }
-    const base = v;
+    area /= 2;
+    const h = b.h;
+    const minH = b.minH ?? 0;
+    const tall = h - minH;
+    const roof = b.roof ?? 0;
+    let style: number;
+    const hot = (b as Hot).style;
+    if (hot !== undefined) style = hot;
+    else if (b.lm === 1 || b.lm === 6 || b.use === USE.civic || b.use === USE.religious) style = STYLE.civic;
+    else if (b.use === USE.house) style = h <= 10 ? STYLE.house : STYLE.villa;
+    else if (b.use === USE.villa) style = h <= 23 ? STYLE.villa : STYLE.apt;
+    else if (b.use === USE.apartments) style = h <= 20 ? STYLE.villa : STYLE.apt;
+    else if (b.use === USE.office) style = h >= 20 ? STYLE.glass : STYLE.shop;
+    else if (b.use === USE.commercial) style = h >= 42 ? STYLE.glass : STYLE.shop;
+    else if (h >= 40) style = STYLE.glass;
+    else if (area > 900 || rnd(seed, 3) < (inCore(p[0], p[1]) ? 0.55 : 0.08)) style = STYLE.shop;
+    else style = area < 45 && h <= 7 ? STYLE.house : STYLE.villa;
+    const pitched = roof >= 2 && roof !== 5;
+    const base = BASE[style];
+    const parapet = pitched || area < 22 || tall < 3.5 ? 0 : base === STYLE.glass ? 1.3 : base === STYLE.apt ? 1.2 : base === STYLE.house ? 0.6 : 0.95;
+    const top = h - parapet;
+    const usable = Math.max(2.4, top - minH - 0.3);
+    const floors = b.levels ? b.levels : Math.max(1, Math.round(usable / 3.2));
+    let gh = 0;
+    let fh = usable / floors;
+    if (minH < 0.5 && floors >= 2 && (base === STYLE.shop || base === STYLE.glass)) {
+      gh = Math.min(5.2, Math.max(3.6, fh * 1.3));
+      fh = (usable - gh) / (floors - 1);
+    }
+    return { style, base, seed, fh: Math.max(2.4, Math.min(12, fh)), gh: Math.min(12, gh), top, parapet, floors, open };
+  });
+}
+
+/** 벽·난간·옥상 메시. looks 를 주지 않으면 이 목록만으로 붙은 벽을 잰다 */
+export function prismGeometry(list: Building[], lk: Look[] = looks(list)): THREE.BufferGeometry {
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const edge: number[] = [];
+  const bld: number[] = [];
+  const idx: number[] = [];
+  let v = 0;
+  let L: Look;
+  const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, u: number, len: number, flags: number, top: number) => {
+    pos.push(x, y, z);
+    nor.push(Math.round(nx * 127), Math.round(ny * 127), Math.round(nz * 127));
+    edge.push(u, len, flags, top);
+    bld.push(L.style, Math.floor(L.seed * 255), Math.round(L.gh * 20), Math.round(L.fh * 20));
+    return v++;
+  };
+  const quad = (a: number) => idx.push(a, a + 1, a + 2, a, a + 2, a + 3);
+  const tri = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number, top: number) => {
+    const ux = bx - ax, uy = by - ay, uz = bz - az, wx = cx - ax, wy = cy - ay, wz = cz - az;
+    let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+    const l = Math.hypot(nx, ny, nz) || 1;
+    (nx /= l), (ny /= l), (nz /= l);
+    if (ny < 0) {
+      (nx = -nx), (ny = -ny), (nz = -nz);
+      [bx, by, bz, cx, cy, cz] = [cx, cy, cz, bx, by, bz];
+    }
+    // 가파른 면(박공)은 벽으로 칠한다
+    const flags = ny < 0.3 ? 0 : 3;
+    const a = put(ax, ay, az, nx, ny, nz, 0, 0, flags, top);
+    put(bx, by, bz, nx, ny, nz, 0, 0, flags, top);
+    put(cx, cy, cz, nx, ny, nz, 0, 0, flags, top);
+    idx.push(a, a + 1, a + 2);
+  };
+
+  list.forEach((b, bi) => {
+    L = lk[bi];
+    const p = b.pts;
+    const n = p.length / 2;
+    const y0 = b.minH ?? 0;
+    const roof = b.roof ?? 0;
+    const h = b.h;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const ax = p[i * 2], az = p[i * 2 + 1], bx = p[j * 2], bz = p[j * 2 + 1];
+      const len = Math.hypot(bx - ax, bz - az) || 1;
+      const nx = (bz - az) / len, nz = -(bx - ax) / len;
+      const f = L.open[i] === 0 ? 8 : 0;
+      quad(put(ax, y0, az, nx, 0, nz, 0, len, f, L.top));
+      put(bx, y0, bz, nx, 0, nz, len, len, f, L.top);
+      put(bx, h, bz, nx, 0, nz, len, len, f, L.top);
+      put(ax, h, az, nx, 0, nz, 0, len, f, L.top);
+    }
+    const ring = L.parapet > 0 ? inset(p, 0.28) : null;
+    if (ring) {
+      // 난간 윗면과 안쪽 벽, 그 안의 낮은 옥상 바닥
+      const fy = h - L.parapet + 0.25;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        const ax = p[i * 2], az = p[i * 2 + 1], bx = p[j * 2], bz = p[j * 2 + 1];
+        const cx = ring[i * 2], cz = ring[i * 2 + 1], dx = ring[j * 2], dz = ring[j * 2 + 1];
+        quad(put(ax, h, az, 0, 1, 0, 0, 0, 2, L.top));
+        put(cx, h, cz, 0, 1, 0, 0, 0, 2, L.top);
+        put(dx, h, dz, 0, 1, 0, 0, 0, 2, L.top);
+        put(bx, h, bz, 0, 1, 0, 0, 0, 2, L.top);
+        const len = Math.hypot(dx - cx, dz - cz) || 1;
+        const nx = -(dz - cz) / len, nz = (dx - cx) / len;
+        quad(put(cx, h, cz, nx, 0, nz, 0, len, 2, L.top));
+        put(cx, fy, cz, nx, 0, nz, 0, len, 2, L.top);
+        put(dx, fy, dz, nx, 0, nz, len, len, 2, L.top);
+        put(dx, h, dz, nx, 0, nz, len, len, 2, L.top);
+      }
+      const contour: THREE.Vector2[] = [];
+      const base = v;
+      for (let i = 0; i < n; i++) {
+        contour.push(new THREE.Vector2(ring[i * 2], ring[i * 2 + 1]));
+        put(ring[i * 2], fy, ring[i * 2 + 1], 0, 1, 0, 0, 0, 1, L.top);
+      }
+      for (const t of THREE.ShapeUtils.triangulateShape(contour, [])) idx.push(base + t[0], base + t[1], base + t[2]);
+      return;
+    }
+    if (roof >= 2 && roof !== 5) {
+      // 경사 지붕: 바닥 상자의 긴 축을 따라 용마루를 두고, 꼭짓점마다 용마루로 올린 점과 잇는다(모임·맞배·피라미드)
+      const o = obb(p);
+      const rh = Math.min(roof >= 6 ? o.W * 0.45 : o.W * 0.32, 6);
+      const half = roof === 4 || roof >= 6 ? 0 : roof === 2 ? o.L / 2 : Math.max(0, (o.L - o.W) / 2);
+      const ridge = (x: number, z: number): [number, number] => {
+        const s = Math.max(-half, Math.min(half, (x - o.cx) * o.ax + (z - o.cz) * o.az));
+        return [o.cx + o.ax * s, o.cz + o.az * s];
+      };
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        const ax = p[i * 2], az = p[i * 2 + 1], bx = p[j * 2], bz = p[j * 2 + 1];
+        const [rax, raz] = ridge(ax, az);
+        const [rbx, rbz] = ridge(bx, bz);
+        tri(ax, h, az, bx, h, bz, rbx, h + rh, rbz, h);
+        if (Math.hypot(rax - rbx, raz - rbz) > 0.05) tri(ax, h, az, rbx, h + rh, rbz, rax, h + rh, raz, h);
+      }
+      return;
+    }
     const contour: THREE.Vector2[] = [];
+    const base = v;
     for (let i = 0; i < n; i++) {
       contour.push(new THREE.Vector2(p[i * 2], p[i * 2 + 1]));
-      put(p[i * 2], b.h, p[i * 2 + 1], 0, 1, 0, -1, b.h, s);
+      put(p[i * 2], h, p[i * 2 + 1], 0, 1, 0, 0, 0, 1, L.top);
     }
-    for (const f of THREE.ShapeUtils.triangulateShape(contour, [])) {
-      idx.set([base + f[0], base + f[1], base + f[2]], k);
-      k += 3;
-    }
-  }
+    for (const t of THREE.ShapeUtils.triangulateShape(contour, [])) idx.push(base + t[0], base + t[1], base + t[2]);
+  });
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-  g.setAttribute('aWall', new THREE.BufferAttribute(wall, 2));
-  g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
-  g.setIndex(new THREE.BufferAttribute(idx.subarray(0, k), 1));
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Int8BufferAttribute(Int8Array.from(nor), 3, true));
+  g.setAttribute('aEdge', new THREE.Float32BufferAttribute(edge, 4));
+  g.setAttribute('aBld', new THREE.Uint8BufferAttribute(Uint8Array.from(bld), 4));
+  g.setIndex(v > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
   return g;
 }
 
+/** 외벽 색(용도·난수). 셰이더와 옥탑 색이 같은 식을 쓴다 */
+const GLSL_COLORS = /* glsl */ `
+vec3 wallColor(float style, float s) {
+  float k = fract(s * 7.31);
+  if (style > 5.5) return style < 6.5 ? vec3(0.88, 0.8, 0.66) : style < 7.5 ? vec3(0.62, 0.66, 0.6) : style < 8.5 ? vec3(0.7, 0.7, 0.68)
+                       : style < 9.5 ? vec3(0.93, 0.93, 0.92) : style < 10.5 ? vec3(0.3, 0.37, 0.44) : vec3(0.86, 0.88, 0.9);
+  if (style < 0.5) return k < 0.42 ? vec3(0.76, 0.5, 0.41) : k < 0.58 ? vec3(0.6, 0.43, 0.35) : k < 0.8 ? vec3(0.93, 0.86, 0.74) : vec3(0.93, 0.92, 0.89);
+  if (style < 1.5) return k < 0.3 ? vec3(0.95, 0.94, 0.92) : k < 0.52 ? vec3(0.84, 0.84, 0.83) : k < 0.7 ? vec3(0.92, 0.86, 0.77) : k < 0.84 ? vec3(0.5, 0.52, 0.55) : vec3(0.74, 0.5, 0.42);
+  if (style < 2.5) return k < 0.5 ? vec3(0.36, 0.39, 0.43) : vec3(0.55, 0.57, 0.6);
+  if (style < 3.5) return k < 0.6 ? vec3(0.96, 0.95, 0.91) : vec3(0.92, 0.89, 0.82);
+  if (style < 4.5) return k < 0.5 ? vec3(0.92, 0.88, 0.8) : vec3(0.72, 0.5, 0.42);
+  return k < 0.55 ? vec3(0.86, 0.85, 0.82) : vec3(0.72, 0.47, 0.4);
+}
+float isBrick(float style, float s) {
+  float k = fract(s * 7.31);
+  if (style > 5.5) return 0.0;
+  return style < 0.5 ? step(k, 0.58) : style > 0.5 && style < 1.5 ? step(0.84, k) : style > 3.5 && style < 4.5 ? step(0.5, k) : style > 4.5 ? step(0.55, k) : 0.0;
+}
+`;
+
 const VERT = /* glsl */ `
-  attribute vec2 aWall; attribute float aSeed;
+  attribute vec4 aEdge; attribute vec4 aBld;
   uniform float uLift;
-  varying vec3 vN; varying vec2 vWall; varying float vSeed; varying float vDist; varying vec2 vXZ;
+  varying vec3 vN; varying vec4 vEdge; varying vec4 vBld; varying vec3 vPos; varying float vDist;
   void main() {
     vec3 p = position;
     p.y += uLift * step(0.01, position.y);
-    vN = normal; vWall = aWall; vSeed = aSeed; vXZ = position.xz;
+    vN = normal; vEdge = aEdge; vBld = aBld; vPos = position;
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     vDist = -mv.z;
     gl_Position = projectionMatrix * mv;
@@ -83,33 +382,231 @@ const VERT = /* glsl */ `
 
 const FRAG = /* glsl */ `
   uniform vec3 uBld, uRoof, uTint; uniform float uGlow;
-  varying vec3 vN; varying vec2 vWall; varying float vSeed; varying float vDist; varying vec2 vXZ;
+  varying vec3 vN; varying vec4 vEdge; varying vec4 vBld; varying vec3 vPos; varying float vDist;
+  ${GLSL_COLORS}
+  /** 부드러운 사각형 안(0~1). p 와 경계는 같은 단위, w 는 화면 한 점의 크기 */
+  float rect(vec2 p, vec2 lo, vec2 hi, vec2 w) {
+    vec2 a = smoothstep(lo - w, lo + w, p) * (1.0 - smoothstep(hi - w, hi + w, p));
+    return a.x * a.y;
+  }
+  /** 간판 색 */
+  vec3 signColor(float r) {
+    return r < 0.18 ? vec3(0.86, 0.16, 0.14) : r < 0.32 ? vec3(0.98, 0.78, 0.12) : r < 0.46 ? vec3(0.12, 0.36, 0.78) : r < 0.58 ? vec3(0.1, 0.55, 0.32)
+         : r < 0.7 ? vec3(0.95, 0.95, 0.93) : r < 0.8 ? vec3(0.12, 0.12, 0.14) : r < 0.9 ? vec3(0.92, 0.42, 0.12) : vec3(0.62, 0.2, 0.62);
+  }
   void main() {
-    // 지하 들여다보기: 원 안의 건물은 성기게 그려 유리처럼 비치게 한다
-    float fi = focusIn(vXZ);
+    float fi = focusIn(vPos.xz);
     if (fi > 0.01 && dither(gl_FragCoord.xy) < fi * 0.82) discard;
-    float roof = step(vWall.x, -0.5);
-    float wallF = 1.0 - roof;
-    vec3 alb = mix(uBld, uRoof, roof) * (0.93 + 0.13 * fract(vSeed * 7.31));
-    alb *= mix(vec3(1.0), vec3(1.03, 0.99, 0.94), fract(vSeed * 3.7)) * uTint;
-    alb *= mix(1.0, mix(0.72, 1.0, smoothstep(0.0, 11.0, vWall.y)), wallF);  // 바닥 쪽 그늘
+    float st = vBld.x, s = vBld.y / 255.0, gh = vBld.z / 20.0, fh = max(2.4, vBld.w / 20.0);
+    // 명소 전용 모양(6~)은 기본 모양을 따른다: 6 석재·8 상상마당 → 공공, 7 녹색 격자·10 푸른 유리·11 유리 주거 탑 → 커튼월, 9 몰 → 상가
+    float style = st < 5.5 ? st : st < 6.5 ? 5.0 : st < 7.5 ? 2.0 : st < 8.5 ? 5.0 : st < 9.5 ? 1.0 : 2.0;
+    float party = step(7.5, vEdge.z);
+    float part = vEdge.z - 8.0 * party;
+    vec3 n = normalize(vN);
+    // 명소 전용 외벽은 실제 색이 보이도록 랜드마크 색을 옅게만 입힌다
+    vec3 tint = st > 5.5 ? mix(vec3(1.0), uTint, 0.35) : uTint;
+    vec3 wall = wallColor(st, s) * uBld * tint;
+    vec3 col;
+    vec3 glow = vec3(0.0);
+    float lightsOn = uNight * (1.0 - fi);
+    // 켜진 창 비율: 한밤에도 열에 한두 집은 켜져 있게
+    float litFrac = clamp(uLit * 1.15 + 0.045 * uNight, 0.0, 1.0);
 
-    vec2 g = vWall / vec2(3.4, 3.2);
-    vec2 id = floor(g);
-    vec2 f = fract(g);
-    float aa = clamp(1.0 - max(fwidth(g.x), fwidth(g.y)) * 1.5, 0.0, 1.0);    // 멀어져 격자가 뭉개지면 평균값으로
-    float win = step(0.2, f.x) * step(f.x, 0.8) * step(0.26, f.y) * step(f.y, 0.8) * wallF;
-    float rnd = hash21(id + vSeed * 91.7);
-    float on = step(rnd, uLit);
-    float shop = wallF * step(vWall.y, 3.2) * step(fract(vSeed * 13.1), 0.6);  // 1층 가게
+    if (part > 0.5 && part < 1.5) {
+      // 평지붕: 녹색 우레탄 방수·회색 콘크리트·밝은 도장, 3m 칸마다 얼룩
+      float k = fract(s * 13.7);
+      vec3 rc = st > 5.5 ? vec3(0.78, 0.79, 0.8) : style < 1.5 || style > 3.5 ? (k < 0.42 ? vec3(0.55, 0.72, 0.6) : k < 0.72 ? vec3(0.76, 0.76, 0.74) : k < 0.88 ? vec3(0.95, 0.95, 0.93) : vec3(0.62, 0.58, 0.54))
+                                           : (k < 0.6 ? vec3(0.74, 0.75, 0.75) : vec3(0.9, 0.9, 0.89));
+      rc *= 0.94 + 0.08 * hash21(floor(vPos.xz / 3.0) + s * 17.0);
+      col = lit(rc * uRoof * tint, n);
+    } else if (part > 2.5) {
+      // 경사 지붕: 기와·금속 지붕 색, 비탈을 따라 골
+      float k = fract(s * 5.9);
+      vec3 rc = k < 0.35 ? vec3(0.42, 0.47, 0.55) : k < 0.6 ? vec3(0.66, 0.38, 0.3) : k < 0.8 ? vec3(0.36, 0.33, 0.31) : vec3(0.38, 0.52, 0.45);
+      float gw = fwidth(vPos.y) * 3.0;
+      rc *= 1.0 - 0.12 * smoothstep(0.5 - gw, 0.5, abs(fract(vPos.y / 0.35) - 0.5) * 2.0) * step(gw, 0.3);
+      col = lit(rc * uTint * mix(uRoof, uBld, 0.5), n);
+    } else if (part > 1.5) {
+      // 난간: 윗면은 갓돌, 안쪽은 벽색
+      col = lit(mix(wall, uRoof * uTint, 0.35) * (n.y > 0.5 ? 1.08 : 0.92), n);
+    } else {
+      float u = vEdge.x, len = vEdge.y, top = vEdge.w, y = vPos.y;
+      bool hasGround = gh > 0.5;
+      float yy = hasGround ? y - gh : y;
+      float fl = yy / fh;
+      float floorI = hasGround ? (y < gh ? 0.0 : 1.0 + floor(fl)) : floor(fl);
+      float fy = hasGround && y < gh ? y / gh : fract(fl);
+      float flH = hasGround && y < gh ? gh : fh;
+      // 기둥 사이 칸: 변마다 양 끝에서 맞춘다
+      float bayW = style < 0.5 ? 2.7 : style < 1.5 ? 3.3 : style < 2.5 ? 1.5 : style < 3.5 ? 2.9 : style < 4.5 ? 3.0 : 3.6;
+      float nb = max(1.0, floor(len / bayW + 0.5));
+      float bw = len / nb;
+      float bu = u / bw;
+      float bid = floor(bu);
+      float bx = fract(bu);
+      vec2 w = vec2(fwidth(bu), fwidth(y / flH)) * 0.75;
+      // 멀어서 칸이 몇 점밖에 안 되면 무늬 대신 평균색
+      float detail = clamp(1.6 - max(w.x * 6.0, w.y * 5.0), 0.0, 1.0);
+      float cellR = hash21(vec2(bid, floorI) + s * 91.7);
+      float cellR2 = hash21(vec2(bid * 1.7 + 3.1, floorI * 2.3) + s * 13.3);
+      float windows = (1.0 - party) * step(1.5, len) * (1.0 - step(top - 0.05, y));
 
-    vec3 col = lit(alb, normalize(vN));
-    col *= 1.0 - 0.11 * win * aa * (1.0 - uNight);                             // 낮: 유리는 조금 어둡게
-    vec3 warm = mix(vec3(1.0, 0.80, 0.52), vec3(0.80, 0.90, 1.0), step(0.82, fract(rnd * 17.0)));
-    float e = mix(uLit * 0.30 * wallF, win * on, aa);
-    e += shop * min(1.0, uLit * 2.4) * mix(0.5, 0.45 + 0.55 * win, aa);
-    col += warm * e * uNight * (0.45 + 0.5 * fract(rnd * 31.0)) * (1.0 - fi);   // 지하 들여다보기 안에서는 창문 불을 끈다
-    col += uTint * uGlow * (0.10 + 0.28 * uNight + 0.5 * roof * uNight * 0.3);
+      vec3 alb = wall;
+      // 벽돌: 0.15m 줄눈(가까이서만)
+      float brick = isBrick(st, s);
+      if (brick > 0.5) {
+        vec2 bp = vec2(u / 0.26 + 0.5 * mod(floor(y / 0.15), 2.0), y / 0.15);
+        vec2 bwid = fwidth(bp);
+        float mortar = max(smoothstep(0.9 - bwid.y, 0.9, fract(bp.y)), smoothstep(0.92 - bwid.x, 0.92, fract(bp.x)));
+        alb *= 1.0 + (0.1 * mortar - 0.04 * hash21(floor(bp))) * clamp(1.5 - max(bwid.x, bwid.y) * 3.0, 0.0, 1.0);
+      }
+      // 층 사이 띠(슬래브)
+      float slab = (1.0 - smoothstep(0.0, 0.07 + w.y, fy)) * windows * step(0.5, floorI + (hasGround ? 0.0 : 1.0));
+      alb *= 1.0 - 0.07 * slab;
+
+      // 창: 용도별 크기
+      vec2 lo, hi;
+      float frameW = 0.07;
+      if (style < 0.5) {               // 빌라: 작은 창, 칸마다 거실 큰 창
+        float big = step(0.72, cellR);
+        lo = vec2(mix(0.28, 0.12, big), 0.3); hi = vec2(mix(0.72, 0.88, big), mix(0.78, 0.84, big));
+      } else if (style < 1.5) {        // 상가: 넓은 창
+        lo = vec2(0.1, 0.24); hi = vec2(0.9, 0.86);
+      } else if (style < 2.5) {        // 커튼월: 유리 전체, 아래쪽 스팬드럴
+        lo = vec2(0.03, 0.26); hi = vec2(0.97, 0.98); frameW = 0.03;
+      } else if (style < 3.5) {        // 아파트: 발코니 창
+        lo = vec2(0.06, 0.34); hi = vec2(0.94, 0.92);
+      } else if (style < 4.5) {        // 주택
+        lo = vec2(0.3, 0.36); hi = vec2(0.7, 0.78);
+      } else {                         // 공공 건물
+        lo = vec2(0.18, 0.28); hi = vec2(0.82, 0.82);
+      }
+      if (st > 5.5 && st < 6.5) { lo = vec2(0.42, 0.12); hi = vec2(0.58, 0.92); }   // 석재 기둥: 좁고 긴 세로 창
+      if (st > 6.5 && st < 7.5) { lo = vec2(0.1, 0.14); hi = vec2(0.9, 0.86); }     // 녹색 유리 격자
+      vec2 q = vec2(bx, fy);
+      float win = rect(q, lo, hi, w) * windows;
+      if (st > 7.5 && st < 8.5) {
+        // 상상마당: 노출 콘크리트에 굽이치는 유리 띠(층과 상관없이 벽을 가로질러 흐른다)
+        float wave = (y + 1.6 * sin(u * 0.33 + s * 6.0) + 0.7 * sin(u * 0.91 + 1.3)) / 5.2;
+        float fw2 = fwidth(wave) + 0.002;
+        win = smoothstep(0.52 - fw2, 0.52 + fw2, fract(wave)) * (1.0 - smoothstep(0.86 - fw2, 0.86 + fw2, fract(wave))) * windows * step(gh + 0.5, y);
+        float panel = step(0.97, fract(u / 1.2)) + step(0.96, fract(y / 0.6));     // 거푸집 자국
+        alb *= 1.0 - 0.06 * min(1.0, panel) * detail;
+      }
+      vec2 fr = vec2(frameW / bw, frameW / flH);
+      float frame = win * (1.0 - rect(q, lo + fr, hi - fr, w));
+      // 창 가운데 문살
+      frame = max(frame, win * (1.0 - smoothstep(0.0, w.x + 0.012, abs(bx - 0.5 * (lo.x + hi.x)))) * step(style, 1.5) * step(0.4, cellR2));
+      float glass = win - frame;
+
+      vec3 glassCol = vec3(0.2, 0.25, 0.3);
+      vec3 frameCol = style < 0.5 || style > 2.5 ? vec3(0.96, 0.96, 0.95) : vec3(0.32, 0.34, 0.37);
+      float sign = 0.0;
+      vec3 signCol = vec3(0.0);
+      float shopGlass = 0.0;
+      float piloti = 0.0;
+      float doorLit = 0.0;
+
+      if (style > 1.5 && style < 2.5) {
+        // 커튼월: 멀리언·스팬드럴, 하늘이 비친다
+        glassCol = mix(vec3(0.24, 0.36, 0.42), vec3(0.34, 0.4, 0.47), step(0.5, fract(s * 3.3)));
+        if (st > 6.5 && st < 7.5) glassCol = vec3(0.3, 0.46, 0.38);
+        if (st > 9.5 && st < 10.5) glassCol = vec3(0.2, 0.36, 0.55);
+        if (st > 10.5) glassCol = vec3(0.22, 0.3, 0.62);
+        frameCol = wall;
+        float span = 1.0 - rect(q, vec2(-1.0, lo.y), vec2(2.0, 2.0), w);
+        alb = mix(alb, glassCol * 0.75, span * windows);
+      }
+      if (style > 2.5 && style < 3.5) {
+        // 아파트: 발코니 난간 띠
+        float rail = rect(q, vec2(0.0, 0.3), vec2(1.0, 0.36), w) * windows;
+        alb = mix(alb, vec3(0.7, 0.72, 0.74) * uBld, rail);
+        // 세대 사이 벽(두 칸마다)
+        float wallStrip = step(mod(bid, 2.0), 0.5) * (1.0 - smoothstep(0.0, 0.06 + w.x, bx));
+        glass *= 1.0 - wallStrip; frame *= 1.0 - wallStrip;
+      }
+      if (style > 0.5 && style < 1.5 && st < 8.5) {
+        // 상가: 위층 간판(창 아래 띠나 세로 간판)
+        float sr = hash21(vec2(bid * 0.37 + 5.0, floorI) + s * 7.0);
+        float band = rect(q, vec2(0.04, 0.03), vec2(0.96, 0.22), w) * step(0.55, sr) * step(0.5, floorI) * step(floorI, 5.0);
+        float vert = rect(vec2(u, y), vec2(0.35, gh + 0.4), vec2(1.15, min(top - 0.8, gh + fh * 3.0)), vec2(fwidth(u), fwidth(y))) * step(0.5, fract(s * 23.0));
+        sign = max(band, vert) * windows;
+        signCol = signColor(fract(sr * 7.0 + floorI * 0.31));
+        // 간판 글자(흰 획)
+        float gx = fract(u / 0.55), gyy = fract(y / 0.5);
+        float glyph = step(0.25, gx) * step(gx, 0.75) * step(0.3, gyy) * step(gyy, 0.75) * step(0.35, hash21(floor(vec2(u / 0.55, y / 0.5)) + sr));
+        signCol = mix(signCol, signCol.r + signCol.g + signCol.b > 2.2 ? vec3(0.1) : vec3(1.0), glyph * 0.85 * detail);
+      }
+      // 1층
+      bool open = party < 0.5;
+      if (open && hasGround && y < gh) {
+        if (style > 0.5 && style < 1.5) {
+          // 가게: 칸(약 4.5m)마다 유리, 사이 기둥, 위 간판 띠
+          float nu = max(1.0, floor(len / 4.5 + 0.5));
+          float uw = len / nu;
+          float uid = floor(u / uw);
+          float ux = fract(u / uw);
+          vec2 uq = vec2(ux, y);
+          vec2 uwd = vec2(fwidth(u / uw), fwidth(y));
+          shopGlass = rect(uq, vec2(0.05, 0.12), vec2(0.95, gh - 1.0), uwd);
+          float ur = hash21(vec2(uid, 7.0) + s * 3.7);
+          float sb = rect(uq, vec2(0.02, gh - 0.92), vec2(0.98, gh - 0.12), uwd);
+          sign = max(sign, sb);
+          signCol = sb > 0.5 ? signColor(ur) : signCol;
+          float gx = fract(u / 0.42), gyy = (y - (gh - 0.92)) / 0.8;
+          float glyph = step(0.2, gx) * step(gx, 0.8) * step(0.25, gyy) * step(gyy, 0.75) * step(0.3, hash21(vec2(floor(u / 0.42), 1.0) + ur)) * step(ux, 0.75) * step(0.25, ux);
+          signCol = mix(signCol, signCol.r + signCol.g + signCol.b > 2.2 ? vec3(0.12) : vec3(1.0), glyph * sb * 0.9 * detail);
+          doorLit = step(ur, min(1.0, 0.25 + uLit * 2.6));
+          glass = 0.0; frame = 0.0;
+        } else {
+          // 로비 유리
+          lo = vec2(0.08, 0.04); hi = vec2(0.92, 0.82);
+          shopGlass = rect(q, lo, hi, w);
+          glass = 0.0; frame = 0.0;
+          doorLit = step(0.3, cellR);
+        }
+      } else if (open && style < 0.5 && floorI < 0.5 && y < fh && fract(s * 31.0) < 0.55 && top > 9.0) {
+        // 다세대 필로티 주차장: 어두운 빈 칸과 기둥
+        piloti = (1.0 - smoothstep(0.86, 0.9, fy)) * (1.0 - (1.0 - smoothstep(0.0, 0.08 + w.x, bx)) - smoothstep(0.92 - w.x, 1.0, bx));
+        glass = 0.0; frame = 0.0;
+      }
+
+      // 멀리서는 무늬 대신 평균
+      float meanWin = style < 0.5 ? 0.22 : style < 1.5 ? 0.45 : style < 2.5 ? 0.7 : style < 3.5 ? 0.45 : style < 4.5 ? 0.15 : 0.3;
+      glass = mix(meanWin * 0.85 * windows, glass, detail);
+      frame = mix(meanWin * 0.15 * windows, frame, detail);
+      sign = mix(sign * 0.6, sign, detail);
+
+      alb = mix(alb, frameCol * uBld, frame);
+      alb = mix(alb, signCol, sign);
+      alb = mix(alb, vec3(0.16, 0.15, 0.14), shopGlass * 0.85);
+      alb = mix(alb, vec3(0.1, 0.1, 0.11), piloti);
+      // 바닥 쪽 그늘
+      alb *= mix(0.8, 1.0, smoothstep(0.0, 8.0, y));
+      col = lit(alb, n);
+      // 유리: 어둡고, 하늘이 비친다(밤에는 꺼진 창이 벽보다 조금 어둡다)
+      vec3 view = normalize(vPos - cameraPosition);
+      float fres = 0.35 + 0.65 * pow(1.0 - abs(dot(view, n)), 3.0);
+      vec3 sky = mix(uFogCol, uSkyCol, 0.5) * (1.0 - 0.6 * uNight);
+      vec3 gcol = glassCol * (0.6 + 0.4 * dot(uSkyCol, vec3(0.33))) + sky * fres * (style > 1.5 && style < 2.5 ? 0.6 : 0.35);
+      col = mix(col, gcol * (1.0 - 0.2 * uNight), glass);
+      col = mix(col, col * 0.55 + gcol * 0.25, shopGlass * 0.6);
+
+      // 밤 불빛
+      float on = step(cellR2, litFrac);
+      vec3 warm = mix(vec3(1.0, 0.8, 0.52), vec3(0.82, 0.9, 1.0), step(0.78, fract(cellR * 17.0)));
+      if (style > 1.5 && style < 2.5) {
+        // 사무실: 층 단위로 켜진다
+        on = step(hash21(vec2(floorI, s * 51.0)), litFrac * 1.2);
+        warm = vec3(0.85, 0.92, 1.0);
+      }
+      float e = mix(litFrac * 0.35 * windows * meanWin, glass * on * (0.55 + 0.45 * fract(cellR * 31.0)), detail);
+      glow += warm * e;
+      glow += vec3(1.0, 0.78, 0.5) * shopGlass * doorLit * min(1.0, 0.35 + uLit * 2.4) * 1.1;
+      glow += signCol * sign * 0.85 * step(0.25, fract(s * 41.0 + floorI * 0.37));
+      col += glow * lightsOn;
+    }
+    col += uTint * uGlow * (0.1 + 0.28 * uNight);
     col = mix(col, col * 0.7 + vec3(0.04, 0.07, 0.11), fi * 0.5);
     gl_FragColor = vec4(fogged(col, vDist), 1.0);
   }`;
@@ -123,8 +620,237 @@ export function buildingMaterial(tint = '#ffffff') {
   });
 }
 
-export function makeBuildings(list: Building[]): THREE.Mesh {
-  const mesh = new THREE.Mesh(prismGeometry(list.filter((b) => b.lm === 0)), buildingMaterial());
+// ───────────────────────── 옥상·외벽 소품 ─────────────────────────
+/** 소품 종류(셰이더의 kind) */
+const PROP = { room: 0, ac: 1, tank: 2, machine: 3, awning: 4, sign: 5 } as const;
+
+/** 소품 자리: [x, y, z, 방향, 너비(x), 높이, 깊이(z), 종류, r, g, b, 난수] */
+export function propsOf(list: Building[], lk: Look[]): number[] {
+  const out: number[] = [];
+  const push = (x: number, y: number, z: number, yaw: number, sx: number, sy: number, sz: number, kind: number, c: [number, number, number], r: number) =>
+    out.push(x, y, z, yaw, sx, sy, sz, kind, c[0], c[1], c[2], r);
+  const SIGNS: [number, number, number][] = [[0.86, 0.16, 0.14], [0.98, 0.78, 0.12], [0.12, 0.36, 0.78], [0.1, 0.55, 0.32], [0.95, 0.95, 0.93], [0.92, 0.42, 0.12], [0.62, 0.2, 0.62]];
+  const AWN: [number, number, number][] = [[0.15, 0.4, 0.32], [0.62, 0.16, 0.16], [0.18, 0.26, 0.5], [0.85, 0.82, 0.74], [0.3, 0.3, 0.32], [0.9, 0.55, 0.2]];
+  list.forEach((b, bi) => {
+    const L = lk[bi];
+    const p = b.pts;
+    const n = p.length / 2;
+    const s = L.seed;
+    // 옥상: 평지붕만
+    if (L.parapet > 0 && b.h - (b.minH ?? 0) > 5) {
+      const o = obb(p);
+      const yaw = Math.atan2(o.az, o.ax);
+      const roofY = b.h - L.parapet + 0.25;
+      const fits = (x: number, z: number, hx: number, hz: number, m: number) => {
+        for (const [a, c] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) {
+          const px = x + o.ax * a * hx - o.az * c * hz;
+          const pz = z + o.az * a * hx + o.ax * c * hz;
+          if (!inPoly(p, px, pz) || edgeDist(p, px, pz) < m) return false;
+        }
+        return true;
+      };
+      const taken: [number, number, number][] = [];
+      const free = (x: number, z: number, r: number) => taken.every(([tx, tz, tr]) => Math.hypot(tx - x, tz - z) > tr + r);
+      if (L.base === STYLE.glass || (L.base === STYLE.apt && b.h > 30)) {
+        // 기계실·엘리베이터 탑
+        const hx = Math.max(2, o.L * 0.22), hz = Math.max(2, o.W * 0.22);
+        if (fits(o.cx, o.cz, hx, hz, 0.8)) {
+          // 60m 넘는 건물은 기계실 지붕에 헬리포트(원과 H)
+          push(o.cx, roofY, o.cz, yaw, hx * 2, L.base === STYLE.glass ? 4.2 : 3.4, hz * 2, PROP.machine, [0.62, 0.64, 0.66], b.h > 60 && hx > 5 && hz > 5 ? 2 : s);
+          taken.push([o.cx, o.cz, Math.hypot(hx, hz)]);
+        }
+      } else if (L.floors >= 2 && o.L * o.W > 50) {
+        // 계단실 옥탑: 바닥 상자 가운데에서 한쪽으로 치우쳐 들어가는 자리
+        const hx = Math.min(2.2, o.L * 0.22), hz = Math.min(1.6, o.W * 0.25);
+        const shift = (rnd(s, 1) - 0.5) * Math.max(0, o.L - hx * 2 - 1.5);
+        for (const k of [shift, shift * 0.5, 0, -shift]) {
+          const x = o.cx + o.ax * k;
+          const z = o.cz + o.az * k;
+          if (fits(x, z, hx, hz, 0.4)) {
+            push(x, roofY, z, yaw, hx * 2, 2.6, hz * 2, PROP.room, [s, L.style, 0], s);
+            taken.push([x, z, Math.hypot(hx, hz)]);
+            break;
+          }
+        }
+      }
+      // 물탱크(빌라·주택 일부)와 실외기
+      const tries = L.base === STYLE.glass ? 10 : 6;
+      let acs = L.base === STYLE.shop ? 3 + Math.floor(rnd(s, 2) * 5) : L.base === STYLE.villa ? 1 + Math.floor(rnd(s, 2) * 3) : 2 + Math.floor(rnd(s, 2) * 4);
+      if (o.L * o.W < 40) acs = Math.min(acs, 1);
+      let tank = (L.base === STYLE.villa || L.base === STYLE.house) && rnd(s, 4) < 0.35;
+      for (let k = 0; k < tries * 3 && (acs > 0 || tank); k++) {
+        const a = (rnd(s, 10 + k) - 0.5) * o.L * 0.9;
+        const c = (rnd(s, 40 + k) - 0.5) * o.W * 0.9;
+        const x = o.cx + o.ax * a - o.az * c;
+        const z = o.cz + o.az * a + o.ax * c;
+        if (tank) {
+          if (fits(x, z, 0.7, 0.7, 0.5) && free(x, z, 1)) {
+            push(x, roofY, z, yaw, 1.4, 1.5, 1.4, PROP.tank, rnd(s, 5) < 0.5 ? [0.92, 0.93, 0.94] : [0.35, 0.55, 0.78], s);
+            taken.push([x, z, 1]);
+            tank = false;
+          }
+          continue;
+        }
+        if (fits(x, z, 0.45, 0.2, 0.35) && free(x, z, 0.5)) {
+          push(x, roofY, z, yaw + (rnd(s, 70 + k) < 0.5 ? 0 : Math.PI), 0.86, 0.66, 0.32, PROP.ac, [0.9, 0.9, 0.88], rnd(s, 80 + k));
+          taken.push([x, z, 0.5]);
+          acs--;
+        }
+      }
+    }
+    // 가게 앞: 트인 변에 차양과 돌출 간판
+    if (L.style !== STYLE.shop || (b.minH ?? 0) > 0.5) return;
+    let signs = 0;
+    for (let i = 0; i < n; i++) {
+      if (L.open[i] === 0) continue;
+      const j = (i + 1) % n;
+      const ax = p[i * 2], az = p[i * 2 + 1], bx = p[j * 2], bz = p[j * 2 + 1];
+      const len = Math.hypot(bx - ax, bz - az);
+      if (len < 3.5) continue;
+      const dx = (bx - ax) / len, dz = (bz - az) / len;
+      const nx = dz, nz = -dx;
+      const yaw = Math.atan2(-dz, -dx);
+      const r = rnd(s, 100 + i);
+      if (r < 0.45) {
+        // 차양: 가게 칸 몇 개에 걸쳐
+        const w = Math.min(len - 1, 3 + rnd(s, 110 + i) * 6);
+        const t = 0.5 + (rnd(s, 120 + i) - 0.5) * Math.max(0, len - w - 1);
+        const at = Math.max(w / 2 + 0.3, Math.min(len - w / 2 - 0.3, t * len));
+        push(ax + dx * at + nx * 0.55, L.gh - 0.75, az + dz * at + nz * 0.55, yaw, w, 0.12, 1.1, PROP.awning, AWN[Math.floor(rnd(s, 130 + i) * AWN.length)], rnd(s, 140 + i));
+      }
+      if (signs < 2 && L.floors >= 3 && rnd(s, 150 + i) < 0.75) {
+        const end = rnd(s, 160 + i) < 0.5 ? 0.9 : len - 0.9;
+        const hgt = Math.min(L.top - L.gh - 0.8, L.fh * (2 + Math.floor(rnd(s, 170 + i) * 2.5)));
+        if (hgt > 2) {
+          push(ax + dx * end + nx * 0.62, L.gh + 0.4, az + dz * end + nz * 0.62, yaw, 0.16, hgt, 0.95, PROP.sign, SIGNS[Math.floor(rnd(s, 180 + i) * SIGNS.length)], rnd(s, 190 + i));
+          signs++;
+        }
+      }
+    }
+  });
+  return out;
+}
+
+const PROP_VERT = /* glsl */ `
+  attribute vec4 aP; attribute vec4 aS; attribute vec4 aC;
+  uniform float uLift;
+  varying vec3 vN; varying vec3 vO; varying vec4 vS; varying vec4 vC; varying vec3 vPos; varying float vDist;
+  void main() {
+    vec3 o = position;
+    vec3 p = o * aS.xyz;
+    if (aS.w > 3.5 && aS.w < 4.5) p.y -= (o.z + 0.5) * 0.5;   // 차양은 바깥으로 기운다
+    float cs = cos(aP.w), sn = sin(aP.w);
+    vec3 w = vec3(aP.x + p.x * cs - p.z * sn, aP.y + p.y, aP.z + p.x * sn + p.z * cs);
+    vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);
+    vO = o; vS = aS; vC = aC; vPos = w;
+    vec4 mv = viewMatrix * vec4(w, 1.0);
+    vDist = -mv.z;
+    gl_Position = projectionMatrix * mv;
+    if (vDist > 900.0) gl_Position = vec4(0.0, 0.0, 2.0, 1.0);   // 멀면 그리지 않는다(몇 점도 안 된다)
+  }`;
+
+const PROP_FRAG = /* glsl */ `
+  uniform vec3 uBld, uRoof;
+  varying vec3 vN; varying vec3 vO; varying vec4 vS; varying vec4 vC; varying vec3 vPos; varying float vDist;
+  ${GLSL_COLORS}
+  void main() {
+    float fi = focusIn(vPos.xz);
+    if (fi > 0.01 && dither(gl_FragCoord.xy) < fi * 0.82) discard;
+    vec3 n = normalize(vN);
+    float kind = vS.w;
+    vec3 c;
+    vec3 glow = vec3(0.0);
+    vec3 m = vO * vS.xyz;            // 상자 안 자리(m)
+    if (kind < 0.5) {
+      // 옥탑: 건물과 같은 벽색, 앞(+x 면)에 문, 옆에 작은 창
+      c = wallColor(vC.y, vC.x) * uBld;
+      float top = step(0.5, n.y);
+      float door = step(0.49, vO.x) * step(abs(m.z), 0.45) * step(m.y, 2.05);
+      float win = step(0.49, abs(vO.z)) * step(abs(m.x), 0.4) * step(1.2, m.y) * step(m.y, 1.8);
+      c = mix(c, vec3(0.32, 0.34, 0.37), door);
+      c = mix(c, vec3(0.2, 0.24, 0.28), win);
+      c = mix(c, uRoof * 0.86, top);
+      glow = vec3(1.0, 0.8, 0.55) * win * step(0.6, vC.w) * 0.8;
+    } else if (kind < 1.5) {
+      // 실외기: 흰 몸통, 앞면에 둥근 팬 그릴
+      c = vec3(0.9, 0.9, 0.88) * uBld;
+      float front = step(0.49, vO.z);
+      float fan = 1.0 - smoothstep(0.2, 0.24, length(vec2(m.x - 0.12, m.y - 0.33)));
+      c = mix(c, vec3(0.25, 0.26, 0.28), fan * front);
+    } else if (kind < 2.5) {
+      // 물탱크: 1m 패널 줄
+      c = vC.rgb * uBld;
+      vec2 g = abs(fract(vec2(m.x + m.z, m.y) / 0.7) - 0.5);
+      c *= 1.0 - 0.12 * step(0.44, max(g.x, g.y));
+    } else if (kind < 3.5) {
+      // 기계실: 루버 줄, 높은 건물은 지붕에 헬리포트
+      c = vC.rgb * uBld;
+      c *= 1.0 - 0.15 * step(abs(n.y), 0.5) * step(0.5, fract(m.y / 0.3)) * step(m.y, vS.y - 0.6);
+      if (vC.w > 1.5 && n.y > 0.5) {
+        float r = length(m.xz);
+        float ring = step(abs(r - 4.0), 0.35);
+        vec2 hq = abs(m.xz);
+        float H = step(hq.y, 1.9) * step(hq.x, 1.4) * (step(1.0, hq.x) + step(hq.y, 0.25));
+        c = mix(vec3(0.42, 0.46, 0.44) * uBld, vec3(0.95, 0.95, 0.9), max(ring, H));
+      }
+    } else if (kind < 4.5) {
+      // 차양: 천 색, 반은 흰 줄무늬
+      c = vC.rgb;
+      float stripe = step(0.5, vC.w) * step(0.5, fract(m.x / 0.5));
+      c = mix(c, vec3(0.95, 0.94, 0.9), stripe);
+      glow = c * 0.25;
+    } else {
+      // 돌출 간판: 바탕색에 흰 글자 블록, 밤에 켜진다
+      c = vC.rgb;
+      float side = step(0.49, abs(vO.x));
+      float gy = fract(m.y / 0.55), gz = fract((m.z + 0.5) / 0.95);
+      float glyph = side * step(0.18, gz) * step(gz, 0.82) * step(0.2, gy) * step(gy, 0.8) * step(0.3, hash21(vec2(floor(m.y / 0.55), vC.w * 31.0)));
+      c = mix(c, c.r + c.g + c.b > 2.2 ? vec3(0.1) : vec3(1.0), glyph);
+      glow = c * 0.95;
+    }
+    vec3 col = lit(c, n) + glow * uNight * (1.0 - fi);
+    gl_FragColor = vec4(fogged(col, vDist), 1.0);
+  }`;
+
+export function makeProps(list: Building[], lk: Look[]): THREE.Mesh {
+  const box = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
+  box.deleteAttribute('uv');
+  const data = propsOf(list, lk);
+  const count = data.length / 12;
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.index = box.index;
+  geo.setAttribute('position', box.attributes.position);
+  geo.setAttribute('normal', box.attributes.normal);
+  const P = new Float32Array(count * 4);
+  const S = new Float32Array(count * 4);
+  const C = new Float32Array(count * 4);
+  for (let i = 0; i < count; i++) {
+    P.set(data.slice(i * 12, i * 12 + 4), i * 4);
+    S.set(data.slice(i * 12 + 4, i * 12 + 8), i * 4);
+    C.set(data.slice(i * 12 + 8, i * 12 + 12), i * 4);
+  }
+  geo.setAttribute('aP', new THREE.InstancedBufferAttribute(P, 4));
+  geo.setAttribute('aS', new THREE.InstancedBufferAttribute(S, 4));
+  geo.setAttribute('aC', new THREE.InstancedBufferAttribute(C, 4));
+  geo.instanceCount = count;
+  const mesh = new THREE.Mesh(geo, material({ vertex: PROP_VERT, fragment: PROP_FRAG, uniforms: { uBld: { value: pal.bld }, uRoof: { value: pal.roof }, uLift: { value: 0 } } }));
   mesh.frustumCulled = false;
   return mesh;
+}
+
+export function makeBuildings(all: Building[]): THREE.Object3D {
+  const list = refine(all);
+  const lk = looks(list);
+  const keep = list.map((b) => b.lm === 0);
+  const group = new THREE.Group();
+  const mesh = new THREE.Mesh(
+    prismGeometry(
+      list.filter((_, i) => keep[i]),
+      lk.filter((_, i) => keep[i]),
+    ),
+    buildingMaterial(),
+  );
+  mesh.frustumCulled = false;
+  group.add(mesh, makeProps(list.filter((_, i) => keep[i]), lk.filter((_, i) => keep[i])));
+  return group;
 }

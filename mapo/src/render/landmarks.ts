@@ -3,7 +3,7 @@
 // 마우스를 올리면 솟거나 밝아지고, 누르면 사이드바에 카드가 뜬다.
 import * as THREE from 'three';
 import type { Board } from '../data/board.ts';
-import { buildingMaterial, prismGeometry } from './buildings.ts';
+import { buildingMaterial, looks, makeProps, prismGeometry, refine } from './buildings.ts';
 import { material } from './env.ts';
 import { roadWidth } from './roads.ts';
 import { addRibbon, ribbon, ribbonGeometry } from './util.ts';
@@ -56,15 +56,17 @@ export function makeLandmarks(board: Board, roadGlow: number[]) {
 
   // 건물 랜드마크: 건물 메시를 따로 만들어 옅은 고유 색을 입히고, 이름표를 가장 높은 지붕 위에 띄운다
   for (const info of LANDMARKS) {
-    const list = board.buildings.filter((b) => b.lm === info.n);
+    // 홍문관·상상마당·메세나폴리스는 사진·항공사진으로 고친 모양(buildings.ts refine)
+    const list = refine(board.buildings.filter((b) => b.lm === info.n));
     if (!list.length) continue;
     // 평소에는 옅게: 흰색 쪽으로 섞되 일반 건물과 구분될 만큼은 칠한다(홍익대는 조금 더 진하게)
     const tint = new THREE.Color('#ffffff').lerp(new THREE.Color(info.color), info.n === 1 ? 0.8 : 0.72);
     const mat = buildingMaterial(`#${tint.getHexString()}`);
-    const mesh = new THREE.Mesh(prismGeometry(list), mat);
+    const lk = looks(list);
+    const mesh = new THREE.Mesh(prismGeometry(list, lk), mat);
     mesh.frustumCulled = false;
     mesh.userData.id = info.id;
-    group.add(mesh);
+    group.add(mesh, makeProps(list, lk));
     pickables.push(mesh);
     mats.set(info.n, mat);
     let x = 0;

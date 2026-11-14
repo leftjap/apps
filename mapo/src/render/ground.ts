@@ -1,9 +1,12 @@
 // 바닥 원판. 마스크(빨강 = 물, 초록 = 녹지, 파랑 = 건물 그늘)를 읽어 칠한다. 옆면에 두께를 준다.
+// 바닥 면(areas)을 주면 원판 위에 땅 쓰임새·보도·광장·운동장 면을 덮는다(src/render/areas.ts).
 import * as THREE from 'three';
+import type { GroundArea } from '../data/board.ts';
 import { BOARD_R } from '../geo.ts';
+import { makeAreas } from './areas.ts';
 import { material, pal } from './env.ts';
 
-export function makeGround(mask: THREE.Texture): THREE.Group {
+export function makeGround(mask: THREE.Texture, areas: GroundArea[] = []): THREE.Group {
   mask.flipY = false;
   mask.colorSpace = THREE.NoColorSpace;
   mask.minFilter = THREE.LinearMipmapLinearFilter;
@@ -36,7 +39,8 @@ export function makeGround(mask: THREE.Texture): THREE.Group {
           float w2 = sin(vW.z * 0.034 - uTime * 0.4 + sin(vW.x * 0.009 + uTime * 0.08) * 3.0);
           float rip = w1 * w2;
           vec3 wat = uWater * (1.0 + 0.06 * rip);
-          wat += uNight * vec3(0.55, 0.6, 0.8) * pow(max(rip, 0.0), 5.0) * 0.10;
+          wat += uNight * vec3(0.55, 0.6, 0.8) * pow(max(rip, 0.0), 5.0) * 0.16;
+          wat += uNight * vec3(1.0, 0.78, 0.5) * pow(max(-rip, 0.0), 5.0) * 0.18;  // 밤: 강변 불빛이 물결에 따뜻하게 비친다
           wat += uDusk * vec3(1.0, 0.55, 0.3) * pow(max(rip, 0.0), 3.0) * 0.16;
           // 물가에 얇은 그늘
           float bank = smoothstep(0.12, 0.5, m.r) * (1.0 - smoothstep(0.5, 0.88, m.r));
@@ -75,5 +79,6 @@ export function makeGround(mask: THREE.Texture): THREE.Group {
   );
   const g = new THREE.Group();
   g.add(top, side);
+  if (areas.length) g.add(makeAreas(areas, mask));
   return g;
 }
