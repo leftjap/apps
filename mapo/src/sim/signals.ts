@@ -1,5 +1,6 @@
 // 신호 교차로. 중앙분리대가 있는 길은 OSM 에서 한 방향씩 따로 그려져 한 교차로가 노드 여러 개로 나뉘므로, 35m 안의 교차 노드를 하나로 묶는다.
-// 묶음으로 들어오는 길을 방향에 따라 두 무리로 나누고, 90초 주기로 번갈아 초록불을 준다. 신호는 시각만의 함수다.
+// 묶음으로 들어오는 길을 방향에 따라 두 무리로 나누고, 90초 주기로 번갈아 초록불을 준다(큰길 쪽 초록이 더 길다). 신호는 시각만의 함수다.
+// 큰길을 따라 이어지는 신호는 초록불 물결이 되게 시각을 맞춘다.
 // 신호를 둘 곳: 횡단보도 자료가 있으면 보행 신호 횡단보도(자치구 횡단보도 정보의 보행등)가 25m 안에 있는 교차로와,
 // 교차로가 아닌 곳의 보행 신호 횡단보도(굽기에서 그 자리에서 길 조각을 끊어 두었다). 자료가 없으면 큰길(주간선·보조간선)이 낀 교차로.
 // 신호 시각은 실제와 다르다.
@@ -14,11 +15,14 @@ export const YELLOW = 1;
 export const RED = 2;
 
 const CYCLE = 90;
-/** [무리 0 초록 끝, 노랑 끝, 전체 빨강 끝, 무리 1 초록 끝, 노랑 끝] (초) */
+/** [무리 0 초록 끝, 노랑 끝, 전체 빨강 끝, 무리 1 초록 끝, 노랑 끝] (초). 교차로마다 두 무리의 초록 시간을 길 중요도로 다시 나눈다 */
 const PLAN = [40, 43, 45, 85, 88];
+/** 교차로 신호 한 주기의 초록 시간 합(노랑 3초·전체 빨강 2초씩을 뺀 나머지)과, 한 무리의 가장 짧은 초록 시간 */
+const GREENS = 80;
+const MIN_GREEN = 24;
 /** 길 중간 횡단보도처럼 무리 0 이 차, 무리 1 이 사람뿐인 신호: 차 60초, 사람 22초 */
 const PLAN_WALK = [60, 63, 65, 87, 90];
-/** 신호 사이를 달리는 차의 속도(m/s). 길 중간 신호는 바로 위쪽 교차로 신호에서 이 속도로 온 차가 초록불에 닿게 시각을 맞춘다 */
+/** 신호 사이를 달리는 차의 속도(m/s). 신호마다 위쪽 신호에서 이 속도로 온 차가 초록불에 닿게 시각을 맞춘다 */
 const WAVE = 11;
 const JOIN = 35;
 /** 보행 신호 횡단보도가 교차로 노드에서 이만큼 안이면 그 교차로 신호에 딸린다(굽기에서 길 조각을 끊는 기준과 같다) */
@@ -180,30 +184,77 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
       for (const e of into) approach.set(e.id, { c, group: 0, crosswalk: xw.wid / 2, setback: Math.min(e.len - 2, setbackOf(e, xw.wid / 2 + 1)) });
     }
   }
-  // 길 중간 신호의 시각 맞추기: 들어오는 구간을 거슬러 올라가(같은 이름 길 먼저, 400m 안) 처음 만나는 교차로 신호의
-  // 그 방향 초록불이 켜진 뒤 차가 닿는 때에 이 신호의 차 초록불이 켜지게 한다
+  // 교차로 신호의 초록 시간: 두 무리에 들어오는 길의 중요도(차로 수 × 등급 무게)에 비례해 나눈다.
+  // 실제 서울 큰 교차로처럼 큰길 쪽이 더 길고, 작은 길 쪽도 사람이 큰길을 건널 만큼(24초)은 남긴다
+  const weight = (e: Edge) => e.lanes * (4 - Math.min(3, e.cls));
+  list.forEach((site, c) => {
+    if (site.plan !== PLAN) return;
+    const w = [0, 0];
+    for (const [id, ap] of approach) if (ap.c === c) w[ap.group] += weight(edges[id]);
+    const g0 = Math.round(GREENS * Math.max(MIN_GREEN / GREENS, Math.min(1 - MIN_GREEN / GREENS, w[0] / (w[0] + w[1] || 1))));
+    site.plan = [g0, g0 + 3, g0 + 5, GREENS + 5, GREENS + 8];
+  });
+  // 신호 시각 맞추기(초록불 물결): 신호의 들어오는 구간마다 길을 거슬러 올라가(같은 이름 길 먼저, 600m 안) 처음 만나는 다른 신호와 잇는다.
+  // 이은 길의 중요도가 큰 것부터 신호를 나무로 엮고(최대 신장 나무), 뿌리에서부터 '윗 신호의 그 방향 초록불이 켜진 뒤 WAVE 로 달린 차가 닿는 때'에
+  // 아랫 신호의 그 방향 초록불이 켜지게 한다. 두 방향 길은 한 방향만 맞는다(나무를 따라 내려가는 방향, 차로가 많은 쪽 먼저)
   const prev: number[][] = edges.map(() => []);
   for (const e of edges) for (const n of e.next) prev[n].push(e.id);
-  list.forEach((site, c) => {
-    if (site.plan !== PLAN_WALK) return;
-    const first = [...approach].find(([, ap]) => ap.c === c);
-    if (!first) return;
-    let cur = edges[first[0]];
+  type Link = { up: number; gu: number; dn: number; gd: number; d: number; w: number };
+  const links: Link[] = [];
+  for (const [id, ap] of approach) {
+    let cur = edges[id];
     let ahead = cur.len;
-    for (let k = 0; k < 12 && ahead < 400; k++) {
+    for (let k = 0; k < 20 && ahead < 600; k++) {
       const ps = prev[cur.id].map((i) => edges[i]);
       if (!ps.length) break;
       const p = ps.find((q) => q.name && q.name === cur.name) ?? ps.sort((a, b) => b.lanes - a.lanes)[0];
-      const ap = approach.get(p.id);
-      if (ap && list[ap.c].plan === PLAN) {
-        const start = ap.group === 0 ? 0 : PLAN[2];
-        site.offset = (((list[ap.c].offset - start - ahead / WAVE) % CYCLE) + CYCLE) % CYCLE;
+      const up = approach.get(p.id);
+      if (up) {
+        if (up.c !== ap.c) links.push({ up: up.c, gu: up.group, dn: ap.c, gd: ap.group, d: ahead, w: Math.min(weight(edges[id]), weight(p)) });
         break;
       }
       ahead += p.len;
       cur = p;
     }
-  });
+  }
+  const phase = (c: number, g: number) => (g === 0 ? 0 : list[c].plan[2]);
+  /** 묶음 c 의 무리 g 초록불이 켜지는 시각(주기 안) */
+  const startOf = (c: number, g: number) => phase(c, g) - list[c].offset;
+  const wrap = (t: number) => ((t % CYCLE) + CYCLE) % CYCLE;
+  links.sort((a, b) => b.w - a.w || a.d - b.d);
+  const root = list.map((_, i) => i);
+  const findRoot = (i: number): number => (root[i] === i ? i : (root[i] = findRoot(root[i])));
+  const tree: Link[][] = list.map(() => []);
+  for (const l of links) {
+    const a = findRoot(l.up);
+    const b = findRoot(l.dn);
+    if (a === b) continue;
+    root[a] = b;
+    tree[l.up].push(l);
+    tree[l.dn].push(l);
+  }
+  const done = new Uint8Array(list.length);
+  // 중요한 신호부터 뿌리로 삼는다(뿌리의 시각은 그대로)
+  const rank = list.map((_, c) => c).sort((a, b) => tree[b].reduce((s, l) => s + l.w, 0) - tree[a].reduce((s, l) => s + l.w, 0));
+  for (const r of rank) {
+    if (done[r]) continue;
+    done[r] = 1;
+    const queue = [r];
+    while (queue.length) {
+      const c = queue.shift()!;
+      for (const l of tree[c]) {
+        const o = l.up === c ? l.dn : l.up;
+        if (done[o]) continue;
+        done[o] = 1;
+        // 같은 두 신호 사이에 반대 방향 연결도 있으면 차로가 많은 쪽을 맞춘다
+        const both = links.filter((q) => (q.up === c && q.dn === o) || (q.up === o && q.dn === c));
+        const m = both.sort((a, b) => b.w - a.w || (a.up === c ? -1 : 1))[0];
+        if (m.up === c) list[o].offset = wrap(phase(o, m.gd) - startOf(c, m.gu) - m.d / WAVE);
+        else list[o].offset = wrap(phase(o, m.gu) - startOf(c, m.gd) + m.d / WAVE);
+        queue.push(o);
+      }
+    }
+  }
   // 교차로 신호에 딸린 보행 신호 횡단보도
   for (const { c: xw, i } of sigXw)
     if (crossSite[i] < 0) {

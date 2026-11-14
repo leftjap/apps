@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeCars, type Cars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
+import { makeJunctions } from '../src/sim/junctions.ts';
 import { makeSignals } from '../src/sim/signals.ts';
 import { fixedProvider, road } from './helpers.ts';
 
@@ -72,5 +73,31 @@ describe('교차로 양보', () => {
     expect(first[major]).toBeDefined();
     expect(first[minor]).toBeDefined();
     expect(first[minor]).toBeGreaterThan(first[major]);
+  });
+});
+
+describe('갈림이 없는 노드', () => {
+  it('두 조각으로 나뉜 두 방향 길의 이음매는 교차로가 아니다', () => {
+    const g = buildCarGraph([road([[-300, 0], [0, 0]], { cls: 1, lanes: 6 }), road([[0, 0], [300, 0]], { cls: 1, lanes: 6 })]);
+    const jn = makeJunctions(g);
+    expect(jn.count).toBe(0);
+    for (const e of g) expect(jn.groupOfEnd[e.id]).toBe(-1);
+  });
+  it('넓은 네거리 한 팔을 27m 앞 횡단보도 자리에서 끊어도 끊은 노드는 네거리 교차로에 묶이지 않는다', () => {
+    // 4+4차로 큰길 네거리. 서쪽 팔은 (−27, 0)에서 두 조각으로 나뉜다(합정역 교차로처럼 횡단보도가 교차로에서 25m 넘게 떨어진 곳)
+    const g = buildCarGraph([
+      road([[-300, 0], [-27, 0]], { cls: 1, lanes: 8 }),
+      road([[-27, 0], [0, 0]], { cls: 1, lanes: 8 }),
+      road([[0, 0], [300, 0]], { cls: 1, lanes: 8 }),
+      road([[0, -300], [0, 0]], { cls: 1, lanes: 8 }),
+      road([[0, 0], [0, 300]], { cls: 1, lanes: 8 }),
+    ]);
+    const jn = makeJunctions(g);
+    const toCut = g.find((e) => e.p[0] < -299)!; // 서쪽에서 끊은 노드로 들어오는 구간
+    const toCenter = g.find((e) => Math.abs(e.p[0] + 27) < 0.1 && e.p[e.p.length - 3] > -0.1)!; // 끊은 노드에서 네거리로
+    expect(jn.groupOfEnd[toCut.id]).toBe(-1);
+    expect(jn.groupOfEnd[toCenter.id]).toBeGreaterThanOrEqual(0);
+    expect(jn.groupOfStart[toCenter.id]).toBe(-1);
+    expect(jn.count).toBe(1);
   });
 });

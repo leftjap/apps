@@ -1,10 +1,11 @@
 // 교차로. 노드마다 둘레에 상자를 두고, 상자 안에서 차는 들어온 차로와 나갈 차로를 잇는 곡선을 따라간다.
 // 중앙분리대가 있는 큰길은 한 교차로가 노드 여러 개로 나뉘므로, 상자가 서로 2m 안으로 붙는 노드들을 한 교차로로 묶는다.
+// 갈림이 없는 통과 노드(길 조각의 이음매, 길 중간 횡단보도 자리)는 교차로가 아니므로 묶지 않는다.
 // 차는 교차로에 들어오는 구간(진입 구간)에 올라서면 교차로를 빠져나갈 때까지의 경로를 미리 정하고(cars.ts),
 // 경로끼리 곡선이 2.2m 안으로 다가오거나, 같은 진입 구간에서 다른 쪽으로 나가거나, 같은 구간을 함께 쓰면 '부딪는 경로'로 본다.
 // 차는 부딪는 경로로 교차로에 들어간 차가 있으면 진입 구간 끝의 상자 앞에서 기다린다.
 import { pointAt } from '../poly.ts';
-import type { Edge } from './graph.ts';
+import { laneOffset, MED, type Edge } from './graph.ts';
 
 const nodeKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
 
@@ -53,11 +54,22 @@ export function makeJunctions(edges: Edge[]): Junctions {
     ins[endNode[e.id]].push(e.id);
     outs[startNode[e.id]].push(e.id);
   });
+  // 통과 노드: 들어오는 구간마다 이어지는 구간이 하나뿐이고, 나가는 구간마다 들어오는 구간이 하나뿐인 노드(길 조각의 이음매, 길 중간 횡단보도 자리).
+  // 차가 고르거나 합쳐지는 일이 없으므로 교차로가 아니다. 상자는 차로 수가 바뀌는 만큼만 둔다
+  const preds = new Int32Array(edges.length);
+  for (const e of edges) for (const k of e.next) preds[k]++;
+  const pass = (n: number) => ins[n].every((i) => edges[i].next.length <= 1) && outs[n].every((i) => preds[i] <= 1);
   // 노드마다 상자 크기: 만나는 길 가운데 가장 넓은 길의 절반 폭 + 1m.
   // 비스듬히 만나는 길은 노드에서 한참 떨어진 곳부터 차로가 겹치므로, 노드에서 거꾸로 짚어 가며
   // 다른 길과 차로가 겹치는 거리를 재서 그 구간의 상자를 늘린다(30m까지). 짧은 구간은 양 끝 상자가 겹치지 않게 줄인다
   const r = new Float32Array(N);
-  for (let n = 0; n < N; n++) r[n] = Math.max(2, ...[...ins[n], ...outs[n]].map((i) => halfWidth(edges[i]))) + 1;
+  for (let n = 0; n < N; n++) {
+    if (pass(n)) {
+      let shift = 0;
+      for (const i of ins[n]) for (const k of edges[i].next) shift = Math.max(shift, Math.abs(edges[i].lanes - edges[k].lanes) * edges[k].lw);
+      r[n] = 3 + 1.5 * shift;
+    } else r[n] = Math.max(2, ...[...ins[n], ...outs[n]].map((i) => halfWidth(edges[i]))) + 1;
+  }
   const reach = new Float32Array(edges.length * 2); // [끝 쪽, 시작 쪽]
   /** 노드에서 구간 쪽으로 향하는 방향(끝 쪽이면 거슬러, 시작 쪽이면 따라) */
   const away = (e: Edge, end: number) => {
@@ -68,6 +80,7 @@ export function makeJunctions(edges: Edge[]): Junctions {
   const alongside = (a: Edge, ea: number, b: Edge, eb: number) => Math.cos(away(a, ea) - away(b, eb)) > Math.cos(Math.PI / 12);
   const Q = [0, 0, 0];
   for (let n = 0; n < N; n++) {
+    if (pass(n)) continue;
     const list = [...ins[n].map((id) => ({ id, end: 1 })), ...outs[n].map((id) => ({ id, end: 0 }))];
     for (let a = 0; a < list.length; a++)
       for (let b = a + 1; b < list.length; b++) {
@@ -96,7 +109,7 @@ export function makeJunctions(edges: Edge[]): Junctions {
   }
 
   // 교차로 묶기: 갈림이 있는 노드(들어오는 구간이나 나가는 구간이 둘 이상)끼리 상자가 2m 안으로 붙으면 하나로
-  const fork = (n: number) => ins[n].length >= 2 || outs[n].length >= 2;
+  const fork = (n: number) => (ins[n].length >= 2 || outs[n].length >= 2) && !pass(n);
   const parent = Array.from({ length: N }, (_, i) => i);
   const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
   const cell = new Map<string, number[]>();
@@ -182,8 +195,8 @@ export function makeJunctions(edges: Edge[]): Junctions {
     return { x: P[0] - Math.sin(h) * off, y: P[1], z: P[2] + Math.cos(h) * off, h };
   };
   function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[]) {
-    const p = lanePoint(a, a.len - rIn[a.id], a.off0 + la * a.lw);
-    const q = lanePoint(b, rOut[b.id], b.off0 + lb * b.lw);
+    const p = lanePoint(a, a.len - rIn[a.id], laneOffset(a, la));
+    const q = lanePoint(b, rOut[b.id], laneOffset(b, lb));
     // 3차 곡선: 들어온 방향으로 나가 나갈 방향으로 들어간다. 조절점을 두 끝 사이 거리의 1/3 만큼만 뻗으므로
     // 거의 나란히 합쳐지는 길에서도 곡선이 나갈 자리 너머로 튀어나가지 않는다
     const span = Math.hypot(q.x - p.x, q.z - p.z) / 3;
@@ -201,7 +214,7 @@ export function makeJunctions(edges: Edge[]): Junctions {
     out[3] = dx * dx + dz * dz > 1e-6 ? Math.atan2(dz, dx) : p.h;
   }
 
-  // 경로: 진입 구간의 상자 앞부터 나가는 구간의 상자 끝까지 1m 간격으로 찍은 점(안쪽·바깥쪽 차로 두 벌)
+  // 경로: 진입 구간의 상자 앞부터 나가는 구간의 상자 끝까지 1m 간격으로 찍은 점(안쪽·바깥쪽 차로 두 벌, 중앙버스차로가 있으면 그 차로도)
   const paths: number[][] = [];
   const pathIx = new Map<string, number>();
   const pts: Float32Array[] = [];
@@ -210,12 +223,13 @@ export function makeJunctions(edges: Edge[]): Junctions {
   function sample(path: number[]) {
     const out: number[] = [];
     const first = edges[path[0]];
-    for (const l0 of new Set([0, first.lanes - 1])) {
+    for (const l0 of new Set([0, first.lanes - 1, ...(first.med ? [MED] : [])])) {
       let la = l0;
       for (let k = 0; k + 1 < path.length; k++) {
         const a = edges[path[k]];
         const b = edges[path[k + 1]];
-        const lb = Math.min(la, b.lanes - 1);
+        // 중앙버스차로 버스는 다음 구간에 중앙버스차로가 없으면 맨 오른쪽 차로로 나간다
+        const lb = la === MED ? (b.med ? MED : b.lanes - 1) : Math.min(la, b.lanes - 1);
         const len = rIn[a.id] + rOut[b.id];
         for (let d = 0; d <= len; d += 1) {
           curve(a, b, la, lb, d, pt);
@@ -224,7 +238,7 @@ export function makeJunctions(edges: Edge[]): Junctions {
         // 묶인 교차로 안의 구간: 두 상자 사이의 곧은 부분
         if (k + 2 < path.length)
           for (let s = rOut[b.id]; s < b.len - rIn[b.id]; s += 1) {
-            const q = lanePoint(b, s, b.off0 + lb * b.lw);
+            const q = lanePoint(b, s, laneOffset(b, lb));
             out.push(q.x, q.z);
           }
         la = lb;

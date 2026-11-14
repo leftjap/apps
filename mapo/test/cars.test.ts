@@ -3,7 +3,7 @@ import { busHeadway, busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
-import { at, fixedProvider, road } from './helpers.ts';
+import { at, crosswalk, fixedProvider, road } from './helpers.ts';
 
 // 한 변 400m 정사각형을 시계 방향으로 도는 일방통행 1차로 순환로
 const ring = () =>
@@ -193,6 +193,25 @@ describe('버스', () => {
   });
 });
 
+describe('차로', () => {
+  it('1차로로 좁아졌다가 다시 3차로가 되면 차가 여러 차로로 다시 퍼진다', () => {
+    const g = buildCarGraph([
+      road([[-300, 0], [0, 0]], { oneway: true, lanes: 3 }),
+      road([[0, 0], [30, 0]], { oneway: true, lanes: 1 }),
+      road([[30, 0], [600, 0]], { oneway: true, lanes: 3 }),
+    ]);
+    const sim = makeCars(g, fixedProvider(1), 7, 20, []);
+    for (let k = 0; k < 12; k++) sim.put(0, 20 + k * 22, k % 3);
+    // 넓어진 구간을 지나는 차들의 옆 자리(차로)를 모은다
+    const zs = new Set<number>();
+    for (let k = 0; k < 900; k++) {
+      sim.step(0.1, at(14), false);
+      for (let i = 0; i < sim.cars.n; i++) if (sim.cars.x[i] > 100 && sim.cars.x[i] < 500) zs.add(Math.round(sim.cars.z[i]));
+    }
+    expect(zs.size).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe('버스 배차', () => {
   it('심야 버스는 밤에만, 다른 버스는 새벽에 쉰다', () => {
     expect(busHeadway({ kind: 0, ref: 'N26' }, 3 * 3600)).toBeGreaterThan(0);
@@ -229,5 +248,73 @@ describe('버스 정류장과 승하차', () => {
       seen.push(...sim.dwells);
     }
     expect(seen).toEqual([[0, 0, 0]]);
+  });
+});
+
+describe('중앙버스차로', () => {
+  // 분리대 8.1m 를 사이에 둔 한 방향 3차로 찻길 둘(동쪽으로 가는 길이 남쪽 z=+9). 둘 다 중앙버스차로가 있다
+  const med = { oneway: true, lanes: 3, cls: 1, medBus: true, gap: 8.1, measured: true };
+  const divided = () => buildCarGraph([road([[-600, 9], [600, 9]], med), road([[600, -9], [-600, -9]], med)]);
+  // 동쪽으로 가는 길의 중앙 정류장(일반 차로 왼쪽 가장자리 z=4.05 바로 안쪽 분리대 위)
+  const MS: [string, string, number, number][] = [['1', '가운데정류장', 0, 2.8]];
+
+  it('중앙차로 구간에서는 OSM 정류장 대신 중앙 정류장에 서고, 마을버스는 길가 정류장 그대로다', () => {
+    const g = divided();
+    const runs = [
+      { ref: '603', kind: 0, to: '', segs: [1], stops: [300], stopNames: ['길가정류장'] },
+      { ref: '마포09', kind: 3, to: '', segs: [1], stops: [300], stopNames: ['길가정류장'] },
+    ];
+    const [blue, village] = makeBusRoutes(runs, g, MS);
+    expect(blue.stopNames).toEqual(['가운데정류장']);
+    expect(blue.stops[0]).toBeCloseTo(600, 0);
+    expect(blue.med).toEqual([true]);
+    expect(village.stopNames).toEqual(['길가정류장']);
+    expect(village.med).toEqual([false]);
+  });
+
+  it('버스는 일반 차로 왼쪽 중앙버스차로로 달리고, 일반 차는 그 차로에 들어가지 않는다', () => {
+    const g = divided();
+    const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [], stopNames: [] }], g, MS);
+    const sim = makeCars(g, fixedProvider(1), 4, 60, routes);
+    sim.addBus(0, 100);
+    for (let k = 0; k < 8; k++) sim.put(g[0].id, 30 + k * 40, k % 3);
+    let carIn = 0;
+    for (let k = 0; k < 300; k++) {
+      sim.step(0.1, at(14), false);
+      for (let i = 0; i < sim.cars.n; i++) if (sim.cars.kind[i] !== 1 && sim.cars.z[i] < 4.05 && sim.cars.z[i] > 0) carIn++;
+    }
+    const b = [...Array(sim.cars.n).keys()].find((i) => sim.cars.kind[i] === 1)!;
+    expect(sim.cars.z[b]).toBeLessThan(4.05 - 1.2); // 일반 차로 왼쪽 가장자리 밖
+    expect(sim.cars.z[b]).toBeGreaterThan(0.5); // 반대 방향 버스차로까지 넘어가지 않는다
+    expect(carIn).toBe(0);
+  });
+
+  it('승강장(정차 자리 뒤 18m ~ 앞 12m)은 횡단보도와 겹치지 않게 횡단보도 앞에서 끝난다', () => {
+    const g = divided();
+    // 정류장 자리 바로 앞(x = 5)을 가로지르는 폭 4m 횡단보도
+    const xws = [crosswalk(5, 0, 0, 1, 14, [[5, 9], [5, -9]])];
+    const [r] = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [], stopNames: [] }], g, MS, xws);
+    const x = r.stops[0] - 600; // 정차 자리의 x
+    expect(x + 12).toBeLessThanOrEqual(5 - 2 + 0.01);
+    expect(x + 12).toBeGreaterThan(5 - 2 - 2);
+  });
+
+  it('중앙 정류장에서는 버스 오른쪽 문이 승강장에 닿게 서고, 정류장 포털은 길 가운데 승강장에 놓인다', () => {
+    const g = divided();
+    const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [], stopNames: [] }], g, MS);
+    const sim = makeCars(g, fixedProvider(1), 4, 10, routes);
+    sim.addBus(0, 450);
+    let door: [number, number] | null = null;
+    for (let k = 0; k < 600 && !door; k++) {
+      sim.step(0.1, at(14), false);
+      if (sim.dwells.length) door = sim.door(sim.dwells[0][2]);
+    }
+    expect(door).not.toBeNull();
+    expect(Math.abs(door![1] - 2.8)).toBeLessThan(1.2);
+    const { portals } = busStopPortals(routes, g);
+    expect(portals).toHaveLength(1);
+    expect(portals[0].median).toBe(true);
+    expect(portals[0].z).toBeGreaterThan(1.5);
+    expect(portals[0].z).toBeLessThan(4.05);
   });
 });

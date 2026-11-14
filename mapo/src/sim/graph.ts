@@ -7,6 +7,13 @@ import { cumLen } from '../poly.ts';
 /** 차선 자료가 없는 길의 차로 폭(m) */
 export const LANE = 3.3;
 
+/** 중앙버스차로를 달리는 버스의 차로 번호(일반 차로 번호와 겹치지 않는 값) */
+export const MED = 7;
+/** 중앙버스정류장 승강장 폭·길이(m)와, 버스가 서는 자리에서 승강장 가운데까지 뒤로 물린 거리(m). 버스 두 대가 함께 설 수 있다 */
+export const ISLAND_W = 2.2;
+export const ISLAND_L = 30;
+export const ISLAND_BACK = 3;
+
 /** 좌표(데시미터 정밀도)로 만든 노드 열쇠 */
 const nodeKey = (x: number, z: number) => (Math.round(x * 10) + 40000) * 80001 + (Math.round(z * 10) + 40000);
 
@@ -33,21 +40,28 @@ export interface Edge {
   /** 원래 도로 조각 번호와, 저장된 방향을 거슬러 가는가 */
   road: number;
   rev: boolean;
+  /** 중앙버스차로: 0 이면 없고, 아니면 일반 차로 왼쪽 가장자리에서 버스차로 가운데까지 거리(m). 한 방향 큰길 왼쪽 분리대 안이다 */
+  med: number;
 }
+
+/** 구간 e 의 l번 차로 가운데가 중심선에서 오른쪽으로 떨어진 거리(중앙버스차로는 왼쪽이라 음수) */
+export const laneOffset = (e: Edge, l: number) => (l === MED ? e.off0 - e.lw / 2 - e.med : e.off0 + l * e.lw);
 
 export function buildCarGraph(roads: Road[]): Edge[] {
   const edges: Edge[] = [];
   const twin: number[] = [];
-  const add = (r: Road, road: number, p: Float32Array, lanes: number, off0: number, rev: boolean) => {
+  const add = (r: Road, road: number, p: Float32Array, lanes: number, off0: number, rev: boolean, med = 0) => {
     const cum = cumLen(p);
-    edges.push({ id: edges.length, p, cum, len: cum[cum.length - 1], cls: r.cls, lanes, lw: r.lw, off0, next: [], nextW: [], entry: false, name: r.name, key: edges.length, road, rev });
+    edges.push({ id: edges.length, p, cum, len: cum[cum.length - 1], cls: r.cls, lanes, lw: r.lw, off0, next: [], nextW: [], entry: false, name: r.name, key: edges.length, road, rev, med });
   };
   roads.forEach((r, road) => {
     // 골목·진입로는 버스가 지나는 곳만 차가 다닌다
     if ((r.cls > 3 && !(r.bus && r.cls <= 5)) || r.p.length < 6) return;
     if (r.oneway) {
       const lanes = Math.max(1, r.lf);
-      add(r, road, r.p, lanes, (-(lanes - 1) / 2) * r.lw, false);
+      // 중앙버스차로는 왼쪽 분리대의 이쪽 절반(찻길 가장자리 0.5m 밖부터 분리대 폭의 절반) 가운데. 버스 한 대가 들어갈 폭이 없으면 두지 않는다
+      const med = r.medBus && r.gap / 2 >= 2.6 ? 0.5 + Math.min(1.75, r.gap / 4) : 0;
+      add(r, road, r.p, lanes, (-(lanes - 1) / 2) * r.lw, false, med);
       twin.push(-1);
     } else {
       // 양방향 길의 가운데선은 중앙선 자리다. 방향마다 차로 수가 다를 수 있다

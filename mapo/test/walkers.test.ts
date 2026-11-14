@@ -315,15 +315,16 @@ describe('찻길과 신호', () => {
     ];
     const signals = makeSignals(buildCarGraph(roads));
     const g = buildWalkGraph(roads);
-    // 동서 방향(무리 0)이 빨간불인 시각
+    // 동서 방향(무리 0)이 35초 넘게 빨간불인 시각(큰길 쪽이 초록을 더 받아 빨간불은 40초가 안 된다)
     const grp = signals.groupOf(0, 0);
     let t0 = 0;
-    while (!(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 40) === RED)) t0 += 1;
+    while (t0 < 200 && !(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 35) === RED)) t0 += 1;
+    expect(t0).toBeLessThan(200);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -40, z: 9 }], fixedProvider(1, 0), 9, 40, undefined, signals);
     sim.burst('x', 30);
     let tod = t0;
     let inside = 0;
-    for (let k = 0; k < 400; k++) {
+    for (let k = 0; k < 350; k++) {
       sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
       tod += 0.1;
       // 남쪽 보도를 따라 동쪽으로 가던 사람은 남북 찻길(|x| < 7.1)을 가로지르는 횡단보도(보도 연장선)에 들어가지 않는다
@@ -343,7 +344,8 @@ describe('찻길과 신호', () => {
     const g = buildWalkGraph(roads);
     const grp = signals.groupOf(0, 0);
     let t0 = 0;
-    while (!(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 40) === RED)) t0 += 1;
+    while (t0 < 200 && !(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 35) === RED)) t0 += 1;
+    expect(t0).toBeLessThan(200);
     // 남쪽 보도의 횡단보도 앞(대기 자리 x ≈ −9~−12 둘레)을 차로라고 친다
     const lanesAt = (x: number, z: number) => x > -16 && x < 0 && z > 0 && z < 12;
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -60, z: 9 }], fixedProvider(1, 0), 9, 40, undefined, signals, lanesAt);
@@ -351,7 +353,7 @@ describe('찻길과 신호', () => {
     let tod = t0;
     let onLanes = 0;
     let waiting = 0;
-    for (let k = 0; k < 400; k++) {
+    for (let k = 0; k < 350; k++) {
       sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
       tod += 0.1;
       for (let i = 0; i < sim.w.n; i++) {
@@ -374,7 +376,8 @@ describe('찻길과 신호', () => {
     const g = buildWalkGraph(roads);
     const grp = signals.groupOf(0, 0);
     let t0 = 0;
-    while (!(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 40) === RED)) t0 += 1;
+    while (t0 < 200 && !(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 35) === RED)) t0 += 1;
+    expect(t0).toBeLessThan(200);
     // 교차로 서쪽 20~26m 의 남쪽 보도를 다른 길의 차로가 가로지른다고 친다
     const lanesAt = (x: number, z: number) => x > -26 && x < -20 && z > 0 && z < 12;
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -60, z: 9 }], fixedProvider(1, 0), 9, 40, undefined, signals, lanesAt);

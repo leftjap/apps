@@ -116,3 +116,67 @@ describe('자료로 정한 신호', () => {
     expect(s.approach.get(west.id)!.setback).toBeCloseTo(22, 0);
   });
 });
+
+/** 묶음 c 의 무리 g 초록불이 켜지는 시각(0~90초) */
+function greenStart(s: ReturnType<typeof makeSignals>, c: number, g: number): number {
+  for (let t = 0; t < 90; t += 0.1) if (s.state(c, g, t) !== GREEN && s.state(c, g, t + 0.1) === GREEN) return t + 0.1;
+  return NaN;
+}
+/** a 에서 b 까지 (90초 주기로) 몇 초 뒤인가 */
+const after = (a: number, b: number) => (((b - a) % 90) + 90) % 90;
+
+describe('신호 시각 맞추기', () => {
+  // 동서 큰길(4+4차로)에 300m 간격으로 남북 작은 길(1+1차로)과 만나는 네거리 셋
+  const corridor = () =>
+    buildCarGraph([
+      road([[-300, 0], [0, 0]], { cls: 1, lanes: 8, name: '큰길' }),
+      road([[0, 0], [300, 0]], { cls: 1, lanes: 8, name: '큰길' }),
+      road([[300, 0], [600, 0]], { cls: 1, lanes: 8, name: '큰길' }),
+      road([[600, 0], [900, 0]], { cls: 1, lanes: 8, name: '큰길' }),
+      ...[0, 300, 600].flatMap((x) => [road([[x, -200], [x, 0]], { cls: 3, lanes: 2 }), road([[x, 0], [x, 200]], { cls: 3, lanes: 2 })]),
+    ]);
+
+  it('큰길을 따라 이어지는 교차로 신호는 11m/s 로 달린 차가 다음 신호에 초록불에 닿게 시각이 맞는다', () => {
+    const g = corridor();
+    const s = makeSignals(g);
+    expect(s.list).toHaveLength(3);
+    const site = (x: number) => s.list.findIndex((q) => Math.abs(q.x - x) < 1);
+    const east = (x: number) => g.find((e) => e.name === '큰길' && Math.abs(e.p[e.p.length - 3] - x) < 1 && e.p[0] < x)!;
+    const west = (x: number) => g.find((e) => e.name === '큰길' && Math.abs(e.p[e.p.length - 3] - x) < 1 && e.p[0] > x)!;
+    for (const [a, b] of [[0, 300], [300, 600]]) {
+      const ca = site(a);
+      const cb = site(b);
+      // 동쪽으로 가는 차: a 에서 초록불이 켜질 때 떠나 300m 를 27초에 달린다. 서쪽으로 가는 차는 반대
+      const eastOk = Math.abs(after(greenStart(s, ca, s.approach.get(east(a).id)!.group), greenStart(s, cb, s.approach.get(east(b).id)!.group)) - 300 / 11) < 1;
+      const westOk = Math.abs(after(greenStart(s, cb, s.approach.get(west(b).id)!.group), greenStart(s, ca, s.approach.get(west(a).id)!.group)) - 300 / 11) < 1;
+      expect(eastOk || westOk).toBe(true);
+    }
+  });
+
+  it('큰길 쪽 무리에 초록 시간을 더 주고, 작은 길 쪽도 사람이 건널 만큼은 준다', () => {
+    const g = corridor();
+    const s = makeSignals(g);
+    const c = s.list.findIndex((q) => Math.abs(q.x - 300) < 1);
+    const main = s.approach.get(g.find((e) => e.name === '큰길' && Math.abs(e.p[e.p.length - 3] - 300) < 1)!.id)!.group;
+    const minor = 1 - main;
+    const len = (grp: number) => s.greenLeft(c, grp, greenStart(s, c, grp));
+    expect(len(main)).toBeGreaterThan(len(minor) + 10);
+    expect(len(minor)).toBeGreaterThan(23.8); // 24초(시각을 0.1초 단위로 찾는다)
+  });
+
+  it('길 중간 보행 신호는 위쪽 교차로 신호에 맞춘다', () => {
+    const g = buildCarGraph([
+      road([[-300, 0], [0, 0]], { cls: 1, lanes: 8, name: '큰길' }),
+      road([[0, 0], [200, 0]], { cls: 1, lanes: 8, name: '큰길' }),
+      road([[200, 0], [500, 0]], { cls: 1, lanes: 8, name: '큰길' }),
+      road([[0, -200], [0, 0]], { cls: 3, lanes: 2 }),
+      road([[0, 0], [0, 200]], { cls: 3, lanes: 2 }),
+    ]);
+    const s = makeSignals(g, { crosswalks: [crosswalk(0, 10, 1, 0, 14, [[0, 10]]), crosswalk(200, 0, 0, 1, 14, [[200, 0]])], stopLines: new Float32Array() });
+    expect(s.list).toHaveLength(2);
+    const into = (x: number) => g.find((e) => e.name === '큰길' && Math.abs(e.p[e.p.length - 3] - x) < 1 && e.p[0] < x)!;
+    const a = s.approach.get(into(0).id)!;
+    const b = s.approach.get(into(200).id)!;
+    expect(after(greenStart(s, a.c, a.group), greenStart(s, b.c, b.group))).toBeCloseTo(200 / 11, 0);
+  });
+});
