@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeStages, minRect } from '../tools/lib/crosswalk.ts';
+import { alignToRoad, isCurrent, mergeStages, minRect } from '../tools/lib/crosswalk.ts';
 import { analysePiece, laneIndex, type LaneSeg } from '../tools/lib/lanes.ts';
 
 describe('횡단보도 면 → 축', () => {
@@ -29,6 +29,39 @@ describe('횡단보도 면 → 축', () => {
     const long = m.find((r) => r.len > 20)!;
     expect(long.len).toBeCloseTo(27, 3);
     expect(long.cz).toBeCloseTo(13.5, 3);
+  });
+  it('정사각형에 가까운 조각은 길과 직각인 쪽을 건너는 방향으로 잡아, 여러 조각 횡단보도가 한 줄로 이어진다', () => {
+    // 동서로 뻗은 길(방향 +x)을 남북으로 건너는 세 조각. 가운데 조각은 동서 8.3m·남북 7.5m 라 긴 변이 길과 나란하다
+    const top = minRect([[0, 0], [8.3, 0], [8.3, 13.7], [0, 13.7]]);
+    const mid = minRect([[0, 16.3], [8.3, 16.3], [8.3, 23.8], [0, 23.8]]);
+    const bot = minRect([[0, 26], [8.3, 26], [8.3, 40.6], [0, 40.6]]);
+    expect(Math.abs(mid.ux)).toBeCloseTo(1, 5); // 고치기 전: 길 방향을 건너는 방향으로 잡는다
+    expect(mergeStages([top, mid, bot])).toHaveLength(3);
+    const a = alignToRoad(mid, 1, 0);
+    expect(Math.abs(a.uz)).toBeCloseTo(1, 5);
+    expect(a.len).toBeCloseTo(7.5, 5);
+    expect(a.wid).toBeCloseTo(8.3, 5);
+    const m = mergeStages([top, bot, mid].map((r) => alignToRoad(r, 1, 0)));
+    expect(m).toHaveLength(1);
+    expect(m[0].len).toBeCloseTo(40.6, 3);
+    // 긴 조각은 길 방향과 상관없이 그대로 둔다(비스듬한 횡단보도)
+    const diag = minRect([[0, 0], [4, 0], [4, 20], [0, 20]]);
+    expect(alignToRoad(diag, 0.7, 0.7)).toEqual(diag);
+  });
+});
+
+describe('2021 면 가운데 지금도 있는 것', () => {
+  const ring: [number, number][] = [[0, 0], [4, 0], [4, 16], [0, 16], [0, 0]];
+  it('2026 점과 관리번호가 이어진 면은 남긴다', () => {
+    expect(isCurrent(ring, true, [], [])).toBe(true);
+  });
+  it('이어지지 않은 면은 2026 점이 5m 안에 있거나(번호만 바뀐 것) OSM 횡단보도가 6m 안에 지나갈 때만 남긴다', () => {
+    expect(isCurrent(ring, false, [], [])).toBe(false);
+    expect(isCurrent(ring, false, [[30, 8]], [])).toBe(false);
+    expect(isCurrent(ring, false, [[8, 8]], [])).toBe(true);
+    expect(isCurrent(ring, false, [[2, 20]], [])).toBe(true);
+    expect(isCurrent(ring, false, [], [[[2, -3], [2, 19]]])).toBe(true);
+    expect(isCurrent(ring, false, [], [[[20, -3], [20, 19]]])).toBe(false);
   });
 });
 

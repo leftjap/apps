@@ -137,6 +137,66 @@ describe('횡단보도로 큰길 건너기', () => {
     expect(onRed).toBe(0);
   });
 
+  // 폭 6m 신호 횡단보도에 양쪽에서 사람이 몰려오는 경우
+  const busyCrossing = () => {
+    const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })];
+    const cars = buildCarGraph(rs);
+    const xws = [crosswalk(0, 0, 0, 1, 9, [[0, 0]], true, 6)];
+    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const g = buildWalkGraph(rs);
+    const sim = makeWalkers(g, exits, fixedProvider(1, 0), 4, 160, undefined, signals, laneTest(cars), laneTest(cars, 1.2), { links: crossLinks(g, xws) });
+    return { sim, signals };
+  };
+
+  it('신호를 기다리는 사람들은 횡단보도 앞에 한 점으로 포개지지 않고 서로 0.6m 넘게 떨어져 선다', () => {
+    const { sim } = busyCrossing();
+    let close = 0;
+    let waiting = 0;
+    for (let k = 0; k < 6000; k++) {
+      if (k % 100 === 0) sim.burst('s', 4), sim.burst('n', 4);
+      sim.step(0.1, { tod: k * 0.1, dow: 2, doy: 317 }, false);
+      if (k % 10) continue;
+      const w = sim.w;
+      const stand: number[] = [];
+      for (let i = 0; i < w.n; i++) if (!w.moving[i] && w.fade[i] > 0.99 && Math.abs(w.x[i]) < 10 && Math.abs(w.z[i]) > 6 && Math.abs(w.z[i]) < 14) stand.push(i);
+      waiting += stand.length;
+      for (const i of stand) for (const j of stand) if (i < j && Math.hypot(w.x[i] - w.x[j], w.z[i] - w.z[j]) < 0.6) close++;
+    }
+    expect(waiting).toBeGreaterThan(500);
+    // 빈자리로 옮겨 가는 도중 잠깐 붙는 것만 남는다(고치기 전 1,122건)
+    expect(close).toBeLessThan(waiting * 0.005);
+  });
+
+  it('건너는 사람은 진행 방향 오른쪽으로 건너서 마주 오는 사람과 겹치지 않고, 같은 쪽 사람과도 포개지지 않는다', () => {
+    const { sim } = busyCrossing();
+    const w = sim.w;
+    const prevZ = new Map<number, number>();
+    const south: number[] = [];
+    const north: number[] = [];
+    let close = 0;
+    for (let k = 0; k < 6000; k++) {
+      if (k % 100 === 0) sim.burst('s', 4), sim.burst('n', 4);
+      sim.step(0.1, { tod: k * 0.1, dow: 2, doy: 317 }, false);
+      const on: number[] = [];
+      for (let i = 0; i < w.n; i++) {
+        if (Math.abs(w.z[i]) > 6 || Math.abs(w.x[i]) > 4) continue;
+        on.push(i);
+        const z0 = prevZ.get(w.id[i]);
+        if (z0 !== undefined && Math.abs(w.z[i] - z0) > 0.05) (w.z[i] > z0 ? south : north).push(w.x[i]);
+      }
+      prevZ.clear();
+      for (const i of on) prevZ.set(w.id[i], w.z[i]);
+      for (const i of on) for (const j of on) if (i < j && Math.hypot(w.x[i] - w.x[j], w.z[i] - w.z[j]) < 0.5) close++;
+    }
+    const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+    expect(south.length).toBeGreaterThan(300);
+    expect(north.length).toBeGreaterThan(300);
+    // 남쪽(+z)으로 가는 사람의 오른쪽은 −x, 북쪽으로 가는 사람의 오른쪽은 +x
+    expect(mean(south)).toBeLessThan(-0.5);
+    expect(mean(north)).toBeGreaterThan(0.5);
+    expect(close).toBeLessThan(south.length * 0.01);
+  });
+
   it('신호 없는 횡단보도에서는 차가 다가오면 기다리고, 건너는 사람이 있으면 바쁨 표시를 한다', () => {
     const rs = roads();
     const g = buildWalkGraph(rs);

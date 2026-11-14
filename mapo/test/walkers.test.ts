@@ -89,6 +89,32 @@ describe('보행자', () => {
   });
 });
 
+describe('부드럽게 돌기', () => {
+  it('모퉁이를 돌거나 되돌아설 때 몸 방향을 한 프레임(1/30초)에 15°넘게 꺾지 않는다', () => {
+    const g = buildWalkGraph([road([[0, 0], [40, 0], [40, 40], [0, 40]], { cls: 4, lanes: 1 })]);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 10, z: 0 }], fixedProvider(1, 0), 3, 20);
+    sim.burst('x', 6);
+    const w = sim.w;
+    const prev = new Map<number, number>();
+    let worst = 0;
+    let turns = 0;
+    for (let k = 0; k < 3600; k++) {
+      sim.step(1 / 30, at(14), false);
+      for (let i = 0; i < w.n; i++) {
+        const y0 = prev.get(w.id[i]);
+        if (y0 === undefined || w.fade[i] < 0.99) continue;
+        const d = Math.abs(((((w.yaw[i] - y0) % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+        worst = Math.max(worst, d);
+        if (d > 0.01) turns++;
+      }
+      prev.clear();
+      for (let i = 0; i < w.n; i++) prev.set(w.id[i], w.yaw[i]);
+    }
+    expect(turns).toBeGreaterThan(5);
+    expect((worst * 180) / Math.PI).toBeLessThan(15);
+  });
+});
+
 describe('멈춰 서서 구경하기', () => {
   it('붙잡힌 사람은 멈춰 서서 대상을 보며 휴대폰을 들고, 시간이 지나면 다시 걷는다', () => {
     const g = buildWalkGraph([road([[0, 0], [400, 0]], { cls: 4, lanes: 1 })]);

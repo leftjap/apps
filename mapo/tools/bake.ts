@@ -6,7 +6,7 @@ import { cumLen, nearestS, pointAt } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
-import { mergeStages, minRect, type Rect } from './lib/crosswalk.ts';
+import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
 import { analysePiece, laneIndex, type LaneSeg, type PieceLanes } from './lib/lanes.ts';
 import { stitch } from './lib/rail.ts';
 import { encodePng, fillPolygon, strokeLine } from './lib/raster.ts';
@@ -475,14 +475,43 @@ interface Cross extends Rect {
   stage: boolean;
   /** 축이 지나는 꼭짓점(데시미터 좌표), 축 방향 순서 */
   verts: [number, number][];
+  /** 조각마다의 실제 면 외곽선(m). 두 단 횡단보도는 조각이 여럿이다 */
+  rings: [number, number][][];
 }
 const crossings: Cross[] = [];
+/** 외곽선 여럿 → [점 개수, x, z, ...(데시미터), 점 개수, ...]. 닫는 점은 뺀다 */
+const ringsOut = (rings: [number, number][][]) =>
+  rings.flatMap((r) => {
+    const pts = r.length > 1 && r[0][0] === r[r.length - 1][0] && r[0][1] === r[r.length - 1][1] ? r.slice(0, -1) : r;
+    return [pts.length, ...pts.flatMap(([x, z]) => [dm(x), dm(z)])];
+  });
+/** 축이 걸어 다니는 길을 지나지 않아 건너는 데 쓰지 못하는 횡단보도 면(그리기만 한다) */
+const drawOnlyRings: [number, number][][] = [];
 {
   const file = new URL('./raw/seoul-crosswalks.json', import.meta.url);
   const src = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { areas: [], points: [] };
-  const rects: (Rect & { sig: boolean | null })[] = (src.areas as { ring: [number, number][]; sig: boolean | null }[])
-    .map((a) => ({ ...minRect(a.ring.map(([la, lo]) => toXZ(la, lo))), sig: a.sig }))
-    .filter((r) => r.len > 1.5 && r.wid > 0.8 && inBoard(r.cx, r.cz, 4));
+  // 면 없는 2026 점(되돌린 자리)과 OSM 횡단보도 선: 2021 면 가운데 지금도 있는 것을 가리는 데 쓴다
+  const newPts = (src.points as { lat: number; lon: number; sig: boolean }[]).map((p) => {
+    const [x, z] = toXZ(p.lat, p.lon);
+    return { x: x + 0.81, z: z - 5.31, sig: p.sig };
+  });
+  const osmCross = raw('highways')
+    .filter((e) => e.geometry && (e.tags?.footway === 'crossing' || e.tags?.highway === 'crossing'))
+    .map((e) => e.geometry!.map((g) => toXZ(g.lat, g.lon)));
+  let stale = 0;
+  const rects: (Rect & { sig: boolean | null; ring: [number, number][] })[] = [];
+  for (const a of src.areas as { ring: [number, number][]; sig: boolean | null }[]) {
+    const ring = a.ring.map(([la, lo]) => toXZ(la, lo));
+    const r = minRect(ring);
+    if (r.len <= 1.5 || r.wid <= 0.8 || !inBoard(r.cx, r.cz, 4)) continue;
+    if (!isCurrent(ring, a.sig !== null, newPts.map((p) => [p.x, p.z]), osmCross)) {
+      stale++;
+      continue;
+    }
+    // 관리번호만 바뀐 면은 가까운 2026 점의 보행등 유무를 쓴다
+    const sig = a.sig ?? newPts.find((p) => ringDist(p.x, p.z, ring) <= 5)?.sig ?? null;
+    rects.push({ ...r, sig, ring });
+  }
   // 조각 선분 격자
   const CELL = 20;
   const grid = new Map<string, [number, number][]>();
@@ -509,15 +538,11 @@ const crossings: Cross[] = [];
         }
     return res;
   };
-  // 면이 없는 새 횡단보도 점: 가까운 찻길(15m 안)에 직각으로, 폭 4m
-  for (const p of src.points as { lat: number; lon: number; sig: boolean }[]) {
-    let [x, z] = toXZ(p.lat, p.lon);
-    x += 0.81;
-    z -= 5.31;
-    if (!inBoard(x, z, 4) || rects.some((r) => Math.hypot(r.cx - x, r.cz - z) < 8)) continue;
-    let best: { d: number; x: number; z: number; ux: number; uz: number; i: number } | null = null;
-    for (const [i, k] of segsNear(x, z, 15)) {
-      if (roads[i][0] > 4) continue;
+  /** (x, z)에서 가장 가까운 찻길(등급 maxCls 이하, r m 안) 선분 */
+  const nearestRoad = (x: number, z: number, r: number, maxCls: number) => {
+    let best: { d: number; x: number; z: number; dx: number; dz: number; i: number } | null = null;
+    for (const [i, k] of segsNear(x, z, r)) {
+      if (roads[i][0] > maxCls) continue;
       const P = ptsOf(roads[i]);
       const [ax, az] = P[k];
       const [bx, bz] = P[k + 1];
@@ -526,9 +551,26 @@ const crossings: Cross[] = [];
       const l2 = dx * dx + dz * dz || 1;
       const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
       const d = Math.hypot(ax + dx * t - x, az + dz * t - z);
-      if (d < 15 && (!best || d < best.d)) best = { d, x: ax + dx * t, z: az + dz * t, ux: -dz / Math.sqrt(l2), uz: dx / Math.sqrt(l2), i };
+      if (d < r && (!best || d < best.d)) best = { d, x: ax + dx * t, z: az + dz * t, dx: dx / Math.sqrt(l2), dz: dz / Math.sqrt(l2), i };
     }
-    if (best) rects.push({ cx: best.x, cz: best.z, ux: best.ux, uz: best.uz, len: carriageway(best.i) + 1, wid: 4, sig: p.sig });
+    return best;
+  };
+  // 정사각형에 가까운 조각은 가장 가까운 길과 직각인 쪽을 건너는 방향으로
+  rects.forEach((r, i) => {
+    const near = nearestRoad(r.cx, r.cz, 15, 5);
+    if (near) rects[i] = { ...alignToRoad(r, near.dx, near.dz), sig: r.sig, ring: r.ring };
+  });
+  // 면이 없는 새 횡단보도 점: 가까운 찻길(15m 안)에 직각으로, 폭 4m
+  for (const p of newPts) {
+    const { x, z } = p;
+    if (!inBoard(x, z, 4) || rects.some((r) => Math.hypot(r.cx - x, r.cz - z) < 8 || ringDist(x, z, r.ring) <= 5)) continue;
+    const best = nearestRoad(x, z, 15, 4);
+    if (!best) continue;
+    const ux = -best.dz;
+    const uz = best.dx;
+    const h = (carriageway(best.i) + 1) / 2;
+    const ring: [number, number][] = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [best.x + ux * a * h - uz * b * 2, best.z + uz * a * h + ux * b * 2]);
+    rects.push({ cx: best.x, cz: best.z, ux, uz, len: h * 2, wid: 4, sig: p.sig, ring });
   }
   const merged = mergeStages(rects);
   // 축이 지나는 조각 자리를 모은 뒤, 조각마다 뒤쪽 선분부터 꼭짓점을 넣는다(앞쪽 번호가 밀리지 않게)
@@ -577,12 +619,24 @@ const crossings: Cross[] = [];
     }
   }
   merged.forEach((m, c) => {
-    if (!verts[c].length) return;
+    const rings = m.parts.map((p) => rects[p].ring);
+    if (!verts[c].length) {
+      // 판에 없는 골목·진입로 입구의 횡단보도: 걸어 다니는 길 15m 안이면 그리기만 한다(다리 위 3m 안은 높이가 달라 뺀다).
+      // 꼭짓점을 넣은 뒤라 선분 격자 번호가 밀려 있으므로 길을 직접 훑는다
+      for (const ring of rings) {
+        const r = minRect(ring);
+        const within = (d: number, pick: (rd: number[]) => boolean) =>
+          roads.some((rd) => pick(rd) && ptsOf(rd).some((p, k, P) => k > 0 && segDist(r.cx, r.cz, P[k - 1][0], P[k - 1][1], p[0], p[1]) < d));
+        if (within(15, (rd) => rd[0] <= 5 && !rd[3]) && !within(3, (rd) => !!rd[3])) drawOnlyRings.push(ring);
+      }
+      return;
+    }
     const parts = m.parts.map((p) => rects[p].sig);
     const sig = parts.includes(true) ? true : parts.includes(false) ? false : null;
     const vs = verts[c].sort((a, b) => a.u - b.u).filter((v, k, a) => k === 0 || v.x !== a[k - 1].x || v.z !== a[k - 1].z);
-    crossings.push({ ...m, sig, stage: m.parts.length > 1, verts: vs.map((v) => [v.x, v.z]) });
+    crossings.push({ ...m, sig, stage: m.parts.length > 1, verts: vs.map((v) => [v.x, v.z]), rings });
   });
+  console.log(`횡단보도 면: 2026 자료에 없어 뺀 것 ${stale}개, 건너는 길이 없어 그리기만 하는 것 ${drawOnlyRings.length}개`);
 }
 // 길 중간 신호 횡단보도에서 조각을 끊는다: 큰길(등급 3 이하) 조각이고, 큰길 교차 노드(큰길 조각 끝이 셋 넘게 모인 노드)에서 25m 넘게,
 // 조각 양 끝에서 10m 넘게 떨어진 꼭짓점
@@ -1040,6 +1094,8 @@ const out = {
   }),
   // 횡단보도: [가운데 x, z, 건너는 방향 ×1000 (x, z), 반 길이, 폭, 표시(1 보행 신호, 2 신호 모름, 4 두 단), 축이 지나는 꼭짓점 x, z, ...]
   xw: crossings.map((c) => [dm(c.cx), dm(c.cz), Math.round(c.ux * 1000), Math.round(c.uz * 1000), dm(c.len / 2), dm(c.wid), (c.sig ? 1 : 0) | (c.sig === null ? 2 : 0) | (c.stage ? 4 : 0), ...c.verts.flat()]),
+  xwp: crossings.map((c) => ringsOut(c.rings)),
+  xwd: ringsOut(drawOnlyRings),
   // 정지선(서울시 차선 자료의 일시정지선) [x0, z0, x1, z1, ...]
   stop: tgis
     .filter((l) => l.k === '004')

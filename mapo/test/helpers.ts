@@ -47,4 +47,5 @@ export const crosswalk = (x: number, z: number, ux: number, uz: number, half: nu
   sig,
   sigUnknown: false,
   verts: Float32Array.from(verts.flat()),
+  rings: [Float32Array.from([[-1, -1], [1, -1], [1, 1], [-1, 1]].flatMap(([a, b]) => [x + ux * a * half - (uz * b * wid) / 2, z + uz * a * half + (ux * b * wid) / 2]))],
 });

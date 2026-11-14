@@ -6,15 +6,41 @@ import type { Crosswalk } from '../data/board.ts';
 import { laneTest, type Edge } from '../sim/graph.ts';
 import type { Signals } from '../sim/signals.ts';
 import { material } from './env.ts';
-import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
+import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry, type Ribbon } from './util.ts';
 
-export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], stopLines: Float32Array) {
+/** 횡단보도 면 외곽선 하나를 칠한다. 줄무늬는 건너는 축(ux, uz)을 따라 (sx, sz)에서부터 0.5m 칠하고 0.5m 띈다 */
+function addStripes(o: Ribbon, ring: Float32Array, sx: number, sz: number, ux: number, uz: number) {
+  const pts: THREE.Vector2[] = [];
+  for (let k = 0; k < ring.length; k += 2) pts.push(new THREE.Vector2(ring[k], ring[k + 1]));
+  const base = o.pos.length / 3;
+  for (const p of pts) {
+    o.pos.push(p.x, 0.35, p.y);
+    o.uv.push(0, (p.x - sx) * ux + (p.y - sz) * uz);
+    o.info.push(1, 0, 0, 0);
+  }
+  for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(pts, [])) o.idx.push(base + a, base + b, base + c);
+}
+
+export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], stopLines: Float32Array, crossMarks: Float32Array[] = []) {
   const group = new THREE.Group();
   const marks = ribbon();
   const poles: [number, number, number, number][] = []; // x, z, 방향, 신호 번호(approach 순서)
   const list: { c: number; group: number }[] = [];
-  // 횡단보도: 축을 따라 폭만큼의 띠. 줄무늬는 띠 방향으로 0.5m 칠하고 0.5m 띈다
-  for (const c of crosswalks) addRibbon(marks, [c.x - c.ux * c.half, 0.35, c.z - c.uz * c.half, c.x + c.ux * c.half, 0.35, c.z + c.uz * c.half], c.wid, [1, 0, 0, 0]);
+  // 횡단보도: 서울시 횡단보도 면 모양 그대로(사다리꼴·평행사변형, 두 단 횡단보도는 조각마다). 줄무늬는 건너는 축을 따라 한쪽 끝에서부터 잇는다
+  for (const c of crosswalks) for (const r of c.rings) addStripes(marks, r, c.x - c.ux * c.half, c.z - c.uz * c.half, c.ux, c.uz);
+  // 판에 없는 골목·진입로 입구의 횡단보도: 가장 긴 변을 건너는 방향으로 본다
+  for (const r of crossMarks) {
+    let best = 0;
+    let ux = 1;
+    let uz = 0;
+    for (let k = 0; k < r.length; k += 2) {
+      const dx = r[(k + 2) % r.length] - r[k];
+      const dz = r[(k + 3) % r.length] - r[k + 1];
+      const l = Math.hypot(dx, dz);
+      if (l > best) (best = l), (ux = dx / l), (uz = dz / l);
+    }
+    addStripes(marks, r, r[0], r[1], ux, uz);
+  }
   // 정지선 가운데가 차로 위에 있는 것만 긋는다(차가 다니지 않는 골목 어귀의 정지선은 길 폭이 달라 엉뚱한 곳에 떠 보인다)
   const onLanes = laneTest(edges);
   for (let k = 0; k < stopLines.length; k += 4)

@@ -137,6 +137,7 @@ const BOARDING = 4; // 버스 문으로 걸어가는 중
 const MAX_WAIT = 300; // 정류장에서 버스를 기다리는 가장 긴 시간(초)
 const QUEUE_GAP = 1.5; // 정류장 줄에서 앞뒤 사람 사이(m). 사람을 실제보다 키워 그리므로 넉넉하게 둔다
 const ALIGHT_T = 1.6; // 버스 문에서 보도까지 걸어 나오는 시간(초)
+const TURN_RATE = 7; // 몸 방향이 1초에 도는 가장 큰 각(라디안). 모퉁이·되돌아서기에서 한 프레임에 확 꺾이지 않게
 
 /** 외곽선 [x,z, ...] 넓이 */
 function polyArea(p: Float32Array): number {
@@ -296,6 +297,10 @@ export function makeWalkers(
   const inLanes = new Uint8Array(max).fill(255);
   const inMajor = new Uint8Array(max).fill(255);
   const laneHold = new Uint8Array(max); // 신호를 기다려 차로 앞에 멈춰 있다(다음 확인까지)
+  const head = new Float32Array(max); // 걷는 방향(판단에 쓴다). 그려지는 몸 방향(w.yaw)은 이쪽으로 TURN_RATE 만큼씩 돈다
+  const queued = new Uint8Array(max); // 신호를 기다리는 사람 뒤에 줄을 서서 멈췄다
+  const xSlot = new Uint8Array(max); // 횡단보도 앞에서 빈자리를 찾아 옮겨 간 횟수
+  const xLat = new Float32Array(max); // 횡단보도에서 축 오른쪽으로 비켜 걷는 거리(m)
   let frame = 0;
   // 보행 노드마다 25m·30m 안의 신호 묶음(−2 = 아직 안 찾음)
   const site25 = new Int16Array(g.adj.length).fill(-2);
@@ -513,7 +518,7 @@ export function makeWalkers(
     const k = t[i] / len; // 모퉁이에서는 노드를 지나거나 노드 앞에서 갈아타므로 0~1 밖도 쓴다
     w.x[i] = sx[i] + dx * k - (dz / len) * (off[i] + dodge[i]);
     w.z[i] = sz[i] + dz * k + (dx / len) * (off[i] + dodge[i]);
-    w.yaw[i] = Math.atan2(dz, dx);
+    head[i] = Math.atan2(dz, dx);
     return len;
   }
 
@@ -559,7 +564,9 @@ export function makeWalkers(
     w.female[i] = rand() < look.female ? 1 : 0;
     if (w.age[i] === 3) speed[i] *= 0.75; // 나이 든 사람은 천천히 걷는다
     w.moving[i] = 1;
+    queued[i] = 0;
     place(i);
+    w.yaw[i] = head[i];
     if (d.door) {
       // 건물 문에서 보도 자리까지 걸어 나온다
       ox[i] = d.door[0] - w.x[i];
@@ -573,7 +580,7 @@ export function makeWalkers(
     onLeave?.(w.x[i], w.z[i]);
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, curK, inLanes, inMajor, laneHold, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, curK, inLanes, inMajor, laneHold, head, queued, xSlot, xLat, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
       a[i] = a[j];
   }
 
@@ -813,6 +820,16 @@ export function makeWalkers(
       xing[i] = 1;
       xLink[i] = nextX[i];
       nextX[i] = -1;
+      // 우측통행: 횡단보도 축에서 건너는 방향 오른쪽으로, 횡단보도 폭 안에서 사람마다 다른 거리만큼 비켜 건넌다
+      const ux = xFx[i] - xNx[i];
+      const uz = xFz[i] - xNz[i];
+      const lu = Math.hypot(ux, uz) || 1;
+      xLat[i] = Math.max(0, links.list[xLink[i]].wid / 2 - 0.4) * (0.15 + rand() * 0.85);
+      xNx[i] -= (uz / lu) * xLat[i];
+      xNz[i] += (ux / lu) * xLat[i];
+      xFx[i] -= (uz / lu) * xLat[i];
+      xFz[i] += (ux / lu) * xLat[i];
+      xSlot[i] = 0;
       return;
     }
     depart(i, to[i], k, startV[i] + excess);
@@ -841,6 +858,60 @@ export function makeWalkers(
           if (j !== i && j < w.n && Math.hypot(w.x[j] - w.x[i], w.z[j] - w.z[i]) < 0.6) return true;
     return false;
   }
+  /** (x, z) 0.7m 안에 i 말고 다른 사람이 없는가 */
+  function freeAt(i: number, x: number, z: number): boolean {
+    const cx = Math.floor(x / 1.5);
+    const cz = Math.floor(z / 1.5);
+    for (let ax = -1; ax <= 1; ax++)
+      for (let az = -1; az <= 1; az++)
+        for (let j = gridHead[cellKey(cx + ax, cz + az)]; j >= 0; j = gridNext[j])
+          if (j !== i && j < w.n && mode[j] !== LEAVING && Math.hypot(w.x[j] - x, w.z[j] - z) < 0.7) return false;
+    return true;
+  }
+  /** 횡단보도 앞 기다릴 자리에 이미 사람이 있을 때 옮겨 설 빈자리: 지금 자리에서 옆으로 0.75m 씩, 그다음 보도 쪽으로 0.75m 씩 물러나며
+   *  횡단보도 폭 안(축에서 폭/2 − 0.3m)에서 처음 빈 곳. 없으면 null */
+  function freeSpot(i: number, l: CrossLink): [number, number] | null {
+    let ux = xFx[i] - xNx[i];
+    let uz = xFz[i] - xNz[i];
+    const lu = Math.hypot(ux, uz) || 1;
+    ux /= lu;
+    uz /= lu;
+    const ax = l.bx - l.ax;
+    const az = l.bz - l.az;
+    const la = Math.hypot(ax, az) || 1;
+    const room = Math.max(0.2, l.wid / 2 - 0.3);
+    for (const row of [0, 0.75, 1.5])
+      for (const lat of [0, 0.75, -0.75, 1.5, -1.5, 2.25, -2.25, 3, -3]) {
+        const x = w.x[i] - uz * lat - ux * row;
+        const z = w.z[i] + ux * lat - uz * row;
+        if (Math.abs(((x - l.ax) * az - (z - l.az) * ax) / la) > room) continue;
+        if (freeAt(i, x, z)) return [x, z];
+      }
+    return null;
+  }
+  let followStand = false;
+  /** 횡단보도를 오가는 사람: 앞(1.4m 안, 옆으로 0.5m 안)에 서 있거나 같은 쪽으로 가는 사람이 있으면 0.7m 뒤까지만 다가간다.
+   *  마주 오거나 가로지르는 사람은 우측통행 자리로 피하므로 보지 않는다. 걸음에 곱할 값(0~1)을 돌려주고, 멈추게 한 사람이 서 있었는지 followStand 에 둔다 */
+  function follow(i: number, hx: number, hz: number): number {
+    const h = Math.atan2(hz, hx);
+    const cx = Math.floor(w.x[i] / 1.5);
+    const cz = Math.floor(w.z[i] / 1.5);
+    let f = 1;
+    followStand = false;
+    for (let ax = -1; ax <= 1; ax++)
+      for (let az = -1; az <= 1; az++)
+        for (let j = gridHead[cellKey(cx + ax, cz + az)]; j >= 0; j = gridNext[j]) {
+          if (j === i || j >= w.n || mode[j] === LEAVING || mode[j] === BOARDING) continue;
+          const dx = w.x[j] - w.x[i];
+          const dz = w.z[j] - w.z[i];
+          const along = dx * hx + dz * hz;
+          if (along <= 0 || along >= 1.4 || Math.abs(dz * hx - dx * hz) >= 0.5) continue;
+          if (w.moving[j] && Math.cos(head[j] - h) < 0.3) continue;
+          const q = Math.max(0, Math.min(1, (along - 0.7) / 0.7));
+          if (q < f) (f = q), (followStand = !w.moving[j]);
+        }
+    return f;
+  }
   /** 걷던 길 조각에서 되돌아선다(같은 쪽 보도를 그대로 쓴다) */
   function turnBack(i: number, len0: number) {
     const a = from[i];
@@ -856,17 +927,24 @@ export function makeWalkers(
     inLanes[i] = inMajor[i] = 255;
     aim(i, g.adj[from[i]].indexOf(to[i]));
   }
+  /** 뒤에 줄을 서야 하는 앞사람인가: 신호를 기다려 서 있는 사람(차로 앞·횡단보도 앞·그 뒤 줄).
+   *  서로 마주 보는 두 사람이 서로를 기다리지 않도록 대략 같은 쪽(cos > 0.3)을 볼 때만 줄로 본다.
+   *  걸어가는 앞사람 뒤에서는 멈추지 않는다(붐비는 길에서 앞사람이 잠깐 늦출 때마다 뒤로 줄줄이 서 버린다) */
+  const queueAhead = (i: number, j: number) =>
+    !w.moving[j] && (laneHold[j] === 1 || xing[j] === 2 || queued[j] === 1) && Math.cos(head[j] - head[i]) > 0.3;
   /** 붐비는 길: 앞(1.6m 안, 옆으로 0.6m 안)에 사람이 있으면 늦추고 그 사람을 비켜 옆으로 선다. 0.7m 안으로 붙은 사람과는 옆으로 떨어진다.
-   *  둘레 1.5m 안에 사람이 많을수록 느리게 걷는다. 역·건물로 들어가며 사라지는 사람은 비키지 않는다.
-   *  걸음 속도에 곱할 값(0.15~1)을 돌려주고 비킨 거리를 고친다 */
+   *  앞사람이 신호를 기다려 서 있으면(queueAhead) 0.75m 뒤에서 멈춰 선다(파고들지 않는다). 걸어가는 사람·버스 줄·구경하는 사람은
+   *  늦추며 비켜 지나간다. 둘레 1.5m 안에 사람이 많을수록 느리게 걷는다. 역·건물로 들어가며 사라지는 사람은 비키지 않는다.
+   *  걸음 속도에 곱할 값(0~1)을 돌려주고 비킨 거리를 고친다 */
   function jostle(i: number, dt: number): number {
-    const hx = Math.cos(w.yaw[i]);
-    const hz = Math.sin(w.yaw[i]);
+    const hx = Math.cos(head[i]);
+    const hz = Math.sin(head[i]);
     const cx = Math.floor(w.x[i] / 1.5);
     const cz = Math.floor(w.z[i] / 1.5);
     let f = 1;
     let push = 0;
     let near = 0;
+    let queue = false;
     for (let ax = -1; ax <= 1; ax++)
       for (let az = -1; az <= 1; az++)
         for (let j = gridHead[cellKey(cx + ax, cz + az)]; j >= 0; j = gridNext[j]) {
@@ -880,7 +958,10 @@ export function makeWalkers(
           const lat = dz * hx - dx * hz; // off 와 같은 방향(진행 방향 오른쪽)이 +
           const away = lat > 0 || (lat === 0 && w.id[i] & 1) ? -1 : 1;
           if (along > 0 && along < 1.6 && Math.abs(lat) < 0.6) {
-            f = Math.min(f, Math.max(0.15, (along - 0.45) / 1.15));
+            if (queueAhead(i, j)) {
+              const q = Math.max(0, Math.min(1, (along - 0.75) / 0.85));
+              if (q < f) (f = q), (queue = true);
+            } else f = Math.min(f, Math.max(0.15, (along - 0.45) / 1.15));
             push += away * (0.6 - Math.abs(lat));
           }
           if (r2 < 0.49) push += away * (0.7 - Math.sqrt(r2)) * 1.5;
@@ -891,6 +972,7 @@ export function makeWalkers(
     const a = sg * (off[i] + dodge[i]);
     if (a < bandLo[i] - 0.2) dodge[i] = sg * (bandLo[i] - 0.2) - off[i];
     else if (a > bandHi[i] + 0.2) dodge[i] = sg * (bandHi[i] + 0.2) - off[i];
+    queued[i] = f === 0 && queue ? 1 : 0;
     return Math.min(f, 1 / (1 + 0.1 * near));
   }
 
@@ -922,7 +1004,7 @@ export function makeWalkers(
         const d = Math.min(dd, Math.max(1.3, speed[i]) * dt);
         w.moving[i] = 1;
         w.phase[i] += d * 4.6;
-        if (dd > 1e-3) w.yaw[i] = Math.atan2(dz, dx);
+        if (dd > 1e-3) head[i] = Math.atan2(dz, dx);
         w.x[i] += (dx / (dd || 1)) * d;
         w.z[i] += (dz / (dd || 1)) * d;
         if (dd - d < 0.35) mode[i] = LEAVING;
@@ -937,7 +1019,7 @@ export function makeWalkers(
       if (holdT[i] > 0) {
         holdT[i] -= dt;
         w.photo[i] = Math.min(1, w.photo[i] + dt * 2);
-        w.yaw[i] = Math.atan2(faceZ[i] - w.z[i], faceX[i] - w.x[i]);
+        head[i] = Math.atan2(faceZ[i] - w.z[i], faceX[i] - w.x[i]);
         w.moving[i] = 0;
         continue;
       }
@@ -950,7 +1032,7 @@ export function makeWalkers(
           const h = Math.atan2(xFz[i] - xNz[i], xFx[i] - xNx[i]);
           if (!mayStart(i, l, Math.hypot(xFx[i] - xNx[i], xFz[i] - xNz[i]), now.tod)) {
             w.moving[i] = 0;
-            w.yaw[i] = h;
+            head[i] = h;
             continue;
           }
           xing[i] = 3;
@@ -960,10 +1042,30 @@ export function makeWalkers(
         const dx = gx - w.x[i];
         const dz = gz - w.z[i];
         const dd = Math.hypot(dx, dz);
-        const d = Math.min(dd, speed[i] * dt);
+        let d = Math.min(dd, speed[i] * dt);
+        if (dd > 1e-3) {
+          // 앞사람을 따라간다. 건너편으로 가는 중에는 멈추지 않고 늦추기만 한다(건너편에서 기다리는 사람 때문에 찻길에 서지 않게)
+          const f = follow(i, dx / dd, dz / dd);
+          const spot = xing[i] === 1 && f === 0 && followStand && Math.hypot(xNx[i] - w.x[i], xNz[i] - w.z[i]) < 4 && xSlot[i] < 3 && !freeAt(i, w.x[i], w.z[i]) ? freeSpot(i, l) : null;
+          if (spot) {
+            // 앞사람 뒤에 섰는데 옆 사람과 너무 붙으면 옆이나 뒤 빈자리로 옮겨 선다
+            [xNx[i], xNz[i]] = spot;
+            xSlot[i]++;
+          } else if (xing[i] === 1 && f === 0 && followStand && Math.hypot(xNx[i] - w.x[i], xNz[i] - w.z[i]) < 4) {
+            // 횡단보도 앞에서 기다리는 사람 뒤에 선다: 여기가 기다릴 자리다
+            xNx[i] = w.x[i];
+            xNz[i] = w.z[i];
+            xing[i] = 2;
+            w.moving[i] = 0;
+            head[i] = Math.atan2(xFz[i] - w.z[i], xFx[i] - w.x[i]);
+            continue;
+          }
+          d *= xing[i] === 1 ? f : Math.max(0.25, f);
+          if (d === 0) w.moving[i] = 0;
+        }
         w.phase[i] += d * 4.6;
         if (dd > 1e-3) {
-          w.yaw[i] = Math.atan2(dz, dx);
+          head[i] = Math.atan2(dz, dx);
           w.x[i] += (dx / dd) * d;
           w.z[i] += (dz / dd) * d;
         }
@@ -981,6 +1083,11 @@ export function makeWalkers(
             xing[i] = 0;
             depart(i, nextDep[i], nextK[i], startV[i]);
             place(i);
+          } else if (xing[i] === 1 && xSlot[i] < 3 && !freeAt(i, w.x[i], w.z[i])) {
+            // 기다릴 자리에 이미 사람이 있으면 옆이나 뒤 빈자리로 옮겨 선다
+            const spot = freeSpot(i, l);
+            if (spot) [xNx[i], xNz[i]] = spot;
+            xSlot[i]++;
           } else xing[i]++;
         }
         continue;
@@ -997,6 +1104,7 @@ export function makeWalkers(
       plan(i);
       const len0 = Math.hypot(g.nx[to[i] * 2] - sx[i], g.nx[to[i] * 2 + 1] - sz[i]);
       const d = speed[i] * jostle(i, dt) * dt;
+      if (d === 0) w.moving[i] = 0; // 앞사람 뒤에 멈춰 섰다
       // 신호 교차로 둘레(30m 안)에서 걷던 길이 차로로 들어가면(비스듬히 만나거나 노드가 여럿인 교차로) 그 앞에서 진행 방향 신호를 지킨다.
       // 신호 교차로가 없는 곳에서 큰길 차로 안쪽으로 들어서려 하면(길 중간을 가로지르는 보행로 등) 되돌아선다
       // 차로 확인은 사람마다 세 단계에 한 번(그 사이 걸을 거리까지 앞을 본다). 멈춤은 다음 확인까지 유지한다
@@ -1008,13 +1116,13 @@ export function makeWalkers(
         }
       } else if (near) {
         laneHold[i] = 0;
-        const nx = w.x[i] + Math.cos(w.yaw[i]) * (d * 3 + 0.4);
-        const nz = w.z[i] + Math.sin(w.yaw[i]) * (d * 3 + 0.4);
+        const nx = w.x[i] + Math.cos(head[i]) * (d * 3 + 0.4);
+        const nz = w.z[i] + Math.sin(head[i]) * (d * 3 + 0.4);
         const site = siteOf(to[i], true) >= 0 ? siteOf(to[i], true) : siteOf(from[i], true);
         if (near & 1) {
           if (inLanes[i] === 255) inLanes[i] = onLanes!(w.x[i], w.z[i]) ? 1 : 0;
           const ahead = onLanes!(nx, nz) ? 1 : 0;
-          if (ahead && !inLanes[i] && site >= 0 && !green(site, w.yaw[i], now.tod)) {
+          if (ahead && !inLanes[i] && site >= 0 && !green(site, head[i], now.tod)) {
             w.moving[i] = 0;
             laneHold[i] = 1;
             continue;
@@ -1053,7 +1161,7 @@ export function makeWalkers(
             const dir = (dk.t < dk.len / 2 ? 1 : -1) / (dk.len || 1);
             w.x[i] += (bx - ax) * dir * n * QUEUE_GAP;
             w.z[i] += (bz - az) * dir * n * QUEUE_GAP;
-            w.yaw[i] += (Math.sign(off[i]) || 1) * (Math.PI / 2); // 찻길 쪽을 본다
+            head[i] += (Math.sign(off[i]) || 1) * (Math.PI / 2); // 찻길 쪽을 본다
           }
         } else if (docks[dockOf[i]].door) {
           // 건물 문으로 걸어 들어간다
@@ -1070,6 +1178,14 @@ export function makeWalkers(
         alightT[i] = Math.max(0, alightT[i] - dt);
         lift(i);
       }
+    }
+    // 몸 방향은 걷는 방향으로 1초에 TURN_RATE 라디안까지만 돈다. 막 나타나거나 사라지는 사람은 바로 맞춘다
+    const turnMax = TURN_RATE * dt;
+    for (let i = 0; i < w.n; i++) {
+      let dy = head[i] - w.yaw[i];
+      dy -= Math.round(dy / (2 * Math.PI)) * 2 * Math.PI;
+      const y = w.fade[i] < 0.15 ? head[i] : w.yaw[i] + Math.max(-turnMax, Math.min(turnMax, dy));
+      w.yaw[i] = y - Math.round(y / (2 * Math.PI)) * 2 * Math.PI;
     }
     if (!ambient || !docks.length) return;
     // 구역마다 화면 인원을 그 구역 인구에 맞춘다. 모자라면 그 구역 출구·정류장에서 지하철·버스로 막 도착한 사람처럼 나오고

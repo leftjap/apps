@@ -61,4 +61,21 @@ describe('구운 모형판 자료', () => {
   });
   it('나무 1,500그루 이상', () => expect(board.trees.length / 2).toBeGreaterThan(1500));
   it('마스크 이미지가 있다', () => expect(statSync(new URL('../public/data/mask.png', import.meta.url)).size).toBeGreaterThan(50_000));
+  it('횡단보도는 서울시 면 모양 그대로 그린다: 조각마다 외곽선이 있고, 외곽선은 축 사각형 안에 든다', () => {
+    expect(board.crosswalks.length).toBeGreaterThan(800);
+    for (const c of board.crosswalks) {
+      expect(c.rings.length).toBeGreaterThan(0);
+      for (const r of c.rings) {
+        expect(r.length).toBeGreaterThanOrEqual(6);
+        for (let k = 0; k < r.length; k += 2) {
+          const dx = r[k] - c.x;
+          const dz = r[k + 1] - c.z;
+          expect(Math.abs(dx * c.ux + dz * c.uz)).toBeLessThan(c.half + 0.6);
+          expect(Math.abs(-dx * c.uz + dz * c.ux)).toBeLessThan(c.wid + 2.5); // 두 단 조각은 옆으로 2.5m 까지 비켜 있다
+        }
+      }
+    }
+    // 판에 없는 골목·진입로 입구의 횡단보도(사람이 건너는 데는 쓰지 않는다)
+    expect(board.crosswalkMarks.length).toBeGreaterThan(20);
+  });
 });

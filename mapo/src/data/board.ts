@@ -27,6 +27,10 @@ export interface BoardJson {
   rl?: (number[] | 0)[];
   /** 횡단보도 [가운데 x, z, 건너는 방향 ×1000 (x, z), 반 길이, 폭, 표시, 축이 지나는 꼭짓점 x, z, ...] */
   xw?: number[][];
+  /** 횡단보도마다 조각 면 외곽선 [점 개수, x, z, ..., 점 개수, ...] */
+  xwp?: number[][];
+  /** 사람이 건너는 데 쓰지 않고 그리기만 하는 횡단보도 면(판에 없는 골목·진입로 입구) [점 개수, x, z, ...] */
+  xwd?: number[];
   /** 정지선 [x0, z0, x1, z1, ...] */
   stop?: number[];
 }
@@ -97,6 +101,8 @@ export interface Crosswalk {
   sigUnknown: boolean;
   /** 축이 지나는 길 조각 꼭짓점 [x,z, ...], 축 방향 순서 */
   verts: Float32Array;
+  /** 서울시 횡단보도 면 외곽선 [x,z, ...]. 두 단 횡단보도는 조각마다 하나 */
+  rings: Float32Array[];
 }
 
 export interface Line {
@@ -151,11 +157,19 @@ export interface Board {
   riverCum: Float32Array;
   picnic: Float32Array;
   crosswalks: Crosswalk[];
+  /** 그리기만 하는 횡단보도 면 외곽선 [x,z, ...] */
+  crosswalkMarks: Float32Array[];
   /** 정지선 [x0, z0, x1, z1, ...] */
   stopLines: Float32Array;
 }
 
 const m = (a: number[], from = 0) => Float32Array.from(a.slice(from), (v) => v / 10);
+/** [점 개수, x, z, ..., 점 개수, ...](데시미터) → 외곽선마다 [x,z, ...](m) */
+const rings = (a: number[]) => {
+  const out: Float32Array[] = [];
+  for (let i = 0; i < a.length; i += 1 + a[i] * 2) out.push(m(a.slice(i + 1, i + 1 + a[i] * 2)));
+  return out;
+};
 
 export function decodeBoard(j: BoardJson): Board {
   const river = Float32Array.from((j.river ?? []).flatMap((v, i, a) => (i % 2 === 0 ? [v / 10, 0, a[i + 1] / 10] : [])));
@@ -199,7 +213,7 @@ export function decodeBoard(j: BoardJson): Board {
     }),
     stations: j.stations.map((s) => ({ name: s.name, x: s.x / 10, z: s.z / 10 })),
     exits: j.exits.map((e) => ({ st: e.st, x: e.x / 10, z: e.z / 10, ref: e.ref ?? '', yaw: e.yaw === undefined ? NaN : e.yaw / 1000 })),
-    crosswalks: (j.xw ?? []).map((c) => ({
+    crosswalks: (j.xw ?? []).map((c, i) => ({
       x: c[0] / 10,
       z: c[1] / 10,
       ux: c[2] / 1000,
@@ -209,7 +223,9 @@ export function decodeBoard(j: BoardJson): Board {
       sig: !!(c[6] & 1),
       sigUnknown: !!(c[6] & 2),
       verts: m(c, 7),
+      rings: rings(j.xwp?.[i] ?? []),
     })),
+    crosswalkMarks: rings(j.xwd ?? []),
     stopLines: m(j.stop ?? []),
     landmarks: j.landmarks.map((l) => ({ id: l.id, x: l.x / 10, z: l.z / 10 })),
     trees: m(j.trees),

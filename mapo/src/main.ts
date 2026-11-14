@@ -160,7 +160,7 @@ const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
-const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.stopLines);
+const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.stopLines, board.crosswalkMarks);
 const flow = makeFlow(carGraph);
 flow.update(provider, start);
 const trees = makeTrees(board.trees, seasonOf(start.doy));
