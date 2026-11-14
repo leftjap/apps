@@ -73,7 +73,7 @@ export function busHeadway(r: { kind: number; ref: string }, tod: number): numbe
  * 25m 안에 있는 같은 이름의 정류장은 여러 노선이 함께 쓰는 하나로 합친다.
  */
 export function busStopPortals(routes: BusRoute[], edges: Edge[]) {
-  const portals: { kind: 'stop'; key: string; x: number; z: number; name: string }[] = [];
+  const portals: { kind: 'stop'; key: string; x: number; z: number; name: string; yaw: number }[] = [];
   const keys = new Map<string, string>();
   const tmp = [0, 0, 0];
   routes.forEach((R, r) =>
@@ -88,7 +88,7 @@ export function busStopPortals(routes: BusRoute[], edges: Edge[]) {
       const z = tmp[2] + Math.cos(yaw) * curb;
       const name = R.stopNames[k];
       let p = portals.find((q) => q.name === name && Math.hypot(q.x - x, q.z - z) < 25);
-      if (!p) portals.push((p = { kind: 'stop', key: `stop-${portals.length}`, x, z, name }));
+      if (!p) portals.push((p = { kind: 'stop', key: `stop-${portals.length}`, x, z, name, yaw }));
       keys.set(`${r}:${k}`, p.key);
     }),
   );

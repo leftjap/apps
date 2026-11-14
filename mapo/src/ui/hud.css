@@ -35,6 +35,10 @@ ol, ul { list-style: none; }
 .presets button:hover, .chips button:hover { background: #1f2638; border-color: #39435c; }
 .presets button.on, .chips button.on { background: #1d3a34; border-color: #3f8f7c; color: #bff0de; }
 .areas h2 { font-size: 12px; font-weight: 600; color: var(--dim); margin-bottom: 8px; }
+.legend h2 { font-size: 12px; font-weight: 600; color: var(--dim); margin-bottom: 6px; }
+.legend p { display: flex; gap: 14px; font-size: 12px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 18px; height: 4px; border-radius: 2px; background: var(--c); }
 .areas li { display: grid; grid-template-columns: 18px 1fr auto; grid-template-areas: "rank name level" "rank ppl level"; column-gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
 .areas li:first-child { border-top: 0; }
 .areas .rank { grid-area: rank; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }

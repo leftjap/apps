@@ -120,21 +120,52 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
     for (let k = 0; k < 6000 && sim.w.n; k++) sim.step(0.1, at(14), false);
     expect(left.length).toBe(25 - sim.w.n);
     expect(left.length).toBeGreaterThan(15);
-    for (const [x, z] of left) expect(near(x, z, 6)).toBe(true);
+    // 출구에서는 그 자리에서, 정류장에서는 줄(최대 12명, 1.5m 간격) 어딘가에서 사라진다
+    for (const [x, z] of left) expect(near(x, z, 6) || Math.hypot(x - 150, z - 103) < 20).toBe(true);
   });
 
   it('정류장에 간 사람은 버스를 기다렸다가 타고, 버스에서 내린 사람이 나타난다', () => {
     const sim = makeWalkers(buildWalkGraph(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 6, 50);
-    sim.alight('s', 6);
+    sim.alight('s', 6, 150, 108);
     expect(sim.w.n).toBe(6);
     for (let k = 0; k < 6000 && sim.waitingAt('s') === 0; k++) sim.step(0.1, at(14), false);
     const waiting = sim.waitingAt('s');
     expect(waiting).toBeGreaterThan(0);
-    sim.board('s');
+    sim.board('s', 150, 108);
     sim.step(0.1, at(14), false);
     expect(sim.waitingAt('s')).toBe(0);
-    for (let k = 0; k < 20; k++) sim.step(0.1, at(14), false);
+    for (let k = 0; k < 200; k++) sim.step(0.1, at(14), false);
     expect(sim.w.n).toBe(6 - waiting);
+  });
+
+  it('정류장에서 기다리는 사람은 한 점에 몰리지 않고 보도를 따라 줄을 선다', () => {
+    const sim = makeWalkers(buildWalkGraph(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 8, 50);
+    sim.alight('s', 14, 150, 108);
+    for (let k = 0; k < 9000 && sim.waitingAt('s') < 8; k++) sim.step(0.1, at(14), false);
+    const still = [];
+    for (let i = 0; i < sim.w.n; i++) if (!sim.w.moving[i]) still.push([sim.w.x[i], sim.w.z[i]]);
+    expect(still.length).toBeGreaterThanOrEqual(8);
+    // 어느 쪽에서 걸어왔든 정류장이 있는 쪽(남쪽, z > 100) 보도에 선다
+    for (const [, z] of still) expect(z).toBeGreaterThan(100);
+    for (let a = 0; a < still.length; a++)
+      for (let b = a + 1; b < still.length; b++) expect(Math.hypot(still[a][0] - still[b][0], still[a][1] - still[b][1])).toBeGreaterThan(0.6);
+  });
+
+  it('버스가 서면 기다리던 사람이 버스 문까지 걸어가서 타고, 내리는 사람은 버스 문에서 나와 보도로 간다', () => {
+    const left: [number, number][] = [];
+    const sim = makeWalkers(buildWalkGraph(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 9, 50, (x, z) => left.push([x, z]));
+    sim.alight('s', 5, 150, 108);
+    // 내린 사람은 버스 문 둘레에서 시작해 한 사람씩 0.5초 간격으로 보도로 옮겨 간다(다섯 명이면 4초 안)
+    for (let i = 0; i < sim.w.n; i++) expect(Math.hypot(sim.w.x[i] - 150, sim.w.z[i] - 108)).toBeLessThan(1.5);
+    for (let k = 0; k < 40; k++) sim.step(0.1, at(14), false);
+    for (let i = 0; i < sim.w.n; i++) expect(offGrid(sim.w.x[i], sim.w.z[i])).toBeLessThan(6);
+    for (let k = 0; k < 9000 && sim.waitingAt('s') < 3; k++) sim.step(0.1, at(14), false);
+    const waiting = sim.waitingAt('s');
+    expect(waiting).toBeGreaterThanOrEqual(3);
+    sim.board('s', 156, 110);
+    for (let k = 0; k < 200; k++) sim.step(0.1, at(14), false);
+    expect(left.length).toBeGreaterThanOrEqual(waiting);
+    for (const [x, z] of left.slice(-waiting)) expect(Math.hypot(x - 156, z - 110)).toBeLessThan(1);
   });
 
   it('큰길 옆 출구에서 나온 사람은 찻길로 들어가지 않고 그쪽 보도로 걷는다', () => {

@@ -14,6 +14,8 @@ import { makeRails, type TrainSpot } from './render/rails.ts';
 import { makeGroundLabels, makeMarker, makeRings, type GroundLabel } from './render/rings.ts';
 import { makeRoads } from './render/roads.ts';
 import { makeSignalMarks } from './render/signals.ts';
+import { makeFlow } from './render/flow.ts';
+import { makeBusStops } from './render/busstops.ts';
 import { makeView } from './render/scene.ts';
 import { makeSchools } from './render/schools.ts';
 import { makeStations } from './render/stations.ts';
@@ -32,7 +34,7 @@ import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
 import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
-import { makeWalkers } from './sim/walkers.ts';
+import { makeWalkers, underpasses, ZONES } from './sim/walkers.ts';
 import { makeHud, type Card, type CardLine, type Layer, type SeasonPick, type Weather } from './ui/hud.ts';
 import { makeTags } from './ui/tags.ts';
 import './ui/hud.css';
@@ -43,6 +45,7 @@ const canvas = document.querySelector<HTMLCanvasElement>('#view')!;
 const sky = document.querySelector<HTMLElement>('#sky')!;
 const stage = document.querySelector<HTMLElement>('#stage')!;
 const small = matchMedia('(max-width: 760px)').matches;
+const MAX_PEOPLE = small ? 900 : 2500;
 
 const view = makeView(canvas);
 const clock = makeClock(location.search);
@@ -66,10 +69,15 @@ cars.fillBuses(start);
 const stops = busStopPortals(cars.routes, carGraph);
 const walkers = makeWalkers(
   walkGraph,
-  [...board.exits.map((e) => ({ kind: 'exit' as const, key: e.st, x: e.x, z: e.z })), ...stops.portals],
+  [
+    ...board.exits.map((e) => ({ kind: 'exit' as const, key: e.st, x: e.x, z: e.z })),
+    ...stops.portals,
+    // 망원한강공원에는 역 출구도 정류장도 없으므로, 강변북로 밑 나들목으로 들고 난다
+    ...underpasses(board.roads, ...ZONES.mangwon).map(([x, z]) => ({ kind: 'exit' as const, key: '망원나들목', x, z })),
+  ],
   provider,
   5,
-  small ? 800 : 1500,
+  MAX_PEOPLE,
   undefined,
   signals,
 );
@@ -86,9 +94,11 @@ const stations = makeStations(board);
 const schools = makeSchools(board);
 const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(small ? 900 : 1500);
-const walkerMesh = makeWalkerMesh(small ? 800 : 1500);
+const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
 const signalMarks = makeSignalMarks(carGraph, signals);
+const flow = makeFlow(carGraph);
+flow.update(provider, start);
 const trees = makeTrees(board.trees, seasonOf(start.doy));
 const rain = makeRain(small ? 3500 : 6000);
 const marker = makeMarker();
@@ -143,7 +153,9 @@ const picnic = makePicnic(board.picnic);
 view.scene.add(
   makeGround(mask),
   roads.group,
+  flow.mesh,
   signalMarks.group,
+  makeBusStops(walkers.docks.flatMap((d, k) => (d.kind === 'stop' ? [walkers.dockPoint(k)] : []))),
   stations.group,
   rails.group,
   rings.mesh,
@@ -230,7 +242,7 @@ function setWeather(w: Weather) {
   weather.wantFog = w === 'fog' ? 1 : 0;
   hud.setWeather(w);
 }
-const layers: Record<Layer, boolean> = { cats: true, people: true, cars: true, subway: true, names: true };
+const layers: Record<Layer, boolean> = { flow: true, cats: true, people: true, cars: true, subway: true, names: true };
 function setLayer(l: Layer, on: boolean) {
   layers[l] = on;
   catMeshes.group.visible = layers.cats;
@@ -240,6 +252,7 @@ function setLayer(l: Layer, on: boolean) {
   rails.setUnderVisible(layers.subway);
   stations.setUnderVisible(layers.subway);
   namesMesh.visible = layers.names;
+  flow.mesh.visible = layers.flow;
 }
 setWeather(query.get('weather') === 'rain' ? 'rain' : query.get('weather') === 'fog' ? 'fog' : 'clear');
 hud.setSeason('live');
@@ -579,10 +592,11 @@ function frame(t: number) {
   prevTod = now.tod;
   cars.step(dt, now);
   // 버스가 정류장에 서면 기다리던 사람이 타고 몇 명이 내린다
-  for (const [r, k] of cars.dwells) {
+  for (const [r, k, i] of cars.dwells) {
     const key = stops.keyOf(r, k);
-    walkers.board(key);
-    walkers.alight(key, Math.floor(Math.random() * 4));
+    const [dx, dz] = cars.door(i);
+    walkers.board(key, dx, dz);
+    walkers.alight(key, Math.floor(Math.random() * 4), dx, dz);
   }
   walkers.step(dt, now);
   // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
@@ -649,6 +663,7 @@ function frame(t: number) {
     hud.setClock(now, clock.live);
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));
+    flow.update(provider, now);
     refreshCard();
   }
   if (import.meta.env.DEV) {

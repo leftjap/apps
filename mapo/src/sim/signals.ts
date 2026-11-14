@@ -2,6 +2,7 @@
 // 중앙분리대가 있는 길은 OSM 에서 한 방향씩 따로 그려져 한 교차로가 노드 여러 개로 나뉘므로, 35m 안의 교차 노드를 하나로 묶는다.
 // 묶음으로 들어오는 길을 방향에 따라 두 무리로 나누고, 90초 주기로 번갈아 초록불을 준다. 신호는 시각만의 함수다.
 import { LANE, type Edge } from './graph.ts';
+import { makeJunctions } from './junctions.ts';
 import { hash01 } from './rng.ts';
 
 export const GREEN = 0;
@@ -47,6 +48,7 @@ const axisGap = (a: number, b: number) => {
 };
 
 export function makeSignals(edges: Edge[]) {
+  const boxes = makeJunctions(edges);
   // 들어오는 길이 둘 이상의 서로 다른 도로인 노드 = 교차 노드
   const incoming = new Map<string, Edge[]>();
   for (const e of edges) {
@@ -88,7 +90,8 @@ export function makeSignals(edges: Edge[]) {
       // 가로지르는 길의 절반 폭 바깥에 횡단보도(폭 3.2m)를 두고, 그 앞에 정지선을 둔다
       const cross = (incoming.get(key(...endOf(e))) ?? []).filter((o) => axisGap(endHeading(o), endHeading(e)) > Math.PI / 4);
       const half = Math.max(3, ...cross.map((o) => (o.off0 > 0 ? o.lanes * LANE : (o.lanes * LANE) / 2)));
-      approach.set(e.id, { c, group: g[i], crosswalk: half + 1.6, setback: Math.min(e.len - 2, half + 4) });
+      // 비스듬히 만나는 길은 교차로 상자가 길어지므로 정지선을 상자 앞까지 물린다
+      approach.set(e.id, { c, group: g[i], crosswalk: half + 1.6, setback: Math.min(e.len - 2, Math.max(half + 4, boxes.rIn[e.id] + 0.5)) });
     });
   }
 
@@ -103,7 +106,7 @@ export function makeSignals(edges: Edge[]) {
   /** 방향 h 로 걷는 사람·차가 속한 무리 */
   const groupOf = (c: number, h: number) => (axisGap(h, list[c].axis) < Math.PI / 4 ? 0 : 1);
 
-  return { list, approach, state, siteAt, groupOf };
+  return { list, approach, state, siteAt, groupOf, junctions: boxes };
 }
 
 export type Signals = ReturnType<typeof makeSignals>;

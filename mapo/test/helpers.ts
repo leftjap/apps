@@ -16,7 +16,7 @@ export const road = (pts: [number, number][], o: Partial<Road> = {}): Road => ({
 /** 속도 비율을 고정한 자료 공급자 */
 export const fixedProvider = (speed: number, pop = 20000): DataProvider => ({
   mode: 'sim',
-  areas: () => [{ id: 'hongdae', name: '홍대 관광특구', level: 2, label: '약간 붐빔', pplMin: pop, pplMax: pop + 1000 }],
+  areas: () => [{ id: 'hongdae', name: '홍대 관광특구', level: 2, label: '약간 붐빔', pplMin: pop, pplMax: pop + 1000, crowd: pop / 30000, ages: [5, 10, 25, 20, 15, 12, 8, 5], female: 50 }],
   roadSpeed: () => speed,
   alighting: () => 300,
 });

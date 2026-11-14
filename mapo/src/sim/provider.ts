@@ -11,6 +11,12 @@ export interface AreaStatus {
   label: string;
   pplMin: number;
   pplMax: number;
+  /** 혼잡 정도: 그 장소의 '붐빔' 기준 인원 대비 지금 인원(0~1.2 남짓). 화면에 보이는 사람 밀도를 정한다 */
+  crowd: number;
+  /** 나이대 비율(%): 0~9세, 10대, 20대, 30대, 40대, 50대, 60대, 70대 이상. 실시간 도시데이터 PPLTN_RATE_0~70 과 같은 칸 */
+  ages: number[];
+  /** 여성 비율(%). 실시간 도시데이터 FEMALE_PPLTN_RATE */
+  female: number;
 }
 
 export interface DataProvider {
@@ -32,15 +38,18 @@ interface AreaModel {
   night: number;
   weekend: number; // 주말에 낮·밤 항에 곱하는 값
   full: number; // 이 인원이면 '붐빔'
+  ages: number[]; // 평소 나이대 비율(%, 8칸)
+  female: number;
+  family: number; // 주말 낮에 아이와 부모가 느는 정도
 }
 
 /** 서울 실시간 도시데이터의 121장소 가운데 판 안에 있는 다섯 곳 */
 const AREAS: AreaModel[] = [
-  { id: 'hongdae', name: '홍대 관광특구', base: 14000, commute: 6000, day: 22000, night: 46000, weekend: 1.3, full: 62000 },
-  { id: 'hongik-stn', name: '홍대입구역(2호선)', base: 9000, commute: 14000, day: 10000, night: 20000, weekend: 1.2, full: 36000 },
-  { id: 'yeonnam', name: '연남동', base: 7000, commute: 2500, day: 12000, night: 11000, weekend: 1.5, full: 26000 },
-  { id: 'hapjeong', name: '합정역', base: 6000, commute: 9000, day: 6000, night: 8000, weekend: 1.1, full: 22000 },
-  { id: 'mangwon', name: '망원한강공원', base: 300, commute: 300, day: 4200, night: 2600, weekend: 2.6, full: 9000 },
+  { id: 'hongdae', name: '홍대 관광특구', base: 14000, commute: 6000, day: 22000, night: 46000, weekend: 1.3, full: 62000, ages: [3, 8, 36, 22, 13, 9, 5, 4], female: 56, family: 0.3 },
+  { id: 'hongik-stn', name: '홍대입구역(2호선)', base: 9000, commute: 14000, day: 10000, night: 20000, weekend: 1.2, full: 36000, ages: [3, 7, 30, 24, 15, 11, 6, 4], female: 52, family: 0.3 },
+  { id: 'yeonnam', name: '연남동', base: 7000, commute: 2500, day: 12000, night: 11000, weekend: 1.5, full: 26000, ages: [4, 6, 32, 25, 13, 10, 6, 4], female: 58, family: 0.6 },
+  { id: 'hapjeong', name: '합정역', base: 6000, commute: 9000, day: 6000, night: 8000, weekend: 1.1, full: 22000, ages: [4, 6, 26, 25, 16, 12, 7, 4], female: 51, family: 0.4 },
+  { id: 'mangwon', name: '망원한강공원', base: 300, commute: 300, day: 4200, night: 2600, weekend: 2.6, full: 9000, ages: [9, 8, 20, 22, 16, 12, 8, 5], female: 50, family: 1.5 },
 ];
 
 const STATIONS: Record<string, number> = { 홍대입구: 1900, 합정: 1100, 신촌: 1300, 상수: 420, 망원: 520, 광흥창: 300, 서강대: 180, 가좌: 220 };
@@ -63,6 +72,19 @@ export function areaPopulation(m: AreaModel, now: Now): number {
   );
 }
 
+/** 나이대 비율: 밤에는 20대가 늘고 나이 든 사람이 줄며, 주말 낮에는 아이와 30·40대 부모가 는다 */
+export function areaAges(m: AreaModel, now: Now): number[] {
+  const night = nightlife(now.tod) * nightBoost(now.dow);
+  const fam = daytime(now.tod) * (isWeekend(now.dow) ? 1 : 0.3) * m.family;
+  const a = m.ages.map((v, k) => v * (k >= 5 ? 1 - 0.5 * clamp01(night) : 1));
+  a[2] += 14 * night;
+  a[0] += 7 * fam;
+  a[3] += 4 * fam;
+  a[4] += 3 * fam;
+  const sum = a.reduce((x, y) => x + y, 0);
+  return a.map((v) => Math.round((v / sum) * 1000) / 10);
+}
+
 export function makeSimProvider(): DataProvider {
   return {
     mode: 'sim',
@@ -72,7 +94,7 @@ export function makeSimProvider(): DataProvider {
         const r = ppl / m.full;
         const level = (r < 0.35 ? 0 : r < 0.6 ? 1 : r < 0.85 ? 2 : 3) as 0 | 1 | 2 | 3;
         const lo = Math.max(100, Math.round((ppl * 0.96) / 100) * 100);
-        return { id: m.id, name: m.name, level, label: LEVELS[level], pplMin: lo, pplMax: lo + Math.max(100, Math.round((ppl * 0.08) / 100) * 100) };
+        return { id: m.id, name: m.name, level, label: LEVELS[level], pplMin: lo, pplMax: lo + Math.max(100, Math.round((ppl * 0.08) / 100) * 100), crowd: r, ages: areaAges(m, now), female: m.female };
       });
     },
     roadSpeed(now, cls, edgeKey) {

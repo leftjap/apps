@@ -24,7 +24,6 @@ const KEYS: Record<string, Key3> = {
   roadMajor: ['#bcb7ad', '#b09d93', '#2e3443'],
   roadMinor: ['#cbc5b8', '#bfa99b', '#242938'],
   walk: ['#f1e7d0', '#e2c8ae', '#2b2a33'],
-  figure: ['#ffffff', '#fff1e4', '#eef2ff'],
 };
 /** [낮, 노을, 밤] 숫자 값 */
 const NUMS: Record<string, [number, number, number]> = {

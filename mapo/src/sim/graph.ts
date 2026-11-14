@@ -78,7 +78,8 @@ export function buildCarGraph(roads: Road[]): Edge[] {
       hasIn.add(j);
     }
   }
-  for (const e of edges) e.entry = !hasIn.has(e.id) || Math.hypot(e.p[0], e.p[2]) > BOARD_R - 40;
+  // 새 차는 판 가장자리에서 시작하는 구간으로만 들어온다(판 안에서 갑자기 나타나지 않게)
+  for (const e of edges) e.entry = !hasIn.has(e.id) && Math.hypot(e.p[0], e.p[2]) > BOARD_R - 40;
   return edges;
 }
 

@@ -82,6 +82,50 @@ describe('차 이동', () => {
     const sim = makeCars(ring(), makeSimProvider(), 1, 500);
     expect(sim.target(at(3))).toBeLessThan(sim.target(at(8.5)) * 0.5);
   });
+  it('길이 많아 상한에 닿아도 목표 대수는 시간대 교통량을 따른다(출근 정점에서만 상한)', () => {
+    // 4차로 순환로(차로 6.4km)에 상한 30대: 예전 식이면 낮에도 상한에 닿아 시간대 차이가 사라진다
+    const wide = buildCarGraph([
+      road([[0, 0], [400, 0]], { oneway: true, lanes: 4 }),
+      road([[400, 0], [400, 400]], { oneway: true, lanes: 4 }),
+      road([[400, 400], [0, 400]], { oneway: true, lanes: 4 }),
+      road([[0, 400], [0, 0]], { oneway: true, lanes: 4 }),
+    ]);
+    const sim = makeCars(wide, makeSimProvider(), 1, 30);
+    const peak = Math.max(...Array.from({ length: 96 }, (_, k) => sim.target(at(k / 4))));
+    expect(peak).toBe(30);
+    expect(sim.target(at(14))).toBeLessThan(peak * 0.8);
+    expect(sim.target(at(3))).toBeLessThan(peak * 0.35);
+  });
+});
+
+describe('판 가장자리 진출입', () => {
+  // 판 서쪽 끝에서 동쪽 끝까지 가로지르는 큰길과, 가운데에서 북쪽으로 300m 들어가다 끊긴 막다른 길
+  const board = () =>
+    buildCarGraph([
+      road([[-1990, 0], [0, 0]], { cls: 2 }),
+      road([[0, 0], [1990, 0]], { cls: 2 }),
+      road([[0, 0], [0, -300]], { cls: 3 }),
+    ]);
+  it('새 차는 판 가장자리에서만 나타나고, 막다른 길로 들어가지 않는다', () => {
+    const sim = makeCars(board(), fixedProvider(1), 4, 80);
+    const seen = new Set<number>();
+    let inner = 0;
+    let spur = 0;
+    for (let k = 0; k < 6000; k++) {
+      sim.step(0.1, at(8.5));
+      const c = sim.cars;
+      for (let i = 0; i < c.n; i++) {
+        if (!seen.has(c.uid[i])) {
+          seen.add(c.uid[i]);
+          if (Math.abs(c.x[i]) < 1900) inner++;
+        }
+        if (c.z[i] < -20) spur++;
+      }
+    }
+    expect(seen.size).toBeGreaterThan(20);
+    expect(inner).toBe(0);
+    expect(spur).toBe(0);
+  });
 });
 
 describe('버스', () => {
@@ -143,6 +187,16 @@ describe('버스', () => {
     expect(sim.cars.n).toBe(0);
   });
 
+  it('버스 문은 차체 앞쪽 오른편에 있다', () => {
+    const g = buildCarGraph([road([[0, 0], [600, 0]], { oneway: true, lanes: 1 })]);
+    const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [], stopNames: [] }], g);
+    const sim = makeCars(g, fixedProvider(1), 4, 20, routes);
+    expect(sim.addBus(0, 300)).toBe(true);
+    const [x, z] = sim.door(0);
+    expect(x).toBeGreaterThan(sim.cars.x[0] + 3);
+    expect(z).toBeGreaterThan(sim.cars.z[0] + 1);
+  });
+
   it('버스는 진행 방향 맨 오른쪽 차로로 달린다', () => {
     const g = buildCarGraph([road([[0, 0], [600, 0]], { oneway: true, lanes: 3 })]);
     const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [], stopNames: [] }], g);
@@ -183,11 +237,11 @@ describe('버스 정류장과 승하차', () => {
     const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [300], stopNames: ['홍대입구역'] }], g);
     const sim = makeCars(g, fixedProvider(1), 4, 20, routes);
     sim.addBus(0, 1);
-    const seen: [number, number][] = [];
+    const seen: [number, number, number][] = [];
     for (let k = 0; k < 2000 && sim.cars.n; k++) {
       sim.step(0.1, at(14), false);
       seen.push(...sim.dwells);
     }
-    expect(seen).toEqual([[0, 0]]);
+    expect(seen).toEqual([[0, 0, 0]]);
   });
 });

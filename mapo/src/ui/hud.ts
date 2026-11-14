@@ -1,7 +1,7 @@
 // 사이드바(PC)와 상단 배지·바닥 시트(모바일). 3D 화면 밖의 글자와 조작 버튼은 모두 여기서 그린다.
 import type { Now } from '../sim/clock.ts';
 import type { AreaStatus } from '../sim/provider.ts';
-import { PEOPLE_PER_FIGURE } from '../sim/walkers.ts';
+import { FLOW_LEVELS } from '../render/flow.ts';
 
 export type CardLine = string | { dot: string; text: string };
 
@@ -16,7 +16,7 @@ export interface Card {
 }
 
 export type Weather = 'clear' | 'rain' | 'fog';
-export type Layer = 'cats' | 'people' | 'cars' | 'subway' | 'names';
+export type Layer = 'flow' | 'cats' | 'people' | 'cars' | 'subway' | 'names';
 export type SeasonPick = 'live' | 'blossom' | 'green' | 'autumn' | 'winter';
 
 const DAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
@@ -39,6 +39,7 @@ const WEATHERS: [Weather, string][] = [
   ['fog', '안개'],
 ];
 const LAYERS: [Layer, string][] = [
+  ['flow', '교통 흐름'],
   ['cats', '고양이'],
   ['people', '사람'],
   ['cars', '차량'],
@@ -118,8 +119,9 @@ export function makeHud(ev: HudEvents) {
          <section class="presets">${presetButtons}${tourButtons}</section>
          <section class="slot" data-card-slot></section>
          <section class="areas"><h2>지금 붐비는 곳</h2><ol data-areas></ol></section>
+         <section class="legend"><h2>도로 흐름</h2><p>${FLOW_LEVELS.map(([name, c]) => `<span><i style="--c:${c}"></i>${name}</span>`).join('')}</p></section>
          <section class="about">
-           <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 캐릭터 한 명은 약 ${PEOPLE_PER_FIGURE}명을 대신합니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다.</p>
+           <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 화면의 사람 밀도는 구역마다 혼잡도(그 장소의 붐빔 기준 인원 대비 지금 인원)를 따르며, 실제 인원을 한 명씩 그린 것은 아닙니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다.</p>
            <p>지도 자료 © OpenStreetMap contributors. 일부 건물 © Overture Maps Foundation, Qian Shi 외(2023) CC BY 4.0.</p>
          </section>
        </div>

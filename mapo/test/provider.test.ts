@@ -16,6 +16,18 @@ describe('시뮬레이션 자료', () => {
   });
   it('한강공원은 토요일 낮이 화요일 새벽보다 붐빈다', () =>
     expect(area('mangwon', 15, 6).pplMin).toBeGreaterThan(area('mangwon', 4, 2).pplMin * 3));
+  it('나이대 비율(0~9세부터 70대 이상까지 8칸)과 여성 비율을 실시간 도시데이터와 같은 모양으로 준다', () => {
+    for (const a of p.areas(at(19, 5))) {
+      expect(a.ages).toHaveLength(8);
+      expect(a.ages.reduce((s, v) => s + v, 0)).toBeCloseTo(100, 0);
+      expect(a.female).toBeGreaterThan(30);
+      expect(a.female).toBeLessThan(70);
+    }
+    // 금요일 밤 홍대는 20대가 가장 많고, 토요일 낮 한강공원은 어린이 비율이 평일 밤 홍대보다 높다
+    const h = area('hongdae', 22, 5).ages;
+    expect(h.indexOf(Math.max(...h))).toBe(2);
+    expect(area('mangwon', 14, 6).ages[0]).toBeGreaterThan(h[0] * 2);
+  });
   it('단계 라벨과 인구 범위', () => {
     for (const a of p.areas(at(19, 5))) {
       expect(a.label).toBe(LEVELS[a.level]);
