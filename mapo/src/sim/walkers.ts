@@ -1,10 +1,12 @@
 // 보행자. 골목·보도 그래프 위를 걷는다. 사람은 역 출구와 버스 정류장에서만 나타나고 사라진다.
 // 나타날 때는 출구·정류장이 붙은 길의 그쪽 보도에서 걷기 시작하고, 한동안 돌아다니다가
 // 가장 가까운 출구·정류장으로 걸어가 들어간다(정류장에서는 버스가 올 때까지 기다렸다가 탄다).
+// 큰길(등급 3 이하)은 횡단보도로만 건넌다: 교차로에서는 큰길 갈래를 건너지 않는 쪽으로만 돌고(graph.ts turnRules),
+// 횡단보도 꼭짓점에 닿으면 횡단보도 축을 따라 곧게 건너 맞은편 보도로 나온다.
 import type { Now } from './clock.ts';
 import { clamp01, commute, daytime, nightlife } from './curves.ts';
 import type { Road } from '../data/board.ts';
-import type { WalkGraph } from './graph.ts';
+import { turnRules, type CrossLink, type WalkGraph } from './graph.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
 import type { Signals } from './signals.ts';
@@ -214,7 +216,17 @@ export function makeWalkers(
   onLanes?: (x: number, z: number) => boolean,
   /** 좌표가 큰길(주간선~집산도로) 차로 안쪽인가(신호 없는 곳에서 큰길을 가로지르지 않도록) */
   onMajor?: (x: number, z: number) => boolean,
+  cross: {
+    /** 횡단보도 연결(graph.ts crossLinks) */
+    links?: { list: CrossLink[]; at: Map<number, number[]> };
+    /** 횡단보도마다 지금 사람이 건너고 있는 자리: 축을 E0 쪽 끝부터 2m 칸으로 나눈 비트(차가 보고 선다) */
+    busy?: Uint32Array;
+    /** 신호 없는 횡단보도로 차가 다가오는가 */
+    traffic?: (l: CrossLink) => boolean;
+  } = {},
 ) {
+  const links = cross.links ?? { list: [], at: new Map<number, number[]>() };
+  const rules = turnRules(g);
   const rand = rng(seed);
   const w: Walkers = {
     n: 0,
@@ -254,7 +266,19 @@ export function makeWalkers(
   const startV = new Float32Array(max);
   const nextOff = new Float32Array(max);
   const nextSide = new Float32Array(max);
-  const waitStart = new Uint8Array(max); // 다음 구간 첫머리에서 길을 건너기 전에 신호를 기다려야 하는가(왼쪽으로 꺾을 때 두 번째 횡단보도)
+  // 횡단보도: 노드 to[i] 에서 건널 연결(−1 이면 건너지 않는다)과 건넌 뒤 나올 노드. 건너는 상태는 0 아님, 1 이쪽 끝(N)으로 걸어감,
+  // 2 N 에서 기다림, 3 축을 따라 건너편 끝(F)으로 건넘, 4 F 에서 나갈 보도 자리(D)로 걸어감. N·F 는 보도 선과 횡단보도 축이 만나는 점이다
+  const nextX = new Int32Array(max).fill(-1);
+  const nextDep = new Int32Array(max);
+  const xing = new Uint8Array(max);
+  const xLink = new Int32Array(max);
+  const xNx = new Float32Array(max);
+  const xNz = new Float32Array(max);
+  const xFx = new Float32Array(max);
+  const xFz = new Float32Array(max);
+  const xDx = new Float32Array(max);
+  const xDz = new Float32Array(max);
+  const marked: number[] = []; // 지난 단계에 건너는 자리를 표시한 횡단보도
   const tx = new Float32Array(max); // 버스 문(타러 걸어가는 곳)
   const tz = new Float32Array(max);
   const ox = new Float32Array(max); // 버스에서 막 내린 사람: 보도 자리에서 버스 문까지(줄어들어 0이 된다)
@@ -286,15 +310,16 @@ export function makeWalkers(
     const dx = g.nx[b * 2] - g.nx[a * 2];
     const dz = g.nx[b * 2 + 1] - g.nx[a * 2 + 1];
     const L = Math.hypot(dx, dz) || 1;
-    const [lo, hi] = g.lat[a][k];
     for (let d = -4; d <= L + 4 && f !== 3; d += 2)
-      for (const o of [lo - 0.2, (lo + hi) / 2, hi + 0.2])
-        for (const sd of [1, -1]) {
+      for (const sd of [1, -1]) {
+        const [lo, hi] = sd > 0 ? g.lat[a][k] : g.latL[a][k];
+        for (const o of [lo - 0.2, (lo + hi) / 2, hi + 0.2]) {
           const x = g.nx[a * 2] + (dx / L) * d - (dz / L) * o * sd;
           const z = g.nx[a * 2 + 1] + (dz / L) * d + (dx / L) * o * sd;
           if (onLanes?.(x, z)) f |= 1;
           if (onMajor?.(x, z)) f |= 2;
         }
+      }
     return (touch[a][k] = f);
   }
   // 가까운 사람 찾기용 격자(1.5m 칸을 해시로 묶는다)
@@ -370,37 +395,94 @@ export function makeWalkers(
   }
   const short = new Float32Array(ZONE_IDS.length + 1); // 구역마다 모자란 인원(버스에서 내릴 사람)
 
-  // ── 집으로 가는 길: 모든 출구·정류장에서 거꾸로 퍼진 최단 경로. via[n] 은 가장 가까운 출구·정류장 쪽 다음 노드 ──
+  // ── 집으로 가는 길: 상태 = (길 조각 a→b, 그 길의 오른쪽·왼쪽 보도). 모든 출구·정류장에서 거꾸로 퍼진 최단 거리 D(상태)는
+  //    그 조각 시작 노드 a 에서 출구·정류장까지 걸을 거리다. 큰길은 횡단보도로만 건너므로 어느 쪽 보도에 있는지까지 따진다 ──
   const N = g.adj.length;
-  const dist = new Float64Array(N).fill(Infinity);
-  const via = new Int32Array(N).fill(-1);
-  const srcDock = new Int32Array(N).fill(-1);
+  const eBase = new Int32Array(N + 1);
+  for (let n = 0; n < N; n++) eBase[n + 1] = eBase[n] + g.adj[n].length;
+  const stateOf = (a: number, k: number, s: number) => (eBase[a] + k) * 2 + (s > 0 ? 0 : 1);
+  const valid = (a: number, k: number, s: number) => g.aw[a][k] > 0 && (!g.dir[a][k] || g.dir[a][k] === s);
+  const D = new Float64Array(eBase[N] * 2).fill(Infinity);
+  /** 상태마다 그 조각 그쪽 보도에 붙은 출구·정류장 [번호, 시작 노드에서 거리] */
+  const docksOn = new Map<number, [number, number][]>();
+  const segLen = (a: number, b: number) => Math.hypot(g.nx[b * 2] - g.nx[a * 2], g.nx[b * 2 + 1] - g.nx[a * 2 + 1]);
+  /** a→b 로 걸을 때 점 (px, pz)가 b 둘레에서 오른쪽(+1)인가 왼쪽(−1)인가 */
+  const sideAt = (a: number, b: number, px: number, pz: number) => {
+    const hx = g.nx[b * 2] - g.nx[a * 2];
+    const hz = g.nx[b * 2 + 1] - g.nx[a * 2 + 1];
+    return (px - g.nx[b * 2]) * -hz + (pz - g.nx[b * 2 + 1]) * hx >= 0 ? 1 : -1;
+  };
+  /** b 에서 m 으로 나갈 때 점이 오른쪽인가 */
+  const sideFrom = (b: number, m: number, px: number, pz: number) => {
+    const hx = g.nx[m * 2] - g.nx[b * 2];
+    const hz = g.nx[m * 2 + 1] - g.nx[b * 2 + 1];
+    return (px - g.nx[b * 2]) * -hz + (pz - g.nx[b * 2 + 1]) * hx >= 0 ? 1 : -1;
+  };
+  /** 횡단보도 연결 l 을 E0 쪽(fromA) 또는 E1 쪽에서 건널 때: 이쪽 노드·끝점과 건너편 노드·끝점 */
+  const ends = (l: CrossLink, fromA: boolean) =>
+    fromA ? { near: l.na, nx: l.ax, nz: l.az, dep: l.nb, fx: l.bx, fz: l.bz } : { near: l.nb, nx: l.bx, nz: l.bz, dep: l.na, fx: l.ax, fz: l.az };
+  const CROSS_COST = 12; // 신호·차를 기다리는 몫(m)
   {
     const h = heap();
+    const seed = (st: number, d: number) => {
+      if (d < D[st]) (D[st] = d), h.push(d, st);
+    };
     docks.forEach((d, i) => {
-      for (const [n, dd] of [
-        [d.a, d.t],
-        [d.b, d.len - d.t],
-      ] as const)
-        if (dd < dist[n]) {
-          dist[n] = dd;
-          srcDock[n] = i;
-          via[n] = -1;
-          h.push(dd, n);
-        }
+      const ka = g.adj[d.a].indexOf(d.b);
+      const kb = g.adj[d.b].indexOf(d.a);
+      for (const [a, k, s, t] of [
+        [d.a, ka, d.side, d.t],
+        [d.b, kb, -d.side, d.len - d.t],
+      ] as const) {
+        if (k < 0 || !valid(a, k, s)) continue;
+        const st = stateOf(a, k, s);
+        (docksOn.get(st) ?? docksOn.set(st, []).get(st)!).push([i, t]);
+        seed(st, t);
+      }
     });
     while (h.size) {
-      const [d, n] = h.pop();
-      if (d > dist[n]) continue;
-      const [nx, nz] = pos(n);
-      for (const m of g.adj[n]) {
-        const [mx, mz] = pos(m);
-        const nd = d + Math.hypot(mx - nx, mz - nz);
-        if (nd < dist[m]) {
-          dist[m] = nd;
-          via[m] = n;
-          srcDock[m] = -1;
-          h.push(nd, m);
+      const [dist, st] = h.pop();
+      if (dist > D[st]) continue;
+      // st = (b → m, s2)
+      const e = st >> 1;
+      const s2 = st & 1 ? -1 : 1;
+      let b = 0;
+      let lo = 0;
+      let hi = N;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (eBase[mid] <= e) lo = mid;
+        else hi = mid - 1;
+      }
+      b = lo;
+      const k2 = e - eBase[b];
+      const m = g.adj[b][k2];
+      // 노드 b 로 걸어 들어와 돌아 나가는 길
+      g.adj[b].forEach((a, p) => {
+        const ka = g.adj[a].indexOf(b);
+        for (const s of [1, -1]) {
+          if (!valid(a, ka, s) || !rules.allowed(b, p, s, k2, s2)) continue;
+          const pst = stateOf(a, ka, s);
+          const nd = dist + segLen(a, b);
+          if (nd < D[pst]) (D[pst] = nd), h.push(nd, pst);
+        }
+      });
+      // 횡단보도를 건너 b 에서 나오는 길: b 가 연결의 건너편 노드이고 나가는 쪽 보도가 건너편 끝을 보고 있다
+      for (const li of links.at.get(b) ?? []) {
+        const l = links.list[li];
+        for (const fromA of [true, false]) {
+          const en = ends(l, fromA);
+          if (en.dep !== b || sideFrom(b, m, en.fx, en.fz) !== s2) continue;
+          const span = Math.hypot(en.fx - en.nx, en.fz - en.nz);
+          const near = en.near;
+          g.adj[near].forEach((a) => {
+            const ka = g.adj[a].indexOf(near);
+            const s = sideAt(a, near, en.nx, en.nz);
+            if (!valid(a, ka, s)) return;
+            const pst = stateOf(a, ka, s);
+            const nd = dist + segLen(a, near) + span + CROSS_COST;
+            if (nd < D[pst]) (D[pst] = nd), h.push(nd, pst);
+          });
         }
       }
     }
@@ -408,13 +490,14 @@ export function makeWalkers(
 
   /** 노드 a 에서 이웃 k 로 갈 때 걸을 자리(중심선에서 떨어진 거리, 부호는 쪽) */
   function offFor(a: number, k: number, sd: number) {
-    const [lo, hi] = g.lat[a][k];
-    return (g.dir[a][k] || Math.sign(sd) || 1) * (lo + Math.abs(sd) * (hi - lo));
+    const sg = g.dir[a][k] || Math.sign(sd) || 1;
+    const [lo, hi] = sg > 0 ? g.lat[a][k] : g.latL[a][k];
+    return sg * (lo + Math.abs(sd) * (hi - lo));
   }
   function aim(i: number, k: number) {
     curK[i] = k;
     offWant[i] = offFor(from[i], k, side[i]);
-    [bandLo[i], bandHi[i]] = g.lat[from[i]][k];
+    [bandLo[i], bandHi[i]] = offWant[i] >= 0 ? g.lat[from[i]][k] : g.latL[from[i]][k];
     nextK[i] = -1;
   }
   function place(i: number) {
@@ -427,12 +510,6 @@ export function makeWalkers(
     w.z[i] = sz[i] + dz * k + (dx / len) * (off[i] + dodge[i]);
     w.yaw[i] = Math.atan2(dz, dx);
     return len;
-  }
-  /** 신호 교차로 노드 b 에서 횡단보도 앞 대기 자리까지 거리: 그 노드에 닿는 길 가운데 가장 넓은 길의 보도 안쪽 */
-  const curbAt = new Float32Array(N).fill(-1);
-  function curb(b: number) {
-    if (curbAt[b] < 0) curbAt[b] = Math.max(3, ...g.lat[b].map(([lo]) => lo - 0.4));
-    return curbAt[b];
   }
 
   /** 출구·정류장 d 에서 한 사람이 나온다 */
@@ -460,7 +537,8 @@ export function makeWalkers(
     endT[i] = -1;
     dockOf[i] = -1;
     holdT[i] = 0;
-    waitStart[i] = 0;
+    xing[i] = 0;
+    nextX[i] = -1;
     inLanes[i] = inMajor[i] = 255;
     laneHold[i] = 0;
     w.phase[i] = rand() * 6.28;
@@ -490,7 +568,7 @@ export function makeWalkers(
     onLeave?.(w.x[i], w.z[i]);
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, waitStart, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, curK, inLanes, inMajor, laneHold, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, curK, inLanes, inMajor, laneHold, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
       a[i] = a[j];
   }
 
@@ -568,139 +646,183 @@ export function makeWalkers(
       }
   }
 
-  /** 노드 b 에서 이웃 kk 로 가려면 큰길(주간선~집산도로) 갈래를 건너야 하는가. 걷는 쪽(오른쪽 보도면 오른쪽)으로 돌며
-   *  들어온 방향과 나갈 방향 사이에 놓인 갈래를 건넌다 */
-  function crossesMajor(i: number, b: number, kk: number): boolean {
-    const nb = g.adj[b];
-    const bx = g.nx[b * 2];
-    const bz = g.nx[b * 2 + 1];
-    const hIn = Math.atan2(bz - sz[i], bx - sx[i]);
-    const rel = (j: number) => {
-      const d = Math.atan2(g.nx[nb[j] * 2 + 1] - bz, g.nx[nb[j] * 2] - bx) - hIn;
-      return Math.atan2(Math.sin(d), Math.cos(d)); // + 는 오른쪽으로 꺾는 쪽
-    };
-    const out = rel(kk);
-    const right = (Math.sign(offWant[i]) || 1) > 0;
-    for (let j = 0; j < nb.length; j++) {
-      if (j === kk || nb[j] === from[i] || g.cls[b][j] > 3) continue;
-      const r = rel(j);
-      if (right ? r > out && r < Math.PI - 0.05 : r < out && r > -Math.PI + 0.05) return true;
-    }
-    return false;
-  }
-
-  /** 노드 to[i] 에 닿으면 갈 이웃을 미리 고르고, 모퉁이에서 갈아탈 자리를 계산한다 */
+  /** 노드 to[i] 에 닿으면 갈 길을 미리 고르고, 모퉁이에서 갈아탈 자리(횡단보도를 건너면 그 양 끝)를 계산한다.
+   *  돌아 나갈 길은 큰길 갈래를 건너지 않는 것만(turnRules), 큰길은 횡단보도 연결로만 건넌다 */
   function plan(i: number): number {
     if (nextK[i] !== -1) return nextK[i];
     const b = to[i];
     const nb = g.adj[b];
-    let k: number;
+    const p = nb.indexOf(from[i]);
+    const sIn = offWant[i] >= 0 ? 1 : -1;
+    const moves: { k: number; s: number; x: number; fromA: boolean; dep: number }[] = [];
+    for (let k = 0; k < nb.length; k++) {
+      if (g.aw[b][k] === 0) continue;
+      // 그대로 걷던 쪽 보도를 먼저 보고, 안 되면 반대쪽. 집에 가는 사람은 두 쪽을 다 놓고 가까운 쪽을 고른다
+      const natural = k === p ? -sIn : sIn; // 되돌아서면 같은 쪽 보도가 반대 부호
+      for (const s of g.dir[b][k] ? [g.dir[b][k]] : [natural, -natural])
+        if (p < 0 || rules.allowed(b, p, sIn, k, s)) {
+          moves.push({ k, s, x: -1, fromA: true, dep: b });
+          if (mode[i] !== HOMING) break;
+        }
+    }
+    // 횡단보도: 이 노드가 연결의 한쪽 끝이고 지금 걷는 쪽 보도가 그 끝을 보고 있으면, 건너편 노드에서 건너편 끝을 보는 쪽 보도로 나간다
+    for (const li of links.at.get(b) ?? [])
+      for (const fromA of [true, false]) {
+        const l = links.list[li];
+        const en = ends(l, fromA);
+        if (en.near !== b || sideAt(from[i], b, en.nx, en.nz) !== sIn) continue;
+        g.adj[en.dep].forEach((m, km) => {
+          const s = sideFrom(en.dep, m, en.fx, en.fz);
+          if (valid(en.dep, km, s)) moves.push({ k: km, s, x: li, fromA, dep: en.dep });
+        });
+      }
+    let j = -1;
     if (mode[i] === HOMING) {
-      if (srcDock[b] >= 0) {
-        const d = docks[srcDock[b]];
-        k = nb.indexOf(d.a === b ? d.b : d.a);
-      } else k = via[b] >= 0 ? nb.indexOf(via[b]) : -1;
+      let best = Infinity;
+      moves.forEach((mv, q) => {
+        let c = D[stateOf(mv.dep, mv.k, mv.s)];
+        if (mv.x >= 0) {
+          const l = links.list[mv.x];
+          c += Math.hypot(l.bx - l.ax, l.bz - l.az) + CROSS_COST;
+        }
+        if (c < best) (best = c), (j = q);
+      });
     } else {
-      // 나온 구역 밖으로 멀어지는 길은 거의 고르지 않는다(구역 밖 사람은 어디로든 간다)
+      // 나온 구역 밖으로 멀어지는 길은 거의 고르지 않는다(구역 밖 사람은 어디로든 간다). 횡단보도가 있으면 열에 서넛은 건넌다
       const z = home[i];
       const [cx, cz, r] = z < ZONE_IDS.length ? ZONES[ZONE_IDS[z]] : [0, 0, Infinity];
       const db = Math.hypot(g.nx[b * 2] - cx, g.nx[b * 2 + 1] - cz);
-      let ws = g.aw[b].map((v, kk) => {
-        if (nb[kk] === from[i] && nb.length > 1) return 0;
-        const dn = Math.hypot(g.nx[nb[kk] * 2] - cx, g.nx[nb[kk] * 2 + 1] - cz);
+      const ws = moves.map((mv) => {
+        const m = g.adj[mv.dep][mv.k];
+        if (mv.x < 0 && m === from[i] && moves.length > 1) return 0;
+        const v = g.aw[mv.dep][mv.k];
+        const dn = Math.hypot(g.nx[m * 2] - cx, g.nx[m * 2 + 1] - cz);
         return dn > r && dn > db ? v * 0.04 : v;
       });
-      // 신호 없는 교차로에서는 큰길을 건너지 않는 쪽으로 간다(그런 쪽이 없으면 건넌다)
-      if (signals && siteOf(b) < 0) {
-        const ok = ws.map((v, kk) => (crossesMajor(i, b, kk) ? 0 : v));
-        if (ok.some((v) => v > 0)) ws = ok;
-      }
-      k = pick(ws, rand());
+      let wn = 0;
+      let wx = 0;
+      moves.forEach((mv, q) => (mv.x < 0 ? (wn += ws[q]) : (wx += ws[q])));
+      if (wn > 0 && wx > 0) moves.forEach((mv, q) => mv.x >= 0 && (ws[q] *= (wn * 0.5) / wx));
+      j = pick(ws, rand());
     }
-    if (k < 0) return (nextK[i] = -2);
+    if (j < 0 || (mode[i] === HOMING && !Number.isFinite(D[stateOf(moves[j].dep, moves[j].k, moves[j].s)]))) return (nextK[i] = -2);
+    const mv = moves[j];
     const [bx, bz] = pos(b);
-    const [mx, mz] = pos(nb[k]);
     let ax = bx - sx[i];
     let az = bz - sz[i];
     const la = Math.hypot(ax, az) || 1;
     ax /= la;
     az /= la;
-    let cx = mx - bx;
-    let cz = mz - bz;
+    const dep = mv.dep;
+    const [dx0, dz0] = pos(dep);
+    const [mx, mz] = pos(g.adj[dep][mv.k]);
+    let cx = mx - dx0;
+    let cz = mz - dz0;
     const lc = Math.hypot(cx, cz) || 1;
     cx /= lc;
     cz /= lc;
-    const back = ax * cx + az * cz < -0.95; // 되돌아선다(막다른 길): 같은 쪽 보도를 유지한다
-    let sd = back ? -side[i] : side[i];
-    if (mode[i] === HOMING && srcDock[b] >= 0) {
-      // 출구·정류장이 있는 길로 꺾어 들어가는 교차로에서 그쪽 보도로 건너간다(길 조각을 거꾸로 지나면 오른쪽·왼쪽이 바뀐다)
-      const d = docks[srcDock[b]];
-      sd = (d.a === b ? 1 : -1) * d.side * Math.max(0.3, Math.abs(side[i]));
-    }
-    const o2 = offFor(b, k, sd);
-    const cr = ax * cz - az * cx;
+    const sd = mv.s * Math.max(0.2, Math.abs(side[i]));
+    const o2 = offFor(dep, mv.k, sd);
     let u = 0;
     let v = 0;
-    if (Math.abs(cr) > 0.3) {
-      // 지금 보도 선(노드 + n1·o1 + a·u)과 다음 보도 선(노드 + n2·o2 + c·v)이 만나는 점. n = 진행 방향 오른쪽
+    nextX[i] = mv.x;
+    nextDep[i] = dep;
+    if (mv.x >= 0) {
+      // 지금 보도 선과 횡단보도 축이 만나는 곳(N)에서 건너기 시작해, 축과 건너편 보도 선이 만나는 곳(F)으로 나온다
+      const en = ends(links.list[mv.x], mv.fromA);
+      let ux = en.fx - en.nx;
+      let uz = en.fz - en.nz;
+      const lu = Math.hypot(ux, uz) || 1;
+      ux /= lu;
+      uz /= lu;
       const o1 = offWant[i];
-      const wx = -cz * o2 + az * o1;
-      const wz = cx * o2 - ax * o1;
-      u = Math.max(-0.8 * la, Math.min(25, (wx * cz - wz * cx) / cr));
-      v = Math.max(-25, Math.min(0.8 * lc, (wx * az - wz * ax) / cr));
+      const cr = (x1: number, z1: number, x2: number, z2: number) => x1 * z2 - z1 * x2;
+      const d1 = cr(ax, az, ux, uz);
+      if (Math.abs(d1) > 0.2) u = Math.max(-40, Math.min(40, cr(en.nx - (bx - az * o1), en.nz - (bz + ax * o1), ux, uz) / d1));
+      const d2 = cr(cx, cz, ux, uz);
+      if (Math.abs(d2) > 0.2) v = Math.max(-40, Math.min(40, cr(en.nx - (dx0 - cz * o2), en.nz - (dz0 + cx * o2), ux, uz) / d2));
+      // N·F 는 축 위 그대로 두고, 보행 조각에서 벗어나는 만큼은 보도 위로 걸어간다(갈아탈 자리와 나갈 자리만 조각 안으로 당긴다)
+      xNx[i] = bx - az * o1 + ax * u;
+      xNz[i] = bz + ax * o1 + az * u;
+      xFx[i] = dx0 - cz * o2 + cx * v;
+      xFz[i] = dz0 + cx * o2 + cz * v;
+      u = Math.max(-0.8 * la, Math.min(25, u));
+      v = Math.max(-25, Math.min(0.8 * lc, v));
+      xDx[i] = dx0 - cz * o2 + cx * v;
+      xDz[i] = dz0 + cx * o2 + cz * v;
+      nextOff[i] = o2;
+    } else {
+      const back = g.adj[dep][mv.k] === from[i] && dep === b;
+      const crs = ax * cz - az * cx;
+      if (Math.abs(crs) > 0.3) {
+        // 지금 보도 선(노드 + n1·o1 + a·u)과 다음 보도 선(노드 + n2·o2 + c·v)이 만나는 점. n = 진행 방향 오른쪽
+        const o1 = offWant[i];
+        const wx = -cz * o2 + az * o1;
+        const wz = cx * o2 - ax * o1;
+        u = Math.max(-0.8 * la, Math.min(25, (wx * cz - wz * cx) / crs));
+        v = Math.max(-25, Math.min(0.8 * lc, (wx * az - wz * ax) / crs));
+      }
+      nextOff[i] = back ? -off[i] : Math.abs(crs) > 0.3 ? o2 : off[i];
     }
     turnU[i] = u;
     startV[i] = v;
     nextSide[i] = sd;
-    nextOff[i] = back ? -off[i] : Math.abs(cr) > 0.3 ? o2 : off[i];
-    return (nextK[i] = k);
+    return (nextK[i] = mv.k);
   }
 
-  /** 갈아탈 자리에 닿았다: 미리 고른 다음 구간으로 옮긴다. excess 는 갈아탈 자리를 지나친 거리 */
+  /** 노드 b 에서 이웃 k 쪽 조각으로 나간다. 집에 가는 길이면 이 조각 이쪽 보도에 붙은 출구·정류장에 들어간다 */
+  function depart(i: number, b: number, k: number, tStart: number) {
+    inLanes[i] = inMajor[i] = 255;
+    side[i] = nextSide[i];
+    off[i] = nextOff[i];
+    sx[i] = g.nx[b * 2];
+    sz[i] = g.nx[b * 2 + 1];
+    from[i] = b;
+    to[i] = g.adj[b][k];
+    t[i] = tStart;
+    aim(i, k);
+    endT[i] = -1;
+    if (mode[i] === HOMING) homeHere(i);
+  }
+  /** 지금 걷는 조각의 이쪽 보도, 앞쪽에 출구·정류장이 있으면 거기로 들어간다 */
+  function homeHere(i: number) {
+    const list = docksOn.get(stateOf(from[i], curK[i], offWant[i] >= 0 ? 1 : -1));
+    if (!list) return;
+    let best = Infinity;
+    for (const [di, at] of list)
+      if (at >= t[i] - 1 && at < best) {
+        best = at;
+        endT[i] = at;
+        dockOf[i] = di;
+      }
+  }
+
+  /** 갈아탈 자리에 닿았다: 미리 고른 다음 구간으로 옮긴다(횡단보도를 건널 차례면 그 앞에 선다). excess 는 갈아탈 자리를 지나친 거리 */
   function turn(i: number, excess: number) {
-    const b = to[i];
     const k = plan(i);
     if (k < 0) {
       mode[i] = LEAVING; // 갈 길이 없는 곳(일어나지 않아야 한다)
       return;
     }
-    if (mode[i] === HOMING && srcDock[b] >= 0) {
-      // 이 노드에 붙은 길 조각에 출구·정류장이 있다
-      const d = docks[srcDock[b]];
-      endT[i] = d.a === b ? d.t : d.len - d.t;
-      dockOf[i] = srcDock[b];
+    if (nextX[i] >= 0) {
+      xing[i] = 1;
+      xLink[i] = nextX[i];
+      nextX[i] = -1;
+      return;
     }
-    waitStart[i] = signals && startV[i] < -2 && siteOf(b) >= 0 ? 1 : 0;
-    inLanes[i] = inMajor[i] = 255;
-    side[i] = nextSide[i];
-    off[i] = nextOff[i];
-    const m = g.adj[b][k];
-    sx[i] = g.nx[b * 2];
-    sz[i] = g.nx[b * 2 + 1];
-    from[i] = b;
-    to[i] = m;
-    t[i] = startV[i] + excess;
-    aim(i, k);
+    depart(i, to[i], k, startV[i] + excess);
   }
 
   /** 신호 묶음 c 에서 방향 h 로 건너기 시작해도 되는가: 초록불이 8초 넘게 남았다(건너는 동안 빨간불이 되지 않게) */
   const green = (c: number, h: number, tod: number) => signals!.greenLeft(c, signals!.groupOf(c, h), tod) > 8;
-  /** 신호 교차로 노드 to[i] 앞에서: 건너야 하는데 그 방향이 초록불이 아니면 false */
-  function mayCross(i: number, tod: number): boolean {
-    const b = to[i];
-    const c = siteOf(b);
-    if (c < 0) return true;
-    const k = plan(i);
-    if (k < 0) return true;
-    const m = g.adj[b][k];
-    const hIn = Math.atan2(g.nx[b * 2 + 1] - sz[i], g.nx[b * 2] - sx[i]);
-    const hOut = Math.atan2(g.nx[m * 2 + 1] - g.nx[b * 2 + 1], g.nx[m * 2] - g.nx[b * 2]);
-    let d = hOut - hIn;
-    d = Math.atan2(Math.sin(d), Math.cos(d));
-    if (Math.abs(d) > 2.8) return true; // 되돌아선다
-    // 보도 쪽으로 꺾으면 건너지 않는다. 곧장 가거나 반대쪽으로 꺾으면 먼저 가로지르는 길을 건넌다
-    if (Math.abs(d) > Math.PI / 4 && Math.sign(d) === (Math.sign(offWant[i]) || 1)) return true;
-    return green(c, hIn, tod);
+  /** 횡단보도 앞에서 건너기 시작해도 되는가: 보행 신호가 있으면 다 건널 만큼 초록불이 남았을 때, 없으면 차가 다가오지 않을 때 */
+  function mayStart(i: number, l: CrossLink, span: number, tod: number): boolean {
+    const c = signals?.crossSite[l.xw] ?? -1;
+    if (c >= 0) {
+      const h = Math.atan2(xFz[i] - w.z[i], xFx[i] - w.x[i]);
+      return signals!.greenLeft(c, signals!.groupOf(c, h), tod) > Math.min(span / speed[i] + 1, 18);
+    }
+    return !(l.major && cross.traffic?.(l));
   }
 
   /** i 가 지금 자리에 놓이면 0.6m 안에 다른 사람이 있는가 */
@@ -725,7 +847,7 @@ export function makeWalkers(
     off[i] = -off[i];
     dodge[i] = -dodge[i];
     endT[i] = -1;
-    waitStart[i] = 0;
+    nextX[i] = -1;
     inLanes[i] = inMajor[i] = 255;
     aim(i, g.adj[from[i]].indexOf(to[i]));
   }
@@ -769,6 +891,10 @@ export function makeWalkers(
 
   function step(dt: number, now: Now, ambient = true) {
     frame++;
+    if (cross.busy) {
+      for (const k of marked) cross.busy[k] = 0;
+      marked.length = 0;
+    }
     gridHead.fill(-1);
     for (let i = 0; i < w.n; i++) {
       const k = cellKey(Math.floor(w.x[i] / 1.5), Math.floor(w.z[i] / 1.5));
@@ -812,38 +938,59 @@ export function makeWalkers(
       }
       w.photo[i] = Math.max(0, w.photo[i] - dt * 2);
       w.moving[i] = 1;
+      if (xing[i]) {
+        // 횡단보도: 이쪽 끝(N)으로 가서 신호·차를 보고 기다렸다가, 축을 따라 건너편 끝(F)으로 건너고, 나갈 보도 자리(D)로 간다
+        const l = links.list[xLink[i]];
+        if (xing[i] === 2) {
+          const h = Math.atan2(xFz[i] - xNz[i], xFx[i] - xNx[i]);
+          if (!mayStart(i, l, Math.hypot(xFx[i] - xNx[i], xFz[i] - xNz[i]), now.tod)) {
+            w.moving[i] = 0;
+            w.yaw[i] = h;
+            continue;
+          }
+          xing[i] = 3;
+        }
+        const gx = xing[i] === 1 ? xNx[i] : xing[i] === 3 ? xFx[i] : xDx[i];
+        const gz = xing[i] === 1 ? xNz[i] : xing[i] === 3 ? xFz[i] : xDz[i];
+        const dx = gx - w.x[i];
+        const dz = gz - w.z[i];
+        const dd = Math.hypot(dx, dz);
+        const d = Math.min(dd, speed[i] * dt);
+        w.phase[i] += d * 4.6;
+        if (dd > 1e-3) {
+          w.yaw[i] = Math.atan2(dz, dx);
+          w.x[i] += (dx / dd) * d;
+          w.z[i] += (dz / dd) * d;
+        }
+        if (xing[i] === 3 && cross.busy) {
+          // 축 위 자리(2m 칸)와 양옆 칸을 표시한다
+          const ax = l.bx - l.ax;
+          const az = l.bz - l.az;
+          const al = Math.hypot(ax, az) || 1;
+          const bin = Math.floor((((w.x[i] - l.ax) * ax + (w.z[i] - l.az) * az) / al) / 2);
+          if (!cross.busy[l.xw]) marked.push(l.xw);
+          for (let k = Math.max(0, bin - 1); k <= Math.min(31, bin + 1); k++) cross.busy[l.xw] |= 1 << k;
+        }
+        if (dd - d < 0.05) {
+          if (xing[i] === 4) {
+            xing[i] = 0;
+            depart(i, nextDep[i], nextK[i], startV[i]);
+            place(i);
+          } else xing[i]++;
+        }
+        continue;
+      }
       if (mode[i] === WANDER) {
         life[i] -= dt;
         if (life[i] <= 0) {
           mode[i] = HOMING;
           nextK[i] = -1; // 집 쪽으로 다시 고른다
+          nextX[i] = -1;
+          homeHere(i);
         }
       }
       plan(i);
       const len0 = Math.hypot(g.nx[to[i] * 2] - sx[i], g.nx[to[i] * 2 + 1] - sz[i]);
-      if (signals) {
-        let stop = false;
-        if (waitStart[i]) {
-          // 왼쪽으로 꺾은 뒤 두 번째 횡단보도 앞
-          const c = siteOf(from[i]);
-          if (c >= 0 && !green(c, Math.atan2(g.nx[to[i] * 2 + 1] - sz[i], g.nx[to[i] * 2] - sx[i]), now.tod)) stop = true;
-          else waitStart[i] = 0;
-        } else if (endT[i] < 0 && nextK[i] >= 0) {
-          // 횡단보도 앞: 사람마다 0~2.7m 뒤에 서서 한 점에 겹치지 않는다. 대기 자리를 지나쳤어도 차도에 들어서기 전이면 신호를 지킨다
-          const cb = curb(to[i]) + (w.id[i] % 4) * 0.9;
-          if (t[i] >= len0 - cb && t[i] < len0 - curb(to[i]) + 0.3 && len0 > cb + 1 && !mayCross(i, now.tod)) stop = true;
-        }
-        if (stop) {
-          // 횡단보도 앞에서 초록불을 기다린다. 그 자리가 차로 위(비스듬히 만나거나 노드가 여럿인 교차로)면 10m 까지 물러선다
-          w.moving[i] = 0;
-          place(i);
-          for (let back = 0; back < 20 && onLanes?.(w.x[i], w.z[i]); back++) {
-            t[i] -= 0.5;
-            place(i);
-          }
-          continue;
-        }
-      }
       const d = speed[i] * jostle(i, dt) * dt;
       // 신호 교차로 둘레(30m 안)에서 걷던 길이 차로로 들어가면(비스듬히 만나거나 노드가 여럿인 교차로) 그 앞에서 진행 방향 신호를 지킨다.
       // 신호 교차로가 없는 곳에서 큰길 차로 안쪽으로 들어서려 하면(길 중간을 가로지르는 보행로 등) 되돌아선다

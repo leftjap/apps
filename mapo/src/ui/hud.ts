@@ -85,7 +85,7 @@ export function makeHud(ev: HudEvents) {
        <div class="badge"><span class="dot"></span><b data-top-name></b><span data-top-level></span><i><span data-top-time></span> · 시뮬레이션</i></div>
        <div class="chips"><button type="button" data-lab-toggle>설정</button>${tourButtons}${presetButtons}</div>
      </div>
-     <p id="credit">© OpenStreetMap contributors · 일부 건물 Overture Maps, Shi 외(2023)</p>
+     <p id="credit">© OpenStreetMap contributors · 일부 건물 Overture Maps, Shi 외(2023) · 횡단보도·차선 서울특별시</p>
      <div id="card" hidden>
        <button type="button" class="close" aria-label="닫기">×</button>
        <p class="tag" data-card-tag></p>
@@ -121,8 +121,8 @@ export function makeHud(ev: HudEvents) {
          <section class="areas"><h2>지금 붐비는 곳</h2><ol data-areas></ol><p class="scale" data-scale></p></section>
          <section class="legend"><h2>도로 흐름</h2><p>${FLOW_LEVELS.map(([name, c]) => `<span><i style="--c:${c}"></i>${name}</span>`).join('')}</p></section>
          <section class="about">
-           <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 화면의 사람은 구역 인구 가운데 밖에 나와 걷는 사람(상업지 12%, 한강공원 30%로 가정)이고, 그릴 수 있는 수를 넘으면 모든 구역을 같은 배율로 줄입니다. 차는 도로 흐름 속도로 정한 대수를 보는 곳 둘레부터 채웁니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다.</p>
-           <p>지도 자료 © OpenStreetMap contributors. 일부 건물 © Overture Maps Foundation, Qian Shi 외(2023) CC BY 4.0.</p>
+           <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 화면의 사람은 구역 인구 가운데 밖에 나와 걷는 사람(상업지 12%, 한강공원 30%로 가정)이고, 그릴 수 있는 수를 넘으면 모든 구역을 같은 배율로 줄입니다. 차는 도로 흐름 속도로 정한 대수를 보는 곳 둘레부터 채웁니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다. 횡단보도·정지선의 자리와 차로 수·차로 폭은 서울시 자료를 따르고, 신호 시각은 실제와 다릅니다.</p>
+           <p>지도 자료 © OpenStreetMap contributors. 일부 건물 © Overture Maps Foundation, Qian Shi 외(2023) CC BY 4.0. 횡단보도·차선: 서울특별시 교통안전시설물(2021), 서울특별시 자치구 횡단보도 정보(2026), 공공누리 제1유형.</p>
          </section>
        </div>
        <div class="ad" aria-hidden="true"><span>광고 자리</span></div>

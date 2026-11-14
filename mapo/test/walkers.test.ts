@@ -202,6 +202,20 @@ describe('차도와 겹친 보행로', () => {
     expect(g.aw[beside.a][beside.k]).toBeGreaterThan(0);
     expect(g.dir[beside.a][beside.k]).toBe(1);
   });
+  it('짧은 조각이 이어진 길도 보도가 다른 길 차로 위면 그쪽으로 걷지 않는다', () => {
+    // 동서 한 방향 4차로 큰길(차로 z −6.6~6.6)과, 그 북쪽 z = −9 에 붙어 동쪽으로 가는 한 방향 합류 길(5m 마다 꼭짓점).
+    // 합류 길의 바깥(진행 방향 오른쪽 = 남쪽) 보도는 z −6.1~−4.5 로 큰길 차로 위이므로 북쪽 보도로 걷는다
+    const merge: [number, number][] = [];
+    for (let x = -100; x <= 100; x += 5) merge.push([x, -9]);
+    const roads = [road([[-300, 0], [300, 0]], { cls: 1, lanes: 4, oneway: true }), road(merge, { cls: 1, lanes: 1, oneway: true })];
+    const g = buildWalkGraph(roads);
+    clearWalkFromCars(g, buildCarGraph(roads));
+    for (const x of [-50, 0, 50]) {
+      const a = g.nearest(x, -9);
+      const k = g.adj[a].findIndex((b) => g.nx[b * 2] > x);
+      expect(g.aw[a][k] === 0 || g.dir[a][k] === -1).toBe(true);
+    }
+  });
 });
 
 describe('찻길과 신호', () => {

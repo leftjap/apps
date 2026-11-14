@@ -3,7 +3,7 @@
 // 2단계에서 공급자가 실제 도로 속도를 주면 같은 띠에 그대로 실린다. 멀리서도 보이도록 화면에서 최소 굵기를 지킨다.
 import * as THREE from 'three';
 import type { Now } from '../sim/clock.ts';
-import { LANE, type Edge } from '../sim/graph.ts';
+import type { Edge } from '../sim/graph.ts';
 import type { DataProvider } from '../sim/provider.ts';
 import { material } from './env.ts';
 
@@ -23,7 +23,7 @@ export function makeFlow(edges: Edge[]) {
   const start: number[] = [];
   for (const e of used) {
     start.push(pos.length / 3);
-    const off = e.off0 + ((e.lanes - 1) / 2) * LANE;
+    const off = e.off0 + ((e.lanes - 1) / 2) * e.lw;
     const n = e.p.length / 3;
     for (let i = 0; i < n; i++) {
       const a = Math.max(0, i - 1) * 3;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeSignals, GREEN, RED } from '../src/sim/signals.ts';
-import { at, fixedProvider, road } from './helpers.ts';
+import { at, crosswalk, fixedProvider, road } from './helpers.ts';
 
 // (0,0)에서 만나는 동서·남북 4차로 십자 교차로. 팔 길이 300m
 const cross = () =>
@@ -79,5 +79,40 @@ describe('신호 교차로', () => {
   it('시간대와 상관없이 같은 시각은 같은 신호', () => {
     const s = makeSignals(cross());
     expect(s.state(0, 0, at(9).tod)).toBe(s.state(0, 0, at(9).tod));
+  });
+});
+
+describe('자료로 정한 신호', () => {
+  it('보행 신호 횡단보도가 있는 교차로에만 신호를 둔다', () => {
+    // 서쪽 팔(15m)을 건너는 횡단보도
+    const sigXw = crosswalk(-15, 0, 0, 1, 8, [[-15, 0]]);
+    expect(makeSignals(cross(), { crosswalks: [sigXw], stopLines: new Float32Array() }).list).toHaveLength(1);
+    expect(makeSignals(cross(), { crosswalks: [{ ...sigXw, sig: false }], stopLines: new Float32Array() }).list).toHaveLength(0);
+    expect(makeSignals(cross(), { crosswalks: [], stopLines: new Float32Array() }).list).toHaveLength(0);
+  });
+
+  it('교차로가 아닌 곳의 신호 횡단보도는 그 자리에서 끝나는 두 구간에 신호를 두고, 차는 횡단보도 앞에 선다', () => {
+    const g = buildCarGraph([road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })]);
+    const s = makeSignals(g, { crosswalks: [crosswalk(0, 0, 0, 1, 8, [[0, 0]])], stopLines: new Float32Array() });
+    expect(s.list).toHaveLength(1);
+    const into = g.filter((e) => Math.hypot(e.p[e.p.length - 3], e.p[e.p.length - 1]) < 1);
+    expect(into).toHaveLength(2);
+    for (const e of into) {
+      const ap = s.approach.get(e.id)!;
+      expect(ap.group).toBe(0);
+      expect(ap.setback).toBeGreaterThan(2.5); // 횡단보도 폭 4m 의 절반 + 여유
+      expect(ap.setback).toBeLessThan(5);
+    }
+    expect(s.crossSite[0]).toBe(0);
+    // 사람은 길과 직각으로 건너므로 차와 다른 무리
+    expect(s.groupOf(0, Math.PI / 2)).toBe(1);
+  });
+
+  it('정지선 자료가 있으면 그 자리를 정지선으로 쓴다', () => {
+    const g = cross();
+    // 서쪽에서 들어오는 차로(교차로 서쪽 22m)를 가로지르는 정지선
+    const s = makeSignals(g, { crosswalks: [crosswalk(-15, 0, 0, 1, 8, [[-15, 0]])], stopLines: Float32Array.from([-22, 0.2, -22, 7]) });
+    const west = g.find((e) => e.p[0] < -299 && Math.hypot(e.p[e.p.length - 3], e.p[e.p.length - 1]) < 1)!;
+    expect(s.approach.get(west.id)!.setback).toBeCloseTo(22, 0);
   });
 });

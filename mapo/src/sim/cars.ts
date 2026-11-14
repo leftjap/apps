@@ -8,7 +8,8 @@ import { GREEN, YELLOW, type Signals } from './signals.ts';
 import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { BOARD_R } from '../geo.ts';
-import { LANE, type Edge } from './graph.ts';
+import type { Crosswalk } from '../data/board.ts';
+import type { Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
@@ -38,7 +39,16 @@ const BUS_LEN = [11.5, 11.5, 12, 7.5]; // 종류별 버스 길이(m)
 const A_MAX = 1.6;
 const B_COMF = 2.5;
 
-export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 1400, routes: BusRoute[] = [], signals?: Signals) {
+export function makeCars(
+  edges: Edge[],
+  provider: DataProvider,
+  seed = 1,
+  max = 1400,
+  routes: BusRoute[] = [],
+  signals?: Signals,
+  /** 횡단보도와, 횡단보도마다 지금 사람이 건너고 있는 자리(축을 2m 칸으로 나눈 비트, 보행자가 쓴다) */
+  xw?: { list: Crosswalk[]; busy: Uint32Array },
+) {
   const rand = rng(seed);
   const cars: Cars = {
     n: 0,
@@ -128,6 +138,32 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
   const cellNext = new Int32Array(max);
   const cellAt = (x: number) => Math.max(0, Math.min(GW - 1, Math.floor((x + BOARD_R + 200) / CELL)));
   const tmp = [0, 0, 0];
+  // 구간마다 그 위의 횡단보도 [구간 시작에서 거리, 횡단보도 번호, 반 폭, 축 위 꼭짓점 자리(E0 에서 m), 구간 오른쪽이 축 방향이면 +1]:
+  // 횡단보도 축이 지나는 꼭짓점이 구간 꼭짓점과 같은 곳. 차는 자기 차로가 지나는 축 자리 둘레에 사람이 있을 때만 선다
+  const xwOn: [number, number, number, number, number][][] = edges.map(() => []);
+  const xwEdges: [number, number][][] = (xw?.list ?? []).map(() => []); // 횡단보도 → [구간, 거리]
+  if (xw) {
+    const at = new Map<string, [number, number][]>();
+    for (const e of edges)
+      for (let k = 0; k < e.p.length; k += 3) {
+        const key = `${Math.round(e.p[k] * 10)},${Math.round(e.p[k + 2] * 10)}`;
+        (at.get(key) ?? at.set(key, []).get(key)!).push([e.id, e.cum[k / 3]]);
+      }
+    xw.list.forEach((c, xi) => {
+      for (let k = 0; k < c.verts.length; k += 2)
+        for (const [id, d] of at.get(`${Math.round(c.verts[k] * 10)},${Math.round(c.verts[k + 1] * 10)}`) ?? []) {
+          const e = edges[id];
+          const seg = Math.max(0, Math.min(e.p.length / 3 - 2, e.cum.indexOf(d)));
+          const hx = e.p[seg * 3 + 3] - e.p[seg * 3];
+          const hz = e.p[seg * 3 + 5] - e.p[seg * 3 + 2];
+          const hl = Math.hypot(hx, hz) || 1;
+          const uv = (c.verts[k] - (c.x - c.ux * c.half)) * c.ux + (c.verts[k + 1] - (c.z - c.uz * c.half)) * c.uz;
+          const sgn = (-hz * c.ux + hx * c.uz) / hl >= 0 ? 1 : -1;
+          xwOn[id].push([d, xi, c.wid / 2, uv, sgn]);
+          xwEdges[xi].push([id, d]);
+        }
+    });
+  }
 
   /** 막힌 길일수록 덜 고른다: 들어설 첫머리에 빈 길이(가장 넉넉한 차로의 맨 뒤 차까지)가 60m 보다 짧을수록,
    *  그 구간 차들의 평균 속도가 제 속도의 절반보다 느릴수록 무게를 줄인다 */
@@ -309,7 +345,7 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
     }
     const seg = pointAt(e.p, e.cum, s[i], tmp);
     const yaw = headingAt(e.p, seg);
-    const off = e.off0 + lane[i] * LANE;
+    const off = e.off0 + lane[i] * e.lw;
     cars.x[i] = tmp[0] - Math.sin(yaw) * off;
     cars.y[i] = tmp[1];
     cars.z[i] = tmp[2] + Math.cos(yaw) * off;
@@ -413,7 +449,7 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
     const ln = Math.floor(rand() * e.lanes);
     const seg = pointAt(e.p, e.cum, at, tmp);
     const yaw = headingAt(e.p, seg);
-    const off = e.off0 + ln * LANE;
+    const off = e.off0 + ln * e.lw;
     const x = tmp[0] - Math.sin(yaw) * off;
     const z = tmp[2] + Math.cos(yaw) * off;
     if (nearFocus(x, z) !== inside || seen(x, z)) return false;
@@ -762,6 +798,30 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
           }
         }
       }
+      // 횡단보도: 사람이 건너고 있으면 그 앞(횡단보도 반 폭 + 1.2m)에 선다. 이 구간과 다음 구간을 본다
+      if (xw) {
+        let d0 = -s[i];
+        for (let id = e.id, k = 0; id >= 0 && k < 2; k++) {
+          for (const [xs, xi, hw, uv, sgn] of xwOn[id]) {
+            const bits = xw.busy[xi];
+            if (!bits) continue;
+            const ln = Math.min(lane[i], edges[id].lanes - 1);
+            const uc = uv + sgn * (edges[id].off0 + ln * edges[id].lw);
+            let hit = false;
+            for (let b = Math.max(0, Math.floor((uc - 1.8) / 2)); b <= Math.min(31, Math.floor((uc + 1.8) / 2)); b++) if (bits & (1 << b)) hit = true;
+            if (!hit) continue;
+            const toLine = d0 + xs - hw - 1.2 - size[i] / 2;
+            if (toLine > -0.5 && toLine + 2 < gap) {
+              gap = toLine + 2;
+              dv = v[i];
+              front = i;
+              if (k === 0) red = true; // 이 구간 끝 교차로는 잡지 않는다
+            }
+          }
+          d0 += edges[id].len;
+          id = k === 0 ? nextE[i] : -1;
+        }
+      }
       // 교차로: 정한 경로로 들어가도 되면 교차로를 잡고, 아니면 상자 앞을 멈춰 선 앞차처럼 다룬다
       const G = jn.groupOfEnd[e.id];
       if (G >= 0 && pathOf[i] >= 0 && planK[i] === 0 && !(claim[i] === G && claimPath[i] === pathOf[i]) && !red) {
@@ -878,9 +938,20 @@ export function makeCars(edges: Edge[], provider: DataProvider, seed = 1, max = 
     }
   }
 
+  /** 횡단보도 xi 로 차가 다가오는가: 그 횡단보도가 지나는 구간에서 횡단보도 앞 (10m + 4초 거리) 안이거나 횡단보도 위에 있는 차 */
+  function approaching(xi: number): boolean {
+    const hw = (xw?.list[xi].wid ?? 4) / 2;
+    for (const [id, d] of xwEdges[xi] ?? []) {
+      for (const j of lists[id]) if (s[j] + size[j] / 2 > d - hw - 10 - v[j] * 4 && s[j] - size[j] / 2 < d + hw + 1) return true;
+      if (d < 40) for (const b of before[id]) for (const j of lists[b]) if (edges[b].len - s[j] + d - hw < 10 + v[j] * 4) return true;
+    }
+    return false;
+  }
+
   return {
     cars,
     step,
+    approaching,
     fill,
     fillBuses,
     addBus,

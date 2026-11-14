@@ -2,7 +2,7 @@
 // 버스는 차 시뮬레이션 안에서 다른 차와 함께 달린다(cars.ts).
 import type { BusRun } from '../data/board.ts';
 import { headingAt, pointAt } from '../poly.ts';
-import { LANE, type Edge } from './graph.ts';
+import type { Edge } from './graph.ts';
 
 /** 서울 시내버스 도색 */
 export const BUS_KINDS = [
@@ -83,7 +83,7 @@ export function busStopPortals(routes: BusRoute[], edges: Edge[]) {
       const edge = edges[R.edges[e]];
       const seg = pointAt(edge.p, edge.cum, s - R.start[e], tmp);
       const yaw = headingAt(edge.p, seg);
-      const curb = edge.off0 + edge.lanes * LANE + 1.2;
+      const curb = edge.off0 + edge.lanes * edge.lw + 1.2;
       const x = tmp[0] - Math.sin(yaw) * curb;
       const z = tmp[2] + Math.cos(yaw) * curb;
       const name = R.stopNames[k];

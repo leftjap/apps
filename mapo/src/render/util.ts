@@ -39,11 +39,13 @@ export interface Ribbon {
   uv: number[];
   info: number[];
   idx: number[];
+  /** 꼭짓점마다 덧붙이는 값 8개(aEx0, aEx1). 쓰지 않으면 비어 있다 */
+  ex: number[];
 }
-export const ribbon = (): Ribbon => ({ pos: [], uv: [], info: [], idx: [] });
+export const ribbon = (): Ribbon => ({ pos: [], uv: [], info: [], idx: [], ex: [] });
 
 /** 중심선 p([x,y,z,...])를 따라 폭 width 의 띠를 덧붙인다. */
-export function addRibbon(o: Ribbon, p: ArrayLike<number>, width: number, info: [number, number, number, number], yOff = 0, cap = 0): void {
+export function addRibbon(o: Ribbon, p: ArrayLike<number>, width: number, info: [number, number, number, number], yOff = 0, cap = 0, ex?: number[]): void {
   const n = p.length / 3;
   if (n < 2) return;
   const base = o.pos.length / 3;
@@ -78,6 +80,7 @@ export function addRibbon(o: Ribbon, p: ArrayLike<number>, width: number, info: 
     o.pos.push(x + dz * hw * k, y, z - dx * hw * k, x - dz * hw * k, y, z + dx * hw * k);
     o.uv.push(-1, vv, 1, vv);
     o.info.push(...info, ...info);
+    if (ex) o.ex.push(...ex, ...ex);
     if (i > 0) {
       const q = base + i * 2;
       o.idx.push(q - 2, q - 1, q, q - 1, q + 1, q);
@@ -90,6 +93,16 @@ export function ribbonGeometry(o: Ribbon): THREE.BufferGeometry {
   g.setAttribute('position', new THREE.Float32BufferAttribute(o.pos, 3));
   g.setAttribute('aUV', new THREE.Float32BufferAttribute(o.uv, 2));
   g.setAttribute('aInfo', new THREE.Float32BufferAttribute(o.info, 4));
+  if (o.ex.length) {
+    const a = new Float32Array(o.ex.length / 2);
+    const b = new Float32Array(o.ex.length / 2);
+    for (let i = 0; i < o.ex.length / 8; i++) {
+      a.set(o.ex.slice(i * 8, i * 8 + 4), i * 4);
+      b.set(o.ex.slice(i * 8 + 4, i * 8 + 8), i * 4);
+    }
+    g.setAttribute('aEx0', new THREE.BufferAttribute(a, 4));
+    g.setAttribute('aEx1', new THREE.BufferAttribute(b, 4));
+  }
   g.setIndex(o.idx);
   return g;
 }

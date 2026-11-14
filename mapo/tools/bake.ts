@@ -2,10 +2,12 @@
 // 실행: node tools/bake.ts
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { BOARD_R, toXZ } from '../src/geo.ts';
-import { cumLen, nearestS } from '../src/poly.ts';
+import { cumLen, nearestS, pointAt } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
+import { mergeStages, minRect, type Rect } from './lib/crosswalk.ts';
+import { analysePiece, laneIndex, type LaneSeg, type PieceLanes } from './lib/lanes.ts';
 import { stitch } from './lib/rail.ts';
 import { encodePng, fillPolygon, strokeLine } from './lib/raster.ts';
 
@@ -276,6 +278,8 @@ const nameIdx = (s?: string) => {
 const bridgeLm = (t: Tags) => (t['bridge:name'] === '양화대교' ? 5 : t.name === '서강로' || t['bridge:name'] === '서강대교' ? 4 : 0);
 
 const roads: number[][] = [];
+/** 조각마다 저장된 순서의 노드 번호(굽는 동안만 쓴다). 횡단보도 자리에 새로 넣은 꼭짓점은 음수 */
+const roadNodes: number[][] = [];
 /** 길 id → 판 안에서 잘린 조각들. s→e 는 저장된 방향의 첫 노드와 끝 노드. 버스 노선을 조각 순서로 바꿀 때 쓴다 */
 const piecesOf = new Map<number, { road: number; s: number; e: number; oneway: boolean }[]>();
 for (const w of hw) {
@@ -303,6 +307,7 @@ for (const w of hw) {
         cur = r;
       }
       roads.push([...head, ...cur]);
+      roadNodes.push(rev ? [...curN].reverse() : curN);
     }
     cur = [];
     curN = [];
@@ -319,6 +324,322 @@ for (const w of hw) {
     }
   });
   flush();
+}
+
+// ───────────────────────── 차선으로 길 모양 고치기 ─────────────────────────
+// 서울시 교통안전시설물 차선(tools/seoul.py 로 받는다)으로 조각마다 실제 가운데 자리·방향별 차로 수·차로 폭·중앙선 종류를 읽는다(tools/lib/lanes.ts).
+// 가운데선은 읽은 자리로 옮기되, 여러 조각이 만나는 노드는 조각마다의 '옆으로 옮길 거리' 조건을 함께 만족하는 자리(최소제곱)로 옮겨 길이 끊기지 않게 한다.
+const ptsOf = (r: number[]): [number, number][] => {
+  const out: [number, number][] = [];
+  for (let i = 6; i < r.length; i += 3) out.push([r[i] / 10, r[i + 2] / 10]);
+  return out;
+};
+const roadLanes: (PieceLanes | null)[] = roads.map(() => null);
+const laneFile = new URL('./raw/seoul-lanes.json', import.meta.url);
+const tgis = existsSync(laneFile)
+  ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]).filter((l) => l.eve === '001')
+  : [];
+{
+  const segs: LaneSeg[] = [];
+  for (const l of tgis) {
+    const P = l.p.map(([a, b]) => toXZ(a, b));
+    for (let i = 0; i + 1 < P.length; i++) segs.push({ ax: P[i][0], az: P[i][1], bx: P[i + 1][0], bz: P[i + 1][1], k: l.k, k2: l.k2 });
+  }
+  const idx = laneIndex(segs);
+  roads.forEach((r, i) => {
+    if (r[0] > 4 || r[3]) return; // 골목보다 작은 길과 교량은 읽지 않는다
+    roadLanes[i] = analysePiece(idx, ptsOf(r), !!(r[2] & 1));
+  });
+}
+/** 못 읽은 조각(교차로 사이 짧은 조각 등)은 같은 길의 가장 길게 읽은 조각 값을 쓴다. 가운데 자리는 노드 쪽 계산에 맡긴다 */
+const laneFilled = new Set<number>();
+for (const list of piecesOf.values()) {
+  const done = list.filter((p) => roadLanes[p.road]).sort((a, b) => roadLanes[b.road]!.n - roadLanes[a.road]!.n);
+  if (!done.length) continue;
+  for (const p of list)
+    if (!roadLanes[p.road] && roads[p.road][0] <= 4 && !roads[p.road][3]) {
+      roadLanes[p.road] = { ...roadLanes[done[0].road]!, off: 0 };
+      laneFilled.add(p.road);
+    }
+}
+// 차로 수 칸은 차선에서 센 값으로 바꾼다(한 방향 길은 그 방향 차로 수, 양방향 길은 두 방향의 합)
+roads.forEach((r, i) => {
+  const L = roadLanes[i];
+  if (L) r[1] = r[2] & 1 ? L.lf : L.lf + L.lb;
+});
+{
+  // 노드마다 Σ (d·n − o)² + λ|d|² 를 가장 작게 하는 옮김 d. 고치지 않는 길도 끝 노드에서는 '옆으로 0' 조건을 낸다
+  const acc = new Map<number, number[]>(); // 노드 → [a11, a12, a22, b1, b2]
+  const add = (node: number, nx: number, nz: number, o: number) => {
+    const a = acc.get(node) ?? acc.set(node, [0, 0, 0, 0, 0]).get(node)!;
+    a[0] += nx * nx;
+    a[1] += nx * nz;
+    a[2] += nz * nz;
+    a[3] += o * nx;
+    a[4] += o * nz;
+  };
+  const normal = (P: [number, number][], k: number): [number, number] => {
+    const a = P[Math.max(0, k - 1)];
+    const b = P[Math.min(P.length - 1, k + 1)];
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return [-(b[1] - a[1]) / L, (b[0] - a[0]) / L]; // 진행 방향 오른쪽
+  };
+  roads.forEach((r, i) => {
+    const P = ptsOf(r);
+    const L = roadLanes[i];
+    if (L && !laneFilled.has(i)) {
+      const o = Math.max(-7, Math.min(7, L.off));
+      P.forEach((_, k) => add(roadNodes[i][k], ...normal(P, k), o));
+    } else if (r[0] <= 5) for (const k of [0, P.length - 1]) add(roadNodes[i][k], ...normal(P, k), 0);
+  });
+  const LAMBDA = 0.02;
+  const moved = new Map<number, [number, number]>();
+  for (const [node, [a11, a12, a22, b1, b2]] of acc) {
+    const p = a11 + LAMBDA;
+    const q = a22 + LAMBDA;
+    const det = p * q - a12 * a12;
+    let dx = (q * b1 - a12 * b2) / det;
+    let dz = (p * b2 - a12 * b1) / det;
+    const len = Math.hypot(dx, dz);
+    if (len > 7) (dx *= 7 / len), (dz *= 7 / len);
+    if (len > 0.05) moved.set(node, [dx, dz]);
+  }
+  roads.forEach((r, i) =>
+    roadNodes[i].forEach((node, k) => {
+      const d = moved.get(node);
+      if (!d) return;
+      r[6 + k * 3] += dm(d[0]);
+      r[8 + k * 3] += dm(d[1]);
+    }),
+  );
+  console.log(`차선으로 읽은 조각 ${roadLanes.filter(Boolean).length - laneFilled.size}개(+같은 길에서 채운 ${laneFilled.size}개), 옮긴 노드 ${moved.size}개`);
+}
+const laneWidth = (i: number) => {
+  const L = roadLanes[i];
+  return L && Number.isFinite(L.lw) ? Math.max(2.8, Math.min(4, L.lw)) : 3.3;
+};
+/** 조각의 찻길 폭(m): 차로 수 × 차로 폭 + 양쪽 0.5m */
+const carriageway = (i: number) => {
+  const r = roads[i];
+  const L = roadLanes[i];
+  if (L) return (L.lf + L.lb) * laneWidth(i) + 1;
+  return r[0] <= 3 ? Math.max(7, r[1] * 3.3 + 1) : r[0] === 4 ? 5.6 : 3.6;
+};
+
+// ───────────────────────── 중앙분리대 ─────────────────────────
+// 한 방향 큰길 조각마다 왼쪽에 나란히 반대로 가는 조각이 있으면 그 사이(분리대·중앙버스차로) 폭을 잰다
+const medianGap = roads.map(() => 0);
+{
+  const oneways = roads.map((_, i) => i).filter((i) => roads[i][0] <= 3 && roads[i][2] & 1 && !roads[i][3]);
+  const mids = oneways.map((i) => {
+    const P = ptsOf(roads[i]);
+    const cum = cumLen(Float32Array.from(P.flatMap(([x, z]) => [x, 0, z])));
+    const tmp = [0, 0, 0];
+    const seg = pointAt(Float32Array.from(P.flatMap(([x, z]) => [x, 0, z])), cum, cum[cum.length - 1] / 2, tmp);
+    const [a, b] = [P[seg], P[seg + 1]];
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return { i, x: tmp[0], z: tmp[2], ux: (b[0] - a[0]) / L, uz: (b[1] - a[1]) / L, P };
+  });
+  for (const m of mids) {
+    let best = Infinity;
+    let other = -1;
+    for (const o of mids) {
+      if (o.i === m.i || Math.hypot(o.x - m.x, o.z - m.z) > 120) continue;
+      for (let k = 0; k + 1 < o.P.length; k++) {
+        const [ax, az] = o.P[k];
+        const [bx, bz] = o.P[k + 1];
+        const dx = bx - ax;
+        const dz = bz - az;
+        const l2 = dx * dx + dz * dz || 1;
+        const t = Math.max(0, Math.min(1, ((m.x - ax) * dx + (m.z - az) * dz) / l2));
+        const qx = ax + dx * t - m.x;
+        const qz = az + dz * t - m.z;
+        const left = qx * m.uz - qz * m.ux; // 진행 방향 왼쪽이 +
+        const along = Math.abs(qx * m.ux + qz * m.uz);
+        const cos = (dx * m.ux + dz * m.uz) / Math.sqrt(l2);
+        if (cos > -0.85 || along > 8 || left < 2 || left > 45) continue;
+        if (left < best) (best = left), (other = o.i);
+      }
+    }
+    if (other >= 0) medianGap[m.i] = Math.max(0, best - carriageway(m.i) / 2 - carriageway(other) / 2);
+  }
+}
+
+// ───────────────────────── 횡단보도 ─────────────────────────
+// 서울시 교통안전시설물 횡단보도 면(2021-08)의 축을 쓰고, 그 뒤 생긴 횡단보도(자치구 횡단보도 점, 2026-03)는 가까운 길에 직각으로 놓는다.
+// 자치구 점 좌표는 면 자료보다 남쪽으로 약 5.3m, 서쪽으로 0.8m 밀려 있어(같은 관리번호 992개의 중앙값) 그만큼 되돌린다.
+// 횡단보도 축이 길 조각을 지나는 자리에 꼭짓점을 넣어 사람이 그 자리에서 길을 건너게 하고,
+// 교차로에서 25m 넘게 떨어진 신호 횡단보도는 그 자리에서 조각을 끊어 차가 그 앞에 서게 한다.
+interface Cross extends Rect {
+  sig: boolean | null;
+  stage: boolean;
+  /** 축이 지나는 꼭짓점(데시미터 좌표), 축 방향 순서 */
+  verts: [number, number][];
+}
+const crossings: Cross[] = [];
+{
+  const file = new URL('./raw/seoul-crosswalks.json', import.meta.url);
+  const src = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { areas: [], points: [] };
+  const rects: (Rect & { sig: boolean | null })[] = (src.areas as { ring: [number, number][]; sig: boolean | null }[])
+    .map((a) => ({ ...minRect(a.ring.map(([la, lo]) => toXZ(la, lo))), sig: a.sig }))
+    .filter((r) => r.len > 1.5 && r.wid > 0.8 && inBoard(r.cx, r.cz, 4));
+  // 조각 선분 격자
+  const CELL = 20;
+  const grid = new Map<string, [number, number][]>();
+  const gk = (x: number, z: number) => `${Math.floor(x / CELL)},${Math.floor(z / CELL)}`;
+  const walkable = (i: number) => roads[i][0] <= 5 && !roads[i][3];
+  roads.forEach((r, i) => {
+    if (!walkable(i)) return;
+    const P = ptsOf(r);
+    for (let k = 0; k + 1 < P.length; k++) {
+      const n = Math.ceil(Math.hypot(P[k + 1][0] - P[k][0], P[k + 1][1] - P[k][1]) / (CELL / 2)) + 1;
+      const keys = new Set<string>();
+      for (let s = 0; s <= n; s++) keys.add(gk(P[k][0] + ((P[k + 1][0] - P[k][0]) * s) / n, P[k][1] + ((P[k + 1][1] - P[k][1]) * s) / n));
+      for (const key of keys) (grid.get(key) ?? grid.set(key, []).get(key)!).push([i, k]);
+    }
+  });
+  const segsNear = (x: number, z: number, r: number) => {
+    const out = new Set<string>();
+    const res: [number, number][] = [];
+    for (let gx = Math.floor((x - r) / CELL); gx <= Math.floor((x + r) / CELL); gx++)
+      for (let gz = Math.floor((z - r) / CELL); gz <= Math.floor((z + r) / CELL); gz++)
+        for (const s of grid.get(`${gx},${gz}`) ?? []) {
+          const key = `${s[0]},${s[1]}`;
+          if (!out.has(key)) out.add(key), res.push(s);
+        }
+    return res;
+  };
+  // 면이 없는 새 횡단보도 점: 가까운 찻길(15m 안)에 직각으로, 폭 4m
+  for (const p of src.points as { lat: number; lon: number; sig: boolean }[]) {
+    let [x, z] = toXZ(p.lat, p.lon);
+    x += 0.81;
+    z -= 5.31;
+    if (!inBoard(x, z, 4) || rects.some((r) => Math.hypot(r.cx - x, r.cz - z) < 8)) continue;
+    let best: { d: number; x: number; z: number; ux: number; uz: number; i: number } | null = null;
+    for (const [i, k] of segsNear(x, z, 15)) {
+      if (roads[i][0] > 4) continue;
+      const P = ptsOf(roads[i]);
+      const [ax, az] = P[k];
+      const [bx, bz] = P[k + 1];
+      const dx = bx - ax;
+      const dz = bz - az;
+      const l2 = dx * dx + dz * dz || 1;
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
+      const d = Math.hypot(ax + dx * t - x, az + dz * t - z);
+      if (d < 15 && (!best || d < best.d)) best = { d, x: ax + dx * t, z: az + dz * t, ux: -dz / Math.sqrt(l2), uz: dx / Math.sqrt(l2), i };
+    }
+    if (best) rects.push({ cx: best.x, cz: best.z, ux: best.ux, uz: best.uz, len: carriageway(best.i) + 1, wid: 4, sig: p.sig });
+  }
+  const merged = mergeStages(rects);
+  // 축이 지나는 조각 자리를 모은 뒤, 조각마다 뒤쪽 선분부터 꼭짓점을 넣는다(앞쪽 번호가 밀리지 않게)
+  const inserts = new Map<number, { k: number; t: number; x: number; z: number; c: number }[]>();
+  merged.forEach((m, c) => {
+    const ext = m.len / 2 + 1.5;
+    const ax = m.cx - m.ux * ext;
+    const az = m.cz - m.uz * ext;
+    const bx = m.cx + m.ux * ext;
+    const bz = m.cz + m.uz * ext;
+    for (const [i, k] of segsNear(m.cx, m.cz, ext + 2)) {
+      const P = ptsOf(roads[i]);
+      const [px, pz] = P[k];
+      const [qx, qz] = P[k + 1];
+      const rx = qx - px;
+      const rz = qz - pz;
+      const sx = bx - ax;
+      const sz = bz - az;
+      const den = rx * sz - rz * sx;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = ((ax - px) * sz - (az - pz) * sx) / den;
+      const u = ((ax - px) * rz - (az - pz) * rx) / den;
+      if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+      (inserts.get(i) ?? inserts.set(i, []).get(i)!).push({ k, t, x: px + rx * t, z: pz + rz * t, c });
+    }
+  });
+  const verts: { u: number; x: number; z: number }[][] = merged.map(() => []);
+  let synth = -1;
+  for (const [i, list] of inserts) {
+    list.sort((a, b) => b.k - a.k || b.t - a.t);
+    const r = roads[i];
+    for (const it of list) {
+      const P = ptsOf(r);
+      let at = -1;
+      for (const v of [it.k, it.k + 1]) if (Math.hypot(P[v][0] - it.x, P[v][1] - it.z) < 0.4) at = v;
+      if (at < 0) {
+        const y = Math.round((r[7 + it.k * 3] + r[10 + it.k * 3]) / 2);
+        r.splice(9 + it.k * 3, 0, dm(it.x), y, dm(it.z));
+        roadNodes[i].splice(it.k + 1, 0, synth--);
+        at = it.k + 1;
+      }
+      const m = merged[it.c];
+      const vx = r[6 + at * 3];
+      const vz = r[8 + at * 3];
+      verts[it.c].push({ u: (vx / 10 - m.cx) * m.ux + (vz / 10 - m.cz) * m.uz, x: vx, z: vz });
+    }
+  }
+  merged.forEach((m, c) => {
+    if (!verts[c].length) return;
+    const parts = m.parts.map((p) => rects[p].sig);
+    const sig = parts.includes(true) ? true : parts.includes(false) ? false : null;
+    const vs = verts[c].sort((a, b) => a.u - b.u).filter((v, k, a) => k === 0 || v.x !== a[k - 1].x || v.z !== a[k - 1].z);
+    crossings.push({ ...m, sig, stage: m.parts.length > 1, verts: vs.map((v) => [v.x, v.z]) });
+  });
+}
+// 길 중간 신호 횡단보도에서 조각을 끊는다: 큰길(등급 3 이하) 조각이고, 큰길 교차 노드(큰길 조각 끝이 셋 넘게 모인 노드)에서 25m 넘게,
+// 조각 양 끝에서 10m 넘게 떨어진 꼭짓점
+{
+  const ends = new Map<number, number>();
+  roads.forEach((r, i) => {
+    if (r[0] > 3) return;
+    for (const n of [roadNodes[i][0], roadNodes[i][roadNodes[i].length - 1]]) ends.set(n, (ends.get(n) ?? 0) + 1);
+  });
+  const junctionXZ: [number, number][] = [];
+  roads.forEach((r, i) => {
+    if (r[0] > 3) return;
+    const P = ptsOf(r);
+    for (const k of [0, P.length - 1]) if ((ends.get(roadNodes[i][k]) ?? 0) >= 3) junctionXZ.push(P[k]);
+  });
+  const wayOf = new Map<number, number>();
+  for (const [w, list] of piecesOf) for (const p of list) wayOf.set(p.road, w);
+  let splits = 0;
+  for (const c of crossings) {
+    if (c.sig !== true) continue;
+    for (const [vx, vz] of c.verts) {
+      const x = vx / 10;
+      const z = vz / 10;
+      if (junctionXZ.some(([jx, jz]) => Math.hypot(jx - x, jz - z) < 25)) continue;
+      for (let i = 0; i < roads.length; i++) {
+        const r = roads[i];
+        if (r[0] > 3 || r[3]) continue;
+        let at = -1;
+        for (let k = 1; k < (r.length - 6) / 3 - 1; k++) if (r[6 + k * 3] === vx && r[8 + k * 3] === vz) at = k;
+        if (at < 0) continue;
+        const P = ptsOf(r);
+        const cum = cumLen(Float32Array.from(P.flatMap(([px, pz]) => [px, 0, pz])));
+        if (cum[at] < 10 || cum[cum.length - 1] - cum[at] < 10) continue;
+        const head = r.slice(0, 6);
+        const tail = [...head, ...r.slice(6 + at * 3)];
+        roads[i] = r.slice(0, 9 + at * 3);
+        roads.push(tail);
+        const nodes = roadNodes[i];
+        roadNodes[i] = nodes.slice(0, at + 1);
+        roadNodes.push(nodes.slice(at));
+        roadLanes.push(roadLanes[i]);
+        medianGap.push(medianGap[i]);
+        const w = wayOf.get(i);
+        const list = w === undefined ? undefined : piecesOf.get(w);
+        const entry = list?.find((p) => p.road === i);
+        if (list && entry) {
+          const j = roads.length - 1;
+          const v = nodes[at];
+          list.splice(list.indexOf(entry) + 1, 0, { road: j, s: v, e: entry.e, oneway: entry.oneway });
+          entry.e = v;
+          wayOf.set(j, w!);
+        }
+        splits++;
+      }
+    }
+  }
+  console.log(`횡단보도 ${crossings.length}곳(보행 신호 ${crossings.filter((c) => c.sig).length}, 두 단 ${crossings.filter((c) => c.stage).length}), 길 중간 신호 자리에서 끊은 조각 ${splits}개`);
 }
 
 // ───────────────────────── 버스 노선 ─────────────────────────
@@ -591,6 +912,47 @@ for (const e of raw('stations').filter((e) => e.tags?.railway === 'subway_entran
   }
   if (bestName) exits.push({ st: bestName, x: dm(x), z: dm(z), ref: e.tags?.ref ?? '' });
 }
+// 출구 방향: 서울 지하철 출구는 보도에 길과 나란히 놓인 계단이고, 대개 역 쪽으로 내려간다(열린 쪽이 역에서 먼 쪽).
+// 가장 가까운 찻길(30m 안)과 나란히 두고 역 쪽을 내려가는 방향으로 삼는다. 출구 자리가 찻길 위면 보도로 밀어낸다
+const exitYaw: number[] = [];
+let exitsPushed = 0;
+for (const e of exits) {
+  const x = e.x / 10;
+  const z = e.z / 10;
+  let best: { d: number; i: number; ux: number; uz: number; px: number; pz: number; side: number } | null = null;
+  roads.forEach((r, i) => {
+    if (r[0] > 4 || r[3]) return;
+    const P = ptsOf(r);
+    for (let k = 0; k + 1 < P.length; k++) {
+      const [ax, az] = P[k];
+      const [bx, bz] = P[k + 1];
+      const dx = bx - ax;
+      const dz = bz - az;
+      const L = Math.hypot(dx, dz);
+      if (L < 1) continue;
+      const t = Math.max(0, Math.min(L, ((x - ax) * dx + (z - az) * dz) / L));
+      const px = ax + (dx / L) * t;
+      const pz = az + (dz / L) * t;
+      const d = Math.hypot(px - x, pz - z) - carriageway(i) / 2; // 찻길 가장자리에서 떨어진 거리
+      if (d < 30 && (!best || d < best.d)) best = { d, i, ux: dx / L, uz: dz / L, px, pz, side: Math.sign((x - ax) * -dz + (z - az) * dx) || 1 };
+    }
+  });
+  const st = stations.find((s) => s.name === e.st)!;
+  if (!best) {
+    exitYaw.push(Math.round(Math.atan2(st.z / 10 - z, st.x / 10 - x) * 1000));
+    continue;
+  }
+  const b = best as { d: number; i: number; ux: number; uz: number; px: number; pz: number; side: number };
+  const toward = Math.sign((st.x / 10 - x) * b.ux + (st.z / 10 - z) * b.uz) || 1;
+  exitYaw.push(Math.round(Math.atan2(b.uz * toward, b.ux * toward) * 1000));
+  if (b.d < 1.6) {
+    // 출구(폭 약 3m) 가운데를 찻길 가장자리에서 2.2m 밖으로
+    const want = carriageway(b.i) / 2 + 2.2;
+    e.x = dm(b.px - b.uz * b.side * want);
+    e.z = dm(b.pz + b.ux * b.side * want);
+    exitsPushed++;
+  }
+}
 
 // ───────────────────────── 랜드마크 중심 ─────────────────────────
 const center = (pts: number[][]) => {
@@ -668,8 +1030,24 @@ const out = {
   r: roads,
   lines: lines.map(({ _ways, _len, ...l }) => l),
   stations,
-  exits,
+  exits: exits.map((e, i) => ({ ...e, yaw: exitYaw[i] })),
   landmarks,
+  // 조각마다 [진행 방향 차로, 반대 방향 차로, 차로 폭(cm), 중앙선 종류, 표시(1 오른쪽 버스차로, 2 반대쪽 버스차로, 4 중앙버스차로), 분리대 폭(dm)]. 0 = 차선 자료 없음
+  rl: roads.map((_, i) => {
+    const L = roadLanes[i];
+    if (L) return [L.lf, L.lb, Math.round(laneWidth(i) * 100), L.ctype, (L.busR ? 1 : 0) | (L.busL ? 2 : 0) | (L.medBus ? 4 : 0), dm(medianGap[i])];
+    return medianGap[i] > 0 ? [0, 0, 0, 0, 0, dm(medianGap[i])] : 0;
+  }),
+  // 횡단보도: [가운데 x, z, 건너는 방향 ×1000 (x, z), 반 길이, 폭, 표시(1 보행 신호, 2 신호 모름, 4 두 단), 축이 지나는 꼭짓점 x, z, ...]
+  xw: crossings.map((c) => [dm(c.cx), dm(c.cz), Math.round(c.ux * 1000), Math.round(c.uz * 1000), dm(c.len / 2), dm(c.wid), (c.sig ? 1 : 0) | (c.sig === null ? 2 : 0) | (c.stage ? 4 : 0), ...c.verts.flat()]),
+  // 정지선(서울시 차선 자료의 일시정지선) [x0, z0, x1, z1, ...]
+  stop: tgis
+    .filter((l) => l.k === '004')
+    .flatMap((l) => {
+      const P = l.p.map(([a, b]) => toXZ(a, b));
+      if (!P.every(([x, z]) => inBoard(x, z, 2))) return [];
+      return P.slice(0, -1).flatMap(([x, z], k) => [dm(x), dm(z), dm(P[k + 1][0]), dm(P[k + 1][1])]);
+    }),
   trees,
   buses: busRuns,
   campus: campusRing.flatMap(([x, z]) => [dm(x), dm(z)]),
@@ -690,5 +1068,6 @@ for (const l of lines) console.log(`${l.name}: 선로 조각 ${l._ways}개 → $
 console.log(`버스 노선 ${busRuns.length}개(${[...new Set(busRuns.map((b) => b.ref))].length}개 번호), 정류장 ${busRuns.reduce((n, b) => n + b.stops.length / 2, 0)}곳(노선별 합), 버스가 지나는 조각 ${roads.filter((r) => r[2] & 2).length}개`);
 console.log(`학교 ${schoolSites.length}곳(${schoolSites.map((s) => s.name).join(', ')}), 학교 건물 ${buildings.filter((b) => b[1] === 6).length}동`);
 console.log(`이름 랜드마크 건물 ${NAMED_LM.map(([re, n]) => `${re.source.slice(0, 6)}:${buildings.filter((b) => b[1] === n).length}`).join(' ')}, 캠퍼스 고리 ${campusRing.length}점, 물길 ${river.length / 2}점, 피크닉 ${picnic.length / 2}곳`);
+console.log(`출구 ${exits.length}곳 가운데 찻길 위에 있어 보도로 밀어낸 곳 ${exitsPushed}곳`);
 console.log(`랜드마크 ${landmarks.map((l) => `${l.id}(${l.x / 10},${l.z / 10})`).join(' ')}`);
 console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB`);

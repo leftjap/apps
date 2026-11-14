@@ -28,7 +28,7 @@ import { makeCatReactor } from './sim/catReact.ts';
 import { CAT_SPOTS, catAt, catName, feeders, makeCats, PERSONALITY_KO, type CatState } from './sim/cats.ts';
 import { makeClock } from './sim/clock.ts';
 import { sunAngles } from './sim/curves.ts';
-import { buildCarGraph, buildWalkGraph, clearWalkFromCars, laneTest } from './sim/graph.ts';
+import { buildCarGraph, buildWalkGraph, clearWalkFromCars, crossLinks, laneTest } from './sim/graph.ts';
 import { makeSimProvider } from './sim/provider.ts';
 import { makeLiveProvider } from './data/live.ts';
 import { makeLiveSubway } from './data/subway.ts';
@@ -79,8 +79,11 @@ const walkGraph = buildWalkGraph(board.roads);
 const carGraph = buildCarGraph(board.roads);
 // 지도 자료에서 차로 위에 그려진 보행로·보도 쪽으로는 걷지 않는다
 clearWalkFromCars(walkGraph, carGraph);
-const signals = makeSignals(carGraph);
-const cars = makeCars(carGraph, provider, 11, MAX_CARS, makeBusRoutes(board.buses, carGraph), signals);
+// 신호는 보행 신호 횡단보도가 있는 교차로·길 중간 횡단보도에 두고, 정지선은 서울시 차선 자료의 정지선 자리를 쓴다
+const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
+// 횡단보도마다 지금 사람이 건너고 있는 자리(축 2m 칸 비트): 차는 자기 차로 앞에 사람이 있으면 서고, 사람은 신호 없는 횡단보도에서 차가 다가오면 기다린다
+const crossBusy = new Uint32Array(board.crosswalks.length);
+const cars = makeCars(carGraph, provider, 11, MAX_CARS, makeBusRoutes(board.buses, carGraph), signals, { list: board.crosswalks, busy: crossBusy });
 // 차는 보는 곳(카메라가 겨눈 자리 둘레) 위주로 실제 밀도에 가깝게 채우고, 화면 밖에서만 놓고 뺀다
 const onScreenP = new THREE.Vector3();
 const onScreen = (x: number, z: number) => {
@@ -122,6 +125,7 @@ const walkers = makeWalkers(
   signals,
   laneTest(carGraph),
   laneTest(carGraph.filter((e) => e.cls <= 3), 1.2),
+  { links: crossLinks(walkGraph, board.crosswalks), busy: crossBusy, traffic: (l) => cars.approaching(l.xw) },
 );
 // 처음부터 길에 사람이 있도록 5분쯤 미리 돌려 둔다(신호가 바뀌도록 시각도 함께 흘린다)
 for (let i = 0; i < 600; i++) walkers.step(0.5, { ...start, tod: (start.tod - 300 + i * 0.5 + 86400) % 86400 });
@@ -129,7 +133,19 @@ const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
 const reactor = makeCatReactor(cats);
 
 // ── 장면 ──
-const roads = makeRoads(board.roads, LM_COLORS);
+// 길 조각 양 끝에서 차선을 긋지 않을 거리: 차의 교차로 상자와 신호 정지선 앞(교차로 안에는 차선이 없다)
+const clears = board.roads.map(() => [0, 0] as [number, number]);
+for (const e of carGraph) {
+  const jn = signals.junctions;
+  const ap = signals.approach.get(e.id);
+  const atEnd = Math.max(jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0, ap ? ap.setback : 0);
+  const atStart = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
+  const c = clears[e.road];
+  // 길 조각을 거슬러 가는 구간은 구간 끝이 조각의 시작이다
+  c[e.rev ? 0 : 1] = Math.max(c[e.rev ? 0 : 1], atEnd);
+  c[e.rev ? 1 : 0] = Math.max(c[e.rev ? 1 : 0], atStart);
+}
+const roads = makeRoads(board.roads, LM_COLORS, (i) => clears[i]);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);
@@ -138,7 +154,7 @@ const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
-const signalMarks = makeSignalMarks(carGraph, signals);
+const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.stopLines);
 const flow = makeFlow(carGraph);
 flow.update(provider, start);
 const trees = makeTrees(board.trees, seasonOf(start.doy));

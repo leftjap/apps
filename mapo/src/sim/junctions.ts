@@ -4,12 +4,12 @@
 // 경로끼리 곡선이 2.2m 안으로 다가오거나, 같은 진입 구간에서 다른 쪽으로 나가거나, 같은 구간을 함께 쓰면 '부딪는 경로'로 본다.
 // 차는 부딪는 경로로 교차로에 들어간 차가 있으면 진입 구간 끝의 상자 앞에서 기다린다.
 import { pointAt } from '../poly.ts';
-import { LANE, type Edge } from './graph.ts';
+import type { Edge } from './graph.ts';
 
 const nodeKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
 
 /** 길 가운데선에서 길 가장자리까지(m) */
-const halfWidth = (e: Edge) => (e.off0 > 0 ? e.lanes * LANE : (e.lanes * LANE) / 2);
+const halfWidth = (e: Edge) => (e.off0 > 0 ? e.lanes * e.lw : (e.lanes * e.lw) / 2);
 
 export interface Junctions {
   /** 구간 id → 그 구간 끝 노드가 속한 교차로 번호(갈림이 없는 노드면 −1) */
@@ -182,8 +182,8 @@ export function makeJunctions(edges: Edge[]): Junctions {
     return { x: P[0] - Math.sin(h) * off, y: P[1], z: P[2] + Math.cos(h) * off, h };
   };
   function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[]) {
-    const p = lanePoint(a, a.len - rIn[a.id], a.off0 + la * LANE);
-    const q = lanePoint(b, rOut[b.id], b.off0 + lb * LANE);
+    const p = lanePoint(a, a.len - rIn[a.id], a.off0 + la * a.lw);
+    const q = lanePoint(b, rOut[b.id], b.off0 + lb * b.lw);
     // 3차 곡선: 들어온 방향으로 나가 나갈 방향으로 들어간다. 조절점을 두 끝 사이 거리의 1/3 만큼만 뻗으므로
     // 거의 나란히 합쳐지는 길에서도 곡선이 나갈 자리 너머로 튀어나가지 않는다
     const span = Math.hypot(q.x - p.x, q.z - p.z) / 3;
@@ -224,7 +224,7 @@ export function makeJunctions(edges: Edge[]): Junctions {
         // 묶인 교차로 안의 구간: 두 상자 사이의 곧은 부분
         if (k + 2 < path.length)
           for (let s = rOut[b.id]; s < b.len - rIn[b.id]; s += 1) {
-            const q = lanePoint(b, s, b.off0 + lb * LANE);
+            const q = lanePoint(b, s, b.off0 + lb * b.lw);
             out.push(q.x, q.z);
           }
         la = lb;
