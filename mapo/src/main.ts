@@ -34,7 +34,7 @@ import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
 import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
-import { makeWalkers, underpasses, ZONES } from './sim/walkers.ts';
+import { makeWalkers, underpasses, walkerScale, ZONES } from './sim/walkers.ts';
 import { makeHud, type Card, type CardLine, type Layer, type SeasonPick, type Weather } from './ui/hud.ts';
 import { makeTags } from './ui/tags.ts';
 import './ui/hud.css';
@@ -45,7 +45,8 @@ const canvas = document.querySelector<HTMLCanvasElement>('#view')!;
 const sky = document.querySelector<HTMLElement>('#sky')!;
 const stage = document.querySelector<HTMLElement>('#stage')!;
 const small = matchMedia('(max-width: 760px)').matches;
-const MAX_PEOPLE = small ? 900 : 2500;
+const MAX_PEOPLE = small ? 2000 : 8000;
+const MAX_CARS = small ? 1000 : 2500;
 
 const view = makeView(canvas);
 const clock = makeClock(location.search);
@@ -62,7 +63,17 @@ const start = clock.now();
 const walkGraph = buildWalkGraph(board.roads);
 const carGraph = buildCarGraph(board.roads);
 const signals = makeSignals(carGraph);
-const cars = makeCars(carGraph, provider, 11, small ? 900 : 1500, makeBusRoutes(board.buses, carGraph), signals);
+const cars = makeCars(carGraph, provider, 11, MAX_CARS, makeBusRoutes(board.buses, carGraph), signals);
+// 차는 보는 곳(카메라가 겨눈 자리 둘레) 위주로 실제 밀도에 가깝게 채우고, 화면 밖에서만 놓고 뺀다
+const onScreenP = new THREE.Vector3();
+const onScreen = (x: number, z: number) => {
+  onScreenP.set(x, 0, z).project(view.camera);
+  return onScreenP.z < 1 && Math.abs(onScreenP.x) < 1.15 && Math.abs(onScreenP.y) < 1.15;
+};
+const focusR = () => Math.min(2200, Math.max(250, view.viewDist() * 1.2));
+let focusAt = { x: view.controls.target.x, z: view.controls.target.z, r: focusR(), age: 0 };
+view.camera.updateMatrixWorld();
+cars.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
 cars.fill(cars.target(start));
 cars.fillBuses(start);
 // 사람은 역 출구와 버스 정류장에서만 나타나고 사라진다
@@ -74,6 +85,18 @@ const walkers = makeWalkers(
     ...stops.portals,
     // 망원한강공원에는 역 출구도 정류장도 없으므로, 강변북로 밑 나들목으로 들고 난다
     ...underpasses(board.roads, ...ZONES.mangwon).map(([x, z]) => ({ kind: 'exit' as const, key: '망원나들목', x, z })),
+    // 구역 안 건물(바닥 40㎡ 넘는 것)의 출입구: 구역 인구 대부분은 가게·집 안에 있다가 드나든다
+    ...board.buildings.flatMap((b) => {
+      let x = 0;
+      let z = 0;
+      for (let k = 0; k < b.pts.length; k += 2) (x += b.pts[k]), (z += b.pts[k + 1]);
+      x /= b.pts.length / 2;
+      z /= b.pts.length / 2;
+      let a = 0;
+      for (let i = 0, j = b.pts.length - 2; i < b.pts.length; j = i, i += 2) a += b.pts[j] * b.pts[i + 1] - b.pts[i] * b.pts[j + 1];
+      const inZone = Object.values(ZONES).some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r);
+      return inZone && Math.abs(a) / 2 > 40 ? [{ kind: 'door' as const, key: '', x, z, poly: b.pts, h: b.h }] : [];
+    }),
   ],
   provider,
   5,
@@ -93,7 +116,7 @@ const rails = makeRails(board.lines);
 const stations = makeStations(board);
 const schools = makeSchools(board);
 const rings = makeRings(board.exits);
-const carMeshes = makeCarMeshes(small ? 900 : 1500);
+const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
 const signalMarks = makeSignalMarks(carGraph, signals);
@@ -590,6 +613,16 @@ function frame(t: number) {
     if (st) ambience.train(1 - Math.hypot(st.x - target.x, st.z - target.z) / 1600);
   }
   prevTod = now.tod;
+  // 보는 곳이 바뀌면(1초에 한 번 살펴서, 겨눈 자리가 반지름의 1/5 넘게 옮겨졌거나 거리가 1/5 넘게 바뀌었으면) 초점을 다시 정한다
+  focusAt.age += dt;
+  if (focusAt.age > 1) {
+    focusAt.age = 0;
+    const r = focusR();
+    if (Math.hypot(target.x - focusAt.x, target.z - focusAt.z) > focusAt.r * 0.2 || Math.abs(r - focusAt.r) > focusAt.r * 0.2) {
+      focusAt = { x: target.x, z: target.z, r, age: 0 };
+      cars.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
+    }
+  }
   cars.step(dt, now);
   // 버스가 정류장에 서면 기다리던 사람이 타고 몇 명이 내린다
   for (const [r, k, i] of cars.dwells) {
@@ -663,6 +696,7 @@ function frame(t: number) {
     hud.setClock(now, clock.live);
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));
+    hud.setScale(walkerScale(provider, now, MAX_PEOPLE), cars.scale()[0]);
     flow.update(provider, now);
     refreshCard();
   }

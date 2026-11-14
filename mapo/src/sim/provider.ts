@@ -1,6 +1,7 @@
 // 시뮬레이션에 들어가는 바깥 자료. 1단계는 시간대 곡선으로 만들고, 2단계에서 이 구현만 실데이터로 바꾼다.
 import type { Now } from './clock.ts';
 import { clamp01, commute, daytime, inService, nightlife } from './curves.ts';
+import { ZONES } from './walkers.ts';
 
 export const LEVELS = ['여유', '보통', '약간 붐빔', '붐빔'] as const;
 
@@ -23,8 +24,8 @@ export interface DataProvider {
   mode: 'sim' | 'live';
   /** 구역별 추정 인구와 혼잡 단계 */
   areas(now: Now): AreaStatus[];
-  /** 도로 구간의 속도 비율(자유 속도 대비 0.15~1). cls 는 도로 등급, edgeKey 는 구간마다 다른 정수 */
-  roadSpeed(now: Now, cls: number, edgeKey: number): number;
+  /** 도로 구간의 속도 비율(자유 속도 대비 0.15~1). cls 는 도로 등급, edgeKey 는 구간마다 다른 정수, (x, z)는 구간 가운데 */
+  roadSpeed(now: Now, cls: number, edgeKey: number, x?: number, z?: number): number;
   /** 역의 최근 5분 하차 인원 */
   alighting(now: Now, station: string): number;
 }
@@ -86,6 +87,23 @@ export function areaAges(m: AreaModel, now: Now): number[] {
 }
 
 export function makeSimProvider(): DataProvider {
+  // 같은 시각에는 장소별 혼잡 정도를 한 번만 계산한다(도로 속도는 구간마다 불린다)
+  let at = NaN;
+  const crowd: Record<string, number> = {};
+  /** (x, z) 둘레 장소의 혼잡 정도: 장소 안이면 그대로, 장소 가장자리에서 250m 까지 줄어든다 */
+  function crowdNear(now: Now, x: number, z: number) {
+    if (now.tod + now.dow * 86400 !== at) {
+      at = now.tod + now.dow * 86400;
+      for (const m of AREAS) crowd[m.id] = areaPopulation(m, now) / m.full;
+    }
+    let c = 0;
+    for (const id in ZONES) {
+      const [cx, cz, r] = ZONES[id];
+      const d = Math.hypot(x - cx, z - cz);
+      c = Math.max(c, (crowd[id] ?? 0) * (d < r ? 1 : Math.max(0, 1 - (d - r) / 250)));
+    }
+    return Math.min(1.2, c);
+  }
   return {
     mode: 'sim',
     areas(now) {
@@ -97,10 +115,12 @@ export function makeSimProvider(): DataProvider {
         return { id: m.id, name: m.name, level, label: LEVELS[level], pplMin: lo, pplMax: lo + Math.max(100, Math.round((ppl * 0.08) / 100) * 100), crowd: r, ages: areaAges(m, now), female: m.female };
       });
     },
-    roadSpeed(now, cls, edgeKey) {
+    roadSpeed(now, cls, edgeKey, x, z) {
       const weight = cls <= 1 ? 0.6 : cls === 2 ? 0.45 : 0.28;
       const jam = commute(now.tod) * (isWeekend(now.dow) ? 0.45 : 1) + nightlife(now.tod) * 0.25 + daytime(now.tod) * 0.2;
-      return Math.max(0.15, 1 - clamp01(jam) * weight * (0.55 + 0.9 * hash(edgeKey)));
+      // 사람이 붐비는 장소 둘레 길은 길을 건너는 사람과 서고 떠나는 차에 막혀 느리다(주말 저녁 홍대·연남)
+      const slow = x === undefined || z === undefined ? 0 : 0.45 * crowdNear(now, x, z) * (0.6 + 0.8 * hash(edgeKey + 17));
+      return Math.max(0.15, 1 - clamp01(jam) * weight * (0.55 + 0.9 * hash(edgeKey)) - slow);
     },
     alighting(now, station) {
       if (!inService(now.tod)) return 0;

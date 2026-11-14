@@ -184,31 +184,20 @@ export function makeJunctions(edges: Edge[]): Junctions {
   function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[]) {
     const p = lanePoint(a, a.len - rIn[a.id], a.off0 + la * LANE);
     const q = lanePoint(b, rOut[b.id], b.off0 + lb * LANE);
-    // 조절점: 들어온 방향으로 뻗은 선과 나갈 방향을 거슬러 뻗은 선이 만나는 곳(거의 나란하면 가운데)
-    const cx0 = Math.cos(p.h);
-    const cz0 = Math.sin(p.h);
-    const cx1 = Math.cos(q.h);
-    const cz1 = Math.sin(q.h);
-    const det = cx0 * cz1 - cz0 * cx1;
-    const span = Math.hypot(q.x - p.x, q.z - p.z);
-    let kx = (p.x + q.x) / 2;
-    let kz = (p.z + q.z) / 2;
-    if (Math.abs(det) > 0.05) {
-      const t = ((q.x - p.x) * cz1 - (q.z - p.z) * cx1) / det;
-      if (t > 0 && t < span * 1.5) {
-        kx = p.x + cx0 * t;
-        kz = p.z + cz0 * t;
-      }
-    }
+    // 3차 곡선: 들어온 방향으로 나가 나갈 방향으로 들어간다. 조절점을 두 끝 사이 거리의 1/3 만큼만 뻗으므로
+    // 거의 나란히 합쳐지는 길에서도 곡선이 나갈 자리 너머로 튀어나가지 않는다
+    const span = Math.hypot(q.x - p.x, q.z - p.z) / 3;
+    const k1x = p.x + Math.cos(p.h) * span;
+    const k1z = p.z + Math.sin(p.h) * span;
+    const k2x = q.x - Math.cos(q.h) * span;
+    const k2z = q.z - Math.sin(q.h) * span;
     const u = Math.max(0, Math.min(1, d / Math.max(0.1, rIn[a.id] + rOut[b.id])));
-    const w0 = (1 - u) * (1 - u);
-    const w1 = 2 * u * (1 - u);
-    const w2 = u * u;
-    out[0] = w0 * p.x + w1 * kx + w2 * q.x;
+    const m = 1 - u;
+    out[0] = m * m * m * p.x + 3 * m * m * u * k1x + 3 * m * u * u * k2x + u * u * u * q.x;
     out[1] = p.y + (q.y - p.y) * u;
-    out[2] = w0 * p.z + w1 * kz + w2 * q.z;
-    const dx = 2 * (1 - u) * (kx - p.x) + 2 * u * (q.x - kx);
-    const dz = 2 * (1 - u) * (kz - p.z) + 2 * u * (q.z - kz);
+    out[2] = m * m * m * p.z + 3 * m * m * u * k1z + 3 * m * u * u * k2z + u * u * u * q.z;
+    const dx = 3 * m * m * (k1x - p.x) + 6 * m * u * (k2x - k1x) + 3 * u * u * (q.x - k2x);
+    const dz = 3 * m * m * (k1z - p.z) + 6 * m * u * (k2z - k1z) + 3 * u * u * (q.z - k2z);
     out[3] = dx * dx + dz * dz > 1e-6 ? Math.atan2(dz, dx) : p.h;
   }
 

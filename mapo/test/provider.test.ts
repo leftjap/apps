@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZONES } from '../src/sim/walkers.ts';
 import { LEVELS, makeSimProvider } from '../src/sim/provider.ts';
 
 const p = makeSimProvider();
@@ -39,6 +40,18 @@ describe('시뮬레이션 자료', () => {
     expect(p.roadSpeed(at(8.5, 2), 1, 7)).toBeLessThan(p.roadSpeed(at(3, 2), 1, 7) - 0.2);
     expect(p.roadSpeed(at(8.5, 2), 1, 7)).toBeGreaterThanOrEqual(0.15);
     expect(p.roadSpeed(at(3, 2), 1, 7)).toBeLessThanOrEqual(1);
+  });
+  it('사람이 붐비는 장소 둘레 길은 같은 길이라도 차가 느리고, 장소에서 멀면 그대로다', () => {
+    const sat = { tod: 17 * 3600 + 300, dow: 6, doy: 318 };
+    const [hx, hz] = ZONES.yeonnam;
+    let near = 0;
+    let far = 0;
+    for (let k = 0; k < 40; k++) {
+      near += p.roadSpeed(sat, 3, k, hx, hz);
+      far += p.roadSpeed(sat, 3, k, -1700, -1700);
+    }
+    expect(near / 40).toBeLessThan(far / 40 - 0.2);
+    expect(p.roadSpeed(sat, 3, 7, -1700, -1700)).toBe(p.roadSpeed(sat, 3, 7));
   });
   it('하차 인원: 퇴근 시간 홍대입구가 한낮보다 많고 운행 시간 밖은 0', () => {
     expect(p.alighting(at(18.5, 2), '홍대입구')).toBeGreaterThan(p.alighting(at(14, 2), '홍대입구'));

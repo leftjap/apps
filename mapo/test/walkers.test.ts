@@ -66,7 +66,8 @@ describe('보행자', () => {
   });
   it('목표 인원: 금요일 21시가 화요일 4시보다 훨씬 많다', () => {
     const p = makeSimProvider();
-    expect(walkerTarget(p, at(21, 5), 1500)).toBeGreaterThan(walkerTarget(p, at(4, 2), 1500) * 5);
+    // 상한에 닿지 않게 넉넉히 두고 시간대 차이만 본다(상한은 crowd.test.ts 에서 따로 본다)
+    expect(walkerTarget(p, at(21, 5), 1e6)).toBeGreaterThan(walkerTarget(p, at(4, 2), 1e6) * 5);
   });
   it('최대 인원을 넘지 않는다', () => {
     const sim = makeWalkers(buildWalkGraph(lanes()), exits, fixedProvider(1, 500000), 3, 50);

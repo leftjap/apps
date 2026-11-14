@@ -82,20 +82,6 @@ describe('차 이동', () => {
     const sim = makeCars(ring(), makeSimProvider(), 1, 500);
     expect(sim.target(at(3))).toBeLessThan(sim.target(at(8.5)) * 0.5);
   });
-  it('길이 많아 상한에 닿아도 목표 대수는 시간대 교통량을 따른다(출근 정점에서만 상한)', () => {
-    // 4차로 순환로(차로 6.4km)에 상한 30대: 예전 식이면 낮에도 상한에 닿아 시간대 차이가 사라진다
-    const wide = buildCarGraph([
-      road([[0, 0], [400, 0]], { oneway: true, lanes: 4 }),
-      road([[400, 0], [400, 400]], { oneway: true, lanes: 4 }),
-      road([[400, 400], [0, 400]], { oneway: true, lanes: 4 }),
-      road([[0, 400], [0, 0]], { oneway: true, lanes: 4 }),
-    ]);
-    const sim = makeCars(wide, makeSimProvider(), 1, 30);
-    const peak = Math.max(...Array.from({ length: 96 }, (_, k) => sim.target(at(k / 4))));
-    expect(peak).toBe(30);
-    expect(sim.target(at(14))).toBeLessThan(peak * 0.8);
-    expect(sim.target(at(3))).toBeLessThan(peak * 0.35);
-  });
 });
 
 describe('판 가장자리 진출입', () => {

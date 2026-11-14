@@ -118,10 +118,10 @@ export function makeHud(ev: HudEvents) {
          <section class="clock"><div class="time" data-time>--:--</div><div class="date" data-date></div></section>
          <section class="presets">${presetButtons}${tourButtons}</section>
          <section class="slot" data-card-slot></section>
-         <section class="areas"><h2>지금 붐비는 곳</h2><ol data-areas></ol></section>
+         <section class="areas"><h2>지금 붐비는 곳</h2><ol data-areas></ol><p class="scale" data-scale></p></section>
          <section class="legend"><h2>도로 흐름</h2><p>${FLOW_LEVELS.map(([name, c]) => `<span><i style="--c:${c}"></i>${name}</span>`).join('')}</p></section>
          <section class="about">
-           <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 화면의 사람 밀도는 구역마다 혼잡도(그 장소의 붐빔 기준 인원 대비 지금 인원)를 따르며, 실제 인원을 한 명씩 그린 것은 아닙니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다.</p>
+           <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 화면의 사람은 구역 인구 가운데 밖에 나와 걷는 사람(상업지 12%, 한강공원 30%로 가정)이고, 그릴 수 있는 수를 넘으면 모든 구역을 같은 배율로 줄입니다. 차는 도로 흐름 속도로 정한 대수를 보는 곳 둘레부터 채웁니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다.</p>
            <p>지도 자료 © OpenStreetMap contributors. 일부 건물 © Overture Maps Foundation, Qian Shi 외(2023) CC BY 4.0.</p>
          </section>
        </div>
@@ -193,6 +193,11 @@ export function makeHud(ev: HudEvents) {
     },
     setSound(on: boolean) {
       for (const b of qa('[data-sound]')) (b.classList.toggle('on', on), (b.textContent = on ? '소리 끄기' : '소리 켜기'));
+    },
+    /** 화면 1명·1대가 실제 몇 명·몇 대인가(차는 보는 곳 둘레 기준) */
+    setScale(people: number, cars: number) {
+      const n = (v: number) => (v < 1.05 ? '1' : v < 10 ? v.toFixed(1) : String(Math.round(v)));
+      q('[data-scale]').textContent = `화면 사람 1명 ≈ 실제 ${n(people)}명 · 보는 곳 차 1대 ≈ 실제 ${n(cars)}대`;
     },
     setAreas(areas: AreaStatus[]) {
       const sorted = [...areas].sort((a, b) => b.level - a.level || b.pplMin - a.pplMin).slice(0, 5);

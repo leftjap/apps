@@ -32,12 +32,14 @@ export interface Walkers {
   female: Uint8Array;
 }
 
-/** 사람이 들고 나는 곳. 역 출구는 key 가 역 이름, 정류장은 정류장 열쇠 */
+/** 사람이 들고 나는 곳. 역 출구는 key 가 역 이름, 정류장은 정류장 열쇠. 건물 출입구는 바닥 외곽선 [x,z, ...]과 높이(m)를 함께 준다 */
 export interface Portal {
-  kind: 'exit' | 'stop';
+  kind: 'exit' | 'stop' | 'door';
   key: string;
   x: number;
   z: number;
+  poly?: Float32Array;
+  h?: number;
 }
 
 /** 구역 id → 판 위의 중심과 반지름(m). 실시간 도시데이터 장소의 대략적인 범위. 겹치는 곳은 작은 구역이 먼저다 */
@@ -49,21 +51,29 @@ export const ZONES: Record<string, [number, number, number]> = {
   hongdae: [350, -250, 520],
 };
 const ZONE_IDS = Object.keys(ZONES);
-const ZONE_AREA = ZONE_IDS.map((id) => Math.PI * ZONES[id][2] ** 2);
-const AREA_SUM = ZONE_AREA.reduce((a, b) => a + b, 0);
 
-/** 밖에 나와 걷는 사람의 비율(구역 인구 가운데). 새벽에는 대부분 실내에 있다 */
+/** 하루 가운데 밖에 나와 다니는 정도(0~1). 새벽에는 대부분 실내에 있다 */
 const outdoors = (now: Now) => clamp01(0.05 + 0.95 * Math.max(daytime(now.tod), nightlife(now.tod), 0.8 * commute(now.tod)));
+/** 구역 인구 가운데 밖에 나와 걷는 사람 비율(가정한 값). 가게·집 안에 있는 사람이 대부분인 상업지와 달리 공원은 대부분 밖에 있다 */
+const OUT_SHARE: Record<string, number> = { mangwon: 0.3 };
 
-/** 구역마다 지금 화면에 있어야 할 사람 수. 구역 넓이 × 혼잡 정도에 비례하므로 붐비는 구역일수록 빽빽하다.
- *  모든 구역이 '붐빔' 기준을 20% 넘을 때 상한이 찬다. 마지막 칸은 구역 밖 출구·정류장 둘레의 사람(구역 인원의 12%) */
-export function zoneTargets(provider: DataProvider, now: Now, max: number): number[] {
+/** 구역마다 지금 밖에 나와 걷는 실제 사람 수. 마지막 칸은 구역 밖 출구·정류장 둘레의 사람(구역 인원의 12%) */
+function outside(provider: DataProvider, now: Now): number[] {
   const act = outdoors(now);
-  const crowd: Record<string, number> = {};
-  for (const a of provider.areas(now)) crowd[a.id] = a.crowd;
-  const t = ZONE_IDS.map((id, k) => max * 0.75 * (ZONE_AREA[k] / AREA_SUM) * Math.min(1.2, crowd[id] ?? 0) * act);
+  const pop: Record<string, number> = {};
+  for (const a of provider.areas(now)) pop[a.id] = (a.pplMin + a.pplMax) / 2;
+  const t = ZONE_IDS.map((id) => (pop[id] ?? 0) * (OUT_SHARE[id] ?? 0.12) * act);
   t.push(t.reduce((a, b) => a + b, 0) * 0.12);
   return t;
+}
+/** 화면 1명이 실제 몇 명인가. 상한 안이면 1, 넘치면 모든 구역을 같은 배율로 줄인다 */
+export function walkerScale(provider: DataProvider, now: Now, max: number): number {
+  return Math.max(1, outside(provider, now).reduce((a, b) => a + b, 0) / max);
+}
+/** 구역마다 지금 화면에 있어야 할 사람 수: 구역 인구에 비례하므로 인구 밀도가 높은 구역일수록 빽빽하다 */
+export function zoneTargets(provider: DataProvider, now: Now, max: number): number[] {
+  const k = walkerScale(provider, now, max);
+  return outside(provider, now).map((v) => v / k);
 }
 
 /** 지금 화면에 있어야 할 보행자 수 */
@@ -108,6 +118,9 @@ interface Dock extends Portal {
   side: number;
   /** 구역 번호(ZONE_IDS 순서, 구역 밖이면 ZONE_IDS.length) */
   zone: number;
+  /** 건물 출입구: 건물 벽 위 문 자리와 드나드는 사람의 몫(바닥 넓이 × 층수) */
+  door?: [number, number];
+  weight?: number;
 }
 
 const WANDER = 0;
@@ -118,6 +131,31 @@ const BOARDING = 4; // 버스 문으로 걸어가는 중
 const MAX_WAIT = 300; // 정류장에서 버스를 기다리는 가장 긴 시간(초)
 const QUEUE_GAP = 1.5; // 정류장 줄에서 앞뒤 사람 사이(m). 사람을 실제보다 키워 그리므로 넉넉하게 둔다
 const ALIGHT_T = 1.6; // 버스 문에서 보도까지 걸어 나오는 시간(초)
+
+/** 외곽선 [x,z, ...] 넓이 */
+function polyArea(p: Float32Array): number {
+  let a = 0;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) a += p[j] * p[i + 1] - p[i] * p[j + 1];
+  return Math.abs(a) / 2;
+}
+/** 외곽선 [x,z, ...] 위에서 (x, z)에 가장 가까운 점 */
+function nearestOnPoly(p: Float32Array, x: number, z: number): [number, number] {
+  let best: [number, number] = [p[0], p[1]];
+  let bd = Infinity;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const ax = p[j];
+    const az = p[j + 1];
+    const dx = p[i] - ax;
+    const dz = p[i + 1] - az;
+    const l2 = dx * dx + dz * dz || 1;
+    const u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
+    const qx = ax + dx * u;
+    const qz = az + dz * u;
+    const d = Math.hypot(qx - x, qz - z);
+    if (d < bd) (bd = d), (best = [qx, qz]);
+  }
+  return best;
+}
 
 /** 작은 이진 힙(거리 순) */
 function heap() {
@@ -218,6 +256,14 @@ export function makeWalkers(
   const ox = new Float32Array(max); // 버스에서 막 내린 사람: 보도 자리에서 버스 문까지(줄어들어 0이 된다)
   const oz = new Float32Array(max);
   const alightT = new Float32Array(max);
+  const dodge = new Float32Array(max); // 앞사람을 비켜 옆으로 옮긴 거리(m, off 와 같은 방향)
+  const bandLo = new Float32Array(max); // 지금 걷는 띠(보도·골목)의 안쪽·바깥쪽 끝(중심선에서 m)
+  const bandHi = new Float32Array(max);
+  // 가까운 사람 찾기용 격자(1.5m 칸을 해시로 묶는다)
+  const GH = 32768;
+  const gridHead = new Int32Array(GH).fill(-1);
+  const gridNext = new Int32Array(max);
+  const cellKey = (cx: number, cz: number) => ((Math.imul(cx, 73856093) ^ Math.imul(cz, 19349663)) >>> 0) & (GH - 1);
 
   const pos = (n: number): [number, number] => [g.nx[n * 2], g.nx[n * 2 + 1]];
   const zoneOf = (x: number, z: number) => {
@@ -258,18 +304,31 @@ export function makeWalkers(
           best = { ...p, a, b, t: tt, len, side: right >= 0 ? 1 : -1, zone: zoneOf(p.x, p.z) };
         }
       }
-    if (best) docks.push(best);
+    if (!best) continue;
+    if (p.poly) {
+      // 건물 출입구: 보도 자리에서 가장 가까운 벽 위 점이 문이다. 길에서 20m 넘게 떨어진 건물은 빼고, 드나드는 몫은 바닥 넓이 × 층수
+      docks.push(best);
+      const s = dockPoint(docks.length - 1);
+      docks.pop();
+      const door = nearestOnPoly(p.poly, s.x, s.z);
+      if (Math.hypot(door[0] - s.x, door[1] - s.z) > 20) continue;
+      best.door = door;
+      best.weight = polyArea(p.poly) * Math.max(1, (p.h ?? 6) / 3);
+    }
+    docks.push(best);
   }
 
-  // 구역별 출구·정류장(정류장은 출구의 절반만 쓴다)
+  // 구역별로 사람이 나오는 곳: 건물 출입구와 역 출구(와 나들목). 건물이 있는 구역에서는 열에 셋을 역 출구에서 내보낸다.
+  // 정류장에서는 버스가 섰을 때 내리는 사람으로 모자란 인원을 채운다
   const docksIn: number[][] = Array.from({ length: ZONE_IDS.length + 1 }, () => []);
   const dockW: number[][] = Array.from({ length: ZONE_IDS.length + 1 }, () => []);
-  // 평소에 생기는 사람은 역 출구(와 나들목)에서만 나온다. 정류장에서는 버스가 섰을 때 내리는 사람으로 모자란 인원을 채운다
-  docks.forEach((d, k) => {
-    if (d.kind !== 'exit') return;
-    docksIn[d.zone].push(k);
-    dockW[d.zone].push(1);
-  });
+  for (let z = 0; z <= ZONE_IDS.length; z++) {
+    const exits = docks.map((d, k) => (d.zone === z && d.kind === 'exit' ? k : -1)).filter((k) => k >= 0);
+    const doors = docks.map((d, k) => (d.zone === z && d.kind === 'door' ? k : -1)).filter((k) => k >= 0);
+    const doorSum = doors.reduce((s, k) => s + (docks[k].weight ?? 1), 0);
+    for (const k of doors) docksIn[z].push(k), dockW[z].push(docks[k].weight ?? 1);
+    for (const k of exits) docksIn[z].push(k), dockW[z].push(doors.length ? (doorSum * 0.3) / 0.7 / exits.length : 1);
+  }
   const short = new Float32Array(ZONE_IDS.length + 1); // 구역마다 모자란 인원(버스에서 내릴 사람)
 
   // ── 집으로 가는 길: 모든 출구·정류장에서 거꾸로 퍼진 최단 경로. via[n] 은 가장 가까운 출구·정류장 쪽 다음 노드 ──
@@ -315,6 +374,7 @@ export function makeWalkers(
   }
   function aim(i: number, k: number) {
     offWant[i] = offFor(from[i], k, side[i]);
+    [bandLo[i], bandHi[i]] = g.lat[from[i]][k];
     nextK[i] = -1;
   }
   function place(i: number) {
@@ -323,8 +383,8 @@ export function makeWalkers(
     const dz = ez - sz[i];
     const len = Math.hypot(dx, dz) || 1;
     const k = t[i] / len; // 모퉁이에서는 노드를 지나거나 노드 앞에서 갈아타므로 0~1 밖도 쓴다
-    w.x[i] = sx[i] + dx * k - (dz / len) * off[i];
-    w.z[i] = sz[i] + dz * k + (dx / len) * off[i];
+    w.x[i] = sx[i] + dx * k - (dz / len) * (off[i] + dodge[i]);
+    w.z[i] = sz[i] + dz * k + (dx / len) * (off[i] + dodge[i]);
     w.yaw[i] = Math.atan2(dz, dx);
     return len;
   }
@@ -344,12 +404,16 @@ export function makeWalkers(
     from[i] = forward ? d.a : d.b;
     to[i] = forward ? d.b : d.a;
     [sx[i], sz[i]] = pos(from[i]);
-    t[i] = forward ? d.t : d.len - d.t;
+    // 출구 폭(건물 문 앞이면 문 폭)만큼 흩어져 나온다
+    t[i] = Math.max(0, Math.min(d.len, (forward ? d.t : d.len - d.t) + (rand() - 0.5) * (d.door ? 2 : 6)));
     // 출구가 있는 쪽 보도로 나온다. 거꾸로 걸으면 오른쪽·왼쪽이 바뀐다
     side[i] = (forward ? d.side : -d.side) * (0.2 + rand() * 0.8);
     const k = g.adj[from[i]].indexOf(to[i]);
     aim(i, k);
     off[i] = offWant[i];
+    dodge[i] = 0;
+    // 이미 사람이 서 있는 자리면 조금 앞으로 나와 선다(한 자리에 겹쳐 나오지 않게)
+    for (let tries = 0; tries < 4 && crowdedAt(i); tries++) t[i] = Math.min(d.len, t[i] + 0.8);
     speed[i] = 1.0 + rand() * 0.55;
     life[i] = 150 + rand() * 350; // 구역 안쪽 골목까지 걸어 들어갈 만큼
     mode[i] = WANDER;
@@ -371,13 +435,20 @@ export function makeWalkers(
     if (w.age[i] === 3) speed[i] *= 0.75; // 나이 든 사람은 천천히 걷는다
     w.moving[i] = 1;
     place(i);
+    if (d.door) {
+      // 건물 문에서 보도 자리까지 걸어 나온다
+      ox[i] = d.door[0] - w.x[i];
+      oz[i] = d.door[1] - w.z[i];
+      alightT[i] = ALIGHT_T;
+      lift(i);
+    }
     return i;
   }
   function remove(i: number) {
     onLeave?.(w.x[i], w.z[i]);
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, waitStart, home, tx, tz, ox, oz, alightT, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, waitStart, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
       a[i] = a[j];
   }
 
@@ -563,7 +634,62 @@ export function makeWalkers(
     return green(c, hIn, tod);
   }
 
+  /** i 가 지금 자리에 놓이면 0.6m 안에 다른 사람이 있는가 */
+  function crowdedAt(i: number): boolean {
+    place(i);
+    const cx = Math.floor(w.x[i] / 1.5);
+    const cz = Math.floor(w.z[i] / 1.5);
+    for (let ax = -1; ax <= 1; ax++)
+      for (let az = -1; az <= 1; az++)
+        for (let j = gridHead[cellKey(cx + ax, cz + az)]; j >= 0; j = gridNext[j])
+          if (j !== i && j < w.n && Math.hypot(w.x[j] - w.x[i], w.z[j] - w.z[i]) < 0.6) return true;
+    return false;
+  }
+  /** 붐비는 길: 앞(1.6m 안, 옆으로 0.6m 안)에 사람이 있으면 늦추고 그 사람을 비켜 옆으로 선다. 0.7m 안으로 붙은 사람과는 옆으로 떨어진다.
+   *  둘레 1.5m 안에 사람이 많을수록 느리게 걷는다. 역·건물로 들어가며 사라지는 사람은 비키지 않는다.
+   *  걸음 속도에 곱할 값(0.15~1)을 돌려주고 비킨 거리를 고친다 */
+  function jostle(i: number, dt: number): number {
+    const hx = Math.cos(w.yaw[i]);
+    const hz = Math.sin(w.yaw[i]);
+    const cx = Math.floor(w.x[i] / 1.5);
+    const cz = Math.floor(w.z[i] / 1.5);
+    let f = 1;
+    let push = 0;
+    let near = 0;
+    for (let ax = -1; ax <= 1; ax++)
+      for (let az = -1; az <= 1; az++)
+        for (let j = gridHead[cellKey(cx + ax, cz + az)]; j >= 0; j = gridNext[j]) {
+          if (j === i || j >= w.n || mode[j] === LEAVING || mode[j] === BOARDING) continue;
+          const dx = w.x[j] - w.x[i];
+          const dz = w.z[j] - w.z[i];
+          const r2 = dx * dx + dz * dz;
+          if (r2 > 2.25) continue;
+          near++;
+          const along = dx * hx + dz * hz;
+          const lat = dz * hx - dx * hz; // off 와 같은 방향(진행 방향 오른쪽)이 +
+          const away = lat > 0 || (lat === 0 && w.id[i] & 1) ? -1 : 1;
+          if (along > 0 && along < 1.6 && Math.abs(lat) < 0.6) {
+            f = Math.min(f, Math.max(0.15, (along - 0.45) / 1.15));
+            push += away * (0.6 - Math.abs(lat));
+          }
+          if (r2 < 0.49) push += away * (0.7 - Math.sqrt(r2)) * 1.5;
+        }
+    dodge[i] = Math.max(-1.2, Math.min(1.2, dodge[i] + (push * 2.5 - dodge[i] * 0.4) * dt));
+    // 걷는 띠 밖으로는 비키지 않는다
+    const sg = Math.sign(off[i]) || 1;
+    const a = sg * (off[i] + dodge[i]);
+    if (a < bandLo[i] - 0.2) dodge[i] = sg * (bandLo[i] - 0.2) - off[i];
+    else if (a > bandHi[i] + 0.2) dodge[i] = sg * (bandHi[i] + 0.2) - off[i];
+    return Math.min(f, 1 / (1 + 0.1 * near));
+  }
+
   function step(dt: number, now: Now, ambient = true) {
+    gridHead.fill(-1);
+    for (let i = 0; i < w.n; i++) {
+      const k = cellKey(Math.floor(w.x[i] / 1.5), Math.floor(w.z[i] / 1.5));
+      gridNext[i] = gridHead[k];
+      gridHead[k] = i;
+    }
     for (let i = w.n - 1; i >= 0; i--) {
       if (mode[i] === LEAVING) {
         w.fade[i] -= dt * 1.6;
@@ -629,7 +755,7 @@ export function makeWalkers(
           continue;
         }
       }
-      const d = speed[i] * dt;
+      const d = speed[i] * jostle(i, dt) * dt;
       t[i] += d;
       w.phase[i] += d * 4.6;
       off[i] += Math.max(-dt * 1.4, Math.min(dt * 1.4, offWant[i] - off[i]));
@@ -653,6 +779,10 @@ export function makeWalkers(
             w.z[i] += (bz - az) * dir * n * QUEUE_GAP;
             w.yaw[i] += (Math.sign(off[i]) || 1) * (Math.PI / 2); // 찻길 쪽을 본다
           }
+        } else if (docks[dockOf[i]].door) {
+          // 건물 문으로 걸어 들어간다
+          mode[i] = BOARDING;
+          [tx[i], tz[i]] = docks[dockOf[i]].door!;
         } else mode[i] = LEAVING;
         endT[i] = -1;
         continue;
