@@ -9,27 +9,27 @@ THREE.ColorManagement.enabled = false;
 type Key3 = [string, string, string]; // [낮, 노을, 밤]
 
 const KEYS: Record<string, Key3> = {
-  bgTop: ['#bfdcf0', '#5c6aa6', '#060a15'],
-  bgBottom: ['#f4ecdc', '#f7ab7c', '#161d33'],
-  fog: ['#eee7da', '#e9a987', '#121829'],
-  sun: ['#fff0d8', '#ffb07a', '#7f93c8'],
-  ambSky: ['#c3cfdd', '#a99cc0', '#aab4d6'],
-  ambGround: ['#a39a8c', '#b08f7e', '#8f96b3'],
-  land: ['#ddd6c8', '#cfb7a6', '#1c2130'],
-  water: ['#8ec3dd', '#7d8fc2', '#0a1222'],
-  green: ['#b4d397', '#a9b889', '#15241d'],
-  skirt: ['#b9ad9a', '#8d7468', '#0d1018'],
-  bld: ['#f6f3ec', '#ecd6c6', '#3a4257'],
-  roof: ['#fdfbf7', '#f5dfce', '#465068'],
-  roadMajor: ['#bcb7ad', '#b09d93', '#2e3443'],
-  roadMinor: ['#cbc5b8', '#bfa99b', '#242938'],
-  walk: ['#f1e7d0', '#e2c8ae', '#2b2a33'],
+  bgTop: ['#bfdcf0', '#5c6aa6', '#2e3e6e'],
+  bgBottom: ['#f4ecdc', '#f7ab7c', '#716f96'],
+  fog: ['#eee7da', '#e9a987', '#5a6186'],
+  sun: ['#fff0d8', '#ffb07a', '#b8c8f0'],
+  ambSky: ['#c3cfdd', '#a99cc0', '#7f95c4'],
+  ambGround: ['#a39a8c', '#b08f7e', '#cfb29a'],
+  land: ['#ddd6c8', '#cfb7a6', '#999bab'],
+  water: ['#8ec3dd', '#7d8fc2', '#4a6592'],
+  green: ['#b4d397', '#a9b889', '#5f7868'],
+  skirt: ['#b9ad9a', '#8d7468', '#3d4255'],
+  bld: ['#f6f3ec', '#ecd6c6', '#b8b6ba'],
+  roof: ['#fdfbf7', '#f5dfce', '#acb1c6'],
+  roadMajor: ['#bcb7ad', '#b09d93', '#888a98'],
+  roadMinor: ['#cbc5b8', '#bfa99b', '#9294a0'],
+  walk: ['#f1e7d0', '#e2c8ae', '#b1a69c'],
 };
 /** [낮, 노을, 밤] 숫자 값 */
 const NUMS: Record<string, [number, number, number]> = {
-  sunPower: [0.6, 0.55, 0.22],
-  ambSkyPower: [0.8, 0.72, 0.8],
-  ambGroundPower: [0.62, 0.6, 0.7],
+  sunPower: [0.6, 0.55, 0.25],
+  ambSkyPower: [0.8, 0.8, 0.95],
+  ambGroundPower: [0.62, 0.68, 1.1],
 };
 
 const parsed = Object.fromEntries(Object.entries(KEYS).map(([k, v]) => [k, v.map((h) => new THREE.Color(h))]));
@@ -62,7 +62,7 @@ export const env = {
 /** 날씨 세기. 전환이 부드럽도록 updateEnv 가 목표값 쪽으로 천천히 옮긴다 */
 export const weather = { rain: 0, fog: 0, wantRain: 0, wantFog: 0 };
 const grey = new THREE.Color('#9aa3ad');
-const greyNight = new THREE.Color('#1b2029');
+const greyNight = new THREE.Color('#4a5062');
 
 const mix3 = (out: THREE.Color, k: THREE.Color[], day: number, dusk: number) => out.copy(k[2]).lerp(k[0], day).lerp(k[1], dusk * 0.85);
 const mixN = (k: [number, number, number], day: number, dusk: number) => {

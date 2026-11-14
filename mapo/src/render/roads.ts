@@ -57,7 +57,7 @@ const FRAG = /* glsl */ `
     vec3 yellow = vec3(0.95, 0.76, 0.26);
     vec3 white = vec3(0.95, 0.95, 0.93);
     vec3 blue = vec3(0.24, 0.45, 0.95);
-    float dim = 1.0 - 0.5 * uNight;
+    float dim = 1.0 - 0.25 * uNight;
     float lw = max(vEx0.w, 2.0);
     if (median > 0.5) {
       // 분리대: 반대 방향 길과의 사이를 반씩 그린다. 띠 오른쪽(+1)이 이 길 쪽이다
@@ -117,7 +117,7 @@ const FRAG = /* glsl */ `
     float lamp = exp(-(al * al / (1.0 + 2.0 * wet) + edge * edge) / 70.0) * major * (1.0 - median);
     float al2 = abs(fract(vUV.y / 26.0 + 0.37) - 0.5) * 26.0;
     float lamp2 = exp(-(al2 * al2) / (42.0 * (1.0 + 1.5 * wet))) * (1.0 - major) * (1.0 - side) * step(cls, 6.5) * 0.55;
-    col += vec3(1.0, 0.70, 0.36) * (lamp * 0.62 + lamp2 * 0.42 + major * 0.05) * uNight * (1.0 + 0.5 * wet * (0.3 + puddle));
+    col += vec3(1.0, 0.70, 0.36) * (lamp * 0.40 + lamp2 * 0.32 + major * 0.04) * uNight * (1.0 + 0.5 * wet * (0.3 + puddle));
 
     // 랜드마크 다리: 고유 색을 입히고 밤에는 난간에 불을 켠다
     int lm = int(vInfo.w + 0.5);

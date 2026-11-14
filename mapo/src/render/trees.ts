@@ -55,7 +55,7 @@ export function makeTrees(xz: Float32Array, season: Season) {
           k = mix(k, step(0.45, k), uSplit);
           vec3 leaf = mix(uLeafB, uLeafA, k) * mix(0.82, 1.08, smoothstep(2.5, 8.0, vH));
           vec3 alb = mix(vec3(0.42, 0.33, 0.27), leaf, vPart);
-          alb = mix(alb, alb * vec3(0.30, 0.36, 0.46), uNight * 0.82);
+          alb = mix(alb, alb * vec3(0.62, 0.72, 0.84), uNight * 0.8);         // 밤: 푸른 하늘빛에 잎이 조금 가라앉는다
           gl_FragColor = vec4(fogged(lit(alb, normalize(vN)), vDist), 1.0);
         }`,
     }),
