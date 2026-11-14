@@ -103,9 +103,10 @@ const walkers = makeWalkers(
   [
     ...board.exits.map((e) => ({ kind: 'exit' as const, key: e.st, x: e.x, z: e.z })),
     ...stops.portals,
-    // 망원한강공원에는 역 출구도 정류장도 없으므로, 강변북로 밑 나들목으로 들고 난다
+    // 망원한강공원 인구는 공원 안에 있는 사람이다. 공원 안(피크닉 자리)에서 나타나 공원 길을 걷고, 일부만 강변북로 밑 나들목으로 들고 난다
     ...underpasses(board.roads, ...ZONES.mangwon).map(([x, z]) => ({ kind: 'exit' as const, key: '망원나들목', x, z })),
-    // 구역 안 건물(바닥 40㎡ 넘는 것)의 출입구: 구역 인구 대부분은 가게·집 안에 있다가 드나든다
+    ...Array.from({ length: board.picnic.length / 2 }, (_, i) => ({ kind: 'exit' as const, key: '망원한강공원', x: board.picnic[i * 2], z: board.picnic[i * 2 + 1] })),
+    // 구역 안 건물(바닥 40㎡ 넘는 것)의 출입구: 구역 인구 대부분은 가게·집 안에 있다가 드나든다(망원 구역 안 건물은 공원 밖 주택가라 쓰지 않는다)
     ...board.buildings.flatMap((b) => {
       let x = 0;
       let z = 0;
@@ -114,7 +115,7 @@ const walkers = makeWalkers(
       z /= b.pts.length / 2;
       let a = 0;
       for (let i = 0, j = b.pts.length - 2; i < b.pts.length; j = i, i += 2) a += b.pts[j] * b.pts[i + 1] - b.pts[i] * b.pts[j + 1];
-      const inZone = Object.values(ZONES).some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r);
+      const inZone = Object.entries(ZONES).some(([id, [cx, cz, r]]) => id !== 'mangwon' && Math.hypot(x - cx, z - cz) < r);
       return inZone && Math.abs(a) / 2 > 40 ? [{ kind: 'door' as const, key: '', x, z, poly: b.pts, h: b.h }] : [];
     }),
   ],
@@ -688,6 +689,7 @@ function frame(t: number) {
     walkers.board(key, dx, dz);
     walkers.alight(key, Math.floor(Math.random() * 4), dx, dz);
   }
+  walkers.setRain(weather.rain);
   walkers.step(dt, now);
   // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
   // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더의 zoomScale 과 같은 식)
@@ -755,7 +757,7 @@ function frame(t: number) {
     hud.setClock(now, clock.live, provider.mode === 'live' ? `실시간 · 인구 ${pplTime} 기준` : undefined);
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));
-    hud.setScale(walkerScale(provider, now, MAX_PEOPLE), cars.scale()[0]);
+    hud.setScale(walkerScale(provider, now, MAX_PEOPLE, weather.rain), cars.scale()[0]);
     flow.update(provider, now);
     refreshCard();
   }

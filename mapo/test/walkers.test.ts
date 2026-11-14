@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildCarGraph, buildWalkGraph, clearWalkFromCars, laneTest } from '../src/sim/graph.ts';
 import { makeSignals, RED } from '../src/sim/signals.ts';
-import { makeWalkers, walkerTarget, type Portal } from '../src/sim/walkers.ts';
+import { makeWalkers, walkerTarget, zoneTargets, ZONE_IDS, type Portal } from '../src/sim/walkers.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { at, fixedProvider, road } from './helpers.ts';
 
@@ -68,6 +68,17 @@ describe('보행자', () => {
     const p = makeSimProvider();
     // 상한에 닿지 않게 넉넉히 두고 시간대 차이만 본다(상한은 crowd.test.ts 에서 따로 본다)
     expect(walkerTarget(p, at(21, 5), 1e6)).toBeGreaterThan(walkerTarget(p, at(4, 2), 1e6) * 5);
+  });
+  it('비가 오면 밖에 걷는 사람이 줄고, 한강공원은 거리보다 훨씬 많이 준다', () => {
+    const p = makeSimProvider();
+    const dry = zoneTargets(p, at(14, 0), 1e6);
+    const wet = zoneTargets(p, at(14, 0), 1e6, 1);
+    const park = ZONE_IDS.indexOf('mangwon');
+    const street = ZONE_IDS.indexOf('hongdae');
+    expect(wet[street]).toBeLessThan(dry[street] * 0.8);
+    expect(wet[street]).toBeGreaterThan(dry[street] * 0.4);
+    expect(wet[park]).toBeLessThan(dry[park] * 0.25);
+    expect(walkerTarget(p, at(14, 0), 1e6, 0.5)).toBeLessThan(walkerTarget(p, at(14, 0), 1e6));
   });
   it('최대 인원을 넘지 않는다', () => {
     const sim = makeWalkers(buildWalkGraph(lanes()), exits, fixedProvider(1, 500000), 3, 50);

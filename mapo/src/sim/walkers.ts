@@ -52,35 +52,39 @@ export const ZONES: Record<string, [number, number, number]> = {
   yeonnam: [300, -1050, 420],
   hongdae: [350, -250, 520],
 };
-const ZONE_IDS = Object.keys(ZONES);
+export const ZONE_IDS = Object.keys(ZONES);
 
 /** 하루 가운데 밖에 나와 다니는 정도(0~1). 새벽에는 대부분 실내에 있다 */
 const outdoors = (now: Now) => clamp01(0.05 + 0.95 * Math.max(daytime(now.tod), nightlife(now.tod), 0.8 * commute(now.tod)));
 /** 구역 인구 가운데 밖에 나와 걷는 사람 비율(가정한 값). 가게·집 안에 있는 사람이 대부분인 상업지와 달리 공원은 대부분 밖에 있다 */
 const OUT_SHARE: Record<string, number> = { mangwon: 0.3 };
 
+/** 비(0~1)가 올 때 밖에 남는 비율: 거리는 우산을 쓰고 다니는 사람이 남지만, 한강공원은 거의 비운다(가정한 값) */
+const RAIN_KEEP: Record<string, number> = { mangwon: 0.15 };
+const rainKeep = (id: string, rain: number) => 1 - (1 - (RAIN_KEEP[id] ?? 0.6)) * clamp01(rain);
+
 /** 구역마다 지금 밖에 나와 걷는 실제 사람 수. 마지막 칸은 구역 밖 출구·정류장 둘레의 사람(구역 인원의 12%) */
-function outside(provider: DataProvider, now: Now): number[] {
+function outside(provider: DataProvider, now: Now, rain = 0): number[] {
   const act = outdoors(now);
   const pop: Record<string, number> = {};
   for (const a of provider.areas(now)) pop[a.id] = (a.pplMin + a.pplMax) / 2;
-  const t = ZONE_IDS.map((id) => (pop[id] ?? 0) * (OUT_SHARE[id] ?? 0.12) * act);
+  const t = ZONE_IDS.map((id) => (pop[id] ?? 0) * (OUT_SHARE[id] ?? 0.12) * act * rainKeep(id, rain));
   t.push(t.reduce((a, b) => a + b, 0) * 0.12);
   return t;
 }
 /** 화면 1명이 실제 몇 명인가. 상한 안이면 1, 넘치면 모든 구역을 같은 배율로 줄인다 */
-export function walkerScale(provider: DataProvider, now: Now, max: number): number {
-  return Math.max(1, outside(provider, now).reduce((a, b) => a + b, 0) / max);
+export function walkerScale(provider: DataProvider, now: Now, max: number, rain = 0): number {
+  return Math.max(1, outside(provider, now, rain).reduce((a, b) => a + b, 0) / max);
 }
 /** 구역마다 지금 화면에 있어야 할 사람 수: 구역 인구에 비례하므로 인구 밀도가 높은 구역일수록 빽빽하다 */
-export function zoneTargets(provider: DataProvider, now: Now, max: number): number[] {
-  const k = walkerScale(provider, now, max);
-  return outside(provider, now).map((v) => v / k);
+export function zoneTargets(provider: DataProvider, now: Now, max: number, rain = 0): number[] {
+  const k = walkerScale(provider, now, max, rain);
+  return outside(provider, now, rain).map((v) => v / k);
 }
 
 /** 지금 화면에 있어야 할 보행자 수 */
-export function walkerTarget(provider: DataProvider, now: Now, max: number): number {
-  return Math.min(max, Math.round(zoneTargets(provider, now, max).reduce((a, b) => a + b, 0)));
+export function walkerTarget(provider: DataProvider, now: Now, max: number, rain = 0): number {
+  return Math.min(max, Math.round(zoneTargets(provider, now, max, rain).reduce((a, b) => a + b, 0)));
 }
 
 /** 걷는 길(골목·보행로)이 자동차 전용도로 밑을 같은 높이로 지나는 곳: 한강공원 나들목. (x, z) 반지름 r 안에서 찾는다 */
@@ -394,6 +398,7 @@ export function makeWalkers(
     for (const k of exits) docksIn[z].push(k), dockW[z].push(doors.length ? (doorSum * 0.3) / 0.7 / exits.length : 1);
   }
   const short = new Float32Array(ZONE_IDS.length + 1); // 구역마다 모자란 인원(버스에서 내릴 사람)
+  let rain = 0;
 
   // ── 집으로 가는 길: 상태 = (길 조각 a→b, 그 길의 오른쪽·왼쪽 보도). 모든 출구·정류장에서 거꾸로 퍼진 최단 거리 D(상태)는
   //    그 조각 시작 노드 a 에서 출구·정류장까지 걸을 거리다. 큰길은 횡단보도로만 건너므로 어느 쪽 보도에 있는지까지 따진다 ──
@@ -1069,7 +1074,7 @@ export function makeWalkers(
     if (!ambient || !docks.length) return;
     // 구역마다 화면 인원을 그 구역 인구에 맞춘다. 모자라면 그 구역 출구·정류장에서 지하철·버스로 막 도착한 사람처럼 나오고
     // (한 구역에서 1초에 목표의 1/40, 적어도 2명까지), 넘치면 그 구역 사람 몇 명을 일찍 들여보낸다
-    const want = zoneTargets(provider, now, max);
+    const want = zoneTargets(provider, now, max, rain);
     // 나이대·성별 비율을 구역마다 새로 읽는다
     const areas = provider.areas(now);
     const avg = [0, 0, 0, 0];
@@ -1109,5 +1114,9 @@ export function makeWalkers(
     }
   }
 
-  return { w, step, burst, alight, board, waitingAt, hold, docks, dockPoint };
+  /** 비 세기(0~1). 밖에 걷는 사람 수가 이 값에 따라 준다 */
+  const setRain = (r: number) => {
+    rain = r;
+  };
+  return { w, step, burst, alight, board, waitingAt, hold, docks, dockPoint, setRain };
 }
