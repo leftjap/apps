@@ -263,6 +263,40 @@ export function makeWalkers(
   const dodge = new Float32Array(max); // 앞사람을 비켜 옆으로 옮긴 거리(m, off 와 같은 방향)
   const bandLo = new Float32Array(max); // 지금 걷는 띠(보도·골목)의 안쪽·바깥쪽 끝(중심선에서 m)
   const bandHi = new Float32Array(max);
+  const curK = new Int32Array(max); // 지금 걷는 길 조각: 노드 from 의 이웃 번호
+  // 지금 자리가 차로 위·큰길 차로 안쪽인가(바로 전 단계에 앞 자리로 잰 값, 255 = 모름)
+  const inLanes = new Uint8Array(max).fill(255);
+  const inMajor = new Uint8Array(max).fill(255);
+  const laneHold = new Uint8Array(max); // 신호를 기다려 차로 앞에 멈춰 있다(다음 확인까지)
+  let frame = 0;
+  // 보행 노드마다 25m·30m 안의 신호 묶음(−2 = 아직 안 찾음)
+  const site25 = new Int16Array(g.adj.length).fill(-2);
+  const site30 = new Int16Array(g.adj.length).fill(-2);
+  const siteOf = (n: number, far = false) => {
+    const a = far ? site30 : site25;
+    if (a[n] === -2) a[n] = signals ? signals.siteNear(g.nx[n * 2], g.nx[n * 2 + 1], far ? 30 : 25) : -1;
+    return a[n];
+  };
+  // 보행 조각마다 차로에 닿는가(1: 차로, 2: 큰길 차로 안쪽). 걷는 띠와 비켜 서는 폭(0.2m)까지 2m 간격으로 처음 쓸 때 재어 둔다(255 = 아직 안 잼)
+  const touch = g.adj.map((nb) => new Uint8Array(nb.length).fill(255));
+  function touchOf(a: number, k: number): number {
+    if (touch[a][k] !== 255) return touch[a][k];
+    let f = 0;
+    const b = g.adj[a][k];
+    const dx = g.nx[b * 2] - g.nx[a * 2];
+    const dz = g.nx[b * 2 + 1] - g.nx[a * 2 + 1];
+    const L = Math.hypot(dx, dz) || 1;
+    const [lo, hi] = g.lat[a][k];
+    for (let d = -4; d <= L + 4 && f !== 3; d += 2)
+      for (const o of [lo - 0.2, (lo + hi) / 2, hi + 0.2])
+        for (const sd of [1, -1]) {
+          const x = g.nx[a * 2] + (dx / L) * d - (dz / L) * o * sd;
+          const z = g.nx[a * 2 + 1] + (dz / L) * d + (dx / L) * o * sd;
+          if (onLanes?.(x, z)) f |= 1;
+          if (onMajor?.(x, z)) f |= 2;
+        }
+    return (touch[a][k] = f);
+  }
   // 가까운 사람 찾기용 격자(1.5m 칸을 해시로 묶는다)
   const GH = 32768;
   const gridHead = new Int32Array(GH).fill(-1);
@@ -378,6 +412,7 @@ export function makeWalkers(
     return (g.dir[a][k] || Math.sign(sd) || 1) * (lo + Math.abs(sd) * (hi - lo));
   }
   function aim(i: number, k: number) {
+    curK[i] = k;
     offWant[i] = offFor(from[i], k, side[i]);
     [bandLo[i], bandHi[i]] = g.lat[from[i]][k];
     nextK[i] = -1;
@@ -426,6 +461,8 @@ export function makeWalkers(
     dockOf[i] = -1;
     holdT[i] = 0;
     waitStart[i] = 0;
+    inLanes[i] = inMajor[i] = 255;
+    laneHold[i] = 0;
     w.phase[i] = rand() * 6.28;
     w.fade[i] = 0;
     w.tint[i] = rand();
@@ -453,7 +490,7 @@ export function makeWalkers(
     onLeave?.(w.x[i], w.z[i]);
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, waitStart, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, waitStart, home, tx, tz, ox, oz, alightT, dodge, bandLo, bandHi, curK, inLanes, inMajor, laneHold, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
       a[i] = a[j];
   }
 
@@ -574,7 +611,7 @@ export function makeWalkers(
         return dn > r && dn > db ? v * 0.04 : v;
       });
       // 신호 없는 교차로에서는 큰길을 건너지 않는 쪽으로 간다(그런 쪽이 없으면 건넌다)
-      if (signals && signals.siteNear(g.nx[b * 2], g.nx[b * 2 + 1]) < 0) {
+      if (signals && siteOf(b) < 0) {
         const ok = ws.map((v, kk) => (crossesMajor(i, b, kk) ? 0 : v));
         if (ok.some((v) => v > 0)) ws = ok;
       }
@@ -633,7 +670,8 @@ export function makeWalkers(
       endT[i] = d.a === b ? d.t : d.len - d.t;
       dockOf[i] = srcDock[b];
     }
-    waitStart[i] = signals && startV[i] < -2 && signals.siteNear(g.nx[b * 2], g.nx[b * 2 + 1]) >= 0 ? 1 : 0;
+    waitStart[i] = signals && startV[i] < -2 && siteOf(b) >= 0 ? 1 : 0;
+    inLanes[i] = inMajor[i] = 255;
     side[i] = nextSide[i];
     off[i] = nextOff[i];
     const m = g.adj[b][k];
@@ -650,7 +688,7 @@ export function makeWalkers(
   /** 신호 교차로 노드 to[i] 앞에서: 건너야 하는데 그 방향이 초록불이 아니면 false */
   function mayCross(i: number, tod: number): boolean {
     const b = to[i];
-    const c = signals!.siteNear(g.nx[b * 2], g.nx[b * 2 + 1]);
+    const c = siteOf(b);
     if (c < 0) return true;
     const k = plan(i);
     if (k < 0) return true;
@@ -688,6 +726,7 @@ export function makeWalkers(
     dodge[i] = -dodge[i];
     endT[i] = -1;
     waitStart[i] = 0;
+    inLanes[i] = inMajor[i] = 255;
     aim(i, g.adj[from[i]].indexOf(to[i]));
   }
   /** 붐비는 길: 앞(1.6m 안, 옆으로 0.6m 안)에 사람이 있으면 늦추고 그 사람을 비켜 옆으로 선다. 0.7m 안으로 붙은 사람과는 옆으로 떨어진다.
@@ -729,6 +768,7 @@ export function makeWalkers(
   }
 
   function step(dt: number, now: Now, ambient = true) {
+    frame++;
     gridHead.fill(-1);
     for (let i = 0; i < w.n; i++) {
       const k = cellKey(Math.floor(w.x[i] / 1.5), Math.floor(w.z[i] / 1.5));
@@ -785,7 +825,7 @@ export function makeWalkers(
         let stop = false;
         if (waitStart[i]) {
           // 왼쪽으로 꺾은 뒤 두 번째 횡단보도 앞
-          const c = signals.siteNear(sx[i], sz[i]);
+          const c = siteOf(from[i]);
           if (c >= 0 && !green(c, Math.atan2(g.nx[to[i] * 2 + 1] - sz[i], g.nx[to[i] * 2] - sx[i]), now.tod)) stop = true;
           else waitStart[i] = 0;
         } else if (endT[i] < 0 && nextK[i] >= 0) {
@@ -807,20 +847,37 @@ export function makeWalkers(
       const d = speed[i] * jostle(i, dt) * dt;
       // 신호 교차로 둘레(30m 안)에서 걷던 길이 차로로 들어가면(비스듬히 만나거나 노드가 여럿인 교차로) 그 앞에서 진행 방향 신호를 지킨다.
       // 신호 교차로가 없는 곳에서 큰길 차로 안쪽으로 들어서려 하면(길 중간을 가로지르는 보행로 등) 되돌아선다
-      if (signals && onLanes) {
-        const nx = w.x[i] + Math.cos(w.yaw[i]) * (d + 0.4);
-        const nz = w.z[i] + Math.sin(w.yaw[i]) * (d + 0.4);
-        if (!onLanes(w.x[i], w.z[i]) && onLanes(nx, nz)) {
-          const c = signals.siteNear(w.x[i], w.z[i], 30);
-          if (c >= 0 && !green(c, w.yaw[i], now.tod)) {
+      // 차로 확인은 사람마다 세 단계에 한 번(그 사이 걸을 거리까지 앞을 본다). 멈춤은 다음 확인까지 유지한다
+      const near = signals && onLanes ? touchOf(from[i], curK[i]) : 0;
+      if (near && (frame + i) % 3) {
+        if (laneHold[i]) {
+          w.moving[i] = 0;
+          continue;
+        }
+      } else if (near) {
+        laneHold[i] = 0;
+        const nx = w.x[i] + Math.cos(w.yaw[i]) * (d * 3 + 0.4);
+        const nz = w.z[i] + Math.sin(w.yaw[i]) * (d * 3 + 0.4);
+        const site = siteOf(to[i], true) >= 0 ? siteOf(to[i], true) : siteOf(from[i], true);
+        if (near & 1) {
+          if (inLanes[i] === 255) inLanes[i] = onLanes!(w.x[i], w.z[i]) ? 1 : 0;
+          const ahead = onLanes!(nx, nz) ? 1 : 0;
+          if (ahead && !inLanes[i] && site >= 0 && !green(site, w.yaw[i], now.tod)) {
             w.moving[i] = 0;
+            laneHold[i] = 1;
             continue;
           }
+          inLanes[i] = ahead;
         }
-        if (onMajor && !onMajor(w.x[i], w.z[i]) && onMajor(nx, nz) && signals.siteNear(w.x[i], w.z[i], 30) < 0) {
-          turnBack(i, len0);
-          place(i);
-          continue;
+        if (near & 2 && onMajor) {
+          if (inMajor[i] === 255) inMajor[i] = onMajor(w.x[i], w.z[i]) ? 1 : 0;
+          const ahead = onMajor(nx, nz) ? 1 : 0;
+          if (ahead && !inMajor[i] && site < 0) {
+            turnBack(i, len0);
+            place(i);
+            continue;
+          }
+          inMajor[i] = ahead;
         }
       }
       t[i] += d;
