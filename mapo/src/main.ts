@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
 import { toXZ } from './geo.ts';
-import { headingAt, nearestS, pointAt } from './poly.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
 import { makeBuildings } from './render/buildings.ts';
 import { makeCarMeshes } from './render/cars.ts';
@@ -68,7 +67,13 @@ if (LIVE_URL) {
 }
 const ambience = makeAmbience();
 const loading = document.querySelector<HTMLElement>('#loading')!;
-const [board, mask] = await Promise.all([loadBoard(BASE), new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`)]).catch((e) => {
+// 지명 자리(tools/places.ts 가 OSM 행정동 경계·공원·도로명 주소로 굽는다)
+type Named = { dongs: { name: string; x: number; z: number }[]; places: { text: string; x: number; z: number; turn: number }[] };
+const [board, mask, named] = await Promise.all([
+  loadBoard(BASE),
+  new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`),
+  fetch(`${BASE}data/places.json`).then((r) => r.json() as Promise<Named>),
+]).catch((e) => {
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
 });
@@ -166,46 +171,12 @@ const labels: GroundLabel[] = [
   { text: '밤섬', x: 1010, z: 1600, size: 44 },
   { text: '선유도', x: -1290, z: 1250, size: 44 },
 ];
-// 지명(설정에서 끌 수 있다): 동 이름은 대략의 가운데, 공원·거리는 OSM 자료의 자리
-const place = (text: string, lat: number, lon: number, size: number, turn = 0): GroundLabel => {
-  const [x, z] = toXZ(lat, lon);
-  return { text, x, z, size, turn };
-};
-const along = (text: string, x: number, z: number, dir: number, size: number): GroundLabel => {
-  // 글줄이 왼쪽에서 오른쪽으로 읽히도록 방향을 ±90° 안으로 맞춘다
-  const t = Math.atan2(Math.sin(dir), Math.cos(dir));
-  return { text, x, z, size, turn: Math.abs(t) > Math.PI / 2 ? t - Math.sign(t) * Math.PI : t };
-};
+// 지명(설정에서 끌 수 있다): 행정동 이름은 크게 써서 넓게 볼 때, 거리·공원 이름은 작게 써서 가까이 볼 때 읽히게 하고,
+// 화면 글자 높이가 범위를 벗어나면 감춰 둘이 한꺼번에 보이지 않게 한다
 const nameLabels: GroundLabel[] = [
-  place('연남동', 37.5638, 126.922, 34),
-  place('동교동', 37.5592, 126.9262, 30),
-  place('서교동', 37.5532, 126.9182, 34),
-  place('합정동', 37.548, 126.9115, 32),
-  place('망원동', 37.556, 126.9035, 34),
-  place('상수동', 37.5476, 126.9228, 30),
-  place('창전동', 37.5502, 126.9312, 30),
-  place('성미산', 37.5665, 126.9105, 24),
+  ...named.dongs.map((d): GroundLabel => ({ text: d.name, x: d.x, z: d.z, size: 150, fade: [9, 44] })),
+  ...named.places.map((p): GroundLabel => ({ text: p.text, x: p.x, z: p.z, size: 24, turn: p.turn, fade: [12, 90] })),
 ];
-{
-  // 경의선숲길: 연남동 구간 공원 가운데, 숲길 아래를 지나는 경의중앙선 방향으로
-  const k = board.lines.find((l) => l.id === 'K');
-  if (k) {
-    const [x, z] = [385, -1079];
-    const seg = pointAt(k.p, k.cum, nearestS(k.p, k.cum, x, z).s, [0, 0, 0]);
-    nameLabels.push(along('경의선숲길', x, z, headingAt(k.p, seg), 22));
-  }
-  // 레드로드: 어울마당로를 따라
-  const red = board.roads.filter((r) => r.name === '어울마당로');
-  if (red.length) {
-    const pts: [number, number][] = red.flatMap((r) => Array.from({ length: r.p.length / 3 }, (_, i) => [r.p[i * 3], r.p[i * 3 + 2]] as [number, number]));
-    let a = pts[0];
-    let b = pts[0];
-    let far = 0;
-    for (const p of pts) for (const q of pts) if (Math.hypot(p[0] - q[0], p[1] - q[1]) > far) (far = Math.hypot(p[0] - q[0], p[1] - q[1])), (a = p), (b = q);
-    nameLabels.push(along('레드로드', (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), 20));
-  }
-  nameLabels.push({ text: '와우산', x: 808, z: 73, size: 24 }, { text: '망원한강공원', x: -1573, z: 44, size: 24 });
-}
 const namesMesh = makeGroundLabels(nameLabels, true);
 const boats = makeBoats(board.river, board.riverCum);
 const picnic = makePicnic(board.picnic);
@@ -317,10 +288,11 @@ setWeather(query.get('weather') === 'rain' ? 'rain' : query.get('weather') === '
 hud.setSeason('live');
 
 function select(t: Target | null) {
-  // 역을 고르면 그 역 위로 날아가 둘레의 땅과 건물을 걷어 내고 지하를 보여 준다
+  // 역을 고르면 그 역 위로 날아가 둘레의 땅과 건물을 걷어 내고 지하를 보여 준다. 출구 자리는 바닥 링이 몇 초 동안 퍼져 알린다
   if (t?.kind === 'station' && !same(t, selected)) {
     const st = board.stations.find((s) => s.name === t.name);
     if (st) view.flyAt(st.x, st.z, 720, 50);
+    rings.flash(t.name);
   }
   selected = t;
   landmarks.setSelected(t?.kind === 'landmark' ? t.id : '');
@@ -618,6 +590,7 @@ canvas.addEventListener('pointerleave', () => {
 const tags = makeTags(
   stage,
   stations.labels,
+  board.lines,
   stations.exits,
   landmarks.labels,
   schools.labels,
@@ -666,7 +639,6 @@ function frame(t: number) {
   const arrived = liveRail ? subway.takeArrivals() : (subway.takeArrivals(), arrivals(board.lines, prevTod, now.tod));
   for (const a of arrived.slice(0, 12)) {
     walkers.burst(a.name, Math.max(1, Math.min(14, Math.round(provider.alighting(now, a.name) / 150))));
-    rings.flash(a.name);
     const st = board.stations.find((s) => s.name === a.name);
     if (st) ambience.train(1 - Math.hypot(st.x - target.x, st.z - target.z) / 1600);
   }

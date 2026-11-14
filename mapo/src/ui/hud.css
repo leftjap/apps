@@ -35,11 +35,7 @@ ol, ul { list-style: none; }
 .presets button:hover, .chips button:hover { background: #1f2638; border-color: #39435c; }
 .presets button.on, .chips button.on { background: #1d3a34; border-color: #3f8f7c; color: #bff0de; }
 .areas h2 { font-size: 12px; font-weight: 600; color: var(--dim); margin-bottom: 8px; }
-.legend h2 { font-size: 12px; font-weight: 600; color: var(--dim); margin-bottom: 6px; }
 .scale { font-size: 11px; color: var(--dim); margin-top: 6px; }
-.legend p { display: flex; gap: 14px; font-size: 12px; color: var(--dim); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i { width: 18px; height: 4px; border-radius: 2px; background: var(--c); }
 .areas li { display: grid; grid-template-columns: 18px 1fr auto; grid-template-areas: "rank name level" "rank ppl level"; column-gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
 .areas li:first-child { border-top: 0; }
 .areas .rank { grid-area: rank; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
@@ -90,6 +86,12 @@ ol, ul { list-style: none; }
 /* 모바일 전용 요소는 PC에서 숨긴다 */
 #top, #credit { display: none; }
 
+/* 도로 색 범례: 3D 화면 왼쪽 아래(교통 흐름 띠가 켜져 있을 때만) */
+#legend { position: absolute; left: 10px; bottom: 10px; z-index: 2; margin: 0; display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 99px; background: rgba(13, 17, 27, 0.66); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--dim); font-size: 11px; pointer-events: none; white-space: nowrap; }
+#legend[hidden] { display: none; }
+#legend span { display: inline-flex; align-items: center; gap: 5px; color: var(--text); }
+#legend i { width: 16px; height: 4px; border-radius: 2px; background: var(--c); }
+
 /* ── 모바일: 위 82% 3D 화면, 아래 광고 자리 ── */
 @media (max-width: 760px) {
   #app { flex-direction: column; }
@@ -109,6 +111,7 @@ ol, ul { list-style: none; }
   .st-tag { font-size: 11px; padding: 3px 7px 3px 6px; }
   .chips button { flex: none; background: rgba(13, 17, 27, 0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-color: rgba(255, 255, 255, 0.08); border-radius: 99px; padding: 6px 12px; font-size: 12px; }
   #credit { display: block; position: absolute; left: 8px; bottom: 6px; margin: 0; font-size: 10px; color: rgba(255, 255, 255, 0.82); background: rgba(13, 17, 27, 0.45); border-radius: 6px; padding: 2px 6px; pointer-events: none; }
+  #legend { left: 8px; bottom: 46px; padding: 4px 9px; font-size: 10.5px; } /* 출처 글이 두 줄로 접혀도 겹치지 않게 */
   #lab { position: absolute; left: 10px; right: 10px; bottom: 10px; background: rgba(16, 20, 31, 0.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   #lab summary { pointer-events: none; }
   #lab summary::after { content: none; }
@@ -121,7 +124,9 @@ ol, ul { list-style: none; }
 #tags[hidden] { display: none; }
 .st-tag { position: absolute; left: 0; top: 0; pointer-events: auto; display: flex; align-items: center; gap: 3px; margin: 0; padding: 4px 9px 4px 7px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 99px; background: rgba(13, 17, 27, 0.8); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; translate: -50% calc(-100% - 7px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25); }
 .st-tag::after { content: ""; position: absolute; left: 50%; bottom: -6px; margin-left: -5px; border: 5px solid transparent; border-top-color: rgba(13, 17, 27, 0.8); border-bottom: 0; }
-.st-tag i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+/* 노선 기호: 번호 노선은 노선 색 원, 이름 노선(경의중앙·공항)은 노선 색 둥근 네모 */
+.st-tag i { flex: none; min-width: 16px; height: 16px; padding: 0; border-radius: 50%; background: var(--c); color: #fff; font-style: normal; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center; text-shadow: 0 0 2px rgba(0, 0, 0, 0.25); }
+.st-tag i.wide { border-radius: 4px; padding: 0 4px; font-size: 10px; letter-spacing: -0.03em; }
 .st-tag b { margin-left: 3px; font-weight: 600; }
 .st-tag:hover { background: rgba(30, 38, 56, 0.92); }
 .lm-tag { position: absolute; left: 0; top: 0; pointer-events: auto; margin: 0; padding: 3px 8px 3px 7px; border: 0; border-left: 3px solid var(--c); border-radius: 6px; background: rgba(255, 255, 255, 0.86); color: #1d2433; font-size: 11px; font-weight: 600; white-space: nowrap; translate: -50% -100%; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18); }

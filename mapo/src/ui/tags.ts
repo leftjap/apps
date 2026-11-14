@@ -10,9 +10,16 @@ const EXIT_FAR = 1800; // 카메라에서 이보다 먼 출구 번호는 감춘�
 const PLACE_FAR = 3200; // 카메라에서 이보다 먼 랜드마크 이름표는 감춘다
 const SCHOOL_FAR = 2600; // 학교 이름은 동네 크기로 볼 때 보인다(판 전체를 볼 때는 감춘다)
 
+/** 역 안내 표지의 노선 기호: 번호 노선은 노선 색 원에 번호, 이름 노선은 노선 색 둥근 네모에 짧은 이름(경의중앙선 → 경의중앙, 공항철도 → 공항) */
+export function lineMark(name: string): { text: string; round: boolean } {
+  const n = /^(\d+)호선$/.exec(name);
+  return n ? { text: n[1], round: true } : { text: name.replace(/(선|철도)$/, ''), round: false };
+}
+
 export function makeTags(
   stage: HTMLElement,
   stations: StationLabel[],
+  lines: { name: string; color: string; stopNames: string[] }[],
   exits: { st: string; ref: string; x: number; z: number }[],
   places: PlaceLabel[],
   schools: SchoolLabel[],
@@ -27,7 +34,15 @@ export function makeTags(
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'st-tag';
-    el.innerHTML = `${s.colors.map((c) => `<i style="--c:${c}"></i>`).join('')}<b></b>`;
+    for (const l of lines.filter((l) => l.stopNames.includes(s.name))) {
+      const m = lineMark(l.name);
+      const i = document.createElement('i');
+      i.className = m.round ? 'ln' : 'ln wide';
+      i.style.setProperty('--c', l.color);
+      i.textContent = m.text;
+      el.append(i);
+    }
+    el.append(document.createElement('b'));
     el.querySelector('b')!.textContent = s.name;
     el.addEventListener('click', () => onStation(s.name));
     layer.append(el);

@@ -1,5 +1,6 @@
 // 교통 흐름. 큰길(차 구간 가운데 골목이 아닌 길)마다 진행 방향 차로 위에 얇은 띠를 깔고,
-// 자료 공급자가 주는 도로 속도 비율로 색을 칠한다(원활 초록, 서행 노랑, 정체 빨강).
+// 자료 공급자가 주는 도로 속도 비율이 느린 구간만 칠한다(서행 주황, 정체 빨강). 원활한 길은 칠하지 않아
+// 노면 표시(흰 차선, 노란 중앙선, 파란 버스전용차로)와 섞이지 않고 막히는 곳만 눈에 띈다.
 // 2단계에서 공급자가 실제 도로 속도를 주면 같은 띠에 그대로 실린다. 멀리서도 보이도록 화면에서 최소 굵기를 지킨다.
 import * as THREE from 'three';
 import type { Now } from '../sim/clock.ts';
@@ -7,10 +8,9 @@ import type { Edge } from '../sim/graph.ts';
 import type { DataProvider } from '../sim/provider.ts';
 import { material } from './env.ts';
 
-/** [이름, 색] 원활·서행·정체 */
+/** [이름, 색] 띠로 칠하는 단계: 서행(속도 비율 0.35~0.6)·정체(0.35 미만). 0.6 이상(원활)은 칠하지 않는다 */
 export const FLOW_LEVELS = [
-  ['원활', '#5fd08a'],
-  ['서행', '#f0cf5a'],
+  ['서행', '#f59b4b'],
   ['정체', '#f0605d'],
 ] as const;
 
@@ -53,7 +53,7 @@ export function makeFlow(edges: Edge[]) {
   const speed = new THREE.Float32BufferAttribute(new Float32Array(pos.length / 3).fill(1), 1);
   geo.setAttribute('aSpeed', speed);
   geo.setIndex(idx);
-  const [g, y, r] = FLOW_LEVELS.map(([, c]) => new THREE.Color(c));
+  const [slow, jam] = FLOW_LEVELS.map(([, c]) => new THREE.Color(c));
   const mesh = new THREE.Mesh(
     geo,
     material({
@@ -61,28 +61,31 @@ export function makeFlow(edges: Edge[]) {
       depthWrite: false,
       offset: 4,
       doubleSide: true,
-      uniforms: { uGreen: { value: g }, uYellow: { value: y }, uRed: { value: r } },
+      uniforms: { uSlow: { value: slow }, uJam: { value: jam } },
       vertex: /* glsl */ `
         attribute float aSide; attribute vec2 aNorm; attribute float aSpeed;
-        varying float vSpeed; varying float vDist;
+        varying float vSpeed; varying float vDist; varying float vSide;
         void main() {
           vec4 cv = viewMatrix * vec4(position, 1.0);
-          // 띠 폭 1.2m, 화면에서는 2.5px 보다 가늘어지지 않게
-          float w = 0.6 * zoomScale(-cv.z, 1.2, 2.5, 1.0, 14.0);
+          // 띠 폭 1.6m, 화면에서는 4px 보다 가늘어지지 않게(가장자리를 어둡게 둘러 나무·노면 표시와 구별되는 선으로 보이게 한다)
+          float w = 0.8 * zoomScale(-cv.z, 1.6, 4.0, 1.0, 14.0);
           vec3 p = position + vec3(aNorm.x, 0.0, aNorm.y) * aSide * w;
           vSpeed = aSpeed;
+          vSide = aSide;
           vec4 mv = viewMatrix * vec4(p, 1.0);
           vDist = -mv.z;
           gl_Position = projectionMatrix * mv;
         }`,
       fragment: /* glsl */ `
-        uniform vec3 uGreen, uYellow, uRed;
-        varying float vSpeed; varying float vDist;
+        uniform vec3 uSlow, uJam;
+        varying float vSpeed; varying float vDist; varying float vSide;
         void main() {
-          vec3 c = vSpeed >= 0.6 ? uGreen : vSpeed >= 0.35 ? uYellow : uRed;
+          if (vSpeed >= 0.6) discard;
+          vec3 c = (vSpeed >= 0.35 ? uSlow : uJam) * (0.9 + 0.25 * uNight);
+          c = mix(c, vec3(0.16, 0.1, 0.1), smoothstep(0.5, 0.7, abs(vSide)));
           // 가까이 다가가면 차가 잘 보이도록 옅게
-          float a = mix(0.3, 0.85, smoothstep(120.0, 600.0, vDist));
-          gl_FragColor = vec4(c * (0.85 + 0.25 * uNight), a);
+          float a = mix(0.35, 0.9, smoothstep(120.0, 600.0, vDist));
+          gl_FragColor = vec4(c, a);
         }`,
     }),
   );
