@@ -28,7 +28,7 @@ import { makeCatReactor } from './sim/catReact.ts';
 import { CAT_SPOTS, catAt, catName, feeders, makeCats, PERSONALITY_KO, type CatState } from './sim/cats.ts';
 import { makeClock } from './sim/clock.ts';
 import { sunAngles } from './sim/curves.ts';
-import { buildCarGraph, buildWalkGraph } from './sim/graph.ts';
+import { buildCarGraph, buildWalkGraph, clearWalkFromCars, laneTest } from './sim/graph.ts';
 import { makeSimProvider } from './sim/provider.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
@@ -62,6 +62,8 @@ const [board, mask] = await Promise.all([loadBoard(BASE), new THREE.TextureLoade
 const start = clock.now();
 const walkGraph = buildWalkGraph(board.roads);
 const carGraph = buildCarGraph(board.roads);
+// 지도 자료에서 차로 위에 그려진 보행로·보도 쪽으로는 걷지 않는다
+clearWalkFromCars(walkGraph, carGraph);
 const signals = makeSignals(carGraph);
 const cars = makeCars(carGraph, provider, 11, MAX_CARS, makeBusRoutes(board.buses, carGraph), signals);
 // 차는 보는 곳(카메라가 겨눈 자리 둘레) 위주로 실제 밀도에 가깝게 채우고, 화면 밖에서만 놓고 뺀다
@@ -103,6 +105,8 @@ const walkers = makeWalkers(
   MAX_PEOPLE,
   undefined,
   signals,
+  laneTest(carGraph),
+  laneTest(carGraph.filter((e) => e.cls <= 3), 1.2),
 );
 // 처음부터 길에 사람이 있도록 5분쯤 미리 돌려 둔다(신호가 바뀌도록 시각도 함께 흘린다)
 for (let i = 0; i < 600; i++) walkers.step(0.5, { ...start, tod: (start.tod - 300 + i * 0.5 + 86400) % 86400 });

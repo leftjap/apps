@@ -35,7 +35,8 @@ export interface SignalSite {
   nodes: Set<string>;
 }
 
-const key = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
+/** 노드 좌표 열쇠(신호 묶음의 nodes 에 든 값) */
+export const key = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
 const endOf = (e: Edge) => [e.p[e.p.length - 3], e.p[e.p.length - 1]] as const;
 const endHeading = (e: Edge) => {
   const n = e.p.length;
@@ -103,10 +104,20 @@ export function makeSignals(edges: Edge[]) {
   }
   /** 좌표 (x, z)의 노드가 속한 신호 묶음(없으면 −1) */
   const siteAt = (x: number, z: number) => list.findIndex((s) => s.nodes.has(key(x, z)));
+  // 묶음마다 노드 좌표(가까운 묶음 찾기용)
+  const pts = list.map((s) => [...s.nodes].map((k) => k.split(',').map((v) => Number(v) / 10)));
+  /** (x, z)에서 r(m) 안에 노드가 있는 신호 묶음(없으면 −1). 중앙분리대 있는 큰길처럼 노드가 여럿인 교차로의 가운데 노드도 잡는다 */
+  const siteNear = (x: number, z: number, r = 25) => pts.findIndex((ps) => ps.some(([px, pz]) => Math.abs(px - x) < r && Math.abs(pz - z) < r && Math.hypot(px - x, pz - z) < r));
+  /** 묶음 c 의 무리 group 초록불이 남은 시간(초). 초록불이 아니면 0 */
+  function greenLeft(c: number, group: number, tod: number): number {
+    const u = (((tod + list[c].offset) % CYCLE) + CYCLE) % CYCLE;
+    if (group === 0) return u < PLAN[0] ? PLAN[0] - u : 0;
+    return u >= PLAN[2] && u < PLAN[3] ? PLAN[3] - u : 0;
+  }
   /** 방향 h 로 걷는 사람·차가 속한 무리 */
   const groupOf = (c: number, h: number) => (axisGap(h, list[c].axis) < Math.PI / 4 ? 0 : 1);
 
-  return { list, approach, state, siteAt, groupOf, junctions: boxes };
+  return { list, approach, state, greenLeft, siteAt, siteNear, groupOf, junctions: boxes };
 }
 
 export type Signals = ReturnType<typeof makeSignals>;

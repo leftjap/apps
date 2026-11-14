@@ -197,3 +197,72 @@ export function buildWalkGraph(roads: Road[]): WalkGraph {
     },
   };
 }
+
+/** 지도 자료에서 따로 그린 보행로·보도가 차로 위에 놓인 곳: 걷는 띠 가운데가 길 중간(양 끝 노드에서 10m 밖)의 차로 안에 30% 넘게 들면 그쪽으로는 걷지 않는다.
+ *  양쪽이 다 차로 위면 그 길 조각을 걷지 않고(인기도 0), 한쪽만이면 다른 쪽만 걷는다. 보도 없는 골목(등급 4·5)은 사람과 차가 함께 쓰므로 그대로 둔다 */
+export function clearWalkFromCars(g: WalkGraph, cars: Edge[]) {
+  const onLanes = laneTest(cars);
+  for (let a = 0; a < g.adj.length; a++)
+    g.adj[a].forEach((b, k) => {
+      if (b < a || (g.cls[a][k] >= 4 && g.cls[a][k] <= 5)) return;
+      const ax = g.nx[a * 2];
+      const az = g.nx[a * 2 + 1];
+      const dx = g.nx[b * 2] - ax;
+      const dz = g.nx[b * 2 + 1] - az;
+      const L = Math.hypot(dx, dz);
+      if (L < 22) return;
+      const mid = (g.lat[a][k][0] + g.lat[a][k][1]) / 2;
+      const hit = [0, 0];
+      let n = 0;
+      for (let d = 10; d <= L - 10; d += 4, n++)
+        [1, -1].forEach((sd, j) => {
+          // 진행 방향(a→b) 오른쪽이 +: (−dz, dx)
+          if (onLanes(ax + (dx / L) * d - (dz / L) * mid * sd, az + (dz / L) * d + (dx / L) * mid * sd)) hit[j]++;
+        });
+      const right = hit[0] > n * 0.3;
+      const left = hit[1] > n * 0.3;
+      const kb = g.adj[b].indexOf(a);
+      if (right && left) {
+        g.aw[a][k] = 0;
+        g.aw[b][kb] = 0;
+      } else if (right || left) {
+        g.dir[a][k] = right ? -1 : 1;
+        g.dir[b][kb] = -g.dir[a][k];
+      }
+    });
+}
+
+/** 좌표가 어느 차로 위에 있는지 알려 주는 함수(차로 조각을 20m 칸 격자에 넣어 둔다). inset 만큼 차로 가장자리 안쪽만 본다 */
+export function laneTest(cars: Edge[], inset = 0): (x: number, z: number) => boolean {
+  // 차로 조각: [ax, az, bx, bz, 차로 안쪽 끝, 바깥쪽 끝]
+  const segs: number[][] = [];
+  const grid = new Map<number, number[]>();
+  const key = (cx: number, cz: number) => cx * 100000 + cz;
+  for (const e of cars) {
+    const lo = e.off0 - LANE / 2;
+    const hi = e.off0 + (e.lanes - 0.5) * LANE;
+    for (let k = 0; k + 3 < e.p.length; k += 3) {
+      const s = [e.p[k], e.p[k + 2], e.p[k + 3], e.p[k + 5], lo, hi];
+      const id = segs.length;
+      segs.push(s);
+      for (let cx = Math.floor(Math.min(s[0], s[2]) / 20) - 1; cx <= Math.floor(Math.max(s[0], s[2]) / 20) + 1; cx++)
+        for (let cz = Math.floor(Math.min(s[1], s[3]) / 20) - 1; cz <= Math.floor(Math.max(s[1], s[3]) / 20) + 1; cz++)
+          (grid.get(key(cx, cz)) ?? grid.set(key(cx, cz), []).get(key(cx, cz))!).push(id);
+    }
+  }
+  const onLanes = (x: number, z: number) => {
+    for (const id of grid.get(key(Math.floor(x / 20), Math.floor(z / 20))) ?? []) {
+      const [ax, az, bx, bz, lo, hi] = segs[id];
+      const dx = bx - ax;
+      const dz = bz - az;
+      const L = Math.hypot(dx, dz) || 1;
+      const u = ((x - ax) * dx + (z - az) * dz) / L;
+      if (u < 0 || u > L) continue;
+      const lat = ((x - ax) * -dz + (z - az) * dx) / L;
+      if (lat > lo + inset && lat < hi - inset) return true;
+    }
+    return false;
+  };
+  return onLanes;
+}
+
