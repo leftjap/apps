@@ -695,7 +695,9 @@ function frame(t: number) {
   // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더의 zoomScale 과 같은 식)
   const projK = view.renderer.domElement.clientHeight / (2 * Math.tan((32 * Math.PI) / 360));
   const vd = view.viewDist();
-  reactor.setGap(0.32 * Math.min(15, Math.max(4, (15 * vd) / (projK * 0.5))) + 0.36 * Math.min(6.5, Math.max(1.6, (8 * vd) / (projK * 1.6))));
+  const ws = Math.min(6.5, Math.max(1.6, (8 * vd) / (projK * 1.6)));
+  const cs = Math.min(15, Math.max(1.6, (10 * vd) / (projK * 0.45)), 2.5 * ws);
+  reactor.setGap(0.27 * cs + 0.32 * ws);
   catStates = reactor.step(dt, cats.map((c) => catAt(c, now)), layers.people ? walkers.w : { ...walkers.w, n: 0 }, walkers.hold);
 
   updateEnv(now, time, sky, dt);
