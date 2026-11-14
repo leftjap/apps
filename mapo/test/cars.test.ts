@@ -258,6 +258,37 @@ describe('중앙버스차로', () => {
   // 동쪽으로 가는 길의 중앙 정류장(일반 차로 왼쪽 가장자리 z=4.05 바로 안쪽 분리대 위)
   const MS: [string, string, number, number][] = [['1', '가운데정류장', 0, 2.8]];
 
+  it('정류장 자리처럼 차선 자료에 중앙버스차선이 없는 짧은 구간도 앞뒤가 중앙버스차로면 이어진다', () => {
+    const plain = { ...med, medBus: false, name: '큰길' };
+    const g = buildCarGraph([
+      road([[-600, 9], [-100, 9]], { ...med, name: '큰길' }),
+      road([[-100, 9], [-50, 9]], plain),
+      road([[-50, 9], [0, 9]], plain),
+      road([[0, 9], [500, 9]], { ...med, name: '큰길' }),
+      road([[500, 9], [600, 9]], plain), // 뒤로 이어지는 중앙버스차로가 없다
+    ]);
+    expect(g.map((e) => e.med > 0)).toEqual([true, true, true, true, false]);
+  });
+
+  it('교차로 앞처럼 분리대가 좁아지는 조각도 중앙버스차로를 끊지 않는다(버스가 차로를 가로지르지 않게)', () => {
+    const g = buildCarGraph([
+      road([[-600, 9], [-100, 9]], { ...med, name: '큰길' }),
+      road([[-100, 9], [0, 9]], { ...med, name: '큰길', gap: 2.4 }),
+      road([[0, 9], [100, 9]], { ...med, name: '큰길', medBus: false, gap: 4.9 }),
+      road([[100, 9], [600, 9]], { ...med, name: '큰길' }),
+    ]);
+    expect(g.map((e) => e.med > 0)).toEqual([true, true, true, true]);
+  });
+
+  it('앞뒤가 바로 중앙버스차로인 40m 미만 조각은 이름이 달라도 잇는다(교차로 안에서 버스가 차로를 오가지 않게)', () => {
+    const g = buildCarGraph([
+      road([[-600, 9], [-20, 9]], { ...med, name: '신촌로' }),
+      road([[-20, 9], [10, 9]], { ...med, name: '', medBus: false, gap: 0 }),
+      road([[10, 9], [600, 9]], { ...med, name: '양화로' }),
+    ]);
+    expect(g.map((e) => e.med > 0)).toEqual([true, true, true]);
+  });
+
   it('중앙차로 구간에서는 OSM 정류장 대신 중앙 정류장에 서고, 마을버스는 길가 정류장 그대로다', () => {
     const g = divided();
     const runs = [

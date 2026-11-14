@@ -44,6 +44,9 @@ export interface Edge {
   med: number;
 }
 
+/** 분리대 폭 gap 인 한 방향 큰길에서 일반 차로 왼쪽 가장자리부터 중앙버스차로 가운데까지(m) */
+const medOff = (gap: number) => 0.5 + Math.max(1.4, Math.min(1.75, gap / 4));
+
 /** 구간 e 의 l번 차로 가운데가 중심선에서 오른쪽으로 떨어진 거리(중앙버스차로는 왼쪽이라 음수) */
 export const laneOffset = (e: Edge, l: number) => (l === MED ? e.off0 - e.lw / 2 - e.med : e.off0 + l * e.lw);
 
@@ -59,8 +62,9 @@ export function buildCarGraph(roads: Road[]): Edge[] {
     if ((r.cls > 3 && !(r.bus && r.cls <= 5)) || r.p.length < 6) return;
     if (r.oneway) {
       const lanes = Math.max(1, r.lf);
-      // 중앙버스차로는 왼쪽 분리대의 이쪽 절반(찻길 가장자리 0.5m 밖부터 분리대 폭의 절반) 가운데. 버스 한 대가 들어갈 폭이 없으면 두지 않는다
-      const med = r.medBus && r.gap / 2 >= 2.6 ? 0.5 + Math.min(1.75, r.gap / 4) : 0;
+      // 중앙버스차로는 왼쪽 분리대의 이쪽 절반(찻길 가장자리 0.5m 밖부터 분리대 폭의 절반) 가운데.
+      // 교차로 앞처럼 분리대가 좁아지는 곳도 버스가 차로를 오가지 않게 차로를 끊지 않는다(분리대가 좁으면 버스가 조금 걸친다)
+      const med = r.medBus ? medOff(r.gap) : 0;
       add(r, road, r.p, lanes, (-(lanes - 1) / 2) * r.lw, false, med);
       twin.push(-1);
     } else {
@@ -97,6 +101,21 @@ export function buildCarGraph(roads: Road[]): Edge[] {
   }
   // 새 차는 판 가장자리에서 시작하는 구간으로만 들어온다(판 안에서 갑자기 나타나지 않게)
   for (const e of edges) e.entry = !hasIn.has(e.id) && Math.hypot(e.p[0], e.p[2]) > BOARD_R - 40;
+  // 중앙버스정류장 자리에서는 분리대 쪽 경계가 버스전용차선이 아니라 승강장 연석이라 차선 자료로 중앙버스차로를 읽지 못한다.
+  // 분리대가 있는 한 방향 큰길 조각이 같은 이름 길을 따라 앞뒤 네 조각 안에서 중앙버스차로와 이어지면 중앙버스차로로 잇는다
+  const prev: number[][] = edges.map(() => []);
+  for (const e of edges) for (const k of e.next) prev[k].push(e.id);
+  const roadOf = edges.map((e) => roads[e.road]);
+  const open = (e: Edge) => !e.med && roadOf[e.id].oneway && e.cls <= 3 && roadOf[e.id].gap > 1;
+  const reach = (e: Edge, step: (e: Edge) => number[], left: number): boolean =>
+    step(e).some((k) => edges[k].name === e.name && (edges[k].med > 0 || (left > 1 && open(edges[k]) && reach(edges[k], step, left - 1))));
+  // 앞뒤가 바로 중앙버스차로인 40m 미만 한 방향 조각(교차로 안 조각 등)은 이름·분리대와 상관없이 잇는다. 이은 조각이 다음 조각을 이을 수 있으므로 바뀌지 않을 때까지 되풀이한다
+  const between = (e: Edge) => !e.med && roadOf[e.id].oneway && e.cls <= 3 && e.len < 40 && prev[e.id].some((k) => edges[k].med > 0) && e.next.some((k) => edges[k].med > 0);
+  for (let pass = 0; pass < 4; pass++) {
+    const fill = edges.filter((e) => (e.name && open(e) && reach(e, (q) => q.next, 4) && reach(e, (q) => prev[q.id], 4)) || between(e));
+    if (!fill.length) break;
+    for (const e of fill) e.med = medOff(roadOf[e.id].gap);
+  }
   return edges;
 }
 
