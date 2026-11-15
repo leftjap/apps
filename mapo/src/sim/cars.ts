@@ -33,6 +33,9 @@ export interface Cars {
   route: Int16Array;
   /** 차마다 붙는 고유 번호(배열 자리가 바뀌어도 그대로) */
   uid: Int32Array;
+  /** 그릴 때 차 길이를 늘일 수 있는 한도(m): 앞뒤 차와의 가운데 거리, 앞의 정지선·정류장까지 가운데 거리의 두 배 가운데 가장 작은 값.
+   *  멀리서 차를 키워 그려도 앞뒤 차와 겹치거나 정지선을 넘어 보이지 않게 한다 */
+  room: Float32Array;
 }
 
 const VFREE = [22, 14, 12.5, 10, 7, 5.5]; // 등급별 자유 속도(m/s)
@@ -63,6 +66,7 @@ export function makeCars(
     fade: new Float32Array(max),
     route: new Int16Array(max).fill(-1),
     uid: new Int32Array(max),
+    room: new Float32Array(max).fill(99),
   };
   let nextUid = 1;
   let nBus = 0;
@@ -254,6 +258,7 @@ export function makeCars(
     cars.tint[i] = route >= 0 ? routes[route].kind : rand();
     cars.brake[i] = 0;
     cars.fade[i] = 0;
+    cars.room[i] = 99;
     dwell[i] = 0;
     stopK[i] = 0;
     claim[i] = -1;
@@ -292,6 +297,7 @@ export function makeCars(
     dwell[i] = dwell[j];
     cars.route[i] = cars.route[j];
     cars.uid[i] = cars.uid[j];
+    cars.room[i] = cars.room[j];
     edge[i] = edge[j];
     nextE[i] = nextE[j];
     s[i] = s[j];
@@ -639,7 +645,8 @@ export function makeCars(
       for (const e of edges) speed[e.id] = VFREE[e.cls] * provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id], midH[e.id]);
       allot(now);
     }
-    // 구간·차로별로 줄 세우고 맨 뒤 차를 적어 둔다
+    // 구간·차로별로 줄 세우고 맨 뒤 차를 적어 둔다. 같은 차로에 줄 선 앞뒤 차끼리는 무엇을 따라가든 그릴 때 늘일 한도(room)를 서로 줄인다
+    cars.room.fill(99, 0, cars.n);
     for (const l of lists) l.length = 0;
     for (let i = 0; i < cars.n; i++) lists[edge[i]].push(i);
     tail.fill(-1);
@@ -651,6 +658,11 @@ export function makeCars(
       lead.fill(-1);
       for (const i of l) {
         acc[i] = lead[lane[i]]; // 잠시 앞차 번호를 담아 둔다
+        if (acc[i] >= 0) {
+          const d = s[acc[i]] - s[i];
+          cars.room[i] = Math.min(cars.room[i], d);
+          cars.room[acc[i]] = Math.min(cars.room[acc[i]], d);
+        }
         lead[lane[i]] = i;
       }
       for (let k = 0; k < e.lanes; k++) tail[e.id * 8 + k] = lead[k];
@@ -814,6 +826,18 @@ export function makeCars(
           }
         }
       }
+      // 이 구간 끝이 교차로가 아니고 다음 구간 끝에 신호가 있으면(정지선 바로 앞 조각이 짧은 길 중간 횡단보도 등) 그 신호도 미리 보고 늦춘다.
+      // 지금 구간만 보면 짧은 조각에 올라선 뒤에야 빨간불을 보고 서지 못해 지나간다
+      const ap2 = !ap && nextE[i] >= 0 && jn.groupOfEnd[e.id] < 0 ? signals?.approach.get(nextE[i]) : undefined;
+      if (ap2) {
+        const st = signals!.state(ap2.c, ap2.group, now.tod);
+        const toLine = e.len - s[i] + edges[nextE[i]].len - ap2.setback - size[i] / 2;
+        if (st !== GREEN && toLine > -0.5 && !(st === YELLOW && toLine < (v[i] * v[i]) / 6) && toLine + 2 < gap) {
+          gap = toLine + 2;
+          dv = v[i];
+          front = i;
+        }
+      }
       // 횡단보도: 사람이 건너고 있으면 그 앞(횡단보도 반 폭 + 1.2m)에 선다. 이 구간과 다음 구간을 본다
       if (xw) {
         let d0 = -s[i];
@@ -900,6 +924,12 @@ export function makeCars(
         const cah = v[i] <= vl ? 0 : -((v[i] - vl) ** 2) / (2 * Math.max(0.1, gap - 2));
         a = idm >= cah ? idm : 0.01 * idm + 0.99 * (cah + B_COMF * Math.tanh((idm - cah) / B_COMF));
       }
+      // 그릴 때 늘일 수 있는 길이: 따라가는 앞 차까지 가운데 거리(앞차의 한도도 함께 줄인다), 정지선·정류장이면 그곳까지 가운데 거리의 두 배
+      if (front >= 0 && front !== i) {
+        const dc = Math.max(0, gap) + (size[front] + size[i]) / 2;
+        cars.room[i] = Math.min(cars.room[i], dc);
+        cars.room[front] = Math.min(cars.room[front], dc);
+      } else if (front === i) cars.room[i] = Math.min(cars.room[i], 2 * Math.max(0, gap - 2 + size[i] / 2));
       if (front >= 0 && front === merging) a = Math.max(a, -1.2 * B_COMF);
       a = Math.max(-8, Math.min(A_MAX, a));
       const slow = v[i] < 0.3 * VFREE[e.cls] * vf[i];

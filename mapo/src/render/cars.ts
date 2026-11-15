@@ -244,14 +244,16 @@ const TAXI_COLORS: [number, [number, number, number]][] = [
 
 const VERT = /* glsl */ `
   attribute vec4 aInst; attribute vec4 aMore;   // aMore = (브레이크, 색 값 또는 버스 종류, 나타남, 0 승용차·1 버스·2 택시)
-  attribute float aPart; attribute vec3 aColor;
-  uniform float uPick;
+  attribute float aPart; attribute vec3 aColor; attribute float aRoom;
+  uniform float uPick; uniform vec4 uDim;
   varying vec3 vN; varying vec3 vNl; varying float vPart; varying vec4 vMore; varying float vDist; varying vec3 vO; varying float vPicked; varying vec3 vAux;
   void main() {
     vec4 cv = viewMatrix * vec4(aInst.xyz, 1.0);
     float picked = step(abs(float(gl_InstanceID) - uPick), 0.5);
     float s = zoomScale(-cv.z, 4.5, 9.0, 1.3, 4.2) * aMore.z * (1.0 + 0.15 * picked);
-    vec3 p = position * s;
+    // 멀리서 키워 그려도 길이는 앞뒤 차·정지선까지(aRoom) 안에서만 늘인다(줄 선 차끼리 겹치거나 정지선을 넘어 보이지 않게)
+    float sl = min(s, max(aMore.z, (aRoom - 0.8) / (2.0 * uDim.x)));   // 0.8m 는 굽은 길과 한 단계 늦은 값의 여유
+    vec3 p = vec3(position.x * sl, position.y * s, position.z * s);
     float cs = cos(aInst.w), sn = sin(aInst.w);
     vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, aInst.y + p.y + 0.05, aInst.z + p.x * sn + p.z * cs);
     vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);
@@ -397,7 +399,7 @@ export function makeCarMeshes(max: number) {
     { base: SHAPES.coach(), look: COACH.look, max: 150 },
     { base: SHAPES.minibus(), look: MINI.look, max: 200 },
   ].map(({ base, look, max }, k) => {
-    const inst = instanced(base, max, { aInst: 4, aMore: 4 });
+    const inst = instanced(base, max, { aInst: 4, aMore: 4, aRoom: 1 });
     const isBus = k >= 5 ? 1 : 0;
     const mat = material({
       vertex: VERT,
@@ -447,12 +449,14 @@ export function makeCarMeshes(max: number) {
       arr.aMore[j + 1] = c.tint[i];
       arr.aMore[j + 2] = c.fade[i];
       arr.aMore[j + 3] = c.kind[i];
+      arr.aRoom[j / 4] = c.room[i];
     }
     kinds.forEach((kd, k) => {
       kd.geo.instanceCount = n[k];
       kd.g2.instanceCount = n[k];
       kd.attr.aInst.needsUpdate = true;
       kd.attr.aMore.needsUpdate = true;
+      kd.attr.aRoom.needsUpdate = true;
     });
   }
   return { group, update };
