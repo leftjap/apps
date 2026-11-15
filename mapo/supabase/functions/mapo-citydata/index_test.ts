@@ -6,6 +6,7 @@ import { trim } from './index.ts';
 const fake = {
   CITYDATA: {
     AREA_NM: '연남동',
+    WEATHER_STTS: [{ WEATHER_TIME: '2026-11-15 04:00', PRECIPITATION: '1.5', PRECPT_TYPE: '비', TEMP: '9.0' }],
     LIVE_PPLTN_STTS: [
       {
         AREA_CONGEST_LVL: '붐빔',
@@ -45,4 +46,9 @@ Deno.test('장소 인구와 도로 구간을 화면에 필요한 값만 추린�
 
 Deno.test('응답에 장소 자료가 없으면 null', () => {
   assertEquals(trim({ RESULT: { CODE: 'INFO-200' } }).place, null);
+});
+
+Deno.test('날씨는 강수 형태와 1시간 강수량만 추린다(없으면 null)', () => {
+  assertEquals(trim(fake).weather, { type: '비', mm: '1.5', time: '2026-11-15 04:00' });
+  assertEquals(trim({ CITYDATA: { AREA_NM: '연남동' } }).weather, null);
 });

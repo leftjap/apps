@@ -377,6 +377,8 @@ export function makeCars(
   // ── 차량 수 ──
   // 구간마다 지금 있어야 할 실제 차 수는 흐름 속도로 정한다. 원활(속도 비율 0.65 이상)하면 시간대 교통량만큼이고,
   // 느려질수록 늘어 속도 비율 0.15(꽉 막힘)에서 차로 1km 에 100대가 된다(서행 0.35 에서 약 60대).
+  // 교통량이 적은 시간(시간대 교통량 3대 미만, 새벽 1~6시)에는 밀도 = 교통량 ÷ 속도(시간대 교통량 ÷ 속도 비율)를 넘지 않게 하고, 4.5대 이상(낮·저녁·출퇴근, 밤 11시 전)이면 위 곡선 그대로다.
+  // 새벽 실시간 자료의 정체는 대부분 짧은 구간(150m 미만)의 신호 대기라 차가 많다는 뜻이 아니다(2026-11-15 04:20 일요일: 정체 48구간 가운데 34구간).
   // 다만 그 속도로 달리는 차가 앞차와 띄우는 간격(차 길이 4.6m + 2m + 1.3초 거리)보다 촘촘할 수는 없다. 상한이 모자라면 보는 곳(초점) 안을 먼저 실제 밀도에 가깝게 채우고, 밖에는 남은 몫을 고르게 나눈다.
   // 초점 안·밖의 모자란 차와 넘치는 차는 화면 밖 길 위에서만 놓고 뺀다
   const JAM = 100;
@@ -393,11 +395,13 @@ export function makeCars(
   /** 지금 시각의 구간별 실제 차 수를 정하고 상한 안에서 초점 안·밖 몫을 나눈다. 목표 대수를 돌려준다 */
   function allot(now: Now): number {
     const base = density(now);
+    const busy = Math.min(1, Math.max(0, (base - 3) / 1.5));
     let F = 0;
     let O = 0;
     for (const e of edges) {
       const r = provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id], midH[e.id]);
-      const k = Math.min(base + (JAM - base) * Math.max(0, Math.min(1, (0.65 - r) / 0.5)), 1000 / (6.6 + 1.3 * r * VFREE[e.cls]));
+      const curve = base + (JAM - base) * Math.max(0, Math.min(1, (0.65 - r) / 0.5));
+      const k = Math.min(curve + (Math.min(curve, base / Math.max(r, 0.15)) - curve) * (1 - busy), 1000 / (6.6 + 1.3 * r * VFREE[e.cls]));
       real[e.id] = (k * e.len * e.lanes) / 1000;
       F += real[e.id] * inF[e.id];
       O += real[e.id] * (1 - inF[e.id]);

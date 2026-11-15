@@ -15,7 +15,7 @@ export interface Card {
   follow?: boolean;
 }
 
-export type Weather = 'clear' | 'rain' | 'fog';
+export type Weather = 'live' | 'clear' | 'rain' | 'fog';
 export type Layer = 'flow' | 'cats' | 'people' | 'cars' | 'subway' | 'names';
 export type SeasonPick = 'live' | 'blossom' | 'green' | 'autumn' | 'winter';
 
@@ -34,6 +34,7 @@ const TIME_PRESETS: [string, string][] = [
   ['night', '밤'],
 ];
 const WEATHERS: [Weather, string][] = [
+  ['live', '실시간'],
   ['clear', '맑음'],
   ['rain', '비'],
   ['fog', '안개'],
@@ -121,7 +122,7 @@ export function makeHud(ev: HudEvents) {
          <section class="slot" data-card-slot></section>
          <section class="areas"><h2>지금 붐비는 곳</h2><ol data-areas></ol><p class="scale" data-scale></p></section>
          <section class="about">
-           <p>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다. 화면의 사람은 구역 인구 가운데 밖에 나와 걷는 사람(상업지 12%, 한강공원 30%로 가정)이고, 그릴 수 있는 수를 넘으면 모든 구역을 같은 배율로 줄입니다. 차는 도로 흐름 속도로 정한 대수를 보는 곳 둘레부터 채웁니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다. 횡단보도·정지선의 자리와 차로 수·차로 폭은 서울시 자료를 따르고, 신호 시각은 실제와 다릅니다.</p>
+           <p><span data-src>열차·버스·차·사람은 시간대 패턴으로 움직이는 시뮬레이션이고, 길고양이는 연출입니다.</span> 화면의 사람은 구역 인구 가운데 밖에 나와 걷는 사람(상업지 12%, 한강공원 30%로 가정)이고, 그릴 수 있는 수를 넘으면 모든 구역을 같은 배율로 줄입니다. 차는 도로 흐름 속도로 정한 대수를 보는 곳 둘레부터 채웁니다. 버스 노선과 정류장은 OpenStreetMap 자료이고, 버스 위치와 배차는 실제와 다릅니다. 횡단보도·정지선의 자리와 차로 수·차로 폭은 서울시 자료를 따르고, 신호 시각은 실제와 다릅니다.</p>
            <p>지도 자료 © OpenStreetMap contributors. 일부 건물 © Overture Maps Foundation, Qian Shi 외(2023) CC BY 4.0. 횡단보도·차선: 서울특별시 교통안전시설물(2021), 서울특별시 자치구 횡단보도 정보(2026). 땅 쓰임새·가로수: 서울특별시 도시생태현황도(2025), 서울특별시 가로수 위치정보(2026). 서울시 자료는 공공누리 제1유형.</p>
          </section>
        </div>
@@ -187,6 +188,14 @@ export function makeHud(ev: HudEvents) {
       q('[data-range-out]').textContent = t;
       if (document.activeElement !== range) range.value = String(Math.floor(now.tod / 60));
       for (const b of qa('[data-tp]')) b.classList.toggle('on', b.dataset.tp === 'live' && live);
+    },
+    /** 무엇이 실시간 자료인지 안내 첫 문장을 바꾼다(도시데이터, 지하철) */
+    setSources(city: boolean, rail: boolean) {
+      const c = city ? '구역 인구·혼잡과 도로 흐름 속도는 서울시 실시간 도시데이터 값이고, 날씨를 실시간으로 두면 비도 그 자료를 따릅니다. ' : '';
+      const r = rail
+        ? '열차는 서울시 실시간 열차 위치를 따르고, 버스·차·사람의 움직임은 시뮬레이션이며, 길고양이는 연출입니다.'
+        : `열차·버스·차·사람은 ${city ? '' : '시간대 패턴으로 움직이는 '}시뮬레이션이고, 길고양이는 연출입니다.`;
+      q('[data-src]').textContent = c + r;
     },
     setSeason(s: SeasonPick) {
       for (const b of qa('[data-season]')) b.classList.toggle('on', b.dataset.season === s);

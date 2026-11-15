@@ -271,9 +271,16 @@ function applySeason() {
   trees.setSeason(season);
 }
 
+// 날씨: '실시간'이면 실시간 도시데이터의 강수 형태·강수량으로 비 세기를 정한다(자료가 없거나 시험 시각이면 맑음)
+let weatherPick: Weather = 'live';
+function applyWeather() {
+  const r = weatherPick === 'live' && clock.live ? live.rain() : null;
+  weather.wantRain = weatherPick === 'live' ? (r ?? 0) : weatherPick === 'rain' ? 1 : 0;
+  weather.wantFog = weatherPick === 'fog' ? 1 : 0;
+}
 function setWeather(w: Weather) {
-  weather.wantRain = w === 'rain' ? 1 : 0;
-  weather.wantFog = w === 'fog' ? 1 : 0;
+  weatherPick = w;
+  applyWeather();
   hud.setWeather(w);
 }
 const layers: Record<Layer, boolean> = { flow: true, cats: true, people: true, cars: true, subway: true, names: true };
@@ -288,7 +295,7 @@ function setLayer(l: Layer, on: boolean) {
   namesMesh.visible = layers.names;
   flow.mesh.visible = layers.flow;
 }
-setWeather(query.get('weather') === 'rain' ? 'rain' : query.get('weather') === 'fog' ? 'fog' : 'clear');
+setWeather(({ rain: 'rain', fog: 'fog', clear: 'clear' } as Record<string, Weather>)[query.get('weather') ?? ''] ?? 'live');
 hud.setSeason('live');
 
 function select(t: Target | null) {
@@ -336,9 +343,11 @@ function refreshCard() {
     const name = selected.name;
     const info = LANDMARKS.find((l) => l.station === name);
     const sim = stationBoard(board.lines, name, now.tod);
-    const rows: CardLine[] = (liveRail ? subway.board(name, sim) : sim).map((r) => ({ dot: lineOf.get(r.line)!.color, text: `${lineOf.get(r.line)!.name} ${r.toward} · ${r.state}` }));
+    const rows: CardLine[] = (liveRail ? subway.board(name, sim, Date.now()) : sim).map((r) => ({ dot: lineOf.get(r.line)!.color, text: `${lineOf.get(r.line)!.name} ${r.toward} · ${r.state}` }));
     rows.push(`최근 5분 하차 약 ${provider.alighting(now, name).toLocaleString('ko-KR')}명`);
-    const when = liveRail ? '열차 위치는 실시간 열차 위치(1~4분 전 값)에서 이어 움직인 것이고, 그 열차가 없는 방향은 배차 간격으로 만든 시뮬레이션입니다.' : '열차 도착 시각은 배차 간격으로 만든 시뮬레이션입니다.';
+    const when = liveRail
+      ? '도착 안내는 서울시 실시간 도착 정보를 받은 뒤 지난 시간만큼 줄인 값이고, 그 정보가 없는 방향은 판 위 실제 열차로 어림하며, 그것도 없으면 시간표 값(시간표 표시)입니다.'
+      : '열차 도착 시각은 배차 간격으로 만든 시뮬레이션입니다.';
     card = { tag: info?.kind ?? '지하철역', title: `${name}역`, color: info?.color ?? '#8fd3ff', lines: rows, note: `${info ? `${info.desc} ` : ''}${when}` };
   } else if (selected.kind === 'train') {
     const key = selected.key;
@@ -359,7 +368,7 @@ function refreshCard() {
       title: `${l.name} 열차`,
       color: l.color,
       lines: [row?.toward ?? '', next ? (stopped ? `${next.n}역 정차 중` : `다음 역 ${next.n}`) : '판 밖으로 나가는 중'],
-      note: '열차 위치는 배차 간격과 주행 곡선으로 만든 시뮬레이션입니다.',
+      note: liveRail ? '열차 위치는 서울시 실시간 열차 위치(1~4분 전 값)에서 역마다 서며 이어 움직인 것입니다.' : '열차 위치는 배차 간격과 주행 곡선으로 만든 시뮬레이션입니다.',
       follow: following,
     };
   } else if (selected.kind === 'school') {
@@ -496,7 +505,11 @@ if (SUBWAY_URL) {
     if (document.visibilityState !== 'visible') return;
     fetch(SUBWAY_URL)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d?.trains && subway.set(d.trains, Date.now()))
+      .then((d) => {
+        if (!d?.trains) return;
+        subway.set(d.trains, Date.now());
+        if (Array.isArray(d.arrivals)) subway.setArrivals(d.arrivals, Date.now());
+      })
       .catch(() => {});
   };
   pull();
@@ -732,7 +745,10 @@ function frame(t: number) {
     hudAge = 0;
     live.use(clock.live);
     const pplTime = live.data?.places[0]?.time.slice(11);
-    hud.setClock(now, clock.live, provider.mode === 'live' ? `실시간 · 인구 ${pplTime} 기준` : undefined);
+    const source = provider.mode === 'live' ? `실시간 · 인구 ${pplTime} 기준` : liveRail ? '시뮬레이션' : undefined;
+    hud.setClock(now, clock.live, source && liveRail ? `${source} · 지하철 실시간` : source);
+    hud.setSources(provider.mode === 'live', liveRail);
+    applyWeather();
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));
     hud.setScale(walkerScale(provider, now, MAX_PEOPLE, weather.rain), cars.scale()[0]);

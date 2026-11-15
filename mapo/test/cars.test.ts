@@ -82,6 +82,12 @@ describe('차 이동', () => {
     const sim = makeCars(ring(), makeSimProvider(), 1, 500);
     expect(sim.target(at(3))).toBeLessThan(sim.target(at(8.5)) * 0.5);
   });
+  it('교통량이 적은 새벽에는 낮은 속도를 많은 차로 바꾸지 않는다(밀도 = 교통량 ÷ 속도). 낮·출퇴근은 그대로다', () => {
+    // 새벽 실시간 자료의 정체(속도 비율 0.2)는 대부분 짧은 구간의 신호 대기라 차가 많다는 뜻이 아니다(2026-11-15 04:20 일요일 공식 자료)
+    const ratio = (h: number, dow: number) => makeCars(ring(), fixedProvider(0.2), 1, 100000).target(at(h, dow)) / makeCars(ring(), fixedProvider(1), 1, 100000).target(at(h, dow));
+    expect(ratio(4.33, 0)).toBeLessThan(8);
+    expect(ratio(18, 2)).toBeGreaterThan(6.5);
+  });
 });
 
 describe('판 가장자리 진출입', () => {

@@ -13,7 +13,7 @@ const data: LiveData = {
   places: [{ name: '연남동', level: '붐빔', min: 30000, max: 32000, ages: [1, 9, 40, 20, 12, 9, 6, 3], female: 60, time: '2026-11-14 21:50' }],
   roads: [{ id: 'L1', idx: '정체', spd: 8, xy: [lonlat(0, 0), lonlat(100, 0)] }],
   roadTime: '2026-11-14 22:20',
-  at: 0,
+  at: Date.now(),
 };
 
 describe('실시간 자료 덧씌우기', () => {
@@ -45,5 +45,48 @@ describe('실시간 자료 덧씌우기', () => {
     expect(live.provider.areas(now)).toEqual(sim.areas(now));
     expect(live.provider.roadSpeed(now, 2, 7, 50, 2, 0)).toBe(sim.roadSpeed(now, 2, 7, 50, 2, 0));
     expect(live.provider.mode).toBe('sim');
+  });
+  it('받은 지 15분이 넘은 자료는 버리고 시뮬레이션으로 돌아간다(중계가 끊겨도 실시간 표시와 값이 남지 않게)', () => {
+    const sim = makeSimProvider();
+    let wall = Date.parse('2026-11-15T04:00:00+09:00');
+    const live = makeLiveProvider(sim, () => wall);
+    live.set({ ...data, at: wall });
+    wall += 14 * 60_000;
+    expect(live.provider.mode).toBe('live');
+    wall += 2 * 60_000;
+    expect(live.provider.mode).toBe('sim');
+    expect(live.provider.areas(now)).toEqual(sim.areas(now));
+    expect(live.provider.roadSpeed(now, 2, 7, 50, 2, 0)).toBe(sim.roadSpeed(now, 2, 7, 50, 2, 0));
+  });
+  it('도시고속도로(등급 0)는 공식 구간 선이 반대 차로 위에 그려져 있어도 같은 방향 80m 안이면 그 구간 속도를 쓴다', () => {
+    const sim = makeSimProvider();
+    const live = makeLiveProvider(sim);
+    live.set(data);
+    const p = live.provider;
+    expect(p.roadSpeed(now, 0, 7, 50, 60, 0)).toBe(0.2);
+    expect(p.roadSpeed(now, 0, 7, 50, 60, Math.PI)).toBe(sim.roadSpeed(now, 0, 7, 50, 60, Math.PI));
+    expect(p.roadSpeed(now, 2, 7, 50, 60, 0)).toBe(sim.roadSpeed(now, 2, 7, 50, 60, 0));
+    expect(p.roadSpeed(now, 0, 7, 50, 120, 0)).toBe(sim.roadSpeed(now, 0, 7, 50, 120, 0));
+  });
+  it('비 세기: 강수 형태가 비이면 강수량이 많을수록 세고(0~1), 비가 없거나 눈이면 0, 자료가 없거나 오래되면 null', () => {
+    let wall = Date.parse('2026-11-15T04:00:00+09:00');
+    const live = makeLiveProvider(makeSimProvider(), () => wall);
+    expect(live.rain()).toBeNull();
+    const w = (type: string, mm: string) => live.set({ ...data, at: wall, weather: { type, mm, time: '2026-11-15 04:00' } });
+    w('없음', '-');
+    expect(live.rain()).toBe(0);
+    w('눈', '1.0');
+    expect(live.rain()).toBe(0);
+    w('빗방울', '1mm 미만');
+    const drizzle = live.rain()!;
+    w('비', '2.0');
+    const mid = live.rain()!;
+    w('비', '15.0mm');
+    const heavy = live.rain()!;
+    expect(drizzle).toBeGreaterThan(0);
+    expect(mid).toBeGreaterThan(drizzle);
+    expect(heavy).toBe(1);
+    wall += 16 * 60_000;
+    expect(live.rain()).toBeNull();
   });
 });

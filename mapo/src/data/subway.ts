@@ -2,6 +2,8 @@
 // 열차마다 '받은 시각에 어느 역 둘레에서 어떤 상태(진입·도착·출발·전역 출발)였는지'로 그때 자리를 정하고,
 // 받은 뒤 지난 시간만큼 앞으로 옮긴 다음, 다음 자료가 올 때까지 역마다 서며(시간표 열차와 같은 25초) 달리게 한다.
 // 새 자료로 자리가 바뀌면 몇 초에 걸쳐 따라가 순간 이동하지 않는다. 자료가 6분 넘게 끊기면 쓰지 않는다(시간표 열차로 돌아간다).
+// 역 안내판은 공식 역 도착 정보(realtimeStationArrival, 판 밖 먼 열차까지 있다)를 먼저 쓰고, 없으면 판 위 실제 열차, 그것도 없으면 시간표 값에 '시간표'를 붙인다.
+// 판 위에는 실제 열차만 그리므로 '정차 중'은 그 역에 실제 열차가 서 있을 때만 쓴다.
 import { DWELL, type Arrival, type BoardRow, type LineDef, type TrainPos } from '../sim/trains.ts';
 
 export interface LiveTrain {
@@ -10,6 +12,27 @@ export interface LiveTrain {
   stn: string;
   updn: string;
   st: string;
+  rcv: number;
+}
+
+/** 공식 역 도착 정보 한 줄(중계 함수가 판 안 역만 추린 것) */
+export interface LiveArrival {
+  line: string;
+  /** 판 안 역 */
+  stn: string;
+  /** 상하행 코드(열차 위치 응답과 같은 값. 중계 함수가 공항철도의 뒤집힌 코드까지 맞춰 준다) */
+  updn: string;
+  /** 0 진입, 1 도착, 2 출발, 3 전역 출발, 4 전역 진입, 5 전역 도착, 99 운행 중 */
+  cd: string;
+  /** 도착까지 남은 초(0 이면 알 수 없음) */
+  sec: number;
+  /** 공식 안내 글('5분 후', '[11]번째 전역 (청량리)' 등) */
+  msg: string;
+  /** 열차가 지금 있는 역 */
+  cur: string;
+  /** 같은 방향 안 순서(작을수록 먼저 온다) */
+  ord: string;
+  no: string;
   rcv: number;
 }
 
@@ -58,6 +81,8 @@ export function makeLiveSubway(lines: LineDef[]) {
   let trains = new Map<number, State>();
   let arrived: Arrival[] = [];
   let lastSet = 0;
+  let arrivals: LiveArrival[] = [];
+  let arrivalsAt = 0;
   const len = (l: LineDef) => l.cum[l.cum.length - 1];
 
   /** 열차 하나를 dt 초 움직인다. 판 안 역에 서면(quiet 가 아니면) 도착을 적는다 */
@@ -120,8 +145,32 @@ export function makeLiveSubway(lines: LineDef[]) {
     lastSet = now;
   }
 
+  /** 공식 도착 정보 한 줄을 안내판 글과 남은 초로. 이미 지나갔거나(도착·출발한 지 오래) 알 수 없으면 null */
+  function arrivalState(a: LiveArrival, now: number): { state: string; inSec: number } | null {
+    const age = Math.max(0, (now - a.rcv) / 1000);
+    // 출발은 지나간 열차다. 도착·진입은 그 역에 선 열차가 판 위에 있으면 앞에서 '정차 중'으로 썼으니, 여기서는 방금(1분 안) 받은 것만 곧 도착으로 쓴다
+    if (a.cd === '2') return null;
+    if (a.cd === '1' || a.cd === '0') return age < 60 ? { state: '곧 도착', inSec: 0 } : null;
+    const prev = a.cd === '3' ? '전역 출발' : a.cd === '4' ? '전역 진입' : a.cd === '5' ? '전역 도착' : '';
+    const eta = a.sec > 0 ? a.sec - age : -1;
+    if (prev && age < 90) return { state: prev, inSec: Math.max(0, Math.round(eta >= 0 ? eta : 90 - age)) };
+    if (a.sec > 0) {
+      if (eta < -30) return null;
+      return { state: eta < 90 ? '곧 도착' : `${Math.ceil(eta / 60)}분 후`, inSec: Math.max(0, Math.round(eta)) };
+    }
+    if (prev) return { state: '곧 도착', inSec: 0 };
+    const n = /\[(\d+)\]번째 전역/.exec(a.msg);
+    if (n) return { state: a.msg.replace(/\[(\d+)\]/, '$1').trim(), inSec: Number(n[1]) * 120 };
+    return a.msg ? { state: a.msg.trim(), inSec: 600 } : null;
+  }
+
   return {
     set,
+    /** 공식 역 도착 정보로 바꾼다(now 는 지금 시각 epoch ms) */
+    setArrivals(list: LiveArrival[], now: number) {
+      arrivals = [...list].sort((a, b) => (a.ord < b.ord ? -1 : a.ord > b.ord ? 1 : 0));
+      arrivalsAt = now;
+    },
     step(dt: number) {
       for (const [k, t] of trains) {
         t.off *= Math.exp(-dt / 2);
@@ -147,12 +196,13 @@ export function makeLiveSubway(lines: LineDef[]) {
     },
     /** 쓸 만한 자료가 있는가(받은 지 6분 안) */
     ready: (now: number) => lastSet > 0 && now - lastSet < 6 * 60_000,
-    /** 역 안내판: 노선·방향마다 다가오는 실제 열차까지 남은 시간. 그런 열차가 없으면 시간표 안내(sim)를 그대로 둔다 */
-    board(station: string, sim: BoardRow[]): BoardRow[] {
+    /** 역 안내판: 노선·방향마다 그 역에 선 실제 열차, 공식 도착 정보, 다가오는 실제 열차까지 남은 시간 순으로 쓴다. 다 없으면 시간표 안내(sim)에 '시간표'를 붙인다 */
+    board(station: string, sim: BoardRow[], now: number): BoardRow[] {
+      const table = (row: BoardRow): BoardRow => ({ ...row, state: `${row.state === '정차 중' ? '곧 도착' : row.state} · 시간표` });
       return sim.map((row) => {
         const stops = stopsOf.get(row.line);
         const st = stops?.find((x) => x.name === station && x.inside);
-        if (!stops || !st) return row;
+        if (!stops || !st) return table(row);
         const sign = row.dir ? -1 : 1;
         let best = Infinity;
         for (const t of trains.values()) {
@@ -165,8 +215,16 @@ export function makeLiveSubway(lines: LineDef[]) {
           const between = stops.filter((x) => (x.s - t.s) * sign > 1 && (st.s - x.s) * sign > 1).length;
           best = Math.min(best, Math.max(0, t.dwell) + Math.abs(st.s - t.s) / V + between * DWELL + 6);
         }
-        if (best === Infinity) return row;
-        return { ...row, state: best === 0 ? '정차 중' : best < 90 ? '곧 도착' : `${Math.ceil(best / 60)}분 후`, inSec: Math.round(best) };
+        if (best === 0) return { ...row, state: '정차 중', inSec: 0 };
+        // 공식 도착 정보(받은 지 6분 안)
+        if (now - arrivalsAt < 6 * 60_000)
+          for (const a of arrivals) {
+            if (a.line !== row.line || a.stn !== station || (a.updn === DIR0[a.line] ? 0 : 1) !== row.dir) continue;
+            const got = arrivalState(a, now);
+            if (got) return { ...row, ...got };
+          }
+        if (best === Infinity) return table(row);
+        return { ...row, state: best < 90 ? '곧 도착' : `${Math.ceil(best / 60)}분 후`, inSec: Math.round(best) };
       });
     },
   };
