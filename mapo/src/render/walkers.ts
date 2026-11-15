@@ -65,15 +65,45 @@ function figure(): THREE.BufferGeometry {
   ]);
 }
 
+// 멀리서 작게 보이는 사람의 단순한 모형: 몸통(하의·상의를 높이로 칠한 육각기둥), 머리(이십면체, 위쪽은 머리카락 색), 우산(육각 원뿔).
+// 팔다리·목·그늘·휴대폰은 없다. 부품 번호는 자세한 모형과 같아 같은 셰이더로 그린다
+function figureFar(): THREE.BufferGeometry {
+  return merge([
+    part(new THREE.CylinderGeometry(0.15, 0.17, 0.88, 6, 1, true).scale(0.8, 1, 1).translate(0, 0.46, 0), 0),
+    part(new THREE.IcosahedronGeometry(HEAD_R, 0).translate(HEAD[0], HEAD[1], 0), 1),
+    part(new THREE.ConeGeometry(0.5, 0.28, 6, 1, true).translate(0, RIM + 0.14, 0), 11),
+  ]);
+}
+const NEAR_FIG = figure();
+const FAR_FIG = figureFar();
+export const NEAR_VERTS = NEAR_FIG.attributes.position.count;
+export const FAR_VERTS = FAR_FIG.attributes.position.count;
+/** 키(1.47m)가 화면에서 이 픽셀보다 작게 보이면 단순한 모형으로 그린다 */
+const NEAR_PX = 14;
+
+/** 한 사람을 어떻게 그릴까: 0 그리지 않음(화면 밖·카메라 뒤), 1 자세한 모형, 2 단순한 모형.
+ *  e 는 투영 × 시점 행렬 원소, projK 는 화면 높이 / (2·tan(화각/2)). 확대 배율은 셰이더의 zoomScale 과 같은 식이다 */
+export function walkerLod(e: ArrayLike<number>, projK: number, x: number, z: number): number {
+  const cw = e[3] * x + e[7] * 0.8 + e[11] * z + e[15];
+  if (cw <= 0.5) return 0;
+  const k = Math.min(6.5, Math.max(1.6, (8 * cw) / (projK * 1.6)));
+  const px = (1.47 * k * projK) / cw;
+  // 사람 키만큼(화면 좌표로) 여유를 두고 화면 밖이면 뺀다
+  const m = px / (projK * Math.tan((16 * Math.PI) / 180)) + 0.05;
+  const cx = (e[0] * x + e[4] * 0.8 + e[8] * z + e[12]) / cw;
+  const cy = (e[1] * x + e[5] * 0.8 + e[9] * z + e[13]) / cw;
+  if (cx < -1 - m || cx > 1 + m || cy < -1 - m || cy > 1 + m) return 0;
+  return px >= NEAR_PX ? 1 : 2;
+}
+
 const SCALE = 'zoomScale(-cv.z, 1.6, 8.0, 1.6, 6.5)';
 /** 셰이더에 넣을 실수 표기 */
 const num = (v: number) => v.toFixed(4);
 
 export function makeWalkerMesh(max: number) {
-  const { geo, arr, attr } = instanced(figure(), max, { aInst: 4, aMore: 3, aLook: 2 });
-  const mesh = new THREE.Mesh(
-    geo,
-    material({
+  const near = instanced(NEAR_FIG, max, { aInst: 4, aMore: 3, aLook: 2 });
+  const far = instanced(FAR_FIG, max, { aInst: 4, aMore: 3, aLook: 2 });
+  const mat = material({
       uniforms: { uLand: { value: pal.land } },
       vertex: /* glsl */ `
         attribute vec4 aInst;      // x, z, 방향, 걸음 위상
@@ -200,6 +230,7 @@ export function makeWalkerMesh(max: number) {
           else if (id == 8 || id == 9) alb = vO.y < ${num(HAND + 0.07)} ? skin : top(age, vTint);   // 소매와 손
           else if (id == 1 || id == 10) {
             alb = skin;
+            if (id == 1 && vO.y > ${num(HEAD[1] + 0.05)}) alb = hair(age, fract(vTint * 5.3));   // 단순한 모형의 머리 위쪽(자세한 모형은 머리카락이 덮는다)
             // 큰 눈(위쪽에 작은 흰 빛)과 볼 홍조
             vec2 e = vec2(vO.y - ${num(HEAD[1] - 0.01)}, abs(vO.z) - 0.1);
             vec2 g = vec2(vO.y - ${num(HEAD[1] + 0.01)}, abs(vO.z) - 0.09);
@@ -228,9 +259,14 @@ export function makeWalkerMesh(max: number) {
           vec3 col = lit(alb, n) * 1.06 + alb * (0.10 + 0.1 * uNight);
           gl_FragColor = vec4(fogged(col, vDist), 1.0);
         }`,
-    }),
-  );
-  mesh.frustumCulled = false;
+  });
+  // 가까운 사람은 자세한 모형, 먼 사람은 단순한 모형. 화면 밖 사람은 어느 쪽에도 넣지 않는다
+  const mesh = new THREE.Group();
+  for (const g of [near.geo, far.geo]) {
+    const m = new THREE.Mesh(g, mat);
+    m.frustumCulled = false;
+    mesh.add(m);
+  }
 
   // 사진 찍는 순간의 플래시 빛: 화면을 향한 작은 판을 더해 그린다
   const FLASH_MAX = 64;
@@ -266,19 +302,26 @@ export function makeWalkerMesh(max: number) {
   flash.renderOrder = 5;
 
   const tmpS = new THREE.Vector3();
+  const pv = new THREE.Matrix4();
   function update(w: Walkers, cam: THREE.Camera) {
     let f = 0;
+    const n = [0, 0];
+    pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
     for (let i = 0; i < w.n; i++) {
-      const j = i * 4;
+      const lod = walkerLod(pv.elements, env.uProjK.value, w.x[i], w.z[i]);
+      if (!lod) continue;
+      const { arr } = lod === 1 ? near : far;
+      const q = n[lod - 1]++;
+      const j = q * 4;
       arr.aInst[j] = w.x[i];
       arr.aInst[j + 1] = w.z[i];
       arr.aInst[j + 2] = w.yaw[i];
       arr.aInst[j + 3] = w.phase[i];
-      arr.aMore[i * 3] = w.fade[i];
-      arr.aMore[i * 3 + 1] = w.tint[i];
-      arr.aMore[i * 3 + 2] = w.photo[i];
-      arr.aLook[i * 2] = w.age[i];
-      arr.aLook[i * 2 + 1] = w.female[i];
+      arr.aMore[q * 3] = w.fade[i];
+      arr.aMore[q * 3 + 1] = w.tint[i];
+      arr.aMore[q * 3 + 2] = w.photo[i];
+      arr.aLook[q * 2] = w.age[i];
+      arr.aLook[q * 2 + 1] = w.female[i];
       if (w.photo[i] > 0.9 && f < FLASH_MAX) {
         // 휴대폰이 있는 자리(PHONE)에 과장 배율을 곱한다
         tmpS.set(w.x[i], 0, w.z[i]).applyMatrix4(cam.matrixWorldInverse);
@@ -289,10 +332,14 @@ export function makeWalkerMesh(max: number) {
         f++;
       }
     }
-    geo.instanceCount = w.n;
-    attr.aInst.needsUpdate = true;
-    attr.aMore.needsUpdate = true;
-    attr.aLook.needsUpdate = true;
+    [near, far].forEach((m, k) => {
+      m.geo.instanceCount = n[k];
+      for (const a of [m.attr.aInst, m.attr.aMore, m.attr.aLook]) {
+        a.clearUpdateRanges();
+        a.addUpdateRange(0, n[k] * a.itemSize);
+        a.needsUpdate = true;
+      }
+    });
     fl.geo.instanceCount = f;
     fl.attr.aInst.needsUpdate = true;
   }
