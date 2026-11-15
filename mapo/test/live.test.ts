@@ -89,4 +89,36 @@ describe('실시간 자료 덧씌우기', () => {
     wall += 16 * 60_000;
     expect(live.rain()).toBeNull();
   });
+  it('눈 세기: 눈·눈날림이면 0보다 크고(비/눈은 비와 눈 둘 다), 비만 오면 0', () => {
+    const wall = Date.parse('2026-11-15T04:00:00+09:00');
+    const live = makeLiveProvider(makeSimProvider(), () => wall);
+    const w = (type: string, mm: string) => live.set({ ...data, at: wall, weather: { type, mm, time: 'x' } });
+    w('눈날림', '-');
+    const flurry = live.snow()!;
+    w('눈', '3.0');
+    const heavy = live.snow()!;
+    expect(flurry).toBeGreaterThan(0);
+    expect(heavy).toBeGreaterThan(flurry);
+    expect(live.rain()).toBe(0);
+    w('비/눈', '2.0');
+    expect(live.snow()).toBeGreaterThan(0);
+    expect(live.rain()).toBeGreaterThan(0);
+    w('비', '2.0');
+    expect(live.snow()).toBe(0);
+  });
+  it('미세먼지 탁함(0~1): 미세먼지·초미세먼지 등급 가운데 나쁜 쪽으로, 좋음·보통은 0, 나쁨 0.5, 매우나쁨 1. 자료가 없거나 오래되면 null', () => {
+    let wall = Date.parse('2026-11-15T22:50:00+09:00');
+    const live = makeLiveProvider(makeSimProvider(), () => wall);
+    expect(live.air()).toBeNull();
+    const a = (pm10Idx: string, pm25Idx: string) => live.set({ ...data, at: wall, air: { pm10: 74, pm10Idx, pm25: 53, pm25Idx, time: '2026-11-15 22:50' } });
+    a('보통', '좋음');
+    expect(live.air()!.dust).toBe(0);
+    a('보통', '나쁨');
+    expect(live.air()!.dust).toBe(0.5);
+    expect(live.air()!.text).toBe('미세먼지 보통(74) · 초미세먼지 나쁨(53)');
+    a('매우나쁨', '나쁨');
+    expect(live.air()!.dust).toBe(1);
+    wall += 16 * 60_000;
+    expect(live.air()).toBeNull();
+  });
 });

@@ -274,9 +274,13 @@ function applySeason() {
 // 날씨: '실시간'이면 실시간 도시데이터의 강수 형태·강수량으로 비 세기를 정한다(자료가 없거나 시험 시각이면 맑음)
 let weatherPick: Weather = 'live';
 function applyWeather() {
-  const r = weatherPick === 'live' && clock.live ? live.rain() : null;
+  // 눈과 미세먼지는 '실시간'일 때만 자료를 따르고, 맑음·비·안개를 고르면 고른 것만 보인다
+  const real = weatherPick === 'live' && clock.live;
+  const r = real ? live.rain() : null;
   weather.wantRain = weatherPick === 'live' ? (r ?? 0) : weatherPick === 'rain' ? 1 : 0;
   weather.wantFog = weatherPick === 'fog' ? 1 : 0;
+  weather.wantSnow = real ? (live.snow() ?? 0) : 0;
+  weather.wantDust = real ? (live.air()?.dust ?? 0) : 0;
 }
 function setWeather(w: Weather) {
   weatherPick = w;
@@ -678,7 +682,8 @@ function frame(t: number) {
     walkers.board(key, dx, dz);
     walkers.alight(key, Math.floor(Math.random() * 4), dx, dz);
   }
-  walkers.setRain(weather.rain);
+  // 눈이 와도 우산을 쓰고 밖에 나온 사람이 준다(비의 0.7배로 친다)
+  walkers.setRain(Math.max(weather.rain, weather.snow * 0.7));
   walkers.step(dt, now);
   // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
   // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더의 zoomScale 과 같은 식)
@@ -711,7 +716,7 @@ function frame(t: number) {
     const len = board.riverCum[board.riverCum.length - 1] ?? 0;
     boatSpots = boats.update(BOATS.map((b) => boatAt(b, now.tod, len)), BOATS.map((b) => b.kind));
   }
-  picnic.visible = picnicOn(now, season, weather.rain);
+  picnic.visible = picnicOn(now, season, Math.max(weather.rain, weather.snow));
   carMeshes.update(cars.cars, selected?.kind === 'bus' ? selected.uid : 0);
   walkerMesh.update(walkers.w, view.camera, season);
   catMeshes.update(catStates, dt);
@@ -749,9 +754,10 @@ function frame(t: number) {
     hud.setClock(now, clock.live, source && liveRail ? `${source} · 지하철 실시간` : source);
     hud.setSources(provider.mode === 'live', liveRail);
     applyWeather();
+    hud.setAir(clock.live ? (live.air()?.text ?? null) : null);
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));
-    hud.setScale(walkerScale(provider, now, MAX_PEOPLE, weather.rain), cars.scale()[0]);
+    hud.setScale(walkerScale(provider, now, MAX_PEOPLE, Math.max(weather.rain, weather.snow * 0.7)), cars.scale()[0]);
     flow.update(provider, now);
     refreshCard();
   }

@@ -29,11 +29,20 @@ export interface LiveWeather {
   mm: string;
   time: string;
 }
+/** 대기질(실시간 도시데이터 WEATHER_STTS): 농도(㎍/㎥)와 등급(좋음·보통·나쁨·매우나쁨) */
+export interface LiveAir {
+  pm10: number;
+  pm10Idx: string;
+  pm25: number;
+  pm25Idx: string;
+  time: string;
+}
 export interface LiveData {
   places: LivePlace[];
   roads: LiveRoad[];
   roadTime: string;
   weather?: LiveWeather | null;
+  air?: LiveAir | null;
   /** 중계 함수가 상류에서 받은 시각(epoch ms) */
   at: number;
 }
@@ -55,6 +64,19 @@ const AREA_ID: Record<string, string> = { '홍대 관광특구': 'hongdae', '홍
 const IDX_SPEED: Record<string, number> = { 원활: 0.8, 서행: 0.45, 정체: 0.2 };
 /** 혼잡 단계 → 혼잡 정도(그 장소 붐빔 기준 대비) */
 const CROWD = [0.3, 0.55, 0.8, 1.05];
+
+/** 눈 세기(0~1): 눈이 섞인 강수 형태일 때. 눈날림 0.35, 눈은 0.45 에 1시간 강수량 1mm 마다 0.12 더한다 */
+export function snowOf(w: LiveWeather): number {
+  if (!/눈/.test(w.type)) return 0;
+  if (!/(^|\/)눈($|\/)/.test(w.type)) return 0.35;
+  const n = parseFloat(w.mm);
+  return Math.min(1, 0.45 + 0.12 * (/미만/.test(w.mm) || !Number.isFinite(n) ? 0 : n));
+}
+const DUST: Record<string, number> = { 나쁨: 0.5, 매우나쁨: 1 };
+/** 미세먼지 탁함(0~1, 두 등급 가운데 나쁜 쪽)과 화면에 쓸 글 */
+export function airOf(a: LiveAir): { dust: number; text: string } {
+  return { dust: Math.max(DUST[a.pm10Idx] ?? 0, DUST[a.pm25Idx] ?? 0), text: `미세먼지 ${a.pm10Idx}(${a.pm10}) · 초미세먼지 ${a.pm25Idx}(${a.pm25})` };
+}
 
 export function makeLiveProvider(sim: DataProvider, wall: () => number = Date.now) {
   let data: LiveData | null = null;
@@ -140,6 +162,16 @@ export function makeLiveProvider(sim: DataProvider, wall: () => number = Date.no
     rain(): number | null {
       const w = fresh()?.weather;
       return w ? rainOf(w) : null;
+    },
+    /** 실제 눈 세기(0~1). 쓸 수 없으면 null */
+    snow(): number | null {
+      const w = fresh()?.weather;
+      return w ? snowOf(w) : null;
+    },
+    /** 미세먼지 탁함과 글. 쓸 수 없으면 null */
+    air(): { dust: number; text: string } | null {
+      const a = fresh()?.air;
+      return a ? airOf(a) : null;
     },
   };
 }

@@ -62,8 +62,9 @@ export const env = {
 };
 
 /** 날씨 세기. 전환이 부드럽도록 updateEnv 가 목표값 쪽으로 천천히 옮긴다 */
-export const weather = { rain: 0, fog: 0, wantRain: 0, wantFog: 0 };
+export const weather = { rain: 0, fog: 0, snow: 0, dust: 0, wantRain: 0, wantFog: 0, wantSnow: 0, wantDust: 0 };
 const grey = new THREE.Color('#9aa3ad');
+const dustC = new THREE.Color();
 const greyNight = new THREE.Color('#4a5062');
 
 const mix3 = (out: THREE.Color, k: THREE.Color[], day: number, dusk: number) => out.copy(k[2]).lerp(k[0], day).lerp(k[1], dusk * 0.85);
@@ -83,12 +84,21 @@ export function updateEnv(now: Now, time: number, sky: HTMLElement, dt = 0): voi
   const k = 1 - Math.exp(-dt * 0.8);
   weather.rain += (weather.wantRain - weather.rain) * k;
   weather.fog += (weather.wantFog - weather.fog) * k;
+  weather.snow += (weather.wantSnow - weather.snow) * k;
+  weather.dust += (weather.wantDust - weather.dust) * k;
   // 흐린 날: 하늘·안개 색을 잿빛 쪽으로, 햇빛을 약하게
-  const overcast = Math.max(weather.rain * 0.8, weather.fog * 0.7);
+  const overcast = Math.max(weather.rain * 0.8, weather.fog * 0.7, weather.snow * 0.6);
   const g = grey.clone().lerp(greyNight, 1 - day);
   for (const key of ['bgTop', 'bgBottom', 'fog'] as const) pal[key].lerp(g, overcast * (key === 'fog' ? 1 : 0.75));
+  // 미세먼지: 하늘·안개 색의 채도만 누런 잿빛 쪽으로 낮춘다(밝기는 그대로)
+  if (weather.dust > 0.001)
+    for (const key of ['bgTop', 'bgBottom', 'fog'] as const) {
+      const c = pal[key];
+      const l = 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
+      c.lerp(dustC.setRGB(l * 1.06, l, l * 0.86), weather.dust * 0.4);
+    }
   env.uRain.value = weather.rain;
-  env.uHaze.value = weather.fog;
+  env.uHaze.value = Math.max(weather.fog, weather.dust * 0.12);
 
   // 빛 방향: 해가 떠 있으면 해, 지면 달(고정 방향)
   const el = (Math.max(elev, 9) * Math.PI) / 180;
