@@ -5,7 +5,7 @@
 // 경로끼리 곡선이 2.2m 안으로 다가오거나, 같은 진입 구간에서 다른 쪽으로 나가거나, 같은 구간을 함께 쓰면 '부딪는 경로'로 본다.
 // 차는 부딪는 경로로 교차로에 들어간 차가 있으면 진입 구간 끝의 상자 앞에서 기다린다.
 import { pointAt } from '../poly.ts';
-import { laneOffset, MED, type Edge } from './graph.ts';
+import { headingNear, laneOffset, MED, type Edge } from './graph.ts';
 
 const nodeKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
 
@@ -189,9 +189,8 @@ export function makeJunctions(edges: Edge[]): Junctions {
   const P = [0, 0, 0];
   /** 구간 e 의 s 지점에서 차로 중심(가운데선 오른쪽 off)으로 옮긴 점과 방향 */
   const lanePoint = (e: Edge, s: number, off: number) => {
-    const seg = pointAt(e.p, e.cum, s, P);
-    const a = seg * 3;
-    const h = Math.atan2(e.p[a + 5] - e.p[a + 2], e.p[a + 3] - e.p[a]);
+    pointAt(e.p, e.cum, s, P);
+    const h = headingNear(e, s);
     return { x: P[0] - Math.sin(h) * off, y: P[1], z: P[2] + Math.cos(h) * off, h };
   };
   function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[]) {

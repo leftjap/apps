@@ -10,7 +10,7 @@ import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { BOARD_R } from '../geo.ts';
 import type { Crosswalk } from '../data/board.ts';
-import { ISLAND_BACK, ISLAND_L, ISLAND_W, laneOffset, MED, type Edge } from './graph.ts';
+import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOffset, MED, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
@@ -351,8 +351,8 @@ export function makeCars(
       cars.yaw[i] = cv[3];
       return;
     }
-    const seg = pointAt(e.p, e.cum, s[i], tmp);
-    const yaw = headingAt(e.p, seg);
+    pointAt(e.p, e.cum, s[i], tmp);
+    const yaw = headingNear(e, s[i]);
     const off = laneOffset(e, lane[i]) - (lane[i] === MED ? islandShift(i, e) : 0);
     cars.x[i] = tmp[0] - Math.sin(yaw) * off;
     cars.y[i] = tmp[1];
@@ -736,8 +736,10 @@ export function makeCars(
         // 교차로 상자 안 곡선은 길을 따라 잰 거리보다 짧을 수 있으므로, 둘 중 하나가 상자 안이면 그려진 자리 사이 거리로도 잰다
         if (boxed[i] || boxed[front]) gap = Math.min(gap, Math.hypot(cars.x[front] - cars.x[i], cars.z[front] - cars.z[i]) - (size[front] + size[i]) / 2);
       }
-      // 교차로가 아닌 곳에서 차로 수가 바뀌면, 구간 끝 40m 안에서 다음 구간의 한 차로로 모일 차들을 한 줄로 보고 바로 앞 차를 따라간다(앞선 차가 먼저)
-      if (cars.route[i] < 0 && nextE[i] >= 0 && jn.groupOfEnd[e.id] < 0 && e.len - s[i] < 40 && edges[nextE[i]].lanes !== e.lanes) {
+      // 교차로가 아닌 곳에서 차로 수가 바뀌면, 구간 끝 40m(빠르면 3.5초 거리) 안에서 다음 구간의 한 차로로 모일 차들을 한 줄로 보고 바로 앞 차를 따라간다(앞선 차가 먼저).
+      // 옆 차로 차에게 자리를 내주는 것이라 편안한 감속까지만 늦춘다(아래 merging)
+      let merging = -1;
+      if (cars.route[i] < 0 && nextE[i] >= 0 && jn.groupOfEnd[e.id] < 0 && e.len - s[i] < Math.max(40, v[i] * 3.5) && edges[nextE[i]].lanes !== e.lanes) {
         const ne = edges[nextE[i]];
         const tl = outLane(i, ne);
         let best = -1;
@@ -752,6 +754,7 @@ export function makeCars(
             gap = g2;
             dv = v[i] - v[best];
             front = best;
+            merging = best;
           }
         }
       }
@@ -887,8 +890,17 @@ export function makeCars(
       }
       const v0 = Math.max(0.5, speed[e.id] * vf[i]);
       const want = 2 + v[i] * 1.3 + Math.max(0, (v[i] * dv) / (2 * Math.sqrt(A_MAX * B_COMF)));
-      let a = A_MAX * (1 - (v[i] / v0) ** 4);
-      if (front >= 0) a -= A_MAX * (want / Math.max(0.3, gap)) ** 2;
+      // 제 속도보다 빠르면(느린 길로 들어섰을 때) 편안한 정도로만 늦춘다
+      let a = Math.max(-0.8 * B_COMF, A_MAX * (1 - (v[i] / v0) ** 4));
+      if (front >= 0) {
+        // ACC 식(Treiber·Kesting): IDM 은 가까이 나타난 정지 대상에 지나치게 세게 밟는다. 앞 대상이 지금 속도를 유지한다고 보고
+        // 그 뒤에 멈추는 데 드는 감속(CAH)이 IDM 보다 약하면 그쪽으로 누그러뜨린다
+        const idm = a - A_MAX * (want / Math.max(0.3, gap)) ** 2;
+        const vl = Math.max(0, v[i] - dv);
+        const cah = v[i] <= vl ? 0 : -((v[i] - vl) ** 2) / (2 * Math.max(0.1, gap - 2));
+        a = idm >= cah ? idm : 0.01 * idm + 0.99 * (cah + B_COMF * Math.tanh((idm - cah) / B_COMF));
+      }
+      if (front >= 0 && front === merging) a = Math.max(a, -1.2 * B_COMF);
       a = Math.max(-8, Math.min(A_MAX, a));
       const slow = v[i] < 0.3 * VFREE[e.cls] * vf[i];
       cars.brake[i] += ((a < -0.5 || slow ? 1 : 0) - cars.brake[i]) * Math.min(1, dt * 6);

@@ -1,5 +1,6 @@
 // 차. 승용차(세단·SUV·경차·승합)·택시와 버스(시내·광역·마을)를 종류마다 인스턴싱으로 그린다.
-// 모양은 옆모습 다각형을 폭 방향으로 밀어낸 차체와 유리 캐빈, 차축 하나에 바퀴 둘을 붙인 원기둥으로 만들고,
+// 승용차는 옆모습(보닛·앞유리·지붕선)을 따라 둥근 단면을 앞뒤로 이어 붙인 몸통과 위로 좁아지는 유리 캐빈, 버스는 옆모습 다각형을 폭 방향으로
+// 밀어내고 앞뒤 모서리를 둥글린 차체로 만들고, 차축 하나에 바퀴 둘을 붙인 원기둥을 단다.
 // 전조등·후미등·그릴·창·문은 셰이더가 차 안 좌표로 칠한다. 색은 한국 도로에 많은 흰색·회색·검정 위주, 택시는 흰색·은색과 주황(꽃담황토색)·검정,
 // 버스는 서울 버스 도색(간선 파랑, 지선 초록, 광역 빨강, 마을 연두)이다. 전조등과 브레이크등은 스스로 빛나고, 밤에는 길 위에 빛 번짐을 덧그린다.
 import * as THREE from 'three';
@@ -10,10 +11,10 @@ import { instanced, merge, part } from './util.ts';
 
 type Pt = [number, number];
 
-/** 옆모습 다각형(x 앞, y 위)을 폭 방향(z)으로 밀어낸 도형. hw(y) 는 높이별 반폭(위로 갈수록 좁혀 둥글게 보이게 한다) */
-function prism(pts: Pt[], hw: (y: number) => number): THREE.BufferGeometry {
+/** 옆모습 다각형(x 앞, y 위)을 폭 방향(z)으로 밀어낸 도형. hw(y, x) 는 반폭(위로 갈수록, 앞뒤 끝으로 갈수록 좁혀 둥글게 보이게 한다) */
+function prism(pts: Pt[], hw: (y: number, x: number) => number): THREE.BufferGeometry {
   const ring = THREE.ShapeUtils.isClockWise(pts.map(([x, y]) => new THREE.Vector2(x, y))) ? [...pts].reverse() : pts;
-  const P = ([x, y]: Pt, side: number) => [x, y, side * hw(y)];
+  const P = ([x, y]: Pt, side: number) => [x, y, side * hw(y, x)];
   const pos: number[] = [];
   for (let i = 0; i < ring.length; i++) {
     const a = ring[i];
@@ -30,6 +31,56 @@ function prism(pts: Pt[], hw: (y: number) => number): THREE.BufferGeometry {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.computeVertexNormals();
   return g;
+}
+/** 옆모습 다각형을 x 에서 세로로 자른 아래·위 끝 y(없으면 null) */
+function span(poly: Pt[], x: number): [number, number] | null {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const [ax, ay] = poly[i];
+    const [bx, by] = poly[(i + 1) % poly.length];
+    if ((x < ax && x < bx) || (x > ax && x > bx) || ax === bx) continue;
+    const y = ay + ((by - ay) * (x - ax)) / (bx - ax);
+    lo = Math.min(lo, y);
+    hi = Math.max(hi, y);
+  }
+  return hi > lo ? [lo, hi] : null;
+}
+/** 앞뒤 끝 둥글리기: 반길이 len 인 차의 x 자리에서 반폭에 곱할 값(끝에서 end, 끝에서 r 안쪽부터 1) */
+const rounded = (x: number, len: number, end: number, r: number) => {
+  const u = Math.max(0, Math.abs(x) - (len - r)) / r;
+  return 1 - (1 - end) * (1 - Math.sqrt(Math.max(0, 1 - u * u)));
+};
+/**
+ * 앞뒤(x)로 늘어놓은 단면을 이어 붙인 몸통. sec(x) 는 반쪽 단면 [z, y] 열(옆 아래 → 위 가운데, z 는 0 이 가운데)이고 반대쪽은 거울로 만든다.
+ * 단면끼리 꼭짓점을 함께 써서 법선을 매끈하게 구하고, 앞뒤 끝은 단면을 부채꼴로 막는다(평평한 면이라 등·그릴을 칠할 수 있다)
+ */
+function loft(xs: number[], sec: (x: number) => Pt[]): THREE.BufferGeometry {
+  const rings = xs.map((x) => {
+    const h = sec(x);
+    return [...h.map(([z, y]) => [x, y, z]), ...h.slice(0, -1).reverse().map(([z, y]) => [x, y, -z])];
+  });
+  const R = rings[0].length;
+  const pos = rings.flat(2);
+  const idx: number[] = [];
+  for (let s = 0; s + 1 < rings.length; s++)
+    for (let j = 0; j + 1 < R; j++) {
+      const a = s * R + j;
+      idx.push(a, a + R, a + R + 1, a, a + R + 1, a + 1);
+    }
+  const skin = new THREE.BufferGeometry();
+  skin.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  skin.setIndex(idx);
+  skin.computeVertexNormals();
+  const caps: number[] = [];
+  for (const [ring, front] of [[rings[0], false], [rings[rings.length - 1], true]] as const) {
+    const c = [ring[0][0], ring.reduce((m, p) => m + p[1], 0) / R, 0];
+    for (let j = 0; j + 1 < R; j++) caps.push(...c, ...(front ? [...ring[j + 1], ...ring[j]] : [...ring[j], ...ring[j + 1]]));
+  }
+  const cap = new THREE.BufferGeometry();
+  cap.setAttribute('position', new THREE.Float32BufferAttribute(caps, 3));
+  cap.computeVertexNormals();
+  return merge([skin.toNonIndexed(), cap]);
 }
 /** 높이 y0 에서 h0, y1 에서 h1 인 반폭 */
 const taper = (y0: number, h0: number, y1: number, h1: number) => (y: number) => h0 + (h1 - h0) * Math.min(1, Math.max(0, (y - y0) / (y1 - y0)));
@@ -58,42 +109,64 @@ interface Look {
   door?: [number, number, number, number];
 }
 
-// 승용차 옆모습. 세단은 쏘나타·K5, SUV 는 투싼·쏘렌토, 경차는 모닝·캐스퍼, 승합은 카니발 크기다
+// 승용차 옆모습(x 앞, y 위, m). 세단은 쏘나타·K5, SUV 는 투싼·쏘렌토, 경차는 모닝·캐스퍼, 승합은 카니발 크기다.
+// body 는 바퀴 위 몸통(범퍼·보닛·트렁크 곡선), cabin 은 유리 캐빈(앞유리·지붕·뒷유리 곡선)이다
 const CAR_SHAPES = {
   sedan: {
-    body: [[-2.4, 0.3], [2.36, 0.3], [2.45, 0.52], [2.4, 0.74], [1.15, 0.94], [-1.62, 0.98], [-2.3, 0.96], [-2.44, 0.72], [-2.45, 0.45]] as Pt[],
-    cabin: [[-1.72, 0.92], [1.22, 0.9], [0.22, 1.42], [-0.88, 1.45]] as Pt[],
-    look: { len: 2.45, hw: 0.93, r: 0.33, axle: [1.45, -1.4], lamp: [0.6, 0.76, 0.66, 0.86], win: [0.4, 0.58, 0, 0] } as Look,
-    roof: [0.92, 0.84, 1.45, 0.66] as const,
+    body: [[-2.42, 0.3], [2.38, 0.3], [2.47, 0.42], [2.46, 0.6], [2.36, 0.72], [1.9, 0.8], [1.15, 0.9], [-1.62, 0.97], [-2.15, 0.96], [-2.38, 0.88], [-2.46, 0.7], [-2.45, 0.45]] as Pt[],
+    cabin: [[-1.75, 0.92], [1.22, 0.88], [0.95, 1.02], [0.45, 1.34], [0.1, 1.43], [-0.75, 1.45], [-1.25, 1.36], [-1.75, 1.0]] as Pt[],
+    look: { len: 2.47, hw: 0.93, r: 0.33, axle: [1.45, -1.4], lamp: [0.6, 0.74, 0.66, 0.86], win: [0.4, 0.58, 0, 0] } as Look,
+    roof: 1.45,
   },
   suv: {
-    body: [[-2.3, 0.36], [2.26, 0.36], [2.36, 0.6], [2.3, 0.94], [1.3, 1.08], [-2.22, 1.1], [-2.34, 0.9], [-2.35, 0.55]] as Pt[],
-    cabin: [[-2.18, 1.05], [1.35, 1.04], [0.45, 1.62], [-1.95, 1.67], [-2.26, 1.14]] as Pt[],
-    look: { len: 2.36, hw: 0.95, r: 0.37, axle: [1.42, -1.35], lamp: [0.78, 0.94, 0.86, 1.02], win: [0.46, 0.74, 0, 0] } as Look,
-    roof: [1.04, 0.88, 1.67, 0.74] as const,
+    body: [[-2.3, 0.36], [2.26, 0.36], [2.37, 0.5], [2.37, 0.78], [2.25, 0.94], [1.7, 1.02], [1.3, 1.08], [-2.22, 1.1], [-2.34, 0.96], [-2.37, 0.6]] as Pt[],
+    cabin: [[-2.2, 1.05], [1.35, 1.04], [1.05, 1.25], [0.5, 1.6], [0.1, 1.67], [-1.9, 1.68], [-2.18, 1.5], [-2.24, 1.14]] as Pt[],
+    look: { len: 2.37, hw: 0.95, r: 0.37, axle: [1.42, -1.35], lamp: [0.78, 0.92, 0.86, 1.02], win: [0.46, 0.74, 0, 0] } as Look,
+    roof: 1.68,
   },
   kei: {
-    body: [[-1.76, 0.28], [1.72, 0.28], [1.8, 0.48], [1.74, 0.76], [1.1, 0.9], [-1.7, 0.94], [-1.8, 0.72], [-1.8, 0.45]] as Pt[],
-    cabin: [[-1.7, 0.9], [1.12, 0.88], [0.45, 1.46], [-1.5, 1.5], [-1.74, 0.98]] as Pt[],
-    look: { len: 1.8, hw: 0.8, r: 0.29, axle: [1.18, -1.18], lamp: [0.58, 0.72, 0.62, 0.86], win: [0.36, 0.54, 0, 0] } as Look,
-    roof: [0.88, 0.74, 1.5, 0.62] as const,
+    body: [[-1.76, 0.28], [1.72, 0.28], [1.82, 0.42], [1.8, 0.68], [1.6, 0.86], [1.1, 0.92], [-1.7, 0.94], [-1.8, 0.78], [-1.81, 0.45]] as Pt[],
+    cabin: [[-1.72, 0.9], [1.12, 0.88], [0.8, 1.15], [0.42, 1.45], [0.1, 1.5], [-1.5, 1.5], [-1.7, 1.3], [-1.74, 0.98]] as Pt[],
+    look: { len: 1.82, hw: 0.8, r: 0.29, axle: [1.18, -1.18], lamp: [0.58, 0.72, 0.62, 0.86], win: [0.36, 0.54, 0, 0] } as Look,
+    roof: 1.5,
   },
   van: {
-    body: [[-2.55, 0.32], [2.5, 0.32], [2.6, 0.56], [2.52, 0.92], [1.8, 1.08], [-2.48, 1.1], [-2.58, 0.86], [-2.58, 0.52]] as Pt[],
-    cabin: [[-2.46, 1.04], [1.85, 1.04], [0.85, 1.74], [-2.3, 1.78], [-2.52, 1.16]] as Pt[],
-    look: { len: 2.6, hw: 1.0, r: 0.36, axle: [1.6, -1.5], lamp: [0.74, 0.9, 0.8, 1.04], win: [0.42, 0.7, 0, 0] } as Look,
-    roof: [1.04, 0.94, 1.78, 0.82] as const,
+    body: [[-2.55, 0.32], [2.5, 0.32], [2.61, 0.48], [2.6, 0.8], [2.4, 0.98], [1.8, 1.08], [-2.48, 1.1], [-2.58, 0.9], [-2.59, 0.52]] as Pt[],
+    cabin: [[-2.48, 1.04], [1.85, 1.04], [1.45, 1.3], [0.85, 1.72], [0.4, 1.78], [-2.3, 1.8], [-2.48, 1.6], [-2.52, 1.16]] as Pt[],
+    look: { len: 2.61, hw: 1.0, r: 0.36, axle: [1.6, -1.5], lamp: [0.74, 0.9, 0.8, 1.04], win: [0.42, 0.7, 0, 0] } as Look,
+    roof: 1.8,
   },
 };
+/** 승용차 앞뒤 끝의 반폭 비율(위에서 보면 모서리가 둥글다)과 둥글린 길이(m) */
+const CAR_END = 0.8;
+const CAR_ROUND = 0.6;
+/** 몸통 단면 자리(반길이에 대한 비율). 앞뒤 끝 둥근 곳을 촘촘히 */
+const BODY_X = [-1, -0.95, -0.83, -0.55, -0.15, 0.25, 0.6, 0.84, 0.95, 1];
 type CarShape = (typeof CAR_SHAPES)[keyof typeof CAR_SHAPES];
 function car(s: CarShape, taxi = false) {
   const { body, cabin, look, roof } = s;
+  const L = look.len;
+  const w = (x: number) => look.hw * rounded(x, L, CAR_END, CAR_ROUND);
+  // 몸통 단면: 아래는 안으로 들어가고(바퀴 집 아래), 허리가 가장 넓고, 어깨에서 다시 들어가 보닛·트렁크 위로 살짝 볼록하다
+  const bodySec = (x: number): Pt[] => {
+    const [yb, yt] = span(body, Math.max(-L + 0.03, Math.min(L - 0.03, x))) ?? [0.4, 0.6];
+    const hw = w(x);
+    return [[hw * 0.93, yb], [hw, yb + (yt - yb) * 0.5], [hw * 0.93, yt], [0, yt + 0.035]];
+  };
+  // 캐빈 단면: 창 아래(허리선)에서 지붕으로 갈수록 좁아진다
+  const [c0, c1] = [Math.min(...cabin.map((p) => p[0])), Math.max(...cabin.map((p) => p[0]))];
+  const cabinX = Array.from({ length: 7 }, (_, k) => c0 + 0.02 + ((c1 - c0 - 0.04) * k) / 6);
+  const cabinSec = (x: number): Pt[] => {
+    const [yb, yt] = span(cabin, x) ?? [0.9, 0.95];
+    const hw = w(x);
+    return [[hw * 0.88, yb], [hw * 0.64, yt], [0, yt + 0.03]];
+  };
   return merge([
-    part(prism(body, taper(look.hw > 0.9 ? 0.75 : 0.65, look.hw, body.reduce((m, p) => Math.max(m, p[1]), 0), look.hw - 0.08)), 0),
-    part(prism(cabin, taper(roof[0], roof[1], roof[2], roof[3])), 1),
+    part(loft(BODY_X.map((f) => f * L), bodySec), 0),
+    part(loft(cabinX, cabinSec), 1),
     ...axles(look.axle, look.r, look.hw + 0.03),
     // 서울 택시 지붕 표시등
-    ...(taxi ? [part(box(0.34, 0.24, 0.62, -0.25, roof[2] + 0.11, 0), 5)] : []),
+    ...(taxi ? [part(box(0.34, 0.24, 0.62, -0.25, roof + 0.1, 0), 5)] : []),
   ]);
 }
 
@@ -110,10 +183,13 @@ const MINI = {
   body: [[-3.7, 0.32], [3.62, 0.32], [3.72, 0.58], [3.72, 1.0], [3.52, 2.72], [3.25, 2.92], [-3.6, 2.92], [-3.72, 2.72], [-3.72, 0.6]] as Pt[],
   look: { len: 3.72, hw: 1.1, r: 0.42, axle: [2.15, -2.05], lamp: [0.5, 0.74, 0.55, 1.1], win: [1.12, 2.5, 0.95, 2.6], door: [2.55, 3.36, -0.95, -0.1] } as Look,
 };
+/** 버스 앞뒤 끝의 반폭 비율 */
+const BUS_END = 0.92;
 function busShape(b: typeof BUS, top: number, pod: boolean) {
   const { body, look } = b;
   return merge([
-    part(prism(body, taper(top - 0.3, look.hw, top, look.hw - 0.09)), 0),
+    // 위에서 보면 앞뒤 모서리가 둥글다(0.5m 안쪽부터 반폭의 92%까지)
+    part(prism(body, (y, x) => taper(top - 0.3, look.hw, top, look.hw - 0.09)(y) * rounded(x, look.len, BUS_END, 0.5)), 0),
     ...(pod ? [part(box(6.0, 0.36, 2.0, 0.9, top + 0.16, 0), 0)] : []),
     ...mirrors(look.len, top - 0.55, look.hw),
     ...axles(look.axle, look.r, look.hw + 0.03),
@@ -192,6 +268,7 @@ const FRAG = /* glsl */ `
   uniform vec4 uLamp;  // 전조등 y0·y1, 후미등 y0·y1
   uniform vec4 uWin;   // 승용차: 그릴 y0·y1. 버스: 옆창 y0·y1, 앞유리 y0·y1
   uniform vec4 uDoor;  // 버스 오른쪽 문 두 곳
+  uniform float uEnd;  // 앞뒤 끝 반폭 비율(위에서 보면 모서리가 둥글어 끝이 좁다)
   varying vec3 vN; varying vec3 vNl; varying float vPart; varying vec4 vMore; varying float vDist; varying vec3 vO; varying float vPicked; varying vec3 vAux;
   vec3 carPaint(float t) {
     ${glslColors(CAR_COLORS)}
@@ -215,12 +292,13 @@ const FRAG = /* glsl */ `
     float back = step(0.4, -nl.x);
     float az = abs(vO.z);
     float hw = uDim.y;
+    float hwe = hw * uEnd;   // 앞뒤 끝 면의 반폭
     float head = 0.0;
     float tail = 0.0;
     float dest = 0.0;
     if (vPart < 0.5) {
-      head = front * band(vO.y, uLamp.x, uLamp.y) * band(az, hw - 0.5, hw - 0.04);
-      tail = back * band(vO.y, uLamp.z, uLamp.w) * band(az, hw - 0.5 + 0.2 * bus, hw - 0.02);
+      head = front * band(vO.y, uLamp.x, uLamp.y) * band(az, hwe - 0.45, hwe - 0.03);
+      tail = back * band(vO.y, uLamp.z, uLamp.w) * band(az, hwe - 0.45 + 0.2 * bus, hwe - 0.02);
       if (bus > 0.5) {
         float route = vMore.y;
         // 옆창(1.65m 마다 기둥), 오른쪽 문, 앞유리, 뒷창, 행선지 표시기
@@ -228,9 +306,9 @@ const FRAG = /* glsl */ `
         float win = side * band(vO.y, uWin.x, uWin.y) * step(abs(vO.x), uDim.x - 0.4) * pil;
         float door = side * step(0.0, vO.z) * (band(vO.x, uDoor.x, uDoor.y) + band(vO.x, uDoor.z, uDoor.w)) * band(vO.y, 0.36, uWin.y);
         float seam = door * (1.0 - step(0.03, abs(fract((vO.x - uDoor.x) / (uDoor.y - uDoor.x) + 0.5) - 0.5)));
-        float shield = front * band(vO.y, uWin.z, uWin.w) * step(az, hw - 0.1);
-        float rear = back * band(vO.y, uWin.y - 0.75, uWin.y) * step(az, hw - 0.28);
-        dest = front * band(vO.y, uWin.w + 0.03, uWin.w + 0.27) * step(az, hw - 0.3);
+        float shield = front * band(vO.y, uWin.z, uWin.w) * step(az, hwe - 0.1);
+        float rear = back * band(vO.y, uWin.y - 0.75, uWin.y) * step(az, hwe - 0.28);
+        dest = front * band(vO.y, uWin.w + 0.03, uWin.w + 0.27) * step(az, hwe - 0.3);
         glass = max(max(win, door), max(shield, rear));
         alb = mix(alb, vec3(0.62, 0.64, 0.66), seam);
         // 광역버스는 지붕이 흰색이고 앞 아랫단이 검다
@@ -240,7 +318,7 @@ const FRAG = /* glsl */ `
         alb = mix(alb, vec3(0.24, 0.25, 0.27), step(vO.y, 0.5));       // 범퍼·아랫단
         alb = mix(alb, vec3(0.05), dest);
       } else {
-        float grille = front * band(vO.y, uWin.x, uWin.y) * step(az, hw - 0.42);
+        float grille = front * band(vO.y, uWin.x, uWin.y) * step(az, hwe - 0.36);
         alb = mix(alb, vec3(0.08, 0.085, 0.09), grille);
         alb = mix(alb, vec3(0.13, 0.135, 0.14), step(vO.y, 0.38));     // 아래 범퍼·몰딩
       }
@@ -332,6 +410,7 @@ export function makeCarMeshes(max: number) {
         uLamp: { value: new THREE.Vector4(...look.lamp) },
         uWin: { value: new THREE.Vector4(...look.win) },
         uDoor: { value: new THREE.Vector4(...(look.door ?? [99, 99, 99, 99])) },
+        uEnd: { value: isBus ? BUS_END : CAR_END },
       },
     });
     const mesh = new THREE.Mesh(inst.geo, mat);

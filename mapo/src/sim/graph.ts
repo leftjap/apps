@@ -2,7 +2,7 @@
 // 구울 때 교차점마다 끊어 두었으므로 조각의 끝점끼리만 이어 주면 된다.
 import { curbAt, type Crosswalk, type Road } from '../data/board.ts';
 import { BOARD_R } from '../geo.ts';
-import { cumLen } from '../poly.ts';
+import { cumLen, pointAt } from '../poly.ts';
 
 /** 차선 자료가 없는 길의 차로 폭(m) */
 export const LANE = 3.3;
@@ -42,6 +42,16 @@ export interface Edge {
   rev: boolean;
   /** 중앙버스차로: 0 이면 없고, 아니면 일반 차로 왼쪽 가장자리에서 버스차로 가운데까지 거리(m). 한 방향 큰길 왼쪽 분리대 안이다 */
   med: number;
+}
+
+const H0 = [0, 0, 0];
+const H1 = [0, 0, 0];
+/** 구간 e 의 s 지점 진행 방향. 꺾인 꼭짓점에서 방향과 차로 옆 거리가 한순간에 바뀌지 않게 앞뒤 1.5m 두 점으로 구한다 */
+export function headingNear(e: Edge, s: number): number {
+  const d = Math.min(1.5, e.len / 2);
+  pointAt(e.p, e.cum, Math.max(0, s - d), H0);
+  pointAt(e.p, e.cum, Math.min(e.len, s + d), H1);
+  return Math.atan2(H1[2] - H0[2], H1[0] - H0[0]);
 }
 
 /** 분리대 폭 gap 인 한 방향 큰길에서 일반 차로 왼쪽 가장자리부터 중앙버스차로 가운데까지(m) */
