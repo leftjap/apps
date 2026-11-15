@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { carriageSections, roadJoints, type Section } from '../src/data/surface.ts';
-import { buildSurface, type Cross } from '../tools/lib/surface.ts';
+import { buildSurface, crosswalkPatches, type Cross } from '../tools/lib/surface.ts';
 import { road } from './helpers.ts';
 
 /** 점이 고리 안에 있는가(짝홀) */
@@ -137,5 +137,24 @@ describe('격자 경계 고리', () => {
     expect(areas[0]).toBe(100);
     expect(areas[1]).toBe(-9);
     for (const l of loops) expect(Math.abs(ringArea(simplifyLoop(l, 0.7)))).toBe(Math.abs(ringArea(l)));
+  });
+});
+
+describe('그리기 전용 찻길 면', () => {
+  it('횡단보도가 그린 찻길보다 길면 밖에 걸친 부분만 찻길 면으로 채우고(띠와 겹치지 않는다), 다 덮인 횡단보도는 건너뛴다', () => {
+    // 동서로 뻗은 폭 7m 큰길(가장자리 z = ±3.5)을 가로지르는 길이 10m 횡단보도(z −5 ~ 5), 그리고 다 덮인 짧은 횡단보도
+    const roads = [road([[-100, 0], [100, 0]], { cls: 3, lanes: 2 })];
+    const s = buildSurface(roads, [], [], [], [0]);
+    const long: Cross = { x: 30, z: 0, ux: 0, uz: 1, half: 5, rings: [ring(30, 0, 0, 1, 5, 4)] };
+    const short: Cross = { x: -30, z: 0, ux: 0, uz: 1, half: 2.5, rings: [ring(-30, 0, 0, 1, 2.5, 4)] };
+    const p = crosswalkPatches(roads, s, [long, short], []);
+    expect(p).toHaveLength(2); // 긴 횡단보도의 양 끝 두 조각
+    const secs = carriageSections(roads[0], 0, Infinity);
+    for (const { ring: r } of p) {
+      expect(Math.abs(r[0] - 30)).toBeLessThan(2.5);
+      for (let x = 28.3; x <= 31.7; x += 0.4)
+        for (const z of [-4.8, -4, 4, 4.8]) if (Math.abs(z) > 3.55) expect(p.some((q) => inside(q.ring, x, z)), `${x},${z}`).toBe(true);
+      for (let x = 28.3; x <= 31.7; x += 0.4) for (let z = -3.3; z <= 3.3; z += 0.5) expect(inside(r, x, z) && onRibbon(secs, x, z), `${x},${z}`).toBe(false);
+    }
   });
 });

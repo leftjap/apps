@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { alignToRoad, isCurrent, mergeStages, minRect } from '../tools/lib/crosswalk.ts';
-import { analyseLink, analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg } from '../tools/lib/lanes.ts';
+import { analyseLink, analysePiece, centerLink, linkSections, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg } from '../tools/lib/lanes.ts';
 import type { Corner } from '../src/data/corners.ts';
 
 describe('횡단보도 면 → 축', () => {
@@ -88,6 +88,31 @@ describe('연결로(OSM *_link) 폭 읽기', () => {
     expect(analyseLink(laneIndex([line(2.7, '009')]), [[0, 0], [60, 0]], true)).toBeNull();
     // 차선 없이 9.5m 면 두 차로
     expect(analyseLink(laneIndex([line(-4.7, '007'), line(4.8, '009')]), [[0, 0], [60, 0]], true)!.lf).toBe(2);
+  });
+});
+
+describe('연결로 가운데선 옮기기', () => {
+  it('경계선 사이 가운데가 1.5m 넘게 어긋나면 양 끝 노드는 두고 모양 점만 그 가운데로 옮긴다', () => {
+    // 폭 10m 회전로: 왼쪽 연석 z = −9, 오른쪽 선 z = 1. OSM 가운데선은 z = 0(오른쪽 가장자리 쪽)
+    const idx = laneIndex([line(-9, '010'), line(1, '010')]);
+    const pts: [number, number][] = [[0, 0], [20, 0], [40, 0], [60, 0]];
+    expect(analyseLink(idx, pts, true)).toBeNull(); // 7.5m 안에서는 왼쪽 연석을 못 찾는다
+    // 단면 몇 개만 한쪽으로 어긋나면(잡음) 옮기지 않는다
+    expect(centerLink(pts, [{ s: 4, mid: 2.6 }, { s: 8, mid: 2.7 }, { s: 24, mid: -1.4 }])).toBeNull();
+    const rows = linkSections(idx, pts, 12);
+    const moved = centerLink(pts, rows)!;
+    expect(moved[0]).toEqual([0, 0]);
+    expect(moved[3]).toEqual([60, 0]);
+    expect(moved[1][1]).toBeCloseTo(-4, 1);
+    expect(moved[2][1]).toBeCloseTo(-4, 1);
+    const L = analyseLink(idx, moved, true)!; // 옮긴 뒤에는 7.5m 안에서 양쪽 연석이 보인다
+    expect(L.lf).toBe(2);
+    expect(L.lf * L.lw + 1).toBeCloseTo(10, 0);
+  });
+  it('어긋남이 1.5m 안이면 옮기지 않는다', () => {
+    const idx = laneIndex([line(-2.3, '007'), line(2.7, '009')]);
+    const pts: [number, number][] = [[0, 0], [30, 0], [60, 0]];
+    expect(centerLink(pts, linkSections(idx, pts, 12))).toBeNull();
   });
 });
 

@@ -10,6 +10,8 @@ export interface SurfaceJson {
   cut: number[];
   /** 교차로 면마다 [등급, 바깥 고리 점 수, x, z, ..., 구멍 수, (점 수, x, z, ...)...]. 좌표는 cm 이고 고리마다 첫 점 뒤는 앞 점과의 차이 */
   jn: number[][];
+  /** 그리기 전용 찻길 면(차는 다니지 않는다): 횡단보도가 OSM 길 밖에 걸친 자리. jn 과 같은 꼴(구멍 없음) */
+  dr?: number[][];
 }
 
 export interface Face {
@@ -25,6 +27,8 @@ export interface Surface {
   /** 길 조각 i 의 띠 구간 [cut[2i], cut[2i+1]](m) */
   cut: Float32Array;
   faces: Face[];
+  /** 그리기 전용 찻길 면 */
+  draw: Face[];
 }
 
 export function decodeFace(a: ArrayLike<number>): Face {
@@ -49,7 +53,7 @@ export function decodeFace(a: ArrayLike<number>): Face {
 }
 
 export function decodeSurface(j: SurfaceJson): Surface {
-  return { cut: Float32Array.from(j.cut, (v) => (v < 0 ? Infinity : v / 10)), faces: j.jn.map(decodeFace) };
+  return { cut: Float32Array.from(j.cut, (v) => (v < 0 ? Infinity : v / 10)), faces: j.jn.map(decodeFace), draw: (j.dr ?? []).map(decodeFace) };
 }
 
 /** 땅 위 찻길 조각(등급 5 이하, 교량 아님). 교차로 면과 띠 자르기는 이 조각만 다룬다 */

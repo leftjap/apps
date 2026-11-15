@@ -5,7 +5,7 @@
 // 갈래 오른쪽 가장자리 → 모퉁이 호 → 다음 갈래 왼쪽 가장자리를 잇고, 갈래 끝에서는 자르는 단면을 건넌다(평면 그래프의 면 돌기).
 // 연결로(OSM *_link)로 둘러싸인 안쪽 고리는 교통섬 구멍으로 남긴다.
 import { cornerArc, roadCorners } from '../../src/data/corners.ts';
-import { carriageSections, isGroundRoad, type Section } from '../../src/data/surface.ts';
+import { carriageSections, isGroundRoad, roadJoints, type Section } from '../../src/data/surface.ts';
 import type { Road } from '../../src/data/board.ts';
 import { cumLen } from '../../src/poly.ts';
 import { fillRings, ringArea, simplifyLoop, traceLoops } from './contour.ts';
@@ -496,8 +496,10 @@ export interface SurfacePolys {
   med: number[][];
   /** 교통섬(교차로 면의 구멍) */
   isl: number[][];
-  /** 보도: 도로 부지·광장 − 찻길 띠 − 교차로 면 − 분리대 */
+  /** 보도: 도로 부지·광장 − 찻길 띠 − 교차로 면 − 분리대 − 그리기 전용 찻길 면 */
   walk: number[][];
+  /** 그리기 전용 찻길 면(crosswalkPatches) */
+  draw: number[][];
 }
 
 /**
@@ -511,6 +513,7 @@ export function surfacePolys(
   areas: { kind: number; outer: ArrayLike<number>; holes: ArrayLike<number>[] }[],
   kinds: number[],
   boardR: number,
+  draw: number[][] = [],
 ): SurfacePolys {
   const car: [number, number[]][] = [];
   const med: number[][] = [];
@@ -536,11 +539,142 @@ export function surfacePolys(
   for (const [, ring] of car) fillRings(grid, N, [g(ring)], 0);
   for (const f of built.faces) fillRings(grid, N, [g(f.outer), ...f.holes.map(g)], 0);
   for (const ring of med) fillRings(grid, N, [g(ring)], 0);
+  for (const ring of draw) fillRings(grid, N, [g(ring)], 0);
   const walk: number[][] = [];
   for (const loop of traceLoops(grid, N)) {
     const s = simplifyLoop(loop, 0.35 / CELL);
     if (Math.abs(ringArea(s)) * CELL * CELL < 2 || s.length < 6) continue;
     walk.push(s.map((v) => v * CELL - boardR));
   }
-  return { car, med, isl, walk };
+  return { car, med, isl, walk, draw };
+}
+
+/**
+ * 그리기 전용 찻길 면: 횡단보도 면이 찻길 띠·교차로 면 밖에 걸친 부분을 찻길로 칠한다(칠한 횡단보도 밑은 찻길이다).
+ * 횡단보도마다 건너는 축을 따라 양 끝 1m 안의 서울시 연석 쪽 선(curbs)까지 늘이고, 폭 쪽으로 0.1m 씩 넓힌 사각형에서
+ * 이미 덮인 곳을 뺀 나머지를 0.1m 격자로 칠해 경계를 따라간다. OSM 에 없는 진입로·회전로, 실제보다 좁게 그린 골목, 모퉁이 호가 깎은 횡단보도 끝이 여기에 든다.
+ * 차는 다니지 않는다. 결과는 [등급, 고리 [x, z, ...]]
+ */
+export function crosswalkPatches(roads: Road[], built: BuiltSurface, crosses: Cross[], curbs: ArrayLike<number>[]): { cls: number; ring: number[] }[] {
+  const joints = roadJoints(roads);
+  type P = { ring: ArrayLike<number>; holes?: ArrayLike<number>[]; box: number[] };
+  const grid = new Map<string, P[]>();
+  const bbox = (r: ArrayLike<number>) => {
+    let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity;
+    for (let k = 0; k < r.length; k += 2) (a = Math.min(a, r[k])), (b = Math.max(b, r[k])), (c = Math.min(c, r[k + 1])), (d = Math.max(d, r[k + 1]));
+    return [a, b, c, d];
+  };
+  const add = (p: P) => {
+    for (let gx = Math.floor(p.box[0] / 25); gx <= Math.floor(p.box[1] / 25); gx++)
+      for (let gz = Math.floor(p.box[2] / 25); gz <= Math.floor(p.box[3] / 25); gz++) (grid.get(`${gx},${gz}`) ?? grid.set(`${gx},${gz}`, []).get(`${gx},${gz}`)!).push(p);
+  };
+  const inRing = (ring: ArrayLike<number>, x: number, z: number) => {
+    let c = false;
+    for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2)
+      if (ring[i + 1] > z !== ring[j + 1] > z && x < ring[i] + ((z - ring[i + 1]) / (ring[j + 1] - ring[i + 1])) * (ring[j] - ring[i])) c = !c;
+    return c;
+  };
+  roads.forEach((r, i) => {
+    if (!isGroundRoad(r) || built.internal[i]) return;
+    const secs = carriageSections(r, built.cut[i * 2], built.cut[i * 2 + 1], joints.subarray(i * 4, i * 4 + 4));
+    for (let k = 1; k < secs.length; k++) {
+      const [a, b] = [secs[k - 1], secs[k]];
+      const ring = [a.rx, a.rz, b.rx, b.rz, b.lx, b.lz, a.lx, a.lz];
+      add({ ring, box: bbox(ring) });
+    }
+  });
+  for (const f of built.faces) add({ ring: f.outer, holes: f.holes, box: bbox(f.outer) });
+  const covered = (x: number, z: number) =>
+    (grid.get(`${Math.floor(x / 25)},${Math.floor(z / 25)}`) ?? []).some(
+      (p) => x >= p.box[0] && x <= p.box[1] && z >= p.box[2] && z <= p.box[3] && inRing(p.ring, x, z) && !(p.holes ?? []).some((h) => inRing(h, x, z)),
+    );
+  // 가장 가까운 땅 위 찻길의 등급(칠 색)
+  const clsAt = (x: number, z: number) => {
+    let best = 15;
+    let cls = 4;
+    for (const r of roads) {
+      if (!isGroundRoad(r)) continue;
+      for (let k = 0; k + 3 < r.p.length; k += 3) {
+        const [ax, az, bx, bz] = [r.p[k], r.p[k + 2], r.p[k + 3], r.p[k + 5]];
+        if (Math.min(ax, bx) > x + best || Math.max(ax, bx) < x - best || Math.min(az, bz) > z + best || Math.max(az, bz) < z - best) continue;
+        const dx = bx - ax;
+        const dz = bz - az;
+        const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+        const d = Math.hypot(ax + dx * t - x, az + dz * t - z);
+        if (d < best) (best = d), (cls = r.cls);
+      }
+    }
+    return cls;
+  };
+  const out: { cls: number; ring: number[] }[] = [];
+  const CELL = 0.1;
+  for (const c of crosses)
+    for (const ring of c.rings) {
+      // 건너는 축(u)과 그 옆(v) 좌표로 면이 차지하는 범위
+      const [ux, uz] = [c.ux, c.uz];
+      const [vx, vz] = [-uz, ux];
+      let gx = 0;
+      let gz = 0;
+      for (let k = 0; k < ring.length; k += 2) (gx += (ring[k] * 2) / ring.length), (gz += (ring[k + 1] * 2) / ring.length);
+      let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+      for (let k = 0; k < ring.length; k += 2) {
+        const du = (ring[k] - gx) * ux + (ring[k + 1] - gz) * uz;
+        const dv = (ring[k] - gx) * vx + (ring[k + 1] - gz) * vz;
+        (a0 = Math.min(a0, du)), (a1 = Math.max(a1, du)), (b0 = Math.min(b0, dv)), (b1 = Math.max(b1, dv));
+      }
+      // 횡단보도 안에 덮이지 않은 곳이 0.2m² 넘게 있을 때만
+      let open = 0;
+      for (let du = a0 + 0.125; du < a1; du += 0.25)
+        for (let dv = b0 + 0.125; dv < b1; dv += 0.25) {
+          const x = gx + ux * du + vx * dv;
+          const z = gz + uz * du + vz * dv;
+          if (inRing(ring, x, z) && !covered(x, z)) open++;
+        }
+      if (open * 0.0625 < 0.2) continue;
+      // 양 끝을 2.5m 안의 연석 쪽 선(건너는 축과 가로지르는 선)까지 늘인다
+      const ext = (dir: number) => {
+        const end = dir > 0 ? a1 : -a0;
+        let best = Infinity;
+        for (const L of curbs)
+          for (let k = 0; k + 3 < L.length; k += 2) {
+            const [px, pz, qx, qz] = [L[k], L[k + 1], L[k + 2], L[k + 3]];
+            const t = hit(gx, gz, gx + ux * dir * (Math.max(a1, -a0) + 2.5), gz + uz * dir * (Math.max(a1, -a0) + 2.5), px, pz, qx, qz);
+            if (!t) continue;
+            const sl = Math.hypot(qx - px, qz - pz) || 1;
+            if (Math.abs(((qx - px) * ux + (qz - pz) * uz) / sl) > 0.5) continue; // 축과 나란한 선
+            const d = t[0] * (Math.max(a1, -a0) + 2.5);
+            if (d > end - 0.01 && d < best) best = d; // 끝 너머 가장 가까운 연석 쪽 선
+          }
+        return best <= end + 1 ? best : end;
+      };
+      const e1 = ext(1);
+      const e0 = -ext(-1);
+      const [lo, hi] = [b0 - 0.1, b1 + 0.1];
+      const quad = [
+        [gx + ux * e0 + vx * lo, gz + uz * e0 + vz * lo],
+        [gx + ux * e1 + vx * lo, gz + uz * e1 + vz * lo],
+        [gx + ux * e1 + vx * hi, gz + uz * e1 + vz * hi],
+        [gx + ux * e0 + vx * hi, gz + uz * e0 + vz * hi],
+      ].flat();
+      const [mnx, mxx, mnz, mxz] = bbox(quad);
+      const nx = Math.ceil((mxx - mnx) / CELL);
+      const nz = Math.ceil((mxz - mnz) / CELL);
+      const n = Math.max(nx, nz) + 2;
+      const g = new Uint8Array(n * n);
+      for (let j = 0; j < nz; j++)
+        for (let i = 0; i < nx; i++) {
+          const x = mnx + (i + 0.5) * CELL;
+          const z = mnz + (j + 0.5) * CELL;
+          if (inRing(quad, x, z) && !covered(x, z)) g[(j + 1) * n + i + 1] = 1;
+        }
+      for (const loop of traceLoops(g, n)) {
+        const sl = simplifyLoop(loop, 0.6);
+        if (sl.length < 6 || ringArea(sl) * CELL * CELL < 0.2) continue;
+        const w = sl.map((v, k) => (k % 2 ? mnz + (v - 1) * CELL : mnx + (v - 1) * CELL));
+        const r2 = w.map((v) => Math.round(v * 100) / 100);
+        out.push({ cls: clsAt(gx, gz), ring: r2 });
+        add({ ring: r2, box: bbox(r2) });
+      }
+    }
+  return out;
 }

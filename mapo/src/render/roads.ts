@@ -283,6 +283,8 @@ export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
     }
   }
   for (const f of surface.faces) addFace(flat, f);
+  // 그리기 전용 찻길 면: 횡단보도가 OSM 길 밖에 걸친 자리(차는 다니지 않는다)
+  for (const f of surface.draw) addFace(flat, f);
 
   const ground = new THREE.Mesh(
     ribbonGeometry(flat),

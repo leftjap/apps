@@ -8,9 +8,9 @@ import { attachShops, buildingInfo, gableGuess, packInfo, pickTitle, rectFootpri
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
-import { analyseLink, analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
+import { analyseLink, analysePiece, centerLink, cornerRadius, linkSections, fitToRoadArea, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
 import { railKind, railProfile, stitch } from './lib/rail.ts';
-import { buildSurface, surfacePolys, type Cross as SurfaceCross } from './lib/surface.ts';
+import { buildSurface, crosswalkPatches, surfacePolys, type Cross as SurfaceCross } from './lib/surface.ts';
 import { ringArea as loopArea } from './lib/contour.ts';
 import { roadJoints } from '../src/data/surface.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
@@ -557,6 +557,7 @@ const roadLanes: (PieceLanes | null)[] = roads.map(() => null);
 const linkRoad = new Set<number>();
 for (const w of hw) if (/_link$/.test(w.tags!.highway)) for (const p of piecesOf.get(w.id) ?? []) linkRoad.add(p.road);
 const linkGuess = new Set<number>();
+let linkMoved = 0;
 const laneFile = new URL('./raw/seoul-lanes.json', import.meta.url);
 const tgis = existsSync(laneFile)
   ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]).filter((l) => l.eve === '001')
@@ -571,7 +572,13 @@ const tgis = existsSync(laneFile)
   roads.forEach((r, i) => {
     if (r[0] > 4 || r[3]) return; // 골목보다 작은 길과 교량은 읽지 않는다
     if (linkRoad.has(i)) {
-      // 연결로: 본선 차선을 세거나 같은 길 다른 조각 값을 빌리지 않고, 양쪽 경계선 사이 폭으로 읽는다(못 읽으면 한 차로)
+      // 연결로: 가운데선이 경계선 사이 가운데에서 1.5m 넘게 어긋나면 모양 점(양 끝 노드는 그대로)을 그 가운데로 옮기고,
+      // 본선 차선을 세거나 같은 길 다른 조각 값을 빌리지 않고 양쪽 경계선(7.5m 안) 사이 폭으로 읽는다(못 읽으면 한 차로)
+      const moved = centerLink(ptsOf(r), linkSections(idx, ptsOf(r), 12));
+      if (moved) {
+        moved.forEach(([x, z], k) => ((r[6 + k * 3] = dm(x)), (r[8 + k * 3] = dm(z))));
+        linkMoved++;
+      }
       const L = analyseLink(idx, ptsOf(r), !!(r[2] & 1));
       if (L) roadLanes[i] = { ...L, off: Math.max(-2, Math.min(2, L.off)) };
       else {
@@ -644,7 +651,7 @@ roads.forEach((r, i) => {
       r[8 + k * 3] += dm(d[1]);
     }),
   );
-  console.log(`차선으로 읽은 조각 ${roadLanes.filter(Boolean).length - laneFilled.size}개(+같은 길에서 채운 ${laneFilled.size - linkGuess.size}개), 연결로 ${linkRoad.size}개(경계선으로 읽은 것 ${linkRoad.size - linkGuess.size}, 한 차로로 둔 것 ${linkGuess.size}), 옮긴 노드 ${moved.size}개`);
+  console.log(`차선으로 읽은 조각 ${roadLanes.filter(Boolean).length - laneFilled.size}개(+같은 길에서 채운 ${laneFilled.size - linkGuess.size}개), 연결로 ${linkRoad.size}개(경계선으로 읽은 것 ${linkRoad.size - linkGuess.size}, 한 차로로 둔 것 ${linkGuess.size}, 가운데선을 옮긴 것 ${linkMoved}), 옮긴 노드 ${moved.size}개`);
 }
 const laneWidth = (i: number) => {
   const L = roadLanes[i];
@@ -1735,20 +1742,24 @@ let surfacePolysJson = '';
     crosses.push({ x: cx, z: cz, ux, uz, half: best / 2, rings: [r] });
   }
   const sf = buildSurface(b.roads, b.cornerR, crosses, b.stopLines, link);
+  // 횡단보도가 OSM 길 밖에 걸친 자리는 그리기 전용 찻길 면으로 채운다(서울시 연석 쪽 선까지)
+  const curbLines = tgis.filter((l) => ['007', '009', '010', '011', '015'].includes(l.k)).map((l) => l.p.flatMap(([a, c]) => toXZ(a, c)));
+  const patches = crosswalkPatches(b.roads, sf, crosses, curbLines);
   // 고리마다 첫 점은 cm, 그 뒤는 앞 점과의 차이(cm)
   const enc = (r: number[]) => {
     const c = r.map((v) => Math.round(v * 100));
     return [r.length / 2, ...c.map((v, i) => (i < 2 ? v : v - c[i - 2]))];
   };
   const jn = sf.faces.map((f) => [f.cls, ...enc(f.outer), f.holes.length, ...f.holes.flatMap(enc)]);
+  const dr = patches.map((p) => [p.cls, ...enc(p.ring), 0]);
   // 보도 면 등 다각형(W2 가 걷는 자리를 만든다. 앱은 읽지 않는다): dm
   const dmR = (r: number[]) => r.map((v) => Math.round(v * 10));
-  const polys = surfacePolys(b.roads, sf, roadJoints(b.roads), b.groundAreas, [GK.ROADSIDE, GK.PLAZA], BOARD_R);
-  surfacePolysJson = JSON.stringify({ v: 1, car: polys.car.map(([i, r]) => [i, ...dmR(r)]), med: polys.med.map(dmR), isl: polys.isl.map(dmR), walk: polys.walk.map(dmR) });
+  const polys = surfacePolys(b.roads, sf, roadJoints(b.roads), b.groundAreas, [GK.ROADSIDE, GK.PLAZA], BOARD_R, patches.map((p) => p.ring));
+  surfacePolysJson = JSON.stringify({ v: 1, car: polys.car.map(([i, r]) => [i, ...dmR(r)]), med: polys.med.map(dmR), isl: polys.isl.map(dmR), walk: polys.walk.map(dmR), draw: polys.draw.map(dmR) });
   console.log(`보도 면 고리 ${polys.walk.length}개(구멍 ${polys.walk.filter((r) => loopArea(r) < 0).length}), 넓이 ${(polys.walk.reduce((a, r) => a + loopArea(r), 0) / 1e4).toFixed(1)}ha, 찻길 띠 ${polys.car.length}개, 분리대 ${polys.med.length}개`);
-  surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn });
+  surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn, dr });
   const multi = sf.faces.filter((f) => f.nodes > 1).length;
-  console.log(`교차로 면 ${sf.faces.length}개(노드 둘 넘게 묶은 것 ${multi}, 교통섬 ${sf.faces.reduce((n, f) => n + f.holes.length, 0)}), 면 안에 들어가 띠를 그리지 않는 조각 ${sf.internal.reduce((n, v) => n + v, 0)}개, 연결로 조각 ${link.reduce((n, v) => n + v, 0)}개`);
+  console.log(`교차로 면 ${sf.faces.length}개(노드 둘 넘게 묶은 것 ${multi}, 교통섬 ${sf.faces.reduce((n, f) => n + f.holes.length, 0)}), 면 안에 들어가 띠를 그리지 않는 조각 ${sf.internal.reduce((n, v) => n + v, 0)}개, 연결로 조각 ${link.reduce((n, v) => n + v, 0)}개, 횡단보도 밑 그리기 전용 찻길 면 ${patches.length}개(${(patches.reduce((a, p) => a + Math.abs(loopArea(p.ring)), 0)).toFixed(0)}m²)`);
 }
 // 노면 표시: 서울시 차선 선(OA-15537)·안전지대(OA-15533)·노면 화살표(OA-15536)를 자료 그대로 public/data/marks.json 에 둔다(src/render/marks.ts)
 let marksJson = '';

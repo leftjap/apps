@@ -406,11 +406,8 @@ export function cornerRadius(idx: LaneIndex, c: { kx: number; kz: number; ax: nu
 const LINK_EDGE = new Set([...CURB, ...YELLOW, ...BUS_MED, '008']);
 const LINK_LANE = new Set(['006', '005']);
 
-/**
- * 연결로(OSM *_link) 조각: 4m 마다 단면에서 가운데선 양쪽으로 가장 가까운 경계선(7.5m 안)을 찾아 그 사이를 찻길로 본다.
- * 사이에 있는 차선으로 차로 수를 세고(차선 없이 넓으면 4.2m 마다 한 차로), 본선과 같은 단면에 걸려도 교통섬·실선 너머의 본선 차선은 세지 않는다. 읽은 단면이 둘 미만이면 null
- */
-export function analyseLink(idx: LaneIndex, pts: [number, number][], oneway: boolean): PieceLanes | null {
+/** 연결로 단면들: 4m 마다 [노선 거리 s, 경계선 사이 폭, 차로 수, 경계선 사이 가운데의 옆 거리(진행 방향 오른쪽 +)]. reach 는 경계선을 찾는 거리(m) */
+export function linkSections(idx: LaneIndex, pts: [number, number][], reach = 7.5): { s: number; w: number; lanes: number; mid: number }[] {
   const cum = [0];
   for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
   const total = cum[cum.length - 1];
@@ -423,12 +420,12 @@ export function analyseLink(idx: LaneIndex, pts: [number, number][], oneway: boo
     return { x: a[0] + (b[0] - a[0]) * t, z: a[1] + (b[1] - a[1]) * t, ux: (b[0] - a[0]) / L, uz: (b[1] - a[1]) / L };
   };
   const ss = total < 12 ? [total / 2] : Array.from({ length: Math.floor((total - 8) / 4) + 1 }, (_, k) => 4 + k * 4);
-  const rows: { w: number; lanes: number; mid: number }[] = [];
+  const rows: { s: number; w: number; lanes: number; mid: number }[] = [];
   for (const s of ss) {
     const p = at(s);
     const hits = transect(idx, p.x, p.z, p.ux, p.uz);
-    const right = hits.filter((h) => LINK_EDGE.has(h.k) && h.t > 0.6 && h.t <= 7.5).map((h) => h.t);
-    const left = hits.filter((h) => LINK_EDGE.has(h.k) && h.t < -0.6 && h.t >= -7.5).map((h) => h.t);
+    const right = hits.filter((h) => LINK_EDGE.has(h.k) && h.t > 0.6 && h.t <= reach).map((h) => h.t);
+    const left = hits.filter((h) => LINK_EDGE.has(h.k) && h.t < -0.6 && h.t >= -reach).map((h) => h.t);
     if (!right.length || !left.length) continue;
     const r = Math.min(...right);
     const l = Math.max(...left);
@@ -436,8 +433,44 @@ export function analyseLink(idx: LaneIndex, pts: [number, number][], oneway: boo
     let prev = l;
     for (const h of hits.filter((h) => LINK_LANE.has(h.k) && h.t > l + 1.5 && h.t < r - 1.5).sort((a, b) => a.t - b.t))
       if (h.t - prev >= 2.3) (lanes++, (prev = h.t));
-    rows.push({ w: r - l, lanes, mid: (r + l) / 2 });
+    rows.push({ s, w: r - l, lanes, mid: (r + l) / 2 });
   }
+  return rows;
+}
+
+/**
+ * 연결로 가운데선이 경계선 사이 가운데에서 1.5m 넘게(단면 가운데값, 단면 셋 넘게 모두 같은 쪽으로 1m 넘게) 어긋나면 모양 점을 그 가운데로 옮긴 점들.
+ * 양 끝 노드는 그대로 둔다(이웃 조각과 이어진 자리).
+ * 옮길 일이 없으면 null
+ */
+export function centerLink(pts: [number, number][], rows: { s: number; mid: number }[]): [number, number][] | null {
+  // 단면 셋 넘게, 모두 같은 쪽으로 1m 넘게, 가운데값이 1.5m 넘게 어긋날 때만(단면 몇 개의 잡음으로 옮기지 않는다)
+  if (rows.length < 3 || pts.length < 3 || Math.abs(median(rows.map((r) => r.mid))) <= 1.5) return null;
+  const side = Math.sign(rows[0].mid);
+  if (!rows.every((r) => Math.sign(r.mid) === side && Math.abs(r.mid) > 1)) return null;
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const midAt = (s: number) => {
+    if (s <= rows[0].s) return rows[0].mid;
+    for (let k = 1; k < rows.length; k++) if (s <= rows[k].s) return rows[k - 1].mid + ((rows[k].mid - rows[k - 1].mid) * (s - rows[k - 1].s)) / (rows[k].s - rows[k - 1].s || 1);
+    return rows[rows.length - 1].mid;
+  };
+  return pts.map((p, i) => {
+    if (i === 0 || i === pts.length - 1) return p;
+    const [a, b] = [pts[i - 1], pts[i + 1]];
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const m = midAt(cum[i]);
+    // 진행 방향 오른쪽 (−dz, dx)
+    return [p[0] - ((b[1] - a[1]) / L) * m, p[1] + ((b[0] - a[0]) / L) * m];
+  });
+}
+
+/**
+ * 연결로(OSM *_link) 조각: 4m 마다 단면에서 가운데선 양쪽으로 가장 가까운 경계선(reach 안)을 찾아 그 사이를 찻길로 본다.
+ * 사이에 있는 차선으로 차로 수를 세고(차선 없이 넓으면 4.2m 마다 한 차로), 본선과 같은 단면에 걸려도 교통섬·실선 너머의 본선 차선은 세지 않는다. 읽은 단면이 둘 미만이면 null
+ */
+export function analyseLink(idx: LaneIndex, pts: [number, number][], oneway: boolean, reach = 7.5): PieceLanes | null {
+  const rows = linkSections(idx, pts, reach);
   if (rows.length < 2) return null;
   const counted = mode(rows.map((r) => r.lanes));
   const pick = rows.filter((r) => r.lanes === counted);

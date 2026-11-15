@@ -60,6 +60,34 @@ describe('찻길 바닥(교차로 면과 띠)', () => {
       expect(two).toBe(0);
     });
 
+  it('교차로 다섯 곳 둘레 80m 의 횡단보도 조각은 넓이의 30% 넘게 찻길(띠·교차로 면·그리기 전용 면) 밖에 있지 않다', () => {
+    const rings = [...board.crosswalks.flatMap((c) => c.rings), ...board.crosswalkMarks];
+    const bad: string[] = [];
+    for (const [name, cx, cz] of JUNCTIONS) {
+      const { quads, faces } = pieces(cx, cz, 120);
+      const draws = surface.draw.filter((d) => Math.hypot(d.outer[0] - cx, d.outer[1] - cz) < 200);
+      for (const r of rings) {
+        let gx = 0;
+        let gz = 0;
+        for (let k = 0; k < r.length; k += 2) (gx += (r[k] * 2) / r.length), (gz += (r[k + 1] * 2) / r.length);
+        if (Math.hypot(gx - cx, gz - cz) > 80) continue;
+        let mnx = Infinity, mxx = -Infinity, mnz = Infinity, mxz = -Infinity;
+        for (let k = 0; k < r.length; k += 2) (mnx = Math.min(mnx, r[k])), (mxx = Math.max(mxx, r[k])), (mnz = Math.min(mnz, r[k + 1])), (mxz = Math.max(mxz, r[k + 1]));
+        let inA = 0;
+        let outA = 0;
+        for (let x = mnx + 0.125; x < mxx; x += 0.25)
+          for (let z = mnz + 0.125; z < mxz; z += 0.25) {
+            if (!inside(r, x, z)) continue;
+            const on = quads.some((q) => q.some((qq) => inside(qq, x, z))) || faces.some((f) => inside(f.outer, x, z) && !f.holes.some((h) => inside(h, x, z))) || draws.some((d) => inside(d.outer, x, z));
+            if (on) inA++;
+            else outA++;
+          }
+        if (outA / (inA + outA || 1) > 0.3) bad.push(`${name} ${gx.toFixed(0)},${gz.toFixed(0)} ${((outA / (inA + outA)) * 100).toFixed(0)}%`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
   it('교차로 면의 외곽선은 스스로 엇갈리지 않는다', () => {
     let bad = 0;
     for (const f of surface.faces) {
