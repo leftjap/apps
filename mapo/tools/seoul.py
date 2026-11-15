@@ -2,6 +2,8 @@
 #  - 서울시 교통안전시설물 횡단보도 정보(OA-15554): 횡단보도 면(A004_A, 2021-08 기준, EPSG:5186)
 #  - 서울시 차선 관련 정보(OA-15537): 차선 선(A058_L, 2021-08 기준, EPSG:5186). 중앙선·차선·가장자리선·정지선·버스전용차선
 #  - 서울특별시 자치구 횡단보도 정보(OA-22906): 횡단보도 점(2026-03 기준, 경위도). 보행등 유무
+#  - 서울시 교통안전시설물 안전지대 정보(OA-15533): 안전지대 면(A005_A, 2025-04 기준, EPSG:5186)
+#  - 서울시 교통안전시설물 방향표시 정보(OA-15536): 노면 화살표 점(A055_P, 2026-09 기준, EPSG:5186). 종류 코드와 각도
 # 모두 공공누리 제1유형(출처 표시). 실행: python3 tools/seoul.py  (표준 라이브러리만 쓴다. 받은 파일은 tools/raw/seoul/ 에 둔다)
 import csv, io, json, math, os, struct, sys, urllib.parse, urllib.request, zipfile
 
@@ -132,6 +134,19 @@ def shp_shapes(data):
         yield [[(pts[2 * i], pts[2 * i + 1]) for i in range(parts[k], parts[k + 1])] for k in range(npart)]
 
 
+def shp_points(data):
+    """점 자료: (x, y) 또는 None 을 레코드 순서대로"""
+    o = 100
+    while o < len(data):
+        _, clen = struct.unpack('>ii', data[o:o + 8])
+        c = data[o + 8: o + 8 + clen * 2]
+        o += 8 + clen * 2
+        if struct.unpack('<i', c[:4])[0] == 0:
+            yield None
+            continue
+        yield struct.unpack('<2d', c[4:20])
+
+
 def in_board(ll_pts):
     return any(math.hypot(*to_xz(lat, lon)) < R for lat, lon in ll_pts)
 
@@ -179,6 +194,28 @@ for row, shape in zip(dbf_rows(zip_member(lane_zip, 'A058_L.dbf')), shp_shapes(z
         if len(ll) >= 2 and in_board(ll):
             lanes.append({'k': row['A058_KND_C'], 'k2': row['A058_KND2_'], 'eve': row['EVE_CDE'], 'p': [[r6(a), r6(b)] for a, b in ll]})
 
+# ── 안전지대(빗금 친 면) ──
+safe_zip = download('OA-15533', 3, 11, 'safety-zones.zip')
+zones = []
+for row, shape in zip(dbf_rows(zip_member(safe_zip, 'A005_A.dbf')), shp_shapes(zip_member(safe_zip, 'A005_A.shp'))):
+    if not shape:
+        continue
+    ring = [tm_to_ll(x, y) for x, y in shape[0]]
+    if in_board(ring):
+        zones.append({'id': row['MGRNU'], 'kind': row['A005_KND_C'], 'eve': row['EVE_CDE'], 'ring': [[r6(a), r6(b)] for a, b in ring]})
+
+# ── 노면 화살표(방향표시): 종류 코드, 각도 ──
+arrow_zip = download('OA-15536', 3, 15, 'arrows.zip')
+arrows = []
+for row, pt in zip(dbf_rows(zip_member(arrow_zip, '.dbf')), shp_points(zip_member(arrow_zip, '.shp'))):
+    if not pt:
+        continue
+    lat, lon = tm_to_ll(*pt)
+    if math.hypot(*to_xz(lat, lon)) < R:
+        arrows.append({'kind': row['A055_KND_C'], 'drn': int(row['DRN'] or 0), 'eve': row['EVE_CDE'], 'lat': r6(lat), 'lon': r6(lon)})
+
+json.dump({'zones': zones}, open(os.path.join(RAW, 'seoul-safety.json'), 'w'), ensure_ascii=False)
+json.dump({'arrows': arrows}, open(os.path.join(RAW, 'seoul-arrows.json'), 'w'), ensure_ascii=False)
 json.dump({'areas': areas, 'points': extra}, open(os.path.join(RAW, 'seoul-crosswalks.json'), 'w'), ensure_ascii=False)
 json.dump({'lanes': lanes}, open(os.path.join(RAW, 'seoul-lanes.json'), 'w'), ensure_ascii=False)
-print(f'횡단보도 면 {len(areas)}개(보행등 있음 {sum(1 for a in areas if a["sig"])}, 점 자료와 못 이은 것 {sum(1 for a in areas if a["sig"] is None)}), 면 없는 점 {len(extra)}개, 차선 {len(lanes)}줄', file=sys.stderr)
+print(f'횡단보도 면 {len(areas)}개(보행등 있음 {sum(1 for a in areas if a["sig"])}, 점 자료와 못 이은 것 {sum(1 for a in areas if a["sig"] is None)}), 면 없는 점 {len(extra)}개, 차선 {len(lanes)}줄, 안전지대 {len(zones)}개, 노면 화살표 {len(arrows)}개', file=sys.stderr)

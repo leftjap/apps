@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
 import { decodeSurface, type SurfaceJson } from './data/surface.ts';
+import { decodeMarks, type MarksJson } from './data/marks.ts';
 import { toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
 import { makeBuildings } from './render/buildings.ts';
@@ -13,6 +14,7 @@ import { LANDMARKS, LM_COLORS, makeLandmarks } from './render/landmarks.ts';
 import { makeRails, type TrainSpot } from './render/rails.ts';
 import { makeGroundLabels, makeMarker, makeRings, type GroundLabel } from './render/rings.ts';
 import { makeRoads } from './render/roads.ts';
+import { makeMarks } from './render/marks.ts';
 import { makeSignalMarks } from './render/signals.ts';
 import { makeFlow } from './render/flow.ts';
 import { makeBusIslands, makeBusStops } from './render/busstops.ts';
@@ -72,12 +74,14 @@ const ambience = makeAmbience();
 const loading = document.querySelector<HTMLElement>('#loading')!;
 // 지명 자리(tools/places.ts 가 OSM 행정동 경계·공원·도로명 주소로 굽는다)
 type Named = { dongs: { name: string; x: number; z: number }[]; places: { text: string; x: number; z: number; turn: number }[] };
-const [board, mask, named, surface] = await Promise.all([
+const [board, mask, named, surface, marks] = await Promise.all([
   loadBoard(BASE),
   new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`),
   fetch(`${BASE}data/places.json`).then((r) => r.json() as Promise<Named>),
   // 찻길 바닥(교차로 면·띠 구간, tools/lib/surface.ts 가 굽는다)
   fetch(`${BASE}data/surface.json`).then((r) => r.json() as Promise<SurfaceJson>).then(decodeSurface),
+  // 노면 표시(서울시 차선 선·안전지대·노면 화살표, tools/bake.ts 가 굽는다)
+  fetch(`${BASE}data/marks.json`).then((r) => r.json() as Promise<MarksJson>).then(decodeMarks),
 ]).catch((e) => {
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
@@ -146,19 +150,9 @@ const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
 const reactor = makeCatReactor(cats);
 
 // ── 장면 ──
-// 길 조각 양 끝에서 차선을 긋지 않을 거리: 차의 교차로 상자와 신호 정지선 앞(교차로 안에는 차선이 없다)
-const clears = board.roads.map(() => [0, 0] as [number, number]);
-for (const e of carGraph) {
-  const jn = signals.junctions;
-  const ap = signals.approach.get(e.id);
-  const atEnd = Math.max(jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0, ap ? ap.setback : 0);
-  const atStart = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
-  const c = clears[e.road];
-  // 길 조각을 거슬러 가는 구간은 구간 끝이 조각의 시작이다
-  c[e.rev ? 0 : 1] = Math.max(c[e.rev ? 0 : 1], atEnd);
-  c[e.rev ? 1 : 0] = Math.max(c[e.rev ? 1 : 0], atStart);
-}
-const roads = makeRoads(board.roads, surface, LM_COLORS, (i) => clears[i]);
+const roads = makeRoads(board.roads, surface, LM_COLORS);
+// 노면 표시: 서울시 차선 선·안전지대·노면 화살표 그대로(src/render/marks.ts)
+const roadMarks = makeMarks(marks);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);
@@ -167,8 +161,8 @@ const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
-const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.stopLines, board.crosswalkMarks);
-const flow = makeFlow(carGraph, signals.junctions);
+const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.crosswalkMarks);
+const flow = makeFlow(carGraph, signals.junctions, surface.cut);
 flow.update(provider, start);
 const trees = makeTrees(board.trees, seasonOf(start.doy));
 const rain = makeRain(small ? 3500 : 6000);
@@ -215,6 +209,7 @@ const picnic = makePicnic(board.picnic);
 view.scene.add(
   makeGround(mask, board.groundAreas),
   roads.group,
+  roadMarks,
   flow.mesh,
   signalMarks.group,
   // 길가 정류장은 보도 위 쉼터, 중앙 정류장은 길 가운데 승강장

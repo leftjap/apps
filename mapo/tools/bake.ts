@@ -15,7 +15,7 @@ import { ringArea as loopArea } from './lib/contour.ts';
 import { roadJoints } from '../src/data/surface.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
-import { decodeBoard, GK, type BoardJson } from '../src/data/board.ts';
+import { decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts';
 import { roadCorners } from '../src/data/corners.ts';
 
 type Tags = Record<string, string>;
@@ -1736,10 +1736,104 @@ let surfacePolysJson = '';
   const multi = sf.faces.filter((f) => f.nodes > 1).length;
   console.log(`교차로 면 ${sf.faces.length}개(노드 둘 넘게 묶은 것 ${multi}, 교통섬 ${sf.faces.reduce((n, f) => n + f.holes.length, 0)}), 면 안에 들어가 띠를 그리지 않는 조각 ${sf.internal.reduce((n, v) => n + v, 0)}개, 연결로 조각 ${link.reduce((n, v) => n + v, 0)}개`);
 }
+// 노면 표시: 서울시 차선 선(OA-15537)·안전지대(OA-15533)·노면 화살표(OA-15536)를 자료 그대로 public/data/marks.json 에 둔다(src/render/marks.ts)
+let marksJson = '';
+{
+  const raw = existsSync(laneFile) ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]) : [];
+  /** 점 수, 첫 점, 뒤 점마다 앞 점과의 차이(dm) */
+  const encPts = (P: number[][]) => {
+    const c = P.map((p) => p.map((v) => Math.round(v * 10)));
+    return [P.length, ...c.flatMap((p, i) => (i ? p.map((v, j) => v - c[i - 1][j]) : p))];
+  };
+  // 선 높이: 땅 찻길 위면 0, 땅 찻길 밖인데 교량 띠 위면 그 교량 높이 + 0.25m(교량 띠 높이). 고가(EVE 002) 선은 12m 안 가장 가까운 교량
+  const bd = decodeBoard(out as unknown as BoardJson);
+  const segIdx = new Map<number, number[][]>(); // 20m 칸 → [ax, ay, az, bx, by, bz, 반폭, 교량이면 1]
+  const cellKey = (x: number, z: number) => Math.floor(x / 20) * 100000 + Math.floor(z / 20);
+  for (const r of bd.roads) {
+    if (r.cls > 5) continue;
+    const half = Math.max(...roadHalf(r)) + 0.5;
+    const deck = r.bridge ? 1 : 0;
+    for (let k = 0; k + 5 < r.p.length; k += 3) {
+      const sg = [r.p[k], r.p[k + 1], r.p[k + 2], r.p[k + 3], r.p[k + 4], r.p[k + 5], half, deck];
+      for (let cx = Math.floor((Math.min(sg[0], sg[3]) - half) / 20); cx <= Math.floor((Math.max(sg[0], sg[3]) + half) / 20); cx++)
+        for (let cz = Math.floor((Math.min(sg[2], sg[5]) - half) / 20); cz <= Math.floor((Math.max(sg[2], sg[5]) + half) / 20); cz++) {
+          const kk = cx * 100000 + cz;
+          (segIdx.get(kk) ?? segIdx.set(kk, []).get(kk)!).push(sg);
+        }
+    }
+  }
+  /** 점 (x, z)를 덮는 찻길: 땅 찻길이 있으면 0, 교량만 있으면 그 높이. reach 를 주면 그 안 가장 가까운 교량 높이 */
+  const heightAt = (x: number, z: number, reach = 0): number | null => {
+    let onGround = false;
+    let deckBest = Infinity;
+    let deckY: number | null = null;
+    const R = Math.max(1, Math.ceil(reach / 20));
+    for (let ox = -R; ox <= R; ox++)
+      for (let oz = -R; oz <= R; oz++)
+        for (const [ax, ay, az, bx, by, bz, half, deck] of segIdx.get(cellKey(x + ox * 20, z + oz * 20)) ?? []) {
+          const dx = bx - ax;
+          const dz = bz - az;
+          const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+          const d = Math.hypot(ax + dx * t - x, az + dz * t - z);
+          const y = ay + (by - ay) * t;
+          if (deck && y > 1 && d < Math.max(half, reach) && d < deckBest) (deckBest = d), (deckY = y + 0.25);
+          if (!deck && y < 1 && d < half) onGround = true;
+        }
+    return reach ? deckY : onGround ? 0 : deckY;
+  };
+  const lines: number[][] = [];
+  const high: number[][] = [];
+  let skipped = 0;
+  let lifted = 0;
+  for (const l of raw) {
+    if (l.eve === '003') continue; // 지하
+    const P = l.p.map(([a, b]) => toXZ(a, b)).filter(([x, z]) => inBoard(x, z, 2));
+    if (P.length < 2) continue;
+    const code = Number(l.k) * 10 + (Number(l.k2) || 1);
+    /** 물(마스크 빨강) 위인가 */
+    const water = (x: number, z: number) => mask[(Math.round(px(z)) * SIZE + Math.round(px(x))) * 4] > 128;
+    const Y = P.map(([x, z]) => (l.eve === '002' ? heightAt(x, z, 12) : (heightAt(x, z) ?? (water(x, z) ? null : 0))));
+    // 고가 표시인데 교량을 못 찾았거나, 땅 표시인데 어느 찻길에도 없고 물 위인 선(교량 옆으로 어긋난 선)은 뺀다
+    if (Y.some((y) => y === null)) {
+      skipped++;
+      continue;
+    }
+    if (Y.every((y) => y === 0)) lines.push([code, ...encPts(P)]);
+    else {
+      if (l.eve !== '002') lifted++;
+      high.push([code, ...encPts(P.map(([x, z], i) => [x, Y[i]!, z]))]);
+    }
+  }
+  // 안전지대: 중앙선(001) 옆이면 황색(1), 아니면 백색(0)
+  const centers = raw.filter((l) => l.k === '001' && l.eve === '001').map((l) => l.p.map(([a, b]) => toXZ(a, b)));
+  const zoneFile = new URL('./raw/seoul-safety.json', import.meta.url);
+  const zones: number[][] = [];
+  for (const zn of existsSync(zoneFile) ? (JSON.parse(readFileSync(zoneFile, 'utf8')).zones as { eve: string; ring: [number, number][] }[]) : []) {
+    if (zn.eve !== '001') continue;
+    const R = zn.ring.map(([a, b]) => toXZ(a, b));
+    if (!R.every(([x, z]) => inBoard(x, z, 2))) continue;
+    if (R.some(([x, z]) => (heightAt(x, z) ?? 0) > 0)) continue; // 교량 위(땅에 칠하면 물 위에 뜬다)
+    const yellow = centers.some((c) => c.some(([cx, cz]) => R.some(([x, z]) => Math.hypot(cx - x, cz - z) < 1.2)));
+    zones.push([yellow ? 1 : 0, ...encPts(R.slice(0, -1))]);
+  }
+  // 노면 화살표: [종류, x, z(dm), 각도(평면 좌표 동쪽에서 반시계, 도)]. 한 방향 길의 직진 화살표 92% 가 길 진행 방향과 맞는 기준이다
+  const arrowFile = new URL('./raw/seoul-arrows.json', import.meta.url);
+  const arrows: number[] = [];
+  for (const a of existsSync(arrowFile) ? (JSON.parse(readFileSync(arrowFile, 'utf8')).arrows as { kind: string; drn: number; eve: string; lat: number; lon: number }[]) : []) {
+    if (a.eve !== '001') continue;
+    const [x, z] = toXZ(a.lat, a.lon);
+    if (inBoard(x, z, 3) && (heightAt(x, z) ?? 0) === 0) arrows.push(Number(a.kind), dm(x), dm(z), a.drn);
+  }
+  marksJson = JSON.stringify({ v: 1, l: lines, h: high, z: zones, a: arrows });
+  const by = new Map<number, number>();
+  for (const l of lines) by.set(Math.floor(l[0] / 10), (by.get(Math.floor(l[0] / 10)) ?? 0) + 1);
+  console.log(`노면 표시: 선 ${lines.length}줄(정지선 ${by.get(4) ?? 0}, 차선 ${by.get(6) ?? 0}, 중앙선 ${by.get(1) ?? 0}, 진로변경제한선 ${by.get(8) ?? 0}, 유도선 ${by.get(12) ?? 0}, 자전거횡단 ${by.get(13) ?? 0}), 교량 위 ${high.length}줄(땅 표시인데 교량 위라 올린 것 ${lifted}, 교량을 못 찾거나 물 위라 뺀 것 ${skipped}), 안전지대 ${zones.length}개(황색 ${zones.filter((z) => z[0]).length}), 화살표 ${arrows.length / 4}개`);
+}
 const json = JSON.stringify(out);
 writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);
 writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), surfacePolysJson);
+writeFileSync(new URL('../public/data/marks.json', import.meta.url), marksJson);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));
 
 const waterPx = mask.reduce((s, v, i) => s + (i % 4 === 0 && v ? 1 : 0), 0);
@@ -1754,4 +1848,4 @@ console.log(`이름 랜드마크 건물 ${NAMED_LM.map(([re, n]) => `${re.source
 console.log(`건물 부분 ${parts.filter((p) => p.used).length}/${parts.length}개를 감싸는 건물 대신 세움, 역 엘리베이터 ${elevators.length / 2}곳, 용도 ${[0, 1, 2, 3, 4, 5, 6, 7].map((u) => binfo.filter((v) => v % 8 === u).length).join('/')}`);
 console.log(`출구 ${exits.length}곳 가운데 찻길 위에 있어 보도로 밀어낸 곳 ${exitsPushed}곳`);
 console.log(`랜드마크 ${landmarks.map((l) => `${l.id}(${l.x / 10},${l.z / 10})`).join(' ')}`);
-console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB, surface.json ${(surfaceJson.length / 1e6).toFixed(2)}MB, surface-polys.json ${(surfacePolysJson.length / 1e6).toFixed(2)}MB`);
+console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB, surface.json ${(surfaceJson.length / 1e6).toFixed(2)}MB, surface-polys.json ${(surfacePolysJson.length / 1e6).toFixed(2)}MB, marks.json ${(marksJson.length / 1e6).toFixed(2)}MB`);

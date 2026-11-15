@@ -2,7 +2,7 @@
 // 자료 공급자가 주는 도로 속도 비율이 느린 구간만 칠한다(서행 주황, 정체 빨강). 원활한 길은 칠하지 않아
 // 노면 표시(흰 차선, 노란 중앙선, 파란 버스전용차로)와 섞이지 않고 막히는 곳만 눈에 띈다.
 // 2단계에서 공급자가 실제 도로 속도를 주면 같은 띠에 그대로 실린다. 멀리서도 보이도록 화면에서 최소 굵기를 지킨다.
-// 띠는 교차로 상자 밖 구간에만 깐다(상자 안은 여러 방향 띠가 겹친다).
+// 띠는 교차로 상자 밖, 그리고 찻길 띠가 그려진 구간(교차로 면 밖, public/data/surface.json 의 cut)에만 깐다(교차로 안은 여러 방향 띠가 겹친다).
 import * as THREE from 'three';
 import { pointAt } from '../poly.ts';
 import type { Now } from '../sim/clock.ts';
@@ -17,10 +17,16 @@ export const FLOW_LEVELS = [
   ['정체', '#f0605d'],
 ] as const;
 
-/** 구간 e 에서 교차로 상자 밖 부분 [x,y,z,...]. 상자에 다 덮이면 빈 배열 */
-function outsideBoxes(e: Edge, jn: Junctions): number[] {
-  const s0 = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
-  const s1 = e.len - (jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
+/** 구간 e 에서 교차로 상자 밖이고 찻길 띠가 그려진 부분 [x,y,z,...]. 없으면 빈 배열. cut 은 길 조각마다 띠 구간(src/data/surface.ts) */
+function outsideBoxes(e: Edge, jn: Junctions, cut?: ArrayLike<number>): number[] {
+  let s0 = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
+  let s1 = e.len - (jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
+  if (cut) {
+    // 구간이 길 조각을 거슬러 가면 조각의 끝이 구간의 시작이다
+    const [a, b] = [cut[e.road * 2], Math.min(e.len, cut[e.road * 2 + 1])];
+    s0 = Math.max(s0, e.rev ? e.len - b : a);
+    s1 = Math.min(s1, e.rev ? e.len - a : b);
+  }
   if (s1 - s0 < 1) return [];
   const tmp = [0, 0, 0];
   pointAt(e.p, e.cum, s0, tmp);
@@ -31,7 +37,7 @@ function outsideBoxes(e: Edge, jn: Junctions): number[] {
   return out;
 }
 
-export function makeFlow(edges: Edge[], jn: Junctions) {
+export function makeFlow(edges: Edge[], jn: Junctions, cut?: ArrayLike<number>) {
   const used = edges.filter((e) => e.cls <= 3);
   const pos: number[] = [];
   const side: number[] = [];
@@ -41,7 +47,7 @@ export function makeFlow(edges: Edge[], jn: Junctions) {
   for (const e of used) {
     start.push(pos.length / 3);
     const off = e.off0 + ((e.lanes - 1) / 2) * e.lw;
-    const p = outsideBoxes(e, jn);
+    const p = outsideBoxes(e, jn, cut);
     const n = p.length / 3;
     for (let i = 0; i < n; i++) {
       const a = Math.max(0, i - 1) * 3;

@@ -1,12 +1,12 @@
-// 횡단보도·정지선·신호등. 횡단보도는 서울시 교통안전시설물 횡단보도 면(구운 모형판의 crosswalks)을 실제 자리·방향·폭으로 칠하고,
-// 정지선은 서울시 차선 자료의 정지선을 그대로 긋는다. 신호에 서는 차의 정지선 자리가 그 자료와 다르면(자료가 없는 곳) 그 자리에도 긋는다.
-// 신호등 기둥은 정지선 옆 보도 끝에 세우고, 불빛은 매 프레임 신호 상태로 바꾼다.
+// 횡단보도·신호등. 횡단보도는 서울시 교통안전시설물 횡단보도 면(구운 모형판의 crosswalks)을 실제 자리·방향·폭으로 칠한다.
+// 정지선은 노면 표시(src/render/marks.ts)가 서울시 차선 자료 그대로 긋는다.
+// 신호등 기둥은 차가 서는 자리(시뮬레이션 정지 자리) 옆 보도 끝에 세우고, 불빛은 매 프레임 신호 상태로 바꾼다.
 import * as THREE from 'three';
 import type { Crosswalk } from '../data/board.ts';
-import { laneTest, type Edge } from '../sim/graph.ts';
+import type { Edge } from '../sim/graph.ts';
 import type { Signals } from '../sim/signals.ts';
 import { material } from './env.ts';
-import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry, type Ribbon } from './util.ts';
+import { instanced, merge, part, ribbon, ribbonGeometry, type Ribbon } from './util.ts';
 
 /** 횡단보도 면 외곽선 하나를 칠한다. 줄무늬는 건너는 축(ux, uz)을 따라 (sx, sz)에서부터 0.5m 칠하고 0.5m 띈다 */
 function addStripes(o: Ribbon, ring: Float32Array, sx: number, sz: number, ux: number, uz: number) {
@@ -21,7 +21,7 @@ function addStripes(o: Ribbon, ring: Float32Array, sx: number, sz: number, ux: n
   for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(pts, [])) o.idx.push(base + a, base + b, base + c);
 }
 
-export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], stopLines: Float32Array, crossMarks: Float32Array[] = []) {
+export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], crossMarks: Float32Array[] = []) {
   const group = new THREE.Group();
   const marks = ribbon();
   const poles: [number, number, number, number][] = []; // x, z, 방향, 신호 번호(approach 순서)
@@ -41,23 +41,6 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
     }
     addStripes(marks, r, r[0], r[1], ux, uz);
   }
-  // 정지선 가운데가 차로 위에 있는 것만 긋는다(차가 다니지 않는 골목 어귀의 정지선은 길 폭이 달라 엉뚱한 곳에 떠 보인다)
-  const onLanes = laneTest(edges);
-  for (let k = 0; k < stopLines.length; k += 4)
-    if (onLanes((stopLines[k] + stopLines[k + 2]) / 2, (stopLines[k + 1] + stopLines[k + 3]) / 2))
-      addRibbon(marks, [stopLines[k], 0.35, stopLines[k + 1], stopLines[k + 2], 0.35, stopLines[k + 3]], 0.45, [0, 1, 0, 0]);
-  const nearStop = (x: number, z: number) => {
-    for (let k = 0; k < stopLines.length; k += 4) {
-      const ax = stopLines[k];
-      const az = stopLines[k + 1];
-      const dx = stopLines[k + 2] - ax;
-      const dz = stopLines[k + 3] - az;
-      const l2 = dx * dx + dz * dz || 1;
-      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
-      if (Math.hypot(ax + dx * t - x, az + dz * t - z) < 2) return true;
-    }
-    return false;
-  };
   for (const [id, ap] of signals.approach) {
     const e = edges[id];
     const n = e.p.length;
@@ -69,12 +52,7 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
     const ax = dx / len;
     const az = dz / len;
     // 진행 방향 오른쪽: (-az, ax). 이 방향 차로가 차지하는 폭(양방향 길이면 가운데선부터)
-    const inner = e.off0 > 0 ? 0.2 : e.off0 - e.lw / 2;
     const outer = e.off0 + (e.lanes - 0.5) * e.lw;
-    const mid = (inner + outer) / 2;
-    const sx = ex - ax * ap.setback - az * mid;
-    const sz = ez - az * ap.setback + ax * mid;
-    if (!nearStop(sx, sz)) addRibbon(marks, [ex - ax * ap.setback - az * inner, 0.35, ez - az * ap.setback + ax * inner, ex - ax * ap.setback - az * outer, 0.35, ez - az * ap.setback + ax * outer], 0.45, [0, 1, 0, 0]);
     const px = ex - ax * ap.setback - az * (outer + 1.6);
     const pz = ez - az * ap.setback + ax * (outer + 1.6);
     poles.push([px, pz, Math.atan2(az, ax), list.length]);
@@ -95,7 +73,7 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
         varying vec2 vUV; varying vec4 vInfo; varying float vDist;
         void main() {
           float zebra = vInfo.x * step(0.5, fract(vUV.y)) * (1.0 - smoothstep(0.9, 1.0, abs(vUV.x)));
-          float a = max(zebra, vInfo.y) * (1.0 - smoothstep(1200.0, 2200.0, vDist));
+          float a = zebra * (1.0 - smoothstep(1200.0, 2200.0, vDist));
           gl_FragColor = vec4(vec3(0.96, 0.96, 0.94) * (0.8 + 0.25 * (1.0 - uNight)), a * 0.85);
         }`,
     }),
