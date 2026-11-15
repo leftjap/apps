@@ -124,3 +124,54 @@ export function ringArea(p: ArrayLike<number>): number {
   for (let i = 0, m = p.length - 2; i < p.length; m = i, i += 2) s += p[m] * p[i + 1] - p[i] * p[m + 1];
   return s / 2;
 }
+
+/**
+ * 변끼리 엇갈린 고리 p(세계 좌표 [x, z, ...])에서 회전수 부호가 sign 인 칸(cell m)만 칠해 그 경계 고리들을 돌려준다.
+ * 가장자리선을 안쪽으로 밀어 만든 고리는 좁은 곳에서 변이 엇갈려 뒤집힌 꼬리가 생기는데, 그 꼬리는 회전수 부호가 반대라 빠진다.
+ * clear 고리들(세계 좌표) 안 칸은 비운다(덩어리 안에 통째로 든 빈 곳은 고리 하나로 나타낼 수 없어 채운 채 둔다). 고리 넓이 부호는 sign 과 같고, tol(m) 안에서 계단을 줄인다.
+ */
+export function windingLoops(p: ArrayLike<number>, sign: number, cell: number, tol: number, clear: ArrayLike<number>[] = []): number[][] {
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (let k = 0; k < p.length; k += 2) (x0 = Math.min(x0, p[k])), (x1 = Math.max(x1, p[k])), (z0 = Math.min(z0, p[k + 1])), (z1 = Math.max(z1, p[k + 1]));
+  const nx = Math.ceil((x1 - x0) / cell);
+  const nz = Math.ceil((z1 - z0) / cell);
+  const n = Math.max(nx, nz) + 2;
+  const g = new Uint8Array(n * n);
+  const xs: [number, number][] = [];
+  for (let j = 0; j < nz; j++) {
+    const zc = z0 + (j + 0.5) * cell;
+    xs.length = 0;
+    for (let i = 0, m = p.length - 2; i < p.length; m = i, i += 2) {
+      const az = p[m + 1];
+      const bz = p[i + 1];
+      if (az <= zc === bz <= zc) continue;
+      xs.push([p[m] + ((zc - az) / (bz - az)) * (p[i] - p[m]), bz > az ? 1 : -1]);
+    }
+    xs.sort((a, b) => a[0] - b[0]);
+    // 왼쪽에서 오른쪽으로 건너며: 아래로 가는 변을 건너면 회전수 +1, 위로 가는 변이면 −1 (넓이 + 고리 안이 +1)
+    let w = 0;
+    for (let q = 0; q + 1 < xs.length; q++) {
+      w -= xs[q][1];
+      if (w * sign <= 0) continue;
+      const a = Math.max(0, Math.ceil((xs[q][0] - x0) / cell - 0.5));
+      const b = Math.min(nx - 1, Math.floor((xs[q + 1][0] - x0) / cell - 0.5));
+      if (b >= a) g.fill(1, (j + 1) * n + a + 1, (j + 1) * n + b + 2);
+    }
+  }
+  for (const r of clear) {
+    let inBox = false;
+    for (let k = 0; k < r.length && !inBox; k += 2) inBox = r[k] >= x0 - 50 && r[k] <= x1 + 50 && r[k + 1] >= z0 - 50 && r[k + 1] <= z1 + 50;
+    if (inBox) fillRings(g, n, [Array.from(r, (v, k) => (v - (k % 2 ? z0 : x0)) / cell + 1)], 0);
+  }
+  const out: number[][] = [];
+  for (const loop of traceLoops(g, n)) {
+    if (ringArea(loop) <= 0) continue; // 칠한 덩어리 안의 빈 곳은 버린다
+    const s = simplifyLoop(loop, tol / cell).map((v, k) => (k % 2 ? z0 : x0) + (v - 1) * cell);
+    if (sign < 0) {
+      const r: number[] = [];
+      for (let k = s.length - 2; k >= 0; k -= 2) r.push(s[k], s[k + 1]);
+      out.push(r);
+    } else out.push(s);
+  }
+  return out;
+}

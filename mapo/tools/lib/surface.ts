@@ -8,7 +8,7 @@ import { cornerArc, roadCorners } from '../../src/data/corners.ts';
 import { carriageSections, isGroundRoad, roadJoints, type Section } from '../../src/data/surface.ts';
 import type { Road } from '../../src/data/board.ts';
 import { cumLen } from '../../src/poly.ts';
-import { fillRings, ringArea, simplifyLoop, traceLoops } from './contour.ts';
+import { fillRings, ringArea, simplifyLoop, traceLoops, windingLoops } from './contour.ts';
 
 /** 횡단보도: 가운데, 건너는 방향, 건너는 길이의 반, 면 외곽선들 */
 export interface Cross {
@@ -49,7 +49,8 @@ function hit(ax: number, az: number, bx: number, bz: number, cx: number, cz: num
   return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [t, u] : null;
 }
 
-export function buildSurface(roads: Road[], radii: number[], crosses: Cross[], stopLines: ArrayLike<number>, link: ArrayLike<number>): BuiltSurface {
+/** paint: 찻길에 칠한 표시 면(안전지대, 차선 둘레 띠, 화살표 둘레). 횡단보도(crosses)와 함께 교통섬 구멍에서 뺀다 */
+export function buildSurface(roads: Road[], radii: number[], crosses: Cross[], stopLines: ArrayLike<number>, link: ArrayLike<number>, paint: ArrayLike<number>[] = []): BuiltSurface {
   const ground = roads.map(isGroundRoad);
   const L = roads.map((r) => cumLen(r.p));
   const len = (r: number) => L[r][L[r].length - 1];
@@ -351,7 +352,12 @@ export function buildSurface(roads: Road[], radii: number[], crosses: Cross[], s
     // 한 방향 길의 분리대는 진행 방향 왼쪽: 시작에서 나가면 왼쪽, 끝에서 나가면 오른쪽
     return side > 0 ? (h & 1) === 1 : (h & 1) === 0;
   };
-  const walk = (start: Sector): { pts: number[]; arms: number; links: number } | null => {
+  const walk = (start: Sector, hole = false): { pts: number[]; arms: number; links: number } | null => {
+    // 섬 둘레(hole)에서는 접점이 조각 길이 너머인 모퉁이 호를 쓰지 않는다. 길이 비스듬히 만나면 두 가장자리선이 조각 끝 너머에서 만나
+    // 호가 섬 한가운데에 놓이고, 그런 호 둘이 엇갈려 섬이 꽃잎 모양이 됐다(합정역 8번 출구 앞). 노드 단면끼리 잇고 엇갈린 꼬리는 회전수로 뺀다
+    const far = (s: Sector) => hole && (s.da > len(s.a >> 1) || s.db > len(s.b >> 1));
+    const dA = (s: Sector) => (far(s) ? 0 : s.da);
+    const dB = (s: Sector) => (far(s) ? 0 : s.db);
     const pts: number[] = [];
     let arms = 0;
     let links = 0;
@@ -361,7 +367,7 @@ export function buildSurface(roads: Road[], radii: number[], crosses: Cross[], s
     let mark = 0;
     for (let guard = 0; guard < 4000; guard++) {
       visited.add(sec);
-      pts.push(...sec.pts);
+      if (!far(sec)) pts.push(...sec.pts);
       const b = sec.b;
       if (link[b >> 1]) links++;
       let next: Sector;
@@ -372,17 +378,17 @@ export function buildSurface(roads: Road[], radii: number[], crosses: Cross[], s
           // 분리대 양쪽 찻길: 자르는 단면끼리 곧게 이어 분리대 끝까지 면에 넣는다
           pts.length = mark;
           pts.push(...edgePt(b, -1, c));
-        } else pts.push(...edgeRun(b, -1, sec.db, c));
+        } else pts.push(...edgeRun(b, -1, dB(sec), c));
         mark = pts.length + 2;
-        pts.push(...edgeRun(b, 1, c, sectorOf.get(b)!.da));
+        pts.push(...edgeRun(b, 1, c, dA(sectorOf.get(b)!)));
         prev = b;
         next = sectorOf.get(b)!;
       } else {
         // 안쪽 조각: 왼쪽 가장자리를 따라 건너편 노드로. 거기서는 같은 가장자리가 반대쪽 갈래의 오른쪽이다
         const nx = sectorOf.get(b ^ 1)!;
         const l = len(b >> 1);
-        const d1 = Math.max(sec.db, l - nx.da);
-        pts.push(...edgeRun(b, -1, Math.min(sec.db, d1), d1));
+        const d1 = Math.max(dB(sec), l - dA(nx));
+        pts.push(...edgeRun(b, -1, Math.min(dB(sec), d1), d1));
         next = nx;
       }
       if (next === start) return { pts, arms, links };
@@ -478,10 +484,18 @@ export function buildSurface(roads: Road[], radii: number[], crosses: Cross[], s
     const holes: number[][] = [];
     for (const s of secs) {
       if (visited.has(s)) continue;
-      const w = walk(s);
+      const w = walk(s, true);
       if (!w || w.arms || !w.links) continue;
-      const ring = untangle(clean(w.pts));
-      if (ring.length >= 6 && Math.sign(area(ring)) === -Math.sign(area(outer)) && Math.abs(area(ring)) > 4) holes.push(ring);
+      // 섬 둘레 고리는 좁은 꼬리(섬 너머 멀리서 만나는 두 조각 사이)와 비스듬한 노드 앞에서 가장자리선이 엇갈린다. 점 수로는 어느 쪽이
+      // 뒤집힌 꼬리인지 알 수 없으므로 회전 방향이 구멍 쪽인 칸만 남긴다
+      const pts = clean(w.pts);
+      let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
+      for (let k = 0; k < pts.length; k += 2) (x0 = Math.min(x0, pts[k])), (x1 = Math.max(x1, pts[k])), (z0 = Math.min(z0, pts[k + 1])), (z1 = Math.max(z1, pts[k + 1]));
+      const cell = Math.max(0.1, Math.max(x1 - x0, z1 - z0) / 1500);
+      // 횡단보도와 paint(안전지대·차선·화살표)는 찻길에 칠한 표시라 섬이 될 수 없다. 빼고 남은 25m² 미만 조각은 버린다: 판 전체
+      // 구멍을 항공사진과 대조하니 그런 조각은 모두 띠 사이 틈이 찻길 위에 남은 것이었다(동교동 (678, −802) 11m² 등, 설계 문서 34.5절)
+      for (const ring of windingLoops(pts, -Math.sign(area(outer)), cell, 0.15, [...crosses.flatMap((c) => c.rings), ...paint]))
+        if (ring.length >= 6 && Math.abs(area(ring)) >= 25) holes.push(ring.map((v) => Math.round(v * 100) / 100));
     }
     faces.push({ cls, outer, holes, nodes: ks.length, arms: armsN });
   }

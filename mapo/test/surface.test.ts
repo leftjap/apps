@@ -138,6 +138,27 @@ describe('격자 경계 고리', () => {
     expect(areas[1]).toBe(-9);
     for (const l of loops) expect(Math.abs(ringArea(simplifyLoop(l, 0.7)))).toBe(Math.abs(ringArea(l)));
   });
+
+  it('엇갈린 고리에서 회전 방향이 맞는 칸만 남긴다(뒤집힌 꼬리는 점이 더 많아도 버린다)', async () => {
+    const { windingLoops, ringArea } = await import('../tools/lib/contour.ts');
+    // 넓이가 음수인 몸통(x 0~10, z −6~10과 오른쪽 삼각형)에 변이 (23.3, 0)에서 엇갈려 뒤집힌 꼬리가 붙은 고리. 꼬리 끝은 점 40개
+    const tail: number[] = [];
+    for (let k = 0; k <= 40; k++) tail.push(30 + Math.sin((k / 40) * Math.PI), -3 + (6 * k) / 40);
+    const p = [0, -6, 0, 10, 10, 10, 10, 6, ...tail, 10, -6];
+    const rings = windingLoops(p, -1, 0.1, 0.15);
+    expect(rings).toHaveLength(1);
+    expect(ringArea(rings[0])).toBeLessThan(0);
+    expect(Math.abs(ringArea(rings[0]) + 240)).toBeLessThan(3);
+    expect(inside(rings[0], 5, 0)).toBe(true);
+    expect(inside(rings[0], 20, 0)).toBe(true);
+    expect(inside(rings[0], 27, 0)).toBe(false);
+    // 뺄 고리(칠한 표시 면)를 주면 그 칸은 비운다: 몸통 왼쪽 변에 걸친 2×2m
+    const cut = windingLoops(p, -1, 0.1, 0.15, [[-1, 2, 2, 2, 2, 4, -1, 4]]);
+    expect(cut).toHaveLength(1);
+    expect(Math.abs(ringArea(cut[0]) + 236)).toBeLessThan(3);
+    expect(inside(cut[0], 1, 3)).toBe(false);
+    expect(inside(cut[0], 3, 3)).toBe(true);
+  });
 });
 
 describe('그리기 전용 찻길 면', () => {

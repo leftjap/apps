@@ -1741,7 +1741,29 @@ let surfacePolysJson = '';
     }
     crosses.push({ x: cx, z: cz, ux, uz, half: best / 2, rings: [r] });
   }
-  const sf = buildSurface(b.roads, b.cornerR, crosses, b.stopLines, link);
+  // 찻길에 칠한 표시는 교통섬이 될 수 없다(교통섬 구멍에서 뺀다): 안전지대 면(서울시 OA-15533), 연석 쪽 선(007·009·010·011·015·016·018)을
+  // 뺀 차선 자료 선 둘레 0.75m, 노면 화살표(OA-15536) 둘레 2m. 모두 땅 위(001)만
+  const zoneRaw = new URL('./raw/seoul-safety.json', import.meta.url);
+  const paint: number[][] = (existsSync(zoneRaw) ? (JSON.parse(readFileSync(zoneRaw, 'utf8')).zones as { eve: string; ring: [number, number][] }[]) : [])
+    .filter((zn) => zn.eve === '001')
+    .map((zn) => zn.ring.flatMap(([a, c]) => toXZ(a, c)));
+  const band = (ax: number, az: number, bx: number, bz: number, r: number) => {
+    const l = Math.hypot(bx - ax, bz - az) || 1;
+    const [ux, uz] = [((bx - ax) / l) * r, ((bz - az) / l) * r];
+    return [ax - ux - uz, az - uz + ux, bx + ux - uz, bz + uz + ux, bx + ux + uz, bz + uz - ux, ax - ux + uz, az - uz - ux];
+  };
+  for (const l of tgis) {
+    if (['007', '009', '010', '011', '015', '016', '018'].includes(l.k)) continue;
+    const P = l.p.map(([a, c]) => toXZ(a, c));
+    for (let i = 0; i + 1 < P.length; i++) paint.push(band(P[i][0], P[i][1], P[i + 1][0], P[i + 1][1], 0.75));
+  }
+  const arrowRaw = new URL('./raw/seoul-arrows.json', import.meta.url);
+  for (const a of existsSync(arrowRaw) ? (JSON.parse(readFileSync(arrowRaw, 'utf8')).arrows as { eve: string; lat: number; lon: number }[]) : []) {
+    if (a.eve !== '001') continue;
+    const [x, z] = toXZ(a.lat, a.lon);
+    paint.push([x - 2, z - 2, x + 2, z - 2, x + 2, z + 2, x - 2, z + 2]);
+  }
+  const sf = buildSurface(b.roads, b.cornerR, crosses, b.stopLines, link, paint);
   // 횡단보도가 OSM 길 밖에 걸친 자리는 그리기 전용 찻길 면으로 채운다(서울시 연석 쪽 선까지)
   const curbLines = tgis.filter((l) => ['007', '009', '010', '011', '015'].includes(l.k)).map((l) => l.p.flatMap(([a, c]) => toXZ(a, c)));
   const patches = crosswalkPatches(b.roads, sf, crosses, curbLines);

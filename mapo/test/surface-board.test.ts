@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeBoard } from '../src/data/board.ts';
+import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { carriageSections, decodeSurface, isGroundRoad, roadJoints, type SurfaceJson } from '../src/data/surface.ts';
 
 // 지금 판의 찻길 바닥(public/data/surface.json): 교차로 다섯 곳(서울시 교차로 자료 A008_P 의 자리)에서 띠와 교차로 면이 겹치지 않는다
@@ -42,6 +43,36 @@ function pieces(cx: number, cz: number, r: number) {
 }
 
 describe('찻길 바닥(교차로 면과 띠)', () => {
+  it('합정역 8번 출구 앞 교통섬은 구멍 하나로 섬 안쪽 네 점(북쪽·가운데·동쪽·남서쪽 화단)을 모두 담는다', () => {
+    // 고치기 전에는 꽃잎 모양 구멍(83m²)이었다. 동쪽 변은 2021-08 서울시 차선 자료의 주정차금지선(010) 자리다(항공사진의 섬은 3~4m 더 넓다)
+    const pts = [[-524, 232], [-521, 242], [-518, 243], [-530, 250]];
+    const holes = surface.faces.flatMap((f) => f.holes).filter((h) => pts.some(([x, z]) => inside(h, x, z)));
+    expect(holes).toHaveLength(1);
+    for (const [x, z] of pts) expect(inside(holes[0], x, z), `${x},${z}`).toBe(true);
+    let a = 0;
+    const h = holes[0];
+    for (let i = 0, j = h.length - 2; i < h.length; j = i, i += 2) a += h[j] * h[i + 1] - h[i] * h[j + 1];
+    expect(Math.abs(a / 2)).toBeGreaterThan(150);
+  });
+
+  it('교차로 다섯 곳 둘레 80m 의 교통섬 구멍은 찻길에 칠한 표시(횡단보도·안전지대)와 0.5m² 넘게 겹치지 않는다', () => {
+    const marks = decodeMarks(read('marks.json') as MarksJson);
+    const paint = [...board.crosswalks.flatMap((c) => c.rings), ...board.crosswalkMarks, ...marks.zones.map((z) => z.ring)];
+    const bad: string[] = [];
+    for (const [name, cx, cz] of JUNCTIONS)
+      for (const h of surface.faces.flatMap((f) => f.holes)) {
+        let gx = 0;
+        let gz = 0;
+        for (let k = 0; k < h.length; k += 2) (gx += (h[k] * 2) / h.length), (gz += (h[k + 1] * 2) / h.length);
+        if (Math.hypot(gx - cx, gz - cz) > 80) continue;
+        let over = 0;
+        for (let x = gx - 40; x < gx + 40; x += 0.25)
+          for (let z = gz - 40; z < gz + 40; z += 0.25) if (inside(h, x, z) && paint.some((r) => inside(r, x, z))) over += 0.0625;
+        if (over > 0.5) bad.push(`${name} (${gx.toFixed(0)},${gz.toFixed(0)}) ${over.toFixed(1)}m²`);
+      }
+    expect(bad).toEqual([]);
+  });
+
   for (const [name, cx, cz] of JUNCTIONS)
     it(`${name}: 가운데 40m 안에서 띠·교차로 면이 두 겹 이상 덮는 넓이가 0 이다`, () => {
       const { quads, faces } = pieces(cx, cz, 40);
