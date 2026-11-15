@@ -1,5 +1,6 @@
 // 구운 모형판 자료의 형식과 로더. 파일에는 길이가 데시미터 정수로 들어 있다.
 import { cumLen } from '../poly.ts';
+import { liftRails } from './railClear.ts';
 
 export interface BoardJson {
   v: 1;
@@ -224,6 +225,13 @@ const rings = (a: number[]) => {
 };
 
 export function decodeBoard(j: BoardJson): Board {
+  const board = decodeRaw(j);
+  // 고가 철도가 비슷한 높이의 찻길과 엇갈리는 곳은 철도를 찻길 위로 올린다(railClear.ts)
+  liftRails(board.lines, board.roads);
+  return board;
+}
+
+function decodeRaw(j: BoardJson): Board {
   const river = Float32Array.from((j.river ?? []).flatMap((v, i, a) => (i % 2 === 0 ? [v / 10, 0, a[i + 1] / 10] : [])));
   return {
     campus: m(j.campus ?? []),
