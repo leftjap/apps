@@ -165,7 +165,7 @@ const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
 const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.stopLines, board.crosswalkMarks);
-const flow = makeFlow(carGraph);
+const flow = makeFlow(carGraph, signals.junctions);
 flow.update(provider, start);
 const trees = makeTrees(board.trees, seasonOf(start.doy));
 const rain = makeRain(small ? 3500 : 6000);

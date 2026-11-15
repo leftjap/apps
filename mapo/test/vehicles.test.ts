@@ -2,35 +2,38 @@ import type * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { cumLen } from '../src/poly.ts';
 import { bodyType, CAR_MIX, SHAPES } from '../src/render/cars.ts';
-import { carPose, findPortals, PORTAL_Y, trainCar } from '../src/render/rails.ts';
+import { carPose, findPortals, trainCar } from '../src/render/rails.ts';
 
-// 동쪽으로 곧게 놓인 노선: 0~500m 는 높이 2m(지상), 500m 부터 6% 로 내려가 −14m 에서 평평해진다
+// 동쪽으로 곧게 놓인 노선: 0~500m 는 높이 2m(지상), 500m 부터 6% 로 내려가 −14m 에서 평평해진다. 650m(높이 −7m)부터 터널 조각이다
 const ramp = (() => {
   const pts: number[] = [];
   for (let x = 0; x <= 2000; x += 10) pts.push(x, Math.max(-14, Math.min(2, 2 - (x - 500) * 0.06)), 0);
   const p = Float32Array.from(pts);
-  return { p, cum: cumLen(p) };
+  const kind = Int8Array.from({ length: pts.length / 3 - 1 }, (_, i) => (i * 10 >= 650 ? -1 : 0));
+  return { p, cum: cumLen(p), kind };
 })();
 
 describe('터널 입구', () => {
-  it('지상에서 지하로 내려가는 곳에 입구 하나를 찾고, 터파기 구간은 땅높이(0)에서 입구 깊이까지다', () => {
+  it('지상 조각에서 터널 조각으로 바뀌는 곳에 입구 하나를 두고, 터파기 구간은 땅높이(0)를 지나는 곳에서 입구까지다', () => {
     const ps = findPortals(ramp);
     expect(ps).toHaveLength(1);
     const { s0, sP } = ps[0];
     expect(s0).toBeCloseTo(500 + 2 / 0.06, 0);
-    expect(sP).toBeCloseTo(500 + (2 - PORTAL_Y) / 0.06, 0);
+    expect(sP).toBeCloseTo(650, 0);
   });
-  it('지하에서 올라오는 쪽도 찾고, 한 구간 안에서 두 깊이를 다 지나도 놓치지 않는다', () => {
+  it('높이가 아니라 조각 종류로 정한다: 입구보다 얕아도 지상 조각이면 터파기, 터널 조각이면 터널이다', () => {
     const p = Float32Array.from([0, -14, 0, 100, -14, 0, 110, 2, 0, 300, 2, 0]);
-    const ps = findPortals({ p, cum: cumLen(p) });
+    const ps = findPortals({ p, cum: cumLen(p), kind: Int8Array.from([-1, 0, 0]) });
     expect(ps).toHaveLength(1);
     const L = Math.hypot(10, 16); // 거리 값은 높이까지 친 길이다
-    expect(ps[0].sP).toBeCloseTo(100 + (L * (PORTAL_Y + 14)) / 16, 3);
+    expect(ps[0].sP).toBeCloseTo(100, 3);
     expect(ps[0].s0).toBeCloseTo(100 + (L * 14) / 16, 3);
+    const flat = Float32Array.from([0, -3, 0, 100, -3, 0, 200, -3, 0]);
+    expect(findPortals({ p: flat, cum: cumLen(flat), kind: Int8Array.from([-1, -1]) })).toHaveLength(0);
   });
   it('처음부터 끝까지 지하인 노선에는 입구가 없다', () => {
     const p = Float32Array.from([0, -14, 0, 3000, -14, 0]);
-    expect(findPortals({ p, cum: cumLen(p) })).toHaveLength(0);
+    expect(findPortals({ p, cum: cumLen(p), kind: Int8Array.from([-1]) })).toHaveLength(0);
   });
   it('칸의 앞뒤 끝이 모두 입구보다 깊어야 터널 안(지하 층)으로 친다', () => {
     const { sP } = findPortals(ramp)[0];

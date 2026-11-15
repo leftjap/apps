@@ -9,7 +9,7 @@ import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
 import { analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
-import { stitch } from './lib/rail.ts';
+import { railKind, railProfile, stitch } from './lib/rail.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
 import { decodeBoard, GK, type BoardJson } from '../src/data/board.ts';
@@ -1344,54 +1344,81 @@ const railWays = raw('railways').filter((e) => e.geometry && !e.tags?.service);
 const stationNodes = raw('stations').filter((e) => e.tags?.railway === 'station' || e.tags?.railway === 'halt');
 const cleanName = (s: string) => s.replace(/\(.*\)/, '').replace(/역$/, '').trim();
 
+/** 찻길 조각 번호 → OSM layer(없으면 다리 1, 아니면 0). 철도와 엇갈리는 곳에서 어느 쪽이 위인지 정한다 */
+const roadLayer = new Map<number, number>();
+for (const w of hw) for (const p of piecesOf.get(w.id) ?? []) roadLayer.set(p.road, Number(w.tags!.layer) || (isBridge(w.tags!) ? 1 : 0));
+/** 철도가 찻길 위로 지날 때 찻길보다 높게, 밑으로 지날 때 낮게 두는 높이(m): 버스 높이 3.5m + 철교·덮개 두께 */
+const RAIL_CLEAR = 5;
+
 const lines = LINES.map((spec) => {
   const ways = railWays.filter((w) => spec.match(w.tags ?? {}));
-  const tagOf = new Map<string, Tags>();
+  const pk = (p: number[]) => `${Math.round(p[0] * 10)},${Math.round(p[1] * 10)}`;
+  const segTags = new Map<string, Tags>(); // 이웃한 두 점 → 그 조각이 속한 선로의 태그
   const pieces = ways.map((w) => {
     const pts = xz(w.geometry!);
-    for (const p of pts) tagOf.set(`${Math.round(p[0] * 10)},${Math.round(p[1] * 10)}`, w.tags!);
+    for (let i = 1; i < pts.length; i++) segTags.set(`${pk(pts[i - 1])}|${pk(pts[i])}`, w.tags!).set(`${pk(pts[i])}|${pk(pts[i - 1])}`, w.tags!);
     return { id: w.id, pts };
   });
   const chain = stitch(pieces);
-  // 높이: 터널 −14m, 교량 +12m, 나머지 0. 뒤에서 150m 이동 평균으로 다듬는다
-  const rawY = chain.map((p) => {
-    const t = tagOf.get(`${Math.round(p[0] * 10)},${Math.round(p[1] * 10)}`) ?? {};
-    if (t.bridge && t.bridge !== 'no') return 12;
-    if ((t.tunnel && t.tunnel !== 'no') || Number(t.layer) < 0) return -14;
-    return 0;
-  });
-  // 30m 간격으로 다시 찍어 고르게 만든다
-  const flat = chain.flatMap(([x, z], i) => [x, rawY[i], z]);
-  const cum0 = cumLen(flat);
-  const total = cum0[cum0.length - 1];
-  const samples: [number, number, number][] = [];
-  {
-    let seg = 0;
-    for (let s = 0; s <= total; s += 15) {
-      while (seg < cum0.length - 2 && cum0[seg + 1] < s) seg++;
-      const t = (s - cum0[seg]) / Math.max(1e-6, cum0[seg + 1] - cum0[seg]);
-      const a = seg * 3;
-      samples.push([flat[a] + (flat[a + 3] - flat[a]) * t, flat[a + 1] + (flat[a + 4] - flat[a + 1]) * t, flat[a + 2] + (flat[a + 5] - flat[a + 2]) * t]);
-    }
+  const chainTags = chain.slice(1).map((p, i) => segTags.get(`${pk(chain[i])}|${pk(p)}`) ?? {});
+  // 터널·지상·다리 구간마다 15m 안 간격으로 다시 찍는다. 구간 경계는 꼭짓점으로 남긴다
+  const c2 = [0];
+  for (let i = 1; i < chain.length; i++) c2.push(c2[i - 1] + Math.hypot(chain[i][0] - chain[i - 1][0], chain[i][1] - chain[i - 1][1]));
+  const at = (s: number): [number, number] => {
+    let i = 1;
+    while (i < c2.length - 1 && c2[i] < s) i++;
+    const t = Math.min(1, Math.max(0, (s - c2[i - 1]) / Math.max(1e-6, c2[i] - c2[i - 1])));
+    return [chain[i - 1][0] + (chain[i][0] - chain[i - 1][0]) * t, chain[i - 1][1] + (chain[i][1] - chain[i - 1][1]) * t];
+  };
+  const sS: number[] = [0];
+  const sKind: number[] = [];
+  const sLayer: number[] = [];
+  for (let i = 0; i < chainTags.length; ) {
+    const k = railKind(chainTags[i]);
+    const layer = Number(chainTags[i].layer) || k;
+    let j = i + 1;
+    while (j < chainTags.length && railKind(chainTags[j]) === k && (Number(chainTags[j].layer) || k) === layer) j++;
+    const [a, b] = [c2[i], c2[j]];
+    const m = Math.max(1, Math.ceil((b - a) / 15));
+    for (let q = 1; q <= m; q++) sS.push(a + ((b - a) * q) / m), sKind.push(k), sLayer.push(layer);
+    i = j;
   }
-  const W = 6; // 앞뒤 6점(90m)씩 평균
-  const smoothY = samples.map((_, i) => {
-    let s = 0;
-    let n = 0;
-    for (let k = Math.max(0, i - W); k <= Math.min(samples.length - 1, i + W); k++) (s += samples[k][1]), n++;
-    return s / n;
-  });
-  // 판 안에 있는 가장 긴 연속 구간만 남긴다
-  let best: number[] = [];
-  let cur: number[] = [];
-  samples.forEach(([x, , z], i) => {
-    if (inBoard(x, z, 1)) cur.push(x, smoothY[i], z);
-    else {
-      if (cur.length > best.length) best = cur;
-      cur = [];
+  const sXZ = sS.map(at);
+  // 찻길(등급 5 이하)과 엇갈리는 조각: 철도 layer 가 높으면 찻길 위로, 아니면 밑으로(마포 판의 철도에는 건널목이 없다)
+  const lo = sS.map(() => -Infinity);
+  const hi = sS.map(() => Infinity);
+  let crossN = 0;
+  roads.forEach((r, ri) => {
+    if (r[0] > 5) return;
+    for (let k = 6; k + 5 < r.length; k += 3) {
+      const [cx, cy, cz, dx, dy, dz] = [r[k] / 10, r[k + 1] / 10, r[k + 2] / 10, r[k + 3] / 10, r[k + 4] / 10, r[k + 5] / 10];
+      for (let i = 0; i + 1 < sXZ.length; i++) {
+        const [[ax, az], [bx, bz]] = [sXZ[i], sXZ[i + 1]];
+        const den = (bx - ax) * (dz - cz) - (bz - az) * (dx - cx);
+        if (Math.abs(den) < 1e-9) continue;
+        const t = ((cx - ax) * (dz - cz) - (cz - az) * (dx - cx)) / den;
+        const u = ((cx - ax) * (bz - az) - (cz - az) * (bx - ax)) / den;
+        if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+        const yc = cy + (dy - cy) * u;
+        crossN++;
+        for (const v of [i, i + 1])
+          if (sLayer[i] > (roadLayer.get(ri) ?? 0)) lo[v] = Math.max(lo[v], yc + RAIL_CLEAR);
+          else hi[v] = Math.min(hi[v], yc - RAIL_CLEAR);
+      }
     }
   });
-  if (cur.length > best.length) best = cur;
+  const sY = railProfile(sS, sKind, lo, hi);
+  // 판 안에 있는 가장 긴 연속 구간만 남긴다
+  let from = 0;
+  let span: [number, number] = [0, 0];
+  for (let i = 0; i <= sS.length; i++) {
+    if (i < sS.length && inBoard(sXZ[i][0], sXZ[i][1], 1)) continue;
+    if (i - from > span[1] - span[0]) span = [from, i];
+    from = i + 1;
+  }
+  const keep = Array.from({ length: span[1] - span[0] }, (_, q) => span[0] + q);
+  const best = keep.flatMap((i) => [sXZ[i][0], sY[i], sXZ[i][1]]);
+  const kinds = keep.slice(0, -1).map((i) => sKind[i]);
   const cum = cumLen(best);
   // 역: 이름이 같은 역 노드 가운데 이 선에 60m 안으로 붙는 것
   const stops = new Map<string, { s: number; d: number }>();
@@ -1404,7 +1431,7 @@ const lines = LINES.map((spec) => {
     if (r.d < (stops.get(name)?.d ?? Infinity)) stops.set(name, r); // 같은 이름의 역 노드가 여럿이면 선에 가장 가까운 것
   }
   const st = [...stops].map(([name, r]) => ({ name, s: Math.round(r.s) })).sort((a, b) => a.s - b.s);
-  return { id: spec.id, name: spec.name, color: spec.color, cars: spec.cars, p: best.map(dm), stops: st, _ways: ways.length, _len: Math.round(cum[cum.length - 1] ?? 0) };
+  return { id: spec.id, name: spec.name, color: spec.color, cars: spec.cars, p: best.map(dm), k: kinds, stops: st, _ways: ways.length, _len: Math.round(cum[cum.length - 1] ?? 0), _cross: crossN };
 });
 
 // ───────────────────────── 역과 출구 ─────────────────────────
@@ -1615,7 +1642,7 @@ const out = {
   sh: shopList,
   ev: elevators,
   r: roads,
-  lines: lines.map(({ _ways, _len, ...l }) => l),
+  lines: lines.map(({ _ways, _len, _cross, ...l }) => l),
   stations,
   exits: exits.map((e, i) => ({ ...e, yaw: exitYaw[i] })),
   landmarks,
@@ -1674,7 +1701,7 @@ console.log(`Overture(OSM 밖) 건물 ${buildings.length - osmBuildings - pointB
 console.log(`건물 ${buildings.length}동 (홍익대 ${buildings.filter((b) => b[1] === 1).length}동)`);
 console.log(`도로 ${roads.length}조각, 교량 조각 ${roads.filter((r) => r[3]).length}, 가장 높은 지점 ${Math.max(...roads.flatMap((r) => r.filter((_, i) => i >= 6 && i % 3 === 1))) / 10}m`);
 console.log(`물 ${((waterPx * 4) / 1e6).toFixed(2)}㎢, 나무 ${trees.length / 2}그루, 출구 ${exits.length}곳, 역 ${stations.map((s) => s.name).join('·')}`);
-for (const l of lines) console.log(`${l.name}: 선로 조각 ${l._ways}개 → ${l._len}m, 역 ${l.stops.map((s) => `${s.name}(${s.s})`).join(' ')}`);
+for (const l of lines) console.log(`${l.name}: 선로 조각 ${l._ways}개 → ${l._len}m, 찻길과 엇갈림 ${l._cross}곳, 터널 아닌 조각 ${l.k.filter((k) => k !== -1).length}개, 역 ${l.stops.map((s) => `${s.name}(${s.s})`).join(' ')}`);
 console.log(`버스 노선 ${busRuns.length}개(${[...new Set(busRuns.map((b) => b.ref))].length}개 번호), 정류장 ${busRuns.reduce((n, b) => n + b.stops.length / 2, 0)}곳(노선별 합), 버스가 지나는 조각 ${roads.filter((r) => r[2] & 2).length}개`);
 console.log(`학교 ${schoolSites.length}곳(${schoolSites.map((s) => s.name).join(', ')}), 학교 건물 ${buildings.filter((b) => b[1] === 6).length}동`);
 console.log(`이름 랜드마크 건물 ${NAMED_LM.map(([re, n]) => `${re.source.slice(0, 6)}:${buildings.filter((b) => b[1] === n).length}`).join(' ')}, 캠퍼스 고리 ${campusRing.length}점, 물길 ${river.length / 2}점, 피크닉 ${picnic.length / 2}곳`);

@@ -2,9 +2,12 @@
 // 자료 공급자가 주는 도로 속도 비율이 느린 구간만 칠한다(서행 주황, 정체 빨강). 원활한 길은 칠하지 않아
 // 노면 표시(흰 차선, 노란 중앙선, 파란 버스전용차로)와 섞이지 않고 막히는 곳만 눈에 띈다.
 // 2단계에서 공급자가 실제 도로 속도를 주면 같은 띠에 그대로 실린다. 멀리서도 보이도록 화면에서 최소 굵기를 지킨다.
+// 띠는 교차로 상자 밖 구간에만 깐다(상자 안은 여러 방향 띠가 겹친다).
 import * as THREE from 'three';
+import { pointAt } from '../poly.ts';
 import type { Now } from '../sim/clock.ts';
 import type { Edge } from '../sim/graph.ts';
+import type { Junctions } from '../sim/junctions.ts';
 import type { DataProvider } from '../sim/provider.ts';
 import { material } from './env.ts';
 
@@ -14,7 +17,21 @@ export const FLOW_LEVELS = [
   ['정체', '#f0605d'],
 ] as const;
 
-export function makeFlow(edges: Edge[]) {
+/** 구간 e 에서 교차로 상자 밖 부분 [x,y,z,...]. 상자에 다 덮이면 빈 배열 */
+function outsideBoxes(e: Edge, jn: Junctions): number[] {
+  const s0 = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
+  const s1 = e.len - (jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
+  if (s1 - s0 < 1) return [];
+  const tmp = [0, 0, 0];
+  pointAt(e.p, e.cum, s0, tmp);
+  const out = [...tmp];
+  for (let i = 1; i < e.cum.length; i++) if (e.cum[i] > s0 && e.cum[i] < s1) out.push(e.p[i * 3], e.p[i * 3 + 1], e.p[i * 3 + 2]);
+  pointAt(e.p, e.cum, s1, tmp);
+  out.push(...tmp);
+  return out;
+}
+
+export function makeFlow(edges: Edge[], jn: Junctions) {
   const used = edges.filter((e) => e.cls <= 3);
   const pos: number[] = [];
   const side: number[] = [];
@@ -24,19 +41,20 @@ export function makeFlow(edges: Edge[]) {
   for (const e of used) {
     start.push(pos.length / 3);
     const off = e.off0 + ((e.lanes - 1) / 2) * e.lw;
-    const n = e.p.length / 3;
+    const p = outsideBoxes(e, jn);
+    const n = p.length / 3;
     for (let i = 0; i < n; i++) {
       const a = Math.max(0, i - 1) * 3;
       const b = Math.min(n - 1, i + 1) * 3;
-      let dx = e.p[b] - e.p[a];
-      let dz = e.p[b + 2] - e.p[a + 2];
+      let dx = p[b] - p[a];
+      let dz = p[b + 2] - p[a + 2];
       const len = Math.hypot(dx, dz) || 1;
       dx /= len;
       dz /= len;
       // 진행 방향 오른쪽 (-dz, dx) 으로 차로 가운데까지 옮긴다
-      const x = e.p[i * 3] - dz * off;
-      const z = e.p[i * 3 + 2] + dx * off;
-      const y = e.p[i * 3 + 1] + 0.4;
+      const x = p[i * 3] - dz * off;
+      const z = p[i * 3 + 2] + dx * off;
+      const y = p[i * 3 + 1] + 0.4;
       const q = pos.length / 3;
       pos.push(x, y, z, x, y, z);
       side.push(-1, 1);

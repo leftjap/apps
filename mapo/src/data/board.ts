@@ -1,6 +1,5 @@
 // 구운 모형판 자료의 형식과 로더. 파일에는 길이가 데시미터 정수로 들어 있다.
 import { cumLen } from '../poly.ts';
-import { liftRails } from './railClear.ts';
 import { fitExits } from './exitFit.ts';
 
 export interface BoardJson {
@@ -16,7 +15,8 @@ export interface BoardJson {
   ev?: number[];
   /** 도로 조각: [등급, 차로 수, 일방통행, 교량, 이름 번호, 랜드마크 번호, x,y,z, ...] */
   r: number[][];
-  lines: { id: string; name: string; color: string; cars: number; p: number[]; stops: { name: string; s: number }[] }[];
+  /** k: 꼭짓점 i 와 i+1 사이 조각의 종류(−1 터널, 0 지상, 1 다리, OSM 태그로 굽는다) */
+  lines: { id: string; name: string; color: string; cars: number; p: number[]; k: number[]; stops: { name: string; s: number }[] }[];
   stations: { name: string; x: number; z: number }[];
   exits: { st: string; x: number; z: number; ref?: string; yaw?: number }[];
   landmarks: { id: string; x: number; z: number }[];
@@ -167,6 +167,8 @@ export interface Line {
   carLen: number;
   p: Float32Array;
   cum: Float32Array;
+  /** 꼭짓점 i 와 i+1 사이 조각의 종류: −1 터널, 0 지상(태그 없음), 1 다리 */
+  kind: Int8Array;
   stops: number[];
   stopNames: string[];
 }
@@ -236,8 +238,6 @@ const rings = (a: number[]) => {
 
 export function decodeBoard(j: BoardJson): Board {
   const board = decodeRaw(j);
-  // 고가 철도가 비슷한 높이의 찻길과 엇갈리는 곳은 철도를 찻길 위로 올린다(railClear.ts)
-  liftRails(board.lines, board.roads);
   // 출구 지붕이 작은 건물로 들어 있으면 그 외곽선으로 출구 자리를 맞추고 지운다. 찻길·건물에 걸린 출구는 옮긴다(exitFit.ts)
   fitExits(board);
   return board;
@@ -289,7 +289,7 @@ function decodeRaw(j: BoardJson): Board {
     }),
     lines: j.lines.map((l) => {
       const p = m(l.p);
-      return { id: l.id, name: l.name, color: l.color, cars: l.cars, carLen: 20, p, cum: cumLen(p), stops: l.stops.map((s) => s.s), stopNames: l.stops.map((s) => s.name) };
+      return { id: l.id, name: l.name, color: l.color, cars: l.cars, carLen: 20, p, cum: cumLen(p), kind: Int8Array.from(l.k), stops: l.stops.map((s) => s.s), stopNames: l.stops.map((s) => s.name) };
     }),
     stations: j.stations.map((s) => ({ name: s.name, x: s.x / 10, z: s.z / 10 })),
     exits: j.exits.map((e) => ({ st: e.st, x: e.x / 10, z: e.z / 10, ref: e.ref ?? '', yaw: e.yaw === undefined ? NaN : e.yaw / 1000 })),

@@ -1,5 +1,5 @@
 // 노선과 열차. 지하 구간은 지표 아래(UNDER_Y)에 얇은 노선색 선(평소에는 아주 옅게, 들여다보기 둘레에서만 또렷하게)으로, 지상 구간(당산철교)은 띄운 선로와 교각으로 그린다.
-// 지상에서 지하로 들어가는 곳(합정 남쪽)에는 옹벽을 세운 터파기와 터널 입구를 만들고, 그 자리만 땅을 깊이로 뚫어 열차가 내려가 입구로 들어가게 한다.
+// 지상 조각에서 터널 조각으로 바뀌는 곳(합정 남서쪽, 굽기가 OSM 태그로 정한다)에는 옹벽을 세운 터파기와 터널 입구를 만들고, 그 자리만 땅을 깊이로 뚫어 열차가 내려가 입구로 들어가게 한다.
 // 터널 안 열차는 땅·도로 위에 흐릿한 윤곽으로만 비치고(나무·사람·건물이 그 위를 덮는다), 지하 들여다보기를 켠 둘레에서만
 // 터널 단면(바닥·옆벽)과 함께 또렷하게 보인다. 전동차는 노선별 실제 차량(2호선 2000호대, 6호선 6000호대, 경의중앙선 321000호대,
 // 공항철도 2000호대)의 색 띠·앞모양·창·출입문(한쪽 4개) 배치를 따른 19.5m 칸이다.
@@ -21,8 +21,6 @@ const VERT = /* glsl */ `
   }`;
 
 const MAX_CARS = 260;
-/** 선로가 이보다 깊으면 터널 안이다(입구 높이 6.2m 를 빼고 지붕 두께를 둔 값) */
-export const PORTAL_Y = -6.5;
 /** 터파기 옹벽이 땅 위로 올라온 높이 */
 const PARAPET = 0.9;
 /** 터파기 안쪽 반폭 */
@@ -43,40 +41,45 @@ const CAR_GAP = 20;
 /** 노선별 차량 모양: 0 2호선, 1 6호선, 2 코레일(경의중앙선), 3 공항철도 */
 const STYLE: Record<string, number> = { '2': 0, '6': 1, K: 2, A: 3 };
 
-type Track = { p: ArrayLike<number>; cum: ArrayLike<number> };
+/** kind: 꼭짓점 i 와 i+1 사이 조각의 종류(−1 터널, 0 지상, 1 다리). 굽기가 OSM 태그로 정하고, 터널 조각의 꼭짓점은 입구 깊이(−6.5m)보다 깊게 둔다(tools/lib/rail.ts) */
+type Track = { p: ArrayLike<number>; cum: ArrayLike<number>; kind: ArrayLike<number> };
 const tmpA = [0, 0, 0];
 const tmpB = [0, 0, 0];
 
-/** 선로가 땅높이에서 입구 깊이(PORTAL_Y)까지 내려가는 터파기 구간들. s0 는 땅높이 지점, sP 는 터널 입구 */
+/** 지상 조각과 터널 조각이 만나는 곳마다 터파기 구간. sP 는 터널 입구(터널 조각이 시작하는 꼭짓점), s0 는 그 앞 지상 조각에서 선로가 땅높이(0)를 지나는 곳 */
 export function findPortals(l: Track): { s0: number; sP: number }[] {
   const n = l.cum.length;
   const y = (i: number) => l.p[i * 3 + 1];
-  /** i 와 i+1 사이에서 높이가 h 를 지나는 거리 값 */
-  const cross = (i: number, h: number) => l.cum[i] + ((h - y(i)) / (y(i + 1) - y(i))) * (l.cum[i + 1] - l.cum[i]);
+  const tunnel = (seg: number) => l.kind[seg] === -1;
   const out: { s0: number; sP: number }[] = [];
-  for (let i = 0; i < n - 1; i++) {
-    if (y(i) >= PORTAL_Y === y(i + 1) >= PORTAL_Y) continue;
-    const sP = cross(i, PORTAL_Y);
-    // 얕은 쪽으로 거슬러 가며 땅높이(0)를 지나는 곳을 찾는다
-    const step = y(i) >= PORTAL_Y ? -1 : 1;
-    for (let j = i; j >= 0 && j < n - 1; j += step) {
-      if (y(j) >= 0 !== y(j + 1) >= 0) {
-        out.push({ s0: cross(j, 0), sP });
+  for (let i = 1; i < n - 1; i++) {
+    if (tunnel(i - 1) === tunnel(i)) continue;
+    // 터널에서 멀어지는 쪽으로 지상 조각을 따라가며 땅높이를 지나는 곳을 찾는다
+    const step = tunnel(i) ? -1 : 1;
+    let s0 = l.cum[i];
+    for (let v = i; ; v += step) {
+      const seg = step < 0 ? v - 1 : v;
+      if (seg < 0 || seg >= n - 1 || tunnel(seg) || y(v) >= 0) break;
+      const w = v + step;
+      if (y(w) >= 0) {
+        s0 = l.cum[v] + (-y(v) / (y(w) - y(v))) * (l.cum[w] - l.cum[v]);
         break;
       }
+      s0 = l.cum[w];
     }
+    if (s0 !== l.cum[i]) out.push({ s0, sP: l.cum[i] });
   }
   return out;
 }
 
-/** 거리 값 s 에 가운데가 놓인 칸: 앞뒤 끝이 모두 입구보다 깊으면 터널 안, 기울기는 앞뒤 끝 높이 차로 정한다 */
+/** 거리 값 s 에 가운데가 놓인 칸: 앞뒤 끝이 모두 터널 조각 위면 터널 안, 기울기는 앞뒤 끝 높이 차로 정한다 */
 export function carPose(l: Track, s: number): { under: boolean; pitch: number; ya: number; yb: number } {
   const len = l.cum[l.cum.length - 1];
   const a = Math.max(0, s - CAR_LEN / 2);
   const b = Math.min(len, s + CAR_LEN / 2);
-  pointAt(l.p, l.cum, a, tmpA);
-  pointAt(l.p, l.cum, b, tmpB);
-  return { under: Math.max(tmpA[1], tmpB[1]) < PORTAL_Y, pitch: Math.atan2(tmpB[1] - tmpA[1], b - a || 1), ya: tmpA[1], yb: tmpB[1] };
+  const sa = pointAt(l.p, l.cum, a, tmpA);
+  const sb = pointAt(l.p, l.cum, b, tmpB);
+  return { under: l.kind[sa] === -1 && l.kind[sb] === -1, pitch: Math.atan2(tmpB[1] - tmpA[1], b - a || 1), ya: tmpA[1], yb: tmpB[1] };
 }
 /** 지상·터파기 선로 바닥 높이 */
 const deckY = (y: number) => (y < 0 ? y + 0.3 : Math.max(0.3, y));
@@ -339,7 +342,7 @@ function tunnels(lines: Line[]) {
     for (let i = 0; i + 1 < n; i++) {
       const y0 = l.p[i * 3 + 1];
       const y1 = l.p[i * 3 + 4];
-      if (y0 >= PORTAL_Y || y1 >= PORTAL_Y) continue;
+      if (l.kind[i] !== -1) continue;
       const a = [l.p[i * 3], Math.max(y0, UNDER_Y), l.p[i * 3 + 2]];
       const b = [l.p[i * 3 + 3], Math.max(y1, UNDER_Y), l.p[i * 3 + 5]];
       const yaw = Math.atan2(b[2] - a[2], b[0] - a[0]);
@@ -376,14 +379,13 @@ export function makeRails(lines: Line[]) {
   for (const l of lines) {
     const c = new THREE.Color(l.color);
     const info: [number, number, number, number] = [c.r, c.g, c.b, 0];
-    // 터널(입구보다 깊은 곳)과 지상·터파기 구간으로 나눠 띠를 만든다. 이웃 구간과 한 점씩 겹치게 한다
+    // 터널 조각과 지상·다리 조각으로 나눠 띠를 만든다. 이웃 구간과 꼭짓점 하나를 함께 쓴다
     const n = l.p.length / 3;
     let start = 0;
-    const under = (i: number) => l.p[i * 3 + 1] < PORTAL_Y;
-    for (let i = 1; i <= n; i++) {
-      if (i < n && under(i) === under(start)) continue;
-      const end = Math.min(n, i + 1);
-      const seg = l.p.slice(start * 3, end * 3);
+    const under = (seg: number) => l.kind[seg] === -1;
+    for (let i = 1; i < n; i++) {
+      if (i < n - 1 && under(i) === under(start)) continue;
+      const seg = l.p.slice(start * 3, (i + 1) * 3);
       if (under(start)) {
         for (let k = 1; k < seg.length; k += 3) seg[k] = Math.max(UNDER_Y, seg[k]);
         addRibbon(glow, seg, 9, info);
