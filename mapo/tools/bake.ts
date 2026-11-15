@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { BOARD_R, toXZ } from '../src/geo.ts';
 import { cumLen, nearestS, pointAt } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
-import { buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title } from './lib/building.ts';
+import { attachShops, buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title } from './lib/building.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
@@ -1589,11 +1589,25 @@ const picnic: number[] = [];
   }
 }
 
+// 가게(tools/shops.py, 서울시 일반·휴게음식점 인허가): 외곽선 안이거나 12m 안 가장 가까운 건물에 붙인다. 화면은 이 건물에만 1층 가게 유리·간판을 그리고 업종별로 불을 끈다
+const shopList: number[] = [];
+{
+  const file = new URL('./raw/seoul-shops.json', import.meta.url);
+  if (existsSync(file)) {
+    const pts = (JSON.parse(readFileSync(file, 'utf8')).shops as [number, number, number][]).map(([lat, lon, k]): [number, number, number] => [...toXZ(lat, lon), k]);
+    const got = attachShops(pts, footprints, 12);
+    for (const [i, { kind, n }] of [...got].sort((a, b) => a[0] - b[0])) shopList.push(i, kind, n);
+    const by = [0, 0, 0, 0, 0];
+    for (const { kind } of got.values()) by[kind]++;
+    console.log(`가게 ${pts.length}곳을 건물 ${got.size}동에 붙임(카페 ${by[1]}·식당 ${by[2]}·주점 ${by[3]}·편의점 ${by[4]}동), 못 붙인 가게 ${pts.length - [...got.values()].reduce((a, v) => a + v.n, 0)}곳`);
+  }
+}
 const out = {
   v: 1,
   names,
   b: buildings,
   bi: binfo,
+  sh: shopList,
   ev: elevators,
   r: roads,
   lines: lines.map(({ _ways, _len, ...l }) => l),

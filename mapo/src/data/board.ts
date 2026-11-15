@@ -9,6 +9,8 @@ export interface BoardJson {
   b: number[][];
   /** 건물마다 용도·층수·지붕·아래 높이를 묶은 숫자(tools/lib/building.ts packInfo). 0 = 모름 */
   bi?: number[];
+  /** 가게가 붙은 건물 [건물 번호, 가장 많은 종류(1 카페 2 식당 3 주점 4 편의점), 가게 수, ...] (서울시 식품 인허가) */
+  sh?: number[];
   /** 역 둘레의 지하↔지상 엘리베이터 [x,z, ...] */
   ev?: number[];
   /** 도로 조각: [등급, 차로 수, 일방통행, 교량, 이름 번호, 랜드마크 번호, x,y,z, ...] */
@@ -66,6 +68,9 @@ export function unpackInfo(v: number): BuildingInfo {
 /** 용도·층수·지붕·아래 높이는 구운 자료에 없으면 비어 있다 */
 export interface Building extends Partial<BuildingInfo> {
   h: number;
+  /** 붙은 가게의 가장 많은 종류(1 카페 2 식당 3 주점 4 편의점, 없으면 없음)와 가게 수 */
+  shop?: number;
+  shops?: number;
   /** 0 = 일반, 1 = 홍익대 */
   lm: number;
   /** 외곽선 [x,z, ...]. 넓이가 양수인 방향 */
@@ -231,6 +236,11 @@ export function decodeBoard(j: BoardJson): Board {
   return board;
 }
 
+function shopsOn(list: Building[], sh: number[]): Building[] {
+  for (let i = 0; i + 2 < sh.length; i += 3) Object.assign(list[sh[i]], { shop: sh[i + 1], shops: sh[i + 2] });
+  return list;
+}
+
 function decodeRaw(j: BoardJson): Board {
   const river = Float32Array.from((j.river ?? []).flatMap((v, i, a) => (i % 2 === 0 ? [v / 10, 0, a[i + 1] / 10] : [])));
   return {
@@ -239,7 +249,7 @@ function decodeRaw(j: BoardJson): Board {
     river,
     riverCum: cumLen(river),
     picnic: m(j.picnic ?? []),
-    buildings: j.b.map((b, i) => ({ h: b[0] / 10, lm: b[1], pts: m(b, 2), ...unpackInfo(j.bi?.[i] ?? 0) })),
+    buildings: shopsOn(j.b.map((b, i) => ({ h: b[0] / 10, lm: b[1], pts: m(b, 2), ...unpackInfo(j.bi?.[i] ?? 0) })), j.sh ?? []),
     elevators: m(j.ev ?? []),
     cornerR: (j.rc ?? []).map((v) => v / 10),
     roads: j.r.map((r, i) => {

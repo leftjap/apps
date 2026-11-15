@@ -1,7 +1,7 @@
 // 건물 유형별 덩어리: 변마다 들이기, 빌라 북쪽 사선 후퇴·필로티, 단독주택 박공, 상가주택·업무 빌딩 단차, 아파트 옥상 구조물
 import { describe, expect, it } from 'vitest';
 import { USE, type Building } from '../src/data/board.ts';
-import { insetEdges, looks, prismGeometry, propsOf, refine, STYLE } from '../src/render/buildings.ts';
+import { insetEdges, looks, prismGeometry, propsOf, refine, shopOpen, STYLE } from '../src/render/buildings.ts';
 
 const box = (x0: number, z0: number, w: number, d: number) => new Float32Array([x0, z0, x0 + w, z0, x0 + w, z0 + d, x0, z0 + d]);
 const bld = (o: Partial<Building> & { pts: Float32Array; h: number }): Building => ({ lm: 0, minH: 0, roof: 0, ...o });
@@ -94,5 +94,27 @@ describe('상징 건물', () => {
     for (let i = 1; i < y.length; i += 3) if (y[i] > 100) (top = Math.max(top, y[i])), (low = Math.min(low, y[i]));
     expect(top).toBeCloseTo(137, 3);
     expect(top - low).toBeGreaterThan(10);
+  });
+});
+
+describe('가게 불빛', () => {
+  it('카페·식당은 22~23시쯤 끄고 주점은 새벽까지, 편의점은 밤새 켠다', () => {
+    expect(shopOpen(1, 0.5, 20)).toBe(1);
+    expect(shopOpen(1, 0.5, 23.5)).toBe(0);
+    expect(shopOpen(2, 0.5, 22)).toBe(1);
+    expect(shopOpen(2, 0.99, 23.8)).toBe(0);
+    expect(shopOpen(3, 0.5, 2)).toBe(1);
+    expect(shopOpen(3, 0.5, 6)).toBe(0);
+    expect(shopOpen(3, 0.5, 14)).toBe(0);
+    expect(shopOpen(4, 0.1, 4)).toBe(1);
+    expect(shopOpen(1, 0.5, 3)).toBe(0);
+  });
+  it('가게가 붙은 건물만 1층 가게(층 높이)와 가게 종류를 갖고, 필로티로 세우지 않는다', () => {
+    const villa = (shop?: number) => looks([bld({ pts: box(0, 0, 11, 13), h: 13.8, use: USE.villa, levels: 4, shop, shops: shop ? 2 : 0 })])[0];
+    expect(villa().shopK).toBe(0);
+    const s = villa(3);
+    expect(s.shopK).toBe(3);
+    expect(s.gh).toBeGreaterThan(3);
+    expect(s.tiers[0].dark).toBe(false);
   });
 });

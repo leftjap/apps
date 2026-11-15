@@ -49,6 +49,8 @@ export const env = {
   /** 창문에 불이 켜진 비율 */
   uLit: { value: 0 },
   uTime: { value: 0 },
+  /** 시각(0~24시): 가게마다 불 끄는 시각 */
+  uHour: { value: 12 },
   /** 깊이 1m 지점에서 1m가 차지하는 화면 픽셀 수 */
   uProjK: { value: 1000 },
   /** 비(0~1): 길이 젖고 빗줄기가 내린다 */
@@ -100,6 +102,7 @@ export function updateEnv(now: Now, time: number, sky: HTMLElement, dt = 0): voi
   env.uDusk.value = dusk;
   env.uLit.value = (1 - day) * Math.min(0.42, 0.06 + 0.26 * nightlife(now.tod) + 0.14 * commute(now.tod));
   env.uTime.value = time;
+  env.uHour.value = now.tod / 3600;
   sky.style.background = `linear-gradient(#${pal.bgTop.getHexString()}, #${pal.bgBottom.getHexString()})`;
 }
 
@@ -109,7 +112,7 @@ export const UNDER_Y = -8;
 /** 모든 셰이더 앞에 붙이는 공통 조각 */
 export const GLSL = /* glsl */ `
 uniform vec3 uSunDir, uSunCol, uSkyCol, uGroundCol, uFogCol;
-uniform float uFogK, uNight, uDusk, uLit, uTime, uProjK, uRain, uHaze;
+uniform float uFogK, uNight, uDusk, uLit, uTime, uHour, uProjK, uRain, uHaze;
 uniform vec4 uFocus;
 /** 4×4 규칙 무늬 문턱값(0~1). 점을 성기게 버려 반투명처럼 보이게 할 때 잡음 대신 쓴다 */
 float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }

@@ -92,3 +92,58 @@ export function rectFootprint(cx: number, cz: number, area: number, ux: number, 
     [cx - ux * a + nx * b, cz - uz * a + nz * b],
   ];
 }
+
+/**
+ * 가게 점 [x, z, 종류]를 건물 외곽선에 붙인다: 외곽선 안이면 그 건물, 밖이면 maxDist(m) 안에서 변이 가장 가까운 건물, 더 멀면 버린다.
+ * 건물 번호 → 가장 많은 종류(같으면 앞선 종류)와 붙은 가게 수
+ */
+export function attachShops(shops: [number, number, number][], footprints: [number, number][][], maxDist: number): Map<number, { kind: number; n: number }> {
+  const CELL = 25;
+  const grid = new Map<string, number[]>();
+  footprints.forEach((f, i) => {
+    const xs = f.map((p) => p[0]);
+    const zs = f.map((p) => p[1]);
+    for (let gx = Math.floor((Math.min(...xs) - maxDist) / CELL); gx <= Math.floor((Math.max(...xs) + maxDist) / CELL); gx++)
+      for (let gz = Math.floor((Math.min(...zs) - maxDist) / CELL); gz <= Math.floor((Math.max(...zs) + maxDist) / CELL); gz++) {
+        const k = `${gx},${gz}`;
+        (grid.get(k) ?? grid.set(k, []).get(k)!).push(i);
+      }
+  });
+  const inRing = (f: [number, number][], x: number, z: number) => {
+    let c = false;
+    for (let i = 0, j = f.length - 1; i < f.length; j = i++)
+      if (f[i][1] > z !== f[j][1] > z && x < ((f[j][0] - f[i][0]) * (z - f[i][1])) / (f[j][1] - f[i][1]) + f[i][0]) c = !c;
+    return c;
+  };
+  const edge = (f: [number, number][], x: number, z: number) => {
+    let d = Infinity;
+    for (let i = 0, j = f.length - 1; i < f.length; j = i++) {
+      const dx = f[i][0] - f[j][0], dz = f[i][1] - f[j][1];
+      const t = Math.max(0, Math.min(1, ((x - f[j][0]) * dx + (z - f[j][1]) * dz) / (dx * dx + dz * dz || 1e-9)));
+      d = Math.min(d, Math.hypot(x - f[j][0] - t * dx, z - f[j][1] - t * dz));
+    }
+    return d;
+  };
+  const counts = new Map<number, number[]>();
+  for (const [x, z, k] of shops) {
+    const cand = grid.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`) ?? [];
+    let best = cand.find((i) => inRing(footprints[i], x, z)) ?? -1;
+    if (best < 0) {
+      let bd = maxDist;
+      for (const i of cand) {
+        const d = edge(footprints[i], x, z);
+        if (d <= bd) (bd = d), (best = i);
+      }
+    }
+    if (best < 0) continue;
+    const c = counts.get(best) ?? counts.set(best, [0, 0, 0, 0, 0]).get(best)!;
+    c[k]++;
+  }
+  const out = new Map<number, { kind: number; n: number }>();
+  for (const [i, c] of counts) {
+    let kind = 1;
+    for (let k = 2; k < c.length; k++) if (c[k] > c[kind]) kind = k;
+    out.set(i, { kind, n: c.reduce((a, b) => a + b, 0) });
+  }
+  return out;
+}

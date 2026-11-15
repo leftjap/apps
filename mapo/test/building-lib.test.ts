@@ -1,6 +1,6 @@
 // 건물 태그 → 용도·층수·지붕·아래 높이, 그리고 board.json 의 한 숫자로 묶고 푸는 것
 import { describe, expect, it } from 'vitest';
-import { buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title } from '../tools/lib/building.ts';
+import { attachShops, buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title } from '../tools/lib/building.ts';
 import { unpackInfo, USE } from '../src/data/board.ts';
 
 describe('건물 태그 읽기', () => {
@@ -66,5 +66,16 @@ describe('외곽선이 없는 건물의 바닥', () => {
     expect(r.reduce((s, p) => s + p[1], 0) / 4).toBeCloseTo(20, 5);
     expect(a).toBeGreaterThan(0); // 판의 다른 외곽선과 같은 방향(넓이 양수)
     expect(Math.hypot(r[1][0] - r[0][0], r[1][1] - r[0][1]) / Math.hypot(r[2][0] - r[1][0], r[2][1] - r[1][1])).toBeCloseTo(1.2, 3);
+  });
+});
+
+describe('가게를 건물에 붙이기', () => {
+  const sq = (x: number, z: number, w: number): [number, number][] => [[x, z], [x + w, z], [x + w, z + w], [x, z + w]];
+  it('외곽선 안이면 그 건물, 밖이면 12m 안 가장 가까운 건물, 더 멀면 버린다. 건물마다 가장 많은 종류와 수', () => {
+    const fps = [sq(0, 0, 10), sq(30, 0, 10)];
+    const got = attachShops([[5, 5, 2], [5, 6, 2], [4, 4, 3], [45, 5, 1], [70, 5, 2]], fps, 12);
+    expect(got.get(0)).toEqual({ kind: 2, n: 3 });
+    expect(got.get(1)).toEqual({ kind: 1, n: 1 });
+    expect(got.size).toBe(2);
   });
 });
