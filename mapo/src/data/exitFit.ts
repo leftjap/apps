@@ -5,6 +5,8 @@
 //  - 그래도 모형 자리가 찻길이나 다른 건물에 걸리면 걸리지 않는 가장 가까운 자리로 옮긴다(계단과 수직으로 10m, 계단 방향으로 6m 안).
 //    홍대입구 7번처럼 큰 건물 벽에 붙은 출구는 건물 밖으로, 가좌 2번처럼 그려진 찻길이 실제보다 넓은 곳은 보도 쪽으로 나간다.
 // 출구 점(e.x, e.z)은 계속 계단 입구 자리이므로 사람이 드나드는 자리도 함께 맞춰진다.
+// 건물 연결형 출구(exits.ts attached: 홍대입구 5·7번, 망원 2번)는 자리를 맞춘 뒤 모형 자리를 덮는 건물(출구보다 높은 6m 넘는 것) 외곽선에
+// 출구 크기만큼 홈을 내 위에서 보이게 한다(notchOut). GIS 외곽선이 출구 지붕까지 대지로 덮어 홍대입구 7번이 통째로 가려졌다.
 import { curbAt, type Board, type Exit, type Road } from './board.ts';
 import { exitLook, type ExitLook } from './exits.ts';
 
@@ -109,6 +111,81 @@ export function onRoad(x: number, z: number, roads: Road[]) {
   return false;
 }
 
+/**
+ * 외곽선 p(넓이가 양수인 방향)에서 직사각형 rect(네 꼭짓점, 사방으로 0.3m 넓힌다)를 뺀다. 외곽선이 직사각형에 한 번 들어갔다 나오는 경우만:
+ * 들어간 점과 나온 점 사이의 외곽선 꼭짓점(직사각형 안)을 빼고, 외곽선 안에 드는 직사각형 꼭짓점으로 두 점을 잇는다.
+ * 겹치지 않거나 여러 번 드나들면 null
+ */
+export function notchOut(p: Float32Array, rect: [number, number][]): Float32Array | null {
+  const n = p.length / 2;
+  // 사방으로 0.3m 넓힌 직사각형
+  const R = rect.map(([x, z], k) => {
+    const [ax, az] = [rect[(k + 1) % 4][0] - x, rect[(k + 1) % 4][1] - z];
+    const [bx, bz] = [rect[(k + 3) % 4][0] - x, rect[(k + 3) % 4][1] - z];
+    const [la, lb] = [Math.hypot(ax, az) || 1, Math.hypot(bx, bz) || 1];
+    return [x - (ax / la + bx / lb) * 0.3, z - (az / la + bz / lb) * 0.3];
+  });
+  const R4 = new Float32Array(R.flat());
+  const inR = (x: number, z: number) => inPoly(x, z, R4);
+  const P = Array.from({ length: n }, (_, k): [number, number] => [p[k * 2], p[k * 2 + 1]]);
+  const start = P.findIndex(([x, z]) => !inR(x, z));
+  if (start < 0) return null;
+  /** 선분 a→b 와 직사각형 변의 교점: [a→b 비율, 직사각형 변 번호, x, z] */
+  const hits = (a: number[], b: number[]) => {
+    const out: [number, number, number, number][] = [];
+    for (let k = 0; k < 4; k++) {
+      const [c, d] = [R[k], R[(k + 1) % 4]];
+      const den = (b[0] - a[0]) * (d[1] - c[1]) - (b[1] - a[1]) * (d[0] - c[0]);
+      if (Math.abs(den) < 1e-12) continue;
+      const t = ((c[0] - a[0]) * (d[1] - c[1]) - (c[1] - a[1]) * (d[0] - c[0])) / den;
+      const u = ((c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0])) / den;
+      if (t > 0 && t <= 1 && u >= 0 && u <= 1) out.push([t, k, a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+    }
+    return out.sort((x, y) => x[0] - y[0]);
+  };
+  const keep: [number, number][] = [];
+  let enter: [number, number, number] | null = null; // [변 번호, x, z]
+  let exit: [number, number, number] | null = null;
+  let at = -1; // keep 에서 들어간 점이 들어갈 자리
+  let inside = false;
+  for (let s = 0; s < n; s++) {
+    const a = P[(start + s) % n];
+    const b = P[(start + s + 1) % n];
+    if (!inside) keep.push(a);
+    for (const [, k, x, z] of hits(a, b)) {
+      if (!inside) {
+        if (enter) return null; // 두 번 들어간다
+        enter = [k, x, z];
+        at = keep.length;
+      } else exit = [k, x, z];
+      inside = !inside;
+    }
+  }
+  if (!enter || !exit || inside) return null;
+  // 들어간 변에서 나온 변까지 직사각형 꼭짓점을 두 방향으로 따라가 외곽선 안에 드는 쪽을 쓴다
+  const path = (dir: number) => {
+    const out: [number, number][] = [];
+    let k = enter![0];
+    while (k !== exit![0]) {
+      const c = dir > 0 ? (k + 1) % 4 : k;
+      out.push(R[c] as [number, number]);
+      k = (k + dir + 4) % 4;
+    }
+    return out;
+  };
+  const fw = path(1);
+  const bw = path(-1);
+  const ok = (q: [number, number][]) => q.every(([x, z]) => inPoly(x, z, p));
+  const corners = ok(fw) ? fw : ok(bw) ? bw : null;
+  if (!corners) return null;
+  const pts: [number, number][] = [...keep.slice(0, at), [enter[1], enter[2]], ...corners, [exit[1], exit[2]], ...keep.slice(at)];
+  const out = new Float32Array(pts.flat());
+  let s2 = 0;
+  for (let i2 = 0, j2 = out.length - 2; i2 < out.length; j2 = i2, i2 += 2) s2 += out[j2] * out[i2 + 1] - out[i2] * out[j2 + 1];
+  if (s2 <= 0) return null;
+  return out;
+}
+
 export function fitExits(board: Board): void {
   const gone = new Set<number>();
   const areas = board.buildings.map((b) => area(b.pts));
@@ -186,5 +263,23 @@ export function fitExits(board: Board): void {
       }
     e.x += best[0];
     e.z += best[1];
+  }
+
+  // 건물 연결형 출구: 모형 자리를 덮는 6m 넘는 건물에 홈을 낸다
+  for (const e of board.exits) {
+    if (!e.ref) continue;
+    const look = exitLook(e.st, e.ref);
+    if (!look.attached) continue;
+    const { cx, cz } = exitBody(e, look.l);
+    const sx = e.len ? e.len / 9.5 : look.l / 9;
+    const hz = SPAN.z * (Math.max(2, look.w) / 3);
+    const [ux, uz] = [Math.cos(e.yaw), Math.sin(e.yaw)];
+    const at = (a: number, b: number): [number, number] => [cx + ux * a - uz * b, cz + uz * a + ux * b];
+    const rect = [at(SPAN.x0 * sx, -hz), at(SPAN.x1 * sx, -hz), at(SPAN.x1 * sx, hz), at(SPAN.x0 * sx, hz)];
+    for (const b of board.buildings) {
+      if (b.h <= 6 || Math.abs(b.pts[0] - cx) > 150 || Math.abs(b.pts[1] - cz) > 150) continue;
+      const p = notchOut(b.pts, rect);
+      if (p) b.pts = p;
+    }
   }
 }
