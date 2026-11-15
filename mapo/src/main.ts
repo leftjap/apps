@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
+import { decodeSurface, type SurfaceJson } from './data/surface.ts';
 import { toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
 import { makeBuildings } from './render/buildings.ts';
@@ -71,10 +72,12 @@ const ambience = makeAmbience();
 const loading = document.querySelector<HTMLElement>('#loading')!;
 // 지명 자리(tools/places.ts 가 OSM 행정동 경계·공원·도로명 주소로 굽는다)
 type Named = { dongs: { name: string; x: number; z: number }[]; places: { text: string; x: number; z: number; turn: number }[] };
-const [board, mask, named] = await Promise.all([
+const [board, mask, named, surface] = await Promise.all([
   loadBoard(BASE),
   new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`),
   fetch(`${BASE}data/places.json`).then((r) => r.json() as Promise<Named>),
+  // 찻길 바닥(교차로 면·띠 구간, tools/lib/surface.ts 가 굽는다)
+  fetch(`${BASE}data/surface.json`).then((r) => r.json() as Promise<SurfaceJson>).then(decodeSurface),
 ]).catch((e) => {
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
@@ -155,7 +158,7 @@ for (const e of carGraph) {
   c[e.rev ? 0 : 1] = Math.max(c[e.rev ? 0 : 1], atEnd);
   c[e.rev ? 1 : 0] = Math.max(c[e.rev ? 1 : 0], atStart);
 }
-const roads = makeRoads(board.roads, LM_COLORS, (i) => clears[i], board.cornerR);
+const roads = makeRoads(board.roads, surface, LM_COLORS, (i) => clears[i]);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);

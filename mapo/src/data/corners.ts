@@ -22,6 +22,11 @@ export interface Corner {
   cls: number;
   /** 등급으로 정한 기본 반지름(m): 큰길끼리 6, 큰길과 골목 4, 골목끼리 2.5 */
   r0: number;
+  /** 갈래 a·b 의 길 조각 번호와 노드 쪽 끝(0 시작, 1 끝) */
+  ra: number;
+  ea: number;
+  rb: number;
+  eb: number;
 }
 
 const nodeKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
@@ -39,9 +44,11 @@ export function roadCorners(roads: Road[]): Corner[] {
     /** 왼쪽·오른쪽이 분리대인가 */
     medL: boolean;
     medR: boolean;
+    ri: number;
+    end: number;
   }
   const arms = new Map<string, { x: number; z: number; list: Arm[] }>();
-  roads.forEach((r) => {
+  roads.forEach((r, ri) => {
     if (r.cls > 5 || r.p.length < 6) return;
     for (let i = 1; i < r.p.length; i += 3) if (r.p[i] > 0.3) return;
     const L = cumLen(r.p);
@@ -56,7 +63,7 @@ export function roadCorners(roads: Road[]): Corner[] {
       const k = nodeKey(x, z);
       const a = arms.get(k) ?? arms.set(k, { x, z, list: [] }).get(k)!;
       // 끝 노드에서 멀어지는 방향은 길 진행 방향의 반대라 오른쪽·왼쪽이 바뀐다
-      a.list.push({ ux: (nx - x) / d, uz: (nz - z) / d, hr: end ? hl : hr, hl: end ? hr : hl, cls: r.cls, len, medL: med && !end, medR: med && !!end });
+      a.list.push({ ux: (nx - x) / d, uz: (nz - z) / d, hr: end ? hl : hr, hl: end ? hr : hl, cls: r.cls, len, medL: med && !end, medR: med && !!end, ri, end });
     }
   });
   const out: Corner[] = [];
@@ -90,6 +97,10 @@ export function roadCorners(roads: Road[]): Corner[] {
         cap,
         cls: Math.min(a.cls, b.cls),
         r0: a.cls <= 3 && b.cls <= 3 ? 6 : a.cls <= 3 || b.cls <= 3 ? 4 : 2.5,
+        ra: a.ri,
+        ea: a.end,
+        rb: b.ri,
+        eb: b.end,
       });
     }
   }

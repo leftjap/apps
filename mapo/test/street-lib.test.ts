@@ -151,7 +151,7 @@ describe('연석 쪽 가장자리선으로 찻길 가장자리 읽기', () => {
 
 describe('모퉁이 반지름', () => {
   // 동쪽(+x)과 남쪽(+z)으로 뻗은 두 길의 가장자리가 (5, 5) 에서 만나는 모퉁이
-  const c: Corner = { kx: 5, kz: 5, ax: 1, az: 0, bx: 0, bz: 1, th: Math.PI / 2, t: 5, cap: 30, cls: 3, r0: 6 };
+  const c: Corner = { kx: 5, kz: 5, ax: 1, az: 0, bx: 0, bz: 1, th: Math.PI / 2, t: 5, cap: 30, cls: 3, r0: 6, ra: 0, ea: 0, rb: 1, eb: 0 };
   it('모퉁이를 도는 가장자리선이 있으면 그 반지름', () => {
     const segs: LaneSeg[] = [];
     for (let k = 0; k < 18; k++) {
