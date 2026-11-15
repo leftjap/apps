@@ -89,7 +89,7 @@ export function makeHud(ev: HudEvents) {
        <div class="badge"><span class="dot"></span><b data-top-name></b><span data-top-level></span><i><span data-top-time></span> · 시뮬레이션</i></div>
        <div class="chips"><button type="button" data-lab-toggle>설정</button>${tourButtons}${presetButtons}</div>
      </div>
-     <p id="credit">© OpenStreetMap contributors · 일부 건물 Overture Maps, Shi 외(2023) · 건물 국토교통부 · 도로 면 행정안전부 · 횡단보도·차선 서울특별시 · 가게 소상공인시장진흥공단</p>
+     <p id="credit">© OpenStreetMap contributors · 일부 건물 Overture Maps, Shi 외(2023) · 건물 국토교통부 · 도로 면 행정안전부 · 횡단보도·차선·실시간 자료 서울 열린데이터광장 · 가게 소상공인시장진흥공단</p>
      <p id="legend">도로 색${FLOW_LEVELS.map(([name, c]) => `<span><i style="--c:${c}"></i>${name}</span>`).join('')}</p>
      <div id="card" hidden>
        <button type="button" class="close" aria-label="닫기">×</button>
