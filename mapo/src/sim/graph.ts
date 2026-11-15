@@ -151,21 +151,88 @@ export interface WalkGraph {
 
 const HOT = /경의선|레드로드|어울마당|홍익로|와우산로|잔다리로|독막로|동교로|성미산로|양화로|월드컵로|연남로|한강|포은로|망원로|희우정로/;
 
-/** 길 조각에서 길을 따라 sa~sb 구간의 걷는 띠: [진행 방향 오른쪽, 왼쪽]. 큰길은 찻길 가장자리(구간에서 가장 바깥) 밖 보도, 골목은 길 안 가장자리 */
-function walkLat(r: Road, sa: number, sb: number): [[number, number], [number, number]] {
+/** 길 조각에서 길을 따라 sa~sb 구간의 걷는 띠: [진행 방향 오른쪽, 왼쪽]. 큰길은 찻길 가장자리(구간에서 가장 바깥) 밖 보도.
+ *  보도 없는 골목(등급 4·5)은 가운데선 0.4m 밖부터 골목 폭 전체: 찻길 가장자리(실폭도로 면으로 맞춘 골목 폭)까지, 그 밖으로 건물 벽이
+ *  떨어져 있으면 벽 0.7m 앞까지(가장자리에서 3m 더까지). wall 은 [오른쪽, 왼쪽] 건물 벽까지 거리(모르면 0) */
+function walkLat(r: Road, sa: number, sb: number, wall: [number, number] = [0, 0]): [[number, number], [number, number]] {
   if (r.cls === 6) return [[0, 2.6], [0, 2.6]];
   if (r.cls === 7) return [[0, 0.8], [0, 0.8]];
-  if (r.cls >= 4) return [[0.6, 2.2], [0.6, 2.2]];
-  const band = (side: number): [number, number] => {
+  const curb = (side: number) => {
     let c = Math.max(curbAt(r, sa, side), curbAt(r, sb, side));
     const p = side > 0 ? r.edge?.r : r.edge?.l;
     if (p) for (let k = 0; k < p.s.length; k++) if (p.s[k] > sa && p.s[k] < sb) c = Math.max(c, p.v[k]);
+    return c;
+  };
+  if (r.cls >= 4) {
+    const alley = (side: number): [number, number] => {
+      const c = curb(side);
+      return [0.4, Math.max(1.2, c - 0.3, Math.min(wall[side > 0 ? 0 : 1] - 0.7, c + 3))];
+    };
+    return [alley(1), alley(-1)];
+  }
+  const band = (side: number): [number, number] => {
+    const c = curb(side);
     return [c + 0.8, c + 2.4];
   };
   return [band(1), band(-1)];
 }
 
-export function buildWalkGraph(roads: Road[]): WalkGraph {
+/** 건물 외곽선 변을 20m 칸 격자에 넣어 두고, 점 (x, z)에서 (dx, dz) 쪽으로 쏜 선이 처음 닿는 벽까지 거리를 돌려준다(max 안에 없으면 max) */
+function wallRay(walls: Float32Array[]) {
+  const segs: number[] = [];
+  const grid = new Map<number, number[]>();
+  const key = (cx: number, cz: number) => cx * 100000 + cz;
+  for (const p of walls)
+    for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+      const id = segs.length;
+      segs.push(p[j], p[j + 1], p[i], p[i + 1]);
+      for (let cx = Math.floor(Math.min(p[j], p[i]) / 20); cx <= Math.floor(Math.max(p[j], p[i]) / 20); cx++)
+        for (let cz = Math.floor(Math.min(p[j + 1], p[i + 1]) / 20); cz <= Math.floor(Math.max(p[j + 1], p[i + 1]) / 20); cz++)
+          (grid.get(key(cx, cz)) ?? grid.set(key(cx, cz), []).get(key(cx, cz))!).push(id);
+    }
+  return (x: number, z: number, dx: number, dz: number, max: number) => {
+    let best = max;
+    const seen = new Set<number>();
+    const ex = x + dx * max;
+    const ez = z + dz * max;
+    for (let cx = Math.floor(Math.min(x, ex) / 20); cx <= Math.floor(Math.max(x, ex) / 20); cx++)
+      for (let cz = Math.floor(Math.min(z, ez) / 20); cz <= Math.floor(Math.max(z, ez) / 20); cz++)
+        for (const id of grid.get(key(cx, cz)) ?? []) {
+          if (seen.has(id)) continue;
+          seen.add(id);
+          const sx = segs[id];
+          const sz = segs[id + 1];
+          const wx = segs[id + 2] - sx;
+          const wz = segs[id + 3] - sz;
+          const den = dx * wz - dz * wx;
+          if (Math.abs(den) < 1e-9) continue;
+          const t = ((sx - x) * wz - (sz - z) * wx) / den;
+          const u = ((sx - x) * dz - (sz - z) * dx) / den;
+          if (t > 0 && t < best && u >= 0 && u <= 1) best = t;
+        }
+    return best;
+  };
+}
+
+/** walls: 건물 외곽선([x,z, ...]). 보도 없는 골목의 걷는 폭을 건물 벽까지 넓히는 데 쓴다 */
+export function buildWalkGraph(roads: Road[], walls: Float32Array[] = []): WalkGraph {
+  const ray = walls.length ? wallRay(walls) : null;
+  // 골목 조각 a→b 의 [오른쪽, 왼쪽] 건물 벽까지 거리: 조각의 1/4·1/2·3/4 자리에서 옆으로 쏜 선 가운데 가장 가까운 것
+  const wallOf = (ax: number, az: number, bx: number, bz: number): [number, number] => {
+    if (!ray) return [0, 0];
+    const L = Math.hypot(bx - ax, bz - az) || 1;
+    const ux = (bx - ax) / L;
+    const uz = (bz - az) / L;
+    let rt = 8;
+    let lt = 8;
+    for (const f of [0.25, 0.5, 0.75]) {
+      const x = ax + (bx - ax) * f;
+      const z = az + (bz - az) * f;
+      rt = Math.min(rt, ray(x, z, -uz, ux, 8));
+      lt = Math.min(lt, ray(x, z, uz, -ux, 8));
+    }
+    return [rt, lt];
+  };
   const ids = new Map<number, number>();
   const xs: number[] = [];
   const adj: number[][] = [];
@@ -203,7 +270,7 @@ export function buildWalkGraph(roads: Road[]): WalkGraph {
       const ds = i ? Math.hypot(r.p[i] - r.p[i - 3], r.p[i + 2] - r.p[i - 1]) : 0;
       s += ds;
       if (prev >= 0 && prev !== n) {
-        const [lr, ll] = walkLat(r, s - ds, s);
+        const [lr, ll] = walkLat(r, s - ds, s, r.cls === 4 || r.cls === 5 ? wallOf(r.p[i - 3], r.p[i - 1], r.p[i], r.p[i + 2]) : undefined);
         adj[prev].push(n);
         adj[n].push(prev);
         aw[prev].push(w);

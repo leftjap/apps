@@ -80,7 +80,7 @@ const [board, mask, named] = await Promise.all([
 
 // ── 시뮬레이션 ──
 const start = clock.now();
-const walkGraph = buildWalkGraph(board.roads);
+const walkGraph = buildWalkGraph(board.roads, board.buildings.map((b) => b.pts));
 const carGraph = buildCarGraph(board.roads);
 // 지도 자료에서 차로 위에 그려진 보행로·보도 쪽으로는 걷지 않는다
 clearWalkFromCars(walkGraph, carGraph);

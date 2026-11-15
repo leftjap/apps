@@ -392,3 +392,52 @@ describe('찻길과 신호', () => {
     expect(entered).toBe(0);
   });
 });
+
+describe('골목 폭 안에 퍼져 걷기', () => {
+  // 길이 200m 골목(찻길 폭 5.6m), 양옆 6m 밖에 건물 벽이 늘어서 있다. 양 끝 출구에서 사람이 계속 나와 오간다
+  const alley = (walls: boolean) => {
+    const box = (z0: number, z1: number) => Float32Array.from([0, z0, 200, z0, 200, z1, 0, z1]);
+    const g = buildWalkGraph([road([[0, 0], [200, 0]], { cls: 4, lanes: 1 })], walls ? [box(6, 20), box(-20, -6)] : []);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'a', x: 1, z: 0 }, { kind: 'exit', key: 'b', x: 199, z: 0 }], fixedProvider(1, 0), 7, 400);
+    const zs: number[] = [];
+    let east = 0;
+    let eastRight = 0;
+    for (let k = 0; k < 30 * 120; k++) {
+      if (k % 20 === 0) (sim.burst('a', 1), sim.burst('b', 1));
+      sim.step(1 / 30, at(14), false);
+      if (k < 30 * 60 || k % 15) continue;
+      const w = sim.w;
+      for (let i = 0; i < w.n; i++) {
+        if (w.fade[i] < 0.99 || Math.abs(w.x[i] - 100) > 60 || !w.moving[i]) continue;
+        zs.push(w.z[i]);
+        if (Math.cos(w.yaw[i]) > 0.9) (east++, w.z[i] > 0 && eastRight++);
+      }
+    }
+    const mean = zs.reduce((s, v) => s + v, 0) / zs.length;
+    const sd = Math.sqrt(zs.reduce((s, v) => s + (v - mean) ** 2, 0) / zs.length);
+    // 가장 붐비는 1.5m 폭 띠에 든 사람 비율
+    const sorted = [...zs].sort((a, b) => a - b);
+    let most = 0;
+    for (let a = 0, b = 0; a < sorted.length; a++) {
+      while (b < sorted.length && sorted[b] < sorted[a] + 1.5) b++;
+      most = Math.max(most, b - a);
+    }
+    return { n: zs.length, sd, packed: most / zs.length, maxAbs: Math.max(...zs.map(Math.abs)), right: eastRight / Math.max(1, east) };
+  };
+
+  it('보도 없는 골목에서는 건물 벽 사이 폭에 퍼져 걷고 한 줄로 몰리지 않는다', () => {
+    const r = alley(true);
+    expect(r.n).toBeGreaterThan(2000);
+    expect(r.sd).toBeGreaterThan(2.4);
+    expect(r.packed).toBeLessThan(0.3);
+    expect(r.maxAbs).toBeLessThan(5.6);
+  });
+  it('골목에서도 우측통행한다(동쪽으로 가는 사람은 대부분 남쪽(+z) 절반)', () => {
+    expect(alley(true).right).toBeGreaterThan(0.8);
+  });
+  it('건물 자료가 없으면 찻길 가장자리(실제 골목 폭) 안에서 퍼진다', () => {
+    const r = alley(false);
+    expect(r.maxAbs).toBeLessThan(2.9);
+    expect(r.sd).toBeGreaterThan(1.4);
+  });
+});
