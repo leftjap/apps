@@ -1,6 +1,7 @@
 // 구운 모형판 자료의 형식과 로더. 파일에는 길이가 데시미터 정수로 들어 있다.
 import { cumLen } from '../poly.ts';
 import { liftRails } from './railClear.ts';
+import { fitExits } from './exitFit.ts';
 
 export interface BoardJson {
   v: 1;
@@ -178,6 +179,8 @@ export interface Exit {
   ref: string;
   /** 계단이 내려가는 방향(라디안, atan2(z, x)). 모르면 NaN */
   yaw: number;
+  /** 출구 지붕 외곽선으로 잰 지상 구조물 길이(m). 맞추지 못했으면 없음(exitFit.ts) */
+  len?: number;
 }
 
 export interface BusRun {
@@ -235,6 +238,8 @@ export function decodeBoard(j: BoardJson): Board {
   const board = decodeRaw(j);
   // 고가 철도가 비슷한 높이의 찻길과 엇갈리는 곳은 철도를 찻길 위로 올린다(railClear.ts)
   liftRails(board.lines, board.roads);
+  // 출구 지붕이 작은 건물로 들어 있으면 그 외곽선으로 출구 자리를 맞추고 지운다. 찻길·건물에 걸린 출구는 옮긴다(exitFit.ts)
+  fitExits(board);
   return board;
 }
 

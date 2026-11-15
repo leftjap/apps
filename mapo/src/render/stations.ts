@@ -3,6 +3,8 @@
 // 홍대입구·합정처럼 출구가 넓게 흩어진 역도 출구 하나하나가 구내로 이어져 역의 실제 범위가 드러난다.
 import * as THREE from 'three';
 import type { Board } from '../data/board.ts';
+import { exitLook, type ExitKind } from '../data/exits.ts';
+import { exitBody } from '../data/exitFit.ts';
 import { nearestS, pointAt } from '../poly.ts';
 import { material, UNDER_Y } from './env.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
@@ -20,6 +22,82 @@ export interface StationLabel {
   colors: string[];
 }
 
+/** 출구 모형 부품 번호(셰이더가 부품마다 색을 칠한다) */
+export const EXIT_PARTS = { STAIR: 0, GRANITE: 1, GLASS: 2, ROOF: 3, FASCIA: 4, POST: 5, COPING: 6, STEP: 7, SIGN: 8, POLE: 9, VAULT: 13, SLOPE: 14, KIOSK: 15 } as const;
+const P = EXIT_PARTS;
+const B = (w: number, h: number, d: number, x: number, y: number, z: number) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
+// 출구 모형은 폭 3m(벽 안쪽)·길이 9m 기준으로 만들고, 출구마다 실제 폭·길이로 늘인다(셰이더의 aSize). 앞(+x)이 내려가는 쪽, 입구는 −x.
+/** 모든 출구: 계단 바닥, 입구 앞 두 단 턱(노란 점자블록), 입구 옆 폴사인 */
+const common = () => [
+  part(B(7.9, 0.04, 3.0, 0.3, 0.04, 0), P.STAIR),
+  part(B(1.3, 0.3, 3.64, -4.95, 0.15, 0), P.STEP),
+  part(B(0.5, 0.15, 3.64, -5.85, 0.075, 0), P.STEP),
+  part(B(0.1, 2.0, 0.1, -6.3, 1.0, 2.35), P.POLE),
+  part(B(0.2, 1.8, 0.5, -6.3, 2.85, 2.35), P.SIGN),
+];
+/** 양옆과 뒤의 화강석 벽(높이 h)과 갓돌 */
+const walls = (h: number) => [
+  ...[1.66, -1.66].map((z) => part(B(8.9, h, 0.32, 0, h / 2, z), P.GRANITE)),
+  part(B(0.32, h, 3.64, 4.29, h / 2, 0), P.GRANITE),
+  ...[1.66, -1.66].map((z) => part(B(9.0, 0.08, 0.44, 0, h + 0.04, z), P.COPING)),
+  part(B(0.44, 0.08, 3.76, 4.29, h + 0.04, 0), P.COPING),
+];
+/** 벽 위 유리(y0~y1) 양옆과 뒤 */
+const glass = (y0: number, y1: number) => [
+  ...[1.66, -1.66].map((z) => part(B(8.6, y1 - y0, 0.04, 0.1, (y0 + y1) / 2, z), P.GLASS)),
+  part(B(0.04, y1 - y0, 3.3, 4.29, (y0 + y1) / 2, 0), P.GLASS),
+];
+/** 네 모서리 기둥(높이 h) */
+const posts = (h: number) => [[-4.35, 1.66], [-4.35, -1.66], [4.35, 1.66], [4.35, -1.66]].map(([x, z]) => part(B(0.14, h, 0.14, x, h / 2, z), P.POST));
+/** 입구 위 띠 간판(셰이더가 1.93~2.53m 높이에 그림을 칠한다) */
+const fascia = () => part(B(0.12, 0.6, 3.5, -4.62, 2.23, 0), P.FASCIA);
+/** 반원통 유리 지붕(반지름 1.75m, 1.9m 높이에서 시작)과 뒤 끝의 반원 유리 */
+const vault = () => [
+  part(new THREE.CylinderGeometry(1.75, 1.75, 9.5, 12, 1, true, 0, Math.PI).rotateZ(Math.PI / 2).translate(-0.15, 1.9, 0), P.VAULT),
+  part(new THREE.CircleGeometry(1.75, 12, 0, Math.PI).rotateY(Math.PI / 2).translate(4.4, 1.9, 0), P.GLASS),
+];
+/** 계단을 따라 낮아지는 유리 옆벽(입구 2.55m → 뒤 1.47m, 아래 0.35m 부터) */
+const slopeGlass = () =>
+  [1.66, -1.66].map((z) => {
+    const s = new THREE.Shape([new THREE.Vector2(-4.4, 0.35), new THREE.Vector2(4.4, 0.35), new THREE.Vector2(4.4, 1.47), new THREE.Vector2(-4.4, 2.55)]);
+    return part(new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: false }).translate(0, 0, z - 0.02), P.GLASS);
+  });
+
+/** 출구 모양별 모형(exits.ts 의 ExitKind) */
+export const EXIT_SHAPES: Record<ExitKind, () => THREE.BufferGeometry> = {
+  // 지붕 없는 개방형: 화강석 벽 위에 스테인리스 난간
+  open: () => merge([...common(), ...walls(0.95), ...[1.66, -1.66].map((z) => part(B(8.8, 0.05, 0.05, 0, 1.75, z), P.POST)), part(B(0.05, 0.05, 3.3, 4.29, 1.75, 0), P.POST)]),
+  // 1984년형: 화강석 벽 위 기둥에 얇은 평지붕, 옆은 트였다
+  old: () => merge([...common(), ...walls(1.0), ...posts(2.55), part(B(9.5, 0.16, 4.0, -0.15, 2.63, 0), P.ROOF), fascia()]),
+  // 2000년 둘레 신형: 낮은 화강석 벽, 유리 옆벽, 반원통 유리 지붕
+  vault: () => merge([...common(), ...walls(0.8), ...glass(0.88, 1.9), ...vault(), fascia()]),
+  // 표준형: 화강석 벽, 유리 벽, 진회색 틀의 평평한 유리 지붕
+  box: () => merge([...common(), ...walls(1.05), ...glass(1.13, 2.55), part(B(9.5, 0.26, 4.1, -0.15, 2.68, 0), P.ROOF), ...posts(2.56), fascia()]),
+  // 도시형: 낮은 턱 위 유리 옆벽, 계단을 따라 낮아지는 얇은 지붕
+  slim: () =>
+    merge([
+      ...common(),
+      ...walls(0.35),
+      ...slopeGlass(),
+      part(B(0.04, 1.1, 3.3, 4.29, 0.92, 0), P.GLASS),
+      part(B(9.6, 0.1, 3.9, 0, 0, 0).rotateZ(-Math.atan2(1.08, 8.8)).translate(-0.05, 2.06, 0), P.SLOPE),
+      fascia(),
+    ]),
+  // 기타(상자형): 문이 난 작은 건물
+  kiosk: () =>
+    merge([
+      ...common(),
+      ...[1.66, -1.66].map((z) => part(B(8.9, 2.7, 0.3, 0, 1.35, z), P.KIOSK)),
+      part(B(0.3, 2.7, 3.64, 4.29, 1.35, 0), P.KIOSK),
+      ...[1.36, -1.36].map((z) => part(B(0.3, 2.7, 0.6, -4.3, 1.35, z), P.KIOSK)),
+      part(B(9.4, 0.3, 4.0, 0, 2.85, 0), P.ROOF),
+      fascia(),
+    ]),
+  // 공항철도·경의중앙선: 낮은 벽 위 유리, 강철 트러스를 댄 큰 반원통(높이는 aSize 로 키운다)
+  grand: () => merge([...common(), ...walls(0.6), ...glass(0.68, 1.9), ...vault(), fascia()]),
+};
+const KIND_NO: Record<ExitKind, number> = { open: 0, old: 1, vault: 2, box: 3, slim: 4, kiosk: 5, grand: 6 };
+
 export function makeStations(board: Board) {
   const group = new THREE.Group();
   const names = board.stations.map((s) => s.name);
@@ -27,8 +105,9 @@ export function makeStations(board: Board) {
   const floor = ribbon();
   const proxies: THREE.Object3D[] = [];
   const tmp = [0, 0, 0];
-  /** 출구마다 [x, z, 내려가는 방향, 역 번호] 와 번호판 글자 */
+  /** 출구마다 [x, z, 내려가는 방향, 역 번호] 와 번호판 글자, 모양 */
   const doors: [number, number, number, number][] = [];
+  const looks: ReturnType<typeof exitLook>[] = [];
   const refs: string[] = [];
 
   names.forEach((name, si) => {
@@ -65,9 +144,13 @@ export function makeStations(board: Board) {
       const pts = [e.x, UNDER_Y, e.z, end[0], UNDER_Y, end[1]];
       addRibbon(floor, pts, 7, info, 0, 3);
       addRibbon(mine, pts, 16, info, 0, 3);
-      // 출구 점(OSM)은 계단 입구 자리다. 모형 가운데는 내려가는 쪽으로 3.5m
+      // 출구 점(OSM)은 계단 입구 자리다. 모형 가운데는 내려가는 쪽으로 (길이 9m 기준 3.5m 를 실제 길이에 맞춰)
       const dir = Number.isFinite(e.yaw) ? e.yaw : toCorridor;
-      doors.push([e.x + Math.cos(dir) * 3.5, e.z + Math.sin(dir) * 3.5, dir, si]);
+      const look = exitLook(name, e.ref);
+      const body = exitBody({ ...e, yaw: dir }, look.l);
+      doors.push([body.cx, body.cz, dir, si]);
+      // 외곽선으로 잰 출구는 지붕(모형 몸체 9.5m)이 외곽선 길이에 맞게
+      looks.push({ ...look, l: e.len ? (body.len * 9) / 9.5 : look.l });
       refs.push(e.ref);
     }
     // 고르기용: 지표 높이에 놓은 보이지 않는 넓은 판(이 판에 노선 구간이 없는 역은 고르지 않는다)
@@ -118,29 +201,6 @@ export function makeStations(board: Board) {
   floorMesh.frustumCulled = false;
   group.add(floorMesh);
 
-  // 출구(서울 지하철 출입구 사진 대조: 홍대입구 1·3·7·8번, 합정 8번, 상수 1번): 앞(+x)이 내려가는 쪽, 입구는 −x.
-  // 입구 앞 두 단 올라선 화강석 턱과 노란 점자블록, 양옆과 뒤의 화강석 난간 벽(갓돌), 그 위 유리 벽, 네 모서리 은색 기둥,
-  // 유리 지붕(은색 테와 살), 입구 위 띠 간판(노선 원·역 이름·노란 바탕 출구 번호), 입구 옆 폴사인(노란 지하철 표시, 번호, 역 이름).
-  // 부품 번호: 0 계단 바닥 1 화강석 벽 2 유리 벽 3 유리 지붕 4 띠 간판 5 기둥 6 갓돌 7 입구 턱 8 폴사인 판 9 폴사인 기둥
-  const door = merge([
-    part(new THREE.BoxGeometry(7.9, 0.04, 3.0).translate(0.3, 0.04, 0), 0),
-    part(new THREE.BoxGeometry(8.9, 1.05, 0.32).translate(0, 0.52, 1.66), 1),
-    part(new THREE.BoxGeometry(8.9, 1.05, 0.32).translate(0, 0.52, -1.66), 1),
-    part(new THREE.BoxGeometry(0.32, 1.05, 3.64).translate(4.29, 0.52, 0), 1),
-    part(new THREE.BoxGeometry(9.0, 0.08, 0.44).translate(0, 1.09, 1.66), 6),
-    part(new THREE.BoxGeometry(9.0, 0.08, 0.44).translate(0, 1.09, -1.66), 6),
-    part(new THREE.BoxGeometry(0.44, 0.08, 3.76).translate(4.29, 1.09, 0), 6),
-    part(new THREE.BoxGeometry(8.6, 1.42, 0.04).translate(0.1, 1.84, 1.66), 2),
-    part(new THREE.BoxGeometry(8.6, 1.42, 0.04).translate(0.1, 1.84, -1.66), 2),
-    part(new THREE.BoxGeometry(0.04, 1.42, 3.3).translate(4.29, 1.84, 0), 2),
-    part(new THREE.BoxGeometry(9.5, 0.26, 4.1).translate(-0.15, 2.68, 0), 3),
-    part(new THREE.BoxGeometry(0.12, 0.6, 3.5).translate(-4.62, 2.23, 0), 4),
-    ...[[-4.35, 1.66], [-4.35, -1.66], [4.35, 1.66], [4.35, -1.66]].map(([x, z]) => part(new THREE.BoxGeometry(0.14, 2.56, 0.14).translate(x, 1.28, z), 5)),
-    part(new THREE.BoxGeometry(1.3, 0.3, 3.64).translate(-4.95, 0.15, 0), 7),
-    part(new THREE.BoxGeometry(0.5, 0.15, 3.64).translate(-5.85, 0.075, 0), 7),
-    part(new THREE.BoxGeometry(0.1, 2.0, 0.1).translate(-6.3, 1.0, 2.35), 9),
-    part(new THREE.BoxGeometry(0.2, 1.8, 0.5).translate(-6.3, 2.85, 2.35), 8),
-  ]);
   // 엘리베이터 출입구: 유리 상자와 지붕(부품 10 유리 11 지붕 12 틀)
   const lift = merge([
     part(new THREE.BoxGeometry(2.4, 2.6, 2.4).translate(0, 1.3, 0), 10),
@@ -235,9 +295,10 @@ export function makeStations(board: Board) {
   fasciaTex.anisotropy = poleTex.anisotropy = 4;
 
   const lineCol = (name: string) => new THREE.Color(board.lines.find((l) => l.stopNames.includes(name))?.color ?? '#3a6fb0');
-  const exitMat = material({
+  const exitMat = (kind: number) => material({
     uniforms: {
       ...uniforms,
+      uKind: { value: kind },
       uCols: { value: Array.from({ length: 16 }, (_, i) => (names[i] ? color(names[i]) : new THREE.Color())) },
       uLine: { value: Array.from({ length: 16 }, (_, i) => (names[i] ? lineCol(names[i]) : new THREE.Color())) },
       uFascia: { value: fasciaTex },
@@ -245,11 +306,12 @@ export function makeStations(board: Board) {
       uSignN: { value: N },
     },
     vertex: /* glsl */ `
-      attribute vec4 aInst; attribute float aPart; attribute float aSign;
+      attribute vec4 aInst; attribute float aPart; attribute float aSign; attribute vec3 aSize;
       varying vec3 vN; varying float vPart; varying float vSt; varying float vDist; varying vec3 vO; varying vec3 vNO; varying float vSign; varying vec3 vW;
       void main() {
         vec4 cv = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
-        vec3 p = position * zoomScale(-cv.z, 4.0, 9.0, 1.0, 3.4);
+        // 출구마다 실제 길이(x)·폭(z)·높이 배율로 늘인다
+        vec3 p = position * vec3(aSize.x, aSize.z, aSize.y) * zoomScale(-cv.z, 4.0, 9.0, 1.0, 3.4);
         float cs = cos(aInst.z), sn = sin(aInst.z);
         vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, p.y + 0.05, aInst.y + p.x * sn + p.z * cs);
         vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);
@@ -260,6 +322,7 @@ export function makeStations(board: Board) {
       }`,
     fragment: /* glsl */ `
       uniform float uHi[16]; uniform vec3 uCols[16]; uniform vec3 uLine[16]; uniform sampler2D uFascia; uniform sampler2D uPole; uniform float uSignN;
+      uniform float uKind;   // 0 개방형 1 구형 2 신형 3 표준형 4 도시형 5 상자형 6 공항철도·경의중앙선, −1 엘리베이터
       varying vec3 vN; varying float vPart; varying float vSt; varying float vDist; varying vec3 vO; varying vec3 vNO; varying float vSign; varying vec3 vW;
       vec3 granite(vec3 o) {
         // 화강석: 회색 바탕에 잔점, 0.6m 마다 판 줄눈
@@ -267,6 +330,8 @@ export function makeStations(board: Board) {
         float joint = step(0.96, fract((o.x + o.z) / 0.6));
         return vec3(0.6, 0.6, 0.59) * (0.9 + 0.16 * speck) * (1.0 - 0.12 * joint);
       }
+      // 틀 색: 표준형·도시형은 서울기와 진회색, 나머지는 은색
+      vec3 frame() { return (abs(uKind - 3.0) < 0.5 || abs(uKind - 4.0) < 0.5) ? vec3(0.24, 0.25, 0.27) : vec3(0.78, 0.8, 0.82); }
       void main() {
         int si = int(vSt + 0.5);
         vec3 c = uCols[si];
@@ -287,7 +352,7 @@ export function makeStations(board: Board) {
           float mull = step(0.94, fract((vO.x + vO.z + 4.3) / 1.43));
           vec3 glass = vec3(0.55, 0.68, 0.72);
           col = lit(glass, n) * 0.8 + vec3(0.2, 0.25, 0.27) * 0.4;
-          col = mix(col, lit(vec3(0.78, 0.8, 0.82), n), clamp(mull, 0.0, 1.0));
+          col = mix(col, lit(frame(), n), clamp(mull, 0.0, 1.0));
           glow = vec3(1.0, 0.95, 0.85) * 0.55;
         } else if (vPart < 3.5) {
           // 유리 지붕: 은색 테와 1.1m 마다 살, 그 사이 유리는 아래 계단이 비쳐 어둡다
@@ -295,7 +360,9 @@ export function makeStations(board: Board) {
           float rim = 1.0 - step(abs(vO.x + 0.15), 4.45) * step(abs(vO.z), 1.75);
           float rib = step(0.9, fract((vO.x + 4.9) / 1.1));
           vec3 glass = mix(vec3(0.42, 0.55, 0.6), vec3(0.22, 0.3, 0.34), smoothstep(-3.0, 3.0, vO.x));
-          vec3 metal = vec3(0.82, 0.84, 0.86);
+          vec3 metal = frame();
+          if (abs(uKind - 1.0) < 0.5) glass = vec3(0.74, 0.75, 0.76);        // 구형: 불투명 금속 지붕
+          if (abs(uKind - 5.0) < 0.5) glass = metal = vec3(0.3, 0.31, 0.33); // 상자형: 평평한 지붕
           col = top > 0.5 ? mix(glass, metal, max(rim, rib)) : metal * 0.92;
           col = lit(col, n) + (top > 0.5 ? vec3(0.08, 0.1, 0.11) * (1.0 - max(rim, rib)) : vec3(0.0));
           glow = vec3(1.0, 0.95, 0.85) * 0.25 * (1.0 - max(rim, rib)) * top + c * 0.2 * h;
@@ -307,7 +374,7 @@ export function makeStations(board: Board) {
           col = mix(lit(vec3(0.3, 0.34, 0.38), n), t * (0.85 + 0.25 * uNight), front);
           glow = t * 0.65 * front;
         } else if (vPart < 5.5) {
-          col = lit(vec3(0.78, 0.8, 0.83), n);
+          col = lit(frame(), n);
         } else if (vPart < 6.5) {
           col = lit(granite(vO) * 1.12, n);
         } else if (vPart < 7.5) {
@@ -326,6 +393,20 @@ export function makeStations(board: Board) {
           glow = t * 0.55 * face;
         } else if (vPart < 9.5) {
           col = lit(vec3(0.24, 0.26, 0.29), n);
+        } else if (vPart > 12.5 && vPart < 13.5) {
+          // 반원통 유리 지붕: 1.1m 마다 은색 아치, 공항철도·경의중앙선은 굵은 강철 트러스가 비스듬히 지난다
+          float rib = step(0.88, fract((vO.x + 4.9) / 1.1));
+          float ang = atan(vO.y - 1.9, vO.z);
+          float truss = step(6.0, uKind) * max(step(0.82, fract((vO.x + ang * 1.6) / 2.4)), step(0.82, fract((vO.x - ang * 1.6) / 2.4)));
+          vec3 glass = vec3(0.5, 0.66, 0.7);
+          col = mix(lit(glass, n) * 0.85 + vec3(0.06, 0.09, 0.1), lit(vec3(0.84, 0.86, 0.88), n), max(rib, truss));
+          glow = vec3(1.0, 0.95, 0.85) * 0.3 * (1.0 - max(rib, truss));
+        } else if (vPart > 13.5 && vPart < 14.5) {
+          // 도시형 경사 지붕: 진회색 틀의 얇은 판
+          col = lit(mix(vec3(0.3, 0.36, 0.4), frame(), step(0.9, fract((vO.x + 4.8) / 1.2))), n);
+        } else if (vPart > 14.5 && vPart < 15.5) {
+          // 상자형 벽: 짙은 석재
+          col = lit(granite(vO) * 0.62, n);
         } else if (vPart < 10.5) {
           // 엘리베이터 유리 상자
           col = lit(vec3(0.5, 0.64, 0.7), n) * 0.85 + vec3(0.06, 0.08, 0.09);
@@ -340,17 +421,24 @@ export function makeStations(board: Board) {
         gl_FragColor = vec4(fogged(col, vDist), 1.0);
       }`,
   });
-  const inst = instanced(door, doors.length, { aInst: 4, aSign: 1 });
-  doors.forEach((d, i) => {
-    inst.arr.aInst.set(d, i * 4);
-    inst.arr.aSign[i] = i;
+  // 출구는 모양마다 한 덩어리(인스턴싱). 출구마다 실제 길이·폭(폭 2m 아래는 벽이 겹쳐 2m 로)·높이 배율을 넘긴다
+  (Object.keys(EXIT_SHAPES) as ExitKind[]).forEach((kind) => {
+    const mine = doors.map((_, i) => i).filter((i) => looks[i].kind === kind);
+    if (!mine.length) return;
+    const inst = instanced(EXIT_SHAPES[kind](), mine.length, { aInst: 4, aSign: 1, aSize: 3 });
+    mine.forEach((i, k) => {
+      inst.arr.aInst.set(doors[i], k * 4);
+      inst.arr.aSign[k] = i;
+      inst.arr.aSize.set([looks[i].l / 9, Math.max(2, looks[i].w) / 3, kind === 'grand' ? 1.3 : 1], k * 3);
+    });
+    inst.geo.instanceCount = mine.length;
+    const mesh = new THREE.Mesh(inst.geo, exitMat(KIND_NO[kind]));
+    mesh.frustumCulled = false;
+    group.add(mesh);
   });
-  inst.geo.instanceCount = doors.length;
-  const doorMesh = new THREE.Mesh(inst.geo, exitMat);
-  doorMesh.frustumCulled = false;
-  group.add(doorMesh);
   // 엘리베이터: 가장 가까운 역의 색, 방향은 가장 가까운 출구를 따른다
-  const lifts = instanced(lift, Math.max(1, board.elevators.length / 2), { aInst: 4, aSign: 1 });
+  const lifts = instanced(lift, Math.max(1, board.elevators.length / 2), { aInst: 4, aSign: 1, aSize: 3 });
+  lifts.arr.aSize.fill(1);
   for (let k = 0; k < board.elevators.length / 2; k++) {
     const x = board.elevators[k * 2];
     const z = board.elevators[k * 2 + 1];
@@ -359,7 +447,7 @@ export function makeStations(board: Board) {
     lifts.arr.aInst.set([x, z, doors[best]?.[2] ?? 0, doors[best]?.[3] ?? 0], k * 4);
   }
   lifts.geo.instanceCount = board.elevators.length / 2;
-  const liftMesh = new THREE.Mesh(lifts.geo, exitMat);
+  const liftMesh = new THREE.Mesh(lifts.geo, exitMat(-1));
   liftMesh.frustumCulled = false;
   group.add(liftMesh);
 
