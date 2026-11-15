@@ -146,3 +146,23 @@ describe('막힌 길 피하기', () => {
   });
 });
 
+
+describe('처음 채우기', () => {
+  it('교차로 상자 안(상자 끝에서 3m 안쪽까지)에는 차를 놓지 않는다(엇갈린 방향 차가 처음부터 포개지지 않게)', () => {
+    // 가운데 (0, 0)에서 만나는 네 갈래 큰길(짧은 갈래로 차가 상자 근처에 많이 놓이게)
+    const g = buildCarGraph([
+      road([[0, 0], [60, 0]], { cls: 1, lanes: 4 }),
+      road([[0, 0], [-60, 0]], { cls: 1, lanes: 4 }),
+      road([[0, 0], [0, 60]], { cls: 1, lanes: 4 }),
+      road([[0, -60], [0, 0]], { cls: 1, lanes: 4 }),
+    ]);
+    const jn = makeJunctions(g);
+    const sim = makeCars(g, fixedProvider(0.3), 5, 400);
+    sim.fill(400);
+    const c = sim.cars;
+    expect(c.n).toBeGreaterThan(20);
+    // 가장 작은 상자 깊이 + 3m 안으로 노드에 다가간 차가 없다(차로 옆으로 떨어진 거리는 빼고 진행 방향 거리로 본다)
+    const box = Math.min(...g.map((e) => Math.min(jn.rIn[e.id], jn.rOut[e.id])));
+    for (let i = 0; i < c.n; i++) expect(Math.max(Math.abs(c.x[i]), Math.abs(c.z[i])), `${c.x[i]},${c.z[i]}`).toBeGreaterThan(box + 3 - 0.01);
+  });
+});

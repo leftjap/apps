@@ -535,8 +535,11 @@ export function makeCars(
     for (const e of edges) {
       if (!placeable[e.id] || closed[e.id]) continue;
       const perM = has ? real[e.id] / e.len : e.lanes;
-      for (let d = 0; d < e.len; d += 20) {
-        const L = Math.min(20, e.len - d);
+      // 교차로 상자와 그 앞뒤 3m 에는 놓지 않는다(상자 안에 엇갈린 방향 차가 처음부터 포개지지 않게, spawnHidden 과 같은 범위)
+      const lo = jn.rOut[e.id] + 3;
+      const hi = e.len - jn.rIn[e.id] - 3;
+      for (let d = lo; d < hi; d += 20) {
+        const L = Math.min(20, hi - d);
         pointAt(e.p, e.cum, d + L / 2, tmp);
         total += perM * L * (nearFocus(tmp[0], tmp[2]) ? 1 / ratioIn : 1 / ratioOut);
         piece.push(e.id, d, L, total);
