@@ -43,7 +43,7 @@ function pieces(cx: number, cz: number, r: number) {
 
 describe('찻길 바닥(교차로 면과 띠)', () => {
   for (const [name, cx, cz] of JUNCTIONS)
-    it(`${name}: 가운데 40m 안에서 띠·교차로 면이 두 겹 이상 덮는 넓이가 거의 없다`, () => {
+    it(`${name}: 가운데 40m 안에서 띠·교차로 면이 두 겹 이상 덮는 넓이가 0 이다`, () => {
       const { quads, faces } = pieces(cx, cz, 40);
       let two = 0;
       let all = 0;
@@ -56,8 +56,8 @@ describe('찻길 바닥(교차로 면과 띠)', () => {
           for (const f of faces) if (inside(f.outer, x, z) && !f.holes.some((h) => inside(h, x, z))) n++;
           if (n >= 2) two++;
         }
-      // 고치기 전 합정 48.6%·홍대입구 15.1%·동교동 26.3%·서교동 7.7%·망원 16.5%. 합정은 부풀려 그린 연결로 띠만 남았다(3단계에서 연결로 폭을 고친다)
-      expect((two / all) * 100).toBeLessThan(name === '합정역' ? 2.5 : 0.5);
+      // 고치기 전 합정 48.6%·홍대입구 15.1%·동교동 26.3%·서교동 7.7%·망원 16.5%
+      expect(two).toBe(0);
     });
 
   it('교차로 면의 외곽선은 스스로 엇갈리지 않는다', () => {

@@ -12,12 +12,14 @@ const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.
 const edges = buildCarGraph(board.roads);
 const jn = makeJunctions(edges);
 
-/** 구간 e 만 그린 흐름 띠의 가운데선 점들 */
+/** 구간 e 만 그린 흐름 띠가 놓인 길 가운데선 자리들(띠 점에서 차로 쪽으로 옮긴 거리를 되돌린다) */
 function drawn(e: (typeof edges)[number]): [number, number][] {
   const { mesh } = makeFlow([e], jn);
   const pos = mesh.geometry.getAttribute('position').array as Float32Array;
+  const nrm = mesh.geometry.getAttribute('aNorm').array as Float32Array;
+  const off = e.off0 + ((e.lanes - 1) / 2) * e.lw;
   const out: [number, number][] = [];
-  for (let i = 0; i < pos.length; i += 6) out.push([pos[i], pos[i + 2]]); // 점마다 좌우 두 꼭짓점을 같은 자리에 둔다
+  for (let i = 0; i < pos.length / 3; i += 2) out.push([pos[i * 3] - nrm[i * 2] * off, pos[i * 3 + 2] - nrm[i * 2 + 1] * off]); // 점마다 좌우 두 꼭짓점을 같은 자리에 둔다
   return out;
 }
 
@@ -30,17 +32,17 @@ describe('도로 흐름 띠', () => {
       const a = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
       const b = e.len - (jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
       const pts = drawn(e);
+      // 띠 조각의 양 끝이 놓인 가운데선 자리 가운데 하나라도 상자 안이면 그 조각 길이를 센다
+      const out = (x: number, z: number) => {
+        const { s } = nearestS(e.p, e.cum, x, z);
+        return s < a - 0.3 || s > b + 0.3;
+      };
       for (let i = 1; i < pts.length; i++) {
         const [ax, az] = pts[i - 1];
         const [bx, bz] = pts[i];
         const len = Math.hypot(bx - ax, bz - az);
         total += len;
-        const n = Math.max(1, Math.ceil(len / 0.5));
-        for (let k = 0; k < n; k++) {
-          const t = (k + 0.5) / n;
-          const { s } = nearestS(e.p, e.cum, ax + (bx - ax) * t, az + (bz - az) * t);
-          if (s < a - 0.3 || s > b + 0.3) inside += len / n;
-        }
+        if (out(ax, az) || out(bx, bz)) inside += len;
       }
     }
     expect(total).toBeGreaterThan(10000);
@@ -79,7 +81,6 @@ describe('도로 흐름 띠와 교차로 면', () => {
           if (inside(f.outer, x, z) && !f.holes.some((h) => inside(h, x, z)) && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => inside(f.outer, x + dx, z + dz))) inFace++;
       }
     }
-    // 남은 것은 합정 연결로(3022)·동교동 5535 조각 띠가 교차로 면과 겹친 자리(연결로 폭을 고치는 W1-3 에서 0 으로)
-    expect(inFace).toBeLessThanOrEqual(7);
+    expect(inFace).toBe(0);
   });
 });

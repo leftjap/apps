@@ -8,7 +8,7 @@ import { attachShops, buildingInfo, gableGuess, packInfo, pickTitle, rectFootpri
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
-import { analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
+import { analyseLink, analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
 import { railKind, railProfile, stitch } from './lib/rail.ts';
 import { buildSurface, surfacePolys, type Cross as SurfaceCross } from './lib/surface.ts';
 import { ringArea as loopArea } from './lib/contour.ts';
@@ -553,6 +553,10 @@ const ptsOf = (r: number[]): [number, number][] => {
   return out;
 };
 const roadLanes: (PieceLanes | null)[] = roads.map(() => null);
+/** 연결로(OSM *_link) 조각과, 그 가운데 경계선을 못 읽어 한 차로로 둔 조각 */
+const linkRoad = new Set<number>();
+for (const w of hw) if (/_link$/.test(w.tags!.highway)) for (const p of piecesOf.get(w.id) ?? []) linkRoad.add(p.road);
+const linkGuess = new Set<number>();
 const laneFile = new URL('./raw/seoul-lanes.json', import.meta.url);
 const tgis = existsSync(laneFile)
   ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]).filter((l) => l.eve === '001')
@@ -566,11 +570,21 @@ const tgis = existsSync(laneFile)
   const idx = laneIndex(segs);
   roads.forEach((r, i) => {
     if (r[0] > 4 || r[3]) return; // 골목보다 작은 길과 교량은 읽지 않는다
+    if (linkRoad.has(i)) {
+      // 연결로: 본선 차선을 세거나 같은 길 다른 조각 값을 빌리지 않고, 양쪽 경계선 사이 폭으로 읽는다(못 읽으면 한 차로)
+      const L = analyseLink(idx, ptsOf(r), !!(r[2] & 1));
+      if (L) roadLanes[i] = { ...L, off: Math.max(-2, Math.min(2, L.off)) };
+      else {
+        roadLanes[i] = { off: 0, lf: 1, lb: r[2] & 1 ? 0 : 1, lw: 3.5, ctype: 0, busR: false, busL: false, medBus: false, n: 0 };
+        linkGuess.add(i);
+      }
+      return;
+    }
     roadLanes[i] = analysePiece(idx, ptsOf(r), !!(r[2] & 1));
   });
 }
 /** 못 읽은 조각(교차로 사이 짧은 조각 등)은 같은 길의 가장 길게 읽은 조각 값을 쓴다. 가운데 자리는 노드 쪽 계산에 맡긴다 */
-const laneFilled = new Set<number>();
+const laneFilled = new Set<number>(linkGuess);
 for (const list of piecesOf.values()) {
   const done = list.filter((p) => roadLanes[p.road]).sort((a, b) => roadLanes[b.road]!.n - roadLanes[a.road]!.n);
   if (!done.length) continue;
@@ -630,7 +644,7 @@ roads.forEach((r, i) => {
       r[8 + k * 3] += dm(d[1]);
     }),
   );
-  console.log(`차선으로 읽은 조각 ${roadLanes.filter(Boolean).length - laneFilled.size}개(+같은 길에서 채운 ${laneFilled.size}개), 옮긴 노드 ${moved.size}개`);
+  console.log(`차선으로 읽은 조각 ${roadLanes.filter(Boolean).length - laneFilled.size}개(+같은 길에서 채운 ${laneFilled.size - linkGuess.size}개), 연결로 ${linkRoad.size}개(경계선으로 읽은 것 ${linkRoad.size - linkGuess.size}, 한 차로로 둔 것 ${linkGuess.size}), 옮긴 노드 ${moved.size}개`);
 }
 const laneWidth = (i: number) => {
   const L = roadLanes[i];

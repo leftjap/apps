@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { alignToRoad, isCurrent, mergeStages, minRect } from '../tools/lib/crosswalk.ts';
-import { analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg } from '../tools/lib/lanes.ts';
+import { analyseLink, analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg } from '../tools/lib/lanes.ts';
 import type { Corner } from '../src/data/corners.ts';
 
 describe('횡단보도 면 → 축', () => {
@@ -68,6 +68,28 @@ describe('2021 면 가운데 지금도 있는 것', () => {
 
 // 동쪽으로 뻗은 길(가운데선 z = 0)과 그 위의 차선. 진행 방향(+x) 오른쪽이 +z
 const line = (z: number, k: string, k2 = '001'): LaneSeg => ({ ax: -200, az: z, bx: 200, bz: z, k, k2 });
+
+describe('연결로(OSM *_link) 폭 읽기', () => {
+  it('양쪽 가장 가까운 경계선 사이를 찻길로 보고 차로 수·폭을 정한다(옆 본선 차선은 세지 않는다)', () => {
+    // 연결로 가운데선 z = 0, 왼쪽 가장자리구역선 z = −2.3, 오른쪽 주차금지선 z = 2.7(폭 5m 한 차로). 교통섬 너머 본선 차선이 −8 ~ −20
+    const idx = laneIndex([line(-2.3, '007'), line(2.7, '009'), line(-8, '009'), line(-11, '006', '002'), line(-14, '006', '002'), line(-17, '006', '002'), line(-20, '001', '003')]);
+    const L = analyseLink(idx, [[0, 0], [60, 0]], true)!;
+    expect(L.lf).toBe(1);
+    expect(L.lb).toBe(0);
+    expect(L.lf * L.lw + 1).toBeCloseTo(5, 1);
+    expect(L.off).toBeCloseTo(0.2, 1);
+    expect(L.medBus).toBe(false);
+  });
+  it('가운데 차선이 있으면 두 차로, 경계선을 못 찾으면 null', () => {
+    const idx = laneIndex([line(-3.5, '007'), line(-0.2, '006', '002'), line(3.2, '010')]);
+    const L = analyseLink(idx, [[0, 0], [60, 0]], true)!;
+    expect(L.lf).toBe(2);
+    expect(L.lf * L.lw + 1).toBeCloseTo(6.7, 1);
+    expect(analyseLink(laneIndex([line(2.7, '009')]), [[0, 0], [60, 0]], true)).toBeNull();
+    // 차선 없이 9.5m 면 두 차로
+    expect(analyseLink(laneIndex([line(-4.7, '007'), line(4.8, '009')]), [[0, 0], [60, 0]], true)!.lf).toBe(2);
+  });
+});
 
 describe('차선으로 길 모양 읽기', () => {
   it('양방향 길: 중앙선 자리로 가운데선을 옮기고, 방향별 차로 수와 차로 폭을 센다', () => {

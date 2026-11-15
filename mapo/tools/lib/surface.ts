@@ -165,7 +165,7 @@ export function buildSurface(roads: Road[], radii: number[], crosses: Cross[], s
             const kx = ax + ux * t;
             const kz = az + uz * t;
             const tb = (kx - nd.x) * vx + (kz - nd.z) * vz;
-            if (t > 0 && tb > 0 && t < 0.9 * len(a >> 1) && tb < 0.9 * len(b >> 1)) {
+            if (t > 0 && tb > 0 && t < 1.5 * len(a >> 1) && tb < 1.5 * len(b >> 1)) {
               sec.da = t;
               sec.db = tb;
               sec.pts = [kx, kz];

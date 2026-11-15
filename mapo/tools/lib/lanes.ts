@@ -401,3 +401,51 @@ export function cornerRadius(idx: LaneIndex, c: { kx: number; kz: number; ax: nu
   if (!Number.isFinite(best)) return NaN;
   return best / (1 / Math.sin(c.th / 2) - 1);
 }
+
+/** 연결로 양쪽 경계로 보는 선: 연석 쪽 선·가장자리구역선, 중앙선, 중앙버스전용차선, 진로변경제한선(본선과 나뉘는 실선) */
+const LINK_EDGE = new Set([...CURB, ...YELLOW, ...BUS_MED, '008']);
+const LINK_LANE = new Set(['006', '005']);
+
+/**
+ * 연결로(OSM *_link) 조각: 4m 마다 단면에서 가운데선 양쪽으로 가장 가까운 경계선(7.5m 안)을 찾아 그 사이를 찻길로 본다.
+ * 사이에 있는 차선으로 차로 수를 세고(차선 없이 넓으면 4.2m 마다 한 차로), 본선과 같은 단면에 걸려도 교통섬·실선 너머의 본선 차선은 세지 않는다. 읽은 단면이 둘 미만이면 null
+ */
+export function analyseLink(idx: LaneIndex, pts: [number, number][], oneway: boolean): PieceLanes | null {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = cum[cum.length - 1];
+  const at = (s: number) => {
+    let i = 1;
+    while (i < pts.length - 1 && cum[i] < s) i++;
+    const t = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1);
+    const [a, b] = [pts[i - 1], pts[i]];
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return { x: a[0] + (b[0] - a[0]) * t, z: a[1] + (b[1] - a[1]) * t, ux: (b[0] - a[0]) / L, uz: (b[1] - a[1]) / L };
+  };
+  const ss = total < 12 ? [total / 2] : Array.from({ length: Math.floor((total - 8) / 4) + 1 }, (_, k) => 4 + k * 4);
+  const rows: { w: number; lanes: number; mid: number }[] = [];
+  for (const s of ss) {
+    const p = at(s);
+    const hits = transect(idx, p.x, p.z, p.ux, p.uz);
+    const right = hits.filter((h) => LINK_EDGE.has(h.k) && h.t > 0.6 && h.t <= 7.5).map((h) => h.t);
+    const left = hits.filter((h) => LINK_EDGE.has(h.k) && h.t < -0.6 && h.t >= -7.5).map((h) => h.t);
+    if (!right.length || !left.length) continue;
+    const r = Math.min(...right);
+    const l = Math.max(...left);
+    let lanes = 1;
+    let prev = l;
+    for (const h of hits.filter((h) => LINK_LANE.has(h.k) && h.t > l + 1.5 && h.t < r - 1.5).sort((a, b) => a.t - b.t))
+      if (h.t - prev >= 2.3) (lanes++, (prev = h.t));
+    rows.push({ w: r - l, lanes, mid: (r + l) / 2 });
+  }
+  if (rows.length < 2) return null;
+  const counted = mode(rows.map((r) => r.lanes));
+  const pick = rows.filter((r) => r.lanes === counted);
+  const w = median(pick.map((r) => r.w));
+  // 차선 없이 넓은 연결로(차로 폭이 4m 를 크게 넘는 것)는 4.2m 마다 한 차로로 본다
+  const lanes = Math.max(counted, Math.round((w - 1) / 4.2));
+  const lw = (w - 1) / lanes;
+  const lf = oneway ? lanes : Math.max(1, Math.ceil(lanes / 2));
+  const lb = oneway ? 0 : Math.max(1, lanes - lf);
+  return { off: median(pick.map((r) => r.mid)), lf, lb, lw: oneway ? lw : (w - 1) / (lf + lb), ctype: 0, busR: false, busL: false, medBus: false, n: rows.length };
+}
