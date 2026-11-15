@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { BOARD_R, toXZ } from '../src/geo.ts';
 import { cumLen, nearestS, pointAt } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
-import { buildingInfo, packInfo } from './lib/building.ts';
+import { buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title } from './lib/building.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
@@ -117,17 +117,88 @@ const pushBuilding = (h: number, lm: number, pts: [number, number][], info: Retu
   binfo.push(packInfo(info));
   footprints.push(pts);
 };
+// 서울시 건물 자료(tools/buildings.py 로 받는다): 건축물대장 표제부(2026)는 OSM 도로명주소로 잇고, 수치지도 건물 점(2018)은 외곽선 안에 든 것의 층수를 쓴다
+const titleFile = new URL('./raw/seoul-bldg-titles.json', import.meta.url);
+const titleIdx = new Map<string, Title[]>();
+if (existsSync(titleFile))
+  for (const r of JSON.parse(readFileSync(titleFile, 'utf8')).titles as Record<string, string>[]) {
+    if (r['주부속구분코드명'] !== '주건축물' || !r['새주소도로코드명']) continue;
+    const key = `${r['새주소도로코드명']}|${+r['새주소주지번'] || 0}|${+r['새주소부지번'] || 0}`;
+    const t: Title = { use: r['주용도코드명'], etc: r['기타용도내용'], floors: +r['지상층수'] || 0, height: +r['높이'] || 0, area: +r['건축면적'] || 0, households: +r['세대수'] || 0, families: +r['가구수'] || 0, dong: r['동명'] };
+    (titleIdx.get(key) ?? titleIdx.set(key, []).get(key)!).push(t);
+  }
+const titleOf = (tags: Record<string, string>, area: number): Title | null => {
+  const hn = (tags['addr:housenumber'] ?? '').split('-').map(Number);
+  if (!tags['addr:street'] || !(hn[0] > 0)) return null;
+  const list = titleIdx.get(`${tags['addr:street']}|${hn[0]}|${hn[1] || 0}`);
+  return list ? pickTitle(list, area, tags.name ?? '') : null;
+};
+const pointFile = new URL('./raw/seoul-bldg-points.json', import.meta.url);
+/** 수치지도 건물 점 [x, z, 층수, 바닥 면적, 이 점이 든 판 건물이 있는가] */
+const bldgPoints: { x: number; z: number; floors: number; area: number; used: boolean }[] = existsSync(pointFile)
+  ? (JSON.parse(readFileSync(pointFile, 'utf8')).points as [number, number, number, number, string][]).map(([lat, lon, floors, area]) => {
+      const [x, z] = toXZ(lat, lon);
+      return { x, z, floors, area, used: false };
+    })
+  : [];
+const PCELL = 25;
+const pointGrid = new Map<string, number[]>();
+bldgPoints.forEach((p, i) => {
+  const k = `${Math.floor(p.x / PCELL)},${Math.floor(p.z / PCELL)}`;
+  (pointGrid.get(k) ?? pointGrid.set(k, []).get(k)!).push(i);
+});
+/** 외곽선 pts 안에 든 수치지도 점 가운데 바닥이 가장 넓은 것의 층수(없으면 0). 든 점은 쓴 것으로 표시한다 */
+const pointFloors = (pts: [number, number][]): number => {
+  const xs = pts.map((p) => p[0]);
+  const zs = pts.map((p) => p[1]);
+  const ring = [[...pts, pts[0]]];
+  let best = -1;
+  for (let gx = Math.floor(Math.min(...xs) / PCELL); gx <= Math.floor(Math.max(...xs) / PCELL); gx++)
+    for (let gz = Math.floor(Math.min(...zs) / PCELL); gz <= Math.floor(Math.max(...zs) / PCELL); gz++)
+      for (const i of pointGrid.get(`${gx},${gz}`) ?? []) {
+        const p = bldgPoints[i];
+        if (!inside(ring, p.x, p.z)) continue;
+        p.used = true;
+        if (p.floors > 0 && (best < 0 || p.area > bldgPoints[best].area)) best = i;
+      }
+  return best < 0 ? 0 : bldgPoints[best].floors;
+};
+const bsrc = { title: 0, tag: 0, point: 0, guess: 0 };
+/** 높이 자료 고르기: 표제부(2026) → OSM 높이·층수 태그 → 수치지도 점 층수(2018) → 추정. 표제부 용도가 있으면 그것을 쓴다 */
+const withSources = (tags: Record<string, string>, pts: [number, number][], area: number): Record<string, string> => {
+  const t = titleOf(tags, area);
+  const fl = pointFloors(pts);
+  if (t && t.floors > 0) {
+    bsrc.title++;
+    const tt = titleTags(t);
+    const out = { ...tags, ...tt };
+    if (tt.building === 'yes') out.building = tags.building ?? 'yes';
+    if (!tt.height) delete out.height;
+    return out;
+  }
+  if (parseFloat(tags.height ?? '') > 0 || parseFloat(tags['building:levels'] ?? '') > 0) {
+    bsrc.tag++;
+    return tags;
+  }
+  if (fl > 0) {
+    bsrc.point++;
+    return { ...tags, 'building:levels': String(fl) };
+  }
+  bsrc.guess++;
+  return tags;
+};
 for (const el of raw('buildings')) {
-  const tags = el.tags ?? {};
-  if (tags.location === 'underground' || Number(tags.layer) < 0) continue;
+  const tags0 = el.tags ?? {};
   const outers =
     el.type === 'way' ? [el.geometry!] : (el.members ?? []).filter((m) => m.role === 'outer' && m.geometry).map((m) => m.geometry!);
+  if (tags0.location === 'underground' || Number(tags0.layer) < 0) continue;
   for (const g of outers) {
     const ring = cleanRing(g);
     if (!ring) continue;
     const { pts, area, cx, cz } = ring;
+    const tags = withSources(tags0, pts, Math.abs(area));
     const h = Math.max(3, Math.min(260, estimateHeight(tags, Math.abs(area), el.id)));
-    const isSchool = schoolSites.some((sc) => inside([sc.ring], cx, cz)) || tags.building === 'school' || /(초등|중|고등)학교/.test(tags.name ?? '');
+    const isSchool = schoolSites.some((sc) => inside([sc.ring], cx, cz)) || tags0.building === 'school' || /(초등|중|고등)학교/.test(tags.name ?? '');
     const lm = inside(hongikRings, cx, cz) ? 1 : isSchool ? 6 : (NAMED_LM.find(([re]) => re.test(tags.name ?? ''))?.[1] ?? 0);
     // 부지 자료가 없는 학교(이름이 붙은 학교 건물): 건물 외곽선을 부지로 삼는다
     if (/(초등|중|고등)학교$/.test(tags.name ?? '') && !schoolSites.some((sc) => inside([sc.ring], cx, cz)))
@@ -204,6 +275,11 @@ const osmBuildings = buildings.length;
       if (near.some((f) => inside([[...f, f[0]]], cx, cz) || inside([ring], f[0][0], f[0][1]))) continue;
       if (area < 0) pts.reverse();
       const id = strHash(r.id);
+      if (!(r.height && r.height > 0) && !(r.floors && r.floors > 0)) {
+        const fl = pointFloors(pts);
+        if (fl > 0) (r.floors = fl), bsrc.point++;
+        else bsrc.guess++;
+      } else bsrc.tag++;
       const h = r.height && r.height > 0 ? r.height : r.floors && r.floors > 0 ? r.floors * 3.2 + 1 : estimateHeight({ building: 'residential' }, Math.abs(area), id);
       const isSchool = schoolSites.some((sc) => inside([sc.ring], cx, cz));
       const tags: Record<string, string> = { building: r.class ?? '' };
@@ -781,6 +857,94 @@ const edgeAt = (i: number, s: number, side: number) => {
   const t = Math.max(0, Math.min(1, (s - p.s[k]) / (p.s[k + 1] - p.s[k] || 1)));
   return p.v[k] + (p.v[k + 1] - p.v[k]) * t;
 };
+
+// ───────────────────────── 건물: 외곽선 자료에 없는 건물 ─────────────────────────
+// 수치지도 건물 점(2018) 가운데 어느 판 건물에도 들지 않은 것(바닥 30㎡ 이상)은 OSM·Overture 에 외곽선이 없는 건물이다(망원동 서쪽에 많다).
+// 그 자리에 바닥 면적만큼의 직사각형(긴 변 : 짧은 변 = 1.25)을 가장 가까운 길(40m 안)과 나란히 세운다. 이미 있는 건물과 겹치면 70·50·35%로 줄여 보고(15㎡ 아래로는 줄이지 않는다), 그래도 겹치면 세우지 않는다.
+// 점이 찻길 안에 떨어지면(점 위치 오차) 세우지 않는다. 외곽선은 실제 모양이 아니라 어림이다(설계 23절).
+let pointBuildings = 0;
+{
+  const CELL = 40;
+  const fgrid = new Map<string, [number, number][][]>();
+  const addF = (f: [number, number][]) => {
+    const xs = f.map((p) => p[0]);
+    const zs = f.map((p) => p[1]);
+    for (let gx = Math.floor(Math.min(...xs) / CELL); gx <= Math.floor(Math.max(...xs) / CELL); gx++)
+      for (let gz = Math.floor(Math.min(...zs) / CELL); gz <= Math.floor(Math.max(...zs) / CELL); gz++) {
+        const k = `${gx},${gz}`;
+        (fgrid.get(k) ?? fgrid.set(k, []).get(k)!).push(f);
+      }
+  };
+  footprints.forEach(addF);
+  const near = (x: number, z: number) => fgrid.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`) ?? [];
+  const overlaps = (r: [number, number][]) => {
+    const ring = [[...r, r[0]]];
+    const probe: [number, number][] = [...r, [(r[0][0] + r[2][0]) / 2, (r[0][1] + r[2][1]) / 2]];
+    for (let k = 0; k < 4; k++) probe.push([(r[k][0] + r[(k + 1) % 4][0]) / 2, (r[k][1] + r[(k + 1) % 4][1]) / 2]);
+    for (const [x, z] of probe) for (const f of near(x, z)) if (inside([[...f, f[0]]], x, z)) return true;
+    for (const [x, z] of probe) for (const f of near(x, z)) if (f.some(([fx, fz]) => inside(ring, fx, fz))) return true;
+    return false;
+  };
+  const RC = 40;
+  /** 길 조각 꼭짓점 사이 [ax, az, bx, bz, 조각 번호, 시작 s] */
+  const rgrid = new Map<string, [number, number, number, number, number, number][]>();
+  roads.forEach((r, i) => {
+    if (r[3]) return;
+    const P = ptsOf(r);
+    let s0 = 0;
+    for (let k = 0; k + 1 < P.length; k++) {
+      const key = `${Math.floor((P[k][0] + P[k + 1][0]) / 2 / RC)},${Math.floor((P[k][1] + P[k + 1][1]) / 2 / RC)}`;
+      (rgrid.get(key) ?? rgrid.set(key, []).get(key)!).push([P[k][0], P[k][1], P[k + 1][0], P[k + 1][1], i, s0]);
+      s0 += Math.hypot(P[k + 1][0] - P[k][0], P[k + 1][1] - P[k][1]);
+    }
+  });
+  /** 가장 가까운 길(40m 안) 방향과, 점이 그 길(등급 5 이하, 땅 위)의 찻길 안에 드는가 */
+  const roadDir = (x: number, z: number): { dir: [number, number]; onRoad: boolean } => {
+    let best = 40;
+    let dir: [number, number] = [1, 0];
+    let onRoad = false;
+    for (let gx = -1; gx <= 1; gx++)
+      for (let gz = -1; gz <= 1; gz++)
+        for (const [ax, az, bx, bz, i, s0] of rgrid.get(`${Math.floor(x / RC) + gx},${Math.floor(z / RC) + gz}`) ?? []) {
+          const d = segDist(x, z, ax, az, bx, bz);
+          const L = Math.hypot(bx - ax, bz - az);
+          if (L < 1) continue;
+          if (d < best) (best = d), (dir = [(bx - ax) / L, (bz - az) / L]);
+          if (roads[i][0] > 5 || roads[i].some((v, k) => k >= 6 && k % 3 === 1 && v > 3)) continue;
+          const t = ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / (L * L);
+          if (t < 0 || t > 1) continue;
+          const side = Math.sign((x - ax) * -(bz - az) + (z - az) * (bx - ax)) || 1;
+          if (d < edgeAt(i, s0 + t * L, side)) onRoad = true;
+        }
+    return { dir, onRoad };
+  };
+  for (const p of bldgPoints) {
+    if (p.used || p.area < 30 || !inBoard(p.x, p.z, 6)) continue;
+    if (near(p.x, p.z).some((f) => inside([[...f, f[0]]], p.x, p.z))) continue;
+    const { dir: [ux, uz], onRoad } = roadDir(p.x, p.z);
+    if (onRoad) continue;
+    let r: [number, number][] | null = null;
+    for (const k of [1, 0.7, 0.5, 0.35]) {
+      if (p.area * k < 15) break;
+      const c = rectFootprint(p.x, p.z, p.area * k, ux, uz, 1.25);
+      if (!overlaps(c)) {
+        r = c;
+        break;
+      }
+    }
+    if (!r || !r.every(([x, z]) => inBoard(x, z, 4))) continue;
+    const id = Math.round(p.x * 10) * 65536 + Math.round(p.z * 10);
+    const tags: Record<string, string> = { building: 'yes' };
+    if (p.floors > 0) tags['building:levels'] = String(p.floors);
+    // 층수를 모르는 작은 바닥(60㎡ 미만)은 창고·부속 건물이 많아 1층으로 둔다
+    const h = p.floors > 0 ? p.floors * 3.2 + 1 : p.area < 60 ? 4.2 : estimateHeight({ building: 'residential' }, p.area, id);
+    const isSchool = schoolSites.some((sc) => inside([sc.ring], p.x, p.z));
+    pushBuilding(Math.max(3, Math.min(260, h)), isSchool ? 6 : 0, r, buildingInfo(tags));
+    addF(r);
+    pointBuildings++;
+  }
+  console.log(`건물 높이 자료: 표제부 ${bsrc.title}, 높이·층수 태그 ${bsrc.tag}, 수치지도 점 ${bsrc.point}, 추정 ${bsrc.guess}. 외곽선 자료에 없어 수치지도 점 자리에 세운 건물 ${pointBuildings}동`);
+}
 
 // ───────────────────────── 버스 노선 ─────────────────────────
 // 관계에 속한 길들의 조각만 따라 이어 달릴 수 있는 길을 찾는다(관계의 길 순서는 뒤섞인 경우가 많아 쓰지 않는다).
@@ -1360,7 +1524,7 @@ writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));
 
 const waterPx = mask.reduce((s, v, i) => s + (i % 4 === 0 && v ? 1 : 0), 0);
-console.log(`Overture(OSM 밖) 건물 ${buildings.length - osmBuildings}동 더함`);
+console.log(`Overture(OSM 밖) 건물 ${buildings.length - osmBuildings - pointBuildings}동 더함`);
 console.log(`건물 ${buildings.length}동 (홍익대 ${buildings.filter((b) => b[1] === 1).length}동)`);
 console.log(`도로 ${roads.length}조각, 교량 조각 ${roads.filter((r) => r[3]).length}, 가장 높은 지점 ${Math.max(...roads.flatMap((r) => r.filter((_, i) => i >= 6 && i % 3 === 1))) / 10}m`);
 console.log(`물 ${((waterPx * 4) / 1e6).toFixed(2)}㎢, 나무 ${trees.length / 2}그루, 출구 ${exits.length}곳, 역 ${stations.map((s) => s.name).join('·')}`);

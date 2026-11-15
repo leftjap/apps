@@ -37,3 +37,58 @@ export function buildingInfo(tags: Record<string, string>): BuildingInfo {
 export function packInfo(i: BuildingInfo): number {
   return i.use + i.levels * 8 + i.roof * 1024 + Math.round(i.minH * 10) * 8192;
 }
+
+/** 서울시 건축물대장 표제부 한 건(tools/buildings.py) */
+export interface Title {
+  /** 주용도코드명(단독주택, 공동주택, 제2종근린생활시설 등) */
+  use: string;
+  /** 기타용도내용(다가구주택, 아파트 등) */
+  etc: string;
+  floors: number;
+  /** 높이(m). 0 = 모름 */
+  height: number;
+  /** 건축면적(㎡) */
+  area: number;
+  households: number;
+  families: number;
+  dong: string;
+}
+
+const TITLE_USE: [RegExp, string][] = [
+  [/종교/, 'church'],
+  [/업무|숙박|방송통신/, 'office'],
+  [/교육|의료|노유자|문화|운수|국방|공공/, 'civic'],
+  [/근린생활|판매|위락|운동|자동차|창고|공장|관광/, 'commercial'],
+];
+
+/** 표제부를 OSM 꼴 건물 태그로: 용도(building), 지상 층수, 층수에 견줘 그럴듯한(층당 2.2~6m) 높이 */
+export function titleTags(t: Title): Record<string, string> {
+  let building = TITLE_USE.find(([re]) => re.test(t.use))?.[1] ?? 'yes';
+  if (t.use === '단독주택') building = /다가구|다중/.test(t.etc) || t.families >= 3 ? 'residential' : 'house';
+  else if (t.use === '공동주택') building = /아파트/.test(t.etc) || t.floors >= 6 ? 'apartments' : 'residential';
+  const out: Record<string, string> = { building };
+  if (t.floors > 0) out['building:levels'] = String(t.floors);
+  if (t.floors > 0 && t.height >= t.floors * 2.2 && t.height <= t.floors * 6 + 4) out.height = String(t.height);
+  return out;
+}
+
+/** 한 주소의 표제부 여럿 가운데 이 건물 것: 동명이 건물 이름과 같으면 그것, 아니면 건축면적이 바닥 면적에 가장 가까운 것 */
+export function pickTitle(list: Title[], footprint: number, name: string): Title {
+  const byName = name ? list.find((t) => t.dong && (t.dong === name || name.endsWith(t.dong))) : undefined;
+  if (byName) return byName;
+  return list.reduce((a, b) => (Math.abs(b.area - footprint) < Math.abs(a.area - footprint) ? b : a));
+}
+
+/** 가운데 (cx, cz), 넓이 area, 긴 변 방향 (ux, uz), 긴 변 : 짧은 변 = aspect 인 직사각형(판 외곽선과 같은 방향, 넓이 양수) */
+export function rectFootprint(cx: number, cz: number, area: number, ux: number, uz: number, aspect: number): [number, number][] {
+  const b = Math.sqrt(area / (4 * aspect));
+  const a = aspect * b;
+  const nx = -uz;
+  const nz = ux;
+  return [
+    [cx - ux * a - nx * b, cz - uz * a - nz * b],
+    [cx + ux * a - nx * b, cz + uz * a - nz * b],
+    [cx + ux * a + nx * b, cz + uz * a + nz * b],
+    [cx - ux * a + nx * b, cz - uz * a + nz * b],
+  ];
+}
