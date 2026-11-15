@@ -9,7 +9,7 @@ export interface BoardJson {
   b: number[][];
   /** 건물마다 용도·층수·지붕·아래 높이를 묶은 숫자(tools/lib/building.ts packInfo). 0 = 모름 */
   bi?: number[];
-  /** 가게가 붙은 건물 [건물 번호, 가장 많은 종류(1 카페 2 식당 3 주점 4 편의점), 가게 수, ...] (서울시 식품 인허가) */
+  /** 가게가 붙은 건물 [건물 번호, 1층·지하 가게 종류, 2층 위 가게 종류, 층 표시, 가게 수, ...] (소상공인 상가(상권)정보). 종류 0 없음 1 카페 2 음식점 3 주점 4 편의점 5 병원·약국 6 소매·생활, 층 표시 1 지하 2 1층 4 2층 8 3층 위 */
   sh?: number[];
   /** 역 둘레의 지하↔지상 엘리베이터 [x,z, ...] */
   ev?: number[];
@@ -68,8 +68,10 @@ export function unpackInfo(v: number): BuildingInfo {
 /** 용도·층수·지붕·아래 높이는 구운 자료에 없으면 비어 있다 */
 export interface Building extends Partial<BuildingInfo> {
   h: number;
-  /** 붙은 가게의 가장 많은 종류(1 카페 2 식당 3 주점 4 편의점, 없으면 없음)와 가게 수 */
+  /** 1층·지하 가게의 가장 많은 종류(0·없음 = 가게 없음, 1 카페 2 음식점 3 주점 4 편의점 5 병원·약국 6 소매·생활), 2층 위 가게 종류, 층 표시(1 지하 2 1층 4 2층 8 3층 위), 가게 수 */
   shop?: number;
+  shopUp?: number;
+  shopMask?: number;
   shops?: number;
   /** 0 = 일반, 1 = 홍익대 */
   lm: number;
@@ -237,7 +239,7 @@ export function decodeBoard(j: BoardJson): Board {
 }
 
 function shopsOn(list: Building[], sh: number[]): Building[] {
-  for (let i = 0; i + 2 < sh.length; i += 3) Object.assign(list[sh[i]], { shop: sh[i + 1], shops: sh[i + 2] });
+  for (let i = 0; i + 4 < sh.length; i += 5) Object.assign(list[sh[i]], { shop: sh[i + 1], shopUp: sh[i + 2], shopMask: sh[i + 3], shops: sh[i + 4] });
   return list;
 }
 

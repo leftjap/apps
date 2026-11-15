@@ -4,7 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { BOARD_R, toXZ } from '../src/geo.ts';
 import { cumLen, nearestS, pointAt } from '../src/poly.ts';
 import { rampHeight } from './lib/elevate.ts';
-import { attachShops, buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title } from './lib/building.ts';
+import { attachShops, buildingInfo, gableGuess, packInfo, pickTitle, rectFootprint, titleTags, type Title } from './lib/building.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
@@ -167,10 +167,10 @@ const pointFloors = (pts: [number, number][]): number => {
 // 외곽선은 꼭짓점을 0.4m 허용 오차로 줄인다. OSM 건물의 층수·용도는 표제부를 주소로 잇지 못했을 때 이 자료에서 가져오고(외곽선이 중심을 품고 넓이가 0.5~2배인 것),
 // OSM·Overture 에 없는 건물은 아래(외곽선 자료에 없는 건물)에서 이 외곽선으로 세운다. 파일이 없으면 건너뛴다.
 const gisFile = new URL('./raw/gis-buildings.json', import.meta.url);
-type Gis = { pts: [number, number][]; area: number; cx: number; cz: number; t: Title; used: boolean };
+type Gis = { pts: [number, number][]; area: number; cx: number; cz: number; t: Title; year: number; used: boolean };
 const gisList: Gis[] = [];
 if (existsSync(gisFile))
-  for (const b of JSON.parse(readFileSync(gisFile, 'utf8')).buildings as { f: number; h: number; use: string; dong: string; r: [number, number][][] }[]) {
+  for (const b of JSON.parse(readFileSync(gisFile, 'utf8')).buildings as { f: number; h: number; use: string; dong: string; date: string; r: [number, number][][] }[]) {
     const ring = cleanRing(b.r[0].map(([lat, lon]) => ({ lat, lon })));
     if (!ring) continue;
     const pts = simplifyRing([...ring.pts, ring.pts[0]], 0.4).slice(0, -1) as [number, number][];
@@ -180,7 +180,7 @@ if (existsSync(gisFile))
     if (area / 2 < 12) continue;
     // 단독주택 가운데 3층 넘는 것은 대개 다가구주택이다(GIS 자료에는 기타용도가 없다)
     const t: Title = { use: b.use, etc: b.use === '단독주택' && b.f >= 3 ? '다가구주택' : '', floors: b.f, height: b.h, area: area / 2, households: 0, families: 0, dong: b.dong };
-    gisList.push({ pts, area: area / 2, cx: ring.cx, cz: ring.cz, t, used: false });
+    gisList.push({ pts, area: area / 2, cx: ring.cx, cz: ring.cz, t, year: parseInt((b.date ?? '').slice(0, 4)) || 0, used: false });
   }
 const GCELL = 40;
 const gisGrid = new Map<string, number[]>();
@@ -206,7 +206,13 @@ const gisAt = (x: number, z: number, area: number): Gis | null => {
 const bsrc = { title: 0, gis: 0, tag: 0, point: 0, guess: 0 };
 /** 높이 자료 고르기: 표제부(2026) → OSM 높이·층수 태그 → GIS건물통합정보(외곽선으로 이음) → 수치지도 점 층수(2018) → 추정. 표제부·GIS 용도가 있으면 그것을 쓴다.
  *  GIS 는 위치로 잇기 때문에 주상복합처럼 저층부와 탑이 따로 그려진 곳에서 엉뚱한 동과 이어질 수 있어 OSM 태그 뒤에 둔다(메세나폴리스 102동이 4층 저층부 값을 받았다) */
+/** 지붕 태그가 없는 오래된 저층 단독주택 일부에 박공(GIS 사용승인일, tools/lib/building.ts gableGuess) */
 const withSources = (tags: Record<string, string>, pts: [number, number][], area: number): Record<string, string> => {
+  const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+  const cz = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  return gableGuess(withSources0(tags, pts, area), gisAt(cx, cz, area)?.year ?? 0, Math.round(cx * 10) * 65536 + Math.round(cz * 10));
+};
+const withSources0 = (tags: Record<string, string>, pts: [number, number][], area: number): Record<string, string> => {
   const t0 = titleOf(tags, area);
   const fl = pointFloors(pts);
   const g = gisAt(pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length, area);
@@ -372,9 +378,8 @@ let gisBuildings = 0;
     if (hit) continue;
     const fl = g.t.floors > 0 ? g.t.floors : pointFloors(g.pts);
     bsrc[g.t.floors > 0 ? 'gis' : fl > 0 ? 'point' : 'guess']++;
-    const tags = titleTags(g.t);
-    if (fl > 0) tags['building:levels'] = String(fl);
     const id = Math.round(g.cx * 10) * 65536 + Math.round(g.cz * 10);
+    const tags = gableGuess({ ...titleTags(g.t), ...(fl > 0 ? { 'building:levels': String(fl) } : {}) }, g.year, id);
     const h = fl > 0 ? estimateHeight(tags, g.area, id) : g.area < 60 ? 4.2 : estimateHeight({ ...tags, building: tags.building === 'yes' ? 'residential' : tags.building }, g.area, id);
     const isSchool = schoolSites.some((sc) => inside([sc.ring], g.cx, g.cz));
     pushBuilding(Math.max(3, Math.min(260, h)), isSchool ? 6 : 0, g.pts, buildingInfo(tags));
@@ -1589,17 +1594,17 @@ const picnic: number[] = [];
   }
 }
 
-// 가게(tools/shops.py, 서울시 일반·휴게음식점 인허가): 외곽선 안이거나 12m 안 가장 가까운 건물에 붙인다. 화면은 이 건물에만 1층 가게 유리·간판을 그리고 업종별로 불을 끈다
+// 가게(tools/shops.py, 소상공인시장진흥공단 상가(상권)정보): 외곽선 안이거나 12m 안 가장 가까운 건물에 붙인다. 화면은 이 건물에만 실제 층(지하·1층·2층·3층 위)에 맞춰 가게 유리·간판을 그리고 업종별로 불을 끈다
 const shopList: number[] = [];
 {
   const file = new URL('./raw/seoul-shops.json', import.meta.url);
   if (existsSync(file)) {
-    const pts = (JSON.parse(readFileSync(file, 'utf8')).shops as [number, number, number][]).map(([lat, lon, k]): [number, number, number] => [...toXZ(lat, lon), k]);
+    const pts = (JSON.parse(readFileSync(file, 'utf8')).shops as [number, number, number, number][]).map(([lat, lon, k, f]): [number, number, number, number] => [...toXZ(lat, lon), k, f]);
     const got = attachShops(pts, footprints, 12);
-    for (const [i, { kind, n }] of [...got].sort((a, b) => a[0] - b[0])) shopList.push(i, kind, n);
-    const by = [0, 0, 0, 0, 0];
+    for (const [i, v] of [...got].sort((a, b) => a[0] - b[0])) shopList.push(i, v.kind, v.up, v.mask, v.n);
+    const by = [0, 0, 0, 0, 0, 0, 0];
     for (const { kind } of got.values()) by[kind]++;
-    console.log(`가게 ${pts.length}곳을 건물 ${got.size}동에 붙임(카페 ${by[1]}·식당 ${by[2]}·주점 ${by[3]}·편의점 ${by[4]}동), 못 붙인 가게 ${pts.length - [...got.values()].reduce((a, v) => a + v.n, 0)}곳`);
+    console.log(`가게 ${pts.length}곳을 건물 ${got.size}동에 붙임(1층 카페 ${by[1]}·음식점 ${by[2]}·주점 ${by[3]}·편의점 ${by[4]}·병원약국 ${by[5]}·소매생활 ${by[6]}동, 위층 가게만 ${by[0]}동), 못 붙인 가게 ${pts.length - [...got.values()].reduce((a, v) => a + v.n, 0)}곳`);
   }
 }
 const out = {

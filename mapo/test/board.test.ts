@@ -17,11 +17,13 @@ describe('구운 모형판 자료', () => {
       expect(b.h).toBeGreaterThan(2);
     }
   });
-  it('서울시 인허가 가게가 붙은 건물이 있다(종류 1~4)', () => {
+  it('상가(상권)정보 가게가 붙은 건물이 있다(종류 1~6)', () => {
     const shops = board.buildings.filter((b) => b.shop);
     expect(shops.length).toBeGreaterThan(2000);
-    for (const b of shops) expect([1, 2, 3, 4]).toContain(b.shop);
+    for (const b of shops) expect([1, 2, 3, 4, 5, 6]).toContain(b.shop);
     expect(shops.some((b) => b.shop === 3)).toBe(true);
+    // 2층 위 가게만 있는 건물도 있다
+    expect(board.buildings.some((b) => !b.shop && b.shopUp)).toBe(true);
   });
   it('홍익대 건물이 랜드마크로 표시돼 있다', () => expect(board.buildings.filter((b) => b.lm === 1).length).toBeGreaterThan(10));
   it('노선 4개와 정차역', () => {

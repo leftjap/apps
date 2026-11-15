@@ -1,5 +1,6 @@
 // 건물 태그(OSM·Overture)에서 그리기에 쓰는 용도·층수·지붕 모양·아래쪽 높이를 읽고, board.json 의 숫자 하나로 묶는다.
 import { USE, type BuildingInfo } from '../../src/data/board.ts';
+import { hash01 } from './height.ts';
 
 const FLOOR = 3.2;
 const ROOF: Record<string, number> = { flat: 1, gabled: 2, hipped: 3, pyramidal: 4, skillion: 5, dome: 6, round: 7, half_hipped: 3, gambrel: 2, mansard: 3 };
@@ -94,10 +95,11 @@ export function rectFootprint(cx: number, cz: number, area: number, ux: number, 
 }
 
 /**
- * 가게 점 [x, z, 종류]를 건물 외곽선에 붙인다: 외곽선 안이면 그 건물, 밖이면 maxDist(m) 안에서 변이 가장 가까운 건물, 더 멀면 버린다.
- * 건물 번호 → 가장 많은 종류(같으면 앞선 종류)와 붙은 가게 수
+ * 가게 점 [x, z, 종류, 층(−1 지하, 1, 2, 3...)]을 건물 외곽선에 붙인다: 외곽선 안이면 그 건물, 밖이면 maxDist(m) 안에서 변이 가장 가까운 건물, 더 멀면 버린다.
+ * 건물 번호 → 1층·지하 가게의 가장 많은 종류(kind, 없으면 0), 2층 위 가게의 가장 많은 종류(up), 층 표시(mask: 1 지하 2 1층 4 2층 8 3층 위), 가게 수.
+ * 종류 수가 같으면 앞선 종류를 고른다
  */
-export function attachShops(shops: [number, number, number][], footprints: [number, number][][], maxDist: number): Map<number, { kind: number; n: number }> {
+export function attachShops(shops: [number, number, number, number][], footprints: [number, number][][], maxDist: number): Map<number, { kind: number; up: number; mask: number; n: number }> {
   const CELL = 25;
   const grid = new Map<string, number[]>();
   footprints.forEach((f, i) => {
@@ -124,8 +126,8 @@ export function attachShops(shops: [number, number, number][], footprints: [numb
     }
     return d;
   };
-  const counts = new Map<number, number[]>();
-  for (const [x, z, k] of shops) {
+  const acc = new Map<number, { g: number[]; u: number[]; mask: number; n: number }>();
+  for (const [x, z, k, fl] of shops) {
     const cand = grid.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`) ?? [];
     let best = cand.find((i) => inRing(footprints[i], x, z)) ?? -1;
     if (best < 0) {
@@ -136,14 +138,23 @@ export function attachShops(shops: [number, number, number][], footprints: [numb
       }
     }
     if (best < 0) continue;
-    const c = counts.get(best) ?? counts.set(best, [0, 0, 0, 0, 0]).get(best)!;
-    c[k]++;
+    const a = acc.get(best) ?? acc.set(best, { g: [0, 0, 0, 0, 0, 0, 0], u: [0, 0, 0, 0, 0, 0, 0], mask: 0, n: 0 }).get(best)!;
+    (fl <= 1 ? a.g : a.u)[k]++;
+    a.mask |= fl < 0 ? 1 : fl <= 1 ? 2 : fl === 2 ? 4 : 8;
+    a.n++;
   }
-  const out = new Map<number, { kind: number; n: number }>();
-  for (const [i, c] of counts) {
-    let kind = 1;
-    for (let k = 2; k < c.length; k++) if (c[k] > c[kind]) kind = k;
-    out.set(i, { kind, n: c.reduce((a, b) => a + b, 0) });
-  }
+  const top = (c: number[]) => c.reduce((b, v, k) => (v > c[b] ? k : b), 0);
+  const out = new Map<number, { kind: number; up: number; mask: number; n: number }>();
+  for (const [i, a] of acc) out.set(i, { kind: top(a.g), up: top(a.u), mask: a.mask, n: a.n });
   return out;
+}
+
+/**
+ * 지붕 태그가 없는 오래된(1990년 전 사용 승인) 2층 이하 단독주택의 60%(id 로 정한다)에 박공 지붕 태그를 단다.
+ * 서울 단독주택은 옥상을 평평하게 쓰는 집(옥탑·물탱크)이 많아 일부에만 씌우고, 태그가 있으면 그대로 둔다.
+ */
+export function gableGuess(tags: Record<string, string>, year: number, id: number): Record<string, string> {
+  if (tags['roof:shape'] || !(year > 0 && year < 1990) || !['house', 'detached'].includes(tags.building ?? '')) return tags;
+  if ((parseFloat(tags['building:levels'] ?? '') || 1) > 2) return tags;
+  return hash01(id, 7) < 0.6 ? { ...tags, 'roof:shape': 'gabled' } : tags;
 }

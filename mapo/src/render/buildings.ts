@@ -25,21 +25,27 @@ const centroid = (p: Float32Array): [number, number] => {
  * 명소 건물 다듬기(사진·항공사진으로 확인한 것). 고친 목록을 돌려준다.
  * - AK&홍대(양화로 188): OSM 은 바닥 전체를 79m 한 덩어리로 그려 두었다. 지상 1~5층 쇼핑몰 기단(약 30m) 위에 안쪽 부분(OSM building:part 17층)만 79.5m 탑으로 세운다.
  * - KT&G 상상마당: 노출 콘크리트 벽에 굽이치는 유리 띠.
- * - 홍익대 홍문관: OSM building:part 의 두 기둥(45m)과 20m 위에 걸친 다리(정문이 뚫린 모양)에 베이지 석재 기둥·녹색 유리 격자.
+ * - 홍익대 홍문관: OSM building:part 의 두 기둥과 20m 위에 걸친 다리(정문이 뚫린 모양)에 베이지 석재 기둥·녹색 유리 격자.
+ *   부분 높이는 45m(10층)로 그려져 있지만 건축물대장(GIS건물통합정보)은 16층 64.8m 라 64.8m 로 올린다.
  * - 메세나폴리스: OSM 의 세 주거 탑(101·102동 39층 137m, 103동 29층 102m, building:colour #394EAA, building:material glass)을 푸른 유리 탑으로.
- *   꼭대기는 평지붕이 아니라 한쪽으로 기운 왕관이라 긴 축을 따라 높이의 11% 만큼 기울인다(가장 높은 곳이 실제 높이).
+ *   OSM·대장 높이(137m, 103동 102m)는 지붕선이고, 꼭대기는 한쪽으로 기운 왕관이라 긴 축을 따라 실제 높이(위키백과: 101·102동 180m, 103동 121m)까지 올린다.
  */
 export function refine(list: Building[]): Building[] {
   const out: Hot[] = [];
+  /** 홍문관 부분(45m 안팎)을 대장 높이 64.8m(16층)로 */
+  const hong = (b: Building) => (b.h >= 40 && b.h <= 50 ? { h: 64.8, levels: b.levels ? 16 : b.levels } : {});
   for (const b of list) {
     const [cx, cz] = centroid(b.pts);
     const near = (x: number, z: number, r: number) => Math.hypot(cx - x, cz - z) < r;
     if (b.lm === 0 && near(661, -699, 6) && b.h > 70) out.push({ ...b, h: 30, levels: 5, style: STYLE.mallPanel });
     else if (b.lm === 0 && near(659, -697, 6) && b.h > 40 && b.h < 70) out.push({ ...b, h: 79.5, levels: 17, style: STYLE.blueGlass });
     else if (b.lm === 10) out.push({ ...b, style: STYLE.sangsang });
-    else if (b.lm === 1 && near(510, -100, 50) && (b.minH ?? 0) > 1) out.push({ ...b, style: STYLE.greenGrid });
-    else if (b.lm === 1 && near(510, -100, 50) && b.h > 40) out.push({ ...b, style: STYLE.stone });
-    else if (b.lm === 13) out.push({ ...b, style: STYLE.tower, crown: b.h * 0.11 });
+    else if (b.lm === 1 && near(510, -100, 50) && (b.minH ?? 0) > 1) out.push({ ...b, ...hong(b), style: STYLE.greenGrid });
+    else if (b.lm === 1 && near(510, -100, 50) && b.h > 40) out.push({ ...b, ...hong(b), style: STYLE.stone });
+    else if (b.lm === 13) {
+      const peak = b.h > 130 ? 180 : b.h > 95 ? 121 : b.h * 1.15;
+      out.push({ ...b, h: peak, style: STYLE.tower, crown: peak - b.h });
+    }
     else out.push(b);
   }
   return out;
@@ -216,8 +222,12 @@ export interface Look {
   open: Uint8Array;
   /** 지붕 모양(태그, 단독주택은 박공 2) */
   roof: number;
-  /** 붙은 가게의 가장 많은 종류(0 없음 1 카페 2 식당 3 주점 4 편의점): 1층 가게 유리·간판과 불 끄는 시각 */
+  /** 1층·지하 가게의 가장 많은 종류(0 없음 1 카페 2 음식점 3 주점 4 편의점 5 병원·약국 6 소매·생활): 1층 가게 유리·간판과 불 끄는 시각 */
   shopK: number;
+  /** 2층 위 가게의 가장 많은 종류: 위층 간판 띠·세로 간판 */
+  upK: number;
+  /** 가게 층 표시(1 지하 2 1층 4 2층 8 3층 위) */
+  shopMask: number;
   /** 아래부터 쌓는 덩어리. 마지막 덩어리에 난간·지붕을 얹는다 */
   tiers: Tier[];
 }
@@ -278,22 +288,26 @@ export function looks(list: Building[]): Look[] {
     else if (h >= 40) style = STYLE.glass;
     else if (area > 900 || b.shop) style = STYLE.shop;
     else style = area < 45 && h <= 7 ? STYLE.house : STYLE.villa;
-    // 단독주택: 태그가 없으면 박공 지붕(꼭짓점 10개 이하의 작은 바닥)
-    const roofK = roof === 0 && style === STYLE.house && n <= 10 && area < 250 && minH < 0.5 ? 2 : roof;
+    // 지붕은 자료(OSM 태그, 굽기가 오래된 저층 단독에 단 박공)를 따른다
+    const roofK = roof;
     const pitched = roofK >= 2 && roofK !== 5;
     const base = BASE[style];
     const parapet = pitched || (b as Hot).crown || area < 22 || tall < 3.5 ? 0 : base === STYLE.glass ? 1.3 : base === STYLE.apt ? 1.2 : base === STYLE.house ? 0.6 : 0.95;
+    // 기운 왕관(crown)은 유리 외벽이 꼭대기까지 이어진다: 창은 꼭대기까지, 층 높이는 지붕선 기준
     const top = h - parapet;
-    const usable = Math.max(2.4, top - minH - 0.3);
+    const usable = Math.max(2.4, top - ((b as Hot).crown ?? 0) - minH - 0.3);
     const floors = b.levels ? b.levels : Math.max(1, Math.round(usable / 3.2));
     let gh = 0;
     let fh = usable / floors;
-    const shopK = b.lm === 0 && minH < 0.5 ? (b.shop ?? 0) : 0;
+    const plain = b.lm === 0 && minH < 0.5;
+    const shopK = plain ? (b.shop ?? 0) : 0;
+    const upK = plain ? (b.shopUp ?? 0) : 0;
+    const shopMask = plain ? (b.shopMask ?? 0) : 0;
     if (minH < 0.5 && floors >= 2 && (base === STYLE.shop || base === STYLE.glass || shopK)) {
       gh = Math.min(5.2, Math.max(3.6, fh * 1.3));
       fh = (usable - gh) / (floors - 1);
     }
-    const L = { style, base, seed, fh: Math.max(2.4, Math.min(12, fh)), gh: Math.min(12, gh), top, parapet, floors, open, roof: roofK, shopK, tiers: [] as Tier[] };
+    const L = { style, base, seed, fh: Math.max(2.4, Math.min(12, fh)), gh: Math.min(12, gh), top, parapet, floors, open, roof: roofK, shopK, upK, shopMask, tiers: [] as Tier[] };
     L.tiers = tiersOf(b, L, area, hot !== undefined);
     return L;
   });
@@ -301,7 +315,9 @@ export function looks(list: Building[]): Look[] {
 
 /**
  * 유형별 덩어리(꼭짓점을 늘리지 않게 변마다 들이기만 한다)
- * - 빌라 4층 이상: 북쪽(−z)을 보는 트인 변을 위 1~2개 층에서 1.6m 씩 들인다(정북 일조권 사선). 필로티 빌라는 1층을 0.7m 들인 어두운 덩어리로.
+ * - 빌라(상가·업무 용도 제외): 정북 일조권 사선. 판 좌표는 경위도를 그대로 편 것이라 −z 가 정북이다. 대지 경계를 모르므로 정북에서 45° 안을 보는 트인 변을
+ *   경계 쪽 변으로 보고, 꼭대기가 9m 를 넘는 층마다 그 층 꼭대기 높이의 절반 − 1.5m 만큼 들인다(9m 까지는 경계에서 1.5m, 넘으면 높이의 절반 띄우는 서울 다세대).
+ *   남북 깊이의 절반보다 깊게는 들이지 않고 단은 3개까지다. 필로티 빌라는 1층을 0.7m 들인 어두운 덩어리로.
  * - 상가주택(4~6층 이하 작은 상가): 1층 상가 위 주거부를 트인 변에서 0.5m 들이고 빌라 외벽으로.
  * - 업무 빌딩(30m 넘는 커튼월, 바닥 18m 넘음): 3개 층 저층부 위로 탑을 트인 변에서 1.5~4m 들인다.
  * 옆 건물과 붙은 변은 들이지 않는다(붙은 건물 사이에 틈이 생기지 않게).
@@ -326,20 +342,25 @@ function tiersOf(b: Building, L: Omit<Look, 'tiers'>, area: number, hot: boolean
       const t = mk(y0, L.fh, Array.from(L.open, (o) => (o ? 0.7 : 0)), L.style, true);
       if (t) out.push(t), (yb = L.fh);
     }
-    // 정북 사선: 북쪽을 보는 트인 변(바깥 법선 z 성분 < −0.5)
+    // 정북 사선: 정북에서 45° 안을 보는 트인 변(바깥 법선 z 성분 < −0.707)
     const north = Array.from({ length: n }, (_, i) => {
       const j = (i + 1) % n;
       const dx = p[j * 2] - p[i * 2], dz = p[j * 2 + 1] - p[i * 2 + 1];
       const len = Math.hypot(dx, dz) || 1;
-      return L.open[i] !== 0 && -dx / len < -0.5 && len > 3;
+      return L.open[i] !== 0 && -dx / len < -0.707 && len > 3;
     });
     let zs0 = Infinity, zs1 = -Infinity;
     for (let i = 1; i < p.length; i += 2) (zs0 = Math.min(zs0, p[i])), (zs1 = Math.max(zs1, p[i]));
-    const k = L.floors >= 5 ? 2 : L.floors >= 4 ? 1 : 0;
     const steps: Tier[] = [];
-    if (k && north.some(Boolean) && zs1 - zs0 >= 9)
-      for (let j = 1; j <= k; j++) {
-        const t = mk(y0 + (L.floors - k + j - 1) * L.fh, b.h, north.map((v) => (v ? 1.6 * j : 0)));
+    const residential = b.use !== USE.commercial && b.use !== USE.office;
+    if (residential && north.some(Boolean))
+      for (let f = 0; f < L.floors; f++) {
+        const ya = y0 + L.gh + (f - (L.gh > 0 ? 1 : 0)) * L.fh;
+        const yt = Math.min(b.h, f === 0 && L.gh > 0 ? y0 + L.gh : ya + L.fh);
+        if (yt <= 9 || f === 0) continue;
+        if (steps.length === 3) break; // 정점을 아끼려고 3단까지만, 그 위 층은 마지막 단을 이어 올린다
+        const d = Math.min(yt / 2 - 1.5, (zs1 - zs0) / 2);
+        const t = mk(ya, b.h, north.map((v) => (v ? d : 0)));
         if (!t) break;
         steps.push(t);
       }
@@ -426,7 +447,7 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list)): THREE
         const ax = q[i * 2], az = q[i * 2 + 1], bx = q[j * 2], bz = q[j * 2 + 1];
         const len = Math.hypot(bx - ax, bz - az) || 1;
         const nx = (bz - az) / len, nz = -(bx - ax) / len;
-        const f = (t.open[i] === 0 ? 8 : 0) + (t.dark ? 4 : 0) + 16 * L.shopK;
+        const f = (t.open[i] === 0 ? 8 : 0) + (t.dark ? 4 : 0) + 16 * L.shopK + 128 * L.upK + 1024 * L.shopMask;
         quad(put(ax, t.y0, az, nx, 0, nz, 0, len, f, L.top));
         put(bx, t.y0, bz, nx, 0, nz, len, len, f, L.top);
         const last = ti + 1 === tiers.length;
@@ -511,14 +532,14 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list)): THREE
 }
 
 /**
- * 가게 종류 k(1 카페 2 식당 3 주점 4 편의점)가 시각 hour(0~24)에 영업 중인가(1/0). r(0~1)로 가게마다 닫는 시각을 흩뜨린다.
- * 카페 8시~21:30~23시, 식당 11시~21:30~23:30, 주점 17시~새벽 1~5시, 편의점은 늘. 셰이더 shopOpen 과 같은 식
+ * 가게 종류 k(1 카페 2 음식점 3 주점 4 편의점 5 병원·약국 6 소매·생활)가 시각 hour(0~24)에 영업 중인가(1/0). r(0~1)로 가게마다 닫는 시각을 흩뜨린다.
+ * 카페 8시~21:30~23시, 음식점 11시~21:30~23:30, 주점 17시~새벽 1~5시, 편의점은 늘, 병원·약국 9시~18:30~19:30, 소매·생활 10시~21~22시. 셰이더 shopOpen 과 같은 식
  */
 export function shopOpen(k: number, r: number, hour: number): number {
-  if (k > 3.5) return 1;
+  if (k > 3.5 && k < 4.5) return 1;
   const hh = hour < 6 ? hour + 24 : hour;
-  const open = k < 1.5 ? 8 : k < 2.5 ? 11 : 17;
-  const close = k < 1.5 ? 21.5 + 1.5 * r : k < 2.5 ? 21.5 + 2 * r : 25 + 4 * r;
+  const open = k < 1.5 ? 8 : k < 2.5 ? 11 : k < 3.5 ? 17 : k < 5.5 ? 9 : 10;
+  const close = k < 1.5 ? 21.5 + 1.5 * r : k < 2.5 ? 21.5 + 2 * r : k < 3.5 ? 25 + 4 * r : k < 5.5 ? 18.5 + r : 21 + r;
   return hh >= open && hh <= close ? 1 : 0;
 }
 
@@ -536,11 +557,21 @@ vec3 wallColor(float style, float s) {
   return k < 0.55 ? vec3(0.86, 0.85, 0.82) : vec3(0.72, 0.47, 0.4);
 }
 float shopOpen(float k, float r) {
-  if (k > 3.5) return 1.0;
+  if (k > 3.5 && k < 4.5) return 1.0;
   float hh = uHour < 6.0 ? uHour + 24.0 : uHour;
-  float o = k < 1.5 ? 8.0 : k < 2.5 ? 11.0 : 17.0;
-  float c = k < 1.5 ? 21.5 + 1.5 * r : k < 2.5 ? 21.5 + 2.0 * r : 25.0 + 4.0 * r;
+  float o = k < 1.5 ? 8.0 : k < 2.5 ? 11.0 : k < 3.5 ? 17.0 : k < 5.5 ? 9.0 : 10.0;
+  float c = k < 1.5 ? 21.5 + 1.5 * r : k < 2.5 ? 21.5 + 2.0 * r : k < 3.5 ? 25.0 + 4.0 * r : k < 5.5 ? 18.5 + r : 21.0 + r;
   return step(o, hh) * step(hh, c);
+}
+/** 업종별 간판 색(차분한 두 가지 가운데 r 로 하나): 카페 녹색·갈색, 음식점 적갈색·황토, 주점 호박색·자두색, 편의점 청색·청록, 병원·약국 청록·흰색, 소매·생활 회청·베이지 */
+vec3 signColor(float k, float r) {
+  vec3 a = vec3(0.46, 0.5, 0.56), b = vec3(0.8, 0.76, 0.68);
+  if (k < 1.5) { a = vec3(0.36, 0.5, 0.4); b = vec3(0.52, 0.4, 0.32); }
+  else if (k < 2.5) { a = vec3(0.64, 0.32, 0.26); b = vec3(0.74, 0.6, 0.34); }
+  else if (k < 3.5) { a = vec3(0.72, 0.5, 0.26); b = vec3(0.46, 0.32, 0.44); }
+  else if (k < 4.5) { a = vec3(0.3, 0.46, 0.6); b = vec3(0.36, 0.56, 0.46); }
+  else if (k < 5.5) { a = vec3(0.3, 0.56, 0.52); b = vec3(0.9, 0.9, 0.88); }
+  return r < 0.5 ? a : b;
 }
 float isBrick(float style, float s) {
   float k = fract(s * 7.31);
@@ -571,20 +602,20 @@ const FRAG = /* glsl */ `
     vec2 a = smoothstep(lo - w, lo + w, p) * (1.0 - smoothstep(hi - w, hi + w, p));
     return a.x * a.y;
   }
-  /** 간판 색: 원색을 회색 쪽으로 45% 섞어 랜드마크보다 덜 튀게 */
-  vec3 signColor(float r) {
-    vec3 c = r < 0.18 ? vec3(0.86, 0.16, 0.14) : r < 0.32 ? vec3(0.98, 0.78, 0.12) : r < 0.46 ? vec3(0.12, 0.36, 0.78) : r < 0.58 ? vec3(0.1, 0.55, 0.32)
-         : r < 0.7 ? vec3(0.95, 0.95, 0.93) : r < 0.8 ? vec3(0.12, 0.12, 0.14) : r < 0.9 ? vec3(0.92, 0.42, 0.12) : vec3(0.62, 0.2, 0.62);
-    return mix(c, vec3(dot(c, vec3(0.3, 0.5, 0.2))), 0.45);
-  }
   void main() {
     float fi = focusIn(vPos.xz);
     if (fi > 0.01 && dither(gl_FragCoord.xy) < fi * 0.82) discard;
     float st = vBld.x, s = vBld.y / 255.0, gh = vBld.z / 20.0, fh = max(2.4, vBld.w / 20.0);
     // 명소 전용 모양(6~)은 기본 모양을 따른다: 6 석재·8 상상마당 → 공공, 7 녹색 격자·10 푸른 유리·11 유리 주거 탑 → 커튼월, 9 몰 → 상가
     float style = st < 5.5 ? st : st < 6.5 ? 5.0 : st < 7.5 ? 2.0 : st < 8.5 ? 5.0 : st < 9.5 ? 1.0 : 2.0;
-    float shopK = floor(vEdge.z / 16.0 + 0.01);
-    float fl0 = vEdge.z - 16.0 * shopK;
+    // 표시 값: 붙음·부분(16 아래) + 16 × 1층 가게 종류 + 128 × 위층 가게 종류 + 1024 × 가게 층 표시(1 지하 2 1층 4 2층 8 3층 위)
+    float smask = floor(vEdge.z / 1024.0 + 0.001);
+    float fz = vEdge.z - 1024.0 * smask;
+    float upK = floor(fz / 128.0 + 0.001);
+    fz -= 128.0 * upK;
+    float shopK = floor(fz / 16.0 + 0.001);
+    float fl0 = fz - 16.0 * shopK;
+    float on1F = mod(floor(smask / 2.0), 2.0), on2F = mod(floor(smask / 4.0), 2.0), on3F = step(7.5, smask);
     float party = step(7.5, fl0);
     float part = fl0 - 8.0 * party;
     vec3 n = normalize(vN);
@@ -712,13 +743,14 @@ const FRAG = /* glsl */ `
         float wallStrip = step(mod(bid, 2.0), 0.5) * (1.0 - smoothstep(0.0, 0.06 + w.x, bx));
         glass *= 1.0 - wallStrip; frame *= 1.0 - wallStrip;
       }
-      if (shopK > 0.5 && st < 8.5) {
-        // 가게 건물: 2층 창 아래 간판 띠(칸의 30%)나 세로 간판(건물의 20%)
+      if (upK > 0.5 && st < 8.5) {
+        // 위층 가게(실제 층): 2층 가게면 2층, 3층 위 가게면 3~5층 창 아래 간판 띠(칸의 30%), 세로 간판(건물의 20%)
         float sr = hash21(vec2(bid * 0.37 + 5.0, floorI) + s * 7.0);
-        float band = rect(q, vec2(0.04, 0.03), vec2(0.96, 0.22), w) * step(0.7, sr) * step(0.5, floorI) * step(floorI, 1.5);
+        float atF = on2F * step(0.5, floorI) * step(floorI, 1.5) + on3F * step(1.5, floorI) * step(floorI, 4.5);
+        float band = rect(q, vec2(0.04, 0.03), vec2(0.96, 0.22), w) * step(0.7, sr) * min(1.0, atF);
         float vert = rect(vec2(u, y), vec2(0.35, gh + 0.4), vec2(1.15, min(top - 0.8, gh + fh * 2.0)), vec2(fwidth(u), fwidth(y))) * step(0.8, fract(s * 23.0));
         sign = max(band, vert) * windows;
-        signCol = signColor(fract(sr * 7.0 + floorI * 0.31));
+        signCol = signColor(upK, fract(sr * 7.0 + floorI * 0.31));
         // 간판 글자(흰 획)
         float gx = fract(u / 0.55), gyy = fract(y / 0.5);
         float glyph = step(0.25, gx) * step(gx, 0.75) * step(0.3, gyy) * step(gyy, 0.75) * step(0.35, hash21(floor(vec2(u / 0.55, y / 0.5)) + sr));
@@ -735,11 +767,12 @@ const FRAG = /* glsl */ `
           float ux = fract(u / uw);
           vec2 uq = vec2(ux, y);
           vec2 uwd = vec2(fwidth(u / uw), fwidth(y));
-          shopGlass = rect(uq, vec2(0.05, 0.12), vec2(0.95, gh - 1.0), uwd);
+          // 지하 가게만 있으면 유리 없이 간판 띠만
+          shopGlass = rect(uq, vec2(0.05, 0.12), vec2(0.95, gh - 1.0), uwd) * on1F;
           float ur = hash21(vec2(uid, 7.0) + s * 3.7);
           float sb = rect(uq, vec2(0.02, gh - 0.92), vec2(0.98, gh - 0.12), uwd);
           sign = max(sign, sb);
-          signCol = sb > 0.5 ? signColor(ur) : signCol;
+          signCol = sb > 0.5 ? signColor(shopK, ur) : signCol;
           float gx = fract(u / 0.42), gyy = (y - (gh - 0.92)) / 0.8;
           float glyph = step(0.2, gx) * step(gx, 0.8) * step(0.25, gyy) * step(gyy, 0.75) * step(0.3, hash21(vec2(floor(u / 0.42), 1.0) + ur)) * step(ux, 0.75) * step(0.25, ux);
           signCol = mix(signCol, signCol.r + signCol.g + signCol.b > 2.2 ? vec3(0.12) : vec3(1.0), glyph * sb * 0.9 * detail);
@@ -787,7 +820,10 @@ const FRAG = /* glsl */ `
       // 가게 유리: 영업 중일 때만(주점은 호박색, 그 밖은 따뜻한 흰빛), 로비 유리는 예전처럼
       vec3 shopLight = shopK > 2.5 && shopK < 3.5 ? vec3(1.0, 0.68, 0.42) : vec3(1.0, 0.85, 0.62);
       glow += (shopK > 0.5 ? shopLight * doorLit * 0.95 : vec3(1.0, 0.78, 0.5) * doorLit * min(1.0, 0.35 + uLit * 2.4) * 1.1) * shopGlass;
-      glow += signCol * sign * 0.6 * shopOpen(shopK, fract(s * 17.3)) * step(0.25, fract(s * 41.0 + floorI * 0.37));
+      float signK = hasGround && y < gh ? shopK : upK;
+      glow += signCol * sign * 0.6 * shopOpen(signK, fract(s * 17.3)) * step(0.25, fract(s * 41.0 + floorI * 0.37));
+      // 2층 가게(카페 등): 영업 중이면 2층 창이 가게 불빛으로
+      glow += shopLight * glass * on2F * step(0.5, upK) * step(0.5, floorI) * step(floorI, 1.5) * shopOpen(upK, cellR) * 0.6 * detail;
       col += glow * lightsOn;
     }
     col += uTint * uGlow * (0.1 + 0.28 * uNight);
@@ -813,14 +849,18 @@ export function propsOf(list: Building[], lk: Look[]): number[] {
   const out: number[] = [];
   const push = (x: number, y: number, z: number, yaw: number, sx: number, sy: number, sz: number, kind: number, c: [number, number, number], r: number) =>
     out.push(x, y, z, yaw, sx, sy, sz, kind, c[0], c[1], c[2], r);
-  // 돌출 간판 색: 원색을 회색 쪽으로 45% 섞는다(셰이더 signColor 와 같이)
-  const SIGNS = ([[0.86, 0.16, 0.14], [0.98, 0.78, 0.12], [0.12, 0.36, 0.78], [0.1, 0.55, 0.32], [0.95, 0.95, 0.93], [0.92, 0.42, 0.12], [0.62, 0.2, 0.62]] as [number, number, number][]).map(
-    (c): [number, number, number] => {
-      const g = c[0] * 0.3 + c[1] * 0.5 + c[2] * 0.2;
-      return [c[0] + (g - c[0]) * 0.45, c[1] + (g - c[1]) * 0.45, c[2] + (g - c[2]) * 0.45];
-    },
-  );
-  const AWN: [number, number, number][] = [[0.15, 0.4, 0.32], [0.62, 0.16, 0.16], [0.18, 0.26, 0.5], [0.85, 0.82, 0.74], [0.3, 0.3, 0.32], [0.9, 0.55, 0.2]];
+  // 돌출 간판 색: 업종별 두 가지(셰이더 signColor 와 같은 값)
+  const SIGNS: [number, number, number][][] = [
+    [[0.46, 0.5, 0.56], [0.8, 0.76, 0.68]],
+    [[0.36, 0.5, 0.4], [0.52, 0.4, 0.32]],
+    [[0.64, 0.32, 0.26], [0.74, 0.6, 0.34]],
+    [[0.72, 0.5, 0.26], [0.46, 0.32, 0.44]],
+    [[0.3, 0.46, 0.6], [0.36, 0.56, 0.46]],
+    [[0.3, 0.56, 0.52], [0.9, 0.9, 0.88]],
+    [[0.46, 0.5, 0.56], [0.8, 0.76, 0.68]],
+  ];
+  // 차양 천: 짙은 녹색·자주·남색·생지·회색·황토(원색을 피한다)
+  const AWN: [number, number, number][] = [[0.24, 0.4, 0.34], [0.56, 0.3, 0.28], [0.26, 0.32, 0.46], [0.85, 0.82, 0.74], [0.3, 0.3, 0.32], [0.74, 0.58, 0.36]];
   list.forEach((b, bi) => {
     const L = lk[bi];
     const p = b.pts;
@@ -908,8 +948,8 @@ export function propsOf(list: Building[], lk: Look[]): number[] {
         }
       }
     }
-    // 가게 앞(가게가 붙은 건물만): 트인 변에 차양과 돌출 간판. 난수 자리(vC.w)에 가게 종류를 더해 불 끄는 시각을 셰이더에 넘긴다
-    if (!L.shopK) return;
+    // 가게 앞(가게가 붙은 건물만): 1층 가게가 있으면 트인 변에 차양, 위층 가게가 있으면 돌출 간판. 난수 자리(vC.w)에 가게 종류를 더해 불 끄는 시각을 셰이더에 넘긴다
+    if (!L.shopK && !L.upK) return;
     let signs = 0;
     for (let i = 0; i < n; i++) {
       if (L.open[i] === 0) continue;
@@ -921,18 +961,18 @@ export function propsOf(list: Building[], lk: Look[]): number[] {
       const nx = dz, nz = -dx;
       const yaw = Math.atan2(-dz, -dx);
       const r = rnd(s, 100 + i);
-      if (r < 0.45) {
+      if (L.shopK && L.shopMask & 2 && r < 0.45) {
         // 차양: 가게 칸 몇 개에 걸쳐
         const w = Math.min(len - 1, 3 + rnd(s, 110 + i) * 6);
         const t = 0.5 + (rnd(s, 120 + i) - 0.5) * Math.max(0, len - w - 1);
         const at = Math.max(w / 2 + 0.3, Math.min(len - w / 2 - 0.3, t * len));
         push(ax + dx * at + nx * 0.55, L.gh - 0.75, az + dz * at + nz * 0.55, yaw, w, 0.12, 1.1, PROP.awning, AWN[Math.floor(rnd(s, 130 + i) * AWN.length)], L.shopK + 0.9 * rnd(s, 140 + i));
       }
-      if (signs < 1 && L.floors >= 3 && rnd(s, 150 + i) < 0.5) {
+      if (L.upK && signs < 1 && L.floors >= 3 && rnd(s, 150 + i) < 0.5) {
         const end = rnd(s, 160 + i) < 0.5 ? 0.9 : len - 0.9;
         const hgt = Math.min(L.top - L.gh - 0.8, L.fh * (2 + Math.floor(rnd(s, 170 + i) * 2.5)));
         if (hgt > 2) {
-          push(ax + dx * end + nx * 0.62, L.gh + 0.4, az + dz * end + nz * 0.62, yaw, 0.16, hgt, 0.95, PROP.sign, SIGNS[Math.floor(rnd(s, 180 + i) * SIGNS.length)], L.shopK + 0.9 * rnd(s, 190 + i));
+          push(ax + dx * end + nx * 0.62, L.gh + 0.4, az + dz * end + nz * 0.62, yaw, 0.16, hgt, 0.95, PROP.sign, SIGNS[L.upK][rnd(s, 180 + i) < 0.5 ? 0 : 1], L.upK + 0.9 * rnd(s, 190 + i));
           signs++;
         }
       }

@@ -1,6 +1,6 @@
 // 건물 태그 → 용도·층수·지붕·아래 높이, 그리고 board.json 의 한 숫자로 묶고 푸는 것
 import { describe, expect, it } from 'vitest';
-import { attachShops, buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title } from '../tools/lib/building.ts';
+import { attachShops, buildingInfo, gableGuess, packInfo, pickTitle, rectFootprint, titleTags, type Title } from '../tools/lib/building.ts';
 import { unpackInfo, USE } from '../src/data/board.ts';
 
 describe('건물 태그 읽기', () => {
@@ -71,11 +71,27 @@ describe('외곽선이 없는 건물의 바닥', () => {
 
 describe('가게를 건물에 붙이기', () => {
   const sq = (x: number, z: number, w: number): [number, number][] => [[x, z], [x + w, z], [x + w, z + w], [x, z + w]];
-  it('외곽선 안이면 그 건물, 밖이면 12m 안 가장 가까운 건물, 더 멀면 버린다. 건물마다 가장 많은 종류와 수', () => {
+  it('외곽선 안이면 그 건물, 밖이면 12m 안 가장 가까운 건물, 더 멀면 버린다. 1층·지하와 2층 위를 나눠 가장 많은 종류, 층 표시, 수', () => {
     const fps = [sq(0, 0, 10), sq(30, 0, 10)];
-    const got = attachShops([[5, 5, 2], [5, 6, 2], [4, 4, 3], [45, 5, 1], [70, 5, 2]], fps, 12);
-    expect(got.get(0)).toEqual({ kind: 2, n: 3 });
-    expect(got.get(1)).toEqual({ kind: 1, n: 1 });
+    // [x, z, 종류, 층(−1 지하, 1, 2, 3...)]
+    const got = attachShops([[5, 5, 2, 1], [5, 6, 2, 1], [4, 4, 3, -1], [6, 6, 1, 2], [45, 5, 5, 3], [70, 5, 2, 1]], fps, 12);
+    // 1층·지하: 식당 2·주점 1 → 식당, 2층 카페, 층 표시 지하1 + 1층2 + 2층4
+    expect(got.get(0)).toEqual({ kind: 2, up: 1, mask: 7, n: 4 });
+    // 3층 병원만: 1층 가게 없음
+    expect(got.get(1)).toEqual({ kind: 0, up: 5, mask: 8, n: 1 });
     expect(got.size).toBe(2);
+  });
+});
+
+describe('오래된 저층 단독주택 박공 지붕', () => {
+  it('지붕 태그가 없고 1990년 전에 지은 2층 이하 단독주택 일부(60%)에만 박공을 얹고, 태그가 있으면 그대로 둔다', () => {
+    const n = Array.from({ length: 200 }, (_, id) => gableGuess({ building: 'house', 'building:levels': '2' }, 1984, id)['roof:shape']).filter((r) => r === 'gabled').length;
+    expect(n).toBeGreaterThan(90);
+    expect(n).toBeLessThan(150);
+    expect(gableGuess({ building: 'house', 'building:levels': '2' }, 2004, 1)['roof:shape']).toBeUndefined();
+    expect(gableGuess({ building: 'house', 'building:levels': '3' }, 1980, 1)['roof:shape']).toBeUndefined();
+    expect(gableGuess({ building: 'residential', 'building:levels': '2' }, 1980, 1)['roof:shape']).toBeUndefined();
+    expect(gableGuess({ building: 'house', 'roof:shape': 'flat' }, 1975, 1)['roof:shape']).toBe('flat');
+    expect(gableGuess({ building: 'house' }, 0, 1)['roof:shape']).toBeUndefined();
   });
 });
