@@ -74,6 +74,8 @@ export interface LiveEvent {
   place: string;
   lon: number;
   lat: number;
+  /** 이 행사를 준 장소(실시간 도시데이터 장소 이름) */
+  area: string;
 }
 
 // deno-lint-ignore no-explicit-any
@@ -181,7 +183,7 @@ export function trim(raw: Raw): {
     }))
     .filter((a: LiveAccident) => Number.isFinite(a.lon) && Number.isFinite(a.lat));
   const events: LiveEvent[] = (Array.isArray(c?.EVENT_STTS) ? c.EVENT_STTS : [])
-    .map((e: Raw) => ({ name: String(e.EVENT_NM ?? ''), period: String(e.EVENT_PERIOD ?? ''), place: String(e.EVENT_PLACE ?? ''), lon: Number(e.EVENT_X), lat: Number(e.EVENT_Y) }))
+    .map((e: Raw) => ({ name: String(e.EVENT_NM ?? ''), period: String(e.EVENT_PERIOD ?? ''), place: String(e.EVENT_PLACE ?? ''), lon: Number(e.EVENT_X), lat: Number(e.EVENT_Y), area: String(c?.AREA_NM ?? '') }))
     .filter((e: LiveEvent) => e.name);
   const p = c?.LIVE_PPLTN_STTS?.[0];
   const place: LivePlace | null = p
@@ -253,13 +255,13 @@ if (import.meta.main)
     // 다섯 장소가 모두 마포구라 날씨는 처음 받은 값 하나만 준다
     const weather = ok.find((g) => g!.weather)?.weather ?? null;
     const air = ok.find((g) => g!.air)?.air ?? null;
-    // 사고통제: 도시데이터 것과 TOPIS 판 둘레 것을 함께(같은 자리·같은 시작 시각이면 하나만). 문화행사는 이름으로 하나만
+    // 사고통제: 도시데이터 것과 TOPIS 판 둘레 것을 함께(같은 자리·같은 시작 시각이면 하나만). 문화행사는 장소·이름마다 하나
     const [topisAcc, topisDiag] = await acc;
     const accidents = new Map<string, LiveAccident>();
     for (const a of topisAcc ?? []) accidents.set(`${a.lon.toFixed(4)},${a.lat.toFixed(4)},${a.start}`, a);
     for (const g of ok) for (const a of g!.accidents) if (fromBoard(a.lon, a.lat) < NEAR) accidents.set(`${a.lon.toFixed(4)},${a.lat.toFixed(4)},${a.start}`, accidents.get(`${a.lon.toFixed(4)},${a.lat.toFixed(4)},${a.start}`) ?? a);
     const events = new Map<string, LiveEvent>();
-    for (const g of ok) for (const e of g!.events) events.set(e.name, e);
+    for (const g of ok) for (const e of g!.events) events.set(`${e.area}|${e.name}`, e);
     const body = {
       places: ok.map((g) => g!.place),
       roads: [...roads.values()],

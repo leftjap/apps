@@ -38,6 +38,7 @@ ol, ul { list-style: none; }
 .scale { font-size: 11px; color: var(--dim); margin-top: 6px; }
 .areas li { display: grid; grid-template-columns: 18px 1fr auto; grid-template-areas: "rank name level" "rank ppl level"; column-gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
 .areas li:first-child { border-top: 0; }
+.areas li[data-area] { cursor: pointer; }
 .areas .rank { grid-area: rank; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .areas .name { grid-area: name; font-size: 14px; font-weight: 600; }
 .areas .ppl { grid-area: ppl; font-size: 12px; color: var(--dim); }

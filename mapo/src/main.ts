@@ -246,7 +246,8 @@ type Target =
   | { kind: 'bus'; uid: number }
   | { kind: 'boat'; i: number }
   | { kind: 'school'; i: number }
-  | { kind: 'incident'; id: string };
+  | { kind: 'incident'; id: string }
+  | { kind: 'area'; id: string };
 let selected: Target | null = null;
 let followed: Target | null = null;
 const same = (a: Target | null, b: Target | null) => JSON.stringify(a) === JSON.stringify(b);
@@ -277,6 +278,7 @@ const hud = makeHud({
     hud.setSeason(s);
     applySeason();
   },
+  onArea: (id) => select({ kind: 'area', id }),
   onRandomCat: () => {
     let i = Math.floor(Math.random() * cats.length);
     if (selected?.kind === 'cat' && selected.i === i) i = (i + 1) % cats.length;
@@ -404,6 +406,31 @@ function refreshCard() {
       lines: [row?.toward ?? '', next ? (stopped ? `${next.n}역 정차 중` : `다음 역 ${next.n}`) : '판 밖으로 나가는 중'],
       note: liveRail ? '열차 위치는 서울시 실시간 열차 위치(1~4분 전 값)에서 역마다 서며 이어 움직인 것입니다.' : '열차 위치는 배차 간격과 주행 곡선으로 만든 시뮬레이션입니다.',
       follow: following,
+    };
+  } else if (selected.kind === 'area') {
+    const id = selected.id;
+    const a = provider.areas(now).find((o) => o.id === id);
+    if (!a) {
+      selected = null;
+      return hud.setCard(null);
+    }
+    // 오늘 진행 중인 문화행사(실시간 도시데이터, 몇 달씩 하는 실내 전시도 많아 화면에 따로 표시하지 않고 이름과 기간만 적는다)
+    const evs = clock.live ? live.events(id) : [];
+    const short = (p: string) => p.replace(/\d{4}-(\d{2})-(\d{2})/g, (_, m, d) => `${Number(m)}.${Number(d)}`).replace('~', ' ~ ');
+    const isLive = provider.mode === 'live';
+    card = {
+      tag: isLive ? '실시간 도시데이터 구역' : '구역 · 시뮬레이션',
+      title: a.name,
+      color: ['#5fd08a', '#f0cf5a', '#f59b4b', '#f0605d'][a.level],
+      lines: [
+        `${a.label} · 약 ${a.pplMin.toLocaleString('ko-KR')}~${a.pplMax.toLocaleString('ko-KR')}명`,
+        ...evs.slice(0, 3).map((e) => `행사 · ${e.name} (${short(e.period)}${e.place ? `, ${e.place}` : ''})`),
+        ...(evs.length > 3 ? [`행사 외 ${evs.length - 3}건`] : []),
+        ...(isLive && !evs.length ? ['오늘 진행 중인 문화행사 없음'] : []),
+      ],
+      note: isLive
+        ? '인구·혼잡과 문화행사는 서울시 실시간 도시데이터 값입니다(인구는 30분쯤 늦은 값). 행사로 모인 사람은 인구에 이미 들어 있습니다.'
+        : '인구·혼잡은 시간대 패턴으로 만든 시뮬레이션입니다.',
     };
   } else if (selected.kind === 'incident') {
     const id = selected.id;

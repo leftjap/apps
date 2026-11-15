@@ -157,4 +157,20 @@ describe('실시간 자료 덧씌우기', () => {
     // 실시간 도로 속도가 있는 길(이미 사고 정체가 들어 있다)은 그대로
     expect(live.provider.roadSpeed(now, 2, 7, 50, 2, 0)).toBe(0.2);
   });
+  it('문화행사: 오늘 진행 중인 것만 구역별로 준다(기간 밖·다른 구역·오래된 자료는 빼고)', () => {
+    let wall = Date.parse('2026-11-15T23:00:00+09:00');
+    const live = makeLiveProvider(makeSimProvider(), () => wall);
+    expect(live.events('yeonnam')).toEqual([]);
+    const ev = (name: string, period: string, area: string) => ({ name, period, place: '연트럴파크', lon: 126.925, lat: 37.562, area });
+    live.set({
+      ...data,
+      at: wall,
+      events: [ev('골목 축제', '2026-11-14~2026-11-16', '연남동'), ev('지난 전시', '2026-10-01~2026-11-10', '연남동'), ev('다음 공연', '2026-11-20~2026-11-21', '연남동'), ev('홍대 버스킹', '2026-11-15~2026-11-15', '홍대 관광특구')],
+    });
+    expect(live.events('yeonnam').map((e) => e.name)).toEqual(['골목 축제']);
+    expect(live.events('hongdae').map((e) => e.name)).toEqual(['홍대 버스킹']);
+    wall += 16 * 60_000;
+    expect(live.events('yeonnam')).toEqual([]);
+  });
 });
+

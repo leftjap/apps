@@ -73,6 +73,8 @@ export interface HudEvents {
   onLayer(layer: Layer, on: boolean): void;
   onSeason(s: SeasonPick): void;
   onRandomCat(): void;
+  /** '지금 붐비는 곳'의 구역을 눌렀다 */
+  onArea(id: string): void;
 }
 
 export function makeHud(ev: HudEvents) {
@@ -149,6 +151,8 @@ export function makeHud(ev: HudEvents) {
 
   document.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
+    const area = t.closest<HTMLElement>('[data-area]');
+    if (area) return ev.onArea(area.dataset.area!);
     const b = t.closest<HTMLElement>('button');
     if (!b) return;
     if (b.dataset.preset) ev.onPreset(b.dataset.preset);
@@ -229,7 +233,7 @@ export function makeHud(ev: HudEvents) {
       q('[data-areas]').innerHTML = sorted
         .map(
           (a, i) =>
-            `<li><span class="rank">${i + 1}</span><span class="name">${esc(a.name)}</span><span class="ppl">약 ${people((a.pplMin + a.pplMax) / 2)}</span><span class="level" style="--c:${LEVEL_COLOR[a.level]}">${a.label}</span></li>`,
+            `<li data-area="${a.id}"><span class="rank">${i + 1}</span><span class="name">${esc(a.name)}</span><span class="ppl">약 ${people((a.pplMin + a.pplMax) / 2)}</span><span class="level" style="--c:${LEVEL_COLOR[a.level]}">${a.label}</span></li>`,
         )
         .join('');
       const top = sorted[0];

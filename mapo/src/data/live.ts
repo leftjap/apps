@@ -50,6 +50,17 @@ export interface LiveAccident {
   lon: number;
   lat: number;
 }
+/** 문화행사(실시간 도시데이터 EVENT_STTS) */
+export interface LiveEvent {
+  name: string;
+  /** 'YYYY-MM-DD~YYYY-MM-DD' */
+  period: string;
+  place: string;
+  lon: number;
+  lat: number;
+  /** 행사를 준 장소 이름(실시간 도시데이터) */
+  area: string;
+}
 export interface LiveData {
   places: LivePlace[];
   roads: LiveRoad[];
@@ -57,6 +68,7 @@ export interface LiveData {
   weather?: LiveWeather | null;
   air?: LiveAir | null;
   accidents?: LiveAccident[];
+  events?: LiveEvent[];
   /** 중계 함수가 상류에서 받은 시각(epoch ms) */
   at: number;
 }
@@ -185,6 +197,16 @@ export function makeLiveProvider(sim: DataProvider, wall: () => number = Date.no
     rain(): number | null {
       const w = fresh()?.weather;
       return w ? rainOf(w) : null;
+    },
+    /** 구역 id 의 오늘(한국 시각) 진행 중인 문화행사. 쓸 수 없으면 빈 목록 */
+    events(area: string): LiveEvent[] {
+      const d = fresh();
+      if (!d) return [];
+      const today = new Date(wall() + 9 * 3600_000).toISOString().slice(0, 10);
+      return (d.events ?? []).filter((e) => {
+        const [a, b] = e.period.split('~').map((t) => t.trim().slice(0, 10));
+        return AREA_ID[e.area] === area && (!a || a <= today) && (!b || today <= b);
+      });
     },
     /** 판 안 돌발정보(사고·공사·통제). 쓸 수 없으면 빈 목록 */
     incidents(): Incident[] {

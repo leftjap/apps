@@ -61,7 +61,7 @@ Deno.test('대기질·사고통제·문화행사를 추린다', () => {
   const t = trim(fake);
   assertEquals(t.air, { pm10: 59, pm10Idx: '보통', pm25: 45, pm25Idx: '나쁨', time: '2026-11-15 04:00' });
   assertEquals(t.accidents, [{ id: 'c:126.9235,37.5560,2026-11-15 21:10', src: 'city', kind: '공사', detail: '도로보수', info: '양화로 1개 차로 통제', start: '2026-11-15 21:10', end: '2026-11-15 23:00', lon: 126.9235, lat: 37.556 }]);
-  assertEquals(t.events, [{ name: '연남 골목 축제', period: '2026-11-14~2026-11-16', place: '연트럴파크', lon: 126.925, lat: 37.562 }]);
+  assertEquals(t.events, [{ name: '연남 골목 축제', period: '2026-11-14~2026-11-16', place: '연트럴파크', lon: 126.925, lat: 37.562, area: '연남동' }]);
   const none = trim({ CITYDATA: { AREA_NM: '연남동' } });
   assertEquals([none.air, none.accidents, none.events], [null, [], []]);
 });
