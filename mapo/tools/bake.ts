@@ -204,13 +204,15 @@ const gisAt = (x: number, z: number, area: number): Gis | null => {
   return best;
 };
 const bsrc = { title: 0, gis: 0, tag: 0, point: 0, guess: 0 };
-/** 높이 자료 고르기: 표제부(2026) → OSM 높이·층수 태그 → 수치지도 점 층수(2018) → 추정. 표제부 용도가 있으면 그것을 쓴다 */
+/** 높이 자료 고르기: 표제부(2026) → OSM 높이·층수 태그 → GIS건물통합정보(외곽선으로 이음) → 수치지도 점 층수(2018) → 추정. 표제부·GIS 용도가 있으면 그것을 쓴다.
+ *  GIS 는 위치로 잇기 때문에 주상복합처럼 저층부와 탑이 따로 그려진 곳에서 엉뚱한 동과 이어질 수 있어 OSM 태그 뒤에 둔다(메세나폴리스 102동이 4층 저층부 값을 받았다) */
 const withSources = (tags: Record<string, string>, pts: [number, number][], area: number): Record<string, string> => {
   const t0 = titleOf(tags, area);
   const fl = pointFloors(pts);
-  const g = t0 && t0.floors > 0 ? null : gisAt(pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length, area);
+  const g = gisAt(pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length, area);
   if (g) g.used = true;
-  const t = t0 && t0.floors > 0 ? t0 : g && g.t.floors > 0 ? g.t : null;
+  const tagged = parseFloat(tags.height ?? '') > 0 || parseFloat(tags['building:levels'] ?? '') > 0;
+  const t = t0 && t0.floors > 0 ? t0 : !tagged && g && g.t.floors > 0 ? g.t : null;
   if (t && t.floors > 0) {
     if (t === t0) bsrc.title++;
     else bsrc.gis++;
