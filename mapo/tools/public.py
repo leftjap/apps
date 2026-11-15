@@ -125,7 +125,7 @@ def dbf_rows(data, enc):
         row = {}
         p = 1
         for name, _, ln in fields:
-            row[name] = r[p:p + ln].decode(enc, 'ignore').strip()
+            row[name] = r[p:p + ln].decode(enc, 'ignore').replace('\x00', '').strip()
             p += ln
         yield row
 

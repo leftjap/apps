@@ -163,13 +163,57 @@ const pointFloors = (pts: [number, number][]): number => {
       }
   return best < 0 ? 0 : bldgPoints[best].floors;
 };
-const bsrc = { title: 0, tag: 0, point: 0, guess: 0 };
+// 국토교통부 GIS건물통합정보(브이월드, tools/public.py 로 뽑는다): 건축물대장과 이은 건물 외곽선(2026)·지상 층수·높이·주용도.
+// 외곽선은 꼭짓점을 0.4m 허용 오차로 줄인다. OSM 건물의 층수·용도는 표제부를 주소로 잇지 못했을 때 이 자료에서 가져오고(외곽선이 중심을 품고 넓이가 0.5~2배인 것),
+// OSM·Overture 에 없는 건물은 아래(외곽선 자료에 없는 건물)에서 이 외곽선으로 세운다. 파일이 없으면 건너뛴다.
+const gisFile = new URL('./raw/gis-buildings.json', import.meta.url);
+type Gis = { pts: [number, number][]; area: number; cx: number; cz: number; t: Title; used: boolean };
+const gisList: Gis[] = [];
+if (existsSync(gisFile))
+  for (const b of JSON.parse(readFileSync(gisFile, 'utf8')).buildings as { f: number; h: number; use: string; dong: string; r: [number, number][][] }[]) {
+    const ring = cleanRing(b.r[0].map(([lat, lon]) => ({ lat, lon })));
+    if (!ring) continue;
+    const pts = simplifyRing([...ring.pts, ring.pts[0]], 0.4).slice(0, -1) as [number, number][];
+    if (pts.length < 3) continue;
+    let area = 0;
+    for (let i = 0; i < pts.length; i++) area += pts[i][0] * pts[(i + 1) % pts.length][1] - pts[(i + 1) % pts.length][0] * pts[i][1];
+    if (area / 2 < 12) continue;
+    // 단독주택 가운데 3층 넘는 것은 대개 다가구주택이다(GIS 자료에는 기타용도가 없다)
+    const t: Title = { use: b.use, etc: b.use === '단독주택' && b.f >= 3 ? '다가구주택' : '', floors: b.f, height: b.h, area: area / 2, households: 0, families: 0, dong: b.dong };
+    gisList.push({ pts, area: area / 2, cx: ring.cx, cz: ring.cz, t, used: false });
+  }
+const GCELL = 40;
+const gisGrid = new Map<string, number[]>();
+gisList.forEach((g, i) => {
+  const xs = g.pts.map((p) => p[0]);
+  const zs = g.pts.map((p) => p[1]);
+  for (let gx = Math.floor(Math.min(...xs) / GCELL); gx <= Math.floor(Math.max(...xs) / GCELL); gx++)
+    for (let gz = Math.floor(Math.min(...zs) / GCELL); gz <= Math.floor(Math.max(...zs) / GCELL); gz++) {
+      const k = `${gx},${gz}`;
+      (gisGrid.get(k) ?? gisGrid.set(k, []).get(k)!).push(i);
+    }
+});
+/** (x, z)를 품는 GIS 건물 가운데 넓이가 area 의 0.5~2배이고 가장 가까운 것 */
+const gisAt = (x: number, z: number, area: number): Gis | null => {
+  let best: Gis | null = null;
+  for (const i of gisGrid.get(`${Math.floor(x / GCELL)},${Math.floor(z / GCELL)}`) ?? []) {
+    const g = gisList[i];
+    if (g.area < area * 0.5 || g.area > area * 2 || !inside([[...g.pts, g.pts[0]]], x, z)) continue;
+    if (!best || Math.abs(g.area - area) < Math.abs(best.area - area)) best = g;
+  }
+  return best;
+};
+const bsrc = { title: 0, gis: 0, tag: 0, point: 0, guess: 0 };
 /** 높이 자료 고르기: 표제부(2026) → OSM 높이·층수 태그 → 수치지도 점 층수(2018) → 추정. 표제부 용도가 있으면 그것을 쓴다 */
 const withSources = (tags: Record<string, string>, pts: [number, number][], area: number): Record<string, string> => {
-  const t = titleOf(tags, area);
+  const t0 = titleOf(tags, area);
   const fl = pointFloors(pts);
+  const g = t0 && t0.floors > 0 ? null : gisAt(pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length, area);
+  if (g) g.used = true;
+  const t = t0 && t0.floors > 0 ? t0 : g && g.t.floors > 0 ? g.t : null;
   if (t && t.floors > 0) {
-    bsrc.title++;
+    if (t === t0) bsrc.title++;
+    else bsrc.gis++;
     const tt = titleTags(t);
     const out = { ...tags, ...tt };
     if (tt.building === 'yes') out.building = tags.building ?? 'yes';
@@ -275,7 +319,10 @@ const osmBuildings = buildings.length;
       if (near.some((f) => inside([[...f, f[0]]], cx, cz) || inside([ring], f[0][0], f[0][1]))) continue;
       if (area < 0) pts.reverse();
       const id = strHash(r.id);
-      if (!(r.height && r.height > 0) && !(r.floors && r.floors > 0)) {
+      const g = gisAt(cx, cz, Math.abs(area));
+      if (g) g.used = true;
+      if (!(r.height && r.height > 0) && !(r.floors && r.floors > 0) && g && g.t.floors > 0) (r.floors = g.t.floors), bsrc.gis++;
+      else if (!(r.height && r.height > 0) && !(r.floors && r.floors > 0)) {
         const fl = pointFloors(pts);
         if (fl > 0) (r.floors = fl), bsrc.point++;
         else bsrc.guess++;
@@ -287,6 +334,50 @@ const osmBuildings = buildings.length;
       if (r.roof_shape) tags['roof:shape'] = r.roof_shape;
       pushBuilding(Math.max(3, Math.min(260, h)), isSchool ? 6 : 0, pts, buildingInfo(tags));
     }
+  }
+}
+
+// ───────────────────────── 건물: GIS건물통합정보 외곽선으로 빈 곳 채우기 ─────────────────────────
+// OSM·Overture 건물과 겹치지 않는 GIS 건물을 그 외곽선 그대로 세운다. 겹침: 가운데나 꼭짓점을 가운데 쪽으로 30% 당긴 점이 이미 있는 건물 안에 들거나, 이미 있는 건물의 가운데를 품는 것.
+// 층수가 없으면 수치지도 점 층수 → 추정(바닥 60㎡ 미만은 1층) 순으로 정한다.
+let gisBuildings = 0;
+{
+  const CELL = 40;
+  const grid = new Map<string, { f: [number, number][]; cx: number; cz: number }[]>();
+  const add = (f: [number, number][]) => {
+    const xs = f.map((p) => p[0]);
+    const zs = f.map((p) => p[1]);
+    const e = { f, cx: xs.reduce((a, v) => a + v, 0) / f.length, cz: zs.reduce((a, v) => a + v, 0) / f.length };
+    for (let gx = Math.floor(Math.min(...xs) / CELL); gx <= Math.floor(Math.max(...xs) / CELL); gx++)
+      for (let gz = Math.floor(Math.min(...zs) / CELL); gz <= Math.floor(Math.max(...zs) / CELL); gz++) {
+        const k = `${gx},${gz}`;
+        (grid.get(k) ?? grid.set(k, []).get(k)!).push(e);
+      }
+  };
+  footprints.forEach(add);
+  const near = (x: number, z: number) => grid.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`) ?? [];
+  for (const g of gisList) {
+    if (g.used || !g.pts.every(([x, z]) => inBoard(x, z, 4))) continue;
+    const ring = [[...g.pts, g.pts[0]]];
+    const probe: [number, number][] = [[g.cx, g.cz], ...g.pts.map(([x, z]): [number, number] => [x + (g.cx - x) * 0.3, z + (g.cz - z) * 0.3])];
+    if (probe.some(([x, z]) => near(x, z).some((e) => inside([[...e.f, e.f[0]]], x, z)))) continue;
+    const xs = g.pts.map((p) => p[0]);
+    const zs = g.pts.map((p) => p[1]);
+    let hit = false;
+    for (let gx = Math.floor(Math.min(...xs) / CELL); gx <= Math.floor(Math.max(...xs) / CELL) && !hit; gx++)
+      for (let gz = Math.floor(Math.min(...zs) / CELL); gz <= Math.floor(Math.max(...zs) / CELL) && !hit; gz++)
+        hit = (grid.get(`${gx},${gz}`) ?? []).some((e) => inside(ring, e.cx, e.cz));
+    if (hit) continue;
+    const fl = g.t.floors > 0 ? g.t.floors : pointFloors(g.pts);
+    bsrc[g.t.floors > 0 ? 'gis' : fl > 0 ? 'point' : 'guess']++;
+    const tags = titleTags(g.t);
+    if (fl > 0) tags['building:levels'] = String(fl);
+    const id = Math.round(g.cx * 10) * 65536 + Math.round(g.cz * 10);
+    const h = fl > 0 ? estimateHeight(tags, g.area, id) : g.area < 60 ? 4.2 : estimateHeight({ ...tags, building: tags.building === 'yes' ? 'residential' : tags.building }, g.area, id);
+    const isSchool = schoolSites.some((sc) => inside([sc.ring], g.cx, g.cz));
+    pushBuilding(Math.max(3, Math.min(260, h)), isSchool ? 6 : 0, g.pts, buildingInfo(tags));
+    add(g.pts);
+    gisBuildings++;
   }
 }
 
@@ -862,6 +953,7 @@ const edgeAt = (i: number, s: number, side: number) => {
 // 수치지도 건물 점(2018) 가운데 어느 판 건물에도 들지 않은 것(바닥 30㎡ 이상)은 OSM·Overture 에 외곽선이 없는 건물이다(망원동 서쪽에 많다).
 // 그 자리에 바닥 면적만큼의 직사각형(긴 변 : 짧은 변 = 1.25)을 가장 가까운 길(40m 안)과 나란히 세운다. 이미 있는 건물과 겹치면 70·50·35%로 줄여 보고(15㎡ 아래로는 줄이지 않는다), 그래도 겹치면 세우지 않는다.
 // 점이 찻길 안에 떨어지면(점 위치 오차) 세우지 않는다. 외곽선은 실제 모양이 아니라 어림이다(설계 23절).
+// GIS건물통합정보(2026)가 있으면 이 단계를 건너뛴다: 그 자료에 없는 2018 점은 대부분 재개발로 헐린 건물이다(신촌·망원 재개발 구역에서 확인).
 let pointBuildings = 0;
 {
   const CELL = 40;
@@ -918,7 +1010,7 @@ let pointBuildings = 0;
         }
     return { dir, onRoad };
   };
-  for (const p of bldgPoints) {
+  for (const p of gisList.length ? [] : bldgPoints) {
     if (p.used || p.area < 30 || !inBoard(p.x, p.z, 6)) continue;
     if (near(p.x, p.z).some((f) => inside([[...f, f[0]]], p.x, p.z))) continue;
     const { dir: [ux, uz], onRoad } = roadDir(p.x, p.z);
@@ -943,7 +1035,7 @@ let pointBuildings = 0;
     addF(r);
     pointBuildings++;
   }
-  console.log(`건물 높이 자료: 표제부 ${bsrc.title}, 높이·층수 태그 ${bsrc.tag}, 수치지도 점 ${bsrc.point}, 추정 ${bsrc.guess}. 외곽선 자료에 없어 수치지도 점 자리에 세운 건물 ${pointBuildings}동`);
+  console.log(`건물 높이 자료: 표제부 ${bsrc.title}, GIS건물통합정보 ${bsrc.gis}, 높이·층수 태그 ${bsrc.tag}, 수치지도 점 ${bsrc.point}, 추정 ${bsrc.guess}. 외곽선 자료에 없어 수치지도 점 자리에 세운 건물 ${pointBuildings}동`);
 }
 
 // ───────────────────────── 버스 노선 ─────────────────────────
@@ -1524,7 +1616,7 @@ writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));
 
 const waterPx = mask.reduce((s, v, i) => s + (i % 4 === 0 && v ? 1 : 0), 0);
-console.log(`Overture(OSM 밖) 건물 ${buildings.length - osmBuildings - pointBuildings}동 더함`);
+console.log(`Overture(OSM 밖) 건물 ${buildings.length - osmBuildings - pointBuildings - gisBuildings}동, GIS건물통합정보 외곽선 건물 ${gisBuildings}동 더함`);
 console.log(`건물 ${buildings.length}동 (홍익대 ${buildings.filter((b) => b[1] === 1).length}동)`);
 console.log(`도로 ${roads.length}조각, 교량 조각 ${roads.filter((r) => r[3]).length}, 가장 높은 지점 ${Math.max(...roads.flatMap((r) => r.filter((_, i) => i >= 6 && i % 3 === 1))) / 10}m`);
 console.log(`물 ${((waterPx * 4) / 1e6).toFixed(2)}㎢, 나무 ${trees.length / 2}그루, 출구 ${exits.length}곳, 역 ${stations.map((s) => s.name).join('·')}`);
