@@ -155,9 +155,10 @@ function subLine(p: Float32Array, s0: number, s1: number): Float32Array {
 
 /**
  * 밤 가로등 빛 지도(판 좌표, 2m 한 칸): 큰길은 양쪽 가장자리를 따라 34m 마다, 골목은 가운데를 따라 26m 마다 가로등을 두고
- * 그 둘레를 가우스 빛으로 칠한다. 띠와 교차로 면이 같은 지도를 읽어 이음매가 없다
+ * 그 둘레를 가우스 빛으로 칠한다. 빛은 더하지 않고 가장 밝은 가로등 하나만 친다(W1 전 띠마다 가까운 가로등 하나만 비추던 세기와 같다.
+ * 더하면 여러 길이 모이는 교차로 가운데가 하얗게 포화된다). 띠와 교차로 면이 같은 지도를 읽어 이음매가 없다
  */
-function lampMap(roads: Road[]): THREE.DataTexture {
+export function lampMap(roads: Road[]): THREE.DataTexture {
   const N = 2048;
   const px = (2 * BOARD_R) / N;
   const acc = new Float32Array(N * N);
@@ -169,7 +170,7 @@ function lampMap(roads: Road[]): THREE.DataTexture {
       for (let i = Math.max(0, ci - r); i <= Math.min(N - 1, ci + r); i++) {
         const dx = (i + 0.5) * px - BOARD_R - x;
         const dz = (j + 0.5) * px - BOARD_R - z;
-        acc[j * N + i] += amp * Math.exp(-(dx * dx + dz * dz) / sig2);
+        acc[j * N + i] = Math.max(acc[j * N + i], amp * Math.exp(-(dx * dx + dz * dz) / sig2));
       }
   };
   const tmp = [0, 0, 0];
