@@ -6,7 +6,7 @@
 //    홍대입구 7번처럼 큰 건물 벽에 붙은 출구는 건물 밖으로, 가좌 2번처럼 그려진 찻길이 실제보다 넓은 곳은 보도 쪽으로 나간다.
 // 출구 점(e.x, e.z)은 계속 계단 입구 자리이므로 사람이 드나드는 자리도 함께 맞춰진다.
 import { curbAt, type Board, type Exit, type Road } from './board.ts';
-import { exitLook } from './exits.ts';
+import { exitLook, type ExitLook } from './exits.ts';
 
 /** 출구 지붕으로 볼 건물: 넓이(㎡)와 높이(m) 한도, 출구 점에서 떨어진 거리(m) 한도 */
 const CANOPY_MIN = 12;
@@ -21,6 +21,25 @@ export function exitBody(e: Exit, l: number): { cx: number; cz: number; len: num
   const len = e.len ?? l;
   const back = e.len ? len / 2 : (3.5 * len) / 9;
   return { cx: e.x + Math.cos(e.yaw) * back, cz: e.z + Math.sin(e.yaw) * back, len };
+}
+
+/** 출구 모형(길이 9m·안쪽 폭 3m 기준)이 차지하는 범위: 길이 방향은 입구 쪽 폴사인(−6.4)부터 지붕 끝(4.75)까지, 폭 방향은 지붕 반폭 2.05 */
+const SPAN = { x0: -6.4, x1: 4.75, z: 2.05 };
+
+/** 출구 모형 외곽을 0.5m 안쪽 간격으로 따라 찍은 점 [x, z]. 렌더러와 같은 배율(길이 l/9 또는 외곽선 길이/9.5, 폭 max(2, w)/3) */
+export function exitOutline(e: Exit, look: ExitLook): [number, number][] {
+  const { cx, cz } = exitBody(e, look.l);
+  const sx = e.len ? e.len / 9.5 : look.l / 9;
+  const sz = Math.max(2, look.w) / 3;
+  const [ux, uz] = [Math.cos(e.yaw), Math.sin(e.yaw)];
+  const at = (a: number, b: number): [number, number] => [cx + ux * a - uz * b, cz + uz * a + ux * b];
+  const [a0, a1, hz] = [SPAN.x0 * sx, SPAN.x1 * sx, SPAN.z * sz];
+  const out: [number, number][] = [];
+  const na = Math.ceil((a1 - a0) / 0.5);
+  const nb = Math.ceil((2 * hz) / 0.5);
+  for (let k = 0; k <= na; k++) out.push(at(a0 + ((a1 - a0) * k) / na, -hz), at(a0 + ((a1 - a0) * k) / na, hz));
+  for (let k = 1; k < nb; k++) out.push(at(a0, -hz + (2 * hz * k) / nb), at(a1, -hz + (2 * hz * k) / nb));
+  return out;
 }
 
 const area = (p: Float32Array) => {
@@ -71,8 +90,9 @@ function minRect(p: Float32Array) {
 }
 
 /** 점이 찻길(보행 전용·다리 제외) 위인가 */
-function onRoad(x: number, z: number, roads: Road[]) {
+export function onRoad(x: number, z: number, roads: Road[]) {
   for (const r of roads) {
+    if (r.cls > 5 || r.bridge) continue;
     const p = r.p;
     let s = 0;
     for (let k = 0; k + 3 < p.length; k += 3) {
@@ -135,8 +155,11 @@ export function fitExits(board: Board): void {
     const blds = board.buildings.filter((b) => near(b.pts, 2));
     const [ux, uz] = [Math.cos(e.yaw), Math.sin(e.yaw)];
     const W = Math.max(2, look.w) + 0.7;
+    // 걸림 정도: 모형 외곽이 한 점이라도 찻길에 들면 1 을 더하고, 모형 안쪽이 건물에 든 비율을 더한다
     const clash = (ox: number, oz: number) => {
-      const { cx, cz, len } = exitBody({ ...e, x: e.x + ox, z: e.z + oz }, look.l);
+      const moved = { ...e, x: e.x + ox, z: e.z + oz };
+      if (exitOutline(moved, look).some(([x, z]) => onRoad(x, z, roads))) return 1 + CLASH;
+      const { cx, cz, len } = exitBody(moved, look.l);
       let n = 0;
       let hit = 0;
       for (let i = -0.4; i <= 0.41; i += 0.1)
@@ -144,19 +167,21 @@ export function fitExits(board: Board): void {
           n++;
           const x = cx + ux * i * len - uz * j * W;
           const z = cz + uz * i * len + ux * j * W;
-          if (blds.some((b) => inPoly(x, z, b.pts)) || onRoad(x, z, roads)) hit++;
+          if (blds.some((b) => inPoly(x, z, b.pts))) hit++;
         }
       return hit / n;
     };
+    // 건물에 붙은 출구는 건물 겹침을 따지지 않고 찻길만 피한다
+    const ok = look.attached ? 1 : CLASH;
     const here = clash(0, 0);
-    if (here <= CLASH) continue;
+    if (here <= ok) continue;
     // 걸리지 않는 자리 가운데 가장 가까운 곳. 없으면(홍대입구 7번처럼 큰 건물과 찻길 사이 좁은 보도) 가장 덜 걸리는 곳
     let best: [number, number, number, number] = [0, 0, 0, here];
     for (let a = -6; a <= 6; a += 1.5)
       for (let p = -10; p <= 10; p += 0.5) {
         const cost = Math.abs(p) + Math.abs(a) * 1.5;
         const [ox, oz] = [ux * a - uz * p, uz * a + ux * p];
-        const c = Math.max(CLASH, clash(ox, oz));
+        const c = Math.max(ok, clash(ox, oz));
         if (c < best[3] || (c === best[3] && cost < best[2])) best = [ox, oz, cost, c];
       }
     e.x += best[0];

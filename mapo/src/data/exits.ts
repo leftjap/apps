@@ -1,6 +1,7 @@
 // 지하철 출구마다 실제 모양. 서울교통공사 출구(2·6호선)는 서울교통공사_외부출입구_캐노피_설치정보(OA-22449, 2025-08-05 기준,
 // 서울 열린데이터광장, 공공누리 제1유형)의 캐노피 종류와 출입구 폭을 쓰고, 공항철도·경의중앙선 출구는 자료가 없어 로드뷰로 정했다.
-// 모양은 출구마다 카카오맵 로드뷰(2026-06 촬영)를 출구 쪽으로 돌려 대조했다(참고만 하고 사진은 저장하지 않는다).
+// 모양은 출구마다 카카오맵 로드뷰(2025-04~2026-07 촬영)를 출구 쪽으로 돌려 대조했다(참고만 하고 사진은 저장하지 않는다).
+// 가려진 출구는 동서남북 20m 떨어진 다른 파노라마에서 다시 찍었고, 그래도 보이지 않은 3곳(신촌 6, 마포구청 3, 서강대 2)은 미확인이다.
 // 길이는 항공사진·로드뷰에서 어림한 값이다.
 
 /**
@@ -12,8 +13,9 @@
  *  - slim: 얇은 틀의 유리 옆벽, 계단을 따라 낮아지는 지붕. 캐노피 '도시형'(2016년 이후)
  *  - kiosk: 작은 건물 같은 상자(불투명 벽, 평지붕). 캐노피 '기타'
  *  - grand: 공항철도·경의중앙선의 크고 넓은 유리 반원통(강철 트러스, 유리에 큰 노란 번호), 에스컬레이터가 붙은 넓은 출구
+ *  - mural: 그림 판을 두른 낮은 벽에 흰 V자 버팀대와 계단 따라 낮아지는 평지붕(홍대입구 3번, 공항철도 그림)
  */
-export type ExitKind = 'open' | 'old' | 'vault' | 'box' | 'slim' | 'kiosk' | 'grand';
+export type ExitKind = 'open' | 'old' | 'vault' | 'box' | 'slim' | 'kiosk' | 'grand' | 'mural';
 
 export interface ExitLook {
   kind: ExitKind;
@@ -25,36 +27,41 @@ export interface ExitLook {
   src: 'OA-22449' | '로드뷰';
   /** 로드뷰로 모양을 확인했는가: 'yes' 확인, 'part' 일부만 보임, 'no' 가려져 확인 못 함(미확인) */
   seen: 'yes' | 'part' | 'no';
+  /** 높이 배율(기본 1, 공항철도 반원통 1.3) */
+  h?: number;
+  /** 건물 벽에 붙거나 건물 아래로 파고든 출구(건물과 겹쳐도 옮기지 않는다) */
+  attached?: boolean;
 }
 
 /** 모양별 기본 길이(m) */
-const LEN: Record<ExitKind, number> = { open: 7, old: 9, vault: 10, box: 9, slim: 10, kiosk: 5, grand: 14 };
+const LEN: Record<ExitKind, number> = { open: 7, old: 9, vault: 10, box: 9, slim: 10, kiosk: 5, grand: 14, mural: 12 };
 const oa = (kind: ExitKind, w: number, seen: ExitLook['seen']): ExitLook => ({ kind, w, l: LEN[kind], src: 'OA-22449', seen });
-const rv = (kind: ExitKind, w: number, l: number, seen: ExitLook['seen']): ExitLook => ({ kind, w, l, src: '로드뷰', seen });
+const rv = (kind: ExitKind, w: number, l: number, seen: ExitLook['seen'], more: Partial<ExitLook> = {}): ExitLook => ({ kind, w, l, src: '로드뷰', seen, h: kind === 'grand' ? 1.3 : 1, ...more });
 
 /** '역:출구 번호' → 모양 */
 export const EXIT_LOOKS: Record<string, ExitLook> = {
-  '망원:1': oa('kiosk', 2.04, 'yes'),
-  '망원:2': oa('kiosk', 2.04, 'yes'),
+  // 망원: 종류는 자료('기타'), 크기는 로드뷰(사람 키와 견줘 높이 약 4.5m, 정면 약 10m 의 두꺼운 평지붕 건물형). 폭은 출입구 폭(2.04m)이 아니라 구조물 폭
+  '망원:1': { ...oa('kiosk', 3.2, 'yes'), l: 11, h: 1.5 },
+  '망원:2': { ...oa('kiosk', 3.2, 'yes'), l: 9, h: 1.5, attached: true }, // 왼쪽 건물 벽에 붙어 있다
   '합정:1': oa('old', 2.81, 'yes'),
   '합정:2': oa('vault', 3.44, 'yes'),
   '합정:3': oa('old', 2.8, 'yes'),
   '합정:4': oa('old', 2.76, 'part'),
   '합정:5': oa('vault', 1.5, 'yes'),
   '합정:6': oa('box', 3.0, 'yes'), // 자료의 폭이 비어 있다(2024 신설)
-  '합정:7': oa('box', 3.0, 'no'), // 자료의 폭이 비어 있다(2024 신설)
+  '합정:7': oa('box', 3.0, 'yes'), // 자료의 폭이 비어 있다(2024 신설)
   '합정:8': oa('box', 2.8, 'yes'),
-  '합정:9': oa('box', 3.25, 'no'), // 메세나폴리스 관리
-  '합정:10': oa('box', 3.3, 'no'), // 메세나폴리스 관리
+  '합정:9': oa('box', 3.25, 'part'), // 메세나폴리스 관리
+  '합정:10': oa('box', 3.3, 'part'), // 메세나폴리스 관리
   '홍대입구:1': oa('box', 3.17, 'part'),
   '홍대입구:2': oa('box', 3.07, 'yes'),
   '홍대입구:8': oa('old', 3.19, 'yes'),
   '홍대입구:9': oa('old', 3.82, 'part'),
-  '홍대입구:3': rv('grand', 6.5, 14, 'yes'),
+  '홍대입구:3': rv('mural', 4.2, 12, 'yes'),
   '홍대입구:4': rv('grand', 6.5, 14, 'yes'),
-  '홍대입구:5': rv('grand', 6.5, 14, 'yes'),
+  '홍대입구:5': rv('grand', 6.5, 14, 'yes', { attached: true }), // AK& 건물 아래로 파고든 출구
   '홍대입구:6': rv('grand', 6.5, 14, 'yes'),
-  '홍대입구:7': rv('grand', 6.5, 14, 'yes'),
+  '홍대입구:7': rv('grand', 6.5, 14, 'yes', { attached: true }), // 건물 벽에 붙은 출구. 항공사진의 반원통 지붕이 옆 건물 GIS 외곽선 안에 든다
   '신촌:1': oa('box', 4.1, 'yes'),
   '신촌:2': oa('box', 4.1, 'yes'),
   '신촌:3': oa('box', 4.1, 'yes'),
@@ -76,7 +83,7 @@ export const EXIT_LOOKS: Record<string, ExitLook> = {
   '마포구청:3': oa('vault', 3.1, 'no'),
   '마포구청:4': oa('vault', 2.9, 'yes'),
   '마포구청:5': oa('vault', 2.6, 'yes'),
-  '마포구청:6': oa('kiosk', 2.72, 'no'),
+  '마포구청:6': oa('kiosk', 2.72, 'part'),
   '마포구청:7': oa('open', 1.89, 'yes'),
   '가좌:1': rv('grand', 5, 11, 'yes'),
   '가좌:2': rv('grand', 5, 11, 'yes'),

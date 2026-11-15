@@ -23,7 +23,7 @@ export interface StationLabel {
 }
 
 /** 출구 모형 부품 번호(셰이더가 부품마다 색을 칠한다) */
-export const EXIT_PARTS = { STAIR: 0, GRANITE: 1, GLASS: 2, ROOF: 3, FASCIA: 4, POST: 5, COPING: 6, STEP: 7, SIGN: 8, POLE: 9, VAULT: 13, SLOPE: 14, KIOSK: 15 } as const;
+export const EXIT_PARTS = { STAIR: 0, GRANITE: 1, GLASS: 2, ROOF: 3, FASCIA: 4, POST: 5, COPING: 6, STEP: 7, SIGN: 8, POLE: 9, VAULT: 13, SLOPE: 14, KIOSK: 15, MURAL: 16 } as const;
 const P = EXIT_PARTS;
 const B = (w: number, h: number, d: number, x: number, y: number, z: number) => new THREE.BoxGeometry(w, h, d).translate(x, y, z);
 // 출구 모형은 폭 3m(벽 안쪽)·길이 9m 기준으로 만들고, 출구마다 실제 폭·길이로 늘인다(셰이더의 aSize). 앞(+x)이 내려가는 쪽, 입구는 −x.
@@ -32,8 +32,8 @@ const common = () => [
   part(B(7.9, 0.04, 3.0, 0.3, 0.04, 0), P.STAIR),
   part(B(1.3, 0.3, 3.64, -4.95, 0.15, 0), P.STEP),
   part(B(0.5, 0.15, 3.64, -5.85, 0.075, 0), P.STEP),
-  part(B(0.1, 2.0, 0.1, -6.3, 1.0, 2.35), P.POLE),
-  part(B(0.2, 1.8, 0.5, -6.3, 2.85, 2.35), P.SIGN),
+  part(B(0.1, 2.0, 0.1, -6.3, 1.0, 1.75), P.POLE),
+  part(B(0.2, 1.8, 0.5, -6.3, 2.85, 1.75), P.SIGN),
 ];
 /** 양옆과 뒤의 화강석 벽(높이 h)과 갓돌 */
 const walls = (h: number) => [
@@ -95,8 +95,18 @@ export const EXIT_SHAPES: Record<ExitKind, () => THREE.BufferGeometry> = {
     ]),
   // 공항철도·경의중앙선: 낮은 벽 위 유리, 강철 트러스를 댄 큰 반원통(높이는 aSize 로 키운다)
   grand: () => merge([...common(), ...walls(0.6), ...glass(0.68, 1.9), ...vault(), fascia()]),
+  // 홍대입구 3번: 낮은 턱 위 그림 판(계단 따라 낮아진다), 바깥에 흰 V자 버팀대, 얇은 흰 평지붕
+  mural: () =>
+    merge([
+      ...common(),
+      ...walls(0.35),
+      ...slopeGlass().map((g) => part(g, P.MURAL)),
+      part(B(0.04, 1.1, 3.3, 4.29, 0.92, 0), P.MURAL),
+      ...[1.78, -1.78].flatMap((z) => [-3.3, -1.1, 1.1, 3.3].map((x, k) => part(B(0.14, 2.5, 0.12, 0, 0, 0).rotateZ(k % 2 ? 0.62 : -0.62).translate(x, 1.45 - x * 0.06, z), P.POST))),
+      part(B(9.6, 0.12, 3.9, 0, 0, 0).rotateZ(-Math.atan2(1.08, 8.8)).translate(-0.05, 2.06, 0), P.ROOF),
+    ]),
 };
-const KIND_NO: Record<ExitKind, number> = { open: 0, old: 1, vault: 2, box: 3, slim: 4, kiosk: 5, grand: 6 };
+const KIND_NO: Record<ExitKind, number> = { open: 0, old: 1, vault: 2, box: 3, slim: 4, kiosk: 5, grand: 6, mural: 7 };
 
 export function makeStations(board: Board) {
   const group = new THREE.Group();
@@ -322,7 +332,7 @@ export function makeStations(board: Board) {
       }`,
     fragment: /* glsl */ `
       uniform float uHi[16]; uniform vec3 uCols[16]; uniform vec3 uLine[16]; uniform sampler2D uFascia; uniform sampler2D uPole; uniform float uSignN;
-      uniform float uKind;   // 0 개방형 1 구형 2 신형 3 표준형 4 도시형 5 상자형 6 공항철도·경의중앙선, −1 엘리베이터
+      uniform float uKind;   // 0 개방형 1 구형 2 신형 3 표준형 4 도시형 5 상자형 6 공항철도·경의중앙선 7 그림형, −1 엘리베이터
       varying vec3 vN; varying float vPart; varying float vSt; varying float vDist; varying vec3 vO; varying vec3 vNO; varying float vSign; varying vec3 vW;
       vec3 granite(vec3 o) {
         // 화강석: 회색 바탕에 잔점, 0.6m 마다 판 줄눈
@@ -330,8 +340,8 @@ export function makeStations(board: Board) {
         float joint = step(0.96, fract((o.x + o.z) / 0.6));
         return vec3(0.6, 0.6, 0.59) * (0.9 + 0.16 * speck) * (1.0 - 0.12 * joint);
       }
-      // 틀 색: 표준형·도시형은 서울기와 진회색, 나머지는 은색
-      vec3 frame() { return (abs(uKind - 3.0) < 0.5 || abs(uKind - 4.0) < 0.5) ? vec3(0.24, 0.25, 0.27) : vec3(0.78, 0.8, 0.82); }
+      // 틀 색: 표준형·도시형은 진회색, 그림형은 흰색, 나머지는 은색
+      vec3 frame() { return abs(uKind - 7.0) < 0.5 ? vec3(0.93) : (abs(uKind - 3.0) < 0.5 || abs(uKind - 4.0) < 0.5) ? vec3(0.24, 0.25, 0.27) : vec3(0.78, 0.8, 0.82); }
       void main() {
         int si = int(vSt + 0.5);
         vec3 c = uCols[si];
@@ -363,6 +373,7 @@ export function makeStations(board: Board) {
           vec3 metal = frame();
           if (abs(uKind - 1.0) < 0.5) glass = vec3(0.74, 0.75, 0.76);        // 구형: 불투명 금속 지붕
           if (abs(uKind - 5.0) < 0.5) glass = metal = vec3(0.3, 0.31, 0.33); // 상자형: 평평한 지붕
+          if (abs(uKind - 7.0) < 0.5) glass = metal = vec3(0.9, 0.91, 0.92); // 그림형: 얇은 흰 지붕
           col = top > 0.5 ? mix(glass, metal, max(rim, rib)) : metal * 0.92;
           col = lit(col, n) + (top > 0.5 ? vec3(0.08, 0.1, 0.11) * (1.0 - max(rim, rib)) : vec3(0.0));
           glow = vec3(1.0, 0.95, 0.85) * 0.25 * (1.0 - max(rim, rib)) * top + c * 0.2 * h;
@@ -404,6 +415,14 @@ export function makeStations(board: Board) {
         } else if (vPart > 13.5 && vPart < 14.5) {
           // 도시형 경사 지붕: 진회색 틀의 얇은 판
           col = lit(mix(vec3(0.3, 0.36, 0.4), frame(), step(0.9, fract((vO.x + 4.8) / 1.2))), n);
+        } else if (vPart > 15.5 && vPart < 16.5) {
+          // 그림 판: 하늘색 바탕, 아래 짙은 파랑 띠, 가운데 주황·흰 열차 줄
+          float y = vO.y;
+          vec3 sky = mix(vec3(0.66, 0.8, 0.9), vec3(0.8, 0.88, 0.94), smoothstep(0.6, 2.4, y));
+          sky = mix(sky, vec3(0.2, 0.36, 0.62), 1.0 - smoothstep(0.55, 0.75, y));
+          float train = smoothstep(0.82, 0.86, y) * (1.0 - smoothstep(1.3, 1.34, y)) * step(-1.5, vO.x) * step(vO.x, 3.6);
+          sky = mix(sky, mix(vec3(0.94, 0.52, 0.16), vec3(0.95), step(1.08, y)), train);
+          col = lit(sky, n);
         } else if (vPart > 14.5 && vPart < 15.5) {
           // 상자형 벽: 짙은 석재
           col = lit(granite(vO) * 0.62, n);
@@ -429,7 +448,7 @@ export function makeStations(board: Board) {
     mine.forEach((i, k) => {
       inst.arr.aInst.set(doors[i], k * 4);
       inst.arr.aSign[k] = i;
-      inst.arr.aSize.set([looks[i].l / 9, Math.max(2, looks[i].w) / 3, kind === 'grand' ? 1.3 : 1], k * 3);
+      inst.arr.aSize.set([looks[i].l / 9, Math.max(2, looks[i].w) / 3, looks[i].h ?? 1], k * 3);
     });
     inst.geo.instanceCount = mine.length;
     const mesh = new THREE.Mesh(inst.geo, exitMat(KIND_NO[kind]));
@@ -466,7 +485,15 @@ export function makeStations(board: Board) {
     group,
     pickables: proxies,
     labels,
-    exits: board.exits.filter((e) => e.ref),
+    /** 출구 번호 자리: 모형 가운데 지붕 위, 그리고 번호가 건물에 가렸는지 볼 주변 건물(150m 안) */
+    exits: board.exits
+      .filter((e) => e.ref)
+      .map((e) => {
+        const look = exitLook(e.st, e.ref);
+        const b = Number.isFinite(e.yaw) ? exitBody(e, look.l) : { cx: e.x, cz: e.z };
+        const occ = board.buildings.filter((B) => B.h > 3 && Math.abs(B.pts[0] - b.cx) < 150 && Math.abs(B.pts[1] - b.cz) < 150);
+        return { st: e.st, ref: e.ref, x: b.cx, y: 3.4 * (look.h ?? 1), z: b.cz, occ };
+      }),
     setHover(name: string) {
       hovered = name;
     },

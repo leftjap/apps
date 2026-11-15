@@ -1,5 +1,5 @@
 // 3D 화면 위에 겹치는 글자: 지붕 위에 뜬 역·랜드마크 이름표와 가까이 볼 때만 보이는 출구 번호.
-// 건물에 가려지지 않도록 화면 좌표로 옮긴 HTML 로 그린다.
+// 건물에 가려지지 않도록 화면 좌표로 옮긴 HTML 로 그린다. 출구 번호는 건물 뒤로 가면 흐리게 한다.
 import * as THREE from 'three';
 import type { PlaceLabel } from '../render/landmarks.ts';
 import type { SchoolLabel } from '../render/schools.ts';
@@ -9,6 +9,13 @@ const EXIT_NEAR = 1500; // 카메라가 보는 지점에서 이만큼(m) 안으�
 const EXIT_FAR = 1800; // 카메라에서 이보다 먼 출구 번호는 감춘다(지평선 쪽 역)
 const PLACE_FAR = 3200; // 카메라에서 이보다 먼 랜드마크 이름표는 감춘다
 const SCHOOL_FAR = 2600; // 학교 이름은 동네 크기로 볼 때 보인다(판 전체를 볼 때는 감춘다)
+
+/** 점이 외곽선 [x,z, ...] 안인가 */
+function inside(x: number, z: number, p: Float32Array) {
+  let c = false;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) if (p[i + 1] > z !== p[j + 1] > z && x < ((p[j] - p[i]) * (z - p[i + 1])) / (p[j + 1] - p[i + 1]) + p[i]) c = !c;
+  return c;
+}
 
 /** 역 안내 표지의 노선 기호: 번호 노선은 노선 색 원에 번호, 이름 노선은 노선 색 둥근 네모에 짧은 이름(경의중앙선 → 경의중앙, 공항철도 → 공항) */
 export function lineMark(name: string): { text: string; round: boolean } {
@@ -20,7 +27,7 @@ export function makeTags(
   stage: HTMLElement,
   stations: StationLabel[],
   lines: { name: string; color: string; stopNames: string[] }[],
-  exits: { st: string; ref: string; x: number; z: number }[],
+  exits: { st: string; ref: string; x: number; y?: number; z: number; occ?: { pts: Float32Array; h: number }[] }[],
   places: PlaceLabel[],
   schools: SchoolLabel[],
   onStation: (name: string) => void,
@@ -73,8 +80,22 @@ export function makeTags(
     el.className = 'ex-tag';
     el.textContent = e.ref;
     layer.append(el);
-    return { el, x: e.x, y: 3, z: e.z };
+    return { el, x: e.x, y: e.y ?? 3, z: e.z, occ: e.occ ?? [], hid: false };
   });
+  /** 출구 번호에서 카메라 쪽으로 2m 씩 가며, 그 자리 높이보다 높은 건물 외곽선 안에 들면 가려졌다 */
+  function behind(it: (typeof ex)[number], cam: THREE.Camera) {
+    const [dx, dy, dz] = [cam.position.x - it.x, cam.position.y - it.y, cam.position.z - it.z];
+    const L = Math.hypot(dx, dy, dz);
+    const top = it.occ.reduce((m, b) => Math.max(m, b.h), 0);
+    for (let s = 2; s < L; s += 2) {
+      const y = it.y + (dy * s) / L;
+      if (y > top) return false;
+      const [x, z] = [it.x + (dx * s) / L, it.z + (dz * s) / L];
+      for (const b of it.occ) if (b.h > y && inside(x, z, b.pts)) return true;
+    }
+    return false;
+  }
+  let tick = 0;
   const v = new THREE.Vector3();
 
   function place(items: { el: HTMLElement; x: number; y: number; z: number }[], cam: THREE.Camera, w: number, h: number, show: boolean, far = Infinity) {
@@ -111,6 +132,13 @@ export function makeTags(
       place(sc, cam, w, h, true, SCHOOL_FAR);
       declutter();
       place(ex, cam, w, h, viewDist < EXIT_NEAR, EXIT_FAR);
+      // 가림 검사는 보이는 번호만, 프레임마다 여섯 개에 하나씩 돌아가며
+      tick++;
+      ex.forEach((it, i) => {
+        if (it.el.style.display === 'none' || (i + tick) % 6) return;
+        const hid = behind(it, cam);
+        if (hid !== it.hid) it.el.style.opacity = (it.hid = hid) ? '0.22' : '';
+      });
     },
   };
 }

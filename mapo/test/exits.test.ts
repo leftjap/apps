@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { curbAt, decodeBoard, type Board, type Building, type Exit } from '../src/data/board.ts';
-import { exitBody, fitExits } from '../src/data/exitFit.ts';
+import { exitBody, exitOutline, fitExits, onRoad } from '../src/data/exitFit.ts';
 import { EXIT_LOOKS, exitLook } from '../src/data/exits.ts';
 import { EXIT_PARTS, EXIT_SHAPES } from '../src/render/stations.ts';
 
@@ -9,18 +9,25 @@ const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.
 const parts = (g: ReturnType<(typeof EXIT_SHAPES)['box']>) => new Set(Array.from(g.attributes.aPart.array as Float32Array));
 
 describe('지하철 출구 모양 자료', () => {
-  it('판의 출구 49곳이 모두 자료에 있고, 확인하지 못한 출구는 7곳이다', () => {
+  it('판의 출구 49곳이 모두 자료에 있고, 확인하지 못한 출구는 3곳이다', () => {
     const keys = board.exits.filter((e) => e.ref).map((e) => `${e.st}:${e.ref}`);
     expect(keys).toHaveLength(49);
     for (const k of keys) expect(EXIT_LOOKS[k], k).toBeDefined();
-    expect(Object.values(EXIT_LOOKS).filter((l) => l.seen === 'no')).toHaveLength(7);
+    expect(Object.values(EXIT_LOOKS).filter((l) => l.seen === 'no')).toHaveLength(3);
   });
   it('서울교통공사 출구는 공공 자료의 캐노피 종류와 폭을 쓴다', () => {
     expect(exitLook('신촌', '6')).toMatchObject({ kind: 'box', w: 5.1, src: 'OA-22449' });
     expect(exitLook('합정', '2')).toMatchObject({ kind: 'vault', w: 3.44 });
     expect(exitLook('상수', '1').kind).toBe('open');
     expect(exitLook('홍대입구', '8').kind).toBe('old');
-    expect(exitLook('홍대입구', '5')).toMatchObject({ kind: 'grand', src: '로드뷰' });
+    expect(exitLook('홍대입구', '5')).toMatchObject({ kind: 'grand', src: '로드뷰', attached: true });
+  });
+  it('로드뷰로 고친 출구: 망원은 높이 4.5m 안팎의 큰 건물형, 홍대입구 3번은 그림 판을 두른 낮은 출구, 7번은 건물 연결형', () => {
+    expect(exitLook('망원', '1')).toMatchObject({ kind: 'kiosk', w: 3.2, l: 11, h: 1.5 });
+    expect(exitLook('홍대입구', '3')).toMatchObject({ kind: 'mural', h: 1 });
+    expect(exitLook('홍대입구', '7').attached).toBe(true);
+    expect(parts(EXIT_SHAPES.mural()).has(EXIT_PARTS.MURAL)).toBe(true);
+    expect(parts(EXIT_SHAPES.mural()).has(EXIT_PARTS.VAULT)).toBe(false);
   });
 });
 
@@ -77,6 +84,14 @@ describe('출구 자리 맞추기', () => {
     expect(exit).toMatchObject({ x: 0, z: 0, yaw: 0 });
     expect(exit.len).toBeUndefined();
   });
+  it('구운 판: 출구 모형 외곽(지붕 끝·입구 계단·폴사인까지)이 49곳 모두 찻길 가장자리 안쪽(보도 쪽)에 있다', () => {
+    const out: string[] = [];
+    for (const e of board.exits.filter((e) => e.ref)) {
+      const on = exitOutline(e, exitLook(e.st, e.ref)).filter(([x, z]) => onRoad(x, z, board.roads));
+      if (on.length) out.push(`${e.st}${e.ref} ${on.length}점`);
+    }
+    expect(out, out.join(', ')).toHaveLength(0);
+  });
   it('구운 판: 출구 모형 자리에 건물과 찻길이 거의 없고, 출구 지붕 외곽선 26곳으로 자리를 맞췄다', () => {
     let bad = 0;
     const where: string[] = [];
@@ -108,8 +123,8 @@ describe('출구 자리 맞추기', () => {
           });
           if (inB || onR) hit++;
         }
-      // 홍대입구 7번은 큰 건물 벽과 좁은 찻길 사이에 붙어 있어 가장 덜 걸리는 자리(원래는 전부 건물 안)로만 옮긴다
-      if (hit / n > (`${e.st}${e.ref}` === '홍대입구7' ? 0.65 : 0.1)) {
+      // 건물에 붙은 출구(홍대입구 5·7)는 건물과 겹쳐도 된다
+      if (!lk.attached && hit / n > 0.1) {
         bad++;
         where.push(`${e.st}${e.ref} ${hit}/${n}`);
       }
