@@ -1,4 +1,5 @@
-// 보행자. 머리(피부)·머리카락·목·상의(허리 아래는 하의)·팔·다리를 나눈 5~6등신쯤의 캐릭터를 인스턴싱으로 그리고, 걸음은 버텍스 셰이더에서 만든다.
+// 보행자. 머리(피부)·머리카락·목·상의(허리 아래는 하의)·팔·다리를 나눈 2.7등신쯤의 귀여운 캐릭터(큰 머리, 둥근 몸통, 짧은 팔다리, 큰 눈과 볼 홍조)를
+// 인스턴싱으로 그리고, 걸음은 버텍스 셰이더에서 만든다.
 // 걸을 때 팔은 다리와 반대로 흔든다. 어깨는 팔 윗부분이 둥글게 덮고, 손은 팔 끝을 피부색으로 칠한다.
 // 나이대(실시간 도시데이터의 나이대 비율로 정한다)에 따라 모양이 다르다: 아이는 작고 머리가 크며 밝은 옷,
 // 10·20대는 선명한 옷, 30~50대는 차분한 옷, 60대 이상은 흰머리에 허리를 조금 굽힌다. 여성 가운데 일부는 긴 머리다.
@@ -11,51 +12,56 @@ import { env, material, pal } from './env.ts';
 import { instanced, merge, part } from './util.ts';
 
 // 몸의 기준 높이(m). 셰이더도 같은 값을 쓴다
-const HIP = 0.84;
-const SHOULDER = 1.27;
-const ARM_Z = 0.205;
-const ELBOW = 1.005;
-const HAND = 0.745;
-const NECK = 1.4;
-const HEAD: [number, number] = [0.01, 1.53];
+// 키 약 1.47m 에 머리 지름 0.54m(2.7등신). 다리 0.42m, 팔 0.36m
+const HIP = 0.42;
+const SHOULDER = 0.86;
+const ARM_Z = 0.2;
+const ELBOW = 0.68;
+const HAND = 0.5;
+const NECK = 0.92;
+const HEAD_R = 0.27;
+const HEAD: [number, number] = [0.0, 1.18];
+/** 하의와 상의가 갈리는 높이 */
+const WAIST = 0.5;
 /** 우산 천의 아래 가장자리 높이(우산 자기 좌표, 손잡이가 원점) */
-const RIM = 0.32 + 0.56 * Math.cos(1.0);
-/** 오른손에 든 휴대폰의 자리(몸 좌표). 플래시를 여기에 띄운다 */
-const PHONE: [number, number, number] = [0.3, 1.12, 0.06];
+const RIM = 0.4 + 0.6 * Math.cos(1.0);
+/** 오른손에 든 휴대폰의 자리(몸 좌표, 셰이더의 hand(1, 든 자세)와 같은 값). 플래시를 여기에 띄운다 */
+const PHONE: [number, number, number] = [0.18, 0.74, 0.11];
 
 // 부품: 0 몸통(허리 아래는 하의), 1 머리, 2·3 다리(오른쪽 +z·왼쪽), 4 휴대폰, 5 발밑 그늘, 6 머리카락, 7 긴 머리,
 // 8·9 팔(오른쪽·왼쪽), 10 목, 11 우산 천, 12 우산 대. 앞은 +x, 오른쪽은 +z.
 // 휴대폰과 우산은 손에 쥐는 점을 원점으로 둔 자기 좌표로 만들고, 셰이더가 손 자리로 옮긴다.
 function figure(): THREE.BufferGeometry {
+  // 둥근 몸통: 엉덩이에서 배까지 불룩하고 어깨에서 목으로 둥글게 좁아진다
   const torso = new THREE.LatheGeometry(
     [
-      [0.135, 0.76],
-      [0.165, 0.84],
-      [0.155, 0.98],
-      [0.172, 1.16],
-      [0.165, 1.28],
-      [0.11, 1.35],
-      [0.05, 1.38],
+      [0.13, 0.36],
+      [0.185, 0.42],
+      [0.205, 0.54],
+      [0.195, 0.7],
+      [0.165, 0.83],
+      [0.105, 0.9],
+      [0.04, 0.93],
     ].map(([r, y]) => new THREE.Vector2(r, y)),
-    8,
-  ).scale(0.62, 1, 1);
-  const leg = (z: number, id: number) => part(new THREE.CapsuleGeometry(0.064, 0.712, 2, 6).translate(0, 0.44, z), id);
-  const arm = (z: number, id: number) => part(new THREE.CapsuleGeometry(0.045, 0.52, 2, 6, 2).translate(0, ELBOW, z), id);
+    10,
+  ).scale(0.8, 1, 1);
+  const leg = (z: number, id: number) => part(new THREE.CapsuleGeometry(0.082, HIP - 0.164, 2, 6).translate(0, HIP / 2, z), id);
+  const arm = (z: number, id: number) => part(new THREE.CapsuleGeometry(0.058, SHOULDER - HAND, 2, 6, 2).translate(0, ELBOW, z), id);
   return merge([
     part(torso, 0),
-    part(new THREE.SphereGeometry(0.14, 10, 7).scale(1, 1.08, 0.96).translate(HEAD[0], HEAD[1], 0), 1),
-    leg(0.085, 2),
-    leg(-0.085, 3),
+    part(new THREE.SphereGeometry(HEAD_R, 12, 8).scale(1, 0.94, 1).translate(HEAD[0], HEAD[1], 0), 1),
+    leg(0.09, 2),
+    leg(-0.09, 3),
     part(new THREE.BoxGeometry(0.13, 0.014, 0.07).rotateZ(0.5).translate(0.04, 0.02, 0), 4),
     part(new THREE.CircleGeometry(0.32, 8).rotateX(-Math.PI / 2).translate(0, 0.03, 0), 5),
     // 머리카락: 머리보다 조금 큰 구면의 일부를 뒤로 기울여, 앞은 이마 위에서 끝나고 뒤는 목덜미까지 덮는다
-    part(new THREE.SphereGeometry(0.148, 10, 5, 0, Math.PI * 2, 0, Math.PI * 0.6).rotateZ(0.75).scale(1, 1.08, 0.96).translate(HEAD[0] - 0.005, HEAD[1] + 0.005, 0), 6),
-    part(new THREE.CapsuleGeometry(0.1, 0.2, 2, 6).scale(0.55, 1, 1.3).translate(-0.085, 1.4, 0), 7),
+    part(new THREE.SphereGeometry(HEAD_R + 0.016, 12, 5, 0, Math.PI * 2, 0, Math.PI * 0.6).rotateZ(0.7).scale(1, 0.95, 1.02).translate(HEAD[0] - 0.01, HEAD[1] + 0.01, 0), 6),
+    part(new THREE.CapsuleGeometry(0.15, 0.22, 2, 6).scale(0.6, 1, 1.4).translate(-0.13, HEAD[1] - 0.17, 0), 7),
     arm(ARM_Z, 8),
     arm(-ARM_Z, 9),
-    part(new THREE.CylinderGeometry(0.05, 0.055, 0.12, 6, 1, true).translate(0, NECK - 0.01, 0), 10),
-    part(new THREE.SphereGeometry(0.56, 8, 3, 0, Math.PI * 2, 0, 1.0).translate(0, 0.32, 0), 11),
-    part(new THREE.CylinderGeometry(0.011, 0.011, 0.9, 4, 1, true).translate(0, 0.42, 0), 12),
+    part(new THREE.CylinderGeometry(0.06, 0.07, 0.06, 6, 1, true).translate(0, NECK - 0.01, 0), 10),
+    part(new THREE.SphereGeometry(0.6, 8, 3, 0, Math.PI * 2, 0, 1.0).translate(0, 0.4, 0), 11),
+    part(new THREE.CylinderGeometry(0.011, 0.011, 0.96, 4, 1, true).translate(0, 0.47, 0), 12),
   ]);
 }
 
@@ -112,8 +118,8 @@ export function makeWalkerMesh(max: number) {
           // 우산: 비가 셀수록 많은 사람이 쓴다(약한 비 일부, 센 비 거의 모두). 휴대폰을 드는 동안은 접는다
           float umb = step(fract(aMore.y * 17.13 + 0.37), 0.95 * smoothstep(0.03, 0.6, uRain)) * move;
           if (id == 7) p *= longHair;
-          // 아이: 머리가 크다
-          if (age < 0.5 && (id == 1 || id == 6 || id == 7)) p = (p - vec3(${num(HEAD[0])}, ${num(HEAD[1])}, 0.0)) * 1.25 + vec3(${num(HEAD[0])}, ${num(HEAD[1])}, 0.0);
+          // 아이: 머리가 더 크다
+          if (age < 0.5 && (id == 1 || id == 6 || id == 7)) p = (p - vec3(${num(HEAD[0])}, ${num(HEAD[1])}, 0.0)) * 1.1 + vec3(${num(HEAD[0])}, ${num(HEAD[1])}, 0.0);
           if (id == 2 || id == 3) {
             // 다리: 엉덩이를 축으로 번갈아 앞뒤로
             float side = id == 2 ? 1.0 : -1.0;
@@ -140,10 +146,10 @@ export function makeWalkerMesh(max: number) {
             // 60대 이상은 허리를 조금 굽힌다. 걸을 때 몸이 좌우로 살짝 흔들리고 위아래로 통통
             p.xy = rot(p.xy - vec2(0.0, ${num(HIP)}), age > 2.5 ? -0.16 : 0.0) + vec2(0.0, ${num(HIP)});
             p.yz = rot(p.yz, sw * 0.04);
-            p.y += abs(cos(aInst.w)) * 0.04 * move;
+            p.y += abs(cos(aInst.w)) * 0.035 * move;
           }
           vec4 cv = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
-          float s = ${SCALE} * aMore.x * (age < 0.5 ? 0.66 : 1.0);
+          float s = ${SCALE} * aMore.x * (age < 0.5 ? 0.72 : 1.0);
           p *= s;
           float cs = cos(aInst.z), sn = sin(aInst.z);
           vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, p.y + 0.05, aInst.y + p.x * sn + p.z * cs);
@@ -190,12 +196,18 @@ export function makeWalkerMesh(max: number) {
           float age = vLook.x;
           vec3 skin = mix(hex(243.,207.,177.), hex(214.,166.,128.), fract(vTint * 13.0));
           vec3 alb;
-          if (id == 0) alb = vO.y < 0.9 ? pants(age, fract(vTint * 7.0)) : top(age, vTint);
-          else if (id == 8 || id == 9) alb = vO.y < 0.79 ? skin : top(age, vTint);              // 소매와 손
+          if (id == 0) alb = vO.y < ${num(WAIST)} ? pants(age, fract(vTint * 7.0)) : top(age, vTint);
+          else if (id == 8 || id == 9) alb = vO.y < ${num(HAND + 0.07)} ? skin : top(age, vTint);   // 소매와 손
           else if (id == 1 || id == 10) {
             alb = skin;
-            vec2 e = vec2(vO.y - 1.535, abs(vO.z) - 0.048);                                 // 눈
-            if (id == 1 && vO.x > 0.1 && dot(e, e) < 0.018 * 0.018) alb = hex(45.,34.,30.);
+            // 큰 눈(위쪽에 작은 흰 빛)과 볼 홍조
+            vec2 e = vec2(vO.y - ${num(HEAD[1] - 0.01)}, abs(vO.z) - 0.1);
+            vec2 g = vec2(vO.y - ${num(HEAD[1] + 0.01)}, abs(vO.z) - 0.09);
+            vec2 c = vec2(vO.y - ${num(HEAD[1] - 0.085)}, abs(vO.z) - 0.165);
+            if (id == 1 && vO.x > 0.12) {
+              if (dot(c, c) < 0.04 * 0.04) alb = mix(alb, hex(240.,128.,128.), 0.55);
+              if (e.x * e.x + e.y * e.y * 1.6 < 0.034 * 0.034) alb = dot(g, g) < 0.011 * 0.011 ? vec3(0.95) : hex(40.,30.,28.);
+            }
           }
           else if (id == 2 || id == 3) alb = pants(age, fract(vTint * 7.0)) * mix(0.55, 1.0, smoothstep(0.08, 0.16, vO.y));   // 신발은 어둡게
           else if (id >= 11) {
