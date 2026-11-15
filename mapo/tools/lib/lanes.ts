@@ -290,21 +290,79 @@ export function readEdges(idx: LaneIndex, pts: [number, number][], near: [number
       if (okB) return m[b];
       return near[j];
     });
-    // 직선 보간으로 0.2m 안에 드는 단면 지우기
-    const keep = [0];
-    for (let i = 1; i < filled.length - 1; i++) {
-      const a = keep[keep.length - 1];
-      let ok = true;
-      for (let q = a + 1; q <= i + 1 && ok; q++) {
-        const t = (S[q] - S[a]) / (S[i + 1] - S[a]);
-        if (Math.abs(filled[a] + (filled[i + 1] - filled[a]) * t - filled[q]) > 0.2) ok = false;
-      }
-      if (!ok) keep.push(i);
-    }
-    keep.push(filled.length - 1);
-    return { s: keep.map((i) => S[i]), v: keep.map((i) => filled[i]) };
+    return thin(S, filled);
   };
   return { right: side(0), left: side(1) };
+}
+
+/** 직선 보간으로 0.2m 안에 드는 단면 지우기 */
+function thin(S: number[], v: number[]): Profile {
+  const keep = [0];
+  for (let i = 1; i < v.length - 1; i++) {
+    const a = keep[keep.length - 1];
+    let ok = true;
+    for (let q = a + 1; q <= i + 1 && ok; q++) {
+      const t = (S[q] - S[a]) / (S[i + 1] - S[a]);
+      if (Math.abs(v[a] + (v[i + 1] - v[a]) * t - v[q]) > 0.2) ok = false;
+    }
+    if (!ok) keep.push(i);
+  }
+  keep.push(v.length - 1);
+  return { s: keep.map((i) => S[i]), v: keep.map((i) => v[i]) };
+}
+
+const valueAt = (p: Profile, s: number) => {
+  let k = 0;
+  while (k + 2 < p.s.length && p.s[k + 1] < s) k++;
+  const t = Math.max(0, Math.min(1, (s - p.s[k]) / (p.s[k + 1] - p.s[k] || 1)));
+  return p.v[k] + (p.v[k + 1] - p.v[k]) * t;
+};
+
+/**
+ * 실폭도로(도로명주소 전자지도 도로 면, 선 종류 'RW') 경계로 찻길 가장자리를 고친다. 실폭도로는 건물 앞까지의 도로 부지라 보도가 있는 길에서는 보도 바깥 끝이다.
+ * 단면마다 가운데선에서 0.3m ~ (지금 가장자리 + 1.5m) 사이 가장 안쪽 경계 d 를 찾는다(끝 skip m 는 교차로라 보지 않는다).
+ *  - 연석선으로 읽은 쪽(curb): d 가 0.3m 넘게 안쪽일 때만 d 로 줄인다(찻길이 도로 부지 밖으로 나간 곳).
+ *  - 어림값 쪽: d 로 바꾼다. 1.5m 넘게 바깥 경계는 보도가 있는 것으로 보고 그대로 둔다.
+ * 하나만 튀는 단면은 앞뒤 셋의 중앙값으로 고르고, 0.2m 안으로 직선 보간되는 단면은 지운다.
+ */
+export function fitToRoadArea(idx: LaneIndex, pts: [number, number][], cur: { right: Profile; left: Profile }, curb: [boolean, boolean], step = 4, skip = 8): { right: Profile; left: Profile } {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = cum[cum.length - 1];
+  const n = Math.max(2, Math.round(total / step) + 1);
+  const S: number[] = [];
+  const V: [number[], number[]] = [[], []];
+  const prof = [cur.right, cur.left];
+  let seg = 0;
+  for (let k = 0; k < n; k++) {
+    const s = (total * k) / (n - 1);
+    S.push(s);
+    const now = [valueAt(prof[0], s), valueAt(prof[1], s)];
+    if (s < skip || s > total - skip || total < 1e-6) {
+      V[0].push(now[0]);
+      V[1].push(now[1]);
+      continue;
+    }
+    while (seg + 1 < pts.length - 1 && cum[seg + 1] < s) seg++;
+    const [ax, az] = pts[seg];
+    const [bx, bz] = pts[seg + 1];
+    const sl = cum[seg + 1] - cum[seg] || 1;
+    const ux = (bx - ax) / sl;
+    const uz = (bz - az) / sl;
+    const f = (s - cum[seg]) / sl;
+    const hits = transect(idx, ax + (bx - ax) * f, az + (bz - az) * f, ux, uz).filter((h) => h.k === 'RW');
+    for (const j of [0, 1] as const) {
+      const dir = j === 0 ? 1 : -1;
+      let d = NaN;
+      for (const h of hits) {
+        const t = h.t * dir;
+        if (t >= 0.3 && t <= now[j] + 1.5 && !(t >= d)) d = t;
+      }
+      V[j].push(Number.isNaN(d) ? now[j] : curb[j] ? (d < now[j] - 0.3 ? d : now[j]) : d);
+    }
+  }
+  const side = (v: number[]) => thin(S, v.map((x, i) => (i > 0 && i < v.length - 1 ? [v[i - 1], x, v[i + 1]].sort((a, b) => a - b)[1] : x)));
+  return { right: side(V[0]), left: side(V[1]) };
 }
 
 /**

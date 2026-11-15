@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { alignToRoad, isCurrent, mergeStages, minRect } from '../tools/lib/crosswalk.ts';
-import { analysePiece, cornerRadius, laneIndex, readEdges, type LaneSeg } from '../tools/lib/lanes.ts';
+import { analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg } from '../tools/lib/lanes.ts';
 import type { Corner } from '../src/data/corners.ts';
 
 describe('횡단보도 면 → 축', () => {
@@ -163,5 +163,38 @@ describe('모퉁이 반지름', () => {
   });
   it('가장자리선이 모퉁이 앞에서 끊기면 잴 수 없다', () => {
     expect(cornerRadius(laneIndex([{ ax: 30, az: 5, bx: 60, bz: 5, k: '009', k2: '001' }]), c)).toBeNaN();
+  });
+});
+
+describe('실폭도로(도로 면) 경계로 찻길 가장자리 맞추기', () => {
+  const rw = (z: number): LaneSeg => ({ ax: -10, az: z, bx: 130, bz: z, k: 'RW', k2: '' });
+  const flat = (v: number) => ({ s: [0, 120], v: [v, v] });
+  const mid = (p: { s: number[]; v: number[] }) => {
+    let i = 0;
+    while (i + 1 < p.s.length - 1 && p.s[i + 1] < 60) i++;
+    const t = (60 - p.s[i]) / (p.s[i + 1] - p.s[i] || 1);
+    return p.v[i] + (p.v[i + 1] - p.v[i]) * t;
+  };
+  const P: [number, number][] = [[0, 0], [120, 0]];
+  it('연석선이 없는 쪽은 도로 면 경계를 가장자리로 삼는다(좁아지거나 넓어진다)', () => {
+    const e = fitToRoadArea(laneIndex([rw(3), rw(-5.5)]), P, { right: flat(5), left: flat(5) }, [false, false]);
+    expect(mid(e.right)).toBeCloseTo(3, 5);
+    expect(mid(e.left)).toBeCloseTo(5.5, 5);
+  });
+  it('연석선이 없어도 경계가 1.5m 넘게 바깥이면 보도가 있는 것으로 보고 그대로 둔다', () => {
+    const e = fitToRoadArea(laneIndex([rw(8), rw(-5)]), P, { right: flat(5), left: flat(5) }, [false, false]);
+    expect(mid(e.right)).toBeCloseTo(5, 5);
+  });
+  it('연석선으로 읽은 쪽은 도로 면 밖으로 0.3m 넘게 나간 곳만 줄인다', () => {
+    const narrow = fitToRoadArea(laneIndex([rw(5), rw(-5.8)]), P, { right: flat(6), left: flat(6) }, [true, true]);
+    expect(mid(narrow.right)).toBeCloseTo(5, 5);
+    expect(mid(narrow.left)).toBeCloseTo(6, 5);
+    const wide = fitToRoadArea(laneIndex([rw(9), rw(-9)]), P, { right: flat(6), left: flat(6) }, [true, true]);
+    expect(mid(wide.right)).toBeCloseTo(6, 5);
+  });
+  it('도로 면 선이 없거나 차선 자료 선만 있으면 그대로 둔다', () => {
+    const e = fitToRoadArea(laneIndex([{ ax: -10, az: 3, bx: 130, bz: 3, k: '009', k2: '' }]), P, { right: flat(5), left: flat(5) }, [false, false]);
+    expect(mid(e.right)).toBeCloseTo(5, 5);
+    expect(mid(e.left)).toBeCloseTo(5, 5);
   });
 });

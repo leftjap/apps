@@ -8,7 +8,7 @@ import { buildingInfo, packInfo, pickTitle, rectFootprint, titleTags, type Title
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
-import { analysePiece, cornerRadius, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
+import { analysePiece, cornerRadius, fitToRoadArea, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
 import { stitch } from './lib/rail.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
@@ -937,6 +937,39 @@ const roadEdges: ({ right: Profile; left: Profile } | null)[] = roads.map(() => 
     changed++;
   });
   console.log(`찻길 가장자리를 연석선으로 고친 조각 ${changed}개`);
+}
+// 행정안전부 도로명주소 전자지도 실폭도로(tools/public.py 로 뽑는다, 건물 앞까지의 도로 부지)로 찻길 가장자리를 한 번 더 고친다(tools/lib/lanes.ts fitToRoadArea).
+// 연석선이 없는 골목은 도로 면 경계를 가장자리로 삼고, 연석선으로 읽은 쪽은 도로 면 밖으로 나간 곳만 줄인다. 파일이 없으면 건너뛴다.
+{
+  const file = new URL('./raw/gis-roads.json', import.meta.url);
+  if (existsSync(file)) {
+    const segs: LaneSeg[] = [];
+    for (const x of JSON.parse(readFileSync(file, 'utf8')).roads as { r: [number, number][][] }[])
+      for (const ring of x.r) {
+        const P = ring.map(([a, b]) => toXZ(a, b));
+        for (let i = 0; i + 1 < P.length; i++) segs.push({ ax: P[i][0], az: P[i][1], bx: P[i + 1][0], bz: P[i + 1][1], k: 'RW', k2: '' });
+      }
+    const idx = laneIndex(segs);
+    let fitted = 0;
+    roads.forEach((r, i) => {
+      if (r[0] > 4 || r[3] || r.some((v, k) => k >= 6 && k % 3 === 1 && v > 3)) return;
+      const near = nearHalf(i);
+      const P = ptsOf(r);
+      const len = P.reduce((a, p, k) => (k ? a + Math.hypot(p[0] - P[k - 1][0], p[1] - P[k - 1][1]) : 0), 0);
+      const cur = roadEdges[i] ?? { right: { s: [0, len], v: [near[0], near[0]] }, left: { s: [0, len], v: [near[1], near[1]] } };
+      const e = fitToRoadArea(idx, P, cur, roadEdges[i] ? [true, true] : [false, false]);
+      const moved = (a: Profile, b: Profile) => b.s.some((s, k) => {
+        let j = 0;
+        while (j + 2 < a.s.length && a.s[j + 1] < s) j++;
+        const t = Math.max(0, Math.min(1, (s - a.s[j]) / (a.s[j + 1] - a.s[j] || 1)));
+        return Math.abs(a.v[j] + (a.v[j + 1] - a.v[j]) * t - b.v[k]) > 0.3;
+      });
+      if (!moved(cur.right, e.right) && !moved(cur.left, e.left)) return;
+      roadEdges[i] = e;
+      fitted++;
+    });
+    console.log(`찻길 가장자리를 실폭도로 경계로 고친 조각 ${fitted}개`);
+  }
 }
 /** 조각 i 의 s 자리 찻길 가장자리(side 1 오른쪽, −1 왼쪽) */
 const edgeAt = (i: number, s: number, side: number) => {
