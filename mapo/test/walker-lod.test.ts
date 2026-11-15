@@ -23,8 +23,8 @@ describe('사람 그리기 단계', () => {
     expect(walkerLod(cam(0, 300, 300), projK, 0, 0)).toBe(2);
     expect(walkerLod(cam(0, 900, 700), projK, 0, 0)).toBe(2);
   });
-  it('단순한 모형은 정점 130개 안이고, 자세한 모형은 2,400개를 넘지 않는다', () => {
+  it('단순한 모형은 정점 130개 안이고, 자세한 모형은 2,700개를 넘지 않는다(소지품·모자 포함)', () => {
     expect(FAR_VERTS).toBeLessThanOrEqual(130);
-    expect(NEAR_VERTS).toBeLessThanOrEqual(2400);
+    expect(NEAR_VERTS).toBeLessThanOrEqual(2700);
   });
 });

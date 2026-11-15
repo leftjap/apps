@@ -713,7 +713,7 @@ function frame(t: number) {
   }
   picnic.visible = picnicOn(now, season, weather.rain);
   carMeshes.update(cars.cars, selected?.kind === 'bus' ? selected.uid : 0);
-  walkerMesh.update(walkers.w, view.camera);
+  walkerMesh.update(walkers.w, view.camera, season);
   catMeshes.update(catStates, dt);
   rings.update(dt);
   signalMarks.update(now.tod);
