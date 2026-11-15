@@ -2,7 +2,8 @@
 // 장소 인구·혼잡 단계·나이대·여성 비율은 실제 값을 쓰고, 도로 속도는 실제 도로 구간 바로 옆(20m 안, 같은 방향)만
 // 그 구간의 원활·서행·정체로 바꾼다. 도시고속도로(등급 0)는 공식 구간 선이 반대 방향 차로 위에 그려진 곳이 많아 같은 방향 80m 안까지 본다.
 // 자료가 없는 장소와 길, 시험 시각으로 볼 때, 받은 지 15분이 넘은 자료(중계가 끊긴 때)는 시뮬레이션 그대로다.
-import { toXZ } from '../geo.ts';
+import { BOARD_R, toXZ } from '../geo.ts';
+import { effectOf, type Incident } from '../sim/incidents.ts';
 import { LEVELS, type DataProvider } from '../sim/provider.ts';
 
 export interface LivePlace {
@@ -37,12 +38,25 @@ export interface LiveAir {
   pm25Idx: string;
   time: string;
 }
+/** 사고·공사·통제 한 건(중계 함수가 도시데이터 사고통제와 TOPIS 돌발정보에서 판 둘레만 추린 것) */
+export interface LiveAccident {
+  id: string;
+  src: string;
+  kind: string;
+  detail: string;
+  info: string;
+  start: string;
+  end: string;
+  lon: number;
+  lat: number;
+}
 export interface LiveData {
   places: LivePlace[];
   roads: LiveRoad[];
   roadTime: string;
   weather?: LiveWeather | null;
   air?: LiveAir | null;
+  accidents?: LiveAccident[];
   /** 중계 함수가 상류에서 받은 시각(epoch ms) */
   at: number;
 }
@@ -85,11 +99,18 @@ export function makeLiveProvider(sim: DataProvider, wall: () => number = Date.no
   const fresh = () => (on && data && wall() - data.at < STALE ? data : null);
   // 도로 구간 조각: [x0, z0, x1, z1, 속도 비율] 을 50m 칸 격자에 넣는다
   let segs: number[][] = [];
+  let incs: Incident[] = [];
   let grid = new Map<number, number[]>();
   const key = (cx: number, cz: number) => cx * 100000 + cz;
 
   function set(d: LiveData) {
     data = d;
+    incs = (d.accidents ?? [])
+      .map((a) => {
+        const [x, z] = toXZ(a.lat, a.lon);
+        return { id: a.id, kind: a.kind, detail: a.detail, info: a.info, start: a.start, end: a.end, x, z, effect: effectOf(a.kind, a.detail, a.info) };
+      })
+      .filter((q) => Math.hypot(q.x, q.z) < BOARD_R);
     segs = [];
     grid = new Map();
     for (const r of d.roads) {
@@ -142,6 +163,8 @@ export function makeLiveProvider(sim: DataProvider, wall: () => number = Date.no
       if (fresh() && x !== undefined && z !== undefined) {
         const v = linkSpeed(x, z, h, cls === 0 ? 80 : 20);
         if (v >= 0) return v;
+        // 실시간 도로 속도가 없는 길(골목 등)만 돌발 지점 40m 안에서 절반으로 늦춘다(있는 길에는 사고 정체가 이미 들어 있다)
+        if (incs.some((q) => Math.hypot(q.x - x, q.z - z) < 40)) return sim.roadSpeed(now, cls, edgeKey, x, z, h) * 0.5;
       }
       return sim.roadSpeed(now, cls, edgeKey, x, z, h);
     },
@@ -162,6 +185,10 @@ export function makeLiveProvider(sim: DataProvider, wall: () => number = Date.no
     rain(): number | null {
       const w = fresh()?.weather;
       return w ? rainOf(w) : null;
+    },
+    /** 판 안 돌발정보(사고·공사·통제). 쓸 수 없으면 빈 목록 */
+    incidents(): Incident[] {
+      return fresh() ? incs : [];
     },
     /** 실제 눈 세기(0~1). 쓸 수 없으면 null */
     snow(): number | null {

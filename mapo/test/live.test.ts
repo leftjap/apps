@@ -121,4 +121,40 @@ describe('실시간 자료 덧씌우기', () => {
     wall += 16 * 60_000;
     expect(live.air()).toBeNull();
   });
+  it('돌발정보: 경위도를 판 좌표로 바꾸고 판 밖(2km 넘게)은 빼며, 통제인지 한 차로 막기인지 가른다. 오래되면 비운다', () => {
+    let wall = Date.parse('2026-11-15T23:00:00+09:00');
+    const live = makeLiveProvider(makeSimProvider(), () => wall);
+    expect(live.incidents()).toEqual([]);
+    const [lon, lat] = lonlat(120, -40);
+    const [flon, flat] = lonlat(2600, 0);
+    live.set({
+      ...data,
+      at: wall,
+      accidents: [
+        { id: 't:1', src: 'topis', kind: '공사', detail: '도로보수', info: '양방향 전면통제', start: '2026-11-15 21:00', end: '2026-11-16 06:00', lon, lat },
+        { id: 't:2', src: 'topis', kind: '교통사고', detail: '추돌사고', info: '', start: '2026-11-15 22:50', end: '', lon, lat },
+        { id: 't:3', src: 'topis', kind: '교통사고', detail: '추돌사고', info: '', start: '', end: '', lon: flon, lat: flat },
+      ],
+    });
+    const list = live.incidents();
+    expect(list.map((q) => [q.id, q.effect])).toEqual([
+      ['t:1', 'close'],
+      ['t:2', 'lane'],
+    ]);
+    expect(list[0].x).toBeCloseTo(120, 0);
+    expect(list[0].z).toBeCloseTo(-40, 0);
+    wall += 16 * 60_000;
+    expect(live.incidents()).toEqual([]);
+  });
+  it('실시간 도로 속도가 없는 길은 돌발 지점 40m 안에서만 속도를 절반으로 낮춘다', () => {
+    const wall = Date.parse('2026-11-15T23:00:00+09:00');
+    const sim = makeSimProvider();
+    const live = makeLiveProvider(sim, () => wall);
+    const [lon, lat] = lonlat(500, 500);
+    live.set({ ...data, at: wall, accidents: [{ id: 't:1', src: 'topis', kind: '교통사고', detail: '', info: '', start: '', end: '', lon, lat }] });
+    expect(live.provider.roadSpeed(now, 3, 9, 510, 500, 0)).toBeCloseTo(sim.roadSpeed(now, 3, 9, 510, 500, 0) * 0.5, 5);
+    expect(live.provider.roadSpeed(now, 3, 9, 600, 500, 0)).toBe(sim.roadSpeed(now, 3, 9, 600, 500, 0));
+    // 실시간 도로 속도가 있는 길(이미 사고 정체가 들어 있다)은 그대로
+    expect(live.provider.roadSpeed(now, 2, 7, 50, 2, 0)).toBe(0.2);
+  });
 });

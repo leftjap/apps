@@ -21,6 +21,7 @@ import { makeStations } from './render/stations.ts';
 import { makeTrees } from './render/trees.ts';
 import { makeWalkerMesh } from './render/walkers.ts';
 import { makeRain } from './render/weather.ts';
+import { makeIncidents } from './render/incidents.ts';
 import { BUS_KINDS, busStopPortals, makeBusRoutes } from './sim/buses.ts';
 import { makeCars } from './sim/cars.ts';
 import { makeCatReactor } from './sim/catReact.ts';
@@ -35,6 +36,7 @@ import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
 import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
+import { matchIncidents, spotXZ, type Incident } from './sim/incidents.ts';
 import { makeWalkers, underpasses, walkerScale, ZONES } from './sim/walkers.ts';
 import { makeHud, type Card, type CardLine, type Layer, type SeasonPick, type Weather } from './ui/hud.ts';
 import { makeTags } from './ui/tags.ts';
@@ -167,6 +169,31 @@ const flow = makeFlow(carGraph);
 flow.update(provider, start);
 const trees = makeTrees(board.trees, seasonOf(start.doy));
 const rain = makeRain(small ? 3500 : 6000);
+// 실시간 돌발정보(사고·공사·통제): 차로를 막거나 구간을 통제하고, 도로 위 점멸등(공사면 라바콘)으로만 보인다
+const incidentMarks = makeIncidents();
+const incidentLayer = new THREE.Group();
+incidentLayer.add(incidentMarks.group);
+let incList: Incident[] = [];
+let incEdge = new Map<string, number>();
+let incKey = '';
+function applyIncidents() {
+  const list = clock.live ? live.incidents() : [];
+  const key = list.map((q) => q.id).join('|');
+  if (key === incKey) return;
+  incKey = key;
+  incList = list;
+  const m = matchIncidents(carGraph, list);
+  cars.setIncidents(m);
+  incEdge = new Map(m.spots.map((sp) => [sp.id, sp.edge]));
+  incidentMarks.set(
+    m.spots.map((sp) => {
+      const e = carGraph[sp.edge];
+      const [x, z, yaw] = spotXZ(e, sp);
+      const q = list.find((o) => o.id === sp.id)!;
+      return { id: sp.id, x, z, yaw, width: e.lanes * e.lw, effect: sp.effect, cones: /공사/.test(q.kind + q.detail) };
+    }),
+  );
+}
 const marker = makeMarker();
 const labels: GroundLabel[] = [
   { text: '한강', x: -260, z: 1560, size: 130, turn: -0.05 },
@@ -206,6 +233,7 @@ view.scene.add(
   walkerMesh.flash,
   catMeshes.group,
   rain.mesh,
+  incidentLayer,
   marker.mesh,
 );
 
@@ -217,7 +245,8 @@ type Target =
   | { kind: 'train'; key: number }
   | { kind: 'bus'; uid: number }
   | { kind: 'boat'; i: number }
-  | { kind: 'school'; i: number };
+  | { kind: 'school'; i: number }
+  | { kind: 'incident'; id: string };
 let selected: Target | null = null;
 let followed: Target | null = null;
 const same = (a: Target | null, b: Target | null) => JSON.stringify(a) === JSON.stringify(b);
@@ -287,7 +316,7 @@ function setWeather(w: Weather) {
   applyWeather();
   hud.setWeather(w);
 }
-const layers: Record<Layer, boolean> = { flow: true, cats: true, people: true, cars: true, subway: true, names: true };
+const layers: Record<Layer, boolean> = { flow: true, cats: true, people: true, cars: true, subway: true, names: true, incidents: true };
 function setLayer(l: Layer, on: boolean) {
   layers[l] = on;
   catMeshes.group.visible = layers.cats;
@@ -297,6 +326,7 @@ function setLayer(l: Layer, on: boolean) {
   rails.setUnderVisible(layers.subway);
   stations.setUnderVisible(layers.subway);
   namesMesh.visible = layers.names;
+  incidentLayer.visible = layers.incidents;
   flow.mesh.visible = layers.flow;
 }
 setWeather(({ rain: 'rain', fog: 'fog', clear: 'clear' } as Record<string, Weather>)[query.get('weather') ?? ''] ?? 'live');
@@ -374,6 +404,26 @@ function refreshCard() {
       lines: [row?.toward ?? '', next ? (stopped ? `${next.n}역 정차 중` : `다음 역 ${next.n}`) : '판 밖으로 나가는 중'],
       note: liveRail ? '열차 위치는 서울시 실시간 열차 위치(1~4분 전 값)에서 역마다 서며 이어 움직인 것입니다.' : '열차 위치는 배차 간격과 주행 곡선으로 만든 시뮬레이션입니다.',
       follow: following,
+    };
+  } else if (selected.kind === 'incident') {
+    const id = selected.id;
+    const q = incList.find((o) => o.id === id);
+    if (!q) {
+      selected = null;
+      return hud.setCard(null);
+    }
+    const e = carGraph[incEdge.get(id) ?? -1];
+    card = {
+      tag: `${q.kind || '돌발'}${q.detail && q.detail !== q.kind ? ` · ${q.detail}` : ''}`,
+      title: e?.name || '이름 없는 길',
+      color: q.effect === 'close' ? '#ff6a5a' : '#ffa53a',
+      lines: [
+        q.info.length > 110 ? `${q.info.slice(0, 108)}…` : q.info,
+        q.start ? `시작 ${q.start}` : '',
+        q.end ? `끝날 예정 ${q.end}` : '',
+        q.effect === 'close' ? '화면에서는 이 둘레 구간에 차를 들이지 않습니다.' : e && e.lanes >= 2 ? '화면에서는 차로 하나를 막아 차가 옆 차로로 비켜 갑니다.' : '화면에서는 이 자리를 천천히 지나갑니다.',
+      ].filter(Boolean),
+      note: '서울시 실시간 돌발정보(TOPIS)와 실시간 도시데이터 사고통제 자료입니다. 자리는 가장 가까운 차로에 맞췄습니다.',
     };
   } else if (selected.kind === 'school') {
     const sc = board.schools[selected.i];
@@ -536,6 +586,11 @@ function pickAt(clientX: number, clientY: number): Target | null {
   const px = clientX - r.left;
   const py = clientY - r.top;
   const lim = small ? 34 : 26;
+  if (layers.incidents && incidentMarks.spots.length) {
+    const sp = incidentMarks.spots;
+    const [i] = nearestOnScreen(sp, px, py, r, lim);
+    if (i >= 0) return { kind: 'incident', id: sp[i].id };
+  }
   if (layers.cats) {
     const [i] = nearestOnScreen(catStates.map((s) => ({ x: s.x, y: 1, z: s.z })), px, py, r, lim);
     if (i >= 0) return { kind: 'cat', i };
@@ -754,6 +809,7 @@ function frame(t: number) {
     hud.setClock(now, clock.live, source && liveRail ? `${source} · 지하철 실시간` : source);
     hud.setSources(provider.mode === 'live', liveRail);
     applyWeather();
+    applyIncidents();
     hud.setAir(clock.live ? (live.air()?.text ?? null) : null);
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));

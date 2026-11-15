@@ -16,7 +16,7 @@ export interface Card {
 }
 
 export type Weather = 'live' | 'clear' | 'rain' | 'fog';
-export type Layer = 'flow' | 'cats' | 'people' | 'cars' | 'subway' | 'names';
+export type Layer = 'flow' | 'cats' | 'people' | 'cars' | 'subway' | 'names' | 'incidents';
 export type SeasonPick = 'live' | 'blossom' | 'green' | 'autumn' | 'winter';
 
 const DAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
@@ -46,6 +46,7 @@ const LAYERS: [Layer, string][] = [
   ['cars', '차량'],
   ['subway', '지하철'],
   ['names', '지명'],
+  ['incidents', '돌발정보'],
 ];
 const SEASONS: [SeasonPick, string][] = [
   ['live', '실시간'],

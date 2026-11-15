@@ -176,7 +176,15 @@ export function makeCars(
   /** 막힌 길일수록 덜 고른다: 들어설 첫머리에 빈 길이(가장 넉넉한 차로의 맨 뒤 차까지)가 60m 보다 짧을수록,
    *  그 구간 차들의 평균 속도가 제 속도의 절반보다 느릴수록 무게를 줄인다 */
   const meanV = new Float32Array(edges.length).fill(-1); // 구간 차들의 평균 속도(1초마다, 차가 없으면 −1)
+  // 돌발정보(src/sim/incidents.ts): 막힌 차로(사고·공사, 없으면 −1), 통제 구간, 서행 지점(없으면 −1)과 그 앞뒤 25m 에서 낼 수 있는 속도
+  const blockLane = new Int8Array(edges.length).fill(-1);
+  const closed = new Uint8Array(edges.length);
+  const slowAt = new Float32Array(edges.length).fill(-1);
+  const slowV = new Float32Array(edges.length);
+  /** 구간 e 에서 차로 ln 이 막혀 있으면 옆 차로(바깥쪽이 있으면 바깥쪽)로 */
+  const free = (e: Edge, ln: number) => (ln !== blockLane[e.id] || e.lanes < 2 ? ln : ln + 1 < e.lanes ? ln + 1 : ln - 1);
   function avoid(k: number): number {
+    if (closed[k]) return 1e-4;
     const e = edges[k];
     let room = 0;
     for (let l = 0; l < e.lanes; l++) {
@@ -251,6 +259,7 @@ export function makeCars(
     pref[i] = (ln + Math.min(0.999, rand())) / e.lanes;
     vf[i] = 0.86 + rand() * 0.26;
     v[i] = speed[e.id] * vf[i] * 0.8;
+    if (slowAt[e.id] >= 0 && Math.abs(at - slowAt[e.id]) < 25) v[i] = Math.min(v[i], slowV[e.id]);
     cars.route[i] = route;
     cars.uid[i] = nextUid++;
     cars.kind[i] = route >= 0 ? 1 : rand() < 0.09 ? 2 : 0;
@@ -333,7 +342,7 @@ export function makeCars(
   const cv = [0, 0, 0, 0];
   /** 차 i 가 차로 lanes 개인 구간에서 달릴 차로(버스는 맨 오른쪽) */
   const laneIn = (i: number, lanes: number) => (cars.route[i] >= 0 ? lanes - 1 : Math.min(lanes - 1, Math.floor(pref[i] * lanes)));
-  const outLane = (i: number, o: Edge) => (cars.route[i] >= 0 && o.med && routes[cars.route[i]].usesMed ? MED : laneIn(i, o.lanes));
+  const outLane = (i: number, o: Edge) => (cars.route[i] >= 0 && o.med && routes[cars.route[i]].usesMed ? MED : free(o, laneIn(i, o.lanes)));
   function locate(i: number) {
     const e = edges[edge[i]];
     // 교차로 상자 안에서는 들어온 차로와 나갈 차로를 잇는 곡선을 따라간다
@@ -426,7 +435,7 @@ export function makeCars(
       for (const j of l) vm += v[j];
       meanV[e.id] = l.length ? vm / l.length : -1;
       const jammed = l.length > 0 && vm / l.length < 0.4 * speed[e.id];
-      const w = !placeable[e.id] || jammed ? 0 : Math.max(0, real[e.id] * (inF[e.id] / ratioIn + (1 - inF[e.id]) / ratioOut) - l.length);
+      const w = !placeable[e.id] || jammed || closed[e.id] ? 0 : Math.max(0, real[e.id] * (inF[e.id] / ratioIn + (1 - inF[e.id]) / ratioOut) - l.length);
       ci += w * inF[e.id];
       co += w * (1 - inF[e.id]);
       cumIn[e.id] = ci;
@@ -473,7 +482,7 @@ export function makeCars(
     const hi = e.len - jn.rIn[id] - 3;
     if (hi <= lo) return false;
     const at = lo + rand() * (hi - lo);
-    const ln = Math.floor(rand() * e.lanes);
+    const ln = free(e, Math.floor(rand() * e.lanes));
     const seg = pointAt(e.p, e.cum, at, tmp);
     const yaw = headingAt(e.p, seg);
     const off = e.off0 + ln * e.lw;
@@ -524,7 +533,7 @@ export function makeCars(
     const piece: number[] = []; // [구간, 시작, 길이, 누적 무게]
     let total = 0;
     for (const e of edges) {
-      if (!placeable[e.id]) continue;
+      if (!placeable[e.id] || closed[e.id]) continue;
       const perM = has ? real[e.id] / e.len : e.lanes;
       for (let d = 0; d < e.len; d += 20) {
         const L = Math.min(20, e.len - d);
@@ -544,7 +553,7 @@ export function makeCars(
       const e = edges[piece[p]];
       const w = piece[p + 3] - (p ? piece[p - 1] : 0);
       const u = ((x - (piece[p + 3] - w)) / w) * piece[p + 2] * e.lanes;
-      const ln = Math.min(e.lanes - 1, Math.floor(u / piece[p + 2]));
+      const ln = free(e, Math.min(e.lanes - 1, Math.floor(u / piece[p + 2])));
       const i = cars.n;
       put(i, e, Math.min(e.len - 0.1, piece[p + 1] + u - ln * piece[p + 2]), ln);
       locate(i);
@@ -897,6 +906,12 @@ export function makeCars(
           }
         }
       }
+      // 돌발 서행 지점: 들어서는 자리(25m 앞)를 서행 속도로 가는 앞차처럼 다뤄 미리 늦춘다
+      if (slowAt[e.id] >= 0 && s[i] < slowAt[e.id] - 25 && slowAt[e.id] - 25 - s[i] + 2 < gap) {
+        gap = slowAt[e.id] - 25 - s[i] + 2;
+        dv = v[i] - slowV[e.id];
+        front = i;
+      }
       if (r >= 0 && stopK[i] < routes[r].stops.length) {
         // 다음 정류장을 멈춰 선 앞차처럼 다룬다. 앞에 2m를 두고 서므로 2m를 더해 정류장 바로 위에 서게 한다
         const toStop = routes[r].stops[stopK[i]] - (routes[r].start[rpos[i]] + s[i]);
@@ -912,7 +927,8 @@ export function makeCars(
           front = i;
         }
       }
-      const v0 = Math.max(0.5, speed[e.id] * vf[i]);
+      // 돌발로 서행하는 자리(앞뒤 25m)에서는 서행 속도를 넘지 않는다
+      const v0 = slowAt[e.id] >= 0 && Math.abs(s[i] - slowAt[e.id]) < 25 ? Math.min(slowV[e.id], Math.max(0.5, speed[e.id] * vf[i])) : Math.max(0.5, speed[e.id] * vf[i]);
       const want = 2 + v[i] * 1.3 + Math.max(0, (v[i] * dv) / (2 * Math.sqrt(A_MAX * B_COMF)));
       // 제 속도보다 빠르면(느린 길로 들어섰을 때) 편안한 정도로만 늦춘다
       let a = Math.max(-0.8 * B_COMF, A_MAX * (1 - (v[i] / v0) ** 4));
@@ -983,7 +999,8 @@ export function makeCars(
       const want = Math.round(nIn + nOut);
       for (let k = 0; k < 6 && cars.n - nBus < want && cars.n < max; k++) {
         const e = entries[pick(entryW, rand())];
-        const ln = Math.floor(rand() * e.lanes);
+        if (closed[e.id]) continue;
+        const ln = free(e, Math.floor(rand() * e.lanes));
         const t = tail[e.id * 8 + ln];
         if (t >= 0 && s[t] < 16) continue;
         put(cars.n, e, 0.5, ln);
@@ -1020,6 +1037,26 @@ export function makeCars(
     },
     target,
     setFocus,
+    /** 돌발정보를 바꾼다: 막을 차로, 통제할 구간, 서행 지점 */
+    setIncidents(inc: { blocks: { edge: number; lane: number; at: number }[]; close: number[]; slow: { edge: number; at: number; v: number }[] }) {
+      blockLane.fill(-1);
+      closed.fill(0);
+      slowAt.fill(-1);
+      for (const b of inc.blocks) {
+        blockLane[b.edge] = b.lane;
+        slowAt[b.edge] = b.at;
+        slowV[b.edge] = 5;
+      }
+      for (const c of inc.close) closed[c] = 1;
+      // 갈 곳이 모두 통제된 구간도 통제한다(갈림길까지 거슬러 올라가, 그 갈림길에서 다른 길을 고르게)
+      for (let changed = inc.close.length > 0; changed; ) {
+        changed = false;
+        for (const e of edges) if (!closed[e.id] && e.next.length && e.next.every((k) => closed[k])) (closed[e.id] = 1), (changed = true);
+      }
+      for (const w of inc.slow) (slowAt[w.edge] = w.at), (slowV[w.edge] = w.v);
+    },
+    /** i번 차가 달리는 차로 */
+    laneOf: (i: number) => lane[i],
     /** 화면 1대가 실제 몇 대인가: 초점 안, 밖 */
     scale: () => [ratioIn, ratioOut],
     routes,
