@@ -116,7 +116,7 @@ export function updateEnv(now: Now, time: number, sky: HTMLElement, dt = 0): voi
   sky.style.background = `linear-gradient(#${pal.bgTop.getHexString()}, #${pal.bgBottom.getHexString()})`;
 }
 
-/** 지하 층의 높이(m). 노선·구내·지하 열차를 이 깊이에 그려 기울여 볼 때 지상과 어긋나 보이게 한다 */
+/** 지하 층의 높이(m). 지하 들여다보기에서 터널 단면·구내·지하 열차 모형을 이 깊이에 그려 기울여 볼 때 지상과 어긋나 보이게 한다 */
 export const UNDER_Y = -8;
 
 /** 모든 셰이더 앞에 붙이는 공통 조각 */

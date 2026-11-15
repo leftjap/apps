@@ -147,6 +147,8 @@ export interface TrainPos {
   /** 선두의 거리 값(m). 방향과 상관없이 중심선의 정방향 기준 */
   s: number;
   key: number;
+  /** 역에 선 뒤 지난 초(0~DWELL). 달리는 중이면 −1 */
+  at: number;
 }
 
 export function trainsAt(lines: LineDef[], tod: number): TrainPos[] {
@@ -161,7 +163,8 @@ export function trainsAt(lines: LineDef[], tod: number): TrainPos[] {
           const tau = t - deps[i];
           if (tau < 0 || tau > prof[dir].dur) continue;
           const d = prof[dir].distAt(tau);
-          out.push({ line: l.id, dir, s: dir ? len - d : d, key: li * 100000 + dir * 50000 + i });
+          const k = prof[dir].arrive.findIndex((a) => tau >= a && tau < a + DWELL);
+          out.push({ line: l.id, dir, s: dir ? len - d : d, key: li * 100000 + dir * 50000 + i, at: k < 0 ? -1 : tau - prof[dir].arrive[k] });
         }
       }
     }

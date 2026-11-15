@@ -1,12 +1,14 @@
 // 역. 지하 층(UNDER_Y)에 승강장 통로와 출구로 이어지는 연결 통로를 그리고(역을 골라 지하 들여다보기가 켜졌을 때만 보인다), 지상에는 출구마다 서울 지하철 출구 모양(화강석 난간·유리 벽·유리 지붕을 씌운
 // 내려가는 계단, 띠 간판, 폴사인)과 역 엘리베이터(유리 상자)를 세운다. 출구는 보도에 길과 나란히 놓이고 역 쪽으로 내려간다(구울 때 정한 방향).
 // 홍대입구·합정처럼 출구가 넓게 흩어진 역도 출구 하나하나가 구내로 이어져 역의 실제 범위가 드러난다.
+// 열차가 역에 서면(그 역 출구에서 사람이 나오는 때) 그 역 출구 지붕이 그 열차의 노선 색으로 잠깐 밝아진다(trainLight.ts exitFlash).
 import * as THREE from 'three';
 import type { Board } from '../data/board.ts';
 import { exitLook, type ExitKind } from '../data/exits.ts';
 import { exitBody } from '../data/exitFit.ts';
 import { nearestS, pointAt } from '../poly.ts';
 import { material, UNDER_Y } from './env.ts';
+import { exitFlash } from './trainLight.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
 
 /** 역별 강조색. 홍대입구·합정은 랜드마크 색을 쓴다 */
@@ -174,7 +176,12 @@ export function makeStations(board: Board) {
   });
 
   const hi = new Float32Array(16);
+  /** 역마다 출구 지붕 밝기와 그 색(막 선 열차의 노선 색) */
+  const flash = new Float32Array(16);
+  const flashAge = new Float32Array(16).fill(Infinity);
+  const flashCol = Array.from({ length: 16 }, () => new THREE.Color());
   const uniforms = { uHi: { value: hi } };
+  const flashUniforms = { uFlash: { value: flash }, uFlashCol: { value: flashCol } };
   const floorMesh = new THREE.Mesh(
     ribbonGeometry(floor),
     material({
@@ -308,6 +315,7 @@ export function makeStations(board: Board) {
   const exitMat = (kind: number) => material({
     uniforms: {
       ...uniforms,
+      ...flashUniforms,
       uKind: { value: kind },
       uCols: { value: Array.from({ length: 16 }, (_, i) => (names[i] ? color(names[i]) : new THREE.Color())) },
       uLine: { value: Array.from({ length: 16 }, (_, i) => (names[i] ? lineCol(names[i]) : new THREE.Color())) },
@@ -331,7 +339,7 @@ export function makeStations(board: Board) {
         gl_Position = projectionMatrix * mv;
       }`,
     fragment: /* glsl */ `
-      uniform float uHi[16]; uniform vec3 uCols[16]; uniform vec3 uLine[16]; uniform sampler2D uFascia; uniform sampler2D uPole; uniform float uSignN;
+      uniform float uHi[16]; uniform vec3 uCols[16]; uniform vec3 uLine[16]; uniform float uFlash[16]; uniform vec3 uFlashCol[16]; uniform sampler2D uFascia; uniform sampler2D uPole; uniform float uSignN;
       uniform float uKind;   // 0 개방형 1 구형 2 신형 3 표준형 4 도시형 5 상자형 6 공항철도·경의중앙선 7 그림형, −1 엘리베이터
       varying vec3 vN; varying float vPart; varying float vSt; varying float vDist; varying vec3 vO; varying vec3 vNO; varying float vSign; varying vec3 vW;
       vec3 granite(vec3 o) {
@@ -437,6 +445,10 @@ export function makeStations(board: Board) {
           col = lit(vec3(0.35, 0.37, 0.4), n);
         }
         col += (glow * uNight + c * 0.35 * h * step(1.5, vPart) * step(vPart, 3.5));
+        // 열차가 막 섰다: 지붕(평지붕·반원통·경사 지붕, 지붕 없는 출구는 갓돌)이 노선 색으로, 유리 벽은 그 절반만큼 밝아진다
+        float roof = max(max(step(2.5, vPart) * step(vPart, 3.5), step(12.5, vPart) * step(vPart, 14.5)), step(5.5, vPart) * step(vPart, 6.5) * step(uKind, 0.5));
+        float wall = step(1.5, vPart) * step(vPart, 2.5);
+        col += uFlashCol[si] * uFlash[si] * (roof + 0.5 * wall) * (0.55 + 0.35 * uNight);
         gl_FragColor = vec4(fogged(col, vDist), 1.0);
       }`,
   });
@@ -504,7 +516,16 @@ export function makeStations(board: Board) {
       names.forEach((n, i) => {
         want[i] = n === hovered ? 1 : n === selected ? 0.7 : 0;
         hi[i] += (want[i] - hi[i]) * Math.min(1, dt * 7);
+        flashAge[i] += dt;
+        flash[i] = exitFlash(flashAge[i]);
       });
+    },
+    /** 열차가 역 name 에 섰다: 그 역 출구 지붕을 노선 색 color 로 잠깐 밝힌다 */
+    flash(name: string, color: string) {
+      const i = names.indexOf(name);
+      if (i < 0) return;
+      flashAge[i] = 0;
+      flashCol[i].set(color);
     },
     setUnderVisible(on: boolean) {
       floorMesh.visible = on;

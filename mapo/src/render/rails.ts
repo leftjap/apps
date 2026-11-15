@@ -1,13 +1,18 @@
-// 노선과 열차. 지하 구간은 지표 아래(UNDER_Y)에 얇은 노선색 선(평소에는 아주 옅게, 들여다보기 둘레에서만 또렷하게)으로, 지상 구간(당산철교)은 띄운 선로와 교각으로 그린다.
-// 지상 조각에서 터널 조각으로 바뀌는 곳(합정 남서쪽, 굽기가 OSM 태그로 정한다)에는 옹벽을 세운 터파기와 터널 입구를 만들고, 그 자리만 땅을 깊이로 뚫어 열차가 내려가 입구로 들어가게 한다.
-// 터널 안 열차는 땅·도로 위에 흐릿한 윤곽으로만 비치고(나무·사람·건물이 그 위를 덮는다), 지하 들여다보기를 켠 둘레에서만
-// 터널 단면(바닥·옆벽)과 함께 또렷하게 보인다. 전동차는 노선별 실제 차량(2호선 2000호대, 6호선 6000호대, 경의중앙선 321000호대,
+// 노선과 열차. 지상 구간(당산철교)은 띄운 선로와 교각, 그 위를 달리는 열차 모형으로 그린다.
+// 지하 구간은 땅 위에 노선 색 점선(아주 옅게, 늘)으로 자리를 보이고, 터널 안 열차는 그 자리 땅 위에 노선 색 빛으로 그린다:
+// 칸마다 나뉜 띠(칸 사이 틈), 머리 칸이 조금 더 밝고, 열차 속도 그대로 움직이며, 역에 서 있는 동안 승강장 길이만큼 빛이 고인다(trainLight.ts).
+// 빛은 땅 높이에 깔려 건물·나무·차가 덮고, 덮인 자리는 성긴 점무늬로 약하게 비쳐 보인다. 빛 바로 앞(카메라 거리의 2.5%, 20~150m)에서 덮은 것만 비치므로
+// 멀리 앞을 가린 건물 벽에는 얹히지 않는다. 판 전체를 볼 만큼 멀면(FAR) 덮인 자리도 보이는 자리와 같은 세기로 그린다.
+// 지상 조각에서 터널 조각으로 바뀌는 곳(합정 남서쪽, 굽기가 OSM 태그로 정한다)에는 옹벽을 세운 터파기와 터널 입구를 만들고, 그 자리만 땅을 깊이로 뚫어 열차 모형이 내려가 입구로 들어간다.
+// 빛은 입구에서 60m 에 걸쳐 켜져 모형과 이어진다. 역·지하 열차를 골라 지하 들여다보기를 켜면 그 원 안에서는 빛·점선 대신
+// 지표 아래(UNDER_Y)의 터널 단면과 열차 모형을 보인다. 전동차는 노선별 실제 차량(2호선 2000호대, 6호선 6000호대, 경의중앙선 321000호대,
 // 공항철도 2000호대)의 색 띠·앞모양·창·출입문(한쪽 4개) 배치를 따른 19.5m 칸이다.
 import * as THREE from 'three';
 import type { Line } from '../data/board.ts';
 import { headingAt, pointAt } from '../poly.ts';
 import type { TrainPos } from '../sim/trains.ts';
-import { material, pal, UNDER_Y } from './env.ts';
+import { env, material, pal, UNDER_Y } from './env.ts';
+import { carSpans, GAP_M, GAP_MAX, GAP_PX, poolLevel, portalRamp } from './trainLight.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
 
 const VERT = /* glsl */ `
@@ -21,6 +26,14 @@ const VERT = /* glsl */ `
   }`;
 
 const MAX_CARS = 260;
+/** 빛 조각 수(칸 + 역에 고인 빛) */
+const MAX_LIGHTS = 300;
+/** 빛을 깔아 두는 땅 위 높이 */
+const LIGHT_Y = 0.5;
+/** 덮인 빛을 비쳐 보이는 거리: 빛 앞(카메라 쪽) 카메라 거리의 REACH 배(20~150m) 안에 있는 건물·나무·차에 덮인 자리만 비쳐 보인다 */
+const REACH = 0.025;
+/** 이 카메라 거리(m) 사이에서 덮인 자리 빛이 '가까이 덮은 것만 약하게'에서 '모두 그대로'로 바뀐다(판 전체 보기는 약 6km) */
+const FAR = [2500, 4500];
 /** 터파기 옹벽이 땅 위로 올라온 높이 */
 const PARAPET = 0.9;
 /** 터파기 안쪽 반폭 */
@@ -37,7 +50,6 @@ export interface TrainSpot {
   z: number;
   under: boolean;
 }
-const CAR_GAP = 20;
 /** 노선별 차량 모양: 0 2호선, 1 6호선, 2 코레일(경의중앙선), 3 공항철도 */
 const STYLE: Record<string, number> = { '2': 0, '6': 1, K: 2, A: 3 };
 
@@ -245,9 +257,8 @@ const trainVert = (scale: string) => /* glsl */ `
     vDist = -mv.z;
     gl_Position = projectionMatrix * mv;
   }`;
-/** 열차 조각: alpha 는 그 자리의 불투명도(지상 열차는 1), tint 는 노선 색으로 물들이는 정도 */
-const trainFrag = (alpha: string, tint = '0.0') => /* glsl */ `
-  uniform float uGhost;
+/** 열차 조각: alpha 는 그 자리의 불투명도(지상 열차는 1, 지하 열차는 들여다보기 원 안에서만 보인다) */
+const trainFrag = (alpha: string) => /* glsl */ `
   varying vec3 vN; varying vec3 vNl; varying vec3 vO; varying vec4 vCol; varying vec4 vMore; varying float vDist; varying vec2 vXZ; varying float vPart;
   ${PAINT}
   void main() {
@@ -257,8 +268,8 @@ const trainFrag = (alpha: string, tint = '0.0') => /* glsl */ `
     vec3 col = lit(alb, n) + vec3(1.0, 0.9, 0.68) * lit2 * uNight * 0.95;
     col = mix(col, vec3(1.0, 0.97, 0.85) * (0.8 + 0.5 * uNight), headL);
     col = mix(col, vec3(1.0, 0.12, 0.08) * (0.6 + 0.4 * uNight), tailL);
-    col = mix(col, vCol.rgb * (0.7 + 0.5 * uNight), ${tint});
     float a = ${alpha};
+    if (a < 0.01) discard;
     gl_FragColor = vec4(fogged(col, vDist), a);
   }`;
 
@@ -371,25 +382,125 @@ function tunnels(lines: Line[]) {
   return g;
 }
 
+/** 지하 노선 자리: 터널 조각을 따라 땅 위(LIGHT_Y)에 깔 점선 띠. 꼭짓점은 가운데선 위에 두고 셰이더가 화면 굵기에 맞춰 옆으로 편다 */
+function routeLines(lines: Line[]) {
+  const pos: number[] = [];
+  const side: number[] = [];
+  const norm: number[] = [];
+  const info: number[] = [];
+  const idx: number[] = [];
+  for (const l of lines) {
+    const c = new THREE.Color(l.color);
+    const n = l.p.length / 3;
+    let i = 0;
+    while (i < n - 1) {
+      if (l.kind[i] !== -1) {
+        i++;
+        continue;
+      }
+      let j = i;
+      while (j < n - 1 && l.kind[j] === -1) j++;
+      // 꼭짓점 i..j 가 한 터널 구간
+      for (let v = i; v <= j; v++) {
+        const a = Math.max(i, v - 1) * 3;
+        const b = Math.min(j, v + 1) * 3;
+        const dx = l.p[b] - l.p[a];
+        const dz = l.p[b + 2] - l.p[a + 2];
+        const len = Math.hypot(dx, dz) || 1;
+        const q = pos.length / 3;
+        for (const sd of [-1, 1]) {
+          pos.push(l.p[v * 3], LIGHT_Y, l.p[v * 3 + 2]);
+          side.push(sd);
+          norm.push(-dz / len, dx / len);
+          info.push(c.r, c.g, c.b, l.cum[v]);
+        }
+        if (v > i) idx.push(q - 2, q - 1, q, q - 1, q + 1, q);
+      }
+      i = j;
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('aSide', new THREE.Float32BufferAttribute(side, 1));
+  g.setAttribute('aNorm', new THREE.Float32BufferAttribute(norm, 2));
+  g.setAttribute('aInfo', new THREE.Float32BufferAttribute(info, 4));
+  g.setIndex(idx);
+  return g;
+}
+
+/** 지하 열차 빛 조각의 셰이더. 조각은 길이 1·폭 2(가운데 폭 1 이 몸통, 바깥은 번짐)의 판이고, 인스턴스마다
+ *  aA(x, z, 방향, 종류 0 칸 1 역에 고인 빛), aB(노선 색, 세기), aC(길이 m, 몸통 폭 m, 머리 칸이면 1, 0) 를 받는다.
+ *  through 는 덮인 자리를 비쳐 보이는 판: 깊이를 카메라 쪽으로 카메라 거리의 REACH 배만큼 당겨, 그 안에 있는 것에 덮인 자리만 통과한다 */
+const lightMat = (through: boolean) =>
+  material({
+    transparent: true,
+    depthWrite: false,
+    offset: 6,
+    doubleSide: true,
+    vertex: /* glsl */ `
+      attribute vec4 aA; attribute vec4 aB; attribute vec4 aC;
+      varying vec2 vQ; varying vec4 vB; varying float vKind; varying float vHead; varying float vDist; varying vec2 vXZ; varying float vFar;
+      void main() {
+        vec4 cv = viewMatrix * vec4(aA.x, ${LIGHT_Y.toFixed(1)}, aA.y, 1.0);
+        float mpp = -cv.z / uProjK;                                   // 이 자리에서 한 픽셀(m)
+        float pool = aA.w;
+        // 칸은 칸 간격에서 틈(${GAP_M}m, 멀리서도 ${GAP_PX}픽셀, 칸 간격의 ${GAP_MAX * 100}% 까지)을 뺀 길이(trainLight.ts lightLen), 몸통 폭은 실제 폭 또는 화면 10픽셀(역에 고인 빛은 16픽셀)
+        float len = pool > 0.5 ? aC.x : aC.x - min(${GAP_MAX.toFixed(2)} * aC.x, max(${GAP_M.toFixed(2)}, ${GAP_PX.toFixed(1)} * mpp));
+        // 판 전체를 볼 만큼 멀면(FAR) 칸이 몇 픽셀뿐이라 화면 굵기를 1.5배로
+        float far = smoothstep(${FAR[0].toFixed(1)}, ${FAR[1].toFixed(1)}, -cv.z);
+        float wid = max(aC.y, mpp * (pool > 0.5 ? 16.0 : 10.0) * (1.0 + 0.5 * far));
+        vec2 l = vec2(position.x * len, position.z * wid);
+        float cs = cos(aA.z), sn = sin(aA.z);
+        vec3 w = vec3(aA.x + l.x * cs - l.y * sn, ${LIGHT_Y.toFixed(1)}, aA.y + l.x * sn + l.y * cs);
+        vQ = vec2(position.x * 2.0, position.z); vB = aB; vKind = pool; vHead = aC.z; vXZ = w.xz; vFar = far;
+        vec4 mv = viewMatrix * vec4(w, 1.0);
+        vDist = -mv.z;
+        gl_Position = projectionMatrix * mv;
+        ${
+          through
+            ? `vec4 m2 = mv; m2.z = min(mv.z + mix(clamp(${REACH.toFixed(3)} * -mv.z, 20.0, 150.0), 3000.0, smoothstep(${FAR[0].toFixed(1)}, ${FAR[1].toFixed(1)}, -mv.z)), -21.0);
+        vec4 c2 = projectionMatrix * m2;
+        gl_Position.z = c2.z / c2.w * gl_Position.w;`
+            : ''
+        }
+      }`,
+    fragment: /* glsl */ `
+      varying vec2 vQ; varying vec4 vB; varying float vKind; varying float vHead; varying float vDist; varying vec2 vXZ; varying float vFar;
+      void main() {
+        float lvl = vB.w * (1.0 - focusIn(vXZ));                      // 들여다보기 원 안에서는 열차 모형을 보이므로 끈다
+        if (lvl < 0.004) discard;
+        float x = abs(vQ.x), y = abs(vQ.y);                           // x: 0 가운데 ~ 1 끝, y: 0 가운데 ~ 1 번짐 바깥
+        float pool = step(0.5, vKind);
+        float body = (1.0 - smoothstep(mix(0.42, 0.1, pool), 0.5, y)) * (1.0 - smoothstep(mix(0.93, 0.55, pool), 1.0, x));
+        float halo = (1.0 - smoothstep(0.5, 0.85, y)) * (1.0 - smoothstep(0.7, 1.0, x)) * (1.0 - body);
+        // 몸통 가운데 줄은 흰빛 쪽으로 밝게, 머리 칸은 칸 전체가 조금 더 밝다(칸 세기 vB.w 도 머리 1 → 꼬리 0.6)
+        vec3 lc = vB.rgb;
+        float hot = (1.0 - smoothstep(0.0, 0.3, y)) * (0.28 - 0.03 * uNight) * (1.0 + 0.6 * vFar) * (1.0 - pool);
+        vec3 col = mix(lc, vec3(1.0), hot + 0.12 * vHead);
+        col *= 1.0 + 0.3 * uNight;
+        float a = (body * mix(0.97, 0.5, pool) + halo * 0.25) * lvl;
+        // 덮인 자리: 가까이서는 성긴 점무늬로 약하게(지붕·벽에 칠한 것이 아니라 그 밑이 비쳐 보이는 것으로 읽히게),
+        // 판 전체를 볼 만큼 멀면(FAR) 나무·건물이 길을 거의 다 덮고 하나하나가 몇 픽셀이므로 덮은 것과 상관없이 보이는 자리와 같은 세기로
+        ${through ? 'if (dither(gl_FragCoord.xy) > mix(0.5, 1.0, vFar)) discard; a *= mix(0.35, 1.0, vFar); col = mix(col, lc, 0.5 * (1.0 - vFar));' : ''}
+        gl_FragColor = vec4(fogged(col, vDist), a);
+      }`,
+  });
+
 export function makeRails(lines: Line[]) {
-  const glow = ribbon();
   const deck = ribbon();
   const piers: THREE.BufferGeometry[] = [];
   const tmp = [0, 0, 0];
   for (const l of lines) {
     const c = new THREE.Color(l.color);
     const info: [number, number, number, number] = [c.r, c.g, c.b, 0];
-    // 터널 조각과 지상·다리 조각으로 나눠 띠를 만든다. 이웃 구간과 꼭짓점 하나를 함께 쓴다
+    // 지상·다리 조각마다 선로 띠를 만든다(터널 조각은 땅 위 점선, routeLines). 이웃 구간과 꼭짓점 하나를 함께 쓴다
     const n = l.p.length / 3;
     let start = 0;
     const under = (seg: number) => l.kind[seg] === -1;
     for (let i = 1; i < n; i++) {
       if (i < n - 1 && under(i) === under(start)) continue;
-      const seg = l.p.slice(start * 3, (i + 1) * 3);
-      if (under(start)) {
-        for (let k = 1; k < seg.length; k += 3) seg[k] = Math.max(UNDER_Y, seg[k]);
-        addRibbon(glow, seg, 9, info);
-      } else {
+      if (!under(start)) {
+        const seg = l.p.slice(start * 3, (i + 1) * 3);
         for (let k = 1; k < seg.length; k += 3) seg[k] = deckY(seg[k]);
         addRibbon(deck, seg, 9, info);
       }
@@ -406,31 +517,40 @@ export function makeRails(lines: Line[]) {
   }
   const group = new THREE.Group();
 
-  const glowMesh = new THREE.Mesh(
-    ribbonGeometry(glow),
+  // 지하 노선 자리: 땅 위 아주 옅은 노선 색 점선(12m 칠하고 12m 띄움). 화면에서 1.6픽셀보다 가늘어지지 않고, 가까이 다가갈수록 더 옅어져
+  // 차선·횡단보도를 가리지 않는다(노면 표시와 흐름 띠보다 먼저 그려 그 밑에 깔린다). 건물·나무가 덮는다
+  const routeMesh = new THREE.Mesh(
+    routeLines(lines),
     material({
-      vertex: VERT,
-      under: true,
+      transparent: true,
+      depthWrite: false,
+      offset: 5,
       doubleSide: true,
-      fragment: /* glsl */ `
-        varying vec2 vUV; varying vec4 vInfo; varying float vDist; varying vec2 vXZ;
+      vertex: /* glsl */ `
+        attribute float aSide; attribute vec2 aNorm; attribute vec4 aInfo;
+        varying vec4 vInfo; varying float vDist; varying vec2 vXZ; varying float vSide;
         void main() {
-          float x = abs(vUV.x);
-          float core = 1.0 - smoothstep(0.26, 0.36, x);                  // 가운데 약 3m 의 선명한 선
-          float halo = (1.0 - x) * (1.0 - x);
-          float flow = 0.85 + 0.15 * sin(vUV.y * 0.06 - uTime * 2.2);
-          vec3 col = mix(vInfo.rgb * 0.92, mix(vInfo.rgb, vec3(1.0), 0.35), uNight) * flow;
-          float fi = focusIn(vXZ);
-          // 땅 밑 노선이라 평소에는 아주 옅게(길 위의 색 선으로 읽히지 않게) 비치고, 들여다보기 둘레에서만 터널 바닥 위에 또렷하게 보인다
-          float a = mix(core * (0.1 + 0.08 * uNight) + halo * 0.02, core * 0.45 + halo * (0.2 + 0.14 * uNight), fi);
-          col *= 1.0 + 0.5 * fi;
-          gl_FragColor = vec4(fogged(col, vDist), a);
+          vec4 cv = viewMatrix * vec4(position, 1.0);
+          float hw = max(0.7, 1.0 * -cv.z / uProjK);
+          vec3 p = position + vec3(aNorm.x, 0.0, aNorm.y) * aSide * hw;
+          vInfo = aInfo; vXZ = p.xz; vSide = aSide;
+          vec4 mv = viewMatrix * vec4(p, 1.0);
+          vDist = -mv.z;
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragment: /* glsl */ `
+        varying vec4 vInfo; varying float vDist; varying vec2 vXZ; varying float vSide;
+        void main() {
+          if (fract(vInfo.w / 24.0) > 0.5) discard;
+          float a = (0.3 + 0.1 * uNight) * mix(0.55, 1.0, smoothstep(250.0, 1400.0, vDist)) * (1.0 - focusIn(vXZ));
+          a *= 1.0 - smoothstep(0.55, 1.0, abs(vSide));
+          gl_FragColor = vec4(fogged(vInfo.rgb * (1.0 + 0.3 * uNight), vDist), a);
         }`,
     }),
   );
-  glowMesh.renderOrder = -4.4;
-  glowMesh.frustumCulled = false;
-  group.add(glowMesh);
+  routeMesh.renderOrder = -3.2;
+  routeMesh.frustumCulled = false;
+  group.add(routeMesh);
 
   // 지상·터파기 선로. 터파기 안의 선로와 열차가 땅보다 먼저 그려지도록(땅을 뚫은 자리로 보이게) 땅보다 앞 순서에 둔다
   const deckMesh = new THREE.Mesh(
@@ -562,20 +682,18 @@ export function makeRails(lines: Line[]) {
     material({
       vertex: trainVert('aInst.y < 0.0 ? 1.5 : zoomScale(-cv.z, 3.2, 5.0, 1.5, 4.5)'),
       fragment: trainFrag('1.0'),
-      uniforms: { uGhost: { value: 0 } },
     }),
   );
   trainMesh.frustumCulled = false;
   trainMesh.renderOrder = -12;
   group.add(trainMesh);
 
-  // 터널 안 열차: 지하 층에서 땅·도로 위에 비쳐 보이게 그린다. 들여다보기 둘레 밖에서는 흐릿한 윤곽(uGhost)으로만 보인다
+  // 터널 안 열차 모형: 지하 들여다보기 원 안에서만 지하 층에 그린다(원 밖은 땅 위 빛으로 그린다)
   const sub = instanced(car, MAX_CARS, { aInst: 4, aCol: 4, aMore: 4 });
   const subMat = material({
     under: true,
     vertex: trainVert('zoomScale(-cv.z, 3.2, 7.0, 1.4, 5.5)'),
-    fragment: trainFrag('mix(uGhost, 1.0, focusIn(vXZ))', '0.35 * (1.0 - focusIn(vXZ))'),
-    uniforms: { uGhost: { value: 0.36 } },
+    fragment: trainFrag('focusIn(vXZ)'),
   });
   const subMesh = new THREE.Mesh(sub.geo, subMat);
   subMesh.renderOrder = -4.2;
@@ -599,19 +717,52 @@ export function makeRails(lines: Line[]) {
     }
   }
 
-  const byId = new Map(lines.map((l) => [l.id, { l, c: new THREE.Color(l.color), st: STYLE[l.id] ?? 0 }]));
+  // 지하 열차 빛: 칸 띠와 역에 고인 빛. 보이는 자리는 그대로, 가까이 덮인 자리는 약하게(through) 그린다
+  const quad = new THREE.BufferGeometry();
+  quad.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, 0, -1, 0.5, 0, -1, 0.5, 0, 1, -0.5, 0, 1], 3));
+  quad.setIndex([0, 2, 1, 0, 3, 2]);
+  const light = instanced(quad, MAX_LIGHTS, { aA: 4, aB: 4, aC: 4 });
+  // 보이는 자리에 그린 빛은 스텐실에 1 을 남기고, 덮인 자리 판은 1 이 아닌 곳에만 그린다(보이는 빛 위에 점무늬가 겹치지 않게)
+  const lightMatMain = lightMat(false);
+  Object.assign(lightMatMain, { stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp });
+  const lightMesh = new THREE.Mesh(light.geo, lightMatMain);
+  const throughMat = lightMat(true);
+  Object.assign(throughMat, { depthFunc: THREE.LessDepth, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc });
+  const throughMesh = new THREE.Mesh(light.geo, throughMat);
+  // 노선 점선(−3.2) 다음, 흐름 띠(−3)·노면 표시(−2.6) 앞에 그려 차선·횡단보도가 빛 위에 칠해진 것으로 보이게 한다(빛은 길 밑에서 올라온다)
+  lightMesh.renderOrder = -3.1;
+  throughMesh.renderOrder = -3.05;
+  for (const m of [lightMesh, throughMesh]) (m.frustumCulled = false), group.add(m);
+
+  const byId = new Map(lines.map((l) => [l.id, { l, c: new THREE.Color(l.color), st: STYLE[l.id] ?? 0, portals: findPortals(l).map((p) => p.sP) }]));
   /** 열차를 놓고, 고르기·따라가기에 쓸 열차별 가운데 칸 위치를 돌려준다 */
   function update(trains: TrainPos[]): TrainSpot[] {
     let n = 0;
     let m = 0;
+    let q = 0;
+    const focus = env.uFocus.value.w > 0.01;
     const spots: TrainSpot[] = [];
+    const putLight = (x: number, z: number, yaw: number, pool: number, c: THREE.Color, lvl: number, len: number, wid: number, head: number) => {
+      if (q >= MAX_LIGHTS || lvl <= 0) return;
+      light.arr.aA.set([x, z, yaw, pool], q * 4);
+      light.arr.aB.set([c.r, c.g, c.b, lvl], q * 4);
+      light.arr.aC.set([len, wid, head, 0], q * 4);
+      q++;
+    };
+    // 역에 서 있는 지하 열차: 승강장 길이(편성 길이 + 10m)만큼 빛이 고인다. 칸 빛보다 먼저 놓아 그 밑에 깔리게 한다
     for (const t of trains) {
-      const { l, c, st } = byId.get(t.line)!;
+      const lv = poolLevel(t.at);
+      if (lv <= 0) continue;
+      const { l, c } = byId.get(t.line)!;
+      if (!carPose(l, t.s).under) continue;
+      const seg = pointAt(l.p, l.cum, t.s, tmp);
+      putLight(tmp[0], tmp[2], headingAt(l.p, seg), 1, c, lv * 0.75, l.cars * CAR_LEN + 10, 13, 0);
+    }
+    for (const t of trains) {
+      const { l, c, st, portals } = byId.get(t.line)!;
       const len = l.cum[l.cum.length - 1];
-      const back = t.dir ? 1 : -1; // 뒤 칸이 놓이는 방향
       const mid = Math.floor(l.cars / 2);
-      for (let k = 0; k < l.cars; k++) {
-        const s = t.s + back * (k * CAR_GAP + CAR_GAP / 2);
+      for (const { s, k, light: lit } of carSpans(l.cars, t.s, t.dir)) {
         if (s < 0 || s > len) continue;
         const seg = pointAt(l.p, l.cum, s, tmp);
         const yaw = headingAt(l.p, seg);
@@ -625,13 +776,16 @@ export function makeRails(lines: Line[]) {
         const ahead = t.dir ? -1 : 1;
         const cab = k === 0 ? ahead : k === l.cars - 1 ? -2 * ahead : 0;
         if (k === mid || (k === 0 && l.cars === 1)) spots.push({ key: t.key, line: t.line, dir: t.dir, x, y: under ? UNDER_Y : y, z, under });
-        if (under && m < MAX_CARS) {
-          const pitch = Math.atan2(Math.max(pose.yb, UNDER_Y) - Math.max(pose.ya, UNDER_Y), CAR_LEN);
-          sub.arr.aInst.set([x, Math.max(y, UNDER_Y), z, yaw], m * 4);
-          sub.arr.aCol.set([c.r, c.g, c.b, st], m * 4);
-          sub.arr.aMore.set([pitch, cab, 0, 0], m * 4);
-          m++;
-        } else if (!under && n < MAX_CARS) {
+        if (under) {
+          putLight(x, z, yaw, 0, c, lit * portalRamp(s, portals), 20, 3.2, k === 0 ? 1 : 0);
+          if (focus && m < MAX_CARS) {
+            const pitch = Math.atan2(Math.max(pose.yb, UNDER_Y) - Math.max(pose.ya, UNDER_Y), CAR_LEN);
+            sub.arr.aInst.set([x, Math.max(y, UNDER_Y), z, yaw], m * 4);
+            sub.arr.aCol.set([c.r, c.g, c.b, st], m * 4);
+            sub.arr.aMore.set([pitch, cab, 0, 0], m * 4);
+            m++;
+          }
+        } else if (n < MAX_CARS) {
           arr.aInst.set([x, deckY(y), z, yaw], n * 4);
           arr.aCol.set([c.r, c.g, c.b, st], n * 4);
           arr.aMore.set([pose.pitch, cab, 0, 0], n * 4);
@@ -641,17 +795,21 @@ export function makeRails(lines: Line[]) {
     }
     geo.instanceCount = n;
     sub.geo.instanceCount = m;
+    light.geo.instanceCount = q;
     sortSub(m);
     for (const a of [attr, sub.attr]) {
       a.aInst.needsUpdate = true;
       a.aCol.needsUpdate = true;
       a.aMore.needsUpdate = true;
     }
+    for (const a of Object.values(light.attr)) a.needsUpdate = true;
     return spots;
   }
-  /** 지하 선·터널·열차를 감추거나 보인다(지상 선로와 터널 입구는 그대로 둔다) */
+  /** 지하 노선 점선·빛·터널·열차를 감추거나 보인다(지상 선로와 터널 입구는 그대로 둔다) */
   function setUnderVisible(on: boolean) {
-    glowMesh.visible = on;
+    routeMesh.visible = on;
+    lightMesh.visible = on;
+    throughMesh.visible = on;
     tunnelMesh.visible = on;
     subMesh.visible = on;
     trainMesh.visible = on;

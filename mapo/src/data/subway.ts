@@ -184,7 +184,7 @@ export function makeLiveSubway(lines: LineDef[]) {
       const out: TrainPos[] = [];
       for (const t of trains.values()) {
         const s = t.s + t.off;
-        if (s >= 0 && s <= len(t.line)) out.push({ line: t.line.id, dir: t.dir, s, key: t.key });
+        if (s >= 0 && s <= len(t.line)) out.push({ line: t.line.id, dir: t.dir, s, key: t.key, at: t.dwell > 0 ? DWELL - t.dwell : -1 });
       }
       return out;
     },

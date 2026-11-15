@@ -740,6 +740,8 @@ function frame(t: number) {
   const arrived = liveRail ? subway.takeArrivals() : (subway.takeArrivals(), arrivals(board.lines, prevTod, now.tod));
   for (const a of arrived.slice(0, 12)) {
     walkers.burst(a.name, Math.max(1, Math.min(14, Math.round(provider.alighting(now, a.name) / 150))));
+    // 사람이 나오는 그 순간 그 역 출구 지붕이 열차의 노선 색으로 잠깐 밝아진다
+    if (layers.subway) stations.flash(a.name, lineOf.get(a.line)?.color ?? '#ffffff');
     const st = board.stations.find((s) => s.name === a.name);
     if (st) ambience.train(1 - Math.hypot(st.x - target.x, st.z - target.z) / 1600);
   }

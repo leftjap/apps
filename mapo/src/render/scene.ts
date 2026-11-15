@@ -23,7 +23,8 @@ export const PRESETS: Record<string, Preset> = {
 const FOV = 32;
 
 export function makeView(canvas: HTMLCanvasElement) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  // 스텐실: 지하 열차 빛이 보이는 자리와 덮인 자리를 나눠 그린다(rails.ts)
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, stencil: true, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
