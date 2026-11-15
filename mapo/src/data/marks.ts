@@ -55,20 +55,22 @@ export function decodeMarks(j: MarksJson): Marks {
   return { lines, zones, arrows };
 }
 
-/** 선 모양: 색(0 백 1 황 2 청), 한 줄 폭(m), 겹선이면 두 줄 가운데 사이의 반(m), 왼쪽·오른쪽 줄 점선(0 실선, 1 3m 칠하고 5m 띄움, 2 1m 칠하고 1m 띄움) */
+/** 선 모양: 색(0 백 1 황 2 청), 한 줄 폭(m), 겹선이면 두 줄 가운데 사이의 반(m), 왼쪽·오른쪽 줄 점선(0 실선, 1 3m 칠하고 5m 띄움, 2 1m 칠하고 1m 띄움, 3 0.5m 칠하고 0.5m 띄움) */
 export function lineStyle(k: number, k2: number): { color: number; w: number; sep: number; dashL: number; dashR: number } {
   const yellow = k === 1 || k === 2 || k === 9 || k === 10 || (k === 16 && k2 === 1);
-  const blue = k === 5 || k === 13 || k === 17 || k === 18;
+  const blue = k === 5 || k === 17 || k === 18;
   const color = yellow ? 1 : blue ? 2 : 0;
   // 겹선: 중앙선 복선·실선/점선, 가변차선, 버스전용 복선, 진로변경제한선 실선/점선
   const double = (k === 1 && k2 >= 3) || k === 2 || ((k === 5 || k === 17 || k === 18) && k2 >= 3) || (k === 8 && k2 >= 2);
   const dashed = (k === 1 && k2 === 2) || (k === 2 && k2 === 2) || k === 3 || ((k === 5 || k === 17 || k === 18) && (k2 === 2 || k2 === 4)) || (k === 6 && k2 === 2);
   const fine = k === 9 || k === 11 || k === 12;
-  let dashL = dashed ? 1 : fine ? 2 : 0;
+  // 자전거횡단도(013, 별표 6 의 534): 백색 0.5m 정사각형을 0.5m 간격으로 한 줄. 자료 정의서는 청색실선이라 적지만 항공사진의 칠은 흰 네모 줄이다
+  const bike = k === 13;
+  let dashL = dashed ? 1 : fine ? 2 : bike ? 3 : 0;
   let dashR = dashL;
   // 실선/점선 겹선: 한 줄만 점선(어느 쪽인지 자료로는 알 수 없어 중분류 순서대로 왼쪽을 앞 이름으로 둔다)
   if ((k === 1 && k2 === 4) || (k === 8 && k2 === 2)) [dashL, dashR] = [0, 1];
   if ((k === 1 && k2 === 5) || (k === 8 && k2 === 3)) [dashL, dashR] = [1, 0];
-  const w = k === 4 ? 0.45 : k === 13 ? 0.3 : k === 14 ? 0.2 : 0.15;
+  const w = k === 4 ? 0.45 : bike ? 0.5 : k === 14 ? 0.2 : 0.15;
   return { color, w, sep: double ? 0.18 : 0, dashL, dashR };
 }

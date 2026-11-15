@@ -1,4 +1,4 @@
-// 노면 표시. 서울시 차선 선(OA-15537)을 자료 그대로 긋고(중앙선·차선·진로변경제한선·정지선·주행유도선·자전거횡단도 등, 색·실선·점선·겹선은 종류대로),
+// 노면 표시. 서울시 차선 선(OA-15537)을 자료 그대로 긋고(중앙선·차선·진로변경제한선·정지선·주행유도선·자전거횡단도 등, 색·실선·점선·겹선은 종류대로. 자전거횡단도는 0.5m 흰 네모 줄),
 // 안전지대(OA-15533)는 빗금 면, 노면 화살표(OA-15536)는 모양으로 칠한다(src/data/marks.ts).
 // 선은 화면에서 한 픽셀보다 가늘어져도 깜박이지 않게 그리는 폭을 화면 크기에 맞춰 넓히고, 칠은 픽셀 단위로 부드럽게 한다. 멀어지면 옅어진다.
 import * as THREE from 'three';
@@ -121,7 +121,8 @@ export function makeMarks(marks: Marks): THREE.Group {
         float dash(float kind) {
           if (kind < 0.5) return 1.0;
           if (kind < 1.5) return step(fract(vAlong / 8.0), 0.375);      // 3m 칠하고 5m 띄움
-          return step(fract(vAlong / 2.0), 0.5);                         // 1m 칠하고 1m 띄움
+          if (kind < 2.5) return step(fract(vAlong / 2.0), 0.5);         // 1m 칠하고 1m 띄움
+          return step(fract(vAlong), 0.5);                               // 0.5m 칠하고 0.5m 띄움(자전거횡단도 네모)
         }
         void main() {
           float aa = max(fwidth(vLat), 1e-4);

@@ -4,7 +4,7 @@ import { decodeBoard } from '../src/data/board.ts';
 import { decodeMarks, lineStyle, type MarksJson } from '../src/data/marks.ts';
 
 describe('노면 표시 모양(서울시 차선 코드)', () => {
-  it('차선 점선은 백색 3m/5m, 중앙선 복선은 황색 두 줄, 정지선은 굵은 백색 실선, 유도선은 1m 점선, 자전거횡단도는 청색', () => {
+  it('차선 점선은 백색 3m/5m, 중앙선 복선은 황색 두 줄, 정지선은 굵은 백색 실선, 유도선은 1m 점선, 자전거횡단도는 백색 네모 줄', () => {
     expect(lineStyle(6, 2)).toMatchObject({ color: 0, sep: 0, dashL: 1 });
     expect(lineStyle(6, 1)).toMatchObject({ color: 0, dashL: 0 });
     expect(lineStyle(1, 3)).toMatchObject({ color: 1, dashL: 0, dashR: 0 });
@@ -12,7 +12,8 @@ describe('노면 표시 모양(서울시 차선 코드)', () => {
     expect(lineStyle(1, 4)).toMatchObject({ color: 1, dashL: 0, dashR: 1 });
     expect(lineStyle(4, 1)).toMatchObject({ color: 0, w: 0.45, dashL: 0 });
     expect(lineStyle(12, 1)).toMatchObject({ color: 0, dashL: 2 });
-    expect(lineStyle(13, 1).color).toBe(2);
+    // 자전거횡단도(534): 백색 0.5m 정사각형을 0.5m 간격으로 한 줄(서울시 자료는 두 줄을 따로 적는다)
+    expect(lineStyle(13, 1)).toMatchObject({ color: 0, w: 0.5, sep: 0, dashL: 3 });
     expect(lineStyle(17, 1)).toMatchObject({ color: 2, dashL: 0 });
     expect(lineStyle(9, 1)).toMatchObject({ color: 1, dashL: 2 });
   });
