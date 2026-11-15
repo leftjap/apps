@@ -78,8 +78,10 @@ export function makeView(canvas: HTMLCanvasElement) {
     camera,
     controls,
     resize,
+    /** 이름 있는 시점, 또는 검증용 'x,z,거리,기울기,회전' */
     jumpTo(name: string) {
-      place(PRESETS[name], tmp);
+      const n = name.split(',').map(Number);
+      place(n.length === 5 && n.every(Number.isFinite) ? { target: [n[0], n[1]], dist: n[2], tilt: n[3], turn: n[4] } : (PRESETS[name] ?? PRESETS.all), tmp);
       controls.target.copy(tmp.target);
       camera.position.copy(tmp.pos);
       controls.update();

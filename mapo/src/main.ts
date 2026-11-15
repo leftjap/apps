@@ -153,7 +153,7 @@ for (const e of carGraph) {
   c[e.rev ? 0 : 1] = Math.max(c[e.rev ? 0 : 1], atEnd);
   c[e.rev ? 1 : 0] = Math.max(c[e.rev ? 1 : 0], atStart);
 }
-const roads = makeRoads(board.roads, LM_COLORS, (i) => clears[i]);
+const roads = makeRoads(board.roads, LM_COLORS, (i) => clears[i], board.cornerR);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);

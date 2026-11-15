@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { alignToRoad, isCurrent, mergeStages, minRect } from '../tools/lib/crosswalk.ts';
-import { analysePiece, laneIndex, type LaneSeg } from '../tools/lib/lanes.ts';
+import { analysePiece, cornerRadius, laneIndex, readEdges, type LaneSeg } from '../tools/lib/lanes.ts';
+import type { Corner } from '../src/data/corners.ts';
 
 describe('횡단보도 면 → 축', () => {
   it('긴 변이 건너는 방향, 짧은 변이 폭', () => {
@@ -109,5 +110,58 @@ describe('차선으로 길 모양 읽기', () => {
     const r = analysePiece(idx, [[0, 0], [120, 0]], false)!;
     expect(r.lf).toBe(3);
     expect(r.busR).toBe(true);
+  });
+});
+
+describe('연석 쪽 가장자리선으로 찻길 가장자리 읽기', () => {
+  const seg = (ax: number, az: number, bx: number, bz: number, k = '009'): LaneSeg => ({ ax, az, bx, bz, k, k2: '001' });
+  /** 단면 목록에서 s 자리 값(선형 보간) */
+  const at = (p: { s: number[]; v: number[] }, s: number) => {
+    let i = 0;
+    while (i + 1 < p.s.length - 1 && p.s[i + 1] < s) i++;
+    const t = Math.max(0, Math.min(1, (s - p.s[i]) / (p.s[i + 1] - p.s[i] || 1)));
+    return p.v[i] + (p.v[i + 1] - p.v[i]) * t;
+  };
+  it('양쪽 가장자리선 자리 + 0.25m(연석은 칠한 선 바깥)를 가장자리로 삼고, 폭이 그대로면 두 단면으로 줄인다', () => {
+    const idx = laneIndex([line(8, '009'), line(-6, '010')]);
+    const e = readEdges(idx, [[0, 0], [120, 0]], [7, 5]);
+    expect(e.right.s).toHaveLength(2);
+    expect(at(e.right, 60)).toBeCloseTo(8.25, 2);
+    expect(at(e.left, 60)).toBeCloseTo(6.25, 2);
+    expect(e.right.s[e.right.s.length - 1]).toBeCloseTo(120, 3);
+  });
+  it('버스 정차 자리처럼 폭이 넓어지는 곳을 따라간다', () => {
+    const idx = laneIndex([seg(-10, 8, 60, 8), seg(60, 8, 64, 11, '011'), seg(64, 11, 130, 11)]);
+    const e = readEdges(idx, [[0, 0], [120, 0]], [7, 5]);
+    expect(at(e.right, 30)).toBeCloseTo(8.25, 1);
+    expect(at(e.right, 100)).toBeCloseTo(11.25, 1);
+  });
+  it('가장자리선이 없으면 차로로 어림한 값을 쓰고, 차로 안쪽 선이나 너무 먼 선은 쓰지 않는다', () => {
+    const idx = laneIndex([line(2, '009'), line(-14, '009')]);
+    const e = readEdges(idx, [[0, 0], [120, 0]], [7, 5]);
+    expect(at(e.right, 60)).toBeCloseTo(7, 5);
+    expect(at(e.left, 60)).toBeCloseTo(5, 5);
+  });
+  it('끝(교차로) 가까이 다른 길의 선은 보지 않고 안쪽 값을 이어 쓴다', () => {
+    const idx = laneIndex([seg(-10, 8, 130, 8), seg(-5, 11, 5, 11)]);
+    const e = readEdges(idx, [[0, 0], [120, 0]], [7, 5]);
+    expect(at(e.right, 0)).toBeCloseTo(8.25, 2);
+  });
+});
+
+describe('모퉁이 반지름', () => {
+  // 동쪽(+x)과 남쪽(+z)으로 뻗은 두 길의 가장자리가 (5, 5) 에서 만나는 모퉁이
+  const c: Corner = { kx: 5, kz: 5, ax: 1, az: 0, bx: 0, bz: 1, th: Math.PI / 2, t: 5, cap: 30, cls: 3, r0: 6 };
+  it('모퉁이를 도는 가장자리선이 있으면 그 반지름', () => {
+    const segs: LaneSeg[] = [];
+    for (let k = 0; k < 18; k++) {
+      const a0 = Math.PI + (k * Math.PI) / 36;
+      const a1 = Math.PI + ((k + 1) * Math.PI) / 36;
+      segs.push({ ax: 15 + 10 * Math.cos(a0), az: 15 + 10 * Math.sin(a0), bx: 15 + 10 * Math.cos(a1), bz: 15 + 10 * Math.sin(a1), k: '009', k2: '001' });
+    }
+    expect(cornerRadius(laneIndex(segs), c)).toBeCloseTo(10, 0);
+  });
+  it('가장자리선이 모퉁이 앞에서 끊기면 잴 수 없다', () => {
+    expect(cornerRadius(laneIndex([{ ax: 30, az: 5, bx: 60, bz: 5, k: '009', k2: '001' }]), c)).toBeNaN();
   });
 });

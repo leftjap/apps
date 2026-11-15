@@ -8,11 +8,12 @@ import { buildingInfo, packInfo } from './lib/building.ts';
 import { estimateHeight, hash01 } from './lib/height.ts';
 import { busKind, traceRuns } from './lib/bus.ts';
 import { alignToRoad, isCurrent, mergeStages, minRect, ringDist, segDist, type Rect } from './lib/crosswalk.ts';
-import { analysePiece, laneIndex, type LaneSeg, type PieceLanes } from './lib/lanes.ts';
+import { analysePiece, cornerRadius, laneIndex, readEdges, type LaneSeg, type PieceLanes, type Profile } from './lib/lanes.ts';
 import { stitch } from './lib/rail.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
-import { GK } from '../src/data/board.ts';
+import { decodeBoard, GK, type BoardJson } from '../src/data/board.ts';
+import { roadCorners } from '../src/data/corners.ts';
 
 type Tags = Record<string, string>;
 interface LL {
@@ -736,6 +737,51 @@ const drawOnlyRings: [number, number][][] = [];
   console.log(`횡단보도 ${crossings.length}곳(보행 신호 ${crossings.filter((c) => c.sig).length}, 두 단 ${crossings.filter((c) => c.stage).length}), 길 중간 신호 자리에서 끊은 조각 ${splits}개`);
 }
 
+// ───────────────────────── 찻길 가장자리 ─────────────────────────
+// 차로 수 × 차로 폭으로 어림한 찻길 가장자리를 서울시 차선 자료의 연석 쪽 가장자리선(009·010·011)으로 고친다(tools/lib/lanes.ts readEdges).
+// 버스 정차 자리·주차 자리처럼 폭이 바뀌는 곳을 따라가고, 선이 없는 곳은 어림값을 쓴다. 차가 달리는 차로는 그대로 두고 그리는 찻길 바닥과 보도 자리만 바뀐다.
+// 한 방향 큰길의 분리대 쪽(왼쪽)은 분리대 폭으로 그리므로 읽지 않는다.
+const nearHalf = (i: number): [number, number] => {
+  const r = roads[i];
+  const L = roadLanes[i];
+  if (L) {
+    const lw = laneWidth(i);
+    return r[2] & 1 ? [(L.lf * lw) / 2 + 0.5, (L.lf * lw) / 2 + 0.5] : [L.lf * lw + 0.5, L.lb * lw + 0.5];
+  }
+  const h = carriageway(i) / 2;
+  return [h, h];
+};
+const roadEdges: ({ right: Profile; left: Profile } | null)[] = roads.map(() => null);
+{
+  const segs: LaneSeg[] = [];
+  for (const l of tgis) {
+    const P = l.p.map(([a, b]) => toXZ(a, b));
+    for (let i = 0; i + 1 < P.length; i++) segs.push({ ax: P[i][0], az: P[i][1], bx: P[i + 1][0], bz: P[i + 1][1], k: l.k, k2: l.k2 });
+  }
+  const idx = laneIndex(segs);
+  let changed = 0;
+  roads.forEach((r, i) => {
+    if (r[0] > 4 || r[3] || r.some((v, k) => k >= 6 && k % 3 === 1 && v > 3)) return;
+    const near = nearHalf(i);
+    const e = readEdges(idx, ptsOf(r), near);
+    if (r[2] & 1 && medianGap[i] > 0.15 && medianGap[i] <= 10) e.left = { s: [0, e.left.s[e.left.s.length - 1]], v: [near[1], near[1]] };
+    if (![...e.right.v.map((v) => v - near[0]), ...e.left.v.map((v) => v - near[1])].some((d) => Math.abs(d) > 0.3)) return;
+    roadEdges[i] = e;
+    changed++;
+  });
+  console.log(`찻길 가장자리를 연석선으로 고친 조각 ${changed}개`);
+}
+/** 조각 i 의 s 자리 찻길 가장자리(side 1 오른쪽, −1 왼쪽) */
+const edgeAt = (i: number, s: number, side: number) => {
+  const e = roadEdges[i];
+  if (!e) return nearHalf(i)[side > 0 ? 0 : 1];
+  const p = side > 0 ? e.right : e.left;
+  let k = 0;
+  while (k + 2 < p.s.length && p.s[k + 1] < s) k++;
+  const t = Math.max(0, Math.min(1, (s - p.s[k]) / (p.s[k + 1] - p.s[k] || 1)));
+  return p.v[k] + (p.v[k + 1] - p.v[k]) * t;
+};
+
 // ───────────────────────── 버스 노선 ─────────────────────────
 // 관계에 속한 길들의 조각만 따라 이어 달릴 수 있는 길을 찾는다(관계의 길 순서는 뒤섞인 경우가 많아 쓰지 않는다).
 // 정류장은 노선 오른쪽 18m 안의 버스 정류장 노드로 정한다(노선마다 실제로 서는 정류장과 다를 수 있다).
@@ -1098,22 +1144,26 @@ let exitsPushed = 0;
 for (const e of exits) {
   const x = e.x / 10;
   const z = e.z / 10;
-  let best: { d: number; i: number; ux: number; uz: number; px: number; pz: number; side: number } | null = null;
+  let best: { d: number; i: number; ux: number; uz: number; px: number; pz: number; side: number; half: number } | null = null;
   roads.forEach((r, i) => {
     if (r[0] > 4 || r[3]) return;
     const P = ptsOf(r);
+    let s0 = 0;
     for (let k = 0; k + 1 < P.length; k++) {
       const [ax, az] = P[k];
       const [bx, bz] = P[k + 1];
       const dx = bx - ax;
       const dz = bz - az;
       const L = Math.hypot(dx, dz);
+      s0 += L;
       if (L < 1) continue;
       const t = Math.max(0, Math.min(L, ((x - ax) * dx + (z - az) * dz) / L));
       const px = ax + (dx / L) * t;
       const pz = az + (dz / L) * t;
-      const d = Math.hypot(px - x, pz - z) - carriageway(i) / 2; // 찻길 가장자리에서 떨어진 거리
-      if (d < 30 && (!best || d < best.d)) best = { d, i, ux: dx / L, uz: dz / L, px, pz, side: Math.sign((x - ax) * -dz + (z - az) * dx) || 1 };
+      const side = Math.sign((x - ax) * -dz + (z - az) * dx) || 1;
+      const half = edgeAt(i, s0 - L + t, side);
+      const d = Math.hypot(px - x, pz - z) - half; // 찻길 가장자리에서 떨어진 거리
+      if (d < 30 && (!best || d < best.d)) best = { d, i, ux: dx / L, uz: dz / L, px, pz, side, half };
     }
   });
   const st = stations.find((s) => s.name === e.st)!;
@@ -1121,12 +1171,12 @@ for (const e of exits) {
     exitYaw.push(Math.round(Math.atan2(st.z / 10 - z, st.x / 10 - x) * 1000));
     continue;
   }
-  const b = best as { d: number; i: number; ux: number; uz: number; px: number; pz: number; side: number };
+  const b = best as { d: number; i: number; ux: number; uz: number; px: number; pz: number; side: number; half: number };
   const toward = Math.sign((st.x / 10 - x) * b.ux + (st.z / 10 - z) * b.uz) || 1;
   exitYaw.push(Math.round(Math.atan2(b.uz * toward, b.ux * toward) * 1000));
   if (b.d < 1.6) {
     // 출구(폭 약 3m) 가운데를 찻길 가장자리에서 2.2m 밖으로
-    const want = carriageway(b.i) / 2 + 2.2;
+    const want = b.half + 2.2;
     e.x = dm(b.px - b.uz * b.side * want);
     e.z = dm(b.pz + b.ux * b.side * want);
     exitsPushed++;
@@ -1265,6 +1315,8 @@ const out = {
     if (L) return [L.lf, L.lb, Math.round(laneWidth(i) * 100), L.ctype, (L.busR ? 1 : 0) | (L.busL ? 2 : 0) | (L.medBus ? 4 : 0), dm(medianGap[i])];
     return medianGap[i] > 0 ? [0, 0, 0, 0, 0, dm(medianGap[i])] : 0;
   }),
+  // 찻길 가장자리: 조각마다 [[오른쪽 s, 거리, s, 거리, ...], [왼쪽 ...]] (dm). 0 = 차로로 어림한 값(src/data/board.ts roadHalf)
+  re: roadEdges.map((e) => (e ? [e.right, e.left].map((p) => p.s.flatMap((s, k) => [dm(s), dm(p.v[k])])) : 0)),
   // 횡단보도: [가운데 x, z, 건너는 방향 ×1000 (x, z), 반 길이, 폭, 표시(1 보행 신호, 2 신호 모름, 4 두 단), 축이 지나는 꼭짓점 x, z, ...]
   xw: crossings.map((c) => [dm(c.cx), dm(c.cz), Math.round(c.ux * 1000), Math.round(c.uz * 1000), dm(c.len / 2), dm(c.wid), (c.sig ? 1 : 0) | (c.sig === null ? 2 : 0) | (c.stage ? 4 : 0), ...c.verts.flat()]),
   xwp: crossings.map((c) => ringsOut(c.rings)),
@@ -1286,6 +1338,23 @@ const out = {
   // 바닥 면 [종류, 값, 직사각형, 바깥 고리, 구멍...] (src/data/board.ts 의 GK)
   ga: groundAreas,
 };
+// 길 모퉁이 반지름: 구운 길로 모퉁이 목록(src/data/corners.ts)을 만들고, 가장자리선이 모퉁이를 돌아가는 곳은 그 반지름(2~25m)을 잰다
+{
+  const segs: LaneSeg[] = [];
+  for (const l of tgis) {
+    const P = l.p.map(([a, b]) => toXZ(a, b));
+    for (let i = 0; i + 1 < P.length; i++) segs.push({ ax: P[i][0], az: P[i][1], bx: P[i + 1][0], bz: P[i + 1][1], k: l.k, k2: l.k2 });
+  }
+  const idx = laneIndex(segs);
+  const corners = roadCorners(decodeBoard(out as unknown as BoardJson).roads);
+  const rc = corners.map((c) => {
+    const R = cornerRadius(idx, c);
+    return R >= 2 && R <= 25 ? dm(R) : 0;
+  });
+  (out as Record<string, unknown>).rc = rc;
+  const got = rc.filter((v) => v > 0).map((v) => v / 10).sort((a, b) => a - b);
+  console.log(`길 모퉁이 ${corners.length}곳 가운데 가장자리선으로 반지름을 잰 곳 ${got.length}곳(중앙값 ${got[got.length >> 1]?.toFixed(1)}m)`);
+}
 const json = JSON.stringify(out);
 writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));

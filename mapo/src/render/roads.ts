@@ -2,7 +2,8 @@
 // 큰길은 서울시 차선 자료로 읽은 실제 중앙선 자리·방향별 차로 수·차로 폭으로 띠와 차선을 그린다(차가 달리는 차로와 같은 값).
 // 교차로 안(차의 교차로 상자, 신호 정지선 앞)에는 차선을 긋지 않고, 길 모퉁이는 둥글게 깎고, 한 방향씩 나뉜 큰길 사이에는 분리대·중앙버스차로를 그린다.
 import * as THREE from 'three';
-import { roadHalf, type Road } from '../data/board.ts';
+import { curbAt, roadHalf, type Road } from '../data/board.ts';
+import { cornerArc, roadCorners } from '../data/corners.ts';
 import { BOARD_R } from '../geo.ts';
 import { cumLen, pointAt } from '../poly.ts';
 import { material, pal } from './env.ts';
@@ -150,12 +151,57 @@ function shift(p: Float32Array, o: number): Float32Array {
   return out;
 }
 
-const nodeKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
+/**
+ * 연석선으로 읽은 가장자리(r.edge)를 따라 폭이 바뀌는 찻길 띠. 꼭짓점과 가장자리 단면 자리마다 띠를 끊어
+ * 오른쪽은 curbAt(+1), 왼쪽은 curbAt(−1) 까지 덮는다. 꼭짓점마다 띠 가운데(ex0.x)와 폭(info.y)을 바꿔 차선 자리는 그대로 둔다
+ */
+function addEdgeRibbon(o: ReturnType<typeof ribbon>, r: Road, info: [number, number, number, number], cap: number, ex: number[]) {
+  const P = r.p;
+  const n = P.length / 3;
+  const L = cumLen(P);
+  const len = L[n - 1];
+  const S = new Set<number>(L);
+  for (const p of [r.edge!.r, r.edge!.l]) for (const s of p.s) if (s > 0 && s < len) S.add(s);
+  const ss = [...S].sort((a, b) => a - b).filter((s, i, a) => i === 0 || s - a[i - 1] > 0.05);
+  const tmp = [0, 0, 0];
+  const base = o.pos.length / 3;
+  ss.forEach((s, i) => {
+    const seg = pointAt(P, L, s, tmp);
+    let dx = P[seg * 3 + 3] - P[seg * 3];
+    let dz = P[seg * 3 + 5] - P[seg * 3 + 2];
+    // 꼭짓점에서는 앞뒤 조각 방향의 가운데
+    const k = L.indexOf(s);
+    if (k > 0 && k < n - 1) {
+      dx = P[k * 3 + 3] - P[k * 3 - 3];
+      dz = P[k * 3 + 5] - P[k * 3 - 1];
+    }
+    const d = Math.hypot(dx, dz) || 1;
+    dx /= d;
+    dz /= d;
+    const er = curbAt(r, s, 1);
+    const el = curbAt(r, s, -1);
+    const ext = i === 0 ? -cap : i === ss.length - 1 ? cap : 0;
+    const x = tmp[0] + dx * ext;
+    const z = tmp[2] + dz * ext;
+    o.pos.push(x + dz * el, tmp[1], z - dx * el, x - dz * er, tmp[1], z + dx * er);
+    const v = s + ext;
+    o.uv.push(-1, v, 1, v);
+    const inf = [info[0], er + el, info[2], info[3]];
+    o.info.push(...inf, ...inf);
+    const e = [(er - el) / 2, ...ex.slice(1)];
+    o.ex.push(...e, ...e);
+    if (i > 0) {
+      const q = base + i * 2;
+      o.idx.push(q - 2, q - 1, q, q - 1, q + 1, q);
+    }
+  });
+}
 
 /**
  * clears(i): 길 조각 i 의 시작·끝에서 차선을 긋지 않을 거리(교차로 상자, 신호 정지선). 없으면 0
+ * radii: 모퉁이마다 굽기가 잰 반지름(board.cornerR)
  */
-export function makeRoads(roads: Road[], lmColors: string[], clears: (i: number) => [number, number] = () => [0, 0]) {
+export function makeRoads(roads: Road[], lmColors: string[], clears: (i: number) => [number, number] = () => [0, 0], radii: number[] = []) {
   const lm = { uLmCol: { value: lmColors.map((c) => new THREE.Color(c)) }, uLmGlow: { value: lmColors.map(() => 0) } };
   const uniforms = { uMajor: { value: pal.roadMajor }, uMinor: { value: pal.roadMinor }, uWalk: { value: pal.walk }, ...lm };
 
@@ -180,7 +226,8 @@ export function makeRoads(roads: Road[], lmColors: string[], clears: (i: number)
     const last = r.p.length - 3;
     const atRim = Math.hypot(r.p[0], r.p[2]) > BOARD_R - 12 || Math.hypot(r.p[last], r.p[last + 2]) > BOARD_R - 12;
     if (top < 0.3) {
-      addRibbon(flat, shift(r.p, c0), w, info, 0, atRim ? 0 : w * 0.45, ex);
+      if (r.edge) addEdgeRibbon(flat, r, info, atRim ? 0 : w * 0.45, ex);
+      else addRibbon(flat, shift(r.p, c0), w, info, 0, atRim ? 0 : w * 0.45, ex);
       // 분리대: 한 방향 큰길 왼쪽, 반대 방향 길까지의 절반. 10m 넘게 떨어진 길 사이는 분리대가 아니라 따로 난 길이다
       if (r.oneway && r.gap > 0.15 && r.gap <= 10 && r.cls <= 3) {
         const gw = r.gap / 2;
@@ -227,7 +274,7 @@ export function makeRoads(roads: Road[], lmColors: string[], clears: (i: number)
       }
     }
   }
-  addCorners(flat, roads);
+  addCorners(flat, roads, radii);
 
   const ground = new THREE.Mesh(
     ribbonGeometry(flat),
@@ -259,89 +306,20 @@ export function makeRoads(roads: Road[], lmColors: string[], clears: (i: number)
   return { group, glow: lm.uLmGlow.value as number[] };
 }
 
-/**
- * 길 모퉁이를 둥글게 깎는다: 땅 위 길 조각이 둘 넘게 만나는 노드에서 각도 순으로 이웃한 두 갈래의 찻길 가장자리 선이 만나는 점(보도 모서리)을
- * 반지름 R(큰길끼리 6m, 큰길과 골목 4m, 골목끼리 2.5m)의 호로 깎아, 그 사이를 길 바닥으로 칠한다. 분리대 쪽 모서리는 깎지 않는다.
- */
-function addCorners(o: ReturnType<typeof ribbon>, roads: Road[]) {
-  interface Arm {
-    ux: number;
-    uz: number;
-    /** 노드에서 멀어지는 방향 기준 오른쪽·왼쪽 찻길 가장자리 */
-    hr: number;
-    hl: number;
-    cls: number;
-    len: number;
-    /** 왼쪽·오른쪽이 분리대인가 */
-    medL: boolean;
-    medR: boolean;
-  }
-  const arms = new Map<string, { x: number; z: number; list: Arm[] }>();
-  roads.forEach((r) => {
-    if (r.cls > 5 || r.p.length < 6) return;
-    for (let i = 1; i < r.p.length; i += 3) if (r.p[i] > 0.3) return;
-    const L = cumLen(r.p);
-    const len = L[L.length - 1];
-    const [hr, hl] = roadHalf(r);
-    const med = r.oneway && r.gap > 0.15 && r.gap <= 10;
-    for (const end of [0, 1]) {
-      const n = r.p.length;
-      const [x, z, nx, nz] = end ? [r.p[n - 3], r.p[n - 1], r.p[n - 6], r.p[n - 4]] : [r.p[0], r.p[2], r.p[3], r.p[5]];
-      const d = Math.hypot(nx - x, nz - z) || 1;
-      const k = nodeKey(x, z);
-      const a = arms.get(k) ?? arms.set(k, { x, z, list: [] }).get(k)!;
-      // 끝 노드에서 멀어지는 방향은 길 진행 방향의 반대라 오른쪽·왼쪽이 바뀐다
-      a.list.push({ ux: (nx - x) / d, uz: (nz - z) / d, hr: end ? hl : hr, hl: end ? hr : hl, cls: r.cls, len, medL: med && !end, medR: med && !!end });
+/** 길 모퉁이를 둥글게 깎아 그 사이를 길 바닥으로 칠한다(src/data/corners.ts). radii[i] 는 굽기가 잰 i 번째 모퉁이 반지름(0 이면 등급 기본값) */
+function addCorners(o: ReturnType<typeof ribbon>, roads: Road[], radii: number[]) {
+  roadCorners(roads).forEach((c, i) => {
+    const arc = cornerArc(c, radii[i] || c.r0);
+    if (!arc) return;
+    const base = o.pos.length / 3;
+    o.pos.push(c.kx, 0, c.kz);
+    for (let k = 0; k < arc.length; k += 2) o.pos.push(arc[k], 0, arc[k + 1]);
+    const steps = arc.length / 2 - 1;
+    for (let s = 0; s <= steps + 1; s++) {
+      o.uv.push(0, 0);
+      o.info.push(c.cls, 10, 0, 0);
+      o.ex.push(0, 0, 0, 3.3, 0, NO_MARKS, 0, 0);
     }
+    for (let s = 0; s < steps; s++) o.idx.push(base, base + 1 + s, base + 2 + s);
   });
-  for (const { x, z, list } of arms.values()) {
-    if (list.length < 2) continue;
-    const sorted = [...list].sort((a, b) => Math.atan2(a.uz, a.ux) - Math.atan2(b.uz, b.ux));
-    for (let k = 0; k < sorted.length; k++) {
-      const a = sorted[k];
-      const b = sorted[(k + 1) % sorted.length];
-      let th = Math.atan2(b.uz, b.ux) - Math.atan2(a.uz, a.ux);
-      if (th <= 0) th += Math.PI * 2;
-      if (th > Math.PI - 0.25 || th < 0.35 || a.medR || b.medL) continue;
-      // a 의 오른쪽 가장자리(+ 각도 쪽)와 b 의 왼쪽 가장자리
-      const ax = x - a.uz * a.hr;
-      const az = z + a.ux * a.hr;
-      const bx = x + b.uz * b.hl;
-      const bz = z - b.ux * b.hl;
-      const den = a.ux * b.uz - a.uz * b.ux;
-      if (Math.abs(den) < 1e-3) continue;
-      const t = ((bx - ax) * b.uz - (bz - az) * b.ux) / den;
-      const kx = ax + a.ux * t;
-      const kz = az + a.uz * t;
-      const R = a.cls <= 3 && b.cls <= 3 ? 6 : a.cls <= 3 || b.cls <= 3 ? 4 : 2.5;
-      const dt = Math.min(R / Math.tan(th / 2), a.len * 0.45, b.len * 0.45);
-      if (dt < 0.3 || t + dt < 0) continue;
-      const r = dt * Math.tan(th / 2);
-      const t1x = kx + a.ux * dt;
-      const t1z = kz + a.uz * dt;
-      const t2x = kx + b.ux * dt;
-      const t2z = kz + b.uz * dt;
-      // 호의 가운데: 두 접점에서 각 가장자리에 직각으로 r 만큼 보도 쪽
-      const cx = t1x - a.uz * r;
-      const cz = t1z + a.ux * r;
-      const a0 = Math.atan2(t1z - cz, t1x - cx);
-      let a1 = Math.atan2(t2z - cz, t2x - cx);
-      while (a1 - a0 > Math.PI) a1 -= Math.PI * 2;
-      while (a0 - a1 > Math.PI) a1 += Math.PI * 2;
-      const cls = Math.min(a.cls, b.cls);
-      const base = o.pos.length / 3;
-      o.pos.push(kx, 0, kz);
-      const steps = 8;
-      for (let s = 0; s <= steps; s++) {
-        const ang = a0 + ((a1 - a0) * s) / steps;
-        o.pos.push(cx + Math.cos(ang) * r, 0, cz + Math.sin(ang) * r);
-      }
-      for (let s = 0; s <= steps + 1; s++) {
-        o.uv.push(0, 0);
-        o.info.push(cls, 10, 0, 0);
-        o.ex.push(0, 0, 0, 3.3, 0, NO_MARKS, 0, 0);
-      }
-      for (let s = 0; s < steps; s++) o.idx.push(base, base + 1 + s, base + 2 + s);
-    }
-  }
 }

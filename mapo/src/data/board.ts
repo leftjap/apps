@@ -29,6 +29,10 @@ export interface BoardJson {
   picnic?: number[];
   /** 도로 조각마다 차선 자료에서 읽은 [진행 방향 차로, 반대 방향 차로, 차로 폭(cm), 중앙선 종류, 표시, 분리대 폭(dm)]. 0 = 없음 */
   rl?: (number[] | 0)[];
+  /** 도로 조각마다 연석선으로 읽은 찻길 가장자리 [[오른쪽 s, 거리, ...], [왼쪽 s, 거리, ...]](dm). 0 = 없음 */
+  re?: (number[][] | 0)[];
+  /** 길 모퉁이(src/data/corners.ts roadCorners 순서)마다 가장자리선으로 잰 반지름(dm). 0 = 등급 기본값 */
+  rc?: number[];
   /** 횡단보도 [가운데 x, z, 건너는 방향 ×1000 (x, z), 반 길이, 폭, 표시, 축이 지나는 꼭짓점 x, z, ...] */
   xw?: number[][];
   /** 횡단보도마다 조각 면 외곽선 [점 개수, x, z, ..., 점 개수, ...] */
@@ -97,6 +101,13 @@ export interface Road {
   measured: boolean;
   /** 중심선 [x,y,z, ...]. 일방통행이면 진행 방향 순서. 양방향 길이면 중앙선 자리 */
   p: Float32Array;
+  /** 연석선으로 읽은 진행 방향 오른쪽·왼쪽 찻길 가장자리(길을 따라간 거리 s 마다 가운데선에서 떨어진 거리). 없으면 roadHalf */
+  edge?: { r: EdgeProfile; l: EdgeProfile };
+}
+
+export interface EdgeProfile {
+  s: Float32Array;
+  v: Float32Array;
 }
 
 /** 길 가운데선에서 진행 방향 오른쪽·왼쪽 찻길 가장자리까지(m). 차로가 있는 길은 차로 수 × 차로 폭 + 0.5m */
@@ -107,6 +118,16 @@ export function roadHalf(r: Road): [number, number] {
   }
   const w = r.cls === 4 ? 5.6 : r.cls === 5 ? 3.6 : r.cls === 6 ? 6.5 : 2.6;
   return [w / 2, w / 2];
+}
+
+/** 길을 따라 s(m) 자리의 찻길 가장자리가 가운데선에서 떨어진 거리. side 1 = 진행 방향 오른쪽, −1 = 왼쪽 */
+export function curbAt(r: Road, s: number, side: number): number {
+  const p = side > 0 ? r.edge?.r : r.edge?.l;
+  if (!p) return roadHalf(r)[side > 0 ? 0 : 1];
+  let k = 0;
+  while (k + 2 < p.s.length && p.s[k + 1] < s) k++;
+  const t = Math.max(0, Math.min(1, (s - p.s[k]) / (p.s[k + 1] - p.s[k] || 1)));
+  return p.v[k] + (p.v[k + 1] - p.v[k]) * t;
 }
 
 export interface Crosswalk {
@@ -167,6 +188,8 @@ export interface BusRun {
 export interface Board {
   buildings: Building[];
   roads: Road[];
+  /** 길 모퉁이 반지름(m, src/data/corners.ts 순서). 0 = 등급 기본값 */
+  cornerR: number[];
   lines: Line[];
   stations: { name: string; x: number; z: number }[];
   exits: Exit[];
@@ -192,6 +215,7 @@ export interface Board {
 }
 
 const m = (a: number[], from = 0) => Float32Array.from(a.slice(from), (v) => v / 10);
+const profile = (a: number[]): EdgeProfile => ({ s: Float32Array.from(a.filter((_, i) => i % 2 === 0), (v) => v / 10), v: Float32Array.from(a.filter((_, i) => i % 2 === 1), (v) => v / 10) });
 /** [점 개수, x, z, ..., 점 개수, ...](데시미터) → 외곽선마다 [x,z, ...](m) */
 const rings = (a: number[]) => {
   const out: Float32Array[] = [];
@@ -209,6 +233,7 @@ export function decodeBoard(j: BoardJson): Board {
     picnic: m(j.picnic ?? []),
     buildings: j.b.map((b, i) => ({ h: b[0] / 10, lm: b[1], pts: m(b, 2), ...unpackInfo(j.bi?.[i] ?? 0) })),
     elevators: m(j.ev ?? []),
+    cornerR: (j.rc ?? []).map((v) => v / 10),
     roads: j.r.map((r, i) => {
       const oneway = !!(r[2] & 1);
       const rl = j.rl?.[i] || null;
@@ -234,6 +259,7 @@ export function decodeBoard(j: BoardJson): Board {
         medBus: measured && !!(rl![4] & 4),
         gap: rl ? rl[5] / 10 : 0,
         measured,
+        ...(j.re?.[i] ? { edge: { r: profile((j.re[i] as number[][])[0]), l: profile((j.re[i] as number[][])[1]) } } : {}),
       };
     }),
     lines: j.lines.map((l) => {

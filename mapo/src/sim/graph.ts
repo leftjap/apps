@@ -1,6 +1,6 @@
 // 도로 조각 → 차가 달리는 방향 그래프와 사람·고양이가 걷는 그래프.
 // 구울 때 교차점마다 끊어 두었으므로 조각의 끝점끼리만 이어 주면 된다.
-import { roadHalf, type Crosswalk, type Road } from '../data/board.ts';
+import { curbAt, type Crosswalk, type Road } from '../data/board.ts';
 import { BOARD_R } from '../geo.ts';
 import { cumLen } from '../poly.ts';
 
@@ -141,13 +141,18 @@ export interface WalkGraph {
 
 const HOT = /경의선|레드로드|어울마당|홍익로|와우산로|잔다리로|독막로|동교로|성미산로|양화로|월드컵로|연남로|한강|포은로|망원로|희우정로/;
 
-/** 길 조각의 걷는 띠: [진행 방향 오른쪽, 왼쪽]. 큰길은 찻길 가장자리 밖 보도, 골목은 길 안 가장자리 */
-function walkLat(r: Road): [[number, number], [number, number]] {
+/** 길 조각에서 길을 따라 sa~sb 구간의 걷는 띠: [진행 방향 오른쪽, 왼쪽]. 큰길은 찻길 가장자리(구간에서 가장 바깥) 밖 보도, 골목은 길 안 가장자리 */
+function walkLat(r: Road, sa: number, sb: number): [[number, number], [number, number]] {
   if (r.cls === 6) return [[0, 2.6], [0, 2.6]];
   if (r.cls === 7) return [[0, 0.8], [0, 0.8]];
   if (r.cls >= 4) return [[0.6, 2.2], [0.6, 2.2]];
-  const [hr, hl] = roadHalf(r);
-  return [[hr + 0.8, hr + 2.4], [hl + 0.8, hl + 2.4]];
+  const band = (side: number): [number, number] => {
+    let c = Math.max(curbAt(r, sa, side), curbAt(r, sb, side));
+    const p = side > 0 ? r.edge?.r : r.edge?.l;
+    if (p) for (let k = 0; k < p.s.length; k++) if (p.s[k] > sa && p.s[k] < sb) c = Math.max(c, p.v[k]);
+    return [c + 0.8, c + 2.4];
+  };
+  return [band(1), band(-1)];
 }
 
 export function buildWalkGraph(roads: Road[]): WalkGraph {
@@ -181,11 +186,14 @@ export function buildWalkGraph(roads: Road[]): WalkGraph {
     for (let i = 1; i < r.p.length; i += 3) top = Math.max(top, r.p[i]);
     if (top > 1) continue;
     const w = (r.cls >= 6 ? 3 : r.cls === 5 ? 0.4 : r.cls === 4 ? 1 : 1.5) * (HOT.test(r.name) ? 3 : 1);
-    const [lr, ll] = walkLat(r);
     let prev = -1;
+    let s = 0;
     for (let i = 0; i < r.p.length; i += 3) {
       const n = node(r.p[i], r.p[i + 2]);
+      const ds = i ? Math.hypot(r.p[i] - r.p[i - 3], r.p[i + 2] - r.p[i - 1]) : 0;
+      s += ds;
       if (prev >= 0 && prev !== n) {
+        const [lr, ll] = walkLat(r, s - ds, s);
         adj[prev].push(n);
         adj[n].push(prev);
         aw[prev].push(w);

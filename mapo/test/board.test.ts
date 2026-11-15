@@ -1,7 +1,9 @@
 // 구운 결과(public/data)가 화면을 만들 만큼 온전한지 본다.
 import { readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { decodeBoard, type BoardJson } from '../src/data/board.ts';
+import { curbAt, decodeBoard, roadHalf, type BoardJson } from '../src/data/board.ts';
+import { buildWalkGraph } from '../src/sim/graph.ts';
+import { road } from './helpers.ts';
 import { BOARD_R } from '../src/geo.ts';
 
 const json: BoardJson = JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8'));
@@ -77,5 +79,30 @@ describe('구운 모형판 자료', () => {
     }
     // 판에 없는 골목·진입로 입구의 횡단보도(사람이 건너는 데는 쓰지 않는다)
     expect(board.crosswalkMarks.length).toBeGreaterThan(20);
+  });
+});
+
+describe('찻길 가장자리(연석선으로 읽은 값)', () => {
+  const prof = (s: number[], v: number[]) => ({ s: Float32Array.from(s), v: Float32Array.from(v) });
+  it('가장자리 값이 있으면 그 자리를 보간하고, 없으면 차로로 어림한 값', () => {
+    const a = road([[0, 0], [100, 0]], { edge: { r: prof([0, 50, 100], [8, 8, 11]), l: prof([0, 100], [6, 6]) } });
+    expect(curbAt(a, 25, 1)).toBeCloseTo(8, 5);
+    expect(curbAt(a, 75, 1)).toBeCloseTo(9.5, 5);
+    expect(curbAt(a, 75, -1)).toBeCloseTo(6, 5);
+    const b = road([[0, 0], [100, 0]]);
+    expect(curbAt(b, 30, 1)).toBeCloseTo(roadHalf(b)[0], 5);
+    expect(curbAt(b, 30, -1)).toBeCloseTo(roadHalf(b)[1], 5);
+  });
+  it('판 자료에서 읽는다', () => {
+    const j = { ...json, r: [[2, 2, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0]], rl: [0], re: [[[0, 80, 1000, 80], [0, 60, 1000, 60]]] } as BoardJson;
+    const r = decodeBoard(j).roads[0];
+    expect(curbAt(r, 50, 1)).toBeCloseTo(8, 5);
+    expect(curbAt(r, 50, -1)).toBeCloseTo(6, 5);
+  });
+  it('큰길 보도는 연석 바깥으로 걷는다', () => {
+    const g = buildWalkGraph([road([[0, 0], [100, 0]], { edge: { r: prof([0, 100], [9, 9]), l: prof([0, 100], [5, 5]) } })]);
+    const a = g.nodeAt(0, 0);
+    expect(g.lat[a][0]).toEqual([9.8, 11.4]);
+    expect(g.latL[a][0][0]).toBeCloseTo(5.8, 5);
   });
 });

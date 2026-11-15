@@ -218,3 +218,128 @@ export function analysePiece(idx: LaneIndex, pts: [number, number][], oneway: bo
     n,
   };
 }
+
+/** 길을 따라간 거리 s(m)마다의 값 v. 렌더러가 선형 보간한다 */
+export interface Profile {
+  s: number[];
+  v: number[];
+}
+
+const EDGE = new Set(['009', '010', '011']);
+/** 칠한 가장자리선에서 연석까지(m) */
+const PAINT_TO_CURB = 0.25;
+
+/**
+ * 길 조각 pts 를 따라 step(m)마다 단면을 긋고, 연석 쪽 가장자리선(009 길가장자리구역선, 010·011 주정차 금지선)으로
+ * 진행 방향 오른쪽·왼쪽 찻길 가장자리까지의 거리(가운데선 기준, m)를 읽는다.
+ * near: 차로 수 × 차로 폭으로 어림한 [오른쪽, 왼쪽] 가장자리. 그 절반 ~ 6m 바깥에서 가장 안쪽 선을 쓴다(어림값은 차로를 잘못 세거나 가운데선이 치우쳐 몇 m 틀릴 수 있고, 옆길 선은 버린다).
+ * 끝 skip(m)은 교차로라 다른 길의 선이 걸리므로 읽지 않는다. 못 읽은 단면은 앞뒤로 40m 안에 읽은 값이 있으면 이어 채우고, 없으면 near 를 쓴다.
+ * 결과는 0.2m 안으로 직선 보간되는 단면을 지워 줄인다.
+ */
+export function readEdges(idx: LaneIndex, pts: [number, number][], near: [number, number], step = 4, skip = 8): { right: Profile; left: Profile } {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = cum[cum.length - 1];
+  const n = Math.max(2, Math.round(total / step) + 1);
+  const S: number[] = [];
+  const raw: [number, number][] = [];
+  let seg = 0;
+  for (let k = 0; k < n; k++) {
+    const s = (total * k) / (n - 1);
+    S.push(s);
+    if (s < skip || s > total - skip || total < 1e-6) {
+      raw.push([NaN, NaN]);
+      continue;
+    }
+    while (seg + 1 < pts.length - 1 && cum[seg + 1] < s) seg++;
+    const [ax, az] = pts[seg];
+    const [bx, bz] = pts[seg + 1];
+    const sl = cum[seg + 1] - cum[seg] || 1;
+    const ux = (bx - ax) / sl;
+    const uz = (bz - az) / sl;
+    const f = (s - cum[seg]) / sl;
+    const hits = transect(idx, ax + (bx - ax) * f, az + (bz - az) * f, ux, uz).filter((h) => EDGE.has(h.k));
+    const pick = (dir: number, nearV: number) => {
+      let best = NaN;
+      for (const h of hits) {
+        const d = h.t * dir;
+        if (d < Math.max(0.3, nearV * 0.5) || d > nearV + 6) continue;
+        if (Number.isNaN(best) || d < best) best = d;
+      }
+      return Number.isNaN(best) ? NaN : best + PAINT_TO_CURB;
+    };
+    raw.push([pick(1, near[0]), pick(-1, near[1])]);
+  }
+  const side = (j: 0 | 1): Profile => {
+    const v = raw.map((r) => r[j]);
+    // 하나만 튀는 값(옆 선·끊긴 선)은 앞뒤 셋의 중앙값으로
+    const m = v.map((x, i) => {
+      const w = [v[i - 1], x, v[i + 1]].filter((y) => y !== undefined && Number.isFinite(y)) as number[];
+      return w.length === 3 ? [...w].sort((a, b) => a - b)[1] : x;
+    });
+    const filled = m.map((x, i) => {
+      if (Number.isFinite(x)) return x;
+      let a = i - 1;
+      while (a >= 0 && !Number.isFinite(m[a])) a--;
+      let b = i + 1;
+      while (b < m.length && !Number.isFinite(m[b])) b++;
+      const okA = a >= 0 && S[i] - S[a] <= 40;
+      const okB = b < m.length && S[b] - S[i] <= 40;
+      if (okA && okB) return m[a] + ((m[b] - m[a]) * (S[i] - S[a])) / (S[b] - S[a]);
+      if (okA) return m[a];
+      if (okB) return m[b];
+      return near[j];
+    });
+    // 직선 보간으로 0.2m 안에 드는 단면 지우기
+    const keep = [0];
+    for (let i = 1; i < filled.length - 1; i++) {
+      const a = keep[keep.length - 1];
+      let ok = true;
+      for (let q = a + 1; q <= i + 1 && ok; q++) {
+        const t = (S[q] - S[a]) / (S[i + 1] - S[a]);
+        if (Math.abs(filled[a] + (filled[i + 1] - filled[a]) * t - filled[q]) > 0.2) ok = false;
+      }
+      if (!ok) keep.push(i);
+    }
+    keep.push(filled.length - 1);
+    return { s: keep.map((i) => S[i]), v: keep.map((i) => filled[i]) };
+  };
+  return { right: side(0), left: side(1) };
+}
+
+/**
+ * 길 모퉁이 c(src/data/corners.ts)의 보도 모서리에서 두 갈래 사이 가운데 방향으로 나아가 처음 만나는 연석 쪽 가장자리선까지 거리 d 로
+ * 모퉁이 반지름을 잰다: 두 가장자리에 접하는 반지름 R 의 호까지 거리는 R(1/sin(θ/2) − 1). 15m 안에 선이 없으면 NaN.
+ */
+export function cornerRadius(idx: LaneIndex, c: { kx: number; kz: number; ax: number; az: number; bx: number; bz: number; th: number }): number {
+  let ux = c.ax + c.bx;
+  let uz = c.az + c.bz;
+  const L = Math.hypot(ux, uz);
+  if (L < 1e-6) return NaN;
+  ux /= L;
+  uz /= L;
+  const MAX = 15;
+  let best = Infinity;
+  const seen = new Set<number>();
+  for (let s = 0; s <= MAX + CELL / 2; s += CELL / 2) {
+    const cx = Math.floor((c.kx + ux * s) / CELL);
+    const cz = Math.floor((c.kz + uz * s) / CELL);
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++)
+        for (const id of idx.grid.get(cellKey(cx + dx, cz + dz)) ?? []) {
+          if (seen.has(id)) continue;
+          seen.add(id);
+          const g = idx.segs[id];
+          if (!EDGE.has(g.k)) continue;
+          const rx = g.bx - g.ax;
+          const rz = g.bz - g.az;
+          const den = ux * rz - uz * rx;
+          if (Math.abs(den) < 1e-9) continue;
+          const t = ((g.ax - c.kx) * rz - (g.az - c.kz) * rx) / den;
+          const u = ((g.ax - c.kx) * uz - (g.az - c.kz) * ux) / den;
+          if (t > 0.05 && t <= MAX && u >= 0 && u <= 1) best = Math.min(best, t);
+        }
+  }
+  if (!Number.isFinite(best)) return NaN;
+  return best / (1 / Math.sin(c.th / 2) - 1);
+}
