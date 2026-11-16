@@ -24,6 +24,9 @@ describe('멀어질수록 키워 그리는 배율(크기 기준 하나)', () => 
     // 중앙버스정류장은 길이·폭을 키우지 않는다(찻길과 맞아야 한다). island 는 높이에만 쓴다
     expect(SIZE_MAX.island).toBeLessThanOrEqual(1.5);
   });
+  it('가까운 보기(깊이 300m 안)에서 사람 키(1.47m)가 출구 입구 높이(구형 기둥 2.55m)보다 작다', () => {
+    for (const d of [20, 100, 200, 300]) expect(1.47 * sizeAt('mover', d)).toBeLessThan(2.55 * sizeAt('exit', d));
+  });
   it('셰이더 식은 TS 식과 같은 값을 낸다', () => {
     const glsl = sizeGlsl('mover', 'd');
     const f = new Function('d', `const clamp = (v, a, b) => Math.min(b, Math.max(a, v)); return ${glsl};`) as (d: number) => number;

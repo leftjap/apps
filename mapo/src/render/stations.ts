@@ -446,10 +446,17 @@ export function makeStations(board: Board) {
           col = lit(vec3(0.35, 0.37, 0.4), n);
         }
         col += (glow * uNight + c * 0.35 * h * step(1.5, vPart) * step(vPart, 3.5));
-        // 열차가 막 섰다: 지붕(평지붕·반원통·경사 지붕, 지붕 없는 출구는 갓돌)이 노선 색으로, 유리 벽은 그 절반만큼 밝아진다
-        float roof = max(max(step(2.5, vPart) * step(vPart, 3.5), step(12.5, vPart) * step(vPart, 14.5)), step(5.5, vPart) * step(vPart, 6.5) * step(uKind, 0.5));
-        float wall = step(1.5, vPart) * step(vPart, 2.5);
-        col += uFlashCol[si] * uFlash[si] * (roof + 0.5 * wall) * (0.55 + 0.35 * uNight);
+        // 위에서 내려다볼 때 출구로 읽히게: 지붕(평지붕·반원통·경사 지붕) 윗면 긴 두 가장자리에 노선 색 띠, 입구 쪽 끝에 노란 출구 번호
+        float roof = max(step(2.5, vPart) * step(vPart, 3.5), step(12.5, vPart) * step(vPart, 14.5));
+        float up = step(0.3, n.y);
+        float band = roof * up * step(1.3, abs(vO.z)) * step(abs(vO.x + 0.1), 4.6);
+        col = mix(col, lit(uLine[si] * 0.95, vec3(0.0, 1.0, 0.0)) + uLine[si] * 0.25 * uNight, band);
+        vec2 nb = vec2((vO.x + 4.1) / 1.2, (vO.z + 0.6) / 1.2);
+        float num = roof * step(0.6, n.y) * step(0.0, nb.x) * step(nb.x, 1.0) * step(0.0, nb.y) * step(nb.y, 1.0);
+        if (num > 0.5) col = texture2D(uFascia, vec2((452.0 + 48.0 * nb.y) / 512.0, 1.0 - (vSign + (8.0 + 48.0 * nb.x) / 64.0) / uSignN)).rgb * (0.9 + 0.2 * uNight);
+        // 열차가 막 섰다: 노선 색 띠(지붕 없는 개방형은 갓돌 윗면)만 잠깐 밝아진다
+        float edge = max(band, step(5.5, vPart) * step(vPart, 6.5) * step(uKind, 0.5) * up);
+        col += uFlashCol[si] * uFlash[si] * edge * (0.45 + 0.3 * uNight);
         gl_FragColor = vec4(fogged(col, vDist), 1.0);
       }`,
   });

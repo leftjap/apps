@@ -34,7 +34,7 @@ const LIGHT_Y = 0.5;
 /** 덮인 빛을 비쳐 보이는 거리: 빛 앞(카메라 쪽) 카메라 거리의 REACH 배(20~150m) 안에 있는 건물·나무·차에 덮인 자리만 비쳐 보인다 */
 const REACH = 0.025;
 /** 이 카메라 거리(m) 사이에서 덮인 자리 빛이 '가까이 덮은 것만 약하게'에서 '모두 그대로'로 바뀐다(판 전체 보기는 약 6km) */
-const FAR = [2500, 4500];
+const FAR = [800, 1800];   // 홍대 보기(1.15km)부터 덮인 자리가 비치기 시작해 판 전체(약 6km)에서는 보이는 자리와 같다
 /** 터파기 옹벽이 땅 위로 올라온 높이 */
 const PARAPET = 0.9;
 /** 터파기 안쪽 반폭 */
@@ -449,7 +449,7 @@ const lightMat = (through: boolean) =>
         float len = pool > 0.5 ? aC.x : aC.x - min(${GAP_MAX.toFixed(2)} * aC.x, max(${GAP_M.toFixed(2)}, ${GAP_PX.toFixed(1)} * mpp));
         // 판 전체를 볼 만큼 멀면(FAR) 칸이 몇 픽셀뿐이라 화면 굵기를 1.5배로
         float far = smoothstep(${FAR[0].toFixed(1)}, ${FAR[1].toFixed(1)}, -cv.z);
-        float wid = max(aC.y, mpp * (pool > 0.5 ? 16.0 : 10.0) * (1.0 + 0.5 * far));
+        float wid = max(aC.y, mpp * (pool > 0.5 ? 16.0 : 12.0) * (1.0 + 0.5 * far));
         vec2 l = vec2(position.x * len, position.z * wid);
         float cs = cos(aA.z), sn = sin(aA.z);
         vec3 w = vec3(aA.x + l.x * cs - l.y * sn, ${LIGHT_Y.toFixed(1)}, aA.y + l.x * sn + l.y * cs);
@@ -476,10 +476,12 @@ const lightMat = (through: boolean) =>
         float halo = (1.0 - smoothstep(0.5, 0.85, y)) * (1.0 - smoothstep(0.7, 1.0, x)) * (1.0 - body);
         // 몸통 가운데 줄은 흰빛 쪽으로 밝게, 머리 칸은 칸 전체가 조금 더 밝다(칸 세기 vB.w 도 머리 1 → 꼬리 0.6)
         vec3 lc = vB.rgb;
-        float hot = (1.0 - smoothstep(0.0, 0.3, y)) * (0.28 - 0.03 * uNight) * (1.0 + 0.6 * vFar) * (1.0 - pool);
+        // 멀리서 볼 때 낮에는 흰 가운데 줄을 밝게: 서행 띠(주황 면)와 다르게 읽힌다. 가까이(400m 안)는 노면 표시를 가리지 않게 그대로
+        float boost = smoothstep(400.0, 1200.0, vDist) * (1.0 - uNight);
+        float hot = (1.0 - smoothstep(0.0, 0.3, y)) * (0.28 - 0.03 * uNight + 0.17 * boost) * (1.0 + 0.6 * vFar) * (1.0 - pool);
         vec3 col = mix(lc, vec3(1.0), hot + 0.12 * vHead);
         col *= 1.0 + 0.3 * uNight;
-        float a = (body * mix(0.97, 0.5, pool) + halo * 0.25) * lvl;
+        float a = (body * mix(0.97, 0.5, pool) + halo * (0.25 + 0.15 * boost)) * lvl;
         // 덮인 자리: 가까이서는 성긴 점무늬로 약하게(지붕·벽에 칠한 것이 아니라 그 밑이 비쳐 보이는 것으로 읽히게),
         // 판 전체를 볼 만큼 멀면(FAR) 나무·건물이 길을 거의 다 덮고 하나하나가 몇 픽셀이므로 덮은 것과 상관없이 보이는 자리와 같은 세기로
         ${through ? 'if (dither(gl_FragCoord.xy) > mix(0.5, 1.0, vFar)) discard; a *= mix(0.35, 1.0, vFar); col = mix(col, lc, 0.5 * (1.0 - vFar));' : ''}
@@ -532,7 +534,7 @@ export function makeRails(lines: Line[]) {
         varying vec4 vInfo; varying float vDist; varying vec2 vXZ; varying float vSide;
         void main() {
           vec4 cv = viewMatrix * vec4(position, 1.0);
-          float hw = max(0.7, 1.0 * -cv.z / uProjK);
+          float hw = max(0.7, mix(1.0, 1.8, smoothstep(400.0, 1400.0, -cv.z)) * -cv.z / uProjK);   // 멀리서는 화면 3.6픽셀 굵기
           vec3 p = position + vec3(aNorm.x, 0.0, aNorm.y) * aSide * hw;
           vInfo = aInfo; vXZ = p.xz; vSide = aSide;
           vec4 mv = viewMatrix * vec4(p, 1.0);
@@ -543,7 +545,8 @@ export function makeRails(lines: Line[]) {
         varying vec4 vInfo; varying float vDist; varying vec2 vXZ; varying float vSide;
         void main() {
           if (fract(vInfo.w / 24.0) > 0.5) discard;
-          float a = (0.3 + 0.1 * uNight) * mix(0.55, 1.0, smoothstep(250.0, 1400.0, vDist)) * (1.0 - focusIn(vXZ));
+          // 가까이서는 옅게(노면 표시를 가리지 않게), 판 전체·홍대 보기에서는 낮에도 알아볼 만큼
+          float a = mix(0.17, 0.62, smoothstep(250.0, 1400.0, vDist)) * (1.0 + 0.15 * uNight) * (1.0 - focusIn(vXZ));
           a *= 1.0 - smoothstep(0.55, 1.0, abs(vSide));
           gl_FragColor = vec4(fogged(vInfo.rgb * (1.0 + 0.3 * uNight), vDist), a);
         }`,
