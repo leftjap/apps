@@ -11,7 +11,7 @@ import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { BOARD_R } from '../geo.ts';
 import type { Crosswalk } from '../data/board.ts';
-import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, MED, medAt, turnAllowed, type Edge } from './graph.ts';
+import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, MED, medAt, turnAllowed, turnAngle, uTurnOk, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
 import { laneStops } from './stops.ts';
 import type { DataProvider } from './provider.ts';
@@ -188,29 +188,55 @@ export function makeCars(
     const slow = meanV[k] < 0 ? 1 : Math.max(0.1, Math.min(1, meanV[k] / (0.5 * VFREE[e.cls])));
     return Math.max(0.01, Math.min(1, room / 60) ** 2 * slow);
   }
-  function chooseNext(i: number, e: Edge, ahead = 1, leave = -1): number {
+  /** 진입 구간 from 끝 방향과, 구간 k 를 따라 60m 안(다음 구간이 하나뿐이면 이어서)의 방향이 150° 넘게 다른가(유턴. U 자로 휘어 되돌아가는 짧은 연결 구간도 잡는다) */
+  const uTurn = (from: Edge, k: number) => {
+    const lim = (150 * Math.PI) / 180;
+    const h0 = headingNear(from, from.len);
+    let o = edges[k];
+    for (let d = 0, guard = 0; guard < 4; guard++) {
+      for (const s1 of [0, Math.min(o.len, 60 - d)]) {
+        let t = headingNear(o, s1) - h0;
+        while (t > Math.PI) t -= 2 * Math.PI;
+        while (t < -Math.PI) t += 2 * Math.PI;
+        if (Math.abs(t) > lim) return true;
+      }
+      d += o.len;
+      if (d >= 60 || o.next.length !== 1) break;
+      o = edges[o.next[0]];
+    }
+    return false;
+  };
+  /** from: 교차로 경로를 정할 때 그 경로의 진입 구간(유턴을 가린다) */
+  function chooseNext(i: number, e: Edge, ahead = 1, leave = -1, from?: Edge): number {
     const r = cars.route[i];
     if (r >= 0) return rpos[i] + ahead < routes[r].edges.length ? routes[r].edges[rpos[i] + ahead] : -1;
     if (!e.next.length) return -1;
+    let cand = e.next;
+    const W = (k: number) => e.nextW[e.next.indexOf(k)];
+    // 유턴은 진입 구간의 지금 차로에 유턴 화살표가 있을 때만(갈 곳이 유턴뿐이면 예외)
+    if (from && !uTurnOk(from, from.id === edge[i] ? lane[i] : -1)) {
+      const no = cand.filter((k) => !uTurn(from, k));
+      if (no.length) cand = no;
+    }
     // 교차로 앞 구간에서는 노면 화살표가 지금 차로에 허락하는 쪽만 고른다(그런 쪽이 없으면 모두)
     if (ahead === 1 && jn.groupOfEnd[e.id] >= 0 && e.id === edge[i]) {
-      const by = e.next.filter((k) => turnAllowed(e, edges[k], lane[i]));
-      if (by.length && by.length < e.next.length) {
-        const w = by.map((k) => e.nextW[e.next.indexOf(k)] * avoid(k) * (canLeave[k] ? 1 : 1e-3));
+      const by = cand.filter((k) => turnAllowed(e, edges[k], lane[i]));
+      if (by.length && by.length < cand.length) {
+        const w = by.map((k) => W(k) * avoid(k) * (canLeave[k] ? 1 : 1e-3));
         return by[pick(w, rand())];
       }
     }
-    const ok = e.next.filter((k) => canLeave[k]);
-    if (ok.length && ok.length < e.next.length) {
-      const w = ok.map((k) => e.nextW[e.next.indexOf(k)] * avoid(k));
+    const ok = cand.filter((k) => canLeave[k]);
+    if (ok.length && ok.length < cand.length) {
+      const w = ok.map((k) => W(k) * avoid(k));
       return ok[pick(w, rand())];
     }
     // 교차로 안을 맴돌지 않도록, 묶인 교차로 안 구간에서는 빠져나가는 쪽을 고른다
     if (leave >= 0) {
-      const out = e.next.filter((k) => jn.groupOfEnd[k] !== leave);
+      const out = cand.filter((k) => jn.groupOfEnd[k] !== leave);
       if (out.length) return out[pick(out.map(avoid), rand())];
     }
-    return e.next[pick(e.nextW.map((w, j) => w * avoid(e.next[j])), rand())];
+    return cand[pick(cand.map((k) => W(k) * avoid(k)), rand())];
   }
 
   /** 차 i 가 구간 from(다음 구간부터 k−1 칸 뒤) 다음에 갈 구간. 정해 둔 경로·노선이 없는데 갈림길이면 −1 */
@@ -243,7 +269,7 @@ export function makeCars(
     let n = 1;
     let cur = e;
     while (n < PLAN) {
-      const nx = chooseNext(i, cur, n, n >= 2 ? g : -1);
+      const nx = chooseNext(i, cur, n, n >= 2 ? g : -1, e);
       if (nx < 0) break;
       plan[b + n++] = nx;
       if (jn.groupOfEnd[nx] !== g) break;

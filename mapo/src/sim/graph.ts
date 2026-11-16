@@ -50,7 +50,7 @@ export interface Edge {
   nextW: number[];
   /** next[j] 로 넘어갈 때 차로 l 이 맡는 다음 구간 차로 범위 [lmap[j][2l], lmap[j][2l+1]) */
   lmap: Int8Array[];
-  /** 차로마다 노면 화살표로 갈 수 있는 쪽(1 좌회전·유턴, 2 직진, 4 우회전 비트). 0 이면 화살표가 없다 */
+  /** 차로마다 노면 화살표로 갈 수 있는 쪽(1 좌회전, 2 직진, 4 우회전, 8 유턴 비트). 0 이면 화살표가 없다 */
   turns: Uint8Array;
   /** 판 가장자리에서 시작해 새 차가 들어오는 구간 */
   entry: boolean;
@@ -190,8 +190,8 @@ export interface Arrow {
   fx: number;
   fz: number;
 }
-/** 화살표 종류 → 갈 수 있는 쪽(1 좌회전·유턴, 2 직진, 4 우회전). 금지 표시·양보·오르막은 넣지 않는다 */
-const ARROW_TURNS: Record<number, number> = { 5: 1, 6: 4, 7: 2, 8: 3, 9: 6, 10: 1, 11: 1, 13: 5, 14: 7, 15: 3, 20: 4 };
+/** 화살표 종류 → 갈 수 있는 쪽(1 좌회전, 2 직진, 4 우회전, 8 유턴. 유턴은 꺾는 쪽도 함께 준다). 금지 표시·양보·오르막은 넣지 않는다 */
+const ARROW_TURNS: Record<number, number> = { 5: 1, 6: 4, 7: 2, 8: 3, 9: 6, 10: 9, 11: 9, 13: 5, 14: 7, 15: 11, 20: 12 };
 /** 교차로에서 a 끝에서 b 시작으로 가는 쪽(1 좌, 2 직진, 4 우): a 에서 갈 수 있는 구간 가운데 75° 안으로 곧은 것 하나가 직진(같은 이름 길이 있으면 그 길,
  *  없으면 가장 곧은 것)이고, 나머지는 꺾는 쪽이다 */
 export const turnOf = (a: Edge, b: Edge) => {
@@ -210,6 +210,8 @@ export const turnOf = (a: Edge, b: Edge) => {
 /** 구간 e 가 든 그래프의 구간 배열 */
 const owner = new WeakMap<Edge, Edge[]>();
 const edgesOf = (e: Edge) => owner.get(e)!;
+/** 구간 e 의 차로 l(−1 이면 아무 차로)에 유턴 화살표가 있는가. 유턴은 서울시 노면 유턴 표시가 있는 차로에서만 한다 */
+export const uTurnOk = (e: Edge, l: number) => (l < 0 ? e.turns.some((m) => (m & 8) !== 0) : (e.turns[Math.min(Math.max(0, l), e.lanes - 1)] & 8) !== 0);
 /** 차로 l 에서 next 구간 b 로 갈 수 있는가: 그 차로에 화살표가 없거나 화살표가 그쪽을 가리킨다 */
 export const turnAllowed = (a: Edge, b: Edge, l: number) => {
   const m = a.turns[Math.min(Math.max(0, l), a.lanes - 1)];

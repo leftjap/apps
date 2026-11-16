@@ -91,3 +91,38 @@ describe('노면 화살표로 교차로 차로 배정', () => {
     expect([...seen].filter((s) => !s.startsWith('0>') && s.endsWith('>3'))).toEqual([]);
   });
 });
+
+describe('유턴', () => {
+  // 동쪽으로 가는 한 방향 길이 x=100 노드에서 동쪽(직진)과, 북쪽 8m 짧은 연결 조각을 지나 서쪽으로 되돌아가는 한 방향 길(유턴)로 갈린다
+  const roads = [
+    road([[0, 0], [100, 0]], { oneway: true, lanes: 2 }),
+    road([[100, 0], [400, 0]], { oneway: true, lanes: 2 }),
+    road([[100, 0], [100, -8]], { oneway: true, lanes: 2 }),
+    road([[100, -8], [-200, -8]], { oneway: true, lanes: 2 }),
+  ];
+  const dir: DirLanes = { a: 1, b: 92, runs: [run(0, 100, [[1, -1.6, 1.6], [99, -1.6, 1.6]])] };
+  const count = (arrows: { kind: number; x: number; z: number; fx: number; fz: number }[]) => {
+    const g = buildCarGraph(roads, [[dir, null], null, null, null], arrows);
+    const a = g.find((e) => e.road === 0)!;
+    const back = g.find((e) => e.road === 2)!;
+    const sim = makeCars(g, fixedProvider(1), 3, 40);
+    let u = 0;
+    let all = 0;
+    for (let k = 0; k < 10 * 200; k++) {
+      if (k % 20 === 0) sim.put(a.id, 5, (k / 20) % 2);
+      sim.step(0.1, at(14), false);
+      const d = sim.debug();
+      for (let i = 0; i < sim.cars.n; i++) if (d.edge[i] === a.id && d.s[i] > 90 && d.nextE[i] >= 0) (all++, d.nextE[i] === back.id && u++);
+    }
+    return [u, all];
+  };
+  it('유턴 표시가 없는 교차로에서는 되돌아가지 않는다', () => {
+    const [u, all] = count([]);
+    expect(all).toBeGreaterThan(100);
+    expect(u).toBe(0);
+  });
+  it('안쪽 차로에 유턴 화살표가 있으면 그 차로의 차만 되돌아갈 수 있다', () => {
+    const [u] = count([{ kind: 10, x: 80, z: -1.6, fx: 1, fz: 0 }]);
+    expect(u).toBeGreaterThan(0);
+  });
+});

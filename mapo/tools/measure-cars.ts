@@ -19,6 +19,7 @@
 //     (앞 범퍼가 정지 자리를 넘던 순간의 신호로, 0.5m 넘게 더 나아간 차만 센다. 정지선에 붙어 선 차의 흔들림은 세지 않는다) v²/6 (감속 3m/s²) 넘게 남아 멈출 수 있었는데 노란·빨간불에 넘으면 '노란불 정지 가능 통과'. 묶인 교차로 안 구간(진입 구간이 같은 교차로 안)인지로 나눈다.
 // 11. 사람이 있는 횡단보도 면을 지나간 차(0.1초마다, 사람 켬): 차 몸통(그린 크기, 배율 1)의 가운데·네 귀·앞뒤 가운데 가운데 하나가 사람이 서 있는 횡단보도 면 안이면
 //     (차, 면) 한 쌍으로 한 번 센다. 까닭: 신호 횡단보도인데 차 신호와 보행 신호가 함께 초록(위상), 신호 횡단보도에서 상자 안 회전 차, 신호 없는 횡단보도, 그 밖.
+// 12. 유턴: 차가 교차로 진입 구간의 곧은 부분에서 마지막으로 가졌던 방향과, 그 교차로를 빠져나간 구간에 올라섰을 때 방향이 150° 넘게 다르면 센다(자리·교차로 구성별).
 //  9. 신호에 선 첫 차(앞 대상이 신호이고 멈춘 차)의 앞 범퍼(그린 길이)에서 가장 가까운 서울시 정지선(20m 안, 진행 방향을 가로지르는 것)까지 거리(0.5초마다):
 //     판 전체와 교차로 다섯 곳 150m 안의 중앙값·90% 지점·1m 안 비율. 사례 출력: SHOWDEV=n(차로 가운데에서 1m 넘게), SHOWXW=1(횡단보도 위 정차), SHOWLINE=n(정지선에서 1m 넘게).
 //  겹친 두 차가 노드 없이 가로지르는 두 길(OSM 에서 다리·터널·layer 로 높이가 다른 곳) 위에 있으면 위 분류 대신 '높이 다른 길'로 센다(실제로는 겹치지 않음, tools/raw/highways.json 이 있을 때만).
@@ -353,6 +354,9 @@ function run(dow: number, tod: number, seed: number) {
   let movingN = 0;
   const waitWhere: Record<string, number> = {};
   const lineD: number[][] = [[], []];
+  const uturns: Record<string, number> = {}; // 12
+  const uturnWhere: Record<string, number> = {};
+  const lastYaw = new Map<number, [number, number]>(); // 차마다 [교차로 진입 구간의 곧은 부분에서 마지막 방향, 그 교차로]
   const pedHits: Record<string, number> = {}; // 11
   const pedWhere: Record<string, number> = {};
   const pedSeen = new Set<string>();
@@ -476,6 +480,26 @@ function run(dow: number, tod: number, seed: number) {
           for (let k = 0; k < 30 && D.aheadWhy[f] >= 1 && D.aheadWhy[f] <= 4 && D.ahead[f] >= 0 && D.ahead[f] < c.n && D.ahead[f] !== f; k++) f = D.ahead[f];
           if (D.aheadWhy[f] === 8) inc(waitWhere, `${Math.round(c.x[f] / 10) * 10},${Math.round(c.z[f] / 10) * 10}`);
           inc(stopWhy, c.kind[f] === 1 && D.v[f] === 0 && D.aheadWhy[f] === 0 ? '정류장' : WHY[D.aheadWhy[f]] + (D.aheadWhy[f] >= 1 && D.aheadWhy[f] <= 4 ? '(끝 못 찾음)' : ''));
+        }
+      }
+      // 12. 유턴
+      {
+        const g = carGraph[e];
+        const ge = jn.groupOfEnd[e];
+        const gs = jn.groupOfStart[e];
+        if (ge >= 0 && gs !== ge && !D.boxed[i] && D.s[i] < g.len - jn.rIn[e]) lastYaw.set(u, [yaw, ge]);
+        const ly = lastYaw.get(u);
+        if (ly && gs === ly[1] && ge !== gs && on) {
+          let dy = yaw - ly[0];
+          while (dy > Math.PI) dy -= 2 * Math.PI;
+          while (dy < -Math.PI) dy += 2 * Math.PI;
+          if (Math.abs(dy) > (150 * Math.PI) / 180 && !D.boxed[i]) {
+            const k = `유턴${c.kind[i] === 1 ? '(버스)' : ''}`;
+            inc(uturns, k);
+            inc(uturnWhere, `${Math.round(x / 10) * 10},${Math.round(z / 10) * 10}`);
+            if (process.env.SHOWU) console.error(JSON.stringify({ uturn: 1, x: +x.toFixed(1), z: +z.toFixed(1), e, junction: gs, dy: Math.round((dy * 180) / Math.PI) }));
+          }
+          if (!D.boxed[i]) lastYaw.delete(u);
         }
       }
       // 10. 신호 지키기
@@ -716,7 +740,8 @@ function run(dow: number, tod: number, seed: number) {
   const stopped = Object.fromEntries(Object.entries(stopWhy).sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, +((100 * n) / tot).toFixed(1)]));
   const redRuns = { crossings, runs, where: top(runWhere, 10) };
   const pedCross = { hits: pedHits, where: top(pedWhere, 10) };
-  return { pedCross, redRuns, stopped, waitWhere: top(waitWhere, 15), speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), lane, crosswalk, stopLine, out };
+  const uturn = { count: uturns, where: top(uturnWhere, 10) };
+  return { uturn, pedCross, redRuns, stopped, waitWhere: top(waitWhere, 15), speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), lane, crosswalk, stopLine, out };
 }
 
 console.error(
