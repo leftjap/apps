@@ -32,8 +32,10 @@ if ! git diff --cached --quiet 2>/dev/null; then
   exit 0
 fi
 
-# 추적 파일만 자동 스테이징
-git add -u 2>/dev/null || exit 0
+# 추적 파일만 자동 스테이징. mapo/ 는 뺀다: 여러 하위 작업이 동시에 고치는 폴더라, 한 작업의 반쯤 된 파일
+# (새 파일은 빠지고 그 파일을 부르는 기존 파일만 잡힘)이 스냅샷에 실려 다른 세션의 push 로 올라가 빌드가 깨지고
+# /apps/mapo/ 가 404 가 된 일이 두 번 있었다(2026-11-16 cff9c15c, 2026-11-17 12fdbc86)
+git add -u -- . ':(exclude)mapo' 2>/dev/null || exit 0
 
 # 스테이지된 것이 없으면 skip (신규 파일만 있는 경우 등)
 git diff --cached --quiet 2>/dev/null && exit 0

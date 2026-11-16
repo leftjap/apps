@@ -195,6 +195,25 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
+      # 빌드가 되면 그 결과를 '마지막 성공 빌드'로 캐시에 남기고, 빌드가 실패하면 그 캐시를 대신 배포해
+      # /apps/mapo/ 가 404 가 되지 않게 한다(2026-11-17 세 번째 404: 반쯤 된 WIP 커밋으로 빌드 실패)
+      - name: Save last good mapo build
+        if: steps.mapo.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: mapo/dist
+          key: mapo-dist-${{ github.run_id }}
+      - name: Clear failed mapo build
+        if: steps.mapo.outcome == 'failure'
+        run: rm -rf mapo/dist
+      - name: Restore last good mapo build
+        if: steps.mapo.outcome == 'failure'
+        uses: actions/cache/restore@v4
+        with:
+          path: mapo/dist
+          key: mapo-dist-none
+          restore-keys: mapo-dist-
+
       # 시험은 빌드와 따로 돌린다. 시험이 실패해도 빌드가 되면 배포해 /apps/mapo/ 가 404 가 되지 않게 하고(2026-11-17 두 번째 404),
       # 실패는 아래 deploy 잡 끝에서 실행 결과를 실패로 표시해 알린다
       - name: Test mapo
@@ -279,7 +298,7 @@ jobs:
       - name: Fail if mapo build failed
         if: needs.build.outputs.mapo == 'failure'
         run: |
-          echo "::error::mapo 빌드 또는 테스트가 실패해 이번 배포에서 /apps/mapo/ 가 빠졌습니다."
+          echo "::error::mapo 빌드가 실패해 마지막 성공 빌드를 대신 배포했습니다(캐시가 없으면 빠짐)."
           exit 1
       - name: Fail if mapo tests failed
         if: needs.build.outputs.mapo_test == 'failure'
