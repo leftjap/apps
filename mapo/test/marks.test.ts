@@ -30,17 +30,30 @@ describe('노면 표시 모양(서울시 차선 코드)', () => {
 describe('지금 판의 노면 표시', () => {
   const marks = decodeMarks(JSON.parse(readFileSync(new URL('../public/data/marks.json', import.meta.url), 'utf8')) as MarksJson);
   const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
-  it('교차로 다섯 곳 둘레 100m 의 서울시 정지선(board.json 의 stopLines, 같은 004 자료) 조각을 모두 긋는다', () => {
+  it('교차로 다섯 곳 둘레 100m 의 서울시 정지선(board.json 의 stopLines, 같은 004 자료)을 긋는다(W14: 그린 찻길 면 밖으로 나간 끝은 잘라 내고 길이의 절반 넘게 남긴다)', () => {
+    const drawn = marks.lines.filter((l) => l.k === 4);
+    const onDrawn = (x: number, z: number) =>
+      drawn.some((l) => {
+        for (let q = 0; q + 3 < l.p.length; q += 3) {
+          const [ax, az, dx, dz] = [l.p[q], l.p[q + 2], l.p[q + 3] - l.p[q], l.p[q + 5] - l.p[q + 2]];
+          const u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+          if (Math.hypot(ax + dx * u - x, az + dz * u - z) < 0.2) return true;
+        }
+        return false;
+      });
     for (const [cx, cz] of [[-497, 250], [222, -410], [694, -804], [-68, -135], [-776, -495]]) {
-      const near = (x: number, z: number) => Math.hypot(x - cx, z - cz) < 100;
       const S = board.stopLines;
       let want = 0;
-      for (let k = 0; k < S.length; k += 4) if (near((S[k] + S[k + 2]) / 2, (S[k + 1] + S[k + 3]) / 2)) want++;
-      let got = 0;
-      for (const l of marks.lines.filter((l) => l.k === 4))
-        for (let k = 0; k + 3 < l.p.length; k += 3) if (near((l.p[k] + l.p[k + 3]) / 2, (l.p[k + 2] + l.p[k + 5]) / 2)) got++;
+      const short: string[] = [];
+      for (let k = 0; k < S.length; k += 4) {
+        if (Math.hypot((S[k] + S[k + 2]) / 2 - cx, (S[k + 1] + S[k + 3]) / 2 - cz) > 100 || Math.hypot(S[k + 2] - S[k], S[k + 3] - S[k + 1]) < 0.3) continue;
+        want++;
+        let on = 0;
+        for (let t = 0; t <= 1.0001; t += 0.1) if (onDrawn(S[k] + (S[k + 2] - S[k]) * t, S[k + 1] + (S[k + 3] - S[k + 1]) * t)) on++;
+        if (on < 6) short.push(`${S[k].toFixed(0)},${S[k + 1].toFixed(0)} ${on}/11`);
+      }
       expect(want).toBeGreaterThan(0);
-      expect(got).toBe(want);
+      expect(short).toEqual([]);
     }
   });
 });

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
-import { decodeSurface, type SurfaceJson } from './data/surface.ts';
+import { decodeCurbs, decodeSurface, type CurbsJson, type SurfaceJson } from './data/surface.ts';
 import { decodeMarks, type MarksJson } from './data/marks.ts';
 import { toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
@@ -80,7 +80,7 @@ const loading = document.querySelector<HTMLElement>('#loading')!;
 // 지명 자리(tools/places.ts 가 OSM 행정동 경계·공원·도로명 주소로 굽는다)
 type Named = { dongs: { name: string; x: number; z: number }[]; places: { text: string; x: number; z: number; turn: number }[] };
 // 로드뷰 기록(data-src/streetview/*.json, 구역마다 따로): 기록한 건물은 난수 색·무늬 대신 기록 값으로 그린다
-const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamps] = await Promise.all([
+const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamps, curbs] = await Promise.all([
   loadBoard(BASE),
   new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`),
   fetch(`${BASE}data/places.json`).then((r) => r.json() as Promise<Named>),
@@ -95,6 +95,8 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamp
   fetch(`${BASE}data/lanes.json`).then((r) => r.json() as Promise<LanesJson>).then(decodeLanes),
   // 서울시 차량 신호등(4색등 = 좌회전 화살표)·회전 표지(tools/signals.ts 가 굽는다). 없으면 노면 화살표로 정한다
   fetch(`${BASE}data/signals.json`).then((r) => (r.ok ? (r.json() as Promise<SignalLamps>) : undefined)).catch(() => undefined),
+  // 연석 선(그린 찻길 면의 경계, tools/bake.ts 가 굽는다). 없으면 긋지 않는다
+  fetch(`${BASE}data/curbs.json`).then((r) => (r.ok ? (r.json() as Promise<CurbsJson>).then(decodeCurbs) : [])).catch(() => []),
 ]).catch((e) => {
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
@@ -165,7 +167,7 @@ const reactor = makeCatReactor(cats);
 // ── 장면 ──
 const roads = makeRoads(board.roads, surface, LM_COLORS);
 // 노면 표시: 서울시 차선 선·안전지대·노면 화살표 그대로(src/render/marks.ts)
-const roadMarks = makeMarks(marks);
+const roadMarks = makeMarks(marks, curbs);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);

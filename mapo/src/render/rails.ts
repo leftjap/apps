@@ -37,7 +37,7 @@ const REACH = 0.025;
 /** 이 카메라 거리(m) 사이에서 덮인 자리 빛이 '가까이 덮은 것만 약하게'에서 '모두 그대로'로 바뀐다(판 전체 보기는 약 6km) */
 const FAR = [800, 1800];   // 홍대 보기(1.15km)부터 덮인 자리가 비치기 시작해 판 전체(약 6km)에서는 보이는 자리와 같다
 /** 터파기 옹벽이 땅 위로 올라온 높이 */
-const PARAPET = 0.9;
+const PARAPET = 1.2; // W14: 방호벽 높이(양화로 가운데 터파기가 찻길에서 두꺼운 벽으로 보이게)
 /** 터파기 안쪽 반폭 */
 const TROUGH_W = 5.2;
 const MOUTH_H = 6.2;
@@ -313,7 +313,7 @@ function portals(lines: Line[]) {
         return [f.x + f.lx * lat + f.lz * d, y, f.z + f.lz * lat - f.lx * d];
       };
       const W = TROUGH_W;
-      const T = 0.5;
+      const T = 0.8; // 옹벽 두께(W14: 0.5 → 0.8, 윗면이 굵게 보이게)
       for (let i = 0; i < n; i++) {
         const [a, b] = [frames[i], frames[i + 1]];
         solid.quad(at(a, -W, deckY(a.y) - 0.08), at(a, W, deckY(a.y) - 0.08), at(b, W, deckY(b.y) - 0.08), at(b, -W, deckY(b.y) - 0.08), TONE.floor);

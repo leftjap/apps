@@ -116,7 +116,7 @@ describe('출구 자리 맞추기', () => {
               const len = Math.hypot(dx, dz);
               const t = ((x - ax) * dx + (z - az) * dz) / (len || 1);
               const c = ((x - ax) * -dz + (z - az) * dx) / (len || 1);
-              if (len > 1e-3 && t >= 0 && t <= len && Math.abs(c) < curbAt(r, s + t, -(Math.sign(c) || 1))) return true;
+              if (len > 1e-3 && t >= 0 && t <= len && Math.abs(c) < curbAt(r, s + t, Math.sign(c) || 1)) return true;
               s += len;
             }
             return false;

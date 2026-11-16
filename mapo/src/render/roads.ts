@@ -4,7 +4,7 @@
 // 바닥 색·물웅덩이·밤 가로등 빛은 판 좌표로 칠해 띠와 면의 이음매가 보이지 않는다. 한 방향씩 나뉜 큰길 사이에는 분리대·중앙버스차로를 그린다.
 import * as THREE from 'three';
 import { curbAt, roadHalf, type Road } from '../data/board.ts';
-import { carriageSections, isGroundRoad, roadJoints, type Surface } from '../data/surface.ts';
+import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach, type Section, type Surface } from '../data/surface.ts';
 import { BOARD_R } from '../geo.ts';
 import { cumLen, pointAt } from '../poly.ts';
 import { material, pal } from './env.ts';
@@ -41,6 +41,7 @@ const FRAG = /* glsl */ `
     float major = step(cls, 3.5);
     float walk = step(5.5, cls) * step(cls, 8.5);
     float side = step(8.5, cls);
+    float parapet = step(9.5, cls);
     float flags = vEx1.y;
     float median = step(7.5, mod(flags, 16.0));
     float medBus = step(15.5, mod(flags, 32.0));
@@ -53,8 +54,9 @@ const FRAG = /* glsl */ `
       alb = mix(alb, vec3(0.72, 0.72, 0.7), curb);
       alb = mix(alb, vec3(0.42, 0.55, 0.36), curb * step(1.3, gw) * step(0.35, u * gw) * step(0.35, (1.0 - u) * gw));
     }
+    alb = mix(alb, vec3(0.78, 0.77, 0.74), parapet);                                            // 다리·둑길 난간(콘크리트)
     vec3 col = lit(alb, vec3(0.0, 1.0, 0.0));
-    col = mix(col, col * 0.62, side);
+    col = mix(col, col * 0.62, side * (1.0 - parapet));
 
     // 비: 길이 젖어 어두워지고 물웅덩이에 하늘빛이 비친다
     float wet = uRain * (1.0 - side);
@@ -66,9 +68,10 @@ const FRAG = /* glsl */ `
     col = mix(col, col * 0.6, wet);
     col += uFogCol * 0.18 * wet * puddle;
 
-    // 밤: 가로등 빛(큰길은 양쪽 가장자리, 골목은 가운데에 선 가로등. 판 좌표 빛 지도 lampMap). 젖은 길에서는 더 번진다
+    // 밤: 가로등 빛(큰길은 양쪽 가장자리, 골목은 가운데에 선 가로등. 판 좌표 빛 지도 lampMap). 젖은 길에서는 더 번진다.
+    // 빛은 바닥 색에 곱해 더한다: 어두운 아스팔트는 가로등 밑에서도 밝은 보도 블록보다 어둡게 남는다(재작업 W14)
     float lamp = texture2D(uLamps, (vXZ + ${BOARD_R.toFixed(1)}) / ${(2 * BOARD_R).toFixed(1)}).r * (1.0 - median) * (1.0 - side) * step(cls, 6.5);
-    col += vec3(1.0, 0.70, 0.36) * (lamp + major * 0.04) * uNight * (1.0 + 0.5 * wet * (0.3 + puddle));
+    col += (alb * vec3(1.0, 0.78, 0.5) * 1.6 + vec3(1.0, 0.70, 0.36) * 0.06) * lamp * uNight * (1.0 + 0.5 * wet * (0.3 + puddle));
 
     // 랜드마크 다리: 고유 색을 입히고 밤에는 난간에 불을 켠다
     int lm = int(vInfo.w + 0.5);
@@ -205,14 +208,205 @@ export function lampMap(roads: Road[]): THREE.DataTexture {
   return tex;
 }
 
+/** 터널 입구 터파기: 바닥이 이 깊이(m)보다 얕은 동안 위가 열려 있고, 이 깊이에서 입구 벽(지붕 시작)을 세운다 */
+const PORTAL = 5.2;
+/** 터널 안 높이(바닥에서 입구 벽 아래 끝까지) */
+const CLEAR = 4.5;
+/** 옹벽·난간이 땅(또는 데크) 위로 올라온 높이와 옹벽 두께 */
+const PARAPET = 0.9;
+const WALL_T = 0.4;
+
+/** 면(사각형)을 모으는 도구: 꼭짓점과 색 번호 */
+class Quads {
+  pos: number[] = [];
+  tone: number[] = [];
+  quad(a: number[], b: number[], c: number[], d: number[], t: number) {
+    for (const v of [a, b, c, a, c, d]) this.pos.push(v[0], v[1], v[2]), this.tone.push(t);
+  }
+  geometry() {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
+    g.setAttribute('aTone', new THREE.Float32BufferAttribute(this.tone, 1));
+    return g;
+  }
+}
+
+/**
+ * 찻길 터널 조각의 입구 경사(재작업 W14): 띠 구간 s0~s1 가운데 바닥 깊이(차 그래프와 같은 tunnelDepth)가 PORTAL 보다 얕은 곳만
+ * 내려가는 바닥 띠(floor), 양쪽 옹벽·난간(walls), 땅을 뚫을 자리(hole, 깊이만 쓴다)로 그리고, PORTAL 깊이에서 입구 벽을 세운다.
+ * 그보다 깊은 터널 속은 그리지 않는다(땅이 덮는다)
+ */
+function addTrench(
+  r: Road,
+  s0: number,
+  s1: number,
+  reach: [number, number],
+  covered: (x: number, z: number) => boolean,
+  floor: Ribbon,
+  walls: Quads,
+  hole: Quads,
+  info: [number, number, number, number],
+  ex: number[],
+) {
+  const len = cumLen(r.p)[r.p.length / 3 - 1];
+  s1 = Math.min(s1, len);
+  if (s1 - s0 < 0.5) return;
+  const depth = (s: number) => tunnelDepth(reach, s, len);
+  // 2m 마다, 그리고 PORTAL 깊이를 지나는 자리
+  const S: number[] = [];
+  const n = Math.max(1, Math.ceil((s1 - s0) / 2));
+  for (let k = 0; k <= n; k++) S.push(s0 + ((s1 - s0) * k) / n);
+  const at: number[] = [];
+  for (let k = 0; k < S.length; k++) {
+    at.push(S[k]);
+    if (k + 1 < S.length && (depth(S[k]) - PORTAL) * (depth(S[k + 1]) - PORTAL) < 0) {
+      let a = S[k];
+      let b = S[k + 1];
+      for (let it = 0; it < 30; it++) {
+        const m = (a + b) / 2;
+        if ((depth(a) - PORTAL) * (depth(m) - PORTAL) <= 0) b = m;
+        else a = m;
+      }
+      at.push((a + b) / 2);
+    }
+  }
+  const sec = (s: number): Section & { d: number } => {
+    const c = carriageSections(r, Math.max(0, s - 0.01), Math.min(len, s + 0.01))[0] ?? carriageSections(r, s - 0.02, s)[0];
+    return { ...c, s, d: depth(s) };
+  };
+  // 위를 다른 찻길이 지나는 곳(짧은 지하차도가 큰길 밑을 지나는 자리)은 지붕 밑이라 열지 않는다. 열린 곳과 덮인 곳 사이에 입구 벽을 세운다
+  const secs0 = at.map(sec);
+  const secs: (Section & { d: number; cov: boolean })[] = [];
+  /** 단면 가운데 앞뒤 0.6m 가 모두 덮였는가(교차로 면 테두리에 걸친 띠 끝 단면은 덮이지 않은 것으로) */
+  const coveredAt = (c: Section) => {
+    const w = Math.hypot(c.rx - c.lx, c.rz - c.lz) || 1;
+    const fx = ((c.rz - c.lz) / w) * 0.6;
+    const fz = (-(c.rx - c.lx) / w) * 0.6;
+    return covered(c.x + fx, c.z + fz) && covered(c.x - fx, c.z - fz);
+  };
+  secs0.forEach((c, k) => {
+    const cov = coveredAt(c);
+    const prev = secs[secs.length - 1];
+    if (prev && prev.cov !== cov) {
+      // 덮인 곳의 끝을 0.25m 안으로 찾아 그 자리에 단면을 넣는다
+      let a = secs0[k - 1].s;
+      let b = c.s;
+      for (let it = 0; it < 12; it++) {
+        const m = (a + b) / 2;
+        const q = sec(m);
+        if (coveredAt(q) === prev.cov) a = m;
+        else b = m;
+      }
+      const e = sec(prev.cov ? b : a);
+      secs.push({ ...e, cov: prev.cov }, { ...e, cov });
+    }
+    secs.push({ ...c, cov });
+  });
+  const open = (c: { d: number; cov: boolean }) => c.d <= PORTAL + 1e-3 && !c.cov;
+  for (let k = 0; k + 1 < secs.length; k++) {
+    const [a, b] = [secs[k], secs[k + 1]];
+    if (!open(a) || !open(b)) continue;
+    // 바닥 띠
+    const base = floor.pos.length / 3;
+    for (const c of [a, b]) {
+      floor.pos.push(c.lx, -c.d + 0.02, c.lz, c.rx, -c.d + 0.02, c.rz);
+      floor.uv.push(-1, c.s, 1, c.s);
+      const inf = [info[0], c.er + c.el, info[2], info[3]];
+      floor.info.push(...inf, ...inf);
+      const e = [(c.er - c.el) / 2, ...ex.slice(1)];
+      floor.ex.push(...e, ...e);
+    }
+    floor.idx.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+    // 옹벽(안쪽 면 → 윗면 → 바깥 면)과 뚫을 자리
+    const out = (c: Section, side: number, extra: number): [number, number] => {
+      const [ex2, ez2] = side > 0 ? [c.rx - c.x, c.rz - c.z] : [c.lx - c.x, c.lz - c.z];
+      const w = Math.hypot(ex2, ez2) || 1;
+      return [c.x + ex2 * (1 + extra / w), c.z + ez2 * (1 + extra / w)];
+    };
+    for (const side of [1, -1]) {
+      const [ax, az] = out(a, side, 0);
+      const [bx, bz] = out(b, side, 0);
+      const [ax2, az2] = out(a, side, WALL_T);
+      const [bx2, bz2] = out(b, side, WALL_T);
+      walls.quad([ax, -a.d, az], [bx, -b.d, bz], [bx, PARAPET, bz], [ax, PARAPET, az], 0);
+      walls.quad([ax, PARAPET, az], [bx, PARAPET, bz], [bx2, PARAPET, bz2], [ax2, PARAPET, az2], 1);
+      walls.quad([ax2, 0, az2], [bx2, 0, bz2], [bx2, PARAPET, bz2], [ax2, PARAPET, az2], 0);
+    }
+    const [lax, laz] = out(a, -1, WALL_T);
+    const [lbx, lbz] = out(b, -1, WALL_T);
+    const [rax, raz] = out(a, 1, WALL_T);
+    const [rbx, rbz] = out(b, 1, WALL_T);
+    hole.quad([lax, 0.06, laz], [rax, 0.06, raz], [rbx, 0.06, rbz], [lbx, 0.06, lbz], 0);
+  }
+  // 입구 벽: PORTAL 깊이 자리마다, 길을 가로질러 지붕 두께만큼. 그 아래는 어두운 터널 속
+  for (let k = 0; k < secs.length; k++) {
+    const c = secs[k];
+    const next = secs[k + 1];
+    const prev = secs[k - 1];
+    // 열린 곳에서 덮인 곳(깊이 PORTAL 을 넘거나 위에 찻길)으로 넘어가는 자리
+    let nb = 0; // 터널 속 쪽
+    if (Math.abs(c.d - PORTAL) < 1e-2 && open(c)) nb = next && next.d > c.d ? 1 : -1;
+    else if (next && open(c) && !open(next) && next.cov && Math.abs(next.s - c.s) < 1e-3) nb = 1;
+    else if (prev && open(c) && !open(prev) && prev.cov && Math.abs(prev.s - c.s) < 1e-3) nb = -1;
+    if (!nb) continue;
+    const fx = (c.rz - c.lz) / (Math.hypot(c.rx - c.lx, c.rz - c.lz) || 1);
+    const fz = -(c.rx - c.lx) / (Math.hypot(c.rx - c.lx, c.rz - c.lz) || 1);
+    // (fx, fz): 진행 방향(오른쪽 가장자리 쪽 벡터를 왼쪽으로 돌림). 터널 속 쪽으로 nb
+    const w = Math.hypot(c.rx - c.lx, c.rz - c.lz) || 1;
+    const lx = (c.lx - c.rx) / w;
+    const lz = (c.lz - c.rz) / w;
+    const L = c.el + WALL_T;
+    const R = c.er + WALL_T;
+    const v = (lat: number, y: number, fwd: number) => [c.x + lx * lat + fx * nb * fwd, y, c.z + lz * lat + fz * nb * fwd];
+    const y0 = Math.min(0, -c.d + CLEAR);
+    const yt = PARAPET + 0.3;
+    for (const f of [0, 0.8]) walls.quad(v(-R, y0, f), v(L, y0, f), v(L, yt, f), v(-R, yt, f), 2);
+    walls.quad(v(-R, yt, 0), v(L, yt, 0), v(L, yt, 0.8), v(-R, yt, 0.8), 1);
+    walls.quad(v(-R, y0, 0), v(L, y0, 0), v(L, y0, 0.8), v(-R, y0, 0.8), 2);
+    walls.quad(v(-R + WALL_T, -c.d, 0.5), v(L - WALL_T, -c.d, 0.5), v(L - WALL_T, y0, 0.5), v(-R + WALL_T, y0, 0.5), 3);
+  }
+}
+
+/** 터널 조각 ri 둘레에서 (x, z)를 터널이 아닌 땅 위 찻길 띠·교차로 면이 덮는가 */
+function coveredNear(roads: Road[], ri: number, surface: Surface, joints: Float32Array, reach: ([number, number] | null)[]): (x: number, z: number) => boolean {
+  const P = roads[ri].p;
+  let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (let k = 0; k < P.length; k += 3) (x0 = Math.min(x0, P[k])), (x1 = Math.max(x1, P[k])), (z0 = Math.min(z0, P[k + 2])), (z1 = Math.max(z1, P[k + 2]));
+  [x0, z0, x1, z1] = [x0 - 40, z0 - 40, x1 + 40, z1 + 40];
+  const near = (r: ArrayLike<number>, step: number, off: number) => {
+    for (let k = off; k < r.length; k += step) if (r[k] > x0 && r[k] < x1 && r[k + (step === 3 ? 2 : 1)] > z0 && r[k + (step === 3 ? 2 : 1)] < z1) return true;
+    return false;
+  };
+  const polys: number[][] = [];
+  roads.forEach((r, i) => {
+    if (reach[i] || !isGroundRoad(r) || !near(r.p, 3, 0)) return;
+    const q = carriageSections(r, surface.cut[i * 2], surface.cut[i * 2 + 1], joints.subarray(i * 4, i * 4 + 4));
+    // 분리대를 그리는 한 방향 큰길은 왼쪽으로 분리대 몫(반대 방향 길까지의 절반)도 덮는다
+    const med = r.oneway && r.gap > 0.15 && r.gap <= 10 ? r.gap / 2 + 0.3 : 0;
+    const L = (c: Section): [number, number] => [c.lx + ((c.lx - c.x) / (c.el || 1)) * med, c.lz + ((c.lz - c.z) / (c.el || 1)) * med];
+    for (let k = 0; k + 1 < q.length; k++) polys.push([...L(q[k]), q[k].rx, q[k].rz, q[k + 1].rx, q[k + 1].rz, ...L(q[k + 1])]);
+  });
+  const faces = surface.faces.filter((f) => near(f.outer, 2, 0));
+  const inside = (r: ArrayLike<number>, x: number, z: number) => {
+    let c = false;
+    for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) if (r[i + 1] > z !== r[j + 1] > z && x < ((r[j] - r[i]) * (z - r[i + 1])) / (r[j + 1] - r[i + 1]) + r[i]) c = !c;
+    return c;
+  };
+  return (x, z) => polys.some((q) => inside(q, x, z)) || faces.some((f) => inside(f.outer, x, z) && !f.holes.some((h) => inside(h, x, z)));
+}
+
 /** surface: 굽기가 정한 띠 구간과 교차로 면(public/data/surface.json) */
 export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
   const lm = { uLmCol: { value: lmColors.map((c) => new THREE.Color(c)) }, uLmGlow: { value: lmColors.map(() => 0) } };
-  const uniforms = { uMajor: { value: pal.roadMajor }, uMinor: { value: pal.roadMinor }, uWalk: { value: pal.walk }, uLamps: { value: lampMap(roads) }, ...lm };
+  const uniforms = { uMajor: { value: pal.tarmac }, uMinor: { value: pal.tarmacMinor }, uWalk: { value: pal.walk }, uLamps: { value: lampMap(roads) }, ...lm };
   const joints = roadJoints(roads);
+  const reach = tunnelReach(roads);
 
   const flat = ribbon();
   const deck = ribbon();
+  const ramp = ribbon();
+  const trench = new Quads();
+  const hole = new Quads();
   const piers: THREE.BufferGeometry[] = [];
   const order = roads.map((_, i) => i).sort((a, b) => roads[b].cls - roads[a].cls);
   const tmp = [0, 0, 0];
@@ -235,6 +429,12 @@ export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
         // 찻길: 굽기가 정한 구간만(교차로 면 앞에서 끝난다)
         const s0 = surface.cut[ri * 2];
         const s1 = surface.cut[ri * 2 + 1];
+        const tun = reach[ri];
+        if (tun) {
+          // 찻길 터널: 입구 경사만 땅을 뚫어 그린다
+          addTrench(r, s0, s1, tun, coveredNear(roads, ri, surface, joints, reach), ramp, trench, hole, info, ex);
+          continue;
+        }
         addSections(flat, carriageSections(r, s0, s1, joints.subarray(ri * 4, ri * 4 + 4)), info, ex);
         // 분리대: 한 방향 큰길 왼쪽, 반대 방향 길까지의 절반. 10m 넘게 떨어진 길 사이는 분리대가 아니라 따로 난 길이다
         if (r.oneway && r.gap > 0.15 && r.gap <= 10 && r.cls <= 3 && s1 - s0 > 0.5) {
@@ -259,13 +459,36 @@ export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
         const x = dp[i * 3] + ((sgn * dz) / ln) * w * 0.5;
         const z = dp[i * 3 + 2] - ((sgn * dx) / ln) * w * 0.5;
         const y = dp[i * 3 + 1] + 0.25;
-        deck.pos.push(x, y, z, x, Math.max(0, y - 1.8), z);
+        // 교량은 상판 두께만, 다리 앞뒤로 올린 둑길(교량 아님)은 땅까지 옹벽
+        deck.pos.push(x, y, z, x, r.bridge ? Math.max(0, y - 1.8) : 0, z);
         deck.uv.push(0, 0, 0, 0);
         deck.info.push(9, w, 0, r.lm, 9, w, 0, r.lm);
         deck.ex.push(0, 0, 0, 3.3, 0, 0, 0, 0, 0, 0, 0, 3.3, 0, 0, 0, 0);
         if (i > 0) {
           const q = base + i * 2;
           deck.idx.push(q - 2, q - 1, q, q - 1, q + 1, q);
+        }
+      }
+      // 난간: 상판 가장자리에서 0.8m(땅 높이에 붙은 끝은 낮게). 높이가 보이게 밝은 콘크리트로
+      if (r.cls <= 5 && r.lm === 0) {
+        const base2 = deck.pos.length / 3;
+        for (let i = 0; i < n; i++) {
+          const a = Math.max(0, i - 1) * 3;
+          const b = Math.min(n - 1, i + 1) * 3;
+          const dx = dp[b] - dp[a];
+          const dz = dp[b + 2] - dp[a + 2];
+          const ln = Math.hypot(dx, dz) || 1;
+          const x = dp[i * 3] + ((sgn * dz) / ln) * w * 0.5;
+          const z = dp[i * 3 + 2] - ((sgn * dx) / ln) * w * 0.5;
+          const y = dp[i * 3 + 1] + 0.25;
+          deck.pos.push(x, y, z, x, y + 0.8 * Math.min(1, dp[i * 3 + 1] / 2), z);
+          deck.uv.push(0, 0, 0, 0);
+          deck.info.push(10, w, 0, 0, 10, w, 0, 0);
+          deck.ex.push(0, 0, 0, 3.3, 0, 0, 0, 0, 0, 0, 0, 3.3, 0, 0, 0, 0);
+          if (i > 0) {
+            const q = base2 + i * 2;
+            deck.idx.push(q - 2, q - 1, q, q - 1, q + 1, q);
+          }
         }
       }
     }
@@ -300,6 +523,33 @@ export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
   decks.frustumCulled = false;
   const group = new THREE.Group();
   group.add(ground, decks);
+  if (trench.pos.length) {
+    // 터널 입구: 옹벽·바닥을 땅보다 먼저 그리고, 그 위 땅높이에 깊이만 쓰는 판을 놓아 땅·도로가 그 자리를 덮지 못하게 한다(rails.ts 터파기와 같은 방법)
+    const floor = new THREE.Mesh(ribbonGeometry(ramp), material({ vertex: VERT, fragment: FRAG, uniforms: { ...uniforms, uDeck: { value: 0 } }, doubleSide: true }));
+    const wall = new THREE.Mesh(
+      trench.geometry(),
+      material({
+        doubleSide: true,
+        vertex: /* glsl */ `attribute float aTone; varying vec3 vW; varying float vTone; varying float vDist;
+          void main() { vW = position; vTone = aTone; vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+        fragment: /* glsl */ `varying vec3 vW; varying float vTone; varying float vDist;
+          void main() {
+            vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
+            if (n.y < 0.0 && abs(n.y) > 0.5) n = -n;
+            vec3 alb = vTone < 0.5 ? vec3(0.70, 0.69, 0.66) : vTone < 1.5 ? vec3(0.84, 0.83, 0.80) : vTone < 2.5 ? vec3(0.64, 0.63, 0.60) : vec3(0.02, 0.022, 0.026);
+            alb *= 1.0 - 0.08 * step(0.5, fract(vW.y / 1.2)) * step(vTone, 0.5);   // 옹벽 거푸집 줄
+            vec3 col = vTone > 2.5 ? alb : lit(alb, abs(n.y) > 0.5 ? vec3(0.0, 1.0, 0.0) : n);
+            gl_FragColor = vec4(fogged(col, vDist), 1.0);
+          }`,
+      }),
+    );
+    const cutout = new THREE.Mesh(hole.geometry(), new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+    floor.renderOrder = -12;
+    wall.renderOrder = -12;
+    cutout.renderOrder = -11;
+    for (const m of [floor, wall, cutout]) m.frustumCulled = false;
+    group.add(floor, wall, cutout);
+  }
   if (piers.length) {
     const pier = new THREE.Mesh(
       merge(piers),

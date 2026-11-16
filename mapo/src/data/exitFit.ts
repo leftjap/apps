@@ -103,7 +103,8 @@ export function onRoad(x: number, z: number, roads: Road[]) {
       if (L > 1e-3) {
         const t = ((x - ax) * dx + (z - az) * dz) / L;
         const c = ((x - ax) * -dz + (z - az) * dx) / L;
-        if (t >= 0 && t <= L && Math.abs(c) < curbAt(r, s + t, -(Math.sign(c) || 1))) return true;
+        // c > 0 이 진행 방향 오른쪽(−dz, dx)이므로 그쪽 가장자리와 견준다(재작업 W14: 양쪽 가장자리가 달라지면서 드러난 좌우 뒤바뀜)
+        if (t >= 0 && t <= L && Math.abs(c) < curbAt(r, s + t, Math.sign(c) || 1)) return true;
       }
       s += L;
     }

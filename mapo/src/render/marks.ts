@@ -2,39 +2,17 @@
 // 안전지대(OA-15533)는 빗금 면, 노면 화살표(OA-15536)는 모양으로 칠한다(src/data/marks.ts).
 // 선은 화면에서 한 픽셀보다 가늘어져도 깜박이지 않게 그리는 폭을 화면 크기에 맞춰 넓히고, 칠은 픽셀 단위로 부드럽게 한다. 멀어지면 옅어진다.
 import * as THREE from 'three';
-import { lineStyle, type Marks } from '../data/marks.ts';
-import { material } from './env.ts';
-
-/** 화살표 모양(앞 +u, 왼쪽 +v, 가운데 0)의 다각형들 */
-const STEM: number[] = [-2.2, -0.15, 0.6, -0.15, 0.6, 0.15, -2.2, 0.15];
-const HEAD = (u: number, v: number, du: number, dv: number) => {
-  // (u, v)에서 (du, dv) 쪽을 가리키는 삼각형
-  const [px, pz] = [-dv, du];
-  return [u + px * 0.6, v + pz * 0.6, u + du * 1.5, v + dv * 1.5, u - px * 0.6, v - pz * 0.6];
-};
-const PARTS: Record<string, number[][]> = {
-  straight: [STEM, HEAD(0.6, 0, 1, 0)],
-  left: [STEM, [0.3, 0, 0.6, 0, 0.6, 0.9, 0.3, 0.9], HEAD(0.45, 0.9, 0, 1)],
-  right: [STEM, [0.3, 0, 0.6, 0, 0.6, -0.9, 0.3, -0.9], HEAD(0.45, -0.9, 0, -1)],
-  uturn: [STEM, [0.3, 0, 0.6, 0, 0.6, 1.2, 0.3, 1.2], [-0.8, 1.05, 0.6, 1.05, 0.6, 1.35, -0.8, 1.35], HEAD(-0.8, 1.2, -1, 0)],
-  uturnR: [STEM, [0.3, 0, 0.6, 0, 0.6, -1.2, 0.3, -1.2], [-0.8, -1.05, 0.6, -1.05, 0.6, -1.35, -0.8, -1.35], HEAD(-0.8, -1.2, -1, 0)],
-  ban: [[-0.9, -0.9, -0.6, -0.9, 0.9, 0.9, 0.6, 0.9], [-0.9, 0.9, -0.6, 0.9, 0.9, -0.9, 0.6, -0.9]],
-  yield: [[1.5, -1.0, 1.5, 1.0, -1.5, 0]],
-};
-/** 방향표시 종류(A055_KND_CDE) → 모양. 금지는 그 화살표에 X 를 겹친다. 오르막·자전거 표시는 그리지 않는다 */
-const GLYPH: Record<number, string[]> = {
-  1: ['right', 'ban'], 2: ['straight', 'ban'], 3: ['left', 'right', 'ban'], 4: ['uturn', 'ban'],
-  5: ['left'], 6: ['right'], 7: ['straight'], 8: ['straight', 'left'], 9: ['straight', 'right'], 10: ['uturn'],
-  11: ['left', 'uturn'], 12: ['left', 'ban'], 13: ['left', 'right'], 14: ['straight', 'left', 'right'], 15: ['straight', 'uturn'],
-  16: ['straight', 'uturn', 'ban'], 17: ['straight', 'right', 'ban'], 18: ['straight', 'left', 'ban'], 20: ['uturnR'], 21: ['yield'], 24: ['left', 'uturn', 'ban'],
-};
+import { arrowShape, lineStyle, type Marks } from '../data/marks.ts';
+import { material, pal } from './env.ts';
 
 const DIM = /* glsl */ `
+  uniform vec3 uCurb;
   // 화면에서 한 픽셀이 1.2m 넘게 덮을 만큼 멀면 옅게 지운다
   float far(float px, float d) { return clamp(1.0 - px / 1.2, 0.0, 1.0) * (1.0 - smoothstep(1200.0, 2200.0, d)); }
-  vec3 paint(float c) { return c < 0.5 ? vec3(0.95, 0.95, 0.93) : c < 1.5 ? vec3(0.96, 0.76, 0.24) : vec3(0.27, 0.48, 0.95); }`;
+  vec3 paint(float c) { return c < 0.5 ? vec3(0.95, 0.95, 0.93) : c < 1.5 ? vec3(0.96, 0.76, 0.24) : c < 2.5 ? vec3(0.27, 0.48, 0.95) : uCurb; }`;
 
-export function makeMarks(marks: Marks): THREE.Group {
+/** curbs: 연석 선(찻길 가장자리, src/render/roads.ts). 칠이 아니라 찻길과 보도 사이 경계라 낮·밤 색(pal.curb)으로 0.2m 폭으로 긋는다 */
+export function makeMarks(marks: Marks, curbs: Float32Array[] = []): THREE.Group {
   const group = new THREE.Group();
   // ── 선 ──
   const pos: number[] = [];
@@ -78,6 +56,7 @@ export function makeMarks(marks: Marks): THREE.Group {
       }
     }
   };
+  for (const c of curbs) addLine(c, { color: 3, w: 0.2, sep: 0, dashL: 0, dashR: 0 });
   for (const l of marks.lines) addLine(l.p, lineStyle(l.k, l.k2));
   // 안전지대 테두리: 실선(중앙선 옆은 황색)
   for (const z of marks.zones) {
@@ -99,6 +78,7 @@ export function makeMarks(marks: Marks): THREE.Group {
       depthWrite: false,
       offset: 5,
       doubleSide: true,
+      uniforms: { uCurb: { value: pal.curb } },
       vertex: /* glsl */ `
         attribute vec2 aNorm; attribute vec2 aUV; attribute vec4 aSty; attribute float aHalf;
         varying float vLat; varying float vAlong; varying vec4 vSty; varying float vDist;
@@ -155,15 +135,14 @@ export function makeMarks(marks: Marks): THREE.Group {
   };
   for (const z of marks.zones) addPoly(Array.from(z.ring), z.yellow ? 2 : 1);
   for (const a of marks.arrows) {
-    const parts = GLYPH[a.kind];
-    if (!parts) continue;
+    const shape = arrowShape(a.kind, a.w);
+    if (!shape) continue;
     // 앞 (fx, fz), 왼쪽 (fz, −fx)
-    for (const name of parts)
-      for (const poly of PARTS[name]) {
-        const out: number[] = [];
-        for (let k = 0; k < poly.length; k += 2) out.push(a.x + a.fx * poly[k] + a.fz * poly[k + 1], a.z + a.fz * poly[k] - a.fx * poly[k + 1]);
-        addPoly(out, 0);
-      }
+    for (const poly of shape) {
+      const out: number[] = [];
+      for (let k = 0; k < poly.length; k += 2) out.push(a.x + a.fx * poly[k] + a.fz * poly[k + 1], a.z + a.fz * poly[k] - a.fx * poly[k + 1]);
+      addPoly(out, 0);
+    }
   }
   const fg = new THREE.BufferGeometry();
   fg.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3));
@@ -176,6 +155,7 @@ export function makeMarks(marks: Marks): THREE.Group {
       depthWrite: false,
       offset: 5,
       doubleSide: true,
+      uniforms: { uCurb: { value: pal.curb } },
       vertex: /* glsl */ `
         attribute float aKind; varying float vKind; varying vec2 vXZ; varying float vDist;
         void main() { vKind = aKind; vXZ = position.xz; vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,

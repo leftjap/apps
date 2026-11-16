@@ -14,6 +14,27 @@ export interface SurfaceJson {
   dr?: number[][];
 }
 
+/** 연석 선(public/data/curbs.json, 재작업 W14): 그린 찻길 면 전체(띠·교차로 면·분리대·그리기 전용 면)의 경계. 줄마다 [점 수, x, z, 뒤 점마다 차이](dm) */
+export interface CurbsJson {
+  v: 1;
+  c: number[][];
+}
+
+export function decodeCurbs(j: CurbsJson): Float32Array[] {
+  return j.c.map((a) => {
+    const n = a[0];
+    const p = new Float32Array(n * 3);
+    let x = 0;
+    let z = 0;
+    for (let i = 0; i < n; i++) {
+      x += a[1 + i * 2];
+      z += a[2 + i * 2];
+      p.set([x / 10, 0, z / 10], i * 3);
+    }
+    return p;
+  });
+}
+
 export interface Face {
   /** 면에 닿는 길 가운데 가장 큰 길의 등급(작은 숫자) */
   cls: number;
@@ -56,7 +77,7 @@ export function decodeSurface(j: SurfaceJson): Surface {
   return { cut: Float32Array.from(j.cut, (v) => (v < 0 ? Infinity : v / 10)), faces: j.jn.map(decodeFace), draw: (j.dr ?? []).map(decodeFace) };
 }
 
-/** 땅 위 찻길 조각(등급 5 이하, 교량 아님). 교차로 면과 띠 자르기는 이 조각만 다룬다 */
+/** 땅 위 찻길 조각(등급 5 이하, 교량·올린 둑길 아님). 교차로 면과 띠 자르기는 이 조각만 다룬다. 찻길 터널도 넣는다(입구 경사는 roads.ts 가 띠 구간 안에서 내려 그린다) */
 export function isGroundRoad(r: Road): boolean {
   if (r.cls > 5 || r.p.length < 6) return false;
   for (let i = 1; i < r.p.length; i += 3) if (r.p[i] >= 0.3) return false;
@@ -179,4 +200,53 @@ export function carriageSections(r: Road, s0: number, s1: number, joint?: ArrayL
     const el = curbAt(r, s, -1) * m;
     return { s, x, y, z, rx: x - dz * er, rz: z + dx * er, lx: x + dz * el, lz: z - dx * el, er, el };
   });
+}
+
+/** 찻길 터널 깊이(m)와 입구 경사 길이(m): 차 그래프(src/sim/graph.ts sinkTunnels)와 같은 값 */
+export const TUNNEL_DEPTH = 8;
+export const TUNNEL_RAMP = 30;
+
+/**
+ * 찻길 터널 조각마다 시작·끝에서 가장 가까운 입구(터널이 아닌 길과 만나는 노드)까지 터널을 따라간 거리.
+ * 터널 조각이 아니면 null. 차 그래프가 차를 내리는 깊이와 같게 그리도록 tunnelDepth 로 깊이를 구한다
+ */
+export function tunnelReach(roads: Road[]): ([number, number] | null)[] {
+  const out: ([number, number] | null)[] = roads.map(() => null);
+  const ends = (r: Road) => {
+    const n = r.p.length;
+    return [key(r.p[0], r.p[2]), key(r.p[n - 3], r.p[n - 1])];
+  };
+  // 입구: 터널 조각이 하나만 닿는 노드(차 그래프는 앞뒤에 터널 구간이 없는 끝을 입구로 본다)
+  const tun = roads.flatMap((r, i) => (r.tunnel && r.cls <= 5 && r.p.length >= 6 ? [i] : []));
+  const count = new Map<string, number>();
+  for (const i of tun) for (const k of new Set(ends(roads[i]))) count.set(k, (count.get(k) ?? 0) + 1);
+  const dist = new Map<string, number>();
+  for (const [k, c] of count) dist.set(k, c === 1 ? 0 : Infinity);
+  const len = (r: Road) => {
+    const L = cumLen(r.p);
+    return L[L.length - 1];
+  };
+  for (let pass = 0; pass < 30; pass++) {
+    let changed = false;
+    for (const i of tun) {
+      const [a, b] = ends(roads[i]);
+      const l = len(roads[i]);
+      const da = dist.get(a)!;
+      const db = dist.get(b)!;
+      if (db + l < da) (dist.set(a, db + l), (changed = true));
+      if (da + l < db) (dist.set(b, da + l), (changed = true));
+    }
+    if (!changed) break;
+  }
+  for (const i of tun) {
+    const [a, b] = ends(roads[i]);
+    out[i] = [dist.get(a)!, dist.get(b)!];
+  }
+  return out;
+}
+
+/** 터널 조각의 s 자리 깊이(m, 양수): 가까운 입구에서 터널을 따라간 거리 d 로 TUNNEL_DEPTH × smoothstep(d / TUNNEL_RAMP) */
+export function tunnelDepth(reach: [number, number], s: number, len: number): number {
+  const t = Math.min(1, Math.min(reach[0] + s, reach[1] + len - s) / TUNNEL_RAMP);
+  return TUNNEL_DEPTH * t * t * (3 - 2 * t);
 }

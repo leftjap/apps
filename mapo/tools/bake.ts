@@ -13,16 +13,24 @@ import { railKind, railProfile, stitch } from './lib/rail.ts';
 import { buildSurface, crosswalkPatches, surfacePolys, type Cross as SurfaceCross } from './lib/surface.ts';
 import { ringArea as loopArea } from './lib/contour.ts';
 import { boardWalkNet } from './lib/walknet.ts';
-import { carriageSections, isGroundRoad, roadJoints } from '../src/data/surface.ts';
-import { carveIslands } from './lib/islands.ts';
+import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../src/data/surface.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
-import { decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts';
+import { curbAt, decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts';
 import { roadCorners } from '../src/data/corners.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { bakeLanes } from './lib/carlanes.ts';
 import { roadLevels } from './lib/levels.ts';
 import { carSurface, pushTreesOffRoad } from './lib/treeplace.ts';
+import { clipLine, drawnGround, dropOverlaps, onGround } from './lib/groundclip.ts';
+import { widenEdges } from './lib/laneedges.ts';
+import { fitCells, snapArrows } from './lib/arrows.ts';
+import { decodeLanes, type LanesJson } from '../src/data/lanes.ts';
+import { bitsAt, fillBits, makeBits, type Bits } from './lib/bits.ts';
+import { simplifyLoop, traceLoops } from './lib/contour.ts';
+import { exitBody, exitOutline } from '../src/data/exitFit.ts';
+import { exitLook } from '../src/data/exits.ts';
+import { findPortals } from '../src/render/rails.ts';
 
 type Tags = Record<string, string>;
 interface LL {
@@ -1705,6 +1713,34 @@ const out = {
   // 바닥 면 [종류, 값, 직사각형, 바깥 고리, 구멍...] (src/data/board.ts 의 GK)
   ga: groundAreas,
 };
+// 높이 다른 찻길(찻길 바닥·노면 표시를 굽기 전에 정한다. 올린 둑길은 땅 찻길이 아니고, 그 위 노면 표시는 데크 높이로 올린다. 재작업 W14): 찻길 터널 조각 표시, 다른 찻길을 노드 없이 넘는 다리 올리기(tools/lib/levels.ts, tools/levels.ts 와 같은 함수)
+{
+  const lv = roadLevels(out.r, raw('highways'));
+  console.log(`찻길 터널 조각 ${lv.tunnels}, 올린 다리 넘는 자리 ${lv.raised.length}, 다리가 아니라 못 올린 곳 ${lv.skipped.length}`);
+}
+// 찻길 가장자리를 서울시 칠한 선이 모두 들어오게 넓힌다(tools/lib/laneedges.ts, 재작업 W14). 모퉁이·교차로 면·보도 면은 넓힌 가장자리로 굽는다
+{
+  const b0 = decodeBoard(out as unknown as BoardJson);
+  // 건물 외곽선과 지하철 출구 모형 자리(0.5m 칸): 찻길을 여기까지 넓히지 않는다
+  const blk = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, 0.5);
+  for (const bl of b0.buildings) fillBits(blk, [bl.pts], 1);
+  for (const e of b0.exits) {
+    const o = exitOutline(e, exitLook(e.st, e.ref ?? ''));
+    const [ux, uz] = [Math.cos(e.yaw), Math.sin(e.yaw)];
+    const { cx, cz } = exitBody(e, exitLook(e.st, e.ref ?? '').l);
+    let [a0, a1, h] = [Infinity, -Infinity, 0];
+    for (const [x, z] of o) {
+      const a = (x - cx) * ux + (z - cz) * uz;
+      (a0 = Math.min(a0, a)), (a1 = Math.max(a1, a)), (h = Math.max(h, Math.abs((x - cx) * -uz + (z - cz) * ux)));
+    }
+    const at = (a: number, c: number) => [cx + ux * a - uz * c, cz + uz * a + ux * c];
+    // 출구 자리 맞추기(src/data/exitFit.ts)가 찻길에 10% 넘게 걸린 출구를 옮기므로 1m 더 비워 둔다
+    fillBits(blk, [[...at(a0 - 1, -h - 1), ...at(a1 + 1, -h - 1), ...at(a1 + 1, h + 1), ...at(a0 - 1, h + 1)]], 1);
+  }
+  const w = widenEdges(b0.roads, b0.roads.map(isGroundRoad), tgis.map((l) => ({ k: Number(l.k), p: l.p.map(([a, c]) => toXZ(a, c)) })), (x, z) => !!(bitsAt(blk, x, z) & 1));
+  for (const [i, pr] of w.edges) out.re[i] = pr.map((p) => p.s.flatMap((s, k) => [dm(s), dm(p.v[k])]));
+  console.log(`찻길 가장자리를 칠한 선까지 넓힌 조각 ${w.moved}개(가장자리에서 4m 넘게 떨어져 맡기지 않은 선 점 ${w.far}개)`);
+}
 // 길 모퉁이 반지름: 구운 길로 모퉁이 목록(src/data/corners.ts)을 만들고, 가장자리선이 모퉁이를 돌아가는 곳은 그 반지름(2~25m)을 잰다
 {
   const segs: LaneSeg[] = [];
@@ -1726,6 +1762,11 @@ const out = {
 let surfaceJson = '';
 let surfacePolysJson = '';
 let walkJson = '';
+/** 그린 찻길 면(찻길 띠·교차로 면·분리대·그리기 전용 면, 찻길 터널 속은 뺀다): 노면 표시를 이 안으로 자른다(재작업 W14) */
+let groundBits: Bits | null = null;
+let curbsJson = '';
+/** 터널 속을 따라가는 선의 점인가(재작업 W14) */
+let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | undefined;
 {
   const b = decodeBoard(out as unknown as BoardJson);
   const link = roads.map(() => 0);
@@ -1771,6 +1812,30 @@ let walkJson = '';
     paint.push([x - 2, z - 2, x + 2, z - 2, x + 2, z + 2, x - 2, z + 2]);
   }
   const sf = buildSurface(b.roads, b.cornerR, crosses, b.stopLines, link, paint);
+  // 찻길 터널 속(입구에서 깊이 3m 넘게 들어간 곳)의 교차로 면은 땅 밑이라 그리지 않는다(재작업 W14)
+  const reach = tunnelReach(b.roads);
+  const underground = (x: number, z: number) =>
+    b.roads.some((r, i) => {
+      const rc = reach[i];
+      if (!rc) return false;
+      const L = cumLen(r.p);
+      for (let k = 0; k + 1 < L.length; k++) {
+        const [ax, az, bx, bz] = [r.p[k * 3], r.p[k * 3 + 2], r.p[k * 3 + 3], r.p[k * 3 + 5]];
+        const dx = bx - ax;
+        const dz = bz - az;
+        const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+        if (Math.hypot(ax + dx * t - x, az + dz * t - z) < 8 && tunnelDepth(rc, L[k] + t * (L[k + 1] - L[k]), L[L.length - 1]) > 3) return true;
+      }
+      return false;
+    });
+  const nFaces = sf.faces.length;
+  sf.faces = sf.faces.filter((f) => {
+    let cx = 0;
+    let cz = 0;
+    for (let k = 0; k < f.outer.length; k += 2) (cx += (f.outer[k] * 2) / f.outer.length), (cz += (f.outer[k + 1] * 2) / f.outer.length);
+    return !underground(cx, cz);
+  });
+  console.log(`찻길 터널 속 교차로 면 ${nFaces - sf.faces.length}개 뺌`);
   // 횡단보도가 OSM 길 밖에 걸친 자리는 그리기 전용 찻길 면으로 채운다(서울시 연석 쪽 선까지)
   const curbLines = tgis.filter((l) => ['007', '009', '010', '011', '015'].includes(l.k)).map((l) => l.p.flatMap(([a, c]) => toXZ(a, c)));
   const patches = crosswalkPatches(b.roads, sf, crosses, curbLines);
@@ -1782,19 +1847,96 @@ let walkJson = '';
     : [];
   const polys = surfacePolys(b.roads, sf, roadJoints(b.roads), b.groundAreas, [GK.ROADSIDE, GK.PLAZA], BOARD_R, patches.map((p) => p.ring), b.buildings.map((q) => q.pts), true, rwAreas);
   console.log(`보도 면: 도로 부지 자료(도시생태현황도 ${b.groundAreas.filter((a) => a.kind === GK.ROADSIDE || a.kind === GK.PLAZA).length}개 + 실폭도로 ${rwAreas.length}개), 보도 면 없는 큰길 쪽 채움: 실폭도로 ${polys.filledRw.toFixed(0)}m², 연석에서 건물 쪽 ${polys.filled.toFixed(0)}m²`);
-  // 교차로 면 안의 섬: 어느 찻길 띠(교차로를 지나 끝까지)·분리대·횡단보도 칠·찻길에 칠한 표시(안전지대·차선 둘레·화살표)에도 덮이지 않고
-  // 면 테두리에 닿지 않는 곳(연결로와 본선 사이 삼각형 등)
+  // 교차로 면 안의 섬: 연결로로 둘러싸인 교통섬(buildSurface)만 낸다. W14 전에는 띠 사이 빈 곳을 0.25m 칸으로 찾아 섬을 더 냈는데(tools/lib/islands.ts carveIslands),
+  // 가장자리가 계단 모양이고 대부분 찻길 띠가 칠한 선보다 좁아 남은 틈이었다(양화로 중앙버스정류장 승강장 끝에서 횡단보도까지 찻길 한가운데 보도 블록 면).
+  // 찻길 가장자리를 칠한 선까지 넓힌 뒤로는 내지 않는다. 분리대와 중앙 승강장(render/busstops.ts)은 그대로다
+  polys.isl = sf.faces.flatMap((f) => f.holes);
+  console.log(`교차로 면 교통섬 ${polys.isl.length}개`);
+  // 터널 속(깊이 1.5m 넘게 내려간 곳)을 따라가는 선: 터널 조각 가운데선에서 그 가장자리 + 0.5m 안이고 터널과 25° 안으로 나란하면 뺀다
   {
-    const joints = roadJoints(b.roads);
-    const ribbons = b.roads.flatMap((r, i) => {
-      if (!isGroundRoad(r)) return [];
-      const q = carriageSections(r, 0, Infinity, joints.subarray(i * 4, i * 4 + 4));
-      return q.length < 2 ? [] : [[...q.flatMap((t) => [t.lx, t.lz]), ...q.reverse().flatMap((t) => [t.rx, t.rz])]];
+    const segs: number[][] = [];
+    b.roads.forEach((r, i) => {
+      const rc = reach[i];
+      if (!rc) return;
+      const L = cumLen(r.p);
+      for (let k = 0; k + 1 < L.length; k++) {
+        const n = Math.max(1, Math.ceil((L[k + 1] - L[k]) / 2));
+        for (let q = 0; q < n; q++) {
+          const s0 = L[k] + ((L[k + 1] - L[k]) * q) / n;
+          const s1 = L[k] + ((L[k + 1] - L[k]) * (q + 1)) / n;
+          if (tunnelDepth(rc, (s0 + s1) / 2, L[L.length - 1]) < 1.5) continue;
+          const t0 = (s0 - L[k]) / (L[k + 1] - L[k] || 1);
+          const t1 = (s1 - L[k]) / (L[k + 1] - L[k] || 1);
+          const [ax, az, bx, bz] = [r.p[k * 3], r.p[k * 3 + 2], r.p[k * 3 + 3], r.p[k * 3 + 5]];
+          segs.push([ax + (bx - ax) * t0, az + (bz - az) * t0, ax + (bx - ax) * t1, az + (bz - az) * t1, Math.max(curbAt(r, s0, 1), curbAt(r, s0, -1)) + 0.5]);
+        }
+      }
     });
-    const before = polys.isl.length;
-    const carved = carveIslands(sf.faces, [...ribbons, ...polys.med, ...b.crosswalks.flatMap((c) => c.rings), ...b.crosswalkMarks, ...patches.map((p) => p.ring), ...paint], polys.med);
-    polys.isl = sf.faces.flatMap((f) => f.holes);
-    console.log(`교차로 면 안 섬 ${carved}개 더 냄(교통섬 ${before} → ${polys.isl.length}개)`);
+    const cell = new Map<number, number[][]>();
+    const ck = (x: number, z: number) => (Math.floor(x / 20) + 500) * 1000 + Math.floor(z / 20) + 500;
+    for (const g of segs)
+      for (let cx = Math.floor((Math.min(g[0], g[2]) - g[4]) / 20); cx <= Math.floor((Math.max(g[0], g[2]) + g[4]) / 20); cx++)
+        for (let cz = Math.floor((Math.min(g[1], g[3]) - g[4]) / 20); cz <= Math.floor((Math.max(g[1], g[3]) + g[4]) / 20); cz++) {
+          const k = (cx + 500) * 1000 + cz + 500;
+          (cell.get(k) ?? cell.set(k, []).get(k)!).push(g);
+        }
+    underTunnel = (x, z, ux, uz) =>
+      (cell.get(ck(x, z)) ?? []).some(([ax, az, bx, bz, h]) => {
+        const dx = bx - ax;
+        const dz = bz - az;
+        const l = Math.hypot(dx, dz) || 1;
+        if (Math.abs((dx * ux + dz * uz) / l) < 0.9) return false;
+        const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (l * l)));
+        return Math.hypot(ax + dx * t - x, az + dz * t - z) < h;
+      });
+  }
+  // 노면 표시를 자를 찻길 면: 찻길 터널 조각의 띠는 뺀다(입구 경사는 땅 밑으로 내려가 그 위에 칠할 곳이 없다)
+  groundBits = drawnGround([
+    ...polys.car.filter(([i]) => !reach[i]).map(([, c]) => [c]),
+    ...sf.faces.map((f) => [f.outer, ...f.holes]),
+    ...polys.med.map((m) => [m]),
+    ...patches.map((p) => [p.ring]),
+  ]);
+  // 철도 터파기(2호선 합정 → 당산철교, 양화로 가운데에서 땅 위로 올라온다): 옹벽 바깥까지 찻길 면에서 뺀다. 그 위 노면 표시는 남기지 않는다(재작업 W14)
+  for (const l of b.lines) {
+    const cum = cumLen(l.p);
+    for (const { s0, sP } of findPortals({ p: l.p, cum, kind: l.kind })) {
+      const n = Math.max(2, Math.ceil(Math.abs(sP - s0) / 2));
+      const L: number[] = [];
+      const R: number[] = [];
+      const tmp = [0, 0, 0];
+      for (let i = 0; i <= n; i++) {
+        const s = s0 + ((sP - s0) * i) / n;
+        const seg = pointAt(l.p, cum, s, tmp);
+        const [dx, dz] = [l.p[seg * 3 + 3] - l.p[seg * 3], l.p[seg * 3 + 5] - l.p[seg * 3 + 2]];
+        const d = Math.hypot(dx, dz) || 1;
+        const H = 6.2; // 터파기 안쪽 반폭 5.2m(src/render/rails.ts TROUGH_W) + 옹벽 + 0.5m
+        L.push(tmp[0] + (dz / d) * H, tmp[2] - (dx / d) * H);
+        R.push(tmp[0] - (dz / d) * H, tmp[2] + (dx / d) * H);
+      }
+      const ring = [...L];
+      for (let i = R.length - 2; i >= 0; i -= 2) ring.push(R[i], R[i + 1]);
+      fillBits(groundBits!, [ring], 1, true);
+    }
+  }
+  // 연석 선: 그린 찻길 면(찻길 띠·교차로 면·분리대·그리기 전용 면을 합친 것)의 경계. 띠끼리 포개진 곳 안쪽에는 선이 생기지 않는다(재작업 W14)
+  const curbLoops: number[][] = [];
+  {
+    const G = groundBits!;
+    for (const loop of traceLoops(G.v, G.w)) {
+      if (Math.abs(loopArea(loop)) * G.cell * G.cell < 2) continue;
+      const q = simplifyLoop(loop, 0.2 / G.cell).map((v, k) => (k % 2 ? G.z0 : G.x0) + v * G.cell);
+      // 판 가장자리(잘린 길 끝)는 연석이 아니다: 가장자리 3m 안 점에서 끊는다
+      let cur: number[] = [];
+      for (let k = 0; k <= q.length; k += 2) {
+        const [x, z] = [q[k % q.length], q[(k + 1) % q.length]];
+        if (Math.hypot(x, z) > BOARD_R - 3) {
+          if (cur.length >= 4) curbLoops.push(cur);
+          cur = [];
+        } else cur.push(x, z);
+      }
+      if (cur.length >= 4) curbLoops.push(cur);
+    }
   }
   // 고리마다 첫 점은 cm, 그 뒤는 앞 점과의 차이(cm)
   const enc = (r: number[]) => {
@@ -1808,11 +1950,27 @@ let walkJson = '';
   surfacePolysJson = JSON.stringify({ v: 1, car: polys.car.map(([i, r]) => [i, ...dmR(r)]), med: polys.med.map(dmR), isl: polys.isl.map(dmR), walk: polys.walk.map(dmR), draw: polys.draw.map(dmR) });
   // 찻길 면 위에 찍힌 가로수를 보도로 옮긴다(tools/lib/treeplace.ts, tools/treeplace.ts 와 같은 함수)
   {
-    const tp = pushTreesOffRoad(trees, carSurface(polys.car.map(([, c]) => c), sf.faces));
+    // 교량·올린 둑길 밑에도 나무를 두지 않는다(데크를 뚫고 솟는다, 재작업 W14)
+    const decks = b.roads.flatMap((r) => {
+      if (r.cls > 5 || isGroundRoad(r)) return [];
+      const q = carriageSections(r, 0, Infinity);
+      return q.length < 2 ? [] : [[...q.flatMap((t) => [t.lx, t.lz]), ...q.reverse().flatMap((t) => [t.rx, t.rz])]];
+    });
+    const tp = pushTreesOffRoad(trees, carSurface([...polys.car.map(([, c]) => c), ...decks, ...polys.med, ...patches.map((p) => p.ring)], sf.faces));
     console.log(`찻길 위 나무 ${tp.moved}그루 보도로 옮김, 못 옮김 ${tp.left}그루`);
   }
   console.log(`보도 면 고리 ${polys.walk.length}개(구멍 ${polys.walk.filter((r) => loopArea(r) < 0).length}), 넓이 ${(polys.walk.reduce((a, r) => a + loopArea(r), 0) / 1e4).toFixed(1)}ha, 찻길 띠 ${polys.car.length}개, 분리대 ${polys.med.length}개`);
+  // 연석 선은 따로 public/data/curbs.json 에: 줄마다 [점 수, 첫 점 x, z, 뒤 점마다 차이](dm)
+  curbsJson = JSON.stringify({
+    v: 1,
+    c: curbLoops.map((r) => {
+      const c = r.map((v) => Math.round(v * 10));
+      return [r.length / 2, ...c.map((v, i) => (i < 2 ? v : v - c[i - 2]))];
+    }),
+  });
+  const cb = curbLoops;
   surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn, dr });
+  console.log(`연석 선 ${cb.length}줄, ${(curbLoops.reduce((a, r) => a + r.reduce((b, _, k) => (k >= 2 && k % 2 === 0 ? b + Math.hypot(r[k] - r[k - 2], r[k + 1] - r[k - 1]) : b), 0), 0) / 1000).toFixed(0)}km`);
   // 걷는 길 그래프(src/sim/walknet.ts): 보도 면 뼈대 선·보도 없는 골목·도로 부지 밖 보행로와 횡단보도 연결
   const walk = boardWalkNet(b, sf.faces, patches.map((p) => p.ring), polys);
   walkJson = JSON.stringify(walk);
@@ -1824,6 +1982,7 @@ let walkJson = '';
 }
 // 노면 표시: 서울시 차선 선(OA-15537)·안전지대(OA-15533)·노면 화살표(OA-15536)를 자료 그대로 public/data/marks.json 에 둔다(src/render/marks.ts)
 let marksJson = '';
+let marksWholeJson = '';
 {
   const raw = existsSync(laneFile) ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]) : [];
   /** 점 수, 첫 점, 뒤 점마다 앞 점과의 차이(dm) */
@@ -1838,7 +1997,10 @@ let marksJson = '';
   for (const r of bd.roads) {
     if (r.cls > 5) continue;
     const half = Math.max(...roadHalf(r)) + 0.5;
-    const deck = r.bridge ? 1 : 0;
+    // 다리 앞뒤로 올린 둑길(levels.ts, 교량 아님)도 데크처럼: 그 위 선은 둑길 높이로 올린다
+    let top = 0;
+    for (let k = 1; k < r.p.length; k += 3) top = Math.max(top, r.p[k]);
+    const deck = r.bridge || top >= 0.3 ? 1 : 0;
     for (let k = 0; k + 5 < r.p.length; k += 3) {
       const sg = [r.p[k], r.p[k + 1], r.p[k + 2], r.p[k + 3], r.p[k + 4], r.p[k + 5], half, deck];
       for (let cx = Math.floor((Math.min(sg[0], sg[3]) - half) / 20); cx <= Math.floor((Math.max(sg[0], sg[3]) + half) / 20); cx++)
@@ -1869,8 +2031,14 @@ let marksJson = '';
   };
   const lines: number[][] = [];
   const high: number[][] = [];
+  /** 자르기 전 땅 위 선: 차로 가운데선 굽기(carlanes)는 자르기 전 선을 읽는다 */
+  const whole: number[][] = [];
   let skipped = 0;
   let lifted = 0;
+  let cutAway = 0;
+  /** 자른 땅 위 선 조각: 중앙선은 겹친 것을 정리한 뒤 넣는다 */
+  const centerPieces: [number, [number, number][]][] = [];
+  const otherPieces: [number, [number, number][]][] = [];
   for (const l of raw) {
     if (l.eve === '003') continue; // 지하
     const P = l.p.map(([a, b]) => toXZ(a, b)).filter(([x, z]) => inBoard(x, z, 2));
@@ -1884,11 +2052,35 @@ let marksJson = '';
       skipped++;
       continue;
     }
-    if (Y.every((y) => y === 0)) lines.push([code, ...encPts(P)]);
-    else {
+    if (Y.every((y) => y === 0)) {
+      whole.push([code, ...encPts(P)]);
+      // 그린 찻길 면 밖(0.3m 넘게)으로 나간 부분은 잘라 낸다(재작업 W14)
+      const parts = groundBits ? clipLine(groundBits, P as [number, number][], 0.6, 0.3, underTunnel) : [P];
+      const before = P.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]) : 0), 0);
+      const after = parts.reduce((a, q) => a + q.reduce((b, p, i) => (i ? b + Math.hypot(p[0] - q[i - 1][0], p[1] - q[i - 1][1]) : 0), 0), 0);
+      cutAway += before - after;
+      for (const q of parts) (Math.floor(code / 10) === 1 ? centerPieces : otherPieces).push([code, q as [number, number][]]);
+    } else {
       if (l.eve !== '002') lifted++;
       high.push([code, ...encPts(P.map(([x, z], i) => [x, Y[i]!, z]))]);
     }
+  }
+  // 같은 자리에 비스듬히 겹친 중앙선은 긴 것 하나만 남긴다(tools/lib/groundclip.ts dropOverlaps, 재작업 W14)
+  {
+    const d = dropOverlaps(centerPieces.map(([, q]) => q));
+    // 남은 조각의 종류: 원래 조각 가운데 첫 점이 가장 가까운 것
+    for (const q of d.kept) {
+      let best = centerPieces[0][0];
+      let bd = Infinity;
+      for (const [code, P] of centerPieces)
+        for (const p of P) {
+          const dd = Math.hypot(p[0] - q[0][0], p[1] - q[0][1]);
+          if (dd < bd) (bd = dd), (best = code);
+        }
+      lines.push([best, ...encPts(q)]);
+    }
+    for (const [code, q] of otherPieces) lines.push([code, ...encPts(q)]);
+    console.log(`겹친 중앙선 정리: 0.5m 점 ${d.dropped}개 버림`);
   }
   // 안전지대: 중앙선(001) 옆이면 황색(1), 아니면 백색(0)
   const centers = raw.filter((l) => l.k === '001' && l.eve === '001').map((l) => l.p.map(([a, b]) => toXZ(a, b)));
@@ -1899,6 +2091,8 @@ let marksJson = '';
     const R = zn.ring.map(([a, b]) => toXZ(a, b));
     if (!R.every(([x, z]) => inBoard(x, z, 2))) continue;
     if (R.some(([x, z]) => (heightAt(x, z) ?? 0) > 0)) continue; // 교량 위(땅에 칠하면 물 위에 뜬다)
+    // 그린 찻길 면 밖으로 반 넘게 나간 안전지대는 뺀다(재작업 W14)
+    if (groundBits && R.filter(([x, z]) => onGround(groundBits!, x, z, 0.5)).length < R.length * 0.5) continue;
     const yellow = centers.some((c) => c.some(([cx, cz]) => R.some(([x, z]) => Math.hypot(cx - x, cz - z) < 1.2)));
     zones.push([yellow ? 1 : 0, ...encPts(R.slice(0, -1))]);
   }
@@ -1908,29 +2102,53 @@ let marksJson = '';
   for (const a of existsSync(arrowFile) ? (JSON.parse(readFileSync(arrowFile, 'utf8')).arrows as { kind: string; drn: number; eve: string; lat: number; lon: number }[]) : []) {
     if (a.eve !== '001') continue;
     const [x, z] = toXZ(a.lat, a.lon);
-    if (inBoard(x, z, 3) && (heightAt(x, z) ?? 0) === 0) arrows.push(Number(a.kind), dm(x), dm(z), a.drn);
+    if (!inBoard(x, z, 3) || (heightAt(x, z) ?? 0) !== 0) continue;
+    arrows.push(Number(a.kind), dm(x), dm(z), a.drn);
   }
   marksJson = JSON.stringify({ v: 1, l: lines, h: high, z: zones, a: arrows });
+  marksWholeJson = JSON.stringify({ v: 1, l: whole, h: high, z: [], a: [] });
+  console.log(`노면 표시 자르기: 그린 찻길 면 밖이라 잘라 낸 선 ${cutAway.toFixed(0)}m`);
   const by = new Map<number, number>();
   for (const l of lines) by.set(Math.floor(l[0] / 10), (by.get(Math.floor(l[0] / 10)) ?? 0) + 1);
   console.log(`노면 표시: 선 ${lines.length}줄(정지선 ${by.get(4) ?? 0}, 차선 ${by.get(6) ?? 0}, 중앙선 ${by.get(1) ?? 0}, 진로변경제한선 ${by.get(8) ?? 0}, 유도선 ${by.get(12) ?? 0}, 자전거횡단 ${by.get(13) ?? 0}), 교량 위 ${high.length}줄(땅 표시인데 교량 위라 올린 것 ${lifted}, 교량을 못 찾거나 물 위라 뺀 것 ${skipped}), 안전지대 ${zones.length}개(황색 ${zones.filter((z) => z[0]).length}), 화살표 ${arrows.length / 4}개`);
 }
-// 높이 다른 찻길: 찻길 터널 조각 표시, 다른 찻길을 노드 없이 넘는 다리 올리기(tools/lib/levels.ts, tools/levels.ts 와 같은 함수)
-{
-  const lv = roadLevels(out.r, raw('highways'));
-  console.log(`찻길 터널 조각 ${lv.tunnels}, 올린 다리 넘는 자리 ${lv.raised.length}, 다리가 아니라 못 올린 곳 ${lv.skipped.length}`);
-}
 const json = JSON.stringify(out);
 writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);
+writeFileSync(new URL('../public/data/curbs.json', import.meta.url), curbsJson);
 writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), surfacePolysJson);
-writeFileSync(new URL('../public/data/marks.json', import.meta.url), marksJson);
 // 차로 가운데선: 차가 다니는 조각마다 서울시 차선으로 방향별 차로를 읽는다(tools/lib/carlanes.ts, tools/lanes.ts 와 같은 함수)
 {
-  const baked = bakeLanes(decodeBoard(out as unknown as BoardJson).roads, decodeMarks(JSON.parse(marksJson) as MarksJson).lines);
+  const bd = decodeBoard(out as unknown as BoardJson);
+  const baked = bakeLanes(bd.roads, decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines);
   writeFileSync(new URL('../public/data/lanes.json', import.meta.url), baked.json);
   console.log(baked.log);
+  // 노면 화살표를 그 화살표가 놓인 차선 칸 가운데로, 길 방향에 맞춰 옮긴다(tools/lib/arrows.ts, 재작업 W14). 옮긴 뒤 찻길 면 밖이면 뺀다
+  const mj = JSON.parse(marksJson) as MarksJson;
+  const ar = decodeMarks(mj).arrows;
+  const sn = snapArrows(bd.roads, decodeLanes(JSON.parse(baked.json) as LanesJson), ar);
+  // 놓인 차선 칸(양옆 칠한 선 사이) 가운데로 옮기고 칸 폭을 붙인다. 화살표 옆 폭은 그리는 쪽이 칸 폭에서 양쪽 0.3m 를 뺀 만큼으로 줄인다(src/data/marks.ts arrowShape)
+  const drawnLines = decodeMarks(mj).lines;
+  // 두 번 맞춘다: 처음 옮긴 자리에서 다시 보면 다른 칸 경계가 잡히는 곳이 있어, 두 번째 결과가 첫 번째와 0.1m 넘게 다르면 칸을 모르는 것으로 둔다
+  const fc1 = fitCells(sn.out, drawnLines);
+  const fc2 = fitCells(fc1.out, drawnLines);
+  const fc = { out: fc1.out.map((q, i) => (q.w > 0 && (fc2.out[i].w === 0 || Math.hypot(fc2.out[i].x - q.x, fc2.out[i].z - q.z) > 0.1) ? { ...sn.out[i], w: 0 } : q)) };
+  const a: number[] = [];
+  const aw: number[] = [];
+  for (const q of fc.out) {
+    if (groundBits && !onGround(groundBits, q.x, q.z, 0.3)) continue;
+    if (underTunnel?.(q.x, q.z, q.fx, q.fz)) continue;
+    a.push(q.kind, dm(q.x), dm(q.z), Math.round((Math.atan2(-q.fz, q.fx) * 180) / Math.PI));
+    aw.push(dm(q.w));
+  }
+  mj.a = a;
+  mj.aw = aw;
+  console.log(`노면 화살표 칸: 양옆 칠한 선을 찾은 것 ${aw.filter((v) => v > 0).length}개, 못 찾은 것 ${aw.filter((v) => v === 0).length}개`);
+  marksJson = JSON.stringify(mj);
+  const d = sn.dist.sort((x, y) => x - y);
+  console.log(`노면 화살표 ${ar.length}개 가운데 차로 가운데로 옮긴 것 ${sn.moved}개(옮긴 거리 중앙값 ${d[d.length >> 1]?.toFixed(2)}m, 90% ${d[Math.floor(d.length * 0.9)]?.toFixed(2)}m), 옮긴 뒤 찻길 면 밖이라 뺀 것 ${ar.length - a.length / 4}개`);
 }
+writeFileSync(new URL('../public/data/marks.json', import.meta.url), marksJson);
 writeFileSync(new URL('../public/data/walk.json', import.meta.url), walkJson);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));
 

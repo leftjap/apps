@@ -24,6 +24,10 @@ const KEYS: Record<string, Key3> = {
   roadMajor: ['#bcb7ad', '#b09d93', '#888a98'],
   roadMinor: ['#cbc5b8', '#bfa99b', '#9294a0'],
   walk: ['#f1e7d0', '#e2c8ae', '#b1a69c'],
+  // 찻길 아스팔트(큰길·골목)와 연석. 보도 블록(walk·areas.ts ROADSIDE)보다 낮·밤 모두 확실히 어둡게 둔다(재작업 W14)
+  tarmac: ['#8b8a87', '#7c716d', '#3c3f4c'],
+  tarmacMinor: ['#9a9792', '#8a7e78', '#464956'],
+  curb: ['#e4e1da', '#d2c1b4', '#8d8c96'],
 };
 /** [낮, 노을, 밤] 숫자 값 */
 const NUMS: Record<string, [number, number, number]> = {
