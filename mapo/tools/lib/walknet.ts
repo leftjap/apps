@@ -5,8 +5,8 @@
 //    걷는 띠는 골목 폭 전체: 1.5m 마다 옆으로 쏜 선이 건물 벽(0.7m 앞)·큰길 찻길에 닿거나 찻길 가장자리 밖에서 도로 부지를 벗어나는 곳(0.3m 앞)까지, 가장자리 + 3m 까지.
 //    골목이 건물 외곽선을 지나는 곳은 끊는다.
 // ③ 도로 부지 밖 보행로(등급 6·7, 공원 길·숲길): 도로 부지·큰길 찻길·건물 밖 부분만 쓴다(도로 부지 안 보도는 ①이 맡는다).
-// ④ 끝점 잇기: 끝점마다 8m 안의 다른 선 가운데 큰길 찻길·건물을 지나지 않고 곧게 닿는 가장 가까운 점에 잇는다(골목 어귀, 끊긴 보도 끝).
-// ⑤ 횡단보도: 축 양 끝에서 바깥으로 큰길 찻길을 벗어난 자리(기다리는 자리)를 정하고, 거기서 곧게 닿는 가장 가까운 선 위 점에 잇는다.
+// ④ 끝점 잇기: 끝점마다 8m 안의 다른 선 가운데 큰길 찻길·건물·횡단보도 면을 지나지 않고 곧게 닿는 가장 가까운 점에 잇는다(골목 어귀, 끊긴 보도 끝).
+// ⑤ 횡단보도: 축 양 끝에서 바깥으로 큰길 찻길·횡단보도 면을 벗어난 자리(기다리는 자리)를 정하고, 거기서 곧게 닿는 가장 가까운 선 위 점에 잇는다.
 import { curbAt, GK, type Board, type Road } from '../../src/data/board.ts';
 import { carriageSections, isGroundRoad, roadJoints } from '../../src/data/surface.ts';
 import { underpasses, ZONES } from '../../src/sim/walkers.ts';
@@ -54,6 +54,7 @@ export function boardWalkNet(
     buildings: b.buildings.map((q) => q.pts),
     roads: b.roads,
     crosswalks: b.crosswalks,
+    paint: draw,
     tunnels: underpasses(b.roads, ...ZONES.mangwon),
     hot: HOT,
   });
@@ -76,7 +77,10 @@ export interface WalkInput {
   buildings: ArrayLike<number>[];
   /** 골목·보행로를 고를 길 조각 */
   roads: Road[];
-  crosswalks: { x: number; z: number; ux: number; uz: number; half: number; wid: number }[];
+  /** 횡단보도(rings 는 칠한 면). 칠한 면과 paint 는 기다리는 자리·잇는 선이 들어가지 않는다(횡단보도 연결로만 건넌다) */
+  crosswalks: { x: number; z: number; ux: number; uz: number; half: number; wid: number; rings?: ArrayLike<number>[] }[];
+  /** 횡단보도 밑 그리기 전용 찻길 면 */
+  paint?: ArrayLike<number>[];
   /** 보행로가 자동차 전용도로 밑을 지나는 곳: 둘레 20m 안에서는 끊지 않는다 */
   tunnels?: [number, number][];
   /** 붐비는 길 이름 */
@@ -87,6 +91,7 @@ const WALK = 1;
 const HARD = 2;
 const LAND = 4;
 const BLDG = 8;
+const XW = 16;
 const CELL = 0.5;
 const REACH = 8; // 끝점·횡단보도를 이을 가장 먼 거리(m)
 
@@ -101,6 +106,8 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
   for (const s of inp.land) fillBits(B, s, LAND);
   for (const s of inp.walk) fillBits(B, s, LAND);
   for (const b of inp.buildings) fillBits(B, [b], BLDG);
+  for (const c of inp.crosswalks) for (const r of c.rings ?? []) fillBits(B, [r], XW);
+  for (const r of inp.paint ?? []) fillBits(B, [r], XW);
   const hot = inp.hot ?? /$^/;
   const tunnels = inp.tunnels ?? [];
   const nearTunnel = (x: number, z: number) => tunnels.some(([tx, tz]) => Math.hypot(tx - x, tz - z) < 20);
@@ -252,7 +259,7 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
   // ④·⑤ 잇기
   const clear = (ax: number, az: number, bx: number, bz: number) => {
     const L = Math.hypot(bx - ax, bz - az);
-    for (let d = 0; d <= L; d += 0.25) if (bitsAt(B, ax + ((bx - ax) * d) / (L || 1), az + ((bz - az) * d) / (L || 1)) & (HARD | BLDG)) return false;
+    for (let d = 0; d <= L; d += 0.25) if (bitsAt(B, ax + ((bx - ax) * d) / (L || 1), az + ((bz - az) * d) / (L || 1)) & (HARD | BLDG | XW)) return false;
     return true;
   };
   const adjOf = () => {
@@ -355,7 +362,7 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
       // 그 전에 건물에 닿으면 건물 앞 빈 곳(0.25m 넘는 것) 가운데에서 기다린다
       const freeAt = (d: number, land: boolean) => {
         const f = bitsAt(B, ex + c.ux * sg * d, ez + c.uz * sg * d);
-        return !(f & (HARD | BLDG)) && (!land || (f & (LAND | WALK)) !== 0);
+        return !(f & (HARD | BLDG | XW)) && (!land || (f & (LAND | WALK)) !== 0);
       };
       // 도로 부지 안 자리를 먼저 찾고, 없으면(도로 부지 자료가 빠진 곳) 도로 부지 밖이라도 찻길·건물이 아닌 자리
       const find = (land: boolean) => {

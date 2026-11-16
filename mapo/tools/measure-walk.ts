@@ -1,4 +1,7 @@
-// 걷는 자리 측정(브라우저 없이 시뮬레이션만 돌린다): node tools/measure-walk.ts [초] [씨앗,...]
+// 걷는 자리 측정(브라우저 없이 시뮬레이션만 돌린다): node tools/measure-walk.ts [초] [씨앗,...] [조건 번호] [까닭]
+// 조건 번호를 주지 않으면 조건 0~2 를 돌린다. 조건 3(토 21:40)은 15절 옛 측정(2분)과 같은 시각이다.
+// 신호 횡단보도에 건너는 방향으로 들어서는 순간(0.1초마다 본다, 같은 횡단보도를 나온 지 5초 안에 다시 들어선 것은 같은 건넘) 그 방향 보행 신호가 빨간불인 횟수, 초록불에 들어섰는데 건너는 도중 빨간불이 되어
+// 4초 넘게 횡단보도 위에 있던 사람, 신호 교차로(30m) 밖에서 큰길 찻길에 들어선 횟수(횡단보도 면·승강장·나들목 제외)도 센다.
 // main.ts 와 같은 순서로 차·신호·버스·사람을 만들고, 사람만 0.5초씩 600번 미리 돌린 뒤 1/30초 단계로 30초 안정시키고
 // [초] 동안 1초마다 사람 자리를 판 칸 격자(0.5m)에 대어 센다. 조건은 일 14:00·토 17:00·평일(화) 08:30.
 // 큰길 찻길 = 등급 3 이하 땅 위 찻길 띠(교차로를 지나 끝까지) ∪ 분리대 ∪ 큰길 교차로 면 가운데 골목 띠 밖(골목 어귀는 뺀다).
@@ -9,7 +12,7 @@ import { decodeBoard, GK } from '../src/data/board.ts';
 import { carriageSections, decodeSurface, isGroundRoad, roadJoints } from '../src/data/surface.ts';
 import { decodeWalk } from '../src/sim/walknet.ts';
 import { buildCarGraph, ISLAND_BACK, ISLAND_L, ISLAND_W } from '../src/sim/graph.ts';
-import { makeSignals } from '../src/sim/signals.ts';
+import { makeSignals, RED } from '../src/sim/signals.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
@@ -22,10 +25,12 @@ const MEAS = Number(process.argv[2] ?? 180);
 const SEEDS = (process.argv[3] ?? '5,9').split(',').map(Number);
 /** 넷째 인자가 있으면 그 번호 조건만 돌리고, 큰길 찻길 위·건물 안·도로 부지 밖 사람을 까닭별로 나눠 적는다 */
 const ONLY = process.argv[4] === undefined ? -1 : Number(process.argv[4]);
+const WHY = process.argv[5] === '까닭';
 const CASES: [string, number, number][] = [
   ['일 14:00', 0, 14 * 3600],
   ['토 17:00', 6, 17 * 3600],
   ['평일 08:30', 2, 8.5 * 3600],
+  ['토 21:40', 6, 21 * 3600 + 40 * 60],
 ];
 const data = (f: string) => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), 'utf8'));
 const board = decodeBoard(data('board.json'));
@@ -104,6 +109,23 @@ for (let a = 0; a < graph.adj.length; a++)
     }
   });
 
+// 신호 판정용: 횡단보도 면 고리를 20m 칸에 넣어 둔다
+const xwGrid = new Map<number, number[]>();
+board.crosswalks.forEach((c, i) => {
+  for (const r of c.rings) {
+    let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+    for (let k = 0; k < r.length; k += 2) (x0 = Math.min(x0, r[k])), (x1 = Math.max(x1, r[k])), (z0 = Math.min(z0, r[k + 1])), (z1 = Math.max(z1, r[k + 1]));
+    for (let cx = Math.floor(x0 / 20); cx <= Math.floor(x1 / 20); cx++) for (let cz = Math.floor(z0 / 20); cz <= Math.floor(z1 / 20); cz++) (xwGrid.get(cx * 1000 + cz) ?? xwGrid.set(cx * 1000 + cz, []).get(cx * 1000 + cz)!).push(i);
+  }
+});
+const inRing = (r: ArrayLike<number>, x: number, z: number) => {
+  let c = false;
+  for (let a = 0, j = r.length - 2; a < r.length; j = a, a += 2) if (r[a + 1] > z !== r[j + 1] > z && x < r[a] + ((z - r[a + 1]) / (r[j + 1] - r[a + 1])) * (r[j] - r[a])) c = !c;
+  return c;
+};
+/** (x, z)가 든 횡단보도 번호(없으면 −1) */
+const xwAt = (x: number, z: number) => (xwGrid.get(Math.floor(x / 20) * 1000 + Math.floor(z / 20)) ?? []).find((i) => board.crosswalks[i].rings.some((r) => inRing(r, x, z))) ?? -1;
+
 function run(dow: number, tod: number, seed: number) {
   const provider = makeSimProvider();
   const start = { tod, dow, doy: 320 };
@@ -171,7 +193,7 @@ function run(dow: number, tod: number, seed: number) {
   };
   const causes: Record<string, Record<string, number>> = { major: {}, building: {}, offLand: {} };
   const note = (kind: string, x: number, z: number) => {
-    if (ONLY < 0) return;
+    if (!WHY) return;
     const k = why(x, z);
     causes[kind][k] = (causes[kind][k] ?? 0) + 1;
   };
@@ -184,6 +206,16 @@ function run(dow: number, tod: number, seed: number) {
   const zoneWant = new Array(ZONE_IDS.length).fill(0);
   const zoneHome = new Array(ZONE_IDS.length).fill(0);
   const hot = new Map<string, number>();
+  // 들어섬 판정: 사람마다 지난 판정 때 큰길 찻길 위였는가, 든 횡단보도, 그 횡단보도에 초록불에 들어섰는가, 빨간불 아래 있던 시간
+  const wasMajor = new Map<number, boolean>();
+  const wasXw = new Map<number, number>();
+  const redOn = new Map<number, number>();
+  const left = new Map<number, [number, number]>(); // 사람마다 마지막으로 나온 횡단보도와 시각
+  const midRed = new Set<number>();
+  let redEntry = 0;
+  let redPass = 0;
+  const redWhy: Record<string, number> = {};
+  let majorEntry = 0;
   const steps = Math.round((30 + MEAS) / DT);
   for (let s = 0; s < steps; s++) {
     now = { ...now, tod: (now.tod + DT) % 86400 };
@@ -197,6 +229,62 @@ function run(dow: number, tod: number, seed: number) {
       walkers.alight(key, Math.floor(Math.random() * 4), dx, dz);
     }
     walkers.step(DT, now);
+    if (s * DT >= 30 && s % 3 === 0) {
+      const w = walkers.w;
+      const seen = new Set<number>();
+      for (let i = 0; i < w.n; i++) {
+        if (w.fade[i] < 0.3) continue;
+        const id = w.id[i];
+        seen.add(id);
+        const x = w.x[i];
+        const z = w.z[i];
+        const xi = xwAt(x, z);
+        const site = xi >= 0 ? signals.crossSite[xi] : -1;
+        if (site >= 0) {
+          const c = board.crosswalks[xi];
+          const sg = (x - c.x) * c.ux + (z - c.z) * c.uz < 0 ? 1 : -1; // 들어선 쪽 반대 끝으로 건넌다
+          const red = signals.state(site, signals.groupOf(site, Math.atan2(c.uz * sg, c.ux * sg)), now.tod) === RED;
+          // 같은 횡단보도를 나온 지 5초 안에 다시 들어선 것(두 단 횡단보도의 섬, 칠한 면 가장자리를 따라 건넘)은 같은 건넘이다
+          const back = left.get(id);
+          const again = back !== undefined && back[0] === xi && now.tod - back[1] < 5;
+          if (wasXw.has(id) && wasXw.get(id) !== xi && !again) {
+            // 건너는 방향(축과 45° 안)으로 들어선 사람만 센다. 골목을 따라 걷다 골목을 가로지르는 횡단보도 면을 지나는 사람은 따로 센다
+            const along = Math.abs(Math.cos(w.yaw[i]) * c.ux + Math.sin(w.yaw[i]) * c.uz) > 0.7071;
+            if (red && along) {
+              redEntry++;
+              if (WHY) {
+                // 까닭: 이 횡단보도의 연결 위(1.5m 안)인가, 다른 횡단보도의 연결 위인가, 연결 밖(걷는 선·잇는 선)인가
+                let k = '연결 밖';
+                for (const l of graph.links) {
+                  const dx = l.pbx - l.pax;
+                  const dz = l.pbz - l.paz;
+                  const t = Math.max(0, Math.min(1, ((x - l.pax) * dx + (z - l.paz) * dz) / (dx * dx + dz * dz || 1)));
+                  if (Math.hypot(l.pax + dx * t - x, l.paz + dz * t - z) < 1.5) k = l.xw === xi ? '이 횡단보도 연결' : '다른 횡단보도 연결';
+                  if (k === '이 횡단보도 연결') break;
+                }
+                if (k === '연결 밖') {
+                  const e = graph.nearestEdge(x, z);
+                  if (e) k += ` (${['보도', '골목', '보행로', '잇는 선'][graph.kind[e[0]][e[1]]]} 선 ${e[3].toFixed(1)}m)`;
+                }
+                redWhy[k] = (redWhy[k] ?? 0) + 1;
+              }
+            }
+            else if (red) redPass++;
+            redOn.set(id, red ? -1 : 0);
+          } else if (red && (redOn.get(id) ?? -1) >= 0) {
+            redOn.set(id, redOn.get(id)! + 0.1);
+            if (redOn.get(id)! > 4) midRed.add(id);
+          }
+        }
+        if (xi < 0 && (wasXw.get(id) ?? -1) >= 0) left.set(id, [wasXw.get(id)!, now.tod]);
+        wasXw.set(id, xi);
+        const f = bitsAt(B, x, z);
+        const major = (f & MAJOR) !== 0 && !(f & XW) && !onIsland(x, z) && !tunnels.some(([tx, tz]) => Math.hypot(tx - x, tz - z) < 20);
+        if (major && wasMajor.get(id) === false && signals.siteNear(x, z, 30) < 0) majorEntry++;
+        wasMajor.set(id, major);
+      }
+      for (const id of [...wasMajor.keys()]) if (!seen.has(id)) wasMajor.delete(id), wasXw.delete(id), redOn.delete(id), left.delete(id);
+    }
     if (s * DT < 30 || s % 30) continue;
     c.samples++;
     c.carV += cars.meanSpeed();
@@ -243,13 +331,18 @@ function run(dow: number, tod: number, seed: number) {
     carV: c.carV / S,
     zones: ZONE_IDS.map((id, z) => [id, Math.round(zoneHome[z] / S), Math.round(zoneWant[z] / S), Math.round((100 * zoneHome[z]) / zoneWant[z] - 100)]),
     zonesAt: ZONE_IDS.map((id, z) => [id, Math.round(zoneHave[z] / S), Math.round((100 * zoneHave[z]) / zoneWant[z] - 100)]),
+    redEntry,
+    redPass,
+    redWhy: Object.entries(redWhy).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', '),
+    midRed: midRed.size,
+    majorEntry,
     causes: Object.fromEntries(Object.entries(causes).map(([k, o]) => [k, Object.entries(o).sort((a, b) => b[1] - a[1]).map(([w, v]) => `${w} ${(v / S).toFixed(1)}`).join(', ')])),
     hot: [...hot.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => `${k}:${(v / S).toFixed(1)}`),
   };
 }
 
 console.log(`보도 선 1m 점 ${lineN}개 가운데 보도 면 위 ${((100 * lineIn) / Math.max(1, lineN)).toFixed(1)}%`);
-for (const [name, dow, tod] of CASES.filter((_, q) => ONLY < 0 || q === ONLY))
+for (const [name, dow, tod] of CASES.filter((_, q) => (ONLY < 0 ? q < 3 : q === ONLY)))
   for (const seed of SEEDS) {
     const t0 = performance.now();
     const r = run(dow, tod, seed);
@@ -260,5 +353,7 @@ for (const [name, dow, tod] of CASES.filter((_, q) => ONLY < 0 || q === ONLY))
     console.log(`  구역에서 나온 사람(실제/목표/차이%): ${r.zones.map((z) => z.join(' ')).join(', ')}`);
     console.log(`  참고, 구역 원 안에 있는 사람(실제/차이%): ${r.zonesAt.map((z) => z.join(' ')).join(', ')}`);
     console.log(`  큰길 찻길 위가 많은 25m 칸: ${r.hot.join(', ')}`);
-    if (ONLY >= 0) for (const [k, v] of Object.entries(r.causes)) console.log(`  ${k} 까닭: ${v}`);
+    console.log(`  신호 횡단보도에 빨간불에 건너는 방향으로 들어섬 ${r.redEntry}회(다른 방향으로 지나감 ${r.redPass}회), 초록불에 들어서 건너는 중 빨간불 4초 넘게 ${r.midRed}명, 신호 교차로 밖에서 큰길 찻길에 들어섬 ${r.majorEntry}회(${MEAS}초)`);
+    if (WHY) console.log(`  빨간불에 들어선 까닭: ${r.redWhy}`);
+    if (WHY) for (const [k, v] of Object.entries(r.causes)) console.log(`  ${k} 까닭: ${v}`);
   }

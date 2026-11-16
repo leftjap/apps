@@ -87,3 +87,13 @@ describe('걷는 길 그래프: 골목과 보행로', () => {
     for (const [, z] of pts) expect(Math.abs(z)).toBeGreaterThan(11.4);
   });
 });
+
+describe('걷는 길 그래프: 횡단보도 면', () => {
+  it('기다리는 자리와 잇는 선은 칠한 횡단보도 면 밖에 둔다(면이 보도까지 나와 있어도)', () => {
+    // 칠한 면이 축 양 끝 9m 까지(찻길 반폭 7.1m 보다 1.9m 더) 나와 있다
+    const g = walkNet([road([[0, 0], [200, 0]], { cls: 2, lanes: 4 })], { crosswalks: [crosswalk(100, 0, 0, 1, 9, [], true, 4)] });
+    expect(g.links.length).toBe(1);
+    expect(Math.min(Math.abs(g.links[0].paz), Math.abs(g.links[0].pbz))).toBeGreaterThan(9);
+    for (const [x, z] of samples(g)) expect(Math.abs(x - 100) > 2 || Math.abs(z) > 9).toBe(true);
+  });
+});

@@ -127,7 +127,7 @@ describe('횡단보도로 큰길 건너기', () => {
   const busyCrossing = () => {
     const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })];
     const cars = buildCarGraph(rs);
-    const xws = [crosswalk(0, 0, 0, 1, 9, [[0, 0]], true, 6)];
+    const xws = [crosswalk(0, 0, 0, 1, 7.1, [[0, 0]], true, 6)]; // 칠한 면은 연석까지
     const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
     const g = walkNet(rs, { crosswalks: xws });
     const sim = makeWalkers(g, exits, fixedProvider(1, 0), 4, 160, undefined, signals);
