@@ -1,11 +1,12 @@
 // 횡단보도·신호등. 횡단보도는 서울시 교통안전시설물 횡단보도 면(구운 모형판의 crosswalks)을 실제 자리·방향·폭으로 칠한다.
 // 정지선은 노면 표시(src/render/marks.ts)가 서울시 차선 자료 그대로 긋는다.
 // 신호등: 차량 신호는 정지선(서울시 차선 자료) 오른쪽 끝 보도에 기둥을 세우고 찻길 위로 뻗은 팔 끝에 가로 3구 등을 단다.
+// 좌회전 신호가 있는 진입로(서울시 신호등 자료의 4색등)는 4구 등(빨강·노랑·좌회전 화살표·초록)이다. 등 상태는 그 진입로 직진 현시(원)와 좌회전 현시(화살표)를 따른다.
 // 보행 신호는 보행 신호 횡단보도 양 끝에 2구(빨강 위, 초록 아래) 기둥으로 세운다. 불빛은 매 프레임 시뮬레이션 신호 상태로 바꾼다.
 import * as THREE from 'three';
 import type { Crosswalk } from '../data/board.ts';
 import { laneOff, leftEdge, rightEdge, type Edge } from '../sim/graph.ts';
-import { GREEN, RED, type Signals } from '../sim/signals.ts';
+import { GREEN, LEFT, RED, STRAIGHT, YELLOW, type Approach, type Signals } from '../sim/signals.ts';
 import { pointAt } from '../poly.ts';
 import { material } from './env.ts';
 import { sizeGlsl } from './size.ts';
@@ -38,9 +39,21 @@ export interface CarPole {
   yaw: number;
   /** 팔 길이(m) */
   arm: number;
+  /** 등 상태: 원(0 초록, 1 노랑, 2 빨강) + 3 × 좌회전 화살표 켬(0·1) */
   state: (tod: number) => number;
   /** 정지선 자료에서 자리를 잡았다(아니면 정지 자리로 어림) */
   fromData: boolean;
+  /** 4구 등(좌회전 화살표): 좌회전 현시가 따로 있는 진입로 */
+  arrow: boolean;
+}
+
+/** 진입로 ap 신호등의 등 상태: 원은 직진 현시, 좌회전 현시 노란불이면 원도 노랑, 화살표는 좌회전 현시 초록 */
+export function lampState(signals: Signals, ap: Approach, tod: number): number {
+  const s = signals.moveState(ap, STRAIGHT, tod);
+  const l = ap.left === 1 ? signals.moveState(ap, LEFT, tod) : RED;
+  const separate = ap.left === 1 && signals.list[ap.c].turn[ap.group] >= 0;
+  const circle = separate && s === RED && l === YELLOW ? YELLOW : s;
+  return circle + (separate && l === GREEN ? 3 : 0);
 }
 export interface PedPole {
   /** 횡단보도 번호 */
@@ -111,7 +124,7 @@ export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswa
     const x = rx + ux * 0.8;
     const z = rz + uz * 0.8;
     const arm = Math.min(10, 0.8 + len * 0.5);
-    car.push({ edge: id, x, z, hx: x - ux * arm, hz: z - uz * arm, yaw: Math.atan2(-ux, uz), arm, state: (tod) => signals.state(ap.c, ap.group, tod), fromData: best < 6 });
+    car.push({ edge: id, x, z, hx: x - ux * arm, hz: z - uz * arm, yaw: Math.atan2(-ux, uz), arm, state: (tod) => lampState(signals, ap, tod), fromData: best < 6, arrow: ap.left === 1 && signals.list[ap.c].turn[ap.group] >= 0 });
   }
   const ped: PedPole[] = [];
   crosswalks.forEach((c, i) => {
@@ -179,6 +192,16 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
     lamp(0, 2),
     lamp(0.42, 3),
   ]);
+  // 4구 등: 왼쪽(팔 쪽, −z)부터 빨강·노랑·좌회전 화살표(왼쪽을 가리키는 세모)·초록
+  const carGeo4 = merge([
+    part(new THREE.CylinderGeometry(0.11, 0.14, 5.9, 6, 1, true).translate(0, 2.95, 0), 0),
+    part(new THREE.BoxGeometry(0.1, 0.12, 1).translate(0, 5.8, -0.5), 4),
+    part(new THREE.BoxGeometry(0.42, 0.42, 1.72).translate(0, 5.55, 0), 5),
+    lamp(-0.63, 1),
+    lamp(-0.21, 2),
+    part(new THREE.CircleGeometry(0.16, 3).rotateZ(Math.PI).rotateY(-Math.PI / 2).translate(-0.24, 5.55, 0.21), 6),
+    lamp(0.63, 3),
+  ]);
   // 보행 신호: 3m 기둥에 2구 상자(빨강 위, 초록 아래)
   const pedGeo = merge([
     part(new THREE.CylinderGeometry(0.06, 0.07, 2.9, 5, 1, true).translate(0, 1.45, 0), 0),
@@ -215,13 +238,16 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
           varying vec3 vN; varying float vPart; varying float vState; varying float vDist;
           void main() {
             vec3 col = lit(vec3(0.22, 0.24, 0.27), normalize(vN));
-            // 1 빨강, 2 노랑, 3 초록. 켜진 불만 밝다(상태 0 초록, 1 노랑, 2 빨강)
+            // 1 빨강, 2 노랑, 3 초록, 6 좌회전 화살표. 켜진 불만 밝다(상태: 원 0 초록·1 노랑·2 빨강, 화살표가 켜지면 3 을 더한다)
+            float circle = mod(vState + 0.1, 3.0);
+            float arrowOn = step(2.5, vState);
             float red = step(0.5, vPart) * step(vPart, 1.5);
             float yel = step(1.5, vPart) * step(vPart, 2.5);
             float grn = step(2.5, vPart) * step(vPart, 3.5);
-            float on = red * step(1.5, vState) + yel * step(0.5, vState) * step(vState, 1.5) + grn * step(vState, 0.5);
-            vec3 lamp = red * vec3(1.0, 0.15, 0.1) + yel * vec3(1.0, 0.75, 0.1) + grn * vec3(0.2, 1.0, 0.55);
-            col = mix(col, lamp * mix(0.18, 1.3 + uNight * 0.6, on), red + yel + grn);
+            float arw = step(5.5, vPart) * step(vPart, 6.5);
+            float on = red * step(1.5, circle) + yel * step(0.5, circle) * step(circle, 1.5) + grn * step(circle, 0.5) + arw * arrowOn;
+            vec3 lamp = red * vec3(1.0, 0.15, 0.1) + yel * vec3(1.0, 0.75, 0.1) + (grn + arw) * vec3(0.2, 1.0, 0.55);
+            col = mix(col, lamp * mix(0.18, 1.3 + uNight * 0.6, on), red + yel + grn + arw);
             gl_FragColor = vec4(fogged(col, vDist), 1.0);
           }`,
       }),
@@ -230,16 +256,21 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
     group.add(mesh);
     return inst;
   };
-  const carInst = meshOf(carGeo, poles.car);
+  const car3 = poles.car.filter((p) => !p.arrow);
+  const car4 = poles.car.filter((p) => p.arrow);
+  const carInst = meshOf(carGeo, car3);
+  const car4Inst = meshOf(carGeo4, car4);
   const pedInst = meshOf(pedGeo, poles.ped);
 
   return {
     group,
     poles,
     update(tod: number) {
-      poles.car.forEach((p, i) => (carInst.arr.aState[i] = p.state(tod)));
+      car3.forEach((p, i) => (carInst.arr.aState[i] = p.state(tod)));
+      car4.forEach((p, i) => (car4Inst.arr.aState[i] = p.state(tod)));
       poles.ped.forEach((p, i) => (pedInst.arr.aState[i] = pedState(signals, p.xw, crosswalks[p.xw], tod)));
       carInst.attr.aState.needsUpdate = true;
+      car4Inst.attr.aState.needsUpdate = true;
       pedInst.attr.aState.needsUpdate = true;
     },
   };

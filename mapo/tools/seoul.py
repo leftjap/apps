@@ -4,8 +4,10 @@
 #  - 서울특별시 자치구 횡단보도 정보(OA-22906): 횡단보도 점(2026-03 기준, 경위도). 보행등 유무
 #  - 서울시 교통안전시설물 안전지대 정보(OA-15533): 안전지대 면(A005_A, 2025-04 기준, EPSG:5186)
 #  - 서울시 교통안전시설물 방향표시 정보(OA-15536): 노면 화살표 점(A055_P, 2026-09 기준, EPSG:5186). 종류 코드와 각도
+#  - 서울시 신호등 관련 정보(OA-15546): 신호등 부착대 선분(A057_L, 2023-06 기준 CSV, EPSG:5186). 신호등 종류(3색등·4색등·보행등)와 지주관리번호
+#  - 서울시 안전표지 관련 정보(OA-15540): 표지 점(A064_P, 2026-02 기준, EPSG:5186). 표지 번호(도로교통법 시행규칙 별표6, 329 비보호좌회전 등)와 지주관리번호
 # 모두 공공누리 제1유형(출처 표시). 실행: python3 tools/seoul.py  (표준 라이브러리만 쓴다. 받은 파일은 tools/raw/seoul/ 에 둔다)
-import csv, io, json, math, os, struct, sys, urllib.parse, urllib.request, zipfile
+import csv, io, json, math, os, re, struct, sys, urllib.parse, urllib.request, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(HERE, 'raw')
@@ -71,9 +73,13 @@ def download(inf_id, inf_seq, seq, name):
         return path
     body = urllib.parse.urlencode({'infId': inf_id, 'infSeq': inf_seq, 'seq': seq}).encode()
     req = urllib.request.Request('https://datafile.seoul.go.kr/bigfile/iot/inf/nio_download.do?&useCache=false', data=body, headers={'User-Agent': 'mapo-live-3d-bake/0.1'})
-    with urllib.request.urlopen(req, timeout=900) as res:
-        data = res.read()
-        disp = res.headers.get('Content-Disposition', '')
+    for _ in range(3):
+        with urllib.request.urlopen(req, timeout=900) as res:
+            data = res.read()
+            disp = res.headers.get('Content-Disposition', '')
+            size = int(res.headers.get('Content-Length') or len(data))
+        if len(data) >= size:  # 큰 파일은 끝이 잘려 오는 때가 있다
+            break
     if 'attachment' not in disp:
         sys.exit(f'{inf_id} 파일 {seq} 을 받지 못했다(파일 번호가 바뀌었을 수 있다): {data[:200]!r}')
     open(path, 'wb').write(data)
@@ -214,8 +220,30 @@ for row, pt in zip(dbf_rows(zip_member(arrow_zip, '.dbf')), shp_points(zip_membe
     if math.hypot(*to_xz(lat, lon)) < R:
         arrows.append({'kind': row['A055_KND_C'], 'drn': int(row['DRN'] or 0), 'eve': row['EVE_CDE'], 'lat': r6(lat), 'lon': r6(lon)})
 
+# ── 차량 신호등 부착대(3색등·4색등·버스전용 3색등)와 같은 지주·둘레의 회전 관련 표지 ──
+lamp_csv = download('OA-15546', 3, 7, 'signal-lamps.csv')
+lamps = []
+rows = list(csv.reader(io.StringIO(open(lamp_csv, 'rb').read().decode('cp949'))))
+ix = {k: i for i, k in enumerate(rows[0])}
+for row in rows[1:]:
+    if row[ix['신호등종류']] not in ('002', '003', '005', '006', '022') or row[ix['상태']] == '':
+        continue
+    nums = [float(v) for v in re.findall(r'-?\d+(?:\.\d+)?', row[ix['공간데이터']].split('ORDINATE_ARRAY')[-1])]
+    if len(nums) < 4 or not near_board(nums[0], nums[1]):
+        continue
+    (x0, z0), (x1, z1) = [to_xz(*tm_to_ll(nums[k], nums[k + 1])) for k in (0, len(nums) - 2)]
+    lamps.append({'kind': row[ix['신호등종류']], 'pole': row[ix['지주관리번호']], 'eve': row[ix['고가']], 'p': [round(x0, 2), round(z0, 2), round(x1, 2), round(z1, 2)]})
+sign_zip = download('OA-15540', 3, 14, 'signs.zip')
+signs = []
+for row, pt in zip(dbf_rows(zip_member(sign_zip, '.dbf')), shp_points(zip_member(sign_zip, '.shp'))):
+    if not pt or row['MRK_NUM'] not in ('213', '214', '216', '311', '329', '330') or not near_board(*pt):
+        continue
+    x, z = to_xz(*tm_to_ll(*pt))
+    signs.append({'num': row['MRK_NUM'], 'pole': row['A062_MGRNU'], 'rmk': row['RMK'], 'x': round(x, 2), 'z': round(z, 2)})
+
+json.dump({'lamps': lamps, 'signs': signs}, open(os.path.join(RAW, 'seoul-signals.json'), 'w'), ensure_ascii=False)
 json.dump({'zones': zones}, open(os.path.join(RAW, 'seoul-safety.json'), 'w'), ensure_ascii=False)
 json.dump({'arrows': arrows}, open(os.path.join(RAW, 'seoul-arrows.json'), 'w'), ensure_ascii=False)
 json.dump({'areas': areas, 'points': extra}, open(os.path.join(RAW, 'seoul-crosswalks.json'), 'w'), ensure_ascii=False)
 json.dump({'lanes': lanes}, open(os.path.join(RAW, 'seoul-lanes.json'), 'w'), ensure_ascii=False)
-print(f'횡단보도 면 {len(areas)}개(보행등 있음 {sum(1 for a in areas if a["sig"])}, 점 자료와 못 이은 것 {sum(1 for a in areas if a["sig"] is None)}), 면 없는 점 {len(extra)}개, 차선 {len(lanes)}줄, 안전지대 {len(zones)}개, 노면 화살표 {len(arrows)}개', file=sys.stderr)
+print(f'횡단보도 면 {len(areas)}개(보행등 있음 {sum(1 for a in areas if a["sig"])}, 점 자료와 못 이은 것 {sum(1 for a in areas if a["sig"] is None)}), 면 없는 점 {len(extra)}개, 차선 {len(lanes)}줄, 안전지대 {len(zones)}개, 노면 화살표 {len(arrows)}개, 차량 신호등 {len(lamps)}개, 회전 표지 {len(signs)}개', file=sys.stderr)

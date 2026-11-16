@@ -1,11 +1,18 @@
 // 신호 교차로. 중앙분리대가 있는 길은 OSM 에서 한 방향씩 따로 그려져 한 교차로가 노드 여러 개로 나뉘므로, 35m 안의 교차 노드를 하나로 묶는다.
-// 묶음으로 들어오는 길을 방향에 따라 두 무리로 나누고, 90초 주기로 번갈아 초록불을 준다(큰길 쪽 초록이 더 길다). 신호는 시각만의 함수다.
-// 큰길을 따라 이어지는 신호는 초록불 물결이 되게 시각을 맞춘다.
+// 묶음으로 들어오는 길(진입로)을 방향에 따라 두 무리(축)로 나누고, 움직임(직진·좌회전·우회전·유턴) 단위로 현시를 정한다(재작업 W18, 설계 문서 42절).
+//  - 현시 순서는 한국 표준 동시신호(직진 뒤 좌회전): 무리 0 직진(+우회전) → 무리 0 좌회전(+유턴) → 무리 1 직진 → 무리 1 좌회전. 현시마다 노랑 3초·전체 빨강 2초.
+//    서로 엇갈리는 움직임(좌회전과 마주 오는 직진, 두 축의 직진)은 같은 초록에 들지 않는다.
+//  - 진입로마다 좌회전 방식은 서울시 신호등 자료(4색등 = 좌회전 화살표)와 안전표지 자료(329 비보호좌회전, 214 좌회전금지, 311 유턴, 216 유턴금지)로 정한다.
+//    4색등이면 좌회전 현시, 비보호 표지면 직진 초록에 마주 오는 차를 기다렸다가, 3색등에 비보호 표지가 없으면 좌회전하지 않는다(노면에 좌회전 화살표가 있으면 비보호로 본다).
+//    직진 출구가 없는 진입로(T 자 교차로의 곁길)는 그 무리 현시에 좌·우회전을 함께 한다. 신호등 자료와 짝을 못 찾은 진입로는 노면 좌회전 화살표가 있으면 좌회전 현시, 없으면 비보호다.
+//  - 우회전은 그 무리 직진 초록에 가고, 빨간불에는 멈춘 뒤 건너는 횡단보도(다른 축 직진 현시에 사람이 건넌다)가 빨간불일 때만 간다(cars.ts).
+//  - 보행 신호: 축 g 에 나란한 횡단보도는 무리 g 직진 현시에 건넌다(그 횡단보도를 가로지르는 차는 그 무리 우회전·비보호 좌회전뿐이고, 사람에게 양보한다).
+//    공개 함수 state·greenLeft(c, group)·groupOf·crossGroup·crossSite 의 뜻은 그대로다(무리 group 직진 현시 = 그 축에 나란한 보행 신호).
+//  - 신호 시각(현시 시간)은 공개 자료가 없어 길 중요도로 나눈다. 모든 신호가 같은 주기를 쓰고, 큰길을 따라 직진 현시끼리 초록불 물결(11m/s)을 맞춘다.
 // 신호를 둘 곳: 횡단보도 자료가 있으면 보행 신호 횡단보도(자치구 횡단보도 정보의 보행등)가 25m 안에 있는 교차로와,
 // 교차로가 아닌 곳의 보행 신호 횡단보도(굽기에서 그 자리에서 길 조각을 끊어 두었다). 자료가 없으면 큰길(주간선·보조간선)이 낀 교차로.
-// 신호 시각은 실제와 다르다.
 import type { Crosswalk } from '../data/board.ts';
-import { leftEdge, rightEdge, type Edge } from './graph.ts';
+import { headingNear, laneOff, leftEdge, rightEdge, turnAngle, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
 import { laneStops } from './stops.ts';
 import { pointAt } from '../poly.ts';
@@ -15,14 +22,20 @@ export const GREEN = 0;
 export const YELLOW = 1;
 export const RED = 2;
 
-const CYCLE = 90;
-/** [무리 0 초록 끝, 노랑 끝, 전체 빨강 끝, 무리 1 초록 끝, 노랑 끝] (초). 교차로마다 두 무리의 초록 시간을 길 중요도로 다시 나눈다 */
-const PLAN = [40, 43, 45, 85, 88];
-/** 교차로 신호 한 주기의 초록 시간 합(노랑 3초·전체 빨강 2초씩을 뺀 나머지)과, 한 무리의 가장 짧은 초록 시간 */
-const GREENS = 80;
+/** 움직임: 1 좌회전, 2 직진, 4 우회전, 8 유턴(graph.ts 노면 화살표 비트와 같다) */
+export const LEFT = 1;
+export const STRAIGHT = 2;
+export const RIGHT = 4;
+export const UTURN = 8;
+
+export const CYCLE = 120;
+const AMBER = 3;
+const CLEAR = 2;
+/** 직진 현시의 가장 짧은 초록(사람이 큰길을 건널 만큼)과 좌회전 현시 초록(좌회전 차로 수로 늘린다) */
 const MIN_GREEN = 24;
-/** 길 중간 횡단보도처럼 무리 0 이 차, 무리 1 이 사람뿐인 신호: 차 60초, 사람 22초 */
-const PLAN_WALK = [60, 63, 65, 87, 90];
+const LEFT_GREEN = [10, 13, 16];
+/** 길 중간 횡단보도처럼 차와 사람만 번갈아 가는 신호: 사람 초록 */
+const WALK_GREEN = 25;
 /** 신호 사이를 달리는 차의 속도(m/s). 신호마다 위쪽 신호에서 이 속도로 온 차가 초록불에 닿게 시각을 맞춘다 */
 const WAVE = 11;
 const JOIN = 35;
@@ -38,6 +51,22 @@ export interface Approach {
   setback: number;
   /** 구간 끝에서 횡단보도 가운데까지 거리(m) */
   crosswalk: number;
+  /** 좌회전: 0 하지 않음, 1 좌회전 현시(화살표), 2 비보호(직진 초록에 마주 오는 차를 기다린다) */
+  left: number;
+  /** 유턴: 0 하지 않음, 1 좌회전 현시에, 2 직진 초록에 양보하며 */
+  uturn: number;
+  /** 맞춘 차량 신호등이 4색등(좌회전 화살표)인가 */
+  arrow: boolean;
+  /** 이 진입로에서 나갈 수 있는 움직임 비트 */
+  moves: number;
+}
+
+/** 현시 하나: 무리 g 의 움직임 kinds(비트)가 green 초 동안 초록 */
+interface Phase {
+  g: number;
+  kinds: number;
+  start: number;
+  green: number;
 }
 
 export interface SignalSite {
@@ -48,14 +77,31 @@ export interface SignalSite {
   offset: number;
   /** 묶음에 속한 노드 좌표 열쇠들 */
   nodes: Set<string>;
+  /** 현시들(주기 안 순서대로). 길 중간 신호는 [차, 사람] */
+  phases: Phase[];
+  /** 무리마다 직진 현시 번호와 좌회전 현시 번호(없으면 −1) */
+  through: number[];
+  turn: number[];
+  /** 길 중간 보행 신호(무리 0 이 차, 무리 1 이 사람) */
+  walk: boolean;
+  /** 무리별 직진 현시(= 보행 신호) 초록 길이를 옛 모양으로: plan[0] 이 무리 0, plan[3] − plan[2] 가 무리 1(사람 쪽 walkers.ts 가 읽는다) */
   plan: number[];
 }
 
-/** 신호를 정할 때 쓰는 자료(구운 모형판의 횡단보도와 정지선) */
+/** 서울시 신호등 부착대와 표지(public/data/signals.json, tools/signals.ts 가 굽는다) */
+export interface SignalLamps {
+  /** [지주 x, z, 팔 끝 x, z, 종류(3 3색등, 4 4색등, 5 버스 3색등), 같은 지주 표지 비트] 6개씩 */
+  lamps: number[];
+  /** 신호등 지주에 달리지 않은 표지 [x, z, 표지 번호] 3개씩 */
+  signs: number[];
+}
+
+/** 신호를 정할 때 쓰는 자료(구운 모형판의 횡단보도와 정지선, 신호등·표지) */
 export interface SignalData {
   crosswalks: Crosswalk[];
   /** [x0, z0, x1, z1, ...] */
   stopLines: Float32Array;
+  lamps?: SignalLamps;
 }
 
 /** 노드 좌표 열쇠(신호 묶음의 nodes 에 든 값) */
@@ -70,6 +116,13 @@ const axisGap = (a: number, b: number) => {
   const d = Math.abs((((a - b) % Math.PI) + Math.PI) % Math.PI);
   return Math.min(d, Math.PI - d);
 };
+const wrapPi = (a: number) => {
+  while (a > Math.PI) a -= 2 * Math.PI;
+  while (a < -Math.PI) a += 2 * Math.PI;
+  return a;
+};
+/** 진입로 끝 방향 h0 에서 나간 방향 h1 로의 움직임 */
+export const moveOfTurn = (dh: number) => (Math.abs(dh) > (150 * Math.PI) / 180 ? UTURN : Math.abs(dh) < Math.PI / 4 ? STRAIGHT : dh < 0 ? LEFT : RIGHT);
 
 export function makeSignals(edges: Edge[], data?: SignalData) {
   const boxes = makeJunctions(edges);
@@ -135,6 +188,71 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
           if (Math.abs(e.p[v] - c.verts[k]) < 0.05 && Math.abs(e.p[v + 2] - c.verts[k + 1]) < 0.05) return Math.max(2, e.len - e.cum[v / 3] + c.wid / 2 + 1);
     return guess;
   };
+
+  // 진입로 e 에서 갈 수 있는 움직임: 묶음 밖으로 나가는 구간까지 따라가(묶음 안 연결 구간 둘까지) 진입로 끝 방향과 나간 방향의 차로
+  const P = [0, 0, 0];
+  const exitHeading = (x: Edge) => headingNear(x, Math.min(x.len, 8));
+  function movesFrom(e: Edge, nodes: Set<string>): number {
+    let m = 0;
+    const h0 = headingNear(e, e.len);
+    const walk = (x: Edge, depth: number) => {
+      if (!nodes.has(key(...endOf(x))) || depth >= 2) {
+        m |= moveOfTurn(wrapPi(exitHeading(x) - h0));
+        return;
+      }
+      for (const k of x.next) walk(edges[k], depth + 1);
+    };
+    for (const k of e.next) walk(edges[k], 0);
+    return m;
+  }
+
+  // 신호등·표지 짝 찾기: 진입로 정지 자리에서 앞으로 −3~80m, 옆 −15~+12m 안의 차량 신호등 부착대 가운데
+  // 팔이 진행 방향 왼쪽으로 뻗은 것(건너편 오른쪽 지주에서 찻길 위로 뻗어 다가오는 차를 본다)
+  const lampData = data?.lamps;
+  function lampsFor(e: Edge, setback: number): { found: boolean; arrow: boolean; bits: number } {
+    const out = { found: false, arrow: false, bits: 0 };
+    if (!lampData) return out;
+    const s = Math.max(0, e.len - setback);
+    const seg = pointAt(e.p, e.cum, s, P);
+    const hx = e.p[seg * 3 + 3] - e.p[seg * 3];
+    const hz = e.p[seg * 3 + 5] - e.p[seg * 3 + 2];
+    const hl = Math.hypot(hx, hz) || 1;
+    const ux = hx / hl;
+    const uz = hz / hl;
+    const mid = (laneOff(e, 0, s) + laneOff(e, e.lanes - 1, s)) / 2;
+    const cx = P[0] - uz * mid;
+    const cz = P[2] + ux * mid;
+    const L = lampData.lamps;
+    for (let k = 0; k < L.length; k += 6) {
+      const ex = L[k + 2] - cx;
+      const ez = L[k + 3] - cz;
+      const along = ex * ux + ez * uz;
+      const lat = ex * -uz + ez * ux;
+      if (along < -3 || along > 80 || lat < -15 || lat > 12) continue;
+      const ax = L[k + 2] - L[k];
+      const az = L[k + 3] - L[k + 1];
+      const al = Math.hypot(ax, az) || 1;
+      if ((ax * uz - az * ux) / al < 0.7) continue;
+      if ((L[k] - cx) * -uz + (L[k + 1] - cz) * ux < lat) continue;
+      out.found = true;
+      if (L[k + 4] === 4) out.arrow = true;
+      out.bits |= L[k + 5];
+    }
+    // 지주에 달리지 않은 표지: 정지선 앞 25m 안 오른쪽 길가(2~15m)
+    const S = lampData.signs;
+    const BIT: Record<number, number> = { 329: 1, 311: 2, 216: 4, 214: 8 };
+    for (let k = 0; k < S.length; k += 3) {
+      if (!BIT[S[k + 2]]) continue;
+      const ex = S[k] - cx;
+      const ez = S[k + 1] - cz;
+      const along = ex * ux + ez * uz;
+      const lat = ex * -uz + ez * ux;
+      if (along < -25 || along > 5 || lat < 2 || lat > 15) continue;
+      out.bits |= BIT[S[k + 2]];
+    }
+    return out;
+  }
+
   for (const members of groups.values()) {
     const nodes = new Set(members.map((m) => m.k));
     // 묶음 밖에서 들어오는 길(간선도로·고속 진입로는 신호를 받지 않는다)
@@ -153,7 +271,11 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
       axis,
       offset: hash01(c * 7.31 + 1) * CYCLE,
       nodes,
-      plan: walkOnly ? PLAN_WALK : PLAN,
+      phases: [],
+      through: [-1, -1],
+      turn: [-1, -1],
+      walk: walkOnly,
+      plan: [],
     });
     into.forEach((e, i) => {
       // 가로지르는 길의 절반 폭 바깥에 횡단보도(폭 3.2m)를 두고, 그 앞에 정지선을 둔다
@@ -161,7 +283,20 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
       const half = Math.max(3, ...cross.map((o) => Math.max(Math.abs(leftEdge(o, o.len)), Math.abs(rightEdge(o, o.len)))));
       // 비스듬히 만나는 길은 교차로 상자가 길어지므로 정지선을 상자 앞까지 물린다
       const guess = Math.min(e.len - 2, Math.max(half + 4, boxes.rIn[e.id] + 0.5));
-      approach.set(e.id, { c, group: g[i], crosswalk: half + 1.6, setback: Math.min(e.len - 2, Math.max(setbackOf(e, guess), boxes.rIn[e.id] + 0.5)) });
+      const setback = Math.min(e.len - 2, Math.max(setbackOf(e, guess), boxes.rIn[e.id] + 0.5));
+      const moves = movesFrom(e, nodes);
+      const lp = lampsFor(e, setback);
+      const laneLeft = e.turns.some((m) => (m & 1) !== 0);
+      const laneU = e.turns.some((m) => (m & 8) !== 0);
+      let left = 0;
+      if (!(moves & LEFT) || lp.bits & 8) left = 0;
+      else if (lp.arrow || !(moves & STRAIGHT)) left = 1;
+      else if (lp.bits & 1) left = 2;
+      else if (!lp.found) left = laneLeft ? 1 : 2;
+      else left = laneLeft ? 2 : 0;
+      let uturn = 0;
+      if (moves & UTURN && !(lp.bits & 4) && (lp.bits & 2 || laneU)) uturn = left === 1 || (lp.arrow && left !== 2) ? 1 : 2;
+      approach.set(e.id, { c, group: g[i], crosswalk: half + 1.6, setback, left, uturn, arrow: lp.arrow, moves });
     });
   }
   // 교차로가 아닌 곳의 보행 신호 횡단보도: 그 꼭짓점에서 끝나는 큰길 구간들(교차로 신호에 이미 딸린 것은 빼고)
@@ -178,26 +313,91 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
         // 두 단 횡단보도처럼 한 횡단보도가 지나는 꼭짓점들은 한 신호로 묶는다
         c = crossSite[i] >= 0 ? crossSite[i] : list.length;
         if (c === list.length)
-          list.push({ x: xw.x, z: xw.z, axis: ((endHeading(into[0]) % Math.PI) + Math.PI) % Math.PI, offset: hash01(c * 7.31 + 1) * CYCLE, nodes: new Set(), plan: PLAN_WALK });
+          list.push({
+            x: xw.x,
+            z: xw.z,
+            axis: ((endHeading(into[0]) % Math.PI) + Math.PI) % Math.PI,
+            offset: hash01(c * 7.31 + 1) * CYCLE,
+            nodes: new Set(),
+            phases: [],
+            through: [-1, -1],
+            turn: [-1, -1],
+            walk: true,
+            plan: [],
+          });
         list[c].nodes.add(vk);
       }
       crossSite[i] = c;
-      for (const e of into) approach.set(e.id, { c, group: 0, crosswalk: xw.wid / 2, setback: Math.min(e.len - 2, setbackOf(e, xw.wid / 2 + 1)) });
+      for (const e of into) approach.set(e.id, { c, group: 0, crosswalk: xw.wid / 2, setback: Math.min(e.len - 2, setbackOf(e, xw.wid / 2 + 1)), left: 0, uturn: 0, arrow: false, moves: STRAIGHT | RIGHT | LEFT });
     }
   }
-  // 교차로 신호의 초록 시간: 두 무리에 들어오는 길의 중요도(차로 수 × 등급 무게)에 비례해 나눈다.
-  // 실제 서울 큰 교차로처럼 큰길 쪽이 더 길고, 작은 길 쪽도 사람이 큰길을 건널 만큼(24초)은 남긴다
+  // 현시와 초록 시간. 직진 현시는 두 무리에 들어오는 길의 중요도(차로 수 × 등급 무게)에 비례해 나누고(한 현시 최소 24초: 사람이 큰길을 건넌다),
+  // 좌회전 현시는 그 무리 좌회전 진입로의 화살표 차로 수(없으면 1)로 10~16초를 준다
   const weight = (e: Edge) => e.vol * (4 - Math.min(3, e.cls));
+  const byC: [Edge, Approach][][] = list.map(() => []);
+  for (const [id, ap] of approach) byC[ap.c].push([edges[id], ap]);
   list.forEach((site, c) => {
-    if (site.plan !== PLAN) return;
-    const w = [0, 0];
-    for (const [id, ap] of approach) if (ap.c === c) w[ap.group] += weight(edges[id]);
-    const g0 = Math.round(GREENS * Math.max(MIN_GREEN / GREENS, Math.min(1 - MIN_GREEN / GREENS, w[0] / (w[0] + w[1] || 1))));
-    site.plan = [g0, g0 + 3, g0 + 5, GREENS + 5, GREENS + 8];
+    if (site.walk) {
+      site.phases = [
+        { g: 0, kinds: STRAIGHT | RIGHT | LEFT | UTURN, start: 0, green: CYCLE - WALK_GREEN - 2 * (AMBER + CLEAR) },
+        { g: 1, kinds: 0, start: CYCLE - WALK_GREEN - AMBER - CLEAR, green: WALK_GREEN },
+      ];
+      site.through = [0, 1];
+      site.turn = [-1, -1];
+    } else {
+      const w = [0, 0];
+      const leftLanes = [0, 0];
+      const hasS = [false, false];
+      const hasL = [false, false];
+      for (const [e, ap] of byC[c]) {
+        w[ap.group] += weight(e);
+        if (ap.moves & STRAIGHT) hasS[ap.group] = true;
+        if (ap.left === 1 || ap.uturn === 1) {
+          hasL[ap.group] = true;
+          leftLanes[ap.group] = Math.max(leftLanes[ap.group], e.turns.filter((m) => (m & 1) !== 0).length || 1);
+        }
+      }
+      const phases: Phase[] = [];
+      for (const gg of [0, 1]) {
+        if (!byC[c].some(([, ap]) => ap.group === gg)) continue;
+        site.through[gg] = phases.length;
+        // 직진 출구가 하나도 없는 무리(T 자 교차로의 곁길)는 좌·우회전을 한 현시에
+        if (!hasS[gg]) {
+          phases.push({ g: gg, kinds: STRAIGHT | RIGHT | LEFT | UTURN, start: 0, green: 0 });
+          continue;
+        }
+        phases.push({ g: gg, kinds: STRAIGHT | RIGHT, start: 0, green: 0 });
+        if (hasL[gg]) {
+          site.turn[gg] = phases.length;
+          phases.push({ g: gg, kinds: LEFT | UTURN, start: 0, green: LEFT_GREEN[Math.min(2, leftLanes[gg] - 1)] });
+        }
+      }
+      // 직진 현시 초록 나누기
+      const lost = phases.length * (AMBER + CLEAR);
+      const turnG = phases.filter((p, k) => !site.through.includes(k)).reduce((s, p) => s + p.green, 0);
+      const rest = CYCLE - lost - turnG;
+      const thr = [0, 1].filter((gg) => site.through[gg] >= 0 && phases[site.through[gg]].green === 0);
+      const W = thr.reduce((s, gg) => s + w[gg], 0) || 1;
+      for (const gg of thr) phases[site.through[gg]].green = thr.length === 1 ? rest : Math.round(Math.max(MIN_GREEN, Math.min(rest - MIN_GREEN, (rest * w[gg]) / W)));
+      if (thr.length === 2) phases[site.through[1]].green = rest - phases[site.through[0]].green;
+      let t = 0;
+      for (const p of phases) {
+        p.start = t;
+        t += p.green + AMBER + CLEAR;
+      }
+      // 반올림으로 남은 몫은 마지막 현시에
+      if (phases.length) phases[phases.length - 1].green += CYCLE - t;
+      site.phases = phases;
+    }
+    // 보행 신호(무리 g 직진 현시)가 없는 무리는 첫 현시를 따른다
+    for (const gg of [0, 1]) if (site.through[gg] < 0) site.through[gg] = 0;
+    const g0 = site.phases[site.through[0]].green;
+    const g1 = site.phases[site.through[1]].green;
+    site.plan = [g0, g0 + AMBER, g0 + AMBER + CLEAR, g0 + AMBER + CLEAR + g1, g0 + 2 * AMBER + CLEAR + g1];
   });
   // 신호 시각 맞추기(초록불 물결): 신호의 들어오는 구간마다 길을 거슬러 올라가(같은 이름 길 먼저, 600m 안) 처음 만나는 다른 신호와 잇는다.
-  // 이은 길의 중요도가 큰 것부터 신호를 나무로 엮고(최대 신장 나무), 뿌리에서부터 '윗 신호의 그 방향 초록불이 켜진 뒤 WAVE 로 달린 차가 닿는 때'에
-  // 아랫 신호의 그 방향 초록불이 켜지게 한다. 두 방향 길은 한 방향만 맞는다(나무를 따라 내려가는 방향, 차로가 많은 쪽 먼저)
+  // 이은 길의 중요도가 큰 것부터 신호를 나무로 엮고(최대 신장 나무), 뿌리에서부터 '윗 신호의 그 방향 직진 초록이 켜진 뒤 WAVE 로 달린 차가 닿는 때'에
+  // 아랫 신호의 그 방향 직진 초록이 켜지게 한다. 두 방향 길은 한 방향만 맞는다(나무를 따라 내려가는 방향, 차로가 많은 쪽 먼저)
   const prev: number[][] = edges.map(() => []);
   for (const e of edges) for (const n of e.next) prev[n].push(e.id);
   type Link = { up: number; gu: number; dn: number; gd: number; d: number; w: number };
@@ -218,8 +418,9 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
       cur = p;
     }
   }
-  const phase = (c: number, g: number) => (g === 0 ? 0 : list[c].plan[2]);
-  /** 묶음 c 의 무리 g 초록불이 켜지는 시각(주기 안) */
+  /** 묶음 c 의 무리 g 직진 초록이 켜지는 주기 안 자리 */
+  const phase = (c: number, g: number) => list[c].phases[list[c].through[g]]?.start ?? 0;
+  /** 묶음 c 의 무리 g 직진 초록이 켜지는 시각(주기 안) */
   const startOf = (c: number, g: number) => phase(c, g) - list[c].offset;
   const wrap = (t: number) => ((t % CYCLE) + CYCLE) % CYCLE;
   links.sort((a, b) => b.w - a.w || a.d - b.d);
@@ -292,12 +493,54 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
     }
   });
 
-  /** 묶음 c 의 무리 group 신호(GREEN·YELLOW·RED) */
-  function state(c: number, group: number, tod: number): number {
-    const u = (((tod + list[c].offset) % CYCLE) + CYCLE) % CYCLE;
-    const P = list[c].plan;
-    if (group === 0) return u < P[0] ? GREEN : u < P[1] ? YELLOW : RED;
-    return u >= P[2] && u < P[3] ? GREEN : u >= P[3] && u < P[4] ? YELLOW : RED;
+  /** 묶음 c 의 k번 현시 상태와 초록 남은 시간 */
+  function phaseState(c: number, k: number, tod: number): number {
+    const p = list[c].phases[k];
+    if (!p) return RED;
+    const u = wrap(tod + list[c].offset - p.start);
+    return u < p.green ? GREEN : u < p.green + AMBER ? YELLOW : RED;
+  }
+  function phaseLeft(c: number, k: number, tod: number): number {
+    const p = list[c].phases[k];
+    if (!p) return 0;
+    const u = wrap(tod + list[c].offset - p.start);
+    return u < p.green ? p.green - u : 0;
+  }
+  /** 묶음 c 의 무리 group 직진 현시 신호(GREEN·YELLOW·RED). 그 축에 나란한 횡단보도의 보행 신호이기도 하다(길 중간 신호는 0 차, 1 사람) */
+  const state = (c: number, group: number, tod: number) => phaseState(c, list[c].through[group], tod);
+  /** 묶음 c 의 무리 group 직진 현시 초록이 남은 시간(초). 초록불이 아니면 0 */
+  const greenLeft = (c: number, group: number, tod: number) => phaseLeft(c, list[c].through[group], tod);
+  /** 진입로 ap 의 움직임 kind 가 따르는 현시: 좌회전 현시가 있는 좌회전·유턴은 그 현시, 나머지는 그 무리 직진 현시 */
+  function phaseOf(ap: Approach, kind: number): number {
+    const s = list[ap.c];
+    if (!s.walk && s.turn[ap.group] >= 0 && ((kind === LEFT && ap.left === 1) || (kind === UTURN && ap.uturn === 1))) return s.turn[ap.group];
+    return s.through[s.walk ? 0 : ap.group];
+  }
+  /** 진입로 ap 에서 움직임 kind 의 신호 */
+  const moveState = (ap: Approach, kind: number, tod: number) => phaseState(ap.c, phaseOf(ap, kind), tod);
+  /** 진입로 ap 에서 움직임 kind 의 초록 남은 시간(초) */
+  const moveLeft = (ap: Approach, kind: number, tod: number) => phaseLeft(ap.c, phaseOf(ap, kind), tod);
+  /** 진입로 ap 에서 움직임 kind 를 해도 되는가(좌회전 금지·유턴 없는 곳은 고르지 않는다. 노선이 정해진 버스는 직진 현시에 양보하며 간다) */
+  const allows = (ap: Approach, kind: number) => list[ap.c].walk || (kind === LEFT ? ap.left > 0 : kind === UTURN ? ap.uturn > 0 : true);
+  /** 진입로 ap 의 움직임 kind 가 직진 초록에 마주 오는 차를 기다려야 하는가(비보호 좌회전·양보 유턴, 곁길 현시는 아니다) */
+  const permissive = (ap: Approach, kind: number) => {
+    const s = list[ap.c];
+    if (s.walk || !(kind === LEFT || kind === UTURN) || phaseOf(ap, kind) === s.turn[ap.group]) return false;
+    return s.phases[s.through[ap.group]].kinds === (STRAIGHT | RIGHT);
+  };
+  /** 빨간불 우회전: 이 진입로를 가로지르는 횡단보도(다른 무리 직진 현시에 사람이 건넌다)가 빨간불일 때만 */
+  const rightOnRed = (ap: Approach, tod: number) => !list[ap.c].walk && state(ap.c, 1 - ap.group, tod) === RED;
+  /** 진입로 e 끝에서 다음 구간 열 path(n 개, path[0] 은 e)로 갈 때의 움직임: 묶음 밖으로 나가는 첫 구간(없으면 마지막 구간)의 방향으로 */
+  function moveOf(e: Edge, path: ArrayLike<number>, n: number): number {
+    const ap = approach.get(e.id);
+    const nodes = ap ? list[ap.c].nodes : null;
+    let x = n > 1 ? edges[path[1]] : null;
+    for (let k = 1; k < n && nodes; k++) {
+      x = edges[path[k]];
+      if (!nodes.has(key(...endOf(x)))) break;
+    }
+    if (!x) return STRAIGHT;
+    return moveOfTurn(wrapPi(exitHeading(x) - headingNear(e, e.len)));
   }
   /** 좌표 (x, z)의 노드가 속한 신호 묶음(없으면 −1) */
   const siteAt = (x: number, z: number) => list.findIndex((s) => s.nodes.has(key(x, z)));
@@ -305,13 +548,6 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
   const pts = list.map((s) => [...s.nodes].map((k) => k.split(',').map((v) => Number(v) / 10)));
   /** (x, z)에서 r(m) 안에 노드가 있는 신호 묶음(없으면 −1). 중앙분리대 있는 큰길처럼 노드가 여럿인 교차로의 가운데 노드도 잡는다 */
   const siteNear = (x: number, z: number, r = 25) => pts.findIndex((ps) => ps.some(([px, pz]) => Math.abs(px - x) < r && Math.abs(pz - z) < r && Math.hypot(px - x, pz - z) < r));
-  /** 묶음 c 의 무리 group 초록불이 남은 시간(초). 초록불이 아니면 0 */
-  function greenLeft(c: number, group: number, tod: number): number {
-    const u = (((tod + list[c].offset) % CYCLE) + CYCLE) % CYCLE;
-    const P = list[c].plan;
-    if (group === 0) return u < P[0] ? P[0] - u : 0;
-    return u >= P[2] && u < P[3] ? P[3] - u : 0;
-  }
   /** 방향 h 로 걷는 사람·차가 속한 무리 */
   const groupOf = (c: number, h: number) => (axisGap(h, list[c].axis) < Math.PI / 4 ? 0 : 1);
   /** 횡단보도마다 건너는 사람이 따르는 무리(보행 신호등과 같이 자료의 축으로 정한다, 신호가 없으면 0).
@@ -323,7 +559,28 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
 
   // 차로마다 정지 자리와 횡단보도 면 위 구간(자료가 있을 때)
   const stops = data ? laneStops(edges, data.stopLines, data.crosswalks) : null;
-  return { list, approach, state, greenLeft, siteAt, siteNear, groupOf, junctions: boxes, crossSite, crossGroup, stops };
+  return {
+    list,
+    approach,
+    state,
+    greenLeft,
+    moveState,
+    moveLeft,
+    allows,
+    permissive,
+    rightOnRed,
+    moveOf,
+    siteAt,
+    siteNear,
+    groupOf,
+    junctions: boxes,
+    crossSite,
+    crossGroup,
+    stops,
+  };
 }
+
+/** 진입로 끝에서 바로 다음 구간으로 갈 때의 움직임(교차로 경로를 아직 정하지 않았을 때) */
+export const firstMove = (a: Edge, b: Edge) => moveOfTurn(turnAngle(a, b));
 
 export type Signals = ReturnType<typeof makeSignals>;

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { decodeBoard } from '../src/data/board.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { decodeLanes } from '../src/data/lanes.ts';
-import { GREEN, makeSignals } from '../src/sim/signals.ts';
+import { GREEN, LEFT, makeSignals, RED, STRAIGHT, YELLOW } from '../src/sim/signals.ts';
 import { pedState, signalPoles } from '../src/render/signals.ts';
 
 const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
@@ -61,10 +61,17 @@ describe('신호등 자리(합정·홍대입구역 교차로)', () => {
 });
 
 describe('신호 색', () => {
-  it('차량 신호는 그 진입로의 시뮬레이션 신호 상태를 그대로 쓴다', () => {
+  it('차량 신호의 원은 그 진입로 직진 신호를, 화살표는 좌회전 현시 초록을 쓴다', () => {
     for (const p of poles.car.slice(0, 50)) {
       const ap = signals.approach.get(p.edge)!;
-      for (const t of [0, 37, 80, 123]) expect(p.state(t)).toBe(signals.state(ap.c, ap.group, t));
+      for (const t of [0, 37, 80, 123]) {
+        const st = signals.moveState(ap, STRAIGHT, t);
+        const l = signals.moveState(ap, LEFT, t);
+        const circle = p.state(t) % 3;
+        if (p.arrow && st === RED && l === YELLOW) expect(circle).toBe(YELLOW);
+        else expect(circle).toBe(st);
+        expect(p.state(t) >= 3).toBe(p.arrow && l === GREEN && st !== GREEN);
+      }
     }
   });
   it('보행 신호는 그 횡단보도를 건너는 사람이 쓰는 무리가 초록일 때만 초록이다', () => {

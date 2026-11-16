@@ -42,7 +42,7 @@ import { makeLiveSubway } from './data/subway.ts';
 import { loadStreetview, matchBuildings, treeKind, xz as llToXZ } from './data/streetview.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
-import { makeSignals } from './sim/signals.ts';
+import { makeSignals, type SignalLamps } from './sim/signals.ts';
 import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
 import { matchIncidents, spotXZ, type Incident } from './sim/incidents.ts';
 import { doorWanted, makeWalkers, underpasses, ZONES } from './sim/walkers.ts';
@@ -80,7 +80,7 @@ const loading = document.querySelector<HTMLElement>('#loading')!;
 // 지명 자리(tools/places.ts 가 OSM 행정동 경계·공원·도로명 주소로 굽는다)
 type Named = { dongs: { name: string; x: number; z: number }[]; places: { text: string; x: number; z: number; turn: number }[] };
 // 로드뷰 기록(data-src/streetview/*.json, 구역마다 따로): 기록한 건물은 난수 색·무늬 대신 기록 값으로 그린다
-const [board, mask, named, streetview, surface, marks, walkJson, roadLanes] = await Promise.all([
+const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamps] = await Promise.all([
   loadBoard(BASE),
   new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`),
   fetch(`${BASE}data/places.json`).then((r) => r.json() as Promise<Named>),
@@ -93,6 +93,8 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes] = aw
   fetch(`${BASE}data/walk.json`).then((r) => r.json() as Promise<WalkJson>),
   // 차로 가운데선(서울시 차선으로 읽은 방향별 차로, tools/lanes.ts 가 굽는다)
   fetch(`${BASE}data/lanes.json`).then((r) => r.json() as Promise<LanesJson>).then(decodeLanes),
+  // 서울시 차량 신호등(4색등 = 좌회전 화살표)·회전 표지(tools/signals.ts 가 굽는다). 없으면 노면 화살표로 정한다
+  fetch(`${BASE}data/signals.json`).then((r) => (r.ok ? (r.json() as Promise<SignalLamps>) : undefined)).catch(() => undefined),
 ]).catch((e) => {
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
@@ -103,7 +105,7 @@ const start = clock.now();
 const walkGraph = decodeWalk(walkJson);
 const carGraph = buildCarGraph(board.roads, roadLanes, marks.arrows);
 // 신호는 보행 신호 횡단보도가 있는 교차로·길 중간 횡단보도에 두고, 정지선은 서울시 차선 자료의 정지선 자리를 쓴다
-const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
+const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines, lamps });
 // 횡단보도마다 지금 사람이 건너고 있는 자리(축 2m 칸 비트): 차는 자기 차로 앞에 사람이 있으면 서고, 사람은 신호 없는 횡단보도에서 차가 다가오면 기다린다
 const crossBusy = new Uint32Array(board.crosswalks.length);
 const cars = makeCars(carGraph, provider, 11, MAX_CARS, makeBusRoutes(board.buses, carGraph, undefined, board.crosswalks), signals, { list: board.crosswalks, busy: crossBusy });

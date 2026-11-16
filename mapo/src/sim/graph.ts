@@ -206,18 +206,27 @@ export const turnOf = (a: Edge, b: Edge) => {
     const key = (a.name && all[k].name === a.name ? 0 : 10) + t;
     if (key < bestKey) (bestKey = key), (best = k);
   }
-  if (b.id === best) return 2;
-  return turnAngle(a, b) < 0 ? 1 : 4;
+  const t = turnAngle(a, b);
+  const side = t < 0 ? 1 : 4;
+  // 비스듬히(25° 넘게) 꺾여 이어지는 길: 어느 차로에도 직진 화살표가 없고 그쪽 화살표만 있으면 그쪽으로 꺾는 것이다
+  if (b.id === best) return Math.abs(t) > (25 * Math.PI) / 180 && a.turns.some((m) => (m & side) !== 0) && !a.turns.some((m) => (m & 2) !== 0) ? side : 2;
+  return side;
 };
 /** 구간 e 가 든 그래프의 구간 배열 */
 const owner = new WeakMap<Edge, Edge[]>();
 const edgesOf = (e: Edge) => owner.get(e)!;
 /** 구간 e 의 차로 l(−1 이면 아무 차로)에 유턴 화살표가 있는가. 유턴은 서울시 노면 유턴 표시가 있는 차로에서만 한다 */
 export const uTurnOk = (e: Edge, l: number) => (l < 0 ? e.turns.some((m) => (m & 8) !== 0) : (e.turns[Math.min(Math.max(0, l), e.lanes - 1)] & 8) !== 0);
-/** 차로 l 에서 next 구간 b 로 갈 수 있는가: 그 차로에 화살표가 없거나 화살표가 그쪽을 가리킨다 */
+/** 차로 l 에서 next 구간 b 로 갈 수 있는가: 화살표가 있는 차로는 화살표대로. 화살표가 없는 차로는 직진은 어디서나, 좌회전은 맨 왼쪽 차로, 우회전은 맨 오른쪽 차로
+ *  (가로변 버스전용차로가 있으면 그 왼쪽 차로)에서만 한다(도로교통법 제25조). 그쪽 화살표를 그은 차로가 따로 있으면 그 차로만 */
 export const turnAllowed = (a: Edge, b: Edge, l: number) => {
-  const m = a.turns[Math.min(Math.max(0, l), a.lanes - 1)];
-  return !m || (m & turnOf(a, b)) !== 0;
+  const k = Math.min(Math.max(0, l), a.lanes - 1);
+  const t = turnOf(a, b);
+  const m = a.turns[k];
+  if (m) return (m & t) !== 0;
+  if (t === 2 || a.lanes < 2) return true;
+  if (a.turns.some((x) => (x & t) !== 0)) return false;
+  return t === 1 ? k === 0 : k === a.lanes - 1 || (a.bus >= 0 && k === a.bus - 1);
 };
 
 export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] = []): Edge[] {
