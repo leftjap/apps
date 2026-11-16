@@ -342,6 +342,18 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] 
     e.med = e.mo.length ? Math.max(0.5, medAt(e, e.len / 2)) : medOff(roadOf[e.id].gap);
   }
   keepApart(edges, roadOf);
+  // 중앙버스차로 버스가 1차로 차와 나란히 설 때 몸통이 닿지 않게: 선으로 읽은 자리가 1차로 가운데에서 (버스 반폭 + 가장 넓은 승용차 반폭 + 0.15m) 보다 가까운 곳이 있으면
+  // 읽은 자리를 버리고 그만큼 떨어진 자리에 둔다(1차로 반폭만큼은 이미 떨어져 있다)
+  for (const e of edges) {
+    if (!e.med) continue;
+    let need = 0;
+    for (const sv of e.mo.length ? [0, ...e.st, e.len] : [e.len / 2]) need = Math.max(need, Math.max(...BUS_HW) + Math.max(...BODY_HW) + 0.15 - laneWidth(e, 0, Math.min(e.len, Math.max(0, sv))) / 2);
+    const close = e.mo.length ? Math.min(...[0, ...e.st, e.len].map((sv) => medAt(e, Math.min(e.len, Math.max(0, sv))))) : e.med;
+    if (close < need) {
+      e.mo = new Float32Array(0);
+      e.med = Math.max(e.med, need);
+    }
+  }
   // 노면 화살표: 서울시 선으로 차로를 읽은 구간에서 차로가 끝나는 자리 앞 45m 안, 그 차로 가운데 반폭 안에 같은 방향으로 놓인 화살표
   const ag = new Map<number, number[]>();
   arrows.forEach((a, i) => {
