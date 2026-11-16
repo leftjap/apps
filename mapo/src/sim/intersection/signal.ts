@@ -155,7 +155,7 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     list.push({ x: J.x, z: J.z, j: J.id, axis, offset: hash01(c * 7.31 + 1) * CYCLE, steps: [], turn: [-1, -1], walkOnly: !groups.includes(1) });
     into.forEach((e, k) => {
       const moves = (X.exits.get(e.id) ?? []).reduce((m, x) => m | x.move, 0);
-      const setback = X.gate(e.id, Math.floor(e.lanes / 2));
+      const setback = X.stopAt(e.id, Math.floor(e.lanes / 2));
       const lp = lampsFor(e, setback);
       const laneLeft = e.turns.some((m) => (m & LEFT) !== 0);
       const laneU = e.turns.some((m) => (m & UTURN) !== 0);

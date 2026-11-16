@@ -89,6 +89,8 @@ export interface Intersections {
   laneMoves(a: number, l: number): number;
   /** 진입로 a 의 차로 l 게이트: 구간 끝에서 거리(m, 구간 길이보다 클 수 있다) */
   gate(a: number, l: number): number;
+  /** 진입로 a 의 차로 l 정지 자리(정지선, 없으면 상자 가장자리): 구간 끝에서 거리(m). 신호등을 세울 자리 */
+  stopAt(a: number, l: number): number;
   /** 진입로 a 의 차로 l 에서 k번째 나가는 길로 가는 경로(그 차로가 그 움직임을 못 하면 undefined) */
   path(a: number, l: number, k: number): LanePath | undefined;
   /** 차로 허용과 상관없이 만든 경로(노선이 정해진 버스가 맞는 차로로 옮기지 못했을 때만) */
@@ -321,9 +323,25 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
       const key = (e.name && o.name === e.name ? 0 : 10) + t;
       if (key < bk) (bk = key), (best = k);
     });
+    // 차로 가운데들의 평균 자리(진입로 끝 방향 기준 오른쪽 + 옆 거리)
+    const mid = (o: Edge, s0: number) => {
+      pointAt(o.p, o.cum, s0, P);
+      let sx = 0;
+      let sz = 0;
+      for (let l = 0; l < o.lanes; l++) {
+        const off = laneOff(o, l, s0);
+        const h = headingNear(o, s0, off);
+        sx += P[0] - Math.sin(h) * off;
+        sz += P[2] + Math.cos(h) * off;
+      }
+      pointAt(e.p, e.cum, e.len, Q);
+      return ((sx / o.lanes - Q[0]) * -Math.sin(h0) + (sz / o.lanes - Q[2]) * Math.cos(h0));
+    };
+    const straightMid = best >= 0 ? mid(edges[out[best].edges[1]], 0) : 0;
     out.forEach((x, k) => {
       const t = dh[k];
-      const side = t < 0 ? LEFT : RIGHT;
+      // 45° 아래로 갈라지는 갈래는 각도가 아니라 갈래 첫 구간 차로가 직진 길 차로보다 어느 쪽에 놓였는지로 좌·우를 정한다(갈래 길의 차로 자료가 가운데선 반대편에 있는 곳)
+      const side = best >= 0 && k !== best && Math.abs(t) < Math.PI / 4 ? (mid(edges[x.edges[1]], 0) < straightMid ? LEFT : RIGHT) : t < 0 ? LEFT : RIGHT;
       if (Math.abs(t) > 150 * D2R) x.move = UTURN;
       else if (k === best)
         // 비스듬히(25° 넘게) 이어지는 길: 직진 화살표 차로가 없고 그쪽 화살표만 있으면 그쪽 회전
@@ -378,9 +396,67 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
 
   // ── 정지 자리와 게이트 ──
   const stops = laneStops(edges, stopLines, crosswalks);
-  function gate(a: number, l: number): number {
+  /** 정지선과 상자 가장자리 가운데 교차로에서 먼 쪽 */
+  function gate0(a: number, l: number): number {
     const b = stops.back(a, l === MED ? 0 : l);
     return Math.max(rIn[a], b);
+  }
+  // 게이트에 선 차(앞 범퍼가 게이트, 버스 길이 12m 까지)의 몸이 같은 교차로의 다른 차로 경로와 닿으면 닿지 않을 때까지 게이트를 물린다.
+  // 분리대 큰길 교차로처럼 노드가 여럿이면 한 진입로의 끝이 다른 움직임이 지나는 자리 곁에 있다(합정역 독막로)
+  const gateCache = new Map<number, number>();
+  function gate(a: number, l: number): number {
+    const key = a * 8 + (l === MED ? 7 : l);
+    const hit = gateCache.get(key);
+    if (hit !== undefined) return hit;
+    const g0 = gate0(a, l);
+    const j = jEnd[a];
+    if (j < 0 || jStart[a] === j) {
+      gateCache.set(key, g0);
+      return g0;
+    }
+    gateCache.set(key, g0); // 경로를 만드는 동안 되불리면 기본값
+    const e = edges[a];
+    // 다른 진입로·차로 경로의 점(같은 진입로 같은 차로에서 출발하는 경로는 빼고)
+    const C2 = 3;
+    const grid = new Map<number, number[]>();
+    for (const b of list[j].into) {
+      const eb = edges[b];
+      const lanes = [...Array.from({ length: eb.lanes }, (_, q) => q), ...(eb.med ? [MED] : [])];
+      (exits.get(b) ?? []).forEach((_, k) =>
+        lanes.forEach((q) => {
+          if (b === a && q === l) return;
+          const p = path(b, q, k);
+          if (!p) return;
+          for (let i = 0; i < p.pts.length; i += 4) {
+            const kk = Math.floor(p.pts[i] / C2) * 100003 + Math.floor(p.pts[i + 2] / C2);
+            (grid.get(kk) ?? grid.set(kk, []).get(kk)!).push(p.pts[i], p.pts[i + 2]);
+          }
+        }),
+      );
+    }
+    const near = (x: number, z: number) => {
+      const gx = Math.floor(x / C2);
+      const gz = Math.floor(z / C2);
+      for (let dx = -1; dx <= 1; dx++)
+        for (let dz = -1; dz <= 1; dz++) {
+          const pts = grid.get((gx + dx) * 100003 + gz + dz) ?? [];
+          for (let i = 0; i < pts.length; i += 2) if (Math.hypot(pts[i] - x, pts[i + 1] - z) < 2.45) return true;
+        }
+      return false;
+    };
+    let g = g0;
+    for (; g < g0 + 30 && g < e.len - 1; g += 0.5) {
+      let clash = false;
+      for (let d = 0; d <= 12 && !clash; d += 1.5) {
+        const sv = e.len - g - d;
+        if (sv < 0) break;
+        const v = lp(e, sv, l);
+        for (const side of [-1, 0, 1]) if (near(v[0] - Math.sin(v[3]) * side, v[2] + Math.cos(v[3]) * side)) clash = true;
+      }
+      if (!clash) break;
+    }
+    gateCache.set(key, g);
+    return g;
   }
 
   // ── 곡선 ──
@@ -494,7 +570,7 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
         if (c >= 0) xw.add(c);
       }
     };
-    for (let s = Math.max(0, e.len - gate(a, l)); s < e.len - rIn[a]; s += STEP) {
+    for (let s = Math.max(0, e.len - gate0(a, l)); s < e.len - rIn[a]; s += STEP) {
       const v = lp(e, s, l);
       look(v[0], v[2], v[3]);
     }
@@ -531,7 +607,11 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     else {
       const xa = A.edges[A.edges.length - 1];
       const xb = B.edges[B.edges.length - 1];
-      if (xa === xb && A.lanes[A.lanes.length - 1] === B.lanes[B.lanes.length - 1]) c = true;
+      const la = A.lanes[A.lanes.length - 1];
+      const lb = B.lanes[B.lanes.length - 1];
+      if (xa === xb && la === lb) c = true;
+      // 같은 진입로의 다른 차로에서 같은 나가는 길의 다른 차로로 차로 순서를 지키며 나란히 가는 두 경로는 부딪지 않는다(몸이 닿는 것은 몸통 겹침 막기가 맡는다)
+      else if (A.a === B.a && A.lane !== B.lane && A.lane !== MED && B.lane !== MED && xa === xb && Math.sign(A.lane - B.lane) === Math.sign(la - lb)) c = false;
       else {
         const pa = A.pts;
         const pb = B.pts;
@@ -554,5 +634,5 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return c;
   }
 
-  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, moveOf, curve, stops };
+  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, moveOf, curve, stops };
 }

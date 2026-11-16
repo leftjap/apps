@@ -785,45 +785,47 @@ export function makeCars(
   /** 길 우선순위(작을수록 큰길) */
   const rankOf = (e: Edge) => e.cls * 10 - e.vol;
   /** 차 i 가 지금 게이트를 넘어 교차로에 들어가도 되는가 */
-  function mayGo(i: number, dist: number, tod: number): boolean {
+  const mayGo = (i: number, dist: number, tod: number) => gateWhy(i, dist, tod) === 0;
+  /** 들어가면 안 되는 까닭: 0 들어간다, 1 빨간불, 2 노란불, 3 부딪는 경로의 차가 교차로를 잡음, 4 나갈 차로에 자리 없음, 5 우선 차 양보, 6 횡단보도 보행 초록 전에 못 빠져나감 */
+  function gateWhy(i: number, dist: number, tod: number): number {
     const P = PS[jp[i]];
     const sig = S.approach.has(P.a);
     if (sig) {
       const st = S.state(P.a, P.move, tod);
-      if (st === RED) return false;
-      if (st === YELLOW) return go[i] === 1 && dist < (v[i] * v[i]) / (2 * B_AMBER) + 0.3;
+      if (st === RED) return 1;
+      if (st === YELLOW) return go[i] === 1 && dist < (v[i] * v[i]) / (2 * B_AMBER) + 0.3 ? 0 : 2;
     }
     for (const h of held[P.j]) {
       if (h === i) continue;
       const hp = jp[h] >= 0 && PS[jp[h]].j === P.j ? jp[h] : pp[h];
-      if (hp >= 0 && X.conflict(P.id, hp)) return false;
+      if (hp >= 0 && X.conflict(P.id, hp)) return 3;
     }
-    if (!exitRoom(i, P, tod)) return false;
+    if (!exitRoom(i, P, tod)) return 4;
     // 양보: 신호 교차로의 양보 움직임, 신호 없는 교차로의 작은 길
     const yieldsNow = sig ? S.yields(P.a, P.move, tod) : true;
     if (yieldsNow) {
       for (const a of coming[P.j]) {
-        if (a === i || go[a] || !X.conflict(P.id, jp[a])) continue;
+        if (a === i || go[a] || jp[a] < 0 || PS[jp[a]].j !== P.j || !X.conflict(P.id, jp[a])) continue;
         const da = gateDist(a);
         const eta = da / Math.max(v[a], 0.5);
         const Q = PS[jp[a]];
         if (sig) {
           if (S.state(Q.a, Q.move, tod) !== GREEN || S.yields(Q.a, Q.move, tod)) continue;
-          if (eta < 5 || da < 3) return false;
+          if (eta < 5 || da < 3) return 5;
         } else {
           const ra = rankOf(edges[Q.a]);
           const ri = rankOf(edges[P.a]);
-          if (ra < ri && eta < 4.5 && waitT[i] < 20) return false;
-          if (ra === ri && da < 3 && (waitT[a] > waitT[i] + 1 || (Math.abs(waitT[a] - waitT[i]) <= 1 && cars.uid[a] < cars.uid[i]))) return false;
+          if (ra < ri && eta < 4.5 && waitT[i] < 20) return 5;
+          if (ra === ri && da < 3 && (waitT[a] > waitT[i] + 1 || (Math.abs(waitT[a] - waitT[i]) <= 1 && cars.uid[a] < cars.uid[i]))) return 5;
         }
       }
     }
     // 지나는 횡단보도 보행 초록이 켜지기 전에 빠져나간다
     if (P.xw.length) {
       const t = clearTime(i, dist);
-      for (const x of P.xw) if (S.walkIn(x, tod) < t + 0.5) return false;
+      for (const x of P.xw) if (S.walkIn(x, tod) < t + 0.5) return 6;
     }
-    return true;
+    return 0;
   }
 
   /** 길 중간 보행 신호 진입로 a(차로 la, 게이트까지 dist)를 지금 지나가도 되는가: 초록이고(노란불은 편히 못 설 때만),
@@ -1045,23 +1047,31 @@ export function makeCars(
           why = 12;
         }
       }
-      // 횡단보도 비워 두기: 앞차(6m/s 보다 느린) 뒤에 서면 내 몸이 횡단보도 면에 걸치고 그 너머에 다 들어갈 자리가 없으면 면 1m 앞에 선다(교차로 밖)
-      if (front >= 0 && front !== i && v[front] < 6 && !(jp[i] >= 0 && past[i]) && pp[i] < 0) {
+      // 횡단보도 비워 두기: 앞차가 지금 속도에서 편히 설 자리를 내다보고, 그 뒤에 서면 내 몸이 횡단보도 면에 걸치거나 너머에 다 들어갈 자리가 없으면
+      // 아직 들어서지 않은 횡단보도 1m 앞에 선다(이 구간과 다음 두 구간, 교차로 경로 위는 경로 차로로)
+      if (front >= 0 && front !== i && !(jp[i] >= 0 && past[i]) && pp[i] < 0) {
         const head = s[i] + size[i] / 2;
-        const stopFront = head + gap - 2;
-        const sp = stops.xwAll(e.id);
-        const until = isApproach(e.id) ? e.len - X.gate(e.id, lane[i]) : e.len;
-        for (let q = 0; q < sp.length && sp[q] < until; q += 2) {
-          const c0 = sp[q];
-          const c1 = sp[q + 1];
-          if (c0 < head + 0.5 || stopFront <= c0 - 1 || stopFront - c1 >= size[i] + 0.5) continue;
-          const g2 = c0 - 1 - head + 2;
-          if (g2 < gap) {
-            gap = g2;
-            dv = v[i];
-            front = i;
-            why = 11;
+        const rearPred = head + gap + (v[front] * v[front]) / (2 * B_COMF);
+        let off = 0;
+        for (let id = e.id, k = 0; id >= 0 && k < 3 && off < rearPred; k++) {
+          const pl = k === 0 ? lane[i] : pathLane(i, id);
+          const ln = pl >= 0 ? pl : laneAt(i, edges[id], lanePos(e, edges[id], pref[i] * e.lanes));
+          const q = stops.xwOf(id, ln === MED ? 0 : ln);
+          for (let m = 0; m < q.length; m += 4) {
+            const c0 = off + q[m];
+            const c1 = off + q[m + 1];
+            if (c0 < head + 0.3 || c0 > rearPred) continue;
+            if (rearPred - c1 >= size[i] + 1) continue;
+            const g2 = c0 - 1 - head + 2;
+            if (g2 < gap && c0 - 1 - head > (v[i] * v[i]) / (2 * B_HARD) - 0.5) {
+              gap = g2;
+              dv = v[i];
+              front = i;
+              why = 11;
+            }
           }
+          off += edges[id].len;
+          id = k === 0 ? nextE[i] : laterEdge(i, edges[id]);
         }
       }
       // 게이트: 교차로 진입로(경로를 골랐다)와 길 중간 신호
@@ -1094,8 +1104,9 @@ export function makeCars(
             } else if (go[i] && dist < 0) past[i] = 1;
           }
         }
-      } else {
-        // 길 중간 보행 신호(이 구간 끝이나, 이 구간이 교차로가 아니면 다음 구간 끝)
+      }
+      {
+        // 길 중간 보행 신호(이 구간 끝이나, 이 구간이 교차로가 아니면 다음 구간 끝). 교차로 게이트와 따로 본다(교차로 앞 짧은 구간에 있는 신호)
         const a = S.midApproach.has(e.id) ? e : nextE[i] >= 0 && X.jEnd[e.id] < 0 && S.midApproach.has(nextE[i]) ? edges[nextE[i]] : null;
         if (a) {
           const la = a === e ? lane[i] : laneAt(i, a, lanePos(e, a, pref[i] * e.lanes));
@@ -1418,7 +1429,7 @@ export function makeCars(
     nextStop: (i: number) => (cars.route[i] >= 0 ? routes[cars.route[i]].stopNames[stopK[i]] ?? '' : ''),
     /** 측정용 읽기 전용 값: 구간·거리·속도·차로·다음 구간·길이·반폭, 고른 경로·지나온 경로·들어가기로 했나, 따라간 앞 대상과 까닭
      *  (12 몸통 겹침으로 막은 차, 1 같은 차로 앞차, 2 다음 구간 앞차, 3 차로 합침, 4 다른 구간 차, 5 게이트·신호, 6 다음 구간 신호, 7 횡단보도 사람, 9 돌발 서행, 10 정류장, 11 횡단보도 비워 두기) */
-    debug: () => ({ edge, s, v, lane, nextE, size, wid, jp, jk, pp, go, past, ahead, aheadWhy, inter: I }),
+    debug: () => ({ edge, s, v, lane, nextE, size, wid, jp, jk, pp, go, past, ahead, aheadWhy, inter: I, gateWhy: (i: number, tod: number) => (jp[i] >= 0 ? gateWhy(i, gateDist(i), tod) : -1) }),
     meanSpeed: () => (cars.n ? v.subarray(0, cars.n).reduce((a, b) => a + b, 0) / cars.n : 0),
   };
 }
