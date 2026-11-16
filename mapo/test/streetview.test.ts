@@ -88,6 +88,12 @@ describe('외벽 색 칸', () => {
     const [L] = looks(refine([b]));
     expect(L.tiers[0].dark).toBe(true);
   });
+  it('1층을 로비로 기록하면 빌라라도 1층 높이를 따로 두어 로비 유리를 그린다', () => {
+    const b = applyRec(bld({ pts: box(0, 0, 12, 14), h: 10.6, use: USE.villa, levels: 3 }), rec(5, 5, { ground: 'lobby' }));
+    const [L] = looks(refine([b]));
+    expect(L.gh).toBeGreaterThan(3);
+    expect(L.shopK).toBe(0);
+  });
   it('기록된 1층이 필로티가 아니면 빌라 필로티를 난수로 두지 않는다', () => {
     for (let k = 0; k < 30; k++) {
       const b = applyRec(bld({ pts: box(k * 37.3, k * 11.1, 11, 13), h: 13.8, use: USE.villa, levels: 4 }), rec(k * 37.3 + 5, k * 11.1 + 5, { ground: 'house' }));

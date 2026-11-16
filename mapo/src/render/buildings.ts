@@ -308,7 +308,8 @@ export function looks(list: Building[]): Look[] {
     const shopK = plain ? (b.shop ?? 0) : 0;
     const upK = plain ? (b.shopUp ?? 0) : 0;
     const shopMask = plain ? (b.shopMask ?? 0) : 0;
-    if (minH < 0.5 && floors >= 2 && (base === STYLE.shop || base === STYLE.glass || shopK)) {
+    // 1층 높이를 따로 두는 건물: 상가·커튼월·가게, 그리고 로드뷰 기록에서 1층이 로비인 건물(1층에 로비 유리를 그린다)
+    if (minH < 0.5 && floors >= 2 && (base === STYLE.shop || base === STYLE.glass || shopK || (b as Hot).rec?.ground === 'lobby')) {
       gh = Math.min(5.2, Math.max(3.6, fh * 1.3));
       fh = (usable - gh) / (floors - 1);
     }
