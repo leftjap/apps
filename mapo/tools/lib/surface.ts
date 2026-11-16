@@ -6,7 +6,7 @@
 // 연결로(OSM *_link)로 둘러싸인 안쪽 고리는 교통섬 구멍으로 남긴다.
 import { cornerArc, roadCorners } from '../../src/data/corners.ts';
 import { carriageSections, isGroundRoad, roadJoints, type Section } from '../../src/data/surface.ts';
-import type { Road } from '../../src/data/board.ts';
+import { curbAt, type Road } from '../../src/data/board.ts';
 import { cumLen } from '../../src/poly.ts';
 import { fillRings, ringArea, simplifyLoop, traceLoops, windingLoops } from './contour.ts';
 
@@ -510,8 +510,11 @@ export interface SurfacePolys {
   med: number[][];
   /** 교통섬(교차로 면의 구멍) */
   isl: number[][];
-  /** 보도: 도로 부지·광장 − 찻길 띠 − 교차로 면 − 분리대 − 그리기 전용 찻길 면 */
+  /** 보도: 도로 부지·광장 − 찻길 띠 − 교차로 면 − 분리대 − 그리기 전용 찻길 면 − 건물 외곽선 */
   walk: number[][];
+  /** 큰길 쪽에 보도 면이 없어 채운 넓이(m²): 실폭도로 면으로, 연석에서 건물 쪽으로 */
+  filled: number;
+  filledRw: number;
   /** 그리기 전용 찻길 면(crosswalkPatches) */
   draw: number[][];
 }
@@ -528,6 +531,12 @@ export function surfacePolys(
   kinds: number[],
   boardR: number,
   draw: number[][] = [],
+  /** 보도 면에서 뺄 건물 외곽선 */
+  buildings: ArrayLike<number>[] = [],
+  /** 큰길(등급 3 이하) 쪽마다 연석 밖 6m 안에 보도 면이 없으면 연석 0.35m 밖부터 채운다: 그 쪽에 실폭도로 면(roadArea)이 있으면 그 면이 이어지는 데까지,
+   *  없으면 건물·찻길·교차로 면·분리대에 막히는 곳까지(6m 안) */
+  fillSides = false,
+  roadArea: { outer: ArrayLike<number>; holes: ArrayLike<number>[] }[] = [],
 ): SurfacePolys {
   const car: [number, number[]][] = [];
   const med: number[][] = [];
@@ -554,13 +563,67 @@ export function surfacePolys(
   for (const f of built.faces) fillRings(grid, N, [g(f.outer), ...f.holes.map(g)], 0);
   for (const ring of med) fillRings(grid, N, [g(ring)], 0);
   for (const ring of draw) fillRings(grid, N, [g(ring)], 0);
+  for (const ring of buildings) fillRings(grid, N, [g(ring)], 0);
+  let filled = 0;
+  let filledRw = 0;
+  if (fillSides) {
+    const blocked = new Uint8Array(N * N);
+    for (const [, ring] of car) fillRings(blocked, N, [g(ring)], 1);
+    for (const f of built.faces) fillRings(blocked, N, [g(f.outer), ...f.holes.map(g)], 1);
+    for (const ring of [...med, ...draw, ...buildings]) fillRings(blocked, N, [g(ring)], 1);
+    const rw = new Uint8Array(roadArea.length ? N * N : 0);
+    for (const a of roadArea) fillRings(rw, N, [g(a.outer), ...a.holes.map(g)], 1);
+    const at = (x: number, z: number) => {
+      const i = Math.floor((x + boardR) / CELL);
+      const j = Math.floor((z + boardR) / CELL);
+      return i < 0 || j < 0 || i >= N || j >= N ? -1 : j * N + i;
+    };
+    roads.forEach((r, ri) => {
+      if (!isGroundRoad(r) || r.cls > 3 || built.internal[ri]) return;
+      let s0 = 0;
+      for (let k = 0; k + 5 < r.p.length; k += 3) {
+        const [ax, az, bx, bz] = [r.p[k], r.p[k + 2], r.p[k + 3], r.p[k + 5]];
+        const L = Math.hypot(bx - ax, bz - az);
+        const nx = -(bz - az) / (L || 1);
+        const nz = (bx - ax) / (L || 1);
+        for (let t = 0.2; t < L; t += 0.4) {
+          const x = ax + ((bx - ax) * t) / L;
+          const z = az + ((bz - az) * t) / L;
+          for (const sd of [1, -1]) {
+            const c = curbAt(r, s0 + t, sd);
+            let has = false;
+            for (let o = c; o < c + 6 && !has; o += 0.5) {
+              const q = at(x + nx * o * sd, z + nz * o * sd);
+              if (q >= 0 && grid[q]) has = true;
+            }
+            if (has) continue;
+            let useRw = false;
+            for (let o = c + 0.35; o < c + 6 && rw.length && !useRw; o += 0.5) {
+              const q = at(x + nx * o * sd, z + nz * o * sd);
+              if (q >= 0 && rw[q] && !blocked[q]) useRw = true;
+            }
+            for (let o = c + 0.35; o < c + 6; o += 0.25) {
+              const q = at(x + nx * o * sd, z + nz * o * sd);
+              if (q < 0 || blocked[q]) break;
+              if (useRw && !rw[q]) {
+                if (o > c + 3) break; // 실폭도로 면이 연석에서 조금(3m 안) 떨어져 시작할 수 있다
+                continue;
+              }
+              if (!grid[q]) (grid[q] = 2), useRw ? filledRw++ : filled++;
+            }
+          }
+        }
+        s0 += L;
+      }
+    });
+  }
   const walk: number[][] = [];
   for (const loop of traceLoops(grid, N)) {
     const s = simplifyLoop(loop, 0.35 / CELL);
     if (Math.abs(ringArea(s)) * CELL * CELL < 2 || s.length < 6) continue;
     walk.push(s.map((v) => v * CELL - boardR));
   }
-  return { car, med, isl, walk, draw };
+  return { car, med, isl, walk, draw, filled: filled * CELL * CELL, filledRw: filledRw * CELL * CELL };
 }
 
 /**

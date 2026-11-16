@@ -1770,7 +1770,14 @@ let walkJson = '';
   // 횡단보도가 OSM 길 밖에 걸친 자리는 그리기 전용 찻길 면으로 채운다(서울시 연석 쪽 선까지)
   const curbLines = tgis.filter((l) => ['007', '009', '010', '011', '015'].includes(l.k)).map((l) => l.p.flatMap(([a, c]) => toXZ(a, c)));
   const patches = crosswalkPatches(b.roads, sf, crosses, curbLines);
-  const polys = surfacePolys(b.roads, sf, roadJoints(b.roads), b.groundAreas, [GK.ROADSIDE, GK.PLAZA], BOARD_R, patches.map((p) => p.ring));
+  // 보도 면: 도시생태현황도 도로 부지·광장 − 찻길 면 − 건물 외곽선. 큰길 쪽 연석 밖 6m 안에 보도 면이 없으면 실폭도로 면(행정안전부, tools/public.py)이
+  // 이어지는 데까지, 실폭도로 면도 없으면 연석에서 건물·찻길에 막히는 곳까지(6m 안) 채운다
+  const rwFile = new URL('./raw/gis-roads.json', import.meta.url);
+  const rwAreas = existsSync(rwFile)
+    ? (JSON.parse(readFileSync(rwFile, 'utf8')).roads as { r: [number, number][][] }[]).map((x) => ({ kind: GK.ROADSIDE, outer: x.r[0].flatMap(([a, c]) => toXZ(a, c)), holes: x.r.slice(1).map((h) => h.flatMap(([a, c]) => toXZ(a, c))) }))
+    : [];
+  const polys = surfacePolys(b.roads, sf, roadJoints(b.roads), b.groundAreas, [GK.ROADSIDE, GK.PLAZA], BOARD_R, patches.map((p) => p.ring), b.buildings.map((q) => q.pts), true, rwAreas);
+  console.log(`보도 면: 도로 부지 자료(도시생태현황도 ${b.groundAreas.filter((a) => a.kind === GK.ROADSIDE || a.kind === GK.PLAZA).length}개 + 실폭도로 ${rwAreas.length}개), 보도 면 없는 큰길 쪽 채움: 실폭도로 ${polys.filledRw.toFixed(0)}m², 연석에서 건물 쪽 ${polys.filled.toFixed(0)}m²`);
   // 교차로 면 안의 섬: 어느 찻길 띠(교차로를 지나 끝까지)·분리대·횡단보도 칠·찻길에 칠한 표시(안전지대·차선 둘레·화살표)에도 덮이지 않고
   // 면 테두리에 닿지 않는 곳(연결로와 본선 사이 삼각형 등)
   {

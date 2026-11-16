@@ -5,9 +5,9 @@
 // main.ts 와 같은 순서로 차·신호·버스·사람을 만들고, 사람만 0.5초씩 600번 미리 돌린 뒤 1/30초 단계로 30초 안정시키고
 // [초] 동안 1초마다 사람 자리를 판 칸 격자(0.5m)에 대어 센다. 조건은 일 14:00·토 17:00·평일(화) 08:30.
 // 큰길 찻길 = 등급 3 이하 땅 위 찻길 띠(교차로를 지나 끝까지) ∪ 분리대 ∪ 큰길 교차로 면 가운데 골목 띠 밖(골목 어귀는 뺀다).
-// 도로 부지 = 도시생태현황도 도로 부지·광장 ∪ 찻길 띠·교차로 면·그리기 전용 찻길 면·분리대·교통섬. 그 밖은 보행로 띠(등급 6·7 둘레)만 걷는 자리로 본다.
+// 도로 부지 = 도시생태현황도 도로 부지·광장 ∪ 실폭도로 면 ∪ 보도 면 ∪ 찻길 띠·교차로 면·그리기 전용 찻길 면·분리대·교통섬. 그 밖은 보행로 띠(등급 6·7 둘레)만 걷는 자리로 본다.
 // 보도 면·도로 부지 안인지는 0.2m 여유를 두고(칸 0.5m 의 가장자리 오차), 큰길 찻길은 칸 가운데로, 건물 안은 외곽선으로 본다.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { decodeBoard, GK } from '../src/data/board.ts';
 import { carriageSections, decodeSurface, isGroundRoad, roadJoints } from '../src/data/surface.ts';
 import { decodeWalk } from '../src/sim/walknet.ts';
@@ -18,7 +18,7 @@ import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { arrivals } from '../src/sim/trains.ts';
 import { makeWalkers, underpasses, zoneTargets, ZONE_IDS, ZONES } from '../src/sim/walkers.ts';
-import { BOARD_R } from '../src/geo.ts';
+import { BOARD_R, toXZ } from '../src/geo.ts';
 import { bitsAt, fillBits, makeBits, strokeBits } from './lib/bits.ts';
 
 const MEAS = Number(process.argv[2] ?? 180);
@@ -47,6 +47,7 @@ const BLDG = 8;
 const LAND = 16;
 const ALLEY = 32;
 const PATH = 64;
+const RWL = 128; // 실폭도로 면(도로 부지 밖 판정에만 쓴다)
 const B = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, 0.5);
 const joints = roadJoints(board.roads);
 const full = (i: number) => {
@@ -82,6 +83,11 @@ const inBuilding = (x: number, z: number) =>
   });
 for (const a of board.groundAreas) if (a.kind === GK.ROADSIDE || a.kind === GK.PLAZA) fillBits(B, [a.outer, ...a.holes], LAND);
 for (const r of [...polys.car.map((c) => c.slice(1)), ...polys.med, ...polys.isl, ...polys.draw]) fillBits(B, [dm(r)], LAND);
+fillBits(B, polys.walk.map(dm), LAND); // 보도 면(실폭도로·채운 보도 포함)은 도로 부지다
+{
+  const rw = new URL('./raw/gis-roads.json', import.meta.url);
+  if (existsSync(rw)) for (const x of JSON.parse(readFileSync(rw, 'utf8')).roads as { r: [number, number][][] }[]) fillBits(B, x.r.map((ring) => ring.flatMap(([a, c]) => toXZ(a, c))), RWL);
+}
 for (const f of [...surface.faces, ...surface.draw]) fillBits(B, [f.outer, ...f.holes], LAND);
 for (const c of polys.car) if (board.roads[c[0]].cls >= 4) fillBits(B, [dm(c.slice(1))], ALLEY);
 for (const f of surface.faces) if (f.cls >= 4) fillBits(B, [f.outer, ...f.holes], ALLEY);
@@ -191,7 +197,7 @@ function run(dow: number, tod: number, seed: number) {
     if (!e) return '선 없음';
     return `${['보도', '골목', '보행로', '잇는 선'][graph.kind[e[0]][e[1]]]} 선 ${e[3] < 1 ? '1m 안' : e[3] < 3 ? '1~3m' : '3m 넘게'}`;
   };
-  const causes: Record<string, Record<string, number>> = { major: {}, building: {}, offLand: {} };
+  const causes: Record<string, Record<string, number>> = { major: {}, building: {}, offLand: {}, offWalk: {} };
   const note = (kind: string, x: number, z: number) => {
     if (!WHY) return;
     const k = why(x, z);
@@ -302,7 +308,7 @@ function run(dow: number, tod: number, seed: number) {
       // 보도 면·도로 부지·골목·보행로 띠 안은 0.2m 여유(둘레 네 점 가운데 하나라도), 큰길 찻길·횡단보도·건물은 칸 가운데로 본다
       const f0 = bitsAt(B, x, z);
       const near = bitsAt(B, x - 0.2, z - 0.2) | bitsAt(B, x + 0.2, z - 0.2) | bitsAt(B, x - 0.2, z + 0.2) | bitsAt(B, x + 0.2, z + 0.2);
-      const f = (f0 & (MAJOR | XW | BLDG)) | ((f0 | near) & (WALK | LAND | ALLEY | PATH));
+      const f = (f0 & (MAJOR | XW | BLDG)) | ((f0 | near) & (WALK | LAND | ALLEY | PATH | RWL));
       const isl = onIsland(x, z);
       if (f & BLDG && inBuilding(x, z)) c.building++, note('building', x, z);
       // 나들목: 걷는 길이 자동차 전용도로 밑을 지나는 곳(자료에는 그 도로가 땅 높이로 있다)은 찻길 위로 치지 않는다
@@ -312,11 +318,12 @@ function run(dow: number, tod: number, seed: number) {
         const k = `${Math.round(x / 25) * 25},${Math.round(z / 25) * 25}`;
         hot.set(k, (hot.get(k) ?? 0) + 1);
       }
-      if (!(f & (LAND | PATH)) && !isl) c.offLand++, note('offLand', x, z);
+      if (!(f & (LAND | PATH | RWL)) && !isl) c.offLand++, note('offLand', x, z);
       // 보도를 걷는 사람: 골목 찻길(차와 함께 쓰는 곳)·횡단보도·승강장·도로 부지 밖 보행로 위가 아닌 사람
       if (!(f & ALLEY && !(f & MAJOR)) && !(f & XW) && !isl && !(f & PATH && !(f & LAND))) {
         c.sideN++;
         if (f & WALK) c.sideWalk++;
+        else note('offWalk', x, z);
       }
     }
   }
