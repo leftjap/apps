@@ -492,8 +492,153 @@ export function makeWalkers(
         const pl = pullOf(docks[k].mask);
         dockWNow[z][q] = dockW[z][q] * (z === PLACE_Z ? Math.max(0.01, pl) : 1 + GATHER * pl);
       });
+    weigh();
+    refocus();
   }
   const short = new Float32Array(PLACE_Z + 1); // 구역마다 모자란 인원(버스에서 내릴 사람)
+
+  // ── 보는 곳 먼저 채우기(차의 보는 곳과 같은 원): 상한이 모자라면 보는 곳 안을 먼저 실제 붐빔대로 채우고 밖은 남은 몫으로 둔다.
+  //    칸(구역, 구역 밖 출구·정류장, 구역 밖 명소)마다 실제 인원이 걷는 선에 퍼지는 몫은 선 길이 × 걷는 무게(aw) × (1 + PULL × 명소 붐빔)에
+  //    비례한다고 본다(plan 이 길을 고르는 무게와 같은 꼴). 구역 사람은 그 구역 몫의 선에, 구역 밖 출구·정류장 사람은 구역 밖 선에,
+  //    구역 밖 명소 사람은 구역 밖 명소 둘레(20m) 선에 퍼진다 ──
+  const eA: number[] = [];
+  const eK: number[] = [];
+  for (let a = 0; a < g.adj.length; a++) if (onBig(a)) g.adj[a].forEach((b, k) => b > a && g.aw[a][k] > 0 && (eA.push(a), eK.push(k)));
+  const NE = eA.length;
+  const eX = new Float32Array(NE);
+  const eZ = new Float32Array(NE);
+  const eLenW = new Float32Array(NE); // 선 길이 × 걷는 무게
+  const eW = new Float32Array(NE);
+  const eCell = new Uint8Array(NE);
+  const ePlace = new Uint8Array(NE);
+  for (let e = 0; e < NE; e++) {
+    const a = eA[e];
+    const b = g.adj[a][eK[e]];
+    eX[e] = (g.nx[a * 2] + g.nx[b * 2]) / 2;
+    eZ[e] = (g.nx[a * 2 + 1] + g.nx[b * 2 + 1]) / 2;
+    eLenW[e] = Math.hypot(g.nx[b * 2] - g.nx[a * 2], g.nx[b * 2 + 1] - g.nx[a * 2 + 1]) * g.aw[a][eK[e]];
+    eCell[e] = zoneOf(eX[e], eZ[e]);
+    ePlace[e] = eCell[e] === ZONE_IDS.length && placeMask(eX[e], eZ[e], 20) ? 1 : 0;
+  }
+  const totW = new Float64Array(PLACE_Z + 1); // 칸마다 선 무게 합
+  const inW = new Float64Array(PLACE_Z + 1); // 칸마다 보는 곳 안 선 무게 합
+  const fEdges = Array.from({ length: PLACE_Z + 1 }, () => [] as number[]); // 칸마다 보는 곳 안 선과 누적 무게(화면 밖에 사람을 놓을 자리)
+  const fCum = Array.from({ length: PLACE_Z + 1 }, () => [] as number[]);
+  let focus: { x: number; z: number; r: number } | null = null;
+  let seen: (x: number, z: number) => boolean = () => true;
+  const inFocus = (x: number, z: number) => !!focus && Math.hypot(x - focus.x, z - focus.z) < focus.r;
+  const dockInF = new Uint8Array(docks.length);
+  const dockWIn = dockW.map((ws) => ws.map(() => 0));
+  const dockWOut = dockW.map((ws) => ws.slice());
+  const sumIn = new Float64Array(PLACE_Z + 1);
+  const sumOut = new Float64Array(PLACE_Z + 1);
+  const wantIn = new Float64Array(PLACE_Z + 1);
+  const wantOut = new Float64Array(PLACE_Z + 1);
+  const haveIn = new Float64Array(PLACE_Z + 1);
+  const haveOut = new Float64Array(PLACE_Z + 1);
+  let kIn = 1; // 보는 곳 안 화면 1명이 실제 몇 명인가
+  let kOut = 1; // 보는 곳 밖
+  /** 선 무게를 지금 명소 붐빔으로 다시 정한다 */
+  function weigh() {
+    totW.fill(0);
+    for (let e = 0; e < NE; e++) {
+      const a = eA[e];
+      eW[e] = eLenW[e] * (1 + PULL * Math.max(nodePull[a], nodePull[g.adj[a][eK[e]]]));
+      totW[eCell[e]] += eW[e];
+      if (ePlace[e]) totW[PLACE_Z] += eW[e];
+    }
+  }
+  weigh();
+  /** 보는 곳 안 선 무게와 문·출구 무게를 나눈다 */
+  function refocus() {
+    inW.fill(0);
+    for (let c = 0; c <= PLACE_Z; c++) (fEdges[c].length = 0), (fCum[c].length = 0);
+    if (focus)
+      for (let e = 0; e < NE; e++) {
+        if (!inFocus(eX[e], eZ[e])) continue;
+        for (const c of ePlace[e] ? [eCell[e], PLACE_Z] : [eCell[e]]) {
+          inW[c] += eW[e];
+          fEdges[c].push(e);
+          fCum[c].push(inW[c]);
+        }
+      }
+    for (let z = 0; z <= PLACE_Z; z++) {
+      sumIn[z] = sumOut[z] = 0;
+      docksIn[z].forEach((k, q) => {
+        dockWIn[z][q] = dockInF[k] ? dockWNow[z][q] : 0;
+        dockWOut[z][q] = dockInF[k] ? 0 : dockWNow[z][q];
+        sumIn[z] += dockWIn[z][q];
+        sumOut[z] += dockWOut[z][q];
+      });
+    }
+  }
+  /** 칸마다 실제 인원(real)을 보는 곳 안·밖 화면 인원으로 나눈다. 보는 곳이 없으면 모든 칸을 같은 배율로 줄인다(walkerScale) */
+  function allot(real: number[]) {
+    let F = 0;
+    let O = 0;
+    for (let c = 0; c <= PLACE_Z; c++) {
+      wantIn[c] = focus && totW[c] > 0 ? (real[c] * inW[c]) / totW[c] : 0;
+      F += wantIn[c];
+      O += real[c] - wantIn[c];
+    }
+    // 밖에는 같은 배율로 줄였을 때의 몫을 남기되 상한의 15% 를 넘지 않는다(판 전체를 보면 지금과 같다)
+    const nIn = Math.min(F, max - Math.min(0.15 * max, (O * max) / Math.max(max, F + O)));
+    kIn = nIn > 0 ? F / nIn : 1;
+    const nOut = Math.min(O / kIn, max - nIn);
+    kOut = nOut > 0 ? O / nOut : kIn;
+    if (!(nIn > 0)) kIn = kOut; // 보는 곳이 없으면 안·밖이 같은 배율이다
+    for (let c = 0; c <= PLACE_Z; c++) {
+      wantOut[c] = (real[c] - wantIn[c]) / kOut;
+      wantIn[c] /= kIn;
+    }
+  }
+  /** 칸 c 사람 한 명을 보는 곳 안, 화면에 안 보이는 걷는 선 위에 놓는다 */
+  function spawnHidden(c: number): boolean {
+    const cum = fCum[c];
+    if (!cum.length || w.n >= max) return false;
+    const x = rand() * cum[cum.length - 1];
+    let lo = 0;
+    let hi = cum.length - 1;
+    while (lo < hi) {
+      const m = (lo + hi) >> 1;
+      if (cum[m] < x) lo = m + 1;
+      else hi = m;
+    }
+    const e = fEdges[c][lo];
+    let a = eA[e];
+    let k = eK[e];
+    let b = g.adj[a][k];
+    if (rand() < 0.5) [a, b, k] = [b, a, g.adj[b].indexOf(a)];
+    const L = segLen(a, b) || 1;
+    const tt = rand() * L;
+    const px = g.nx[a * 2] + ((g.nx[b * 2] - g.nx[a * 2]) * tt) / L;
+    const pz = g.nx[a * 2 + 1] + ((g.nx[b * 2 + 1] - g.nx[a * 2 + 1]) * tt) / L;
+    if (!inFocus(px, pz) || seen(px, pz)) return false;
+    const i = w.n++;
+    from[i] = a;
+    to[i] = b;
+    [sx[i], sz[i]] = pos(a);
+    t[i] = tt;
+    side[i] = (rand() < 0.9 ? 1 : -1) * (0.1 + rand() * 0.9);
+    aim(i, k);
+    off[i] = offWant[i];
+    dodge[i] = 0;
+    jx[i] = 0;
+    jz[i] = 0;
+    born(i, c);
+    w.fade[i] = 1;
+    place(i);
+    w.yaw[i] = head[i];
+    return true;
+  }
+  /** 칸 z 사람 가운데 보는 곳 안(inside) 또는 밖에서 화면에 안 보이는, 그냥 걷고 있는 사람 하나를 뺀다(한 번 골라 본다) */
+  function dropHidden(z: number, inside: boolean): boolean {
+    const i = Math.floor(rand() * w.n);
+    if (i >= w.n || home[i] !== z || (mode[i] !== WANDER && mode[i] !== HOMING) || xing[i] || rt[i] || alightT[i] > 0 || holdT[i] > 0) return false;
+    if (inFocus(w.x[i], w.z[i]) !== inside || seen(w.x[i], w.z[i])) return false;
+    remove(i);
+    return true;
+  }
   let rain = 0;
 
   // ── 집으로 가는 길: 모든 출구·정류장에서 거꾸로 퍼진 최단 거리 D(노드)는 그 노드에서 출구·정류장까지 걸을 거리다.
@@ -586,6 +731,32 @@ export function makeWalkers(
     w.z[i] = z0;
   }
 
+  /** 막 나온 사람의 걸음·수명·생김새를 정한다(zone 은 나온 구역 칸) */
+  function born(i: number, zone: number) {
+    speed[i] = 1.0 + rand() * 0.55;
+    life[i] = 150 + rand() * 350; // 구역 안쪽 골목까지 걸어 들어갈 만큼
+    mode[i] = WANDER;
+    endT[i] = -1;
+    dockOf[i] = -1;
+    holdT[i] = 0;
+    xing[i] = 0;
+    nextX[i] = -1;
+    w.phase[i] = rand() * 6.28;
+    w.fade[i] = 0;
+    w.tint[i] = rand();
+    w.id[i] = nextId++;
+    w.photo[i] = 0;
+    home[i] = zone;
+    alightT[i] = 0;
+    const look = looks[zone];
+    const u = rand();
+    w.age[i] = u < look.ages[0] ? 0 : u < look.ages[1] ? 1 : u < look.ages[2] ? 2 : 3;
+    w.female[i] = rand() < look.female ? 1 : 0;
+    if (w.age[i] === 3) speed[i] *= 0.75; // 나이 든 사람은 천천히 걷는다
+    w.moving[i] = 1;
+    queued[i] = 0;
+    rt[i] = 0;
+  }
   /** 출구·정류장 d 에서 한 사람이 나온다 */
   function spawnAt(di: number): number {
     if (w.n >= max) return -1;
@@ -607,29 +778,7 @@ export function makeWalkers(
     jz[i] = 0;
     // 이미 사람이 서 있는 자리면 조금 앞으로 나와 선다(한 자리에 겹쳐 나오지 않게)
     for (let tries = 0; tries < 4 && crowdedAt(i); tries++) t[i] = Math.min(d.len, t[i] + 0.8);
-    speed[i] = 1.0 + rand() * 0.55;
-    life[i] = 150 + rand() * 350; // 구역 안쪽 골목까지 걸어 들어갈 만큼
-    mode[i] = WANDER;
-    endT[i] = -1;
-    dockOf[i] = -1;
-    holdT[i] = 0;
-    xing[i] = 0;
-    nextX[i] = -1;
-    w.phase[i] = rand() * 6.28;
-    w.fade[i] = 0;
-    w.tint[i] = rand();
-    w.id[i] = nextId++;
-    w.photo[i] = 0;
-    home[i] = d.zone;
-    alightT[i] = 0;
-    const look = looks[d.zone];
-    const u = rand();
-    w.age[i] = u < look.ages[0] ? 0 : u < look.ages[1] ? 1 : u < look.ages[2] ? 2 : 3;
-    w.female[i] = rand() < look.female ? 1 : 0;
-    if (w.age[i] === 3) speed[i] *= 0.75; // 나이 든 사람은 천천히 걷는다
-    w.moving[i] = 1;
-    queued[i] = 0;
-    rt[i] = 0;
+    born(i, d.zone);
     place(i);
     w.yaw[i] = head[i];
     if (d.door) {
@@ -1421,9 +1570,10 @@ export function makeWalkers(
       w.yaw[i] = y - Math.round(y / (2 * Math.PI)) * 2 * Math.PI;
     }
     if (!ambient || !docks.length) return;
-    // 구역마다 화면 인원을 그 구역 인구에 맞춘다. 모자라면 그 구역 출구·정류장에서 지하철·버스로 막 도착한 사람처럼 나오고
-    // (한 구역에서 1초에 목표의 1/40, 적어도 2명까지), 넘치면 그 구역 사람 몇 명을 일찍 들여보낸다
-    const want = zoneTargets(provider, now, max, rain);
+    // 칸마다 화면 인원을 실제 인원에 맞춘다(보는 곳 안·밖 따로). 모자라면 그 칸 출구·정류장·문에서 지하철·버스로 막 도착한 사람처럼 나오고
+    // (한 칸에서 1초에 목표의 1/40, 적어도 2명까지), 넘치면 그 칸 사람 몇 명을 일찍 들여보낸다.
+    // 보는 곳이 있으면 보는 곳 안이 많이 모자랄 때 화면 밖 걷는 선 위에 바로 놓고, 넘치는 사람은 화면 밖에서 바로 뺀다
+    allot(outside(provider, now, rain));
     // 나이대·성별 비율을 구역마다 새로 읽는다
     const areas = provider.areas(now);
     const avg = [0, 0, 0, 0];
@@ -1444,21 +1594,31 @@ export function makeWalkers(
       let c = 0;
       looks[ZONE_IDS.length] = looks[PLACE_Z] = { ages: avg.map((v) => (c += v / cnt)), female: fem / cnt };
     }
-    const have = new Array<number>(want.length).fill(0);
-    for (let i = 0; i < w.n; i++) if (mode[i] !== LEAVING) have[home[i]]++;
-    for (let z = 0; z < want.length; z++) {
-      short[z] = want[z] - have[z];
+    haveIn.fill(0);
+    haveOut.fill(0);
+    for (let i = 0; i < w.n; i++) if (mode[i] !== LEAVING) (inFocus(w.x[i], w.z[i]) ? haveIn : haveOut)[home[i]]++;
+    for (let z = 0; z <= PLACE_Z; z++) {
+      const want = wantIn[z] + wantOut[z];
+      short[z] = want - haveIn[z] - haveOut[z];
+      if (focus) {
+        for (let k = 0; k < 6 && haveIn[z] < wantIn[z] - Math.max(3, wantIn[z] * 0.08) && w.n < max; k++) if (spawnHidden(z)) haveIn[z]++;
+        for (let k = 0; k < 8 && haveOut[z] > wantOut[z] * 1.05 + 2; k++) if (dropHidden(z, false)) haveOut[z]--;
+        for (let k = 0; k < 8 && haveIn[z] > wantIn[z] * 1.1 + 3; k++) if (dropHidden(z, true)) haveIn[z]--;
+      }
       if (!docksIn[z].length) continue;
-      budget[z] = Math.min(8, budget[z] + dt * Math.max(2, want[z] / 40));
-      while (have[z] < want[z] && budget[z] >= 1 && w.n < max) {
-        spawnAt(docksIn[z][pick(dockWNow[z], rand())]);
-        have[z]++;
+      budget[z] = Math.min(8, budget[z] + dt * Math.max(2, want / 40));
+      while (budget[z] >= 1 && w.n < max) {
+        const out = haveOut[z] < wantOut[z] && sumOut[z] > 0;
+        if (!out && !(haveIn[z] < wantIn[z] && sumIn[z] > 0)) break;
+        spawnAt(docksIn[z][pick(out ? dockWOut[z] : dockWIn[z], rand())]);
+        (out ? haveOut : haveIn)[z]++;
         budget[z]--;
       }
-      if (have[z] > want[z] * 1.15 + 5)
+      const over = (i: number) => (!focus ? haveIn[z] + haveOut[z] > want * 1.15 + 5 : inFocus(w.x[i], w.z[i]) ? haveIn[z] > wantIn[z] * 1.15 + 5 : haveOut[z] > wantOut[z] * 1.15 + 5);
+      if (!focus ? over(0) : haveIn[z] > wantIn[z] * 1.15 + 5 || haveOut[z] > wantOut[z] * 1.15 + 5)
         for (let k = 0; k < 2; k++) {
           const i = Math.floor(rand() * w.n);
-          if (home[i] === z && mode[i] === WANDER) life[i] = 0;
+          if (home[i] === z && mode[i] === WANDER && over(i)) life[i] = 0;
         }
     }
   }
@@ -1473,5 +1633,26 @@ export function makeWalkers(
     for (let i = 0; i < w.n; i++) if (mode[i] !== LEAVING) have[home[i]]++;
     return have;
   };
-  return { w, step, burst, alight, board, waitingAt, hold, docks, dockPoint, setRain, zoneCounts };
+  /** 보는 곳을 정한다: 중심 (x, z), 반지름 r(m), 화면에 보이는 자리인지 알려 주는 함수 */
+  const setFocus = (x: number, z: number, r: number, visible: (x: number, z: number) => boolean) => {
+    focus = { x, z, r };
+    seen = visible;
+    docks.forEach((d, k) => (dockInF[k] = inFocus(d.x, d.z) ? 1 : 0));
+    refocus();
+  };
+  /** 화면 1명이 실제 몇 명인가: [보는 곳 안, 밖] */
+  const scale = (): [number, number] => [kIn, kOut];
+  /** 실제 추정 인원: test 가 참인 자리의 걷는 선에 퍼진 몫(칸마다 실제 인원 × 그 칸 선 무게 가운데 그 자리 몫) */
+  const expected = (test: (x: number, z: number) => boolean, now: Now) => {
+    refreshPlaces(now);
+    const real = outside(provider, now, rain);
+    const part = new Float64Array(PLACE_Z + 1);
+    for (let e = 0; e < NE; e++)
+      if (test(eX[e], eZ[e])) {
+        part[eCell[e]] += eW[e];
+        if (ePlace[e]) part[PLACE_Z] += eW[e];
+      }
+    return real.reduce((a, v, c) => a + (totW[c] > 0 ? (v * part[c]) / totW[c] : 0), 0);
+  };
+  return { w, step, burst, alight, board, waitingAt, hold, docks, dockPoint, setRain, zoneCounts, setFocus, scale, expected };
 }

@@ -220,10 +220,10 @@ export function makeHud(ev: HudEvents) {
     setSound(on: boolean) {
       for (const b of qa('[data-sound]')) (b.classList.toggle('on', on), (b.textContent = on ? '소리 끄기' : '소리 켜기'));
     },
-    /** 화면 1명·1대가 실제 몇 명·몇 대인가(차는 보는 곳 둘레 기준) */
+    /** 보는 곳(카메라가 겨눈 자리 둘레) 안에서 화면 1명·1대가 실제 몇 명·몇 대인가. 보는 곳 밖은 더 성기게 둔다 */
     setScale(people: number, cars: number) {
       const n = (v: number) => (v < 1.05 ? '1' : v < 10 ? v.toFixed(1) : String(Math.round(v)));
-      q('[data-scale]').textContent = `화면 사람 1명 ≈ 실제 ${n(people)}명 · 보는 곳 차 1대 ≈ 실제 ${n(cars)}대`;
+      q('[data-scale]').textContent = `보는 곳 사람 1명 ≈ 실제 ${n(people)}명 · 차 1대 ≈ 실제 ${n(cars)}대`;
     },
     setAreas(areas: AreaStatus[]) {
       const sorted = [...areas].sort((a, b) => b.level - a.level || b.pplMin - a.pplMin).slice(0, 5);

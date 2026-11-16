@@ -253,6 +253,15 @@ describe('단지 바닥 소품', () => {
     expect(kinds.filter((k) => k === 5).length).toBe(1);
     expect(kinds.filter((k) => k === 6).length).toBe(1);
   });
+  it('가로등 기둥은 기록한 색(분홍 기둥 등)으로, 색이 없으면 회색으로 세운다', () => {
+    const pole = (color?: string) => {
+      const s = siteOf([{ kind: 'lamp', ll: toLatLon(0, 0), type: 'pole', h: 6, color, conf: 'part', seen: '' }]);
+      const i = Array.from({ length: s.length / 12 }, (_, k) => k).find((k) => s[k * 12 + 7] === DK.pole)! * 12;
+      return [s[i + 8], s[i + 9], s[i + 10]];
+    };
+    expect(pole('#ff8000')).toEqual([1, 128 / 255, 0]);
+    expect(pole()).toEqual([0.36, 0.37, 0.39]);
+  });
 });
 
 describe('기록한 창 모양', () => {

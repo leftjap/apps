@@ -182,7 +182,7 @@ export function siteOf(props: PropRec[]): number[] {
       }
     } else if (p.kind === 'lamp') {
       const [x, z] = xz(p.ll);
-      const c: [number, number, number] = [0.36, 0.37, 0.39];
+      const c: [number, number, number] = p.color ? hexRGB(p.color) : [0.36, 0.37, 0.39];
       push(x, 0, z, 0, 0.14, p.h, 0.14, DK.pole, c);
       if (p.type === 'pole') push(x + 0.55, p.h - 0.1, z, 0, 1.2, 0.14, 0.32, DK.lamp, [0.85, 0.85, 0.82]);
       else push(x, p.h, z, 0, 0.42, 0.42, 0.42, DK.lamp, [0.95, 0.95, 0.92]);

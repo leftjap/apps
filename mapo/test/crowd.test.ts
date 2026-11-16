@@ -186,7 +186,7 @@ describe('보는 곳 먼저 채우기', () => {
   const now0 = { ...at(14), tod: 14 * 3600 };
   const big = { hongdae: 60000, yeonnam: 60000 };
   // 홍대 구역 안쪽 한 곳을 가까이 본다: 보는 곳 반지름 200m, 화면은 그 가운데 120m 네모
-  const F = { x: 360, z: -300, r: 200 };
+  const F = { x: 400, z: -300, r: 200 };
   const screen = (x: number, z: number) => Math.abs(x - F.x) < 60 && Math.abs(z - F.z) < 60;
   const inF = (x: number, z: number) => Math.hypot(x - F.x, z - F.z) < F.r;
   const run = (sim: ReturnType<typeof makeWalkers>, from: number, secs: number, each?: () => void) => {

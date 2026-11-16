@@ -118,7 +118,7 @@ export type PropRec = PropBase &
     | { kind: 'paving'; ll: LL; w: number; d: number; yaw: number; surface: 'asphalt' | 'concrete' | 'planting' | 'block' }
     | { kind: 'parking'; ll: LL; yaw: number; n: number; w: number; d: number; orient: 'perp' | 'parallel' }
     | { kind: 'pergola'; ll: LL; w: number; d: number; h: number; yaw: number; color: string }
-    | { kind: 'lamp'; ll: LL; type: 'pole' | 'globe'; h: number }
+    | { kind: 'lamp'; ll: LL; type: 'pole' | 'globe'; h: number; /** 기둥 색(분홍 기둥 등). 없으면 회색 */ color?: string }
   );
 
 export interface AreaRec {

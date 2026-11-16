@@ -45,7 +45,7 @@ import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
 import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
 import { matchIncidents, spotXZ, type Incident } from './sim/incidents.ts';
-import { doorWanted, makeWalkers, underpasses, walkerScale, ZONES } from './sim/walkers.ts';
+import { doorWanted, makeWalkers, underpasses, ZONES } from './sim/walkers.ts';
 import { makeHud, type Card, type CardLine, type Layer, type SeasonPick, type Weather } from './ui/hud.ts';
 import { arrivalBadge, makeTags } from './ui/tags.ts';
 import './ui/hud.css';
@@ -113,6 +113,9 @@ const onScreen = (x: number, z: number) => {
   onScreenP.set(x, 0, z).project(view.camera);
   return onScreenP.z < 1 && Math.abs(onScreenP.x) < 1.15 && Math.abs(onScreenP.y) < 1.15;
 };
+// 처음 보는 곳(주소의 view)을 먼저 맞춰 둔다: 차와 사람을 그 둘레부터 채우고 미리 돌린다
+view.resize();
+view.jumpTo(query.get('view') ?? 'all');
 const focusR = () => Math.min(2200, Math.max(250, view.viewDist() * 1.2));
 let focusAt = { x: view.controls.target.x, z: view.controls.target.z, r: focusR(), age: 0 };
 view.camera.updateMatrixWorld();
@@ -150,6 +153,8 @@ const walkers = makeWalkers(
   signals,
   { busy: crossBusy, traffic: (l) => cars.approaching(l.xw) },
 );
+// 사람도 차와 같은 보는 곳을 먼저 실제 붐빔대로 채우고, 화면 밖에서만 놓고 뺀다
+walkers.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
 // 처음부터 길에 사람이 있도록 5분쯤 미리 돌려 둔다(신호가 바뀌도록 시각도 함께 흘린다)
 for (let i = 0; i < 600; i++) walkers.step(0.5, { ...start, tod: (start.tod - 300 + i * 0.5 + 86400) % 86400 });
 const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
@@ -771,6 +776,7 @@ function frame(t: number) {
     if (Math.hypot(target.x - focusAt.x, target.z - focusAt.z) > focusAt.r * 0.2 || Math.abs(r - focusAt.r) > focusAt.r * 0.2) {
       focusAt = { x: target.x, z: target.z, r, age: 0 };
       cars.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
+      walkers.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
     }
   }
   cars.step(dt, now);
@@ -854,7 +860,7 @@ function frame(t: number) {
     hud.setAir(clock.live ? (live.air()?.text ?? null) : null);
     if (seasonPick === 'live' && seasonOf(now.doy) !== season) applySeason();
     hud.setAreas(provider.areas(now));
-    hud.setScale(walkerScale(provider, now, MAX_PEOPLE, Math.max(weather.rain, weather.snow * 0.7)), cars.scale()[0]);
+    hud.setScale(walkers.scale()[0], cars.scale()[0]);
     // 역 이름표 도착 표시(가까운 보기에서만 보인다): 그 역에 선 열차는 '도착', 90초 안에 설 열차는 '곧 도착'
     for (const l of stations.labels) {
       const b = layers.subway && dist < NEAR_VIEW[1] ? arrivalBadge(liveRail ? subway.board(l.name, stationBoard(board.lines, l.name, now.tod), Date.now()) : stationBoard(board.lines, l.name, now.tod)) : null;
