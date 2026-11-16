@@ -217,7 +217,8 @@ export function makeCars(
   const laneInto = (i: number, e: Edge, a: Edge) => laneAt(i, a, lanePos(e, a, pref[i] * e.lanes));
   /** 지금 경로(또는 지나온 경로)에서 구간 k 를 달릴 차로. 경로 밖이면 −1 */
   function pathLane(i: number, k: number): number {
-    for (const id of [jp[i], pp[i]]) {
+    for (let pk = 0; pk < 2; pk++) {
+      const id = pk ? pp[i] : jp[i];
       if (id < 0) continue;
       const q = PS[id].edges.indexOf(k);
       if (q >= 0) return PS[id].lanes[q];
@@ -371,7 +372,8 @@ export function makeCars(
     const e = edges[eid];
     out[4] = 0;
     // 교차로 경로 위
-    for (const id of [jp[i], pp[i]]) {
+    for (let pk = 0; pk < 2; pk++) {
+      const id = pk ? pp[i] : jp[i];
       if (id < 0) continue;
       const P = PS[id];
       const q = P.edges.indexOf(eid);
@@ -524,7 +526,8 @@ export function makeCars(
   function hit(ax: number, az: number, ay: number, al: number, aw: number, bx: number, bz: number, by: number, bl: number, bw: number): boolean {
     const dx = bx - ax;
     const dz = bz - az;
-    for (const t of [ay, ay + Math.PI / 2, by, by + Math.PI / 2]) {
+    for (let k = 0; k < 4; k++) {
+      const t = k === 0 ? ay : k === 1 ? ay + Math.PI / 2 : k === 2 ? by : by + Math.PI / 2;
       const ux = Math.cos(t);
       const uz = Math.sin(t);
       const ra = Math.abs(al * Math.cos(ay - t)) + Math.abs(aw * Math.sin(ay - t));
@@ -538,7 +541,8 @@ export function makeCars(
     const dx = bx - ax;
     const dz = bz - az;
     let m = Infinity;
-    for (const t of [ay, ay + Math.PI / 2, by, by + Math.PI / 2]) {
+    for (let k = 0; k < 4; k++) {
+      const t = k === 0 ? ay : k === 1 ? ay + Math.PI / 2 : k === 2 ? by : by + Math.PI / 2;
       const ux = Math.cos(t);
       const uz = Math.sin(t);
       const ra = Math.abs(al * Math.cos(ay - t)) + Math.abs(aw * Math.sin(ay - t));
@@ -1425,7 +1429,8 @@ export function makeCars(
   }
   /** 차 i 가 구간 from 다음에 갈 구간(정해 둔 경로·노선, 갈림 없는 길). 모르면 −1 */
   function laterEdge(i: number, from: Edge): number {
-    for (const id of [jp[i], pp[i]]) {
+    for (let pk = 0; pk < 2; pk++) {
+      const id = pk ? pp[i] : jp[i];
       if (id < 0) continue;
       const q = PS[id].edges.indexOf(from.id);
       if (q >= 0 && q + 1 < PS[id].edges.length) return PS[id].edges[q + 1];

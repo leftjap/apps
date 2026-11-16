@@ -359,6 +359,8 @@ export function makePeople(
     if (zone === OUT_Z && mask) zone = PLACE_Z;
     pushDock({ kind: 'door', key: '', x: d.x, z: d.z, he, t: d.t, lat: 0, door: [d.x, d.z], zone, mask, weight: area * Math.max(1, (b?.h ?? 6) / 3) });
   }
+  // 노드마다 목록을 길이에 맞춰 다시 담는다(push 로 늘린 배열은 칸을 넉넉히 잡아 노드 11만 개에 수십 MB 를 더 쓴다, W19)
+  for (let n = 0; n < out.length; n++) (out[n] = out[n].slice()), (nodeRects[n] = nodeRects[n].slice());
   // ── (선을 다 더한 뒤: 중앙 승강장 선 포함) 좁은 길(두 사람이 엇갈려 지날 수 없는 띠: 가운데가 설 수 있는 폭이 2 × BODY_R 보다 좁다)의 차지: 방향 있는 선마다 지금 그 선을 걷는 사람 수 ──
   const narrow = new Uint8Array(hes.length);
   for (let k = 0; k < hes.length; k++) narrow[k] = hes[k].x < 0 && hes[k].hi - hes[k].lo < 2 * BODY_R ? 1 : 0;
@@ -495,7 +497,9 @@ export function makePeople(
   const seenN = new Int32Array(max * 4).fill(-1); // 최근 지난 노드 넷
   const lastX = new Int32Array(max).fill(-1); // 마지막으로 건넌 횡단보도
   const lastXT = new Float32Array(max);
-  const all = [vX, vZ, headW, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, walked, sampT, ringN, lastX, lastXT];
+  // 성기게 움직이기(W19): 자세히 볼 필요 없는 사람(setDetail 이 거짓)은 밀린 시간이 SUB 에 닿을 때만 한 번에 움직인다
+  const lag = new Float32Array(max);
+  const all = [lag, vX, vZ, headW, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, walked, sampT, ringN, lastX, lastXT];
 
   const dead = new Uint8Array(max);
   /** 사라질 사람 표시(단계 안에서는 배열 자리를 바꾸지 않는다: 격자가 옛 자리 번호를 쥐고 있다) */
@@ -562,64 +566,67 @@ export function makePeople(
         }
     return c / 19.6;
   }
-  // 차 몸통 격자(8m 칸)
+  // 차 몸통 격자(8m 칸): 칸 열쇠마다 연결 목록(carCH → carCN), 차 방향의 cos·sin 은 격자를 만들 때 한 번만 구한다(W19)
   const CG = 8;
-  const carHead = new Map<number, number[]>();
+  const carCH = new Int32Array(GH).fill(-1);
+  const carCN = new Int32Array(8192);
+  let carCount = 0;
   const carL = new Float32Array(8192);
   const carW = new Float32Array(8192);
+  const carC = new Float64Array(8192);
+  const carS = new Float64Array(8192);
   function carGrid() {
-    carHead.clear();
+    if (carCount) carCH.fill(-1);
+    carCount = 0;
     const c = o.cars;
     if (!c) return;
     for (let k = 0; k < c.n && k < carL.length; k++) {
       if (Math.abs(c.y[k]) > 0.6) continue; // 지하차도·고가·둑길·터널 입구 경사 위 차는 사람과 같은 높이가 아니다(망원나들목은 강변북로 밑을 지난다)
       carL[k] = (c.kind[k] === 1 ? 12 : BODY_LEN[c.kind[k] === 2 ? 0 : bodyType(c.tint[k])]) / 2;
       carW[k] = c.kind[k] === 1 ? 1.25 : BODY_HW[c.kind[k] === 2 ? 0 : bodyType(c.tint[k])];
+      carC[k] = Math.cos(c.yaw[k]);
+      carS[k] = Math.sin(c.yaw[k]);
       const key = cellKey(Math.floor(c.x[k] / CG), Math.floor(c.z[k] / CG));
-      (carHead.get(key) ?? carHead.set(key, []).get(key)!).push(k);
+      carCN[k] = carCH[key];
+      carCH[key] = k;
+      carCount++;
     }
   }
   /** (x, z)에 몸이 놓이면 차 몸통(둘레 pad)에 얼마나 깊이 들어가는가(0 이면 안 겹침) */
   function carDepth(x: number, z: number, pad = CAR_PAD): number {
     const c = o.cars;
-    if (!c || !carHead.size) return 0;
+    if (!c || !carCount) return 0;
     const cx = Math.floor(x / CG);
     const cz = Math.floor(z / CG);
     let m = 0;
     for (let ax = -1; ax <= 1; ax++)
-      for (let az = -1; az <= 1; az++) {
-        const list = carHead.get(cellKey(cx + ax, cz + az));
-        if (!list) continue;
-        for (const k of list) {
+      for (let az = -1; az <= 1; az++)
+        for (let k = carCH[cellKey(cx + ax, cz + az)]; k >= 0; k = carCN[k]) {
           const dx = x - c.x[k];
           const dz = z - c.z[k];
-          const cs = Math.cos(c.yaw[k]);
-          const sn = Math.sin(c.yaw[k]);
+          const cs = carC[k];
+          const sn = carS[k];
           const a = carL[k] + BODY_R + pad - Math.abs(dx * cs + dz * sn);
           const b = carW[k] + BODY_R + pad - Math.abs(-dx * sn + dz * cs);
           if (a > 0 && b > 0) m = Math.max(m, Math.min(a, b));
         }
-      }
     return m;
   }
   /** (x, z)에 몸이 놓이면 차 몸통(둘레 pad)과 겹치는가 */
   function carAt(x: number, z: number, pad = CAR_PAD): boolean {
     const c = o.cars;
-    if (!c || !carHead.size) return false;
+    if (!c || !carCount) return false;
     const cx = Math.floor(x / CG);
     const cz = Math.floor(z / CG);
     for (let ax = -1; ax <= 1; ax++)
-      for (let az = -1; az <= 1; az++) {
-        const list = carHead.get(cellKey(cx + ax, cz + az));
-        if (!list) continue;
-        for (const k of list) {
+      for (let az = -1; az <= 1; az++)
+        for (let k = carCH[cellKey(cx + ax, cz + az)]; k >= 0; k = carCN[k]) {
           const dx = x - c.x[k];
           const dz = z - c.z[k];
-          const cs = Math.cos(c.yaw[k]);
-          const sn = Math.sin(c.yaw[k]);
+          const cs = carC[k];
+          const sn = carS[k];
           if (Math.abs(dx * cs + dz * sn) < carL[k] + BODY_R + pad && Math.abs(-dx * sn + dz * cs) < carW[k] + BODY_R + pad) return true;
         }
-      }
     return false;
   }
 
@@ -788,6 +795,8 @@ export function makePeople(
     headW[i] = rand() * Math.PI * 2;
     avoidHe[i] = -1;
     avoidT[i] = 0;
+    // 성기게 움직일 때 같은 프레임에 몰리지 않게 사람마다 밀린 시간을 다르게 시작한다
+    lag[i] = ((w.id[i] * 0.618034) % 1) * SUB;
   }
   /** 문·출구·정류장 k 에서 한 명을 낸다(자리가 비어 있을 때만). 낸 사람 번호, 못 내면 −1 */
   function spawnAt(k: number, near?: [number, number]): number {
@@ -1505,9 +1514,17 @@ export function makePeople(
       rebuildGrid();
       for (let i = w.n - 1; i >= 0; i--) {
         if (dead[i]) continue;
+        let td = sd;
+        if (detail) {
+          // 자세히 볼 사람은 매 단계, 나머지는 밀린 시간이 SUB 에 닿을 때 그만큼 한 번에(가장 긴 단계는 SUB + 한 프레임)
+          lag[i] += sd;
+          if (lag[i] < SUB - 1e-6 && !detail(w.x[i], w.z[i])) continue;
+          td = lag[i];
+          lag[i] = 0;
+        }
         const x0 = w.x[i];
         const z0 = w.z[i];
-        tick(i, sd, now);
+        tick(i, td, now);
         if (!dead[i] && (w.x[i] !== x0 || w.z[i] !== z0)) {
           const a = Math.atan2(w.z[i] - z0, w.x[i] - x0);
           if (mode[i] !== QUEUE && mode[i] !== WAITX) head[i] = a;
@@ -1516,7 +1533,7 @@ export function makePeople(
           // 몸 방향은 1초에 TURN_RATE 라디안까지만 돈다
           let d = head[i] - w.yaw[i];
           d = Math.atan2(Math.sin(d), Math.cos(d));
-          w.yaw[i] += Math.max(-TURN_RATE * sd, Math.min(TURN_RATE * sd, d));
+          w.yaw[i] += Math.max(-TURN_RATE * td, Math.min(TURN_RATE * td, d));
         }
       }
       compact();
@@ -1603,7 +1620,7 @@ export function makePeople(
   }
   /** 차 몸통이 다가와 몸에 닿으면(둘레 여유 안) 덜 닿는 쪽으로 비켜난다(1초에 2.5m 까지) */
   function escapeCar(i: number, dt: number) {
-    if (!o.cars || !carHead.size) return;
+    if (!o.cars || !carCount) return;
     const d0 = carDepth(w.x[i], w.z[i], CAR_PAD + 0.5);
     if (d0 <= 0) return;
     const v = 3 * dt;
@@ -1709,6 +1726,11 @@ export function makePeople(
     asked = { x, z, r };
     dirty = true;
   };
+  /** 성기게 움직이기(W19, 앱만 쓴다): fine(x, z) 가 거짓인 사람(화면 밖·작게 보이는 사람)은 SUB 초에 한 번만 움직인다. null 이면 모두 매 단계 */
+  let detail: ((x: number, z: number) => boolean) | null = null;
+  const setDetail = (fine: ((x: number, z: number) => boolean) | null) => {
+    detail = fine;
+  };
   /** 화면 1명이 실제 몇 명인가: [보는 곳 안, 밖]. 1 보다 작으면 실제보다 많이 그린 것 */
   const scale = (): [number, number] => [kIn, kOut];
   /** 실제 추정 인원: test 가 참인 자리의 걷는 선에 퍼진 몫 */
@@ -1742,7 +1764,7 @@ export function makePeople(
   const popStats = () => ({ wantIn: Array.from(wantIn), haveIn: Array.from(haveIn), wantOut: Array.from(wantOut), haveOut: Array.from(haveOut), focus, kIn, kOut, n: w.n, pending: pending.length });
   /** 시험용: 사람이 지금 있어도 되는 자리인가 */
   const validAt = (i: number) => valid(i, w.x[i], w.z[i]);
-  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, scale, expected, stateOf, validAt, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
+  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
 }
 export type People = ReturnType<typeof makePeople>;
 

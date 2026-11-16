@@ -340,6 +340,8 @@ const FRAG = /* glsl */ `
 // 빛 번짐: 밤에만 차 앞의 전조등 웅덩이와 뒤의 붉은 번짐을 납작한 판 두 장으로 덧그린다(낮에는 브레이크등도 길에 번지지 않는다).
 // 판은 차로를 덮지 않게 작게: 앞 [길이, 폭], 뒤 [길이, 폭](m)
 export const GLOW_SIZE = { head: [7, 3], tail: [3, 2.6] } as const;
+/** 화면 밖 차 빼기 여유(m): 가장 긴 버스 반 길이 + 전조등 빛 번짐(약 20m)에 멀리서 키우는 배율 최대(SIZE_MAX.mover 3)를 곱했다 */
+const CULL_R = 60;
 const GLOW_K = { head: 0.4, rear: 0.16, brake: 0.4 };
 /** 번짐 세기(가장 밝은 곳): night 0 낮 ~ 1 밤, brake 0~1. 셰이더(GLOW_FRAG)와 같은 식 */
 export function glowStrength(night: number, brake: number): { head: number; rear: number } {
@@ -431,11 +433,17 @@ export function makeCarMeshes(max: number) {
   });
 
   /** pickedUid: 고른 버스의 고유 번호(없으면 0) */
-  function update(c: Cars, pickedUid = 0) {
+  // 화면 밖 차는 넣지 않는다(W19): 차 자리 둘레 CULL_R(m) 공이 카메라 시야 밖이면 뺀다(전조등·후미등 빛 번짐까지 덮는 여유)
+  const frustum = new THREE.Frustum();
+  const pv = new THREE.Matrix4();
+  const ball = new THREE.Sphere(new THREE.Vector3(), CULL_R);
+  function update(c: Cars, pickedUid = 0, cam?: THREE.Camera) {
     const n = kinds.map(() => 0);
     for (const kd of kinds) kd.pick.value = -1;
+    if (cam) frustum.setFromProjectionMatrix(pv.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     for (let i = 0; i < c.n; i++) {
       if (c.y[i] < -2) continue; // 찻길 터널 안(땅 밑)의 차는 그리지 않는다(sim/graph.ts sinkTunnels)
+      if (cam && !frustum.intersectsSphere(ball.set(ball.center.set(c.x[i], c.y[i], c.z[i]), CULL_R))) continue;
       const k = c.kind[i] === 1 ? (c.tint[i] === 3 ? 7 : c.tint[i] === 2 ? 6 : 5) : c.kind[i] === 2 ? 4 : bodyType(c.tint[i]);
       const kd = kinds[k];
       if (n[k] >= kd.max) continue;

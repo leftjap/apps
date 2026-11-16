@@ -121,6 +121,14 @@ export function decodeWalk(j: WalkJson): WalkGraph {
     band[a].push([lo, hi]);
     band[b].push([-hi, -lo]);
   }
+  // 노드마다 목록을 길이에 맞춰 다시 담는다(push 로 늘린 배열은 칸을 넉넉히 잡아 노드 11만 개 × 다섯 목록에 약 100MB 를 더 쓴다, W19)
+  for (let i = 0; i < N; i++) {
+    adj[i] = adj[i].slice();
+    aw[i] = aw[i].slice();
+    cls[i] = cls[i].slice();
+    kind[i] = kind[i].slice();
+    band[i] = band[i].slice();
+  }
   const links: CrossLink[] = [];
   const linkAt = new Map<number, number[]>();
   for (let k = 0; k < j.x.length; k += LINK_N) {

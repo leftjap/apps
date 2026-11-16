@@ -66,7 +66,8 @@ export function makeView(canvas: HTMLCanvasElement) {
   function resize() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // 화소 배율은 1.5 까지(레티나 2배 화면에서 칠할 화소가 0.56배, W19 설계 문서 48절)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h);
     camera.updateProjectionMatrix();

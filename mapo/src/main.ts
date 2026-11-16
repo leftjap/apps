@@ -25,7 +25,7 @@ import { makeView } from './render/scene.ts';
 import { makeSchools } from './render/schools.ts';
 import { makeStations } from './render/stations.ts';
 import { makeTrees } from './render/trees.ts';
-import { makeWalkerMesh } from './render/walkers.ts';
+import { makeWalkerMesh, walkerLod } from './render/walkers.ts';
 import { makeRain } from './render/weather.ts';
 import { makeIncidents } from './render/incidents.ts';
 import { BUS_KINDS, busStopPortals, makeBusRoutes } from './sim/buses.ts';
@@ -160,6 +160,9 @@ const peopleR = () => Math.min(2200, Math.max(150, view.viewDist() * 1.2));
 walkers.setFocus(focusAt.x, focusAt.z, peopleR());
 // 처음부터 길에 사람이 있도록 5분 미리 돌린다: 문·출구에서 나와 걸어간 사람들이다(화면 한가운데에 놓지 않는다)
 walkers.warm(300, start);
+// 화면 밖이거나 작게(단순한 모형으로) 보이는 사람은 0.1초에 한 번만 움직인다(W19, 설계 문서 48절). 판단은 지난 프레임 카메라로 그리기와 같은 기준(walkerLod)
+const camPV = new THREE.Matrix4();
+walkers.setDetail((x, z) => walkerLod(camPV.elements, env.uProjK.value, x, z) === 1);
 const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
 const reactor = makeCatReactor(cats);
 
@@ -740,6 +743,13 @@ const tags = makeTags(
 // 개발 중 화면 확인용 손잡이(배포본에는 들어가지 않는다)
 if (import.meta.env.DEV) Object.assign(window, { __dbg: { view, cats, states: () => catStates, cars, walkers, board, select, followTarget, clock, inter, trains: () => trainSpots } });
 
+// 성능 측정(tools/perf-probe.js, 설계 문서 48절): 주소에 perf 가 있을 때만 프레임마다 간격과 사람·차·그리기 JS 시간, 그리기 호출·삼각형 수를 적는다
+const PERF_N = 1 << 14;
+const perf = query.has('perf')
+  ? { n: 0, gap: new Float32Array(PERF_N), people: new Float32Array(PERF_N), cars: new Float32Array(PERF_N), draw: new Float32Array(PERF_N), js: new Float32Array(PERF_N), calls: 0, tris: 0, jump: (v: string) => view.jumpTo(v), scene: view.scene, counts: () => ({ nPeople: walkers.w.n, nCars: cars.cars.n }) }
+  : null;
+if (perf) Object.assign(window, { __perf: perf });
+
 // ── 프레임 ──
 view.resize();
 view.jumpTo(query.get('view') ?? 'all');
@@ -754,6 +764,8 @@ let hudAge = Infinity;
 let frames = 0;
 let fpsAt = last;
 function frame(t: number) {
+  const p0 = perf ? performance.now() : 0;
+  if (perf) perf.gap[perf.n % PERF_N] = t - last;
   // requestAnimationFrame 시각이 앞서 잰 시각보다 이를 수 있어(첫 프레임) 0 아래로 내려가지 않게 한다
   const dt = Math.max(0, Math.min(0.1, (t - last) / 1000));
   last = t;
@@ -786,7 +798,9 @@ function frame(t: number) {
       walkers.setFocus(focusAt.x, focusAt.z, peopleR());
     }
   }
+  const p1 = perf ? performance.now() : 0;
   cars.step(dt, now);
+  const p2 = perf ? performance.now() : 0;
   // 버스가 정류장에 서면 기다리던 사람이 타고 몇 명이 내린다
   for (const [r, k, i] of cars.dwells) {
     const key = stops.keyOf(r, k);
@@ -796,7 +810,9 @@ function frame(t: number) {
   }
   // 눈이 와도 우산을 쓰고 밖에 나온 사람이 준다(비의 0.7배로 친다)
   walkers.setRain(Math.max(weather.rain, weather.snow * 0.7));
+  camPV.multiplyMatrices(view.camera.projectionMatrix, view.camera.matrixWorldInverse);
   walkers.step(dt, now);
+  const p3 = perf ? performance.now() : 0;
   // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
   // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더와 같은 크기 기준, render/size.ts)
   reactor.setGap((0.27 * BODY_SCALE + 0.32) * sizeAt('mover', view.viewDist()));
@@ -825,7 +841,8 @@ function frame(t: number) {
     boatSpots = boats.update(BOATS.map((b) => boatAt(b, now.tod, len)), BOATS.map((b) => b.kind));
   }
   picnic.visible = picnicOn(now, season, Math.max(weather.rain, weather.snow));
-  carMeshes.update(cars.cars, selected?.kind === 'bus' ? selected.uid : 0);
+  const p4 = perf ? performance.now() : 0;
+  carMeshes.update(cars.cars, selected?.kind === 'bus' ? selected.uid : 0, view.camera);
   walkerMesh.update(walkers.w, view.camera, season);
   trees.update(view.camera);
   catMeshes.update(catStates, dt);
@@ -847,6 +864,15 @@ function frame(t: number) {
     marker.set(p ? { x: p.x, y: spot?.y ?? 0, z: p.z } : null, color);
   } else marker.set(null);
   view.renderer.render(view.scene, view.camera);
+  if (perf) {
+    const k = perf.n++ % PERF_N;
+    const p5 = performance.now();
+    perf.cars[k] = p2 - p1;
+    perf.people[k] = p3 - p2;
+    perf.draw[k] = p5 - p4;
+    perf.calls = view.renderer.info.render.calls;
+    perf.tris = view.renderer.info.render.triangles;
+  }
   tags.update(view.camera, canvas.clientWidth, canvas.clientHeight, dist, true);
   ambience.update({ night: 1 - Math.min(1, Math.max(0, sunAngles(now.tod, now.doy).elev / 6 + 0.5)), rain: weather.rain }, dt);
 
@@ -884,6 +910,7 @@ function frame(t: number) {
       fpsAt = t;
     }
   }
+  if (perf) perf.js[(perf.n - 1) % PERF_N] = performance.now() - p0;
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

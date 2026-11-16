@@ -426,12 +426,13 @@ function recBytes(L: Look): number[] {
 
 /** 벽·난간·옥상 메시. looks 를 주지 않으면 이 목록만으로 붙은 벽을 잰다. rec: 로드뷰 기록 값을 꼭짓점마다 싣는다(모든 건물에 기록이 있어야 한다) */
 export function prismGeometry(list: Building[], lk: Look[] = looks(list), rec = false): THREE.BufferGeometry {
-  const pos: number[] = [];
-  const nor: number[] = [];
-  const edge: number[] = [];
-  const bld: number[] = [];
-  const idx: number[] = [];
-  const rb: number[] = [];
+  // 숫자 목록 대신 늘어나는 형식 배열에 쌓는다(판 건물 꼭짓점 수백만 개를 숫자 목록에 쌓으면 불러올 때 수백 MB 가 버려진다, W19)
+  const pos = grow(Float32Array);
+  const nor = grow(Int8Array);
+  const edge = grow(Float32Array);
+  const bld = grow(Uint8Array);
+  const idx = grow(Uint32Array);
+  const rb = grow(Uint8Array);
   let recB: number[] = [];
   let small: string[] = [];
   let v = 0;
@@ -445,7 +446,7 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list), rec = 
     if (rec) {
       rb.push(...recB);
       // 작은 창으로 기록한 면의 벽: 마지막 바이트 1
-      if (ny === 0 && rb[rb.length - 1] === 0 && small.length && small.includes(faceOf(nx, nz))) rb[rb.length - 1] = 1;
+      if (ny === 0 && rb.a[rb.n - 1] === 0 && small.length && small.includes(faceOf(nx, nz))) rb.a[rb.n - 1] = 1;
     }
     return v++;
   };
@@ -570,17 +571,36 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list), rec = 
     cap(p, h);
   });
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.Int8BufferAttribute(Int8Array.from(nor), 3, true));
-  g.setAttribute('aEdge', new THREE.Float32BufferAttribute(edge, 4));
-  g.setAttribute('aBld', new THREE.Uint8BufferAttribute(Uint8Array.from(bld), 4));
+  g.setAttribute('position', new THREE.BufferAttribute(pos.done(), 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor.done(), 3, true));
+  g.setAttribute('aEdge', new THREE.BufferAttribute(edge.done(), 4));
+  g.setAttribute('aBld', new THREE.BufferAttribute(bld.done(), 4));
   if (rec) {
-    const u = Uint8Array.from(rb);
+    const u = rb.done();
     // 16바이트를 vec4 네 개로(0~1)
     const ib = new THREE.InterleavedBuffer(u, 16);
     for (let k = 0; k < 4; k++) g.setAttribute(`aRec${k}`, new THREE.InterleavedBufferAttribute(ib, 4, k * 4, true));
   }
-  g.setIndex(v > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
+  g.setIndex(v > 65535 ? new THREE.BufferAttribute(idx.done(), 1) : new THREE.BufferAttribute(Uint16Array.from(idx.done()), 1));
+  return g;
+}
+
+type Typed = Float32Array | Int8Array | Uint8Array | Uint32Array;
+/** 늘어나는 형식 배열: push 로 쌓고 done() 이 딱 맞는 길이의 사본을 돌려준다 */
+function grow<T extends Typed>(Kind: { new (n: number): T }) {
+  const g = {
+    a: new Kind(1024),
+    n: 0,
+    push(...v: number[]) {
+      if (g.n + v.length > g.a.length) {
+        const b = new Kind(Math.max(g.a.length * 2, g.n + v.length));
+        b.set(g.a as never);
+        g.a = b;
+      }
+      for (let k = 0; k < v.length; k++) g.a[g.n++] = v[k];
+    },
+    done: (): T => g.a.slice(0, g.n) as T,
+  };
   return g;
 }
 
