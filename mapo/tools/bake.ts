@@ -14,7 +14,7 @@ import { buildSurface, crosswalkPatches, surfacePolys, type Cross as SurfaceCros
 import { ringArea as loopArea } from './lib/contour.ts';
 import { boardWalkNet } from './lib/walknet.ts';
 import { bakeWalk } from './lib/walkfix.ts';
-import { doorWanted } from '../src/sim/people/zones.ts';
+import { doorWanted, underpasses, ZONES } from '../src/sim/people/zones.ts';
 import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../src/data/surface.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
@@ -2063,7 +2063,7 @@ let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | u
   console.log(`연석 선 ${cb.length}줄, ${(curbLoops.reduce((a, r) => a + r.reduce((b, _, k) => (k >= 2 && k % 2 === 0 ? b + Math.hypot(r[k] - r[k - 2], r[k + 1] - r[k - 1]) : b), 0), 0) / 1000).toFixed(0)}km`);
   // 걷는 길 그래프(src/sim/walknet.ts): 보도 면 뼈대 선·보도 없는 골목·도로 부지 밖 보행로와 횡단보도 연결
   // 그린 찻길 면 기준으로 선을 옮기고 자르고, 횡단보도를 다시 잇고, 한 덩어리만 남긴다(tools/lib/walkfix.ts, 재작업 W21)
-  const walk = bakeWalk(b, boardWalkNet(b, sf.faces, patches.map((p) => p.ring), polys), sf.faces, patches.map((p) => p.ring), polys, [-BOARD_R, -BOARD_R, BOARD_R, BOARD_R], (i, x, z) => doorWanted(x, z) && Math.abs(loopArea(b.buildings[i].pts)) > 40, (s) => console.log(s));
+  const walk = bakeWalk(b, boardWalkNet(b, sf.faces, patches.map((p) => p.ring), polys), sf.faces, patches.map((p) => p.ring), polys, [-BOARD_R, -BOARD_R, BOARD_R, BOARD_R], (i, x, z) => doorWanted(x, z) && Math.abs(loopArea(b.buildings[i].pts)) > 40, (s) => console.log(s), underpasses(b.roads, ...ZONES.mangwon));
   walkJson = JSON.stringify(walk);
   const kinds = [0, 0, 0, 0];
   for (let k = 0; k < walk.e.length; k += 5) kinds[walk.e[k + 2] >> 4]++;

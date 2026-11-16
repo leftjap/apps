@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { decodeBoard } from '../src/data/board.ts';
 import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
 import { BOARD_R } from '../src/geo.ts';
-import { doorWanted } from '../src/sim/people/zones.ts';
+import { doorWanted, underpasses, ZONES } from '../src/sim/people/zones.ts';
 import { boardWalkNet } from './lib/walknet.ts';
 import { bakeWalk } from './lib/walkfix.ts';
 
@@ -23,7 +23,7 @@ const area = (p: ArrayLike<number>) => {
   for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) a += p[j] * p[i + 1] - p[i] * p[j + 1];
   return Math.abs(a) / 2;
 };
-const walk = bakeWalk(board, raw, surface.faces, draw, polys, [-BOARD_R, -BOARD_R, BOARD_R, BOARD_R], (i, x, z) => doorWanted(x, z) && area(board.buildings[i].pts) > 40, (s) => console.log(s));
+const walk = bakeWalk(board, raw, surface.faces, draw, polys, [-BOARD_R, -BOARD_R, BOARD_R, BOARD_R], (i, x, z) => doorWanted(x, z) && area(board.buildings[i].pts) > 40, (s) => console.log(s), underpasses(board.roads, ...ZONES.mangwon));
 const json = JSON.stringify(walk);
 writeFileSync(new URL('../public/data/walk.json', import.meta.url), json);
 console.log(`walk.json ${(json.length / 1e6).toFixed(2)}MB, ${((Date.now() - t0) / 1000).toFixed(1)}초`);

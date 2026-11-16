@@ -5,6 +5,8 @@ import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
 import { BOARD_R } from '../src/geo.ts';
 import { decodeWalk, type WalkJson } from '../src/sim/walknet.ts';
 import { BODY_R, EDGE_EXT, hitDisc, majorGround } from '../tools/lib/walkfix.ts';
+import { fillBits } from '../tools/lib/bits.ts';
+import { underpasses, ZONES } from '../src/sim/people/zones.ts';
 
 // 재작업 W21, 지금 판(public/data): 걷는 길 그물의 선·걷는 띠·노드 원은 큰길 찻길에서 사람 몸 반지름 넘게 떨어져 있고,
 // 그물은 한 덩어리이며, 그물에 든 횡단보도는 양 끝이 모두 그물에 닿는다
@@ -22,6 +24,8 @@ const G = majorGround(
   P.med.map(dm),
   [-BOARD_R, -BOARD_R, BOARD_R, BOARD_R],
 );
+// 한강공원 나들목 둘레 20m 는 보행로가 자동차 전용도로 밑을 지난다(찻길로 치지 않는다)
+for (const [tx, tz] of underpasses(board.roads, ...ZONES.mangwon)) fillBits(G, [Array.from({ length: 48 }, (_, k) => (k % 2 ? tz + Math.sin((Math.floor(k / 2) * Math.PI) / 12) * 20 : tx + Math.cos((Math.floor(k / 2) * Math.PI) / 12) * 20))], 1, true);
 const N = W.nx.length / 2;
 
 describe('W21 걷는 길 그물', () => {

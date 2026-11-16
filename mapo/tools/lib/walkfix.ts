@@ -146,6 +146,8 @@ export interface FixInput {
   med: ArrayLike<number>[];
   buildings: ArrayLike<number>[];
   crosswalks: { x: number; z: number; ux: number; uz: number; half: number; wid: number; rings?: ArrayLike<number>[] }[];
+  /** 한강공원 나들목(보행로가 자동차 전용도로 밑을 지나는 곳) */
+  underpasses?: [number, number][];
   /** 문을 둘 건물인가(건물 번호, 바닥 가운데) */
   doorOk?: (i: number, x: number, z: number) => boolean;
   log?: (s: string) => void;
@@ -164,6 +166,12 @@ interface E {
 export function fixWalkNet(inp: FixInput): WalkJson {
   const log = inp.log ?? (() => {});
   const B = majorGround(inp.roads, inp.faces, inp.draw, inp.car, inp.med, inp.bounds);
+  // 한강공원 나들목: 보행로가 자동차 전용도로 밑을 지난다(자료에는 같은 높이). 둘레 20m 는 찻길로 치지 않는다
+  for (const [tx, tz] of inp.underpasses ?? []) {
+    const ring: number[] = [];
+    for (let k = 0; k < 24; k++) ring.push(tx + Math.cos((k * Math.PI) / 12) * 20, tz + Math.sin((k * Math.PI) / 12) * 20);
+    fillBits(B, [ring], ROAD, true);
+  }
   for (const b of inp.buildings) fillBits(B, [b], BLDG);
   for (const c of inp.crosswalks) for (const r of c.rings ?? []) fillBits(B, [r], XW);
   // 큰길 찻길·건물 칸을 CLEAR 만큼 넓힌 칸(네모로 넓혀 원보다 넉넉하다): 1 몸이 찻길·건물에 닿음, 2 몸이 찻길에 닿음
@@ -854,6 +862,7 @@ export function bakeWalk(
   bounds: [number, number, number, number],
   doorOk?: FixInput['doorOk'],
   log?: (s: string) => void,
+  underpasses?: [number, number][],
 ): WalkJson {
-  return fixWalkNet({ json: raw, bounds, roads: b.roads, faces, draw, car: polys.car, med: polys.med, buildings: b.buildings.map((q) => q.pts), crosswalks: b.crosswalks, doorOk, log });
+  return fixWalkNet({ json: raw, bounds, roads: b.roads, faces, draw, car: polys.car, med: polys.med, buildings: b.buildings.map((q) => q.pts), crosswalks: b.crosswalks, doorOk, log, underpasses });
 }
