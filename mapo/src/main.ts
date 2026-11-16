@@ -171,6 +171,8 @@ flow.update(provider, start);
 // 로드뷰 기록 구역의 나무(자리·수종은 기록 파일에 있고, 지금 모형은 수종을 쓰지 않는다)
 const svTrees = streetview.flatMap((a) => a.props.flatMap((p) => (p.kind === 'tree' ? llToXZ(p.ll) : [])));
 const trees = makeTrees(svTrees.length ? Float32Array.from([...board.trees, ...svTrees]) : board.trees, seasonOf(start.doy));
+// 수종(tools/trees.ts 가 board.json 나무 순서대로 굽는다). 오기 전에는 모두 '그 밖 활엽' 모형으로 그린다
+fetch(`${BASE}data/trees.json`).then((r) => r.json() as Promise<{ k: string }>).then((j) => trees.setKinds(Array.from(j.k, Number))).catch(() => {});
 const svMatch = matchBuildings(board.buildings, streetview);
 const buildings = makeBuildings(board.buildings, svMatch.byIndex);
 const detail = makeDetail(buildings.list, buildings.looks, [...svMatch.byIndex.keys()], streetview.flatMap((a) => a.props));
@@ -807,6 +809,7 @@ function frame(t: number) {
   picnic.visible = picnicOn(now, season, Math.max(weather.rain, weather.snow));
   carMeshes.update(cars.cars, selected?.kind === 'bus' ? selected.uid : 0);
   walkerMesh.update(walkers.w, view.camera, season);
+  trees.update(view.camera);
   catMeshes.update(catStates, dt);
   rings.update(dt);
   signalMarks.update(now.tod);
