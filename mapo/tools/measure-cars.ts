@@ -11,9 +11,10 @@
 //  4. 땅 위 찻길(등급 5 이하, 교량 아님)을 달리는 차 가운데가 찻길 면(surface-polys 의 car + 교차로 면 − 교통섬) 밖인 시간 비율과 그 자리(10m 칸, 위 15곳).
 //  5. 멈춘 차(0.3m/s 아래)가 차를 따라갈 때 그 차와의 범퍼 사이(그린 길이, 배율 1): 중앙값, 5% 지점, 1m 미만 비율.
 //  6. 판 전체 차 평균 속도와 대수(1초마다).
+//  겹친 두 차가 노드 없이 가로지르는 두 길(OSM 에서 다리·터널·layer 로 높이가 다른 곳) 위에 있으면 위 분류 대신 '높이 다른 길'로 센다(실제로는 겹치지 않음, tools/raw/highways.json 이 있을 때만).
 // 합정 교차로(−497,250)와 홍대입구역 교차로(222,−410) 둘레 60m 는 1~5 를 따로 적는다.
 // 판 폴더는 MAPO_DATA 로 바꿀 수 있다(고치기 전·후를 같은 판으로 견줄 때). 사례 출력: SHOW=n(옆 튐·꺾임), SHOWOFF=n(찻길 밖), SHOWOV=n(겹침)은 표준 오류로 나간다.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { decodeBoard } from '../src/data/board.ts';
 import { decodeSurface, isGroundRoad } from '../src/data/surface.ts';
 import { decodeWalk } from '../src/sim/walknet.ts';
@@ -23,7 +24,7 @@ import { makeCars } from '../src/sim/cars.ts';
 import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { makeWalkers, underpasses, ZONES } from '../src/sim/walkers.ts';
-import { BOARD_R } from '../src/geo.ts';
+import { BOARD_R, toXZ } from '../src/geo.ts';
 import { bitsAt, fillBits, makeBits } from './lib/bits.ts';
 
 const MEAS = Number(process.argv[2] ?? 300);
@@ -42,6 +43,93 @@ const SPOTS: [string, number, number][] = [
 ];
 const data = (f: string) => JSON.parse(readFileSync(`${DATA}/${f}`, 'utf8'));
 const board = decodeBoard(data('board.json'));
+
+// 높이 다른 길: 차가 다니는 두 찻길 조각이 노드 없이 가로지르는 곳 가운데, OSM 에서 높이가 다른 곳(다리·터널·layer).
+// 실제로는 위아래로 지나가므로 그 자리(가로지른 점 15m 안)에서 두 길의 차가 겹친 것은 '높이 다른 길'로 따로 센다.
+// OSM 원자료(tools/raw/highways.json, 커밋하지 않음)가 있을 때만 가린다
+const levelCross = new Map<string, [number, number][]>(); // '작은 조각,큰 조각' → 가로지른 점들
+const sameCross: { x: number; z: number; a: string; b: string }[] = []; // 같은 높이에서 노드 없이 가로지르는 곳
+{
+  const rawFile = new URL('./raw/highways.json', import.meta.url);
+  const carRoads = buildCarGraph(board.roads).map((e) => e.road);
+  const used = [...new Set(carRoads)];
+  if (existsSync(rawFile)) {
+    type Way = { id: number; geometry: { lat: number; lon: number }[]; tags: Record<string, string> };
+    const ways = (JSON.parse(readFileSync(rawFile, 'utf8')).elements as Way[]).filter((w) => w.geometry && w.tags?.highway && !/^(footway|path|cycleway|steps|pedestrian)$/.test(w.tags.highway));
+    const level = (t: Record<string, string>) => (t.layer !== undefined && !Number.isNaN(Number(t.layer)) ? Number(t.layer) : t.bridge && t.bridge !== 'no' ? 1 : t.tunnel && t.tunnel !== 'no' ? -1 : 0);
+    const C = 20;
+    const wg = new Map<number, [Way, number, number, number, number][]>();
+    for (const w of ways) {
+      const p = w.geometry.map((g) => toXZ(g.lat, g.lon));
+      for (let i = 0; i + 1 < p.length; i++) {
+        for (let x = Math.floor(Math.min(p[i][0], p[i + 1][0]) / C); x <= Math.floor(Math.max(p[i][0], p[i + 1][0]) / C); x++)
+          for (let z = Math.floor(Math.min(p[i][1], p[i + 1][1]) / C); z <= Math.floor(Math.max(p[i][1], p[i + 1][1]) / C); z++)
+            (wg.get(x * 4096 + z) ?? wg.set(x * 4096 + z, []).get(x * 4096 + z)!).push([w, p[i][0], p[i][1], p[i + 1][0], p[i + 1][1]]);
+      }
+    }
+    /** 점 (x,z) 에서 방향 (hx,hz) 로 지나는 OSM 길(3m 안, 같은 방향. 구운 가운데선은 OSM 에서 2m 남짓 옮겨진 곳이 있다)의 높이. 여럿이면 가장 가까운 길 */
+    const levelAt = (x: number, z: number, hx: number, hz: number) => {
+      const hl0 = Math.hypot(hx, hz) || 1;
+      let best = Infinity;
+      let lv = 0;
+      for (let gx = -1; gx <= 1; gx++)
+        for (let gz = -1; gz <= 1; gz++)
+          for (const [w, ax, az, bx, bz] of wg.get((Math.floor(x / C) + gx) * 4096 + Math.floor(z / C) + gz) ?? []) {
+            const dx = bx - ax;
+            const dz = bz - az;
+            const L = Math.hypot(dx, dz) || 1;
+            if (Math.abs((dx * hx + dz * hz) / (L * hl0)) < 0.95) continue;
+            const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (L * L)));
+            const d = Math.hypot(ax + t * dx - x, az + t * dz - z);
+            if (d < 3 && d < best) (best = d), (lv = level(w.tags));
+          }
+      return lv;
+    };
+    // 가로지르는 곳: 두 조각의 마디가 서로 안쪽에서 만나고, 만나는 점이 두 조각이 함께 쓰는 노드가 아닌 곳
+    const sg = new Map<number, [number, number][]>(); // 칸 → [조각, 마디 시작 번호]
+    for (const r of used) {
+      const p = board.roads[r].p;
+      for (let i = 0; i + 5 < p.length; i += 3)
+        for (let x = Math.floor(Math.min(p[i], p[i + 3]) / C); x <= Math.floor(Math.max(p[i], p[i + 3]) / C); x++)
+          for (let z = Math.floor(Math.min(p[i + 2], p[i + 5]) / C); z <= Math.floor(Math.max(p[i + 2], p[i + 5]) / C); z++) (sg.get(x * 4096 + z) ?? sg.set(x * 4096 + z, []).get(x * 4096 + z)!).push([r, i]);
+    }
+    const seen = new Set<string>();
+    for (const l of sg.values())
+      for (let a = 0; a < l.length; a++)
+        for (let b = a + 1; b < l.length; b++) {
+          const [ra, ia] = l[a];
+          const [rb, ib] = l[b];
+          if (ra === rb) continue;
+          const P = board.roads[ra].p;
+          const Q = board.roads[rb].p;
+          const d1x = P[ia + 3] - P[ia];
+          const d1z = P[ia + 5] - P[ia + 2];
+          const d2x = Q[ib + 3] - Q[ib];
+          const d2z = Q[ib + 5] - Q[ib + 2];
+          const den = d1x * d2z - d1z * d2x;
+          if (Math.abs(den) < 1e-9) continue;
+          const u = ((Q[ib] - P[ia]) * d2z - (Q[ib + 2] - P[ia + 2]) * d2x) / den;
+          const v = ((Q[ib] - P[ia]) * d1z - (Q[ib + 2] - P[ia + 2]) * d1x) / den;
+          if (u < 0 || u > 1 || v < 0 || v > 1) continue;
+          const x = P[ia] + u * d1x;
+          const z = P[ia + 2] + u * d1z;
+          const ends = (R: Float32Array) => [[R[0], R[2]], [R[R.length - 3], R[R.length - 1]]];
+          if (ends(P).some(([ex, ez]) => ends(Q).some(([fx, fz]) => Math.hypot(ex - fx, ez - fz) < 0.05 && Math.hypot(ex - x, ez - z) < 0.5))) continue;
+          const key = `${Math.min(ra, rb)},${Math.max(ra, rb)}`;
+          const at = `${key}@${Math.round(x)},${Math.round(z)}`;
+          if (seen.has(at)) continue;
+          seen.add(at);
+          const ya = P[ia + 1] + u * (P[ia + 4] - P[ia + 1]);
+          const yb = Q[ib + 1] + v * (Q[ib + 4] - Q[ib + 1]);
+          if (Math.abs(ya - yb) > 2.5) continue; // 구운 판에서 이미 높이가 달라 겹침을 재지 않는 곳
+          if (levelAt(x, z, d1x, d1z) !== levelAt(x, z, d2x, d2z)) (levelCross.get(key) ?? levelCross.set(key, []).get(key)!).push([x, z]);
+          else sameCross.push({ x: +x.toFixed(1), z: +z.toFixed(1), a: board.roads[ra].name || `조각 ${ra}`, b: board.roads[rb].name || `조각 ${rb}` });
+        }
+  }
+}
+/** 두 차(조각 ra·rb, 자리)가 높이 다른 두 길이 가로지르는 자리에서 만난 것인가 */
+const levelApart = (ra: number, rb: number, x: number, z: number) =>
+  (levelCross.get(`${Math.min(ra, rb)},${Math.max(ra, rb)}`) ?? []).some(([cx, cz]) => Math.hypot(cx - x, cz - z) < 15);
 const surface = decodeSurface(data('surface.json'));
 const polys = data('surface-polys.json') as { car: number[][]; isl: number[][] };
 const walkNet = data('walk.json');
@@ -319,8 +407,9 @@ function run(dow: number, tod: number, seed: number) {
                 const ej = D.edge[j];
                 const lead = D.ahead[i] === j || D.ahead[j] === i;
                 const par = Math.cos(c.yaw[i] - c.yaw[j]) > 0.9;
-                const kind =
-                  D.boxed[i] || D.boxed[j]
+                const kind = levelApart(carGraph[ei].road, carGraph[ej].road, (c.x[i] + c.x[j]) / 2, (c.z[i] + c.z[j]) / 2)
+                  ? '높이 다른 길'
+                  : D.boxed[i] || D.boxed[j]
                     ? '교차로 안'
                     : seam(i) || seam(j)
                       ? '이음매 곡선'
@@ -370,6 +459,12 @@ function run(dow: number, tod: number, seed: number) {
   return { speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), out };
 }
 
+console.error(
+  JSON.stringify({
+    levelCross: [...levelCross].map(([k, l]) => [k, l.map(([x, z]) => `${Math.round(x)},${Math.round(z)}`)]),
+    sameLevelCross: sameCross,
+  }),
+);
 for (const [k, [name, dow, tod]] of CASES.entries()) {
   if (ONLY >= 0 && k !== ONLY) continue;
   for (const seed of SEEDS) {
