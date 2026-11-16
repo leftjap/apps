@@ -85,7 +85,8 @@ describe('횡단보도로 큰길 건너기', () => {
     const sim = makeWalkers(g, exits, fixedProvider(1, 0), 3, 60, undefined, undefined);
     let crossed = 0;
     let off = 0;
-    for (let k = 0; k < 6000; k++) {
+    // 북쪽 보도가 벽에 끊겨 건너는 사람이 드물다(씨앗에 따라 10분에 한두 번). 30분을 돌려 건넘을 여러 번 본다
+    for (let k = 0; k < 18000; k++) {
       if (k % 200 === 0) sim.burst('s', 3), sim.burst('n', 3);
       sim.step(0.1, at(14), false);
       for (let i = 0; i < sim.w.n; i++) {
@@ -264,7 +265,7 @@ describe('횡단보도로 큰길 건너기', () => {
     const { sim } = busyCrossing();
     let close = 0;
     let waiting = 0;
-    for (let k = 0; k < 6000; k++) {
+    for (let k = 0; k < 12000; k++) {
       if (k % 100 === 0) sim.burst('s', 4), sim.burst('n', 4);
       sim.step(0.1, { tod: k * 0.1, dow: 2, doy: 317 }, false);
       if (k % 10) continue;

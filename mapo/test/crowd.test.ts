@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DataProvider } from '../src/sim/provider.ts';
-import { makeWalkers, underpasses, walkerScale, ZONES, type Portal } from '../src/sim/walkers.ts';
+import { makeWalkers, OUT_BASE, underpasses, walkerScale, zoneTargets, ZONE_IDS, ZONES, type Portal } from '../src/sim/walkers.ts';
 import { at, road, walkNet } from './helpers.ts';
 
 // 홍대·홍대입구역·연남 구역을 덮는 60m 간격 골목 격자
@@ -37,11 +37,12 @@ const density = (sim: ReturnType<typeof settle>, id: string) => {
 };
 
 describe('구역 인구와 화면 인원', () => {
-  it('상한 안이면 화면 1명이 밖에 나와 걷는 실제 1명이다(구역 인구의 12%, 구역 밖 둘레 12% 더)', () => {
-    const sim = settle({ hongdae: 6000, yeonnam: 6000 });
-    expect(walkerScale(provider({ hongdae: 6000, yeonnam: 6000 }), { ...at(14), tod: 14 * 3600 }, 2500)).toBe(1);
-    expect(sim.w.n).toBeGreaterThan(12000 * 0.12 * 1.12 * 0.8);
-    expect(sim.w.n).toBeLessThan(12000 * 0.12 * 1.12 * 1.2);
+  it('상한 안이면 화면 1명이 밖에 나와 걷는 실제 1명이다(구역 인구의 13.5%, 구역 밖 둘레 12% 더)', () => {
+    // 이 격자에는 구역 밖 명소 둘레 문이 없으므로 그 칸(마지막)은 채워지지 않는다
+    const sim = settle({ hongdae: 6000, yeonnam: 6000 }, 600, 5000);
+    expect(walkerScale(provider({ hongdae: 6000, yeonnam: 6000 }), { ...at(14), tod: 14 * 3600 }, 5000)).toBe(1);
+    expect(sim.w.n).toBeGreaterThan(12000 * OUT_BASE * 1.12 * 0.8);
+    expect(sim.w.n).toBeLessThan(12000 * OUT_BASE * 1.12 * 1.2);
   });
   it('인구가 상한을 넘으면 모든 구역을 같은 배율로 줄인다', () => {
     const p = provider({ hongdae: 60000, yeonnam: 60000 });
@@ -49,7 +50,9 @@ describe('구역 인구와 화면 인원', () => {
     expect(k).toBeGreaterThan(5);
     const sim = settle({ hongdae: 60000, yeonnam: 60000 });
     expect(sim.w.n).toBeLessThanOrEqual(2500);
-    expect(sim.w.n).toBeGreaterThan(2000);
+    // 구역 밖 명소 칸 몫(이 격자에는 그 문이 없다)을 뺀 만큼은 채운다
+    const want = zoneTargets(p, { ...at(14), tod: 14 * 3600 + 600 }, 2500);
+    expect(sim.w.n).toBeGreaterThan(want.slice(0, ZONE_IDS.length + 1).reduce((a, b) => a + b, 0) * 0.85);
   });
   it('인구가 같으면 좁은 구역이 넓은 구역보다 빽빽하다', () => {
     const sim = settle({ 'hongik-stn': 6000, yeonnam: 6000 });

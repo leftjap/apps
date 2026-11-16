@@ -1,7 +1,7 @@
 import type * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { cumLen } from '../src/poly.ts';
-import { SHAPES } from '../src/render/cars.ts';
+import { GLOW_SIZE, glowStrength, SHAPES } from '../src/render/cars.ts';
 import { bodyType, CAR_MIX } from '../src/sim/bodies.ts';
 import { carPose, findPortals, trainCar } from '../src/render/rails.ts';
 
@@ -74,5 +74,17 @@ describe('전동차 모형', () => {
     expect(b.max.x - b.min.x).toBeCloseTo(19.5, 1);
     expect(b.max.z - b.min.z).toBeGreaterThan(3.1);
     expect(b.max.z - b.min.z).toBeLessThan(3.25);
+  });
+});
+
+describe('전조등·후미등 바닥 번짐', () => {
+  it('낮에는 브레이크를 밟아도 번짐이 없고, 밤에만 보인다', () => {
+    expect(glowStrength(0, 1)).toEqual({ head: 0, rear: 0 });
+    expect(glowStrength(1, 0).head).toBeGreaterThan(0);
+    expect(glowStrength(1, 1).rear).toBeGreaterThan(glowStrength(1, 0).rear);
+  });
+  it('번짐 판은 옛 크기(앞 13×4.6m, 뒤 4.5×4.2m)보다 작다', () => {
+    expect(GLOW_SIZE.head[0] * GLOW_SIZE.head[1]).toBeLessThan(13 * 4.6 * 0.5);
+    expect(GLOW_SIZE.tail[0] * GLOW_SIZE.tail[1]).toBeLessThan(4.5 * 4.2 * 0.6);
   });
 });

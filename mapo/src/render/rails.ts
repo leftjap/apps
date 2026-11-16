@@ -1,6 +1,7 @@
 // 노선과 열차. 지상 구간(당산철교)은 띄운 선로와 교각, 그 위를 달리는 열차 모형으로 그린다.
-// 지하 구간은 땅 위에 노선 색 점선(아주 옅게, 늘)으로 자리를 보이고, 터널 안 열차는 그 자리 땅 위에 노선 색 빛으로 그린다:
-// 칸마다 나뉜 띠(칸 사이 틈), 머리 칸이 조금 더 밝고, 열차 속도 그대로 움직이며, 역에 서 있는 동안 승강장 길이만큼 빛이 고인다(trainLight.ts).
+// 지하 구간은 먼 보기에서만 땅 위에 노선 색 점선(아주 옅게)으로 자리를 보이고, 터널 안 열차는 그 자리 땅 위에 노선 색 가는 빛줄기로 그린다:
+// 화면 몇 픽셀 폭으로 열차 길이만큼 이어지고 뒤로 꼬리를 끌며, 머리가 가장 밝고, 열차 속도 그대로 움직이며, 역에 서 있는 동안 승강장 길이만큼 빛이 고인다(trainLight.ts).
+// 가까운 보기(카메라에서 400m 안, 600m 부터 서서히, size.ts NEAR_VIEW)에서는 땅에 아무것도 그리지 않는다(역 이름표 도착 표시와 출구 지붕 띠로 알린다).
 // 빛은 땅 높이에 깔려 건물·나무·차가 덮고, 덮인 자리는 성긴 점무늬로 약하게 비쳐 보인다. 빛 바로 앞(카메라 거리의 2.5%, 20~150m)에서 덮은 것만 비치므로
 // 멀리 앞을 가린 건물 벽에는 얹히지 않는다. 판 전체를 볼 만큼 멀면(FAR) 덮인 자리도 보이는 자리와 같은 세기로 그린다.
 // 지상 조각에서 터널 조각으로 바뀌는 곳(합정 남서쪽, 굽기가 OSM 태그로 정한다)에는 옹벽을 세운 터파기와 터널 입구를 만들고, 그 자리만 땅을 깊이로 뚫어 열차 모형이 내려가 입구로 들어간다.
@@ -12,8 +13,8 @@ import type { Line } from '../data/board.ts';
 import { headingAt, pointAt } from '../poly.ts';
 import type { TrainPos } from '../sim/trains.ts';
 import { env, material, pal, UNDER_Y } from './env.ts';
-import { sizeGlsl } from './size.ts';
-import { carPoses, GAP_M, GAP_MAX, GAP_PX, makeTrack, poolLevel, portalRamp } from './trainLight.ts';
+import { farViewGlsl, sizeGlsl } from './size.ts';
+import { CAR_PITCH, carPoses, makeTrack, poolLevel, portalRamp, streakLevels, TAIL } from './trainLight.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
 
 const VERT = /* glsl */ `
@@ -27,8 +28,8 @@ const VERT = /* glsl */ `
   }`;
 
 const MAX_CARS = 260;
-/** 빛 조각 수(칸 + 역에 고인 빛) */
-const MAX_LIGHTS = 300;
+/** 빛 조각 수(칸 + 꼬리 + 역에 고인 빛) */
+const MAX_LIGHTS = 480;
 /** 빛을 깔아 두는 땅 위 높이 */
 const LIGHT_Y = 0.5;
 /** 덮인 빛을 비쳐 보이는 거리: 빛 앞(카메라 쪽) 카메라 거리의 REACH 배(20~150m) 안에 있는 건물·나무·차에 덮인 자리만 비쳐 보인다 */
@@ -41,6 +42,8 @@ const PARAPET = 0.9;
 const TROUGH_W = 5.2;
 const MOUTH_H = 6.2;
 const CAR_LEN = 19.5;
+/** 먼 보기 빛줄기 폭(화면 픽셀) */
+const STREAK_PX = 4;
 
 export interface TrainSpot {
   key: number;
@@ -445,11 +448,11 @@ const lightMat = (through: boolean) =>
         vec4 cv = viewMatrix * vec4(aA.x, ${LIGHT_Y.toFixed(1)}, aA.y, 1.0);
         float mpp = -cv.z / uProjK;                                   // 이 자리에서 한 픽셀(m)
         float pool = aA.w;
-        // 칸은 칸 간격에서 틈(${GAP_M}m, 멀리서도 ${GAP_PX}픽셀, 칸 간격의 ${GAP_MAX * 100}% 까지)을 뺀 길이(trainLight.ts lightLen), 몸통 폭은 실제 폭 또는 화면 10픽셀(역에 고인 빛은 16픽셀)
-        float len = pool > 0.5 ? aC.x : aC.x - min(${GAP_MAX.toFixed(2)} * aC.x, max(${GAP_M.toFixed(2)}, ${GAP_PX.toFixed(1)} * mpp));
-        // 판 전체를 볼 만큼 멀면(FAR) 칸이 몇 픽셀뿐이라 화면 굵기를 1.5배로
+        // 빛줄기 조각은 칸 간격 전체 길이(이웃 조각과 이어진다), 폭은 화면 픽셀로 고정(빛줄기 ${STREAK_PX}픽셀, 역에 고인 빛 10픽셀)
+        float len = aC.x;
+        // 판 전체를 볼 만큼 멀면(FAR) 화면 굵기를 1.5배로
         float far = smoothstep(${FAR[0].toFixed(1)}, ${FAR[1].toFixed(1)}, -cv.z);
-        float wid = max(aC.y, mpp * (pool > 0.5 ? 16.0 : 12.0) * (1.0 + 0.5 * far));
+        float wid = mpp * (pool > 0.5 ? 10.0 : ${STREAK_PX.toFixed(1)}) * (1.0 + 0.5 * far);
         vec2 l = vec2(position.x * len, position.z * wid);
         float cs = cos(aA.z), sn = sin(aA.z);
         vec3 w = vec3(aA.x + l.x * cs - l.y * sn, ${LIGHT_Y.toFixed(1)}, aA.y + l.x * sn + l.y * cs);
@@ -468,20 +471,21 @@ const lightMat = (through: boolean) =>
     fragment: /* glsl */ `
       varying vec2 vQ; varying vec4 vB; varying float vKind; varying float vHead; varying float vDist; varying vec2 vXZ; varying float vFar;
       void main() {
-        float lvl = vB.w * (1.0 - focusIn(vXZ));                      // 들여다보기 원 안에서는 열차 모형을 보이므로 끈다
+        // 들여다보기 원 안에서는 열차 모형을 보이므로 끄고, 가까운 보기(NEAR_VIEW)에서는 땅에 그리지 않는다
+        float lvl = vB.w * (1.0 - focusIn(vXZ)) * ${farViewGlsl('vDist')};
         if (lvl < 0.004) discard;
         float x = abs(vQ.x), y = abs(vQ.y);                           // x: 0 가운데 ~ 1 끝, y: 0 가운데 ~ 1 번짐 바깥
         float pool = step(0.5, vKind);
-        float body = (1.0 - smoothstep(mix(0.42, 0.1, pool), 0.5, y)) * (1.0 - smoothstep(mix(0.93, 0.55, pool), 1.0, x));
-        float halo = (1.0 - smoothstep(0.5, 0.85, y)) * (1.0 - smoothstep(0.7, 1.0, x)) * (1.0 - body);
-        // 몸통 가운데 줄은 흰빛 쪽으로 밝게, 머리 칸은 칸 전체가 조금 더 밝다(칸 세기 vB.w 도 머리 1 → 꼬리 0.6)
+        // 빛줄기 조각은 끝을 흐리지 않아 이웃 조각과 끊기지 않는다(역에 고인 빛만 끝을 흐린다)
+        float ends = mix(1.0, 1.0 - smoothstep(0.55, 1.0, x), pool);
+        float body = (1.0 - smoothstep(mix(0.42, 0.1, pool), 0.5, y)) * ends;
+        float halo = (1.0 - smoothstep(0.5, 0.85, y)) * ends * (1.0 - body);
+        // 가운데 줄은 흰빛 쪽으로 밝게, 머리 조각은 조금 더 밝다(세기 vB.w 도 머리 1 → 꼬리 쪽으로 옅어진다)
         vec3 lc = vB.rgb;
-        // 멀리서 볼 때 낮에는 흰 가운데 줄을 밝게: 서행 띠(주황 면)와 다르게 읽힌다. 가까이(400m 안)는 노면 표시를 가리지 않게 그대로
-        float boost = smoothstep(400.0, 1200.0, vDist) * (1.0 - uNight);
-        float hot = (1.0 - smoothstep(0.0, 0.3, y)) * (0.28 - 0.03 * uNight + 0.17 * boost) * (1.0 + 0.6 * vFar) * (1.0 - pool);
+        float hot = (1.0 - smoothstep(0.0, 0.3, y)) * (0.28 - 0.03 * uNight) * (1.0 + 0.6 * vFar) * (1.0 - pool);
         vec3 col = mix(lc, vec3(1.0), hot + 0.12 * vHead);
         col *= 1.0 + 0.3 * uNight;
-        float a = (body * mix(0.97, 0.5, pool) + halo * (0.25 + 0.15 * boost)) * lvl;
+        float a = (body * mix(0.97, 0.5, pool) + halo * 0.25) * lvl;
         // 덮인 자리: 가까이서는 성긴 점무늬로 약하게(지붕·벽에 칠한 것이 아니라 그 밑이 비쳐 보이는 것으로 읽히게),
         // 판 전체를 볼 만큼 멀면(FAR) 나무·건물이 길을 거의 다 덮고 하나하나가 몇 픽셀이므로 덮은 것과 상관없이 보이는 자리와 같은 세기로
         ${through ? 'if (dither(gl_FragCoord.xy) > mix(0.5, 1.0, vFar)) discard; a *= mix(0.35, 1.0, vFar); col = mix(col, lc, 0.5 * (1.0 - vFar));' : ''}
@@ -545,8 +549,8 @@ export function makeRails(lines: Line[]) {
         varying vec4 vInfo; varying float vDist; varying vec2 vXZ; varying float vSide;
         void main() {
           if (fract(vInfo.w / 24.0) > 0.5) discard;
-          // 가까이서는 옅게(노면 표시를 가리지 않게), 판 전체·홍대 보기에서는 낮에도 알아볼 만큼
-          float a = mix(0.17, 0.62, smoothstep(250.0, 1400.0, vDist)) * (1.0 + 0.15 * uNight) * (1.0 - focusIn(vXZ));
+          // 가까운 보기(NEAR_VIEW)에서는 그리지 않고, 판 전체·홍대 보기에서는 낮에도 알아볼 만큼
+          float a = mix(0.17, 0.62, smoothstep(250.0, 1400.0, vDist)) * (1.0 + 0.15 * uNight) * (1.0 - focusIn(vXZ)) * ${farViewGlsl('vDist')};
           a *= 1.0 - smoothstep(0.55, 1.0, abs(vSide));
           gl_FragColor = vec4(fogged(vInfo.rgb * (1.0 + 0.3 * uNight), vDist), a);
         }`,
@@ -772,17 +776,24 @@ export function makeRails(lines: Line[]) {
       const { l, c, st, portals, track } = byId.get(t.line)!;
       const mid = Math.floor(l.cars / 2);
       // 칸마다 앞뒤 끝을 방향별 선로 위에 얹는다. 커브에서도 방향이 걸음마다 조금씩 바뀌고 칸 사이 틈이 일정하다
+      const lv = streakLevels(l.cars, TAIL);
+      // 꼬리: 열차 뒤로 TAIL 조각, 옅어지며 이어진다(빛만)
+      const ahead = t.dir ? -1 : 1;
+      for (const tail of carPoses(track[t.dir], TAIL, t.s - ahead * ((l.cars + TAIL) / 2) * CAR_PITCH, t.dir)) {
+        if (!tail || !carPose(l, tail.s).under) continue;
+        putLight(tail.x, tail.z, tail.yaw, 0, c, lv[l.cars + tail.k] * portalRamp(tail.s, portals), CAR_PITCH, 3.2, 0);
+      }
       for (const car of carPoses(track[t.dir], l.cars, t.s, t.dir)) {
         if (!car) continue;
-        const { s, k, light: lit, x, y, z, yaw } = car;
+        const { s, k, x, y, z, yaw } = car;
+        const lit = lv[k];
         const pose = carPose(l, s);
         const under = pose.under;
         // 운전실: 맨 앞 칸의 진행 방향 끝(전조등), 맨 뒤 칸의 반대 끝(후미등). 부호는 그 끝이 +x 쪽인지
-        const ahead = t.dir ? -1 : 1;
         const cab = k === 0 ? ahead : k === l.cars - 1 ? -2 * ahead : 0;
         if (k === mid || (k === 0 && l.cars === 1)) spots.push({ key: t.key, line: t.line, dir: t.dir, x, y: under ? UNDER_Y : y, z, under });
         if (under) {
-          putLight(x, z, yaw, 0, c, lit * portalRamp(s, portals), 20, 3.2, k === 0 ? 1 : 0);
+          putLight(x, z, yaw, 0, c, lit * portalRamp(s, portals), CAR_PITCH, 3.2, k === 0 ? 1 : 0);
           if (focus && m < MAX_CARS) {
             const pitch = Math.atan2(Math.max(pose.yb, UNDER_Y) - Math.max(pose.ya, UNDER_Y), CAR_LEN);
             sub.arr.aInst.set([x, Math.max(y, UNDER_Y), z, yaw], m * 4);

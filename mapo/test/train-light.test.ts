@@ -4,7 +4,8 @@ import { decodeBoard } from '../src/data/board.ts';
 import { makeLiveSubway } from '../src/data/subway.ts';
 import { cumLen } from '../src/poly.ts';
 import { findPortals } from '../src/render/rails.ts';
-import { CAR_PITCH, carPoses, carSpans, exitFlash, GAP_M, GAP_MAX, GAP_PX, lightLen, makeTrack, poolLevel, portalRamp } from '../src/render/trainLight.ts';
+import { farView } from '../src/render/size.ts';
+import { CAR_PITCH, carPoses, carSpans, exitFlash, GAP_M, GAP_MAX, GAP_PX, lightLen, makeTrack, poolLevel, portalRamp, streakLevels, TAIL } from '../src/render/trainLight.ts';
 import { arrivals, DWELL, makeProfile, trainsAt, type LineDef } from '../src/sim/trains.ts';
 
 // 지하 열차는 땅 위에 노선 색 빛으로 그린다: 칸마다 나뉜 띠, 머리 쪽이 조금 더 밝고, 역에 서면 승강장 길이만큼 빛이 고이고,
@@ -186,5 +187,23 @@ describe('커브에서 칸 놓기', () => {
     const edge = carPoses(makeTrack(p, cumLen(p), 2.3), 10, 30, 0);
     expect(edge.filter((c) => !c)).toHaveLength(3);
     expect(edge[6]!.x).toBeCloseTo(0, 3);
+  });
+});
+
+describe('가까운 보기와 먼 보기의 지하철 빛', () => {
+  it('가까운 보기(400m 안)에서는 땅에 그리지 않고, 600m 부터는 다 그린다', () => {
+    expect(farView(300)).toBe(0);
+    expect(farView(400)).toBe(0);
+    expect(farView(500)).toBeGreaterThan(0);
+    expect(farView(500)).toBeLessThan(1);
+    expect(farView(700)).toBe(1);
+  });
+  it('빛줄기는 머리가 가장 밝고 꼬리 쪽으로 끊기지 않고 옅어지며, 열차 뒤로 꼬리를 끈다', () => {
+    const lv = streakLevels(8, TAIL);
+    expect(lv.length).toBe(8 + TAIL);
+    expect(lv[0]).toBe(1);
+    for (let k = 1; k < lv.length; k++) expect(lv[k]).toBeLessThan(lv[k - 1]);
+    expect(lv[lv.length - 1]).toBeLessThan(0.15);
+    expect(lv[7]).toBeGreaterThan(0.5);
   });
 });

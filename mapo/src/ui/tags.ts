@@ -3,7 +3,9 @@
 import * as THREE from 'three';
 import type { PlaceLabel } from '../render/landmarks.ts';
 import type { SchoolLabel } from '../render/schools.ts';
+import { NEAR_VIEW } from '../render/size.ts';
 import type { StationLabel } from '../render/stations.ts';
+import type { BoardRow } from '../sim/trains.ts';
 
 const EXIT_NEAR = 1500; // 카메라가 보는 지점에서 이만큼(m) 안으로 들어오면 출구 번호를 보인다
 const EXIT_FAR = 1800; // 카메라에서 이보다 먼 출구 번호는 감춘다(지평선 쪽 역)
@@ -21,6 +23,15 @@ function inside(x: number, z: number, p: Float32Array) {
 export function lineMark(name: string): { text: string; round: boolean } {
   const n = /^(\d+)호선$/.exec(name);
   return n ? { text: n[1], round: true } : { text: name.replace(/(선|철도)$/, ''), round: false };
+}
+
+/** 역 이름표에 붙일 도착 표시: 그 역에 서 있는 열차가 있으면 '도착', 90초 안에 서면 '곧 도착'(가장 먼저 오는 노선), 아니면 null */
+export function arrivalBadge(rows: BoardRow[]): { text: string; line: string } | null {
+  const live = rows.filter((r) => !r.state.startsWith('운행 종료'));
+  const at = live.find((r) => r.state.startsWith('정차 중'));
+  if (at) return { text: '도착', line: at.line };
+  const soon = live.filter((r) => r.inSec < 90).sort((a, b) => a.inSec - b.inSec)[0];
+  return soon ? { text: '곧 도착', line: soon.line } : null;
 }
 
 export function makeTags(
@@ -51,9 +62,13 @@ export function makeTags(
     }
     el.append(document.createElement('b'));
     el.querySelector('b')!.textContent = s.name;
+    // 도착 표시: 가까운 보기에서만, 그 역에 서 있거나 곧 설 열차의 노선 색으로
+    const arr = document.createElement('em');
+    arr.hidden = true;
+    el.append(arr);
     el.addEventListener('click', () => onStation(s.name));
     layer.append(el);
-    return { el, x: s.x, y: s.y, z: s.z };
+    return { el, x: s.x, y: s.y, z: s.z, name: s.name, arr };
   });
   const pl = places.map((p) => {
     const el = document.createElement('button');
@@ -127,6 +142,7 @@ export function makeTags(
     update(cam: THREE.Camera, w: number, h: number, viewDist: number, visible: boolean) {
       layer.hidden = !visible;
       if (!visible) return;
+      for (const it of st) it.arr.hidden = viewDist >= NEAR_VIEW[1] || !it.arr.textContent;
       place(st, cam, w, h, true);
       place(pl, cam, w, h, true, PLACE_FAR);
       place(sc, cam, w, h, true, SCHOOL_FAR);
@@ -139,6 +155,15 @@ export function makeTags(
         const hid = behind(it, cam);
         if (hid !== it.hid) it.el.style.opacity = (it.hid = hid) ? '0.22' : '';
       });
+    },
+    /** 역 name 이름표의 도착 표시(text 가 비면 없앤다). color 는 그 열차의 노선 색 */
+    setArrival(name: string, text: string, color: string) {
+      for (const it of st) {
+        if (it.name !== name || it.arr.textContent === text) continue;
+        it.arr.textContent = text;
+        it.arr.style.setProperty('--c', color);
+        it.arr.className = text === '도착' ? 'now' : '';
+      }
     },
   };
 }

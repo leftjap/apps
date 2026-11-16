@@ -17,7 +17,7 @@ import { makeCars } from '../src/sim/cars.ts';
 import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { arrivals } from '../src/sim/trains.ts';
-import { makeWalkers, underpasses, zoneTargets, ZONE_IDS, ZONES } from '../src/sim/walkers.ts';
+import { doorWanted, makeWalkers, underpasses, zoneTargets, ZONE_IDS, ZONES } from '../src/sim/walkers.ts';
 import { BOARD_R, toXZ } from '../src/geo.ts';
 import { bitsAt, fillBits, makeBits, strokeBits } from './lib/bits.ts';
 
@@ -163,8 +163,7 @@ function run(dow: number, tod: number, seed: number) {
       z /= b.pts.length / 2;
       let a = 0;
       for (let i = 0, j = b.pts.length - 2; i < b.pts.length; j = i, i += 2) a += b.pts[j] * b.pts[i + 1] - b.pts[i] * b.pts[j + 1];
-      const inZone = Object.entries(ZONES).some(([id, [cx, cz, r]]) => id !== 'mangwon' && Math.hypot(x - cx, z - cz) < r);
-      return inZone && Math.abs(a) / 2 > 40 ? [{ kind: 'door' as const, key: '', x, z, poly: b.pts, h: b.h }] : [];
+      return doorWanted(x, z) && Math.abs(a) / 2 > 40 ? [{ kind: 'door' as const, key: '', x, z, poly: b.pts, h: b.h }] : [];
     }),
   ];
   const walkers = makeWalkers(graph, portals, provider, seed, 8000, undefined, signals, { busy: crossBusy, traffic: (l) => cars.approaching(l.xw) });

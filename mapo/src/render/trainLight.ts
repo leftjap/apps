@@ -1,5 +1,6 @@
-// 지하 열차를 땅 위 빛으로 그리는 규칙. 빛은 칸마다 나뉜 띠(칸 사이에 틈)이고 머리 칸이 가장 밝다.
+// 지하 열차를 땅 위 빛으로 그리는 규칙. 먼 보기에서는 노선 색 가는 빛줄기가 열차 길이만큼 이어지고 그 뒤로 꼬리를 끌며, 머리가 가장 밝다.
 // 열차가 역에 서 있는 동안 승강장 길이만큼 빛이 고이고, 서는 순간(출구에서 사람이 나오는 때) 그 역 출구 지붕이 잠깐 밝아진다.
+// 칸 자리(carPoses)는 칸 사이 틈을 두고 놓지만, 빛줄기는 칸 간격 전체를 칠해 끊기지 않는다(옛 칸 판의 틈 규칙 lightLen 은 시험에만 남아 있다).
 import { DWELL } from '../sim/trains.ts';
 
 /** 칸 사이 간격(칸 길이 19.5m + 연결부) */
@@ -22,6 +23,16 @@ export interface CarSpan {
 export function carSpans(cars: number, s: number, dir: 0 | 1): CarSpan[] {
   const ahead = dir ? -1 : 1;
   return Array.from({ length: cars }, (_, k) => ({ s: s + ahead * ((cars - 1) / 2 - k) * CAR_PITCH, k, light: 1 - (0.4 * k) / Math.max(1, cars - 1) }));
+}
+
+/** 빛줄기 꼬리 길이(칸 간격 수). 열차 뒤로 이만큼 옅어지며 이어진다 */
+export const TAIL = 4;
+/** 빛줄기 조각마다 세기: 칸(cars 개, 머리 1 → 꼬리 칸 0.6) 다음에 꼬리(tail 개, 0.6 에서 0 쪽으로) */
+export function streakLevels(cars: number, tail: number): number[] {
+  const out: number[] = [];
+  for (let k = 0; k < cars; k++) out.push(1 - (0.4 * k) / Math.max(1, cars - 1));
+  for (let k = 0; k < tail; k++) out.push(0.6 * (1 - (k + 1) / (tail + 1)) * 0.9);
+  return out;
 }
 
 /** 한 칸의 빛 길이(m). mPerPx 는 그 자리에서 한 픽셀이 몇 m 인지 */

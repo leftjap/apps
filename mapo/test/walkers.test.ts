@@ -177,6 +177,60 @@ describe('부드럽게 돌기', () => {
   });
 });
 
+describe('순간이동 없음', () => {
+  /** 1/30초 단계로 secs 초 돌리며, 나타나고 사라지는 중이 아닌 사람이 한 단계에 움직인 가장 긴 거리(m) */
+  const worstStep = (sim: ReturnType<typeof makeWalkers>, secs: number, refill: () => void) => {
+    const w = sim.w;
+    const prev = new Map<number, [number, number]>();
+    let worst = 0;
+    let moves = 0;
+    for (let k = 0; k < secs * 30; k++) {
+      if (k % 150 === 0) refill();
+      sim.step(1 / 30, at(14), false);
+      const seen = new Map<number, [number, number]>();
+      for (let i = 0; i < w.n; i++) {
+        const p = prev.get(w.id[i]);
+        if (p && w.fade[i] >= 0.99) {
+          worst = Math.max(worst, Math.hypot(w.x[i] - p[0], w.z[i] - p[1]));
+          moves++;
+        }
+        seen.set(w.id[i], [w.x[i], w.z[i]]);
+      }
+      prev.clear();
+      for (const [id, p] of seen) prev.set(id, p);
+    }
+    return { worst, moves };
+  };
+  it('막다른 길 끝에서 되돌아설 때 옆으로 튀지 않는다(한 단계 0.25m 아래)', () => {
+    // 양옆에 보도가 있는 큰길 80m. 출구는 가운데. 사람은 길 끝에서 되돌아서고, 걷는 띠가 넓어 오른쪽·왼쪽 자리가 멀다
+    const g = walkNet([road([[0, 3000], [80, 3000]], { cls: 3, lanes: 4 })], { sidewalk: 6 });
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 40, z: 2990 }], fixedProvider(1, 0), 4, 40);
+    const r = worstStep(sim, 120, () => sim.w.n < 30 && sim.burst('x', 6));
+    expect(r.moves).toBeGreaterThan(50000);
+    expect(r.worst).toBeLessThan(0.25);
+  });
+  it('모퉁이를 돌거나 붐벼서 비켜 설 때 옆으로 튀지 않는다(한 단계 0.25m 아래)', () => {
+    // 넓은 보도의 네모난 길을 40명이 돈다: 모퉁이에서 갈아타고, 서로 비킨다
+    const g = walkNet([road([[0, 3000], [60, 3000], [60, 3060], [0, 3060], [0, 3000]], { cls: 3, lanes: 4 })], { sidewalk: 6 });
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 30, z: 2990 }], fixedProvider(1, 0), 5, 60);
+    const r = worstStep(sim, 120, () => sim.w.n < 50 && sim.burst('x', 15));
+    expect(r.moves).toBeGreaterThan(80000);
+    expect(r.worst).toBeLessThan(0.25);
+  });
+  it('정류장에 닿은 사람은 줄 자리까지 걸어가서 선다(한 단계 0.25m 아래)', () => {
+    // 길 하나에 정류장 하나. 버스에서 내린 사람이 돌아다니다 정류장으로 돌아와 줄을 선다
+    const g = walkNet([road([[0, 3000], [200, 3000]], { cls: 4, lanes: 1 })]);
+    const sim = makeWalkers(g, [{ kind: 'stop', key: 's', x: 100, z: 2996 }], fixedProvider(1, 0), 6, 40);
+    let waited = 0;
+    const r = worstStep(sim, 700, () => {
+      if (sim.w.n < 25) sim.alight('s', 4, 100, 2995);
+      waited = Math.max(waited, sim.waitingAt('s'));
+    });
+    expect(waited).toBeGreaterThan(3);
+    expect(r.worst).toBeLessThan(0.25);
+  });
+});
+
 describe('멈춰 서서 구경하기', () => {
   it('붙잡힌 사람은 멈춰 서서 대상을 보며 휴대폰을 들고, 시간이 지나면 다시 걷는다', () => {
     const g = walkNet([road([[0, 0], [400, 0]], { cls: 4, lanes: 1 })]);

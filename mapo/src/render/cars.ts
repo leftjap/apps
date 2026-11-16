@@ -2,7 +2,7 @@
 // 승용차는 옆모습(보닛·앞유리·지붕선)을 따라 둥근 단면을 앞뒤로 이어 붙인 몸통과 위로 좁아지는 유리 캐빈, 버스는 옆모습 다각형을 폭 방향으로
 // 밀어내고 앞뒤 모서리를 둥글린 차체로 만들고, 차축 하나에 바퀴 둘을 붙인 원기둥을 단다.
 // 전조등·후미등·그릴·창·문은 셰이더가 차 안 좌표로 칠한다. 색은 한국 도로에 많은 흰색·회색·검정 위주, 택시는 흰색·은색과 주황(꽃담황토색)·검정,
-// 버스는 서울 버스 도색(간선 파랑, 지선 초록, 광역 빨강, 마을 연두)이다. 전조등과 브레이크등은 스스로 빛나고, 밤에는 길 위에 빛 번짐을 덧그린다.
+// 버스는 서울 버스 도색(간선 파랑, 지선 초록, 광역 빨강, 마을 연두)이다. 전조등과 브레이크등은 스스로 빛나고, 밤에만 길 위에 작은 빛 번짐을 덧그린다.
 import * as THREE from 'three';
 import type { Cars } from '../sim/cars.ts';
 import { material } from './env.ts';
@@ -337,7 +337,14 @@ const FRAG = /* glsl */ `
     gl_FragColor = vec4(fogged(col, vDist), 1.0);
   }`;
 
-// 빛 번짐: 차 앞의 전조등 웅덩이와 뒤의 붉은 번짐을 납작한 판 두 장으로 덧그린다
+// 빛 번짐: 밤에만 차 앞의 전조등 웅덩이와 뒤의 붉은 번짐을 납작한 판 두 장으로 덧그린다(낮에는 브레이크등도 길에 번지지 않는다).
+// 판은 차로를 덮지 않게 작게: 앞 [길이, 폭], 뒤 [길이, 폭](m)
+export const GLOW_SIZE = { head: [7, 3], tail: [3, 2.6] } as const;
+const GLOW_K = { head: 0.4, rear: 0.16, brake: 0.4 };
+/** 번짐 세기(가장 밝은 곳): night 0 낮 ~ 1 밤, brake 0~1. 셰이더(GLOW_FRAG)와 같은 식 */
+export function glowStrength(night: number, brake: number): { head: number; rear: number } {
+  return { head: GLOW_K.head * night, rear: (GLOW_K.rear + GLOW_K.brake * brake) * night };
+}
 const GLOW_VERT = /* glsl */ `
   attribute vec4 aInst; attribute vec4 aMore; attribute float aPart;
   varying vec2 vP; varying float vPart; varying float vBrake; varying float vDist;
@@ -358,14 +365,17 @@ const GLOW_FRAG = /* glsl */ `
     vec2 q = vP * 2.0 - 1.0;
     float head = (1.0 - vP.x) * max(0.0, 1.0 - q.y * q.y) * smoothstep(0.0, 0.12, vP.x);
     float rear = max(0.0, 1.0 - dot(q, q));
-    vec3 col = vPart < 0.5 ? vec3(1.0, 0.92, 0.72) * head * 0.55 * uNight : vec3(1.0, 0.12, 0.05) * rear * rear * (0.22 * uNight + 0.55 * vBrake * (0.35 + 0.65 * uNight));
+    if (uNight < 0.01) discard;
+    vec3 col = vPart < 0.5 ? vec3(1.0, 0.92, 0.72) * head * ${GLOW_K.head.toFixed(2)} * uNight : vec3(1.0, 0.12, 0.05) * rear * rear * (${GLOW_K.rear.toFixed(2)} + ${GLOW_K.brake.toFixed(2)} * vBrake) * uNight;
     col *= 1.0 + 1.1 * uRain;                                                  // 젖은 길에 더 밝게 비친다
     gl_FragColor = vec4(col * (1.0 - smoothstep(2500.0, 6000.0, vDist) * 0.5), 1.0);
   }`;
 
 function glowGeometry(front: number, rear: number): THREE.BufferGeometry {
-  const head = new THREE.PlaneGeometry(13, 4.6).rotateX(-Math.PI / 2).translate(front + 6.5, 0, 0);
-  const tail = new THREE.PlaneGeometry(4.5, 4.2).rotateX(-Math.PI / 2).translate(rear - 0.6, 0.5, 0);
+  const [hl, hw] = GLOW_SIZE.head;
+  const [tl, tw] = GLOW_SIZE.tail;
+  const head = new THREE.PlaneGeometry(hl, hw).rotateX(-Math.PI / 2).translate(front + hl / 2, 0, 0);
+  const tail = new THREE.PlaneGeometry(tl, tw).rotateX(-Math.PI / 2).translate(rear - 0.4, 0.5, 0);
   const tag = (g: THREE.BufferGeometry, id: number) => {
     const out = g.toNonIndexed();
     out.setAttribute('aPart', new THREE.BufferAttribute(new Float32Array(out.attributes.position.count).fill(id), 1));
