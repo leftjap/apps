@@ -36,5 +36,6 @@
 ## 환경 함정
 
 - **테스트 실행**: 2026-08-30 부로 6개 PWA 의 `test` 스크립트를 `vitest run` 으로 바꾸고 watch 는 `test:watch` 로 분리했으므로 `pnpm test` 는 안전합니다. 다만 `run` 없이 `pnpm vitest` 로 직접 부르면 여전히 watch 에 걸려 Bash 가 멈추므로, PreToolUse hook 이 그 경우만 차단합니다.
+- **앱 미리보기 도구 금지**: `preview_start`·`mcp__Claude_Browser__*` 는 권한 묻지 않는 모드에서도 지오에게 승인 창을 띄워 세션을 멈춘다(2026-11-17 마포 하위 세션 사고, 지오 「앞으로는 허용 승인 물으면 절대 안 됨」). 화면 확인은 디버그 크롬(`~/.claude/scripts/chrome-debug.sh`, 9333, chrome-devtools MCP `new_page` 에 `background: true`)으로 빌드 결과나 배포본을 연다. 하위 작업 지시문에도 이 줄을 넣는다.
 - **PWA 배포 전 확인**: `pnpm test` → `pnpm build` → `pnpm preview` 순. manifest·서비스워커·오프라인은 dev 모드에서 꺼져 있어 `preview` 단계에서만 확인된다. 홈 화면 추가와 standalone 동작은 자동화가 불가능하므로 iPhone Safari 실기기로 직접 본다.
 - **pnpm 10 onlyBuiltDependencies**: 누락 시 esbuild postinstall 차단. PWA 앱(study/gym/today/book/pick/cue/best) `["esbuild"]`.
