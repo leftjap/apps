@@ -117,12 +117,14 @@ export type PropRec = PropBase &
     | { kind: 'tree'; ll: LL; species: string; height: '5-' | '5-10' | '10+' }
     | { kind: 'fence'; line: LL[]; base: 'concrete' | 'brick'; baseColor: string; baseH: number; fence: 'iron' | 'none'; fenceColor: string; fenceH: number }
     | { kind: 'gate'; ll: LL; w: number; d: number; h: number; color: string; top: 'arch' | 'flat' }
-    | { kind: 'paving'; ll: LL; w: number; d: number; yaw: number; surface: 'asphalt' | 'concrete' | 'planting' | 'block' }
+    | { kind: 'paving'; ll: LL; w: number; d: number; yaw: number; surface: 'asphalt' | 'concrete' | 'planting' | 'block'; /** 포장 색(붉은 벽돌 등). 없으면 재질 색 */ color?: string }
     | { kind: 'parking'; ll: LL; yaw: number; n: number; w: number; d: number; orient: 'perp' | 'parallel' }
     | { kind: 'pergola'; ll: LL; w: number; d: number; h: number; yaw: number; color: string }
     | { kind: 'lamp'; ll: LL; type: 'pole' | 'globe'; h: number; /** 기둥 색(분홍 기둥 등). 없으면 회색 */ color?: string }
     /** 계단식 돌 좌석: 앞(아랫단) 가운데 ll 이 아니라 전체 가운데 ll, 방위각 yaw 쪽으로 n 단을 올라 높이 h. w 는 가로, d 는 오르는 방향 깊이 */
     | { kind: 'steps'; ll: LL; w: number; d: number; h: number; n: number; yaw: number; color: string }
+    /** 부스·안내소·무대처럼 길에 놓인 상자: 가운데 ll, 길이 w 를 방위각 yaw 쪽으로 눕히고 폭 d, 높이 h. base 를 적으면 아래 baseH 를 그 색 띠로 */
+    | { kind: 'booth'; ll: LL; w: number; d: number; h: number; yaw: number; color: string; base?: string; baseH?: number }
   );
 
 export interface AreaRec {

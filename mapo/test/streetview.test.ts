@@ -262,6 +262,28 @@ describe('단지 바닥 소품', () => {
     expect(pole('#ff8000')).toEqual([1, 128 / 255, 0]);
     expect(pole()).toEqual([0.36, 0.37, 0.39]);
   });
+  it('포장 면은 기록한 색(붉은 벽돌 등)으로, 색이 없으면 재질 색으로 깐다', () => {
+    const pave = (color?: string) => {
+      const s = siteOf([{ kind: 'paving', ll: toLatLon(0, 0), w: 10, d: 4, yaw: 0, surface: 'block', color, conf: 'part', seen: '' }]);
+      return [s[8], s[9], s[10]];
+    };
+    expect(pave('#ff8000')).toEqual([1, 128 / 255, 0]);
+    expect(pave()).toEqual([0.66, 0.63, 0.59]);
+  });
+  it('부스는 길이 w 를 방위 yaw 로 눕힌 상자이고, 아래 띠 색을 적으면 띠 위에 몸통을 얹는다', () => {
+    const s = siteOf([{ kind: 'booth', ll: toLatLon(10, 20), w: 10, d: 3, h: 3.5, yaw: 90, color: '#ff8000', base: '#0000ff', baseH: 0.5, conf: 'part', seen: '' }]);
+    const boxes = Array.from({ length: s.length / 12 }, (_, i) => s.slice(i * 12, i * 12 + 12));
+    expect(boxes.length).toBe(2);
+    const [base, body] = boxes[0][1] === 0 ? boxes : [boxes[1], boxes[0]];
+    expect([base[8], base[9], base[10]]).toEqual([0, 0, 1]);
+    expect(body[1]).toBeCloseTo(0.5);
+    expect(body[1] + body[5]).toBeCloseTo(3.5);
+    expect(body[4]).toBeCloseTo(10); // 동쪽(90°)으로 눕혀 x 축 길이가 w
+    expect(body[6]).toBeCloseTo(3);
+    const one = siteOf([{ kind: 'booth', ll: toLatLon(0, 0), w: 4, d: 2, h: 0.6, yaw: 0, color: '#808080', conf: 'part', seen: '' }]);
+    expect(one.length / 12).toBe(1);
+    expect(one[1] + one[5]).toBeCloseTo(0.6);
+  });
   it('계단식 좌석은 단 n 개를 쌓아 맨 윗단 위가 h, 맨 아랫단이 깊이 전체를 덮는다', () => {
     const s = siteOf([{ kind: 'steps', ll: toLatLon(10, 20), w: 30, d: 6, h: 1.8, n: 9, yaw: 90, color: '#a7a6a1', conf: 'part', seen: '' }]);
     const boxes = Array.from({ length: s.length / 12 }, (_, i) => s.slice(i * 12, i * 12 + 12));
@@ -337,7 +359,7 @@ describe('기록 파일', () => {
         expect(['shop', 'piloti', 'lobby', 'house', 'ramp', UNKNOWN]).toContain(r.ground);
         expect(['yes', 'part', 'sky']).toContain(r.conf);
       }
-      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp', 'steps']).toContain(p.kind);
+      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp', 'steps', 'booth']).toContain(p.kind);
     }
   });
 });

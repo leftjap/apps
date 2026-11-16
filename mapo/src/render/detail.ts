@@ -159,7 +159,7 @@ export function siteOf(props: PropRec[]): number[] {
     } else if (p.kind === 'paving') {
       const [x, z] = xz(p.ll);
       const c: Record<typeof p.surface, [number, number, number]> = { asphalt: [0.36, 0.37, 0.38], concrete: [0.68, 0.68, 0.66], planting: [0.36, 0.42, 0.27], block: [0.66, 0.63, 0.59] };
-      push(x, 0.02, z, dir(p.yaw).yaw, p.w, 0.06, p.d, DK.paving, c[p.surface], p.surface === 'planting' ? 1 : 0);
+      push(x, 0.02, z, dir(p.yaw).yaw, p.w, 0.06, p.d, DK.paving, p.color ? hexRGB(p.color) : c[p.surface], p.surface === 'planting' ? 1 : 0);
     } else if (p.kind === 'parking') {
       const [x, z] = xz(p.ll);
       const { dx, dz, yaw } = dir(p.yaw);
@@ -186,6 +186,12 @@ export function siteOf(props: PropRec[]): number[] {
       push(x, 0, z, 0, 0.14, p.h, 0.14, DK.pole, c);
       if (p.type === 'pole') push(x + 0.55, p.h - 0.1, z, 0, 1.2, 0.14, 0.32, DK.lamp, [0.85, 0.85, 0.82]);
       else push(x, p.h, z, 0, 0.42, 0.42, 0.42, DK.lamp, [0.95, 0.95, 0.92]);
+    } else if (p.kind === 'booth') {
+      const [x, z] = xz(p.ll);
+      const yaw = dir(p.yaw).yaw;
+      const bh = p.base ? (p.baseH ?? 0.5) : 0;
+      if (p.base) push(x, 0, z, yaw, p.w, bh, p.d, DK.slab, hexRGB(p.base));
+      push(x, bh, z, yaw, p.w, p.h - bh, p.d, DK.slab, hexRGB(p.color));
     } else if (p.kind === 'steps') {
       // 단 k 는 앞에서 k·d/n 뒤부터 맨 뒤까지 덮는 상자 하나(층층이 쌓는다). 윗면이 밝은 slab 으로 디딤면과 챌면이 갈린다
       const [x, z] = xz(p.ll);
