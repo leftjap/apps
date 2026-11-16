@@ -165,7 +165,7 @@ const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
-const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.crosswalkMarks);
+const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.crosswalkMarks, board.stopLines);
 const flow = makeFlow(carGraph, signals.junctions, surface.cut);
 flow.update(provider, start);
 // 로드뷰 기록 구역의 나무(자리·수종은 기록 파일에 있고, 지금 모형은 수종을 쓰지 않는다)
