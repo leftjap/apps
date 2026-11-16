@@ -1,5 +1,5 @@
 // 로드뷰 기록으로 더 자세히 그리는 것: 층마다 내민 발코니와 난간·실외기, 원통 계단실, 처마 띠, 벽의 세로 띠, 주차장 입구(detailOf),
-// 담·철제 펜스·정문 기둥·포장·주차 칸 선·퍼걸러·가로등(siteOf). 모두 상자 하나(원통 계단실은 원통 하나)를 인스턴스로 그린다.
+// 담·철제 펜스·정문 기둥·포장·주차 칸 선·퍼걸러·가로등·계단식 좌석(siteOf). 모두 상자 하나(원통 계단실은 원통 하나)를 인스턴스로 그린다.
 // 기록이 있는 구역에만 생기므로 판 전체 정점은 거의 늘지 않는다. 멀면(900m 넘게) 그리지 않는다.
 import * as THREE from 'three';
 import type { Building } from '../data/board.ts';
@@ -186,6 +186,15 @@ export function siteOf(props: PropRec[]): number[] {
       push(x, 0, z, 0, 0.14, p.h, 0.14, DK.pole, c);
       if (p.type === 'pole') push(x + 0.55, p.h - 0.1, z, 0, 1.2, 0.14, 0.32, DK.lamp, [0.85, 0.85, 0.82]);
       else push(x, p.h, z, 0, 0.42, 0.42, 0.42, DK.lamp, [0.95, 0.95, 0.92]);
+    } else if (p.kind === 'steps') {
+      // 단 k 는 앞에서 k·d/n 뒤부터 맨 뒤까지 덮는 상자 하나(층층이 쌓는다). 윗면이 밝은 slab 으로 디딤면과 챌면이 갈린다
+      const [x, z] = xz(p.ll);
+      const { dx, dz, yaw } = dir(p.yaw);
+      const c = hexRGB(p.color);
+      for (let k = 0; k < p.n; k++) {
+        const s = (k * p.d) / p.n / 2;
+        push(x + dx * s, (k * p.h) / p.n, z + dz * s, yaw, p.d * (1 - k / p.n), p.h / p.n, p.w, DK.slab, c);
+      }
     }
   }
   return out;

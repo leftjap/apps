@@ -98,6 +98,8 @@ export interface StreetRec {
   trees: { species: string; height: string } | null;
   lamps: string;
   props: string[];
+  /** 사람이 모여 서거나 앉는 자리(줄·계단·벤치). 사람 분포가 쓸 수 있게 글로만 적는다 */
+  gather?: string[];
   conf: Conf;
   pano: number[];
   seen: string;
@@ -119,6 +121,8 @@ export type PropRec = PropBase &
     | { kind: 'parking'; ll: LL; yaw: number; n: number; w: number; d: number; orient: 'perp' | 'parallel' }
     | { kind: 'pergola'; ll: LL; w: number; d: number; h: number; yaw: number; color: string }
     | { kind: 'lamp'; ll: LL; type: 'pole' | 'globe'; h: number; /** 기둥 색(분홍 기둥 등). 없으면 회색 */ color?: string }
+    /** 계단식 돌 좌석: 앞(아랫단) 가운데 ll 이 아니라 전체 가운데 ll, 방위각 yaw 쪽으로 n 단을 올라 높이 h. w 는 가로, d 는 오르는 방향 깊이 */
+    | { kind: 'steps'; ll: LL; w: number; d: number; h: number; n: number; yaw: number; color: string }
   );
 
 export interface AreaRec {

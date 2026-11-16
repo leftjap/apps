@@ -262,6 +262,21 @@ describe('단지 바닥 소품', () => {
     expect(pole('#ff8000')).toEqual([1, 128 / 255, 0]);
     expect(pole()).toEqual([0.36, 0.37, 0.39]);
   });
+  it('계단식 좌석은 단 n 개를 쌓아 맨 윗단 위가 h, 맨 아랫단이 깊이 전체를 덮는다', () => {
+    const s = siteOf([{ kind: 'steps', ll: toLatLon(10, 20), w: 30, d: 6, h: 1.8, n: 9, yaw: 90, color: '#a7a6a1', conf: 'part', seen: '' }]);
+    const boxes = Array.from({ length: s.length / 12 }, (_, i) => s.slice(i * 12, i * 12 + 12));
+    expect(boxes.length).toBe(9);
+    expect(boxes.every((b) => b[7] === DK.slab)).toBe(true);
+    const tops = boxes.map((b) => b[1] + b[5]);
+    expect(Math.max(...tops)).toBeCloseTo(1.8);
+    const bottom = boxes.find((b) => b[1] === 0)!;
+    expect(bottom[4]).toBeCloseTo(6); // 오르는 방향 길이 = 깊이 전체
+    expect(bottom[6]).toBeCloseTo(30); // 가로 = 너비
+    // 동쪽(90°)으로 오르면 윗단일수록 가운데가 동쪽으로 간다
+    const top = boxes.reduce((a, b) => (b[1] > a[1] ? b : a));
+    expect(top[0]).toBeGreaterThan(bottom[0]);
+    expect(top[2]).toBeCloseTo(bottom[2]);
+  });
 });
 
 describe('기록한 창 모양', () => {
@@ -322,7 +337,7 @@ describe('기록 파일', () => {
         expect(['shop', 'piloti', 'lobby', 'house', 'ramp', UNKNOWN]).toContain(r.ground);
         expect(['yes', 'part', 'sky']).toContain(r.conf);
       }
-      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp']).toContain(p.kind);
+      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp', 'steps']).toContain(p.kind);
     }
   });
 });
