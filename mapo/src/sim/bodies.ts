@@ -4,6 +4,10 @@
 export const CAR_MIX = [0.4, 0.38, 0.1, 0.12];
 /** 차종별 차 길이(m). 모형 옆모습의 앞뒤 끝 사이(render/cars.ts CAR_SHAPES 의 look.len × 2) */
 export const BODY_LEN = [4.94, 4.74, 3.64, 5.22];
+/** 차종별 반폭(m). 모형의 look.hw(render/cars.ts CAR_SHAPES) */
+export const BODY_HW = [0.93, 0.95, 0.8, 1.0];
+/** 버스 종류별 반폭(m): 0·1 시내, 2 광역, 3 마을(render/cars.ts BUS_SHAPES 의 look.hw) */
+export const BUS_HW = [1.245, 1.245, 1.245, 1.1];
 
 /** 차의 색 값(0~1 균등)과 섞이지 않게 다른 자리 수로 차종을 고른다 */
 export function bodyType(t: number): number {

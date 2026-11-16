@@ -4,7 +4,7 @@
 // 버스는 노선의 구간 열을 따라 맨 오른쪽 차로로 달리고, 정류장마다 잠시 선다. 중앙버스차로가 있는 구간에서는 그 차로로 달리고(마을버스 빼고)
 // 중앙 정류장 가까이에서는 승강장 폭만큼 더 왼쪽으로 비켜 서서 오른쪽 문이 승강장에 닿는다. 일반 차는 중앙버스차로를 쓰지 않는다.
 import { headingAt, pointAt } from '../poly.ts';
-import { BODY_LEN, bodyType } from './bodies.ts';
+import { BODY_HW, BODY_LEN, BUS_HW, bodyType } from './bodies.ts';
 import { busHeadway, type BusRoute } from './buses.ts';
 import { GREEN, YELLOW, type Signals } from './signals.ts';
 import type { Now } from './clock.ts';
@@ -83,6 +83,7 @@ export function makeCars(
   const pref = new Float32Array(max);
   const vf = new Float32Array(max);
   const size = new Float32Array(max);
+  const wid = new Float32Array(max); // 그리는 몸통의 반폭(m)
   const acc = new Float32Array(max);
   const rpos = new Int16Array(max); // 노선의 몇 번째 구간인가
   const stopK = new Int16Array(max); // 다음에 설 정류장 번호
@@ -269,6 +270,7 @@ export function makeCars(
     cars.kind[i] = route >= 0 ? 1 : rand() < 0.09 ? 2 : 0;
     cars.tint[i] = route >= 0 ? routes[route].kind : rand();
     size[i] = route >= 0 ? BUS_LEN[routes[route].kind] ?? 11.5 : BODY_LEN[cars.kind[i] === 2 ? 0 : bodyType(cars.tint[i])];
+    wid[i] = route >= 0 ? BUS_HW[routes[route].kind] ?? 1.245 : BODY_HW[cars.kind[i] === 2 ? 0 : bodyType(cars.tint[i])];
     cars.brake[i] = 0;
     cars.fade[i] = 0;
     cars.room[i] = 99;
@@ -323,6 +325,7 @@ export function makeCars(
     pref[i] = pref[j];
     vf[i] = vf[j];
     size[i] = size[j];
+    wid[i] = wid[j];
     cars.kind[i] = cars.kind[j];
     cars.tint[i] = cars.tint[j];
     cars.brake[i] = cars.brake[j];
@@ -800,13 +803,14 @@ export function makeCars(
           }
         }
       }
-      // 비스듬히 합쳐지는 길에서는 합치기 전부터 차로가 겹친다. 같은 구간으로 합류할 다른 구간의 차가 내 차로 앞을 막고 있으면 그 차도 앞차로 본다.
+      // 다른 구간의 차가 내 앞을 막고 있으면 그 차도 앞차로 본다: 비스듬히 합쳐지는 길은 합치기 전부터 차로가 겹치고,
+      // 자료에서 같은 방향 두 길의 차로가 포개진 곳도 있다. 옆으로 떨어진 거리가 두 몸통의 반폭 합(비스듬하면 그 차 몸통이 옆으로 내민 만큼 더)보다 가까우면 막은 것이다.
       // 둘이 서로 상대를 앞에 두면 큰길 차가 먼저 간다. 교차로 상자 안끼리는 교차로 잡기가 맡는다
       if (!boxed[i]) {
         const hx = Math.cos(cars.yaw[i]);
         const hz = Math.sin(cars.yaw[i]);
         const reach = size[i] / 2 + 6 + v[i] * 1.5;
-        const wi = cars.kind[i] === 1 ? 1.25 : 0.9;
+        const wi = wid[i];
         const cx = cars.x[i] + (hx * reach) / 2;
         const cz = cars.z[i] + (hz * reach) / 2;
         const rad = reach / 2 + 7;
@@ -818,19 +822,18 @@ export function makeCars(
           for (let gz = z0; gz <= z1; gz++)
             for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
               if (j === i || j === front || edge[j] === edge[i] || Math.abs(cars.y[j] - cars.y[i]) > 2.5) continue;
-              if (nextE[i] < 0 || (nextE[j] !== nextE[i] && edge[j] !== nextE[i])) continue; // 합류하지 않는 나란한 길의 차는 보지 않는다
               const dx = cars.x[j] - cars.x[i];
               const dz = cars.z[j] - cars.z[i];
               const along = dx * hx + dz * hz;
               if (along <= 0 || along > reach + size[j] / 2) continue;
-              const wj = cars.kind[j] === 1 ? 1.25 : 0.9;
-              if (Math.abs(dz * hx - dx * hz) > wi + wj + 0.3) continue;
               const jx = Math.cos(cars.yaw[j]);
               const jz = Math.sin(cars.yaw[j]);
               const cosd = hx * jx + hz * jz;
               if (cosd < 0.64) continue; // 가로지르거나 마주 오는 차
+              const sind = Math.abs(hx * jz - hz * jx);
+              if (Math.abs(dz * hx - dx * hz) > wi + wid[j] + sind * (size[j] / 2) + 0.2) continue;
               // 나도 그 차의 앞에 있으면 우선순위가 낮은 쪽이 기다린다
-              if (-(dx * jx + dz * jz) > 0 && Math.abs(dx * jz - dz * jx) < wi + wj + 0.3 && outranks(i, j)) continue;
+              if (-(dx * jx + dz * jz) > 0 && Math.abs(dx * jz - dz * jx) < wi + wid[j] + sind * (size[i] / 2) + 0.2 && outranks(i, j)) continue;
               const g2 = along - (size[i] + size[j]) / 2;
               if (g2 < gap) {
                 gap = g2;
@@ -1070,6 +1073,7 @@ export function makeCars(
       put(cars.n, edges[edgeId], at, lane);
       cars.kind[cars.n] = 0;
       size[cars.n] = BODY_LEN[bodyType(cars.tint[cars.n])];
+      wid[cars.n] = BODY_HW[bodyType(cars.tint[cars.n])];
       locate(cars.n++);
     },
     target,

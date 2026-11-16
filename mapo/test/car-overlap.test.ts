@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { bodyType } from '../src/sim/bodies.ts';
+import { BODY_HW, bodyType } from '../src/sim/bodies.ts';
 import { CAR_SHAPES } from '../src/render/cars.ts';
 import { at, fixedProvider, road } from './helpers.ts';
 
@@ -35,6 +35,12 @@ function overlaps(sim: ReturnType<typeof makeCars>): number {
     for (let j = i + 1; j < c.n; j++) if (Math.hypot(c.x[i] - c.x[j], c.z[i] - c.z[j]) < 14 && !apart(corners(i), corners(j))) n++;
   return n;
 }
+
+describe('시뮬레이션 몸통', () => {
+  it('시뮬레이션이 쓰는 차종별 반폭은 그리는 모형의 반폭과 같다', () => {
+    expect(BODY_HW).toEqual(HW);
+  });
+});
 
 describe('굽은 길에서 줄 선 차', () => {
   it('차로가 많은 길이 갈림 없이 90° 꺾이는 곳에 줄이 서도 안쪽 차로 차들이 겹치지 않는다', () => {
@@ -74,6 +80,29 @@ describe('차로 수가 늘어나는 이음매', () => {
       sim.setIncidents({ blocks: [], close: [], slow: [{ edge: east.id, at: 40, v: 0.05 }] });
       for (let k = 0; k < 10 * 120; k++) {
         if (k % 25 === 0 && k < 10 * 60) sim.put(west.id, 5, 0);
+        sim.step(0.1, at(14), false);
+        worst = Math.max(worst, overlaps(sim));
+      }
+    }
+    expect(worst).toBe(0);
+  });
+});
+
+describe('포개진 두 길', () => {
+  it('자료에서 같은 방향 두 길의 차로가 포개져 있으면, 한쪽 길 차가 다른 길의 앞차 뒤에 서서 겹치지 않는다', () => {
+    // 같은 방향 1차로 일방통행 두 길의 가운데선이 1.6m 떨어져 나란하다(서로 이어지지 않는다). 두 길 모두 앞이 막혀 줄이 선다
+    const g = buildCarGraph([
+      road([[-300, 0], [300, 0]], { oneway: true, lanes: 1, cls: 2 }),
+      road([[-300, 1.6], [300, 1.6]], { oneway: true, lanes: 1, cls: 2 }),
+    ]);
+    const a = g.find((e) => e.p[2] === 0)!;
+    const b = g.find((e) => e.p[2] !== 0)!;
+    let worst = 0;
+    for (const seed of [1, 2, 3]) {
+      const sim = makeCars(g, fixedProvider(1), seed, 60);
+      sim.setIncidents({ blocks: [], close: [], slow: [{ edge: a.id, at: 400, v: 0.05 }, { edge: b.id, at: 410, v: 0.05 }] });
+      for (let k = 0; k < 10 * 150; k++) {
+        if (k % 30 === 0 && k < 10 * 60) sim.put(k % 60 ? a.id : b.id, 5, 0);
         sim.step(0.1, at(14), false);
         worst = Math.max(worst, overlaps(sim));
       }
