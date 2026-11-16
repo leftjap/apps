@@ -181,3 +181,74 @@ describe('공원 나들목', () => {
     expect(Math.hypot(g[0][0], g[0][1])).toBeLessThan(1);
   });
 });
+
+describe('보는 곳 먼저 채우기', () => {
+  const now0 = { ...at(14), tod: 14 * 3600 };
+  const big = { hongdae: 60000, yeonnam: 60000 };
+  // 홍대 구역 안쪽 한 곳을 가까이 본다: 보는 곳 반지름 200m, 화면은 그 가운데 120m 네모
+  const F = { x: 360, z: -300, r: 200 };
+  const screen = (x: number, z: number) => Math.abs(x - F.x) < 60 && Math.abs(z - F.z) < 60;
+  const inF = (x: number, z: number) => Math.hypot(x - F.x, z - F.z) < F.r;
+  const run = (sim: ReturnType<typeof makeWalkers>, from: number, secs: number, each?: () => void) => {
+    for (let k = 0; k < secs * 2; k++) {
+      sim.step(0.5, { ...now0, tod: now0.tod + from + k * 0.5 });
+      each?.();
+    }
+  };
+  const count = (sim: ReturnType<typeof makeWalkers>, f: (x: number, z: number) => boolean) => {
+    let n = 0;
+    for (let i = 0; i < sim.w.n; i++) if (f(sim.w.x[i], sim.w.z[i])) n++;
+    return n;
+  };
+
+  it('보는 곳을 정하지 않으면 모든 곳을 같은 배율로 줄인다(옛 방식)', () => {
+    const sim = makeWalkers(walkNet(grid()), portals, provider(big), 3, 2500);
+    run(sim, 0, 60);
+    const [kIn, kOut] = sim.scale();
+    expect(kIn).toBeCloseTo(walkerScale(provider(big), now0, 2500), 0);
+    expect(kOut).toBeCloseTo(kIn, 5);
+  });
+  it('가까이 보면 보는 곳 안은 실제 붐빔대로(1명 = 1명) 채우고, 밖은 더 줄인다', () => {
+    const sim = makeWalkers(walkNet(grid()), portals, provider(big), 3, 2500);
+    sim.setFocus(F.x, F.z, F.r, () => false);
+    run(sim, 0, 600);
+    const [kIn, kOut] = sim.scale();
+    expect(kIn).toBe(1);
+    expect(kOut).toBeGreaterThan(walkerScale(provider(big), now0, 2500));
+    const real = sim.expected(inF, { ...now0, tod: now0.tod + 600 });
+    expect(real).toBeGreaterThan(100);
+    const have = count(sim, inF);
+    expect(have).toBeGreaterThan(real * 0.85);
+    expect(have).toBeLessThan(real * 1.2);
+    expect(sim.w.n).toBeLessThanOrEqual(2500);
+  });
+  it('보는 곳을 옮기면 화면 밖에서 놓고 빼서, 화면 안에서는 갑자기 생기거나 사라지지 않는다', () => {
+    const sim = makeWalkers(walkNet(grid()), portals, provider(big), 3, 2500);
+    run(sim, 0, 300);
+    const before = count(sim, inF);
+    // 화면(네모) 안에 문·출구가 없으므로, 화면 안에 새로 보이는 사람은 화면 가장자리에서 걸어 들어온 사람뿐이다
+    sim.setFocus(F.x, F.z, F.r, screen);
+    let prev = new Map<number, [number, number]>();
+    let popped = 0;
+    let vanished = 0;
+    run(sim, 300, 120, () => {
+      const cur = new Map<number, [number, number]>();
+      for (let i = 0; i < sim.w.n; i++) cur.set(sim.w.id[i], [sim.w.x[i], sim.w.z[i]]);
+      for (const [id, [x, z]] of cur) if (!prev.has(id) && prev.size && screen(x, z) && Math.abs(x - F.x) < 55 && Math.abs(z - F.z) < 55) popped++;
+      for (const [id, [x, z]] of prev) if (!cur.has(id) && screen(x, z) && Math.abs(x - F.x) < 55 && Math.abs(z - F.z) < 55) vanished++;
+      prev = cur;
+    });
+    expect(popped).toBe(0);
+    expect(vanished).toBe(0);
+    expect(count(sim, inF)).toBeGreaterThan(before * 1.8);
+  });
+  it('판 전체를 보면 지금과 같은 인원이다', () => {
+    const a = makeWalkers(walkNet(grid()), portals, provider(big), 3, 2500);
+    const b = makeWalkers(walkNet(grid()), portals, provider(big), 3, 2500);
+    b.setFocus(0, 0, 1e5, () => true);
+    run(a, 0, 300);
+    run(b, 0, 300);
+    expect(Math.abs(a.w.n - b.w.n)).toBeLessThan(a.w.n * 0.05);
+    expect(b.scale()[0]).toBeCloseTo(a.scale()[0], 1);
+  });
+});
