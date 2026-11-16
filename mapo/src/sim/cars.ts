@@ -224,6 +224,11 @@ export function makeCars(
     }
     return -1;
   }
+  /** 지나온 경로를 놓는 자리(경로 위 거리): 경로 끝이 아니라 나간 차로가 같은 교차로 다른 경로에서 떨어지는 자리(clearOut) */
+  const holdEnd = (P: LanePath) => {
+    const x = P.edges[P.edges.length - 1];
+    return P.end + Math.max(0, X.clearOut(x, P.lanes[P.lanes.length - 1]) - X.rOut[x]);
+  };
   /** 경로 id 위 거리 d 의 자리 → out [x, y, z, 방향] */
   function pathPose(id: number, d: number, out: number[]) {
     const p = PS[id].pts;
@@ -952,7 +957,7 @@ export function makeCars(
     for (const l of coming) l.length = 0;
     for (let i = 0; i < cars.n; i++) {
       if (pp[i] >= 0) {
-        if (pd[i] - size[i] / 2 > PS[pp[i]].end + 0.3) pp[i] = -1;
+        if (pd[i] - size[i] / 2 > holdEnd(PS[pp[i]]) + 0.3) pp[i] = -1;
         else held[PS[pp[i]].j].push(i);
       }
       if (jp[i] >= 0) {
@@ -1335,7 +1340,9 @@ export function makeCars(
         if (!h) wait[r] = 60;
         else if ((t < 0 || s[t] > 16) && addBus(r)) {
           wait[r] = h * (0.85 + rand() * 0.3);
+          // 같은 단계에 같은 출발 구간에 놓인 다른 노선 버스와도 겹치지 않게(새로 놓은 차 목록에 넣는다)
           if (touches(cars.n - 1)) remove(cars.n - 1);
+          else fresh.push(cars.n - 1);
         }
       });
     if (spawn && focus) {
@@ -1376,23 +1383,36 @@ export function makeCars(
     const o = edges[nextE[i]];
     const pl = pathLane(i, o.id);
     const ln = pl >= 0 ? pl : laneAt(i, o, lanePos(e, o, pref[i] * e.lanes));
-    // 다음 구간 자리에서 자리를 셈하려고 잠깐 옮겨 본다
+    // 다음 구간 자리에서 자리를 셈하려고 잠깐 옮겨 본다(꺾이지 않은 이음매는 넘어가며 옆 거리를 넘기는 것까지 같게)
     const se = edge[i];
     const ss = s[i];
     const sl = lane[i];
     const pe = prevE[i];
     const pl0 = prevLane[i];
+    const sd = side[i];
+    const seam = X.jEnd[e.id] < 0 && !bent(e, o);
+    if (seam) {
+      s[i] = e.len;
+      pose(i, e.id, e.len, sl, PS0);
+    }
     edge[i] = o.id;
     s[i] = Math.min(o.len, sv - e.len);
     prevE[i] = e.id;
     prevLane[i] = sl;
     lane[i] = ln;
+    if (seam) {
+      side[i] = 0;
+      pose(i, o.id, s[i], ln, PS1);
+      side[i] = (PS0[0] - PS1[0]) * -Math.sin(PS1[3]) + (PS0[2] - PS1[2]) * Math.cos(PS1[3]);
+      if (!Number.isFinite(side[i])) side[i] = sd;
+    }
     const b = blockedAt(i, o.id, s[i], ln);
     edge[i] = se;
     s[i] = ss;
     lane[i] = sl;
     prevE[i] = pe;
     prevLane[i] = pl0;
+    side[i] = sd;
     return b;
   }
   /** 차 i 가 구간 from 다음에 갈 구간(정해 둔 경로·노선, 갈림 없는 길). 모르면 −1 */
