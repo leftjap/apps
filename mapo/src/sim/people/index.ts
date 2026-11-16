@@ -255,6 +255,24 @@ export function makePeople(
     nodeRects[l.nb].push(rects.length - 1);
   });
 
+  // ── 좁은 길(두 사람이 엇갈려 지날 수 없는 띠)의 차지: 방향 있는 선마다 지금 그 선을 걷는 사람 수 ──
+  const narrow = new Uint8Array(hes.length);
+  for (let k = 0; k < hes.length; k++) narrow[k] = hes[k].x < 0 && hes[k].hi - hes[k].lo < 2 * BODY_R + 0.2 ? 1 : 0;
+  const occ = new Int32Array(hes.length);
+  /** 좁은 선 k 로 들어서면 마주 오는 사람이 있는가: k 와 그 뒤로 갈래 없이 이어진 좁은 선들(25m)에 반대 방향으로 걷는 사람이 있다 */
+  function opposed(k: number): boolean {
+    let len = 0;
+    for (let q = 0; q < 40 && k >= 0 && narrow[k] && len < 25; q++) {
+      if (occ[hes[k].rev] > 0) return true;
+      len += hes[k].L;
+      const b = hes[k].b;
+      if (out[b].length !== 2) break;
+      const nxt = out[b][0] === hes[k].rev ? out[b][1] : out[b][0];
+      k = nxt;
+    }
+    return false;
+  }
+
   // ── 출구·정류장·문 ──
   const docks: Dock[] = [];
   const dockAtHe = new Map<number, number[]>();
@@ -438,6 +456,8 @@ export function makePeople(
   const tx = new Float32Array(max); // 걸어갈 자리(문턱·줄 자리·기다리는 자리·버스 문 앞)
   const tz = new Float32Array(max);
   const xLeg = new Uint8Array(max);
+  const blockT = new Float32Array(max); // 앞사람에게 막혀 선 시간
+  const blk = new Int32Array(max).fill(-1); // 측정용: 막은 앞사람
   const headW = new Float32Array(max); // 돌아다닐 때 갈 쪽(라디안)
   const avoidHe = new Int32Array(max).fill(-1); // 막혀 돌아선 선(잠시 고르지 않는다)
   const avoidT = new Float32Array(max);
@@ -453,7 +473,7 @@ export function makePeople(
   const seenN = new Int32Array(max * 4).fill(-1); // 최근 지난 노드 넷
   const lastX = new Int32Array(max).fill(-1); // 마지막으로 건넌 횡단보도
   const lastXT = new Float32Array(max);
-  const all = [headW, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, dodge, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, walked, sampT, ringN, lastX, lastXT];
+  const all = [blockT, headW, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, dodge, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, walked, sampT, ringN, lastX, lastXT];
 
   const dead = new Uint8Array(max);
   /** 사라질 사람 표시(단계 안에서는 배열 자리를 바꾸지 않는다: 격자가 옛 자리 번호를 쥐고 있다) */
@@ -875,6 +895,7 @@ export function makePeople(
       if (jd > 0.5) k = Math.max(k, Math.min(1, (spd[aheadJ] * jd) / Math.max(0.1, v)) * Math.min(1, gap / 0.3));
     }
     const step = Math.min(dd, v * dt * k);
+    if (step > 1e-4) blockT[i] = 0;
     const x0 = w.x[i];
     const z0 = w.z[i];
     if (step > 1e-4) {
@@ -890,8 +911,14 @@ export function makePeople(
         if (fd > 1e-3 && tryMove(i, x0 + (fx / fd) * s2, z0 + (fz / fd) * s2)) return s2 * Math.max(0, (fx * dx + fz * dz) / fd);
       }
     }
-    // 앞이 막혀 0.8초 넘게 서 있으면 한쪽(대개 오른쪽)으로 비켜 선다. 비킨 만큼 옆자리를 옮겨 두어(dodge) 되돌아오며 비비지 않는다
-    if (stuckT[i] > 0.8) {
+    // 앞이 막혔을 때: 마주 오는 사람이면 곧바로, 같은 쪽으로 가다 선 사람(신호·정류장 줄이 아닌)이면 2초 뒤 한쪽(대개 오른쪽)으로 비켜 선다.
+    // 비킨 만큼 옆자리를 옮겨 두어(dodge) 되돌아오며 비비지 않는다
+    const j = aheadJ;
+    if (j >= 0 && step <= 1e-4) blockT[i] += dt;
+    blk[i] = step <= 1e-4 ? j : -1;
+    const faceJ = j >= 0 && Math.cos(head[j]) * dx + Math.sin(head[j]) * dz < -0.3;
+    const passJ = j >= 0 && !faceJ && mode[j] === WALK && !w.moving[j] && blockT[i] > 2;
+    if (faceJ || passJ || stuckT[i] > 0.8) {
       const sv = Math.min(0.5 * v * dt, 0.06);
       const sg = lane[i] >= 0 ? 1 : -1;
       if (tryMove(i, x0 - dz * sv * sg, z0 + dx * sv * sg)) {
@@ -954,7 +981,13 @@ export function makePeople(
     const bz = NX[e.b * 2 + 1];
     // 한 번 선 끝 쪽(다음 선)을 겨누기 시작하면 갈아탈 때까지 그대로 겨눈다(viaNode 1: 다음 선, 2: 노드)
     if (toEnd > look && !viaNode[i]) [gx, gz] = onHe(h, Math.max(0, s) + look, laneU(i, h));
-    else if (nxWalk) {
+    else if (nxWalk && narrow[nx] && !narrow[h] && toEnd < 1.2 && opposed(nx)) {
+      // 좁은 길 건너편에서 사람이 오고 있으면 노드 앞에서 비켜 기다린다(좁은 길에서 마주쳐 막히지 않게). 오래 기다리면 다른 길로
+      w.moving[i] = 0;
+      waitT[i] += dt;
+      if (waitT[i] > 12) (waitT[i] = 0), (avoidHe[i] = nx), (avoidT[i] = clockS + 30), (nk[i] = plan(i, h, clockS)), (viaNode[i] = 0);
+      return;
+    } else if (nxWalk) {
       if (!viaNode[i]) viaNode[i] = 1;
       // 다음 선 위 자리로 곧장 가되, 가는 길이 걷는 길 밖으로 나가면 노드로 먼저 간다(노드는 두 띠에 다 든다)
       const n2 = hes[nx];
@@ -980,7 +1013,8 @@ export function makePeople(
       const j = aheadJ;
       const hx = Math.cos(head[i]);
       const hz = Math.sin(head[i]);
-      const facing = j >= 0 && mode[j] === WALK && w.moving[j] > 0 && Math.cos(head[j]) * hx + Math.sin(head[j]) * hz < -0.3;
+      // 마주 선 두 사람 가운데 번호가 작은 쪽만 돌아선다(둘 다 돌아서며 오가지 않게)
+      const facing = j >= 0 && mode[j] === WALK && Math.cos(head[j]) * hx + Math.sin(head[j]) * hz < -0.3 && w.id[i] < w.id[j];
       if (j < 0 || facing) stuckT[i] += dt;
       else stuckT[i] = 0;
     }
@@ -1011,6 +1045,7 @@ export function makePeople(
         nk[i] = -1;
         viaNode[i] = 0;
         viaNode[i] = 0;
+        waitT[i] = 0;
         h = nx;
       }
     }
@@ -1280,6 +1315,8 @@ export function makePeople(
   let rush = 1;
 
   function rebuildGrid() {
+    occ.fill(0);
+    for (let i = 0; i < w.n; i++) if (mode[i] === WALK && narrow[he[i]]) occ[he[i]]++;
     gridHead.fill(-1);
     for (let i = 0; i < w.n; i++) {
       const key = cellKey(Math.floor(w.x[i] / GC), Math.floor(w.z[i] / GC));
@@ -1582,11 +1619,13 @@ export function makePeople(
   const debugOf = (i: number) => {
     const e = hes[he[i]];
     const [s, u] = proj(he[i], w.x[i], w.z[i]);
-    return { mode: mode[i], he: he[i], a: e.a, b: e.b, L: e.L, s, u, lo: e.lo, hi: e.hi, nk: nk[i], nkL: nk[i] >= 0 ? hes[nk[i]].L : -1, stuck: stuckT[i], goal: goal[i], D: goal[i] >= 0 ? D[goal[i]][e.b] : -1, radB: RAD[e.b], dodge: dodge[i], tx: tx[i], tz: tz[i], via: viaNode[i], why };
+    return { mode: mode[i], he: he[i], a: e.a, b: e.b, L: e.L, s, u, lo: e.lo, hi: e.hi, nk: nk[i], nkL: nk[i] >= 0 ? hes[nk[i]].L : -1, stuck: stuckT[i], goal: goal[i], D: goal[i] >= 0 ? D[goal[i]][e.b] : -1, radB: RAD[e.b], dodge: dodge[i], tx: tx[i], tz: tz[i], via: viaNode[i], why, blk: blk[i], waitT: waitT[i], narrow: narrow[he[i]], nkNarrow: nk[i] >= 0 ? narrow[nk[i]] : -1 };
   };
+  /** 측정용: 칸마다 보는 곳 안·밖 목표와 지금 인원, 보는 곳 원 */
+  const popStats = () => ({ wantIn: Array.from(wantIn), haveIn: Array.from(haveIn), wantOut: Array.from(wantOut), haveOut: Array.from(haveOut), focus, kIn, kOut, n: w.n, pending: pending.length });
   /** 시험용: 사람이 지금 있어도 되는 자리인가 */
   const validAt = (i: number) => valid(i, w.x[i], w.z[i]);
-  return { w, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, scale, expected, stateOf, validAt, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
+  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, scale, expected, stateOf, validAt, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
 }
 export type People = ReturnType<typeof makePeople>;
 
