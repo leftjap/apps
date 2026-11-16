@@ -77,7 +77,7 @@ describe('W14 지금 판', () => {
     expect(sb.filter((q) => nearH(q.x, q.z))).toEqual([]);
     expect(sb.length).toBeLessThanOrEqual(2);
     expect(cc.filter((q) => nearH(q.x, q.z)).length).toBeLessThanOrEqual(2);
-    expect(cc.length).toBeLessThanOrEqual(216);
+    expect(cc.length).toBeLessThanOrEqual(219); // 중앙선을 매끈하게 다시 표본한 뒤 219
   });
   // 계획 세션 요청: 칸을 찾은 화살표는 바깥 테두리가 양옆 칠한 선 안에 0.2m 넘게 여유를 두고 들어간다(실패 0). 칸을 못 찾은 화살표 수는 메모에
   it('화살표 테두리가 놓인 차선 칸 안에 양쪽 0.2m 여유로 들어간다', () => {
@@ -185,5 +185,21 @@ describe('W14 지금 판', () => {
       if (n && inB / n > 0.05) bad++;
     }
     expect(bad).toBeLessThanOrEqual(2);
+  });
+  // 계획 세션 요청(선 품질): 굽은 노면 선은 한 마디 꺾임 5° 안팎. 자료가 dm 라 짧은 마디는 반올림으로 꺾임이 흔들려
+  // 2026-11-17 판 6~45° 마디 8,716개(45° 넘는 모서리 빼고). 늘지 않는지만 본다
+  it('노면 선 마디 꺾임이 늘지 않는다', () => {
+    let n = 0;
+    for (const l of marks.lines) {
+      if ([4, 13, 14].includes(l.k) || l.p.some((_, i) => i % 3 === 1 && l.p[i] !== 0)) continue;
+      for (let i = 3; i + 3 < l.p.length; i += 3) {
+        const [ux, uz, vx, vz] = [l.p[i] - l.p[i - 3], l.p[i + 2] - l.p[i - 1], l.p[i + 3] - l.p[i], l.p[i + 5] - l.p[i + 2]];
+        const L = Math.hypot(ux, uz) * Math.hypot(vx, vz);
+        if (L < 1e-6) continue;
+        const a = (Math.acos(Math.max(-1, Math.min(1, (ux * vx + uz * vz) / L))) * 180) / Math.PI;
+        if (a > 6 && a <= 45) n++;
+      }
+    }
+    expect(n).toBeLessThanOrEqual(8716);
   });
 });

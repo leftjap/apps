@@ -22,7 +22,7 @@ import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { bakeLanes } from './lib/carlanes.ts';
 import { roadLevels } from './lib/levels.ts';
 import { carSurface, pushTreesOffRoad } from './lib/treeplace.ts';
-import { clipLine, drawnGround, dropOverlaps, onGround } from './lib/groundclip.ts';
+import { clipLine, drawnGround, dropOverlaps, onGround, smoothLine } from './lib/groundclip.ts';
 import { widenEdges } from './lib/laneedges.ts';
 import { fitCells, snapArrows } from './lib/arrows.ts';
 import { decodeLanes, type LanesJson } from '../src/data/lanes.ts';
@@ -2142,8 +2142,10 @@ let marksWholeJson = '';
     }
     if (Y.every((y) => y === 0)) {
       whole.push([code, ...encPts(P)]);
-      // 그린 찻길 면 밖(0.3m 넘게)으로 나간 부분은 잘라 낸다(재작업 W14)
-      const parts = groundBits ? clipLine(groundBits, P as [number, number][], 0.6, 0.3, underTunnel) : [P];
+      // 굽은 선은 꼭짓점을 지나는 매끈한 곡선으로(한 마디 꺾임 5° 안팎, 45° 넘는 모서리는 그대로). 정지선·자전거횡단도·정차금지지대는 곧은 선이라 그대로.
+      // 그다음 그린 찻길 면 밖(0.3m 넘게)으로 나간 부분은 잘라 낸다(재작업 W14)
+      const S = [4, 13, 14].includes(Number(l.k)) ? (P as [number, number][]) : smoothLine(P as [number, number][]);
+      const parts = groundBits ? clipLine(groundBits, S, 0.6, 0.3, underTunnel) : [S];
       const before = P.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]) : 0), 0);
       const after = parts.reduce((a, q) => a + q.reduce((b, p, i) => (i ? b + Math.hypot(p[0] - q[i - 1][0], p[1] - q[i - 1][1]) : 0), 0), 0);
       cutAway += before - after;

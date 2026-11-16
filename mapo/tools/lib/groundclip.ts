@@ -129,3 +129,68 @@ export function dropOverlaps(lines: [number, number][][], dist = 2, cos = 0.94):
   }
   return { kept, dropped };
 }
+
+/**
+ * 굽은 선을 매끈하게(재작업 W14): 꼭짓점을 지나는 캣멀롬 곡선으로, 한 마디 꺾임이 5° 아래가 되도록 꼭짓점 사이를 나눈다.
+ * 45° 넘게 꺾이는 꼭짓점은 실제 모서리로 보고 그 자리에서 선을 끊어 따로 다룬다(모서리는 그대로 남는다)
+ */
+export function smoothLine(P0: [number, number][], maxTurn = 5): [number, number][] {
+  if (P0.length < 3) return P0;
+  // 촘촘한 점(자료의 0.1~0.3m 간격 지그재그)은 0.05m 안에서 먼저 줄인다
+  const P = simplifyOpen(P0, 0.05);
+  if (P.length < 3) return P;
+  const turn = (a: [number, number], b: [number, number], c: [number, number]) => {
+    const [ux, uz, vx, vz] = [b[0] - a[0], b[1] - a[1], c[0] - b[0], c[1] - b[1]];
+    const l = Math.hypot(ux, uz) * Math.hypot(vx, vz);
+    return l < 1e-9 ? 0 : (Math.acos(Math.max(-1, Math.min(1, (ux * vx + uz * vz) / l))) * 180) / Math.PI;
+  };
+  // 모서리에서 나눈 조각들
+  const parts: [number, number][][] = [[P[0]]];
+  for (let i = 1; i < P.length; i++) {
+    parts[parts.length - 1].push(P[i]);
+    if (i < P.length - 1 && turn(P[i - 1], P[i], P[i + 1]) > 45) parts.push([P[i]]);
+  }
+  const out: [number, number][] = [];
+  for (const Q of parts) {
+    const n = Q.length;
+    const at = (i: number) => Q[Math.max(0, Math.min(n - 1, i))];
+    for (let i = 0; i + 1 < n; i++) {
+      const [p0, p1, p2, p3] = [i === 0 ? [2 * Q[0][0] - Q[1][0], 2 * Q[0][1] - Q[1][1]] : at(i - 1), at(i), at(i + 1), i + 2 >= n ? [2 * Q[n - 1][0] - Q[n - 2][0], 2 * Q[n - 1][1] - Q[n - 2][1]] : at(i + 2)];
+      // 이 마디의 꺾임(양 끝 꼭짓점 둘레)으로 나눌 수를 정한다
+      const bend = Math.max(n > 2 && i > 0 ? turn(at(i - 1), at(i), at(i + 1)) : 0, n > 2 && i + 2 < n ? turn(at(i), at(i + 1), at(i + 2)) : 0);
+      const L = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+      // 나눈 마디가 0.8m 보다 짧아지지 않게(점 반올림 0.1m 에 꺾임이 흔들리지 않게)
+      const m = bend < maxTurn ? 1 : Math.max(1, Math.min(Math.ceil((bend * 2) / maxTurn), Math.floor(L / 0.8)));
+      for (let k = out.length && (k0(out, p1)) ? 1 : 0; k < m; k++) {
+        const t = k / m;
+        const t2 = t * t;
+        const t3 = t2 * t;
+        const f = (a: number, b: number, c: number, d: number) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+        out.push([f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])]);
+      }
+    }
+    out.push(Q[n - 1]);
+  }
+  return out;
+}
+const k0 = (out: [number, number][], p: [number, number] | number[]) => Math.hypot(out[out.length - 1][0] - p[0], out[out.length - 1][1] - p[1]) < 1e-6;
+
+/** 열린 선의 더글러스-포이커 줄이기 */
+function simplifyOpen(P: [number, number][], tol: number): [number, number][] {
+  const keep = new Uint8Array(P.length);
+  keep[0] = keep[P.length - 1] = 1;
+  const st: [number, number][] = [[0, P.length - 1]];
+  while (st.length) {
+    const [a, b] = st.pop()!;
+    const [ax, az, bx, bz] = [P[a][0], P[a][1], P[b][0], P[b][1]];
+    const L = Math.hypot(bx - ax, bz - az) || 1;
+    let m = -1;
+    let md = tol;
+    for (let i = a + 1; i < b; i++) {
+      const d = Math.abs((bx - ax) * (az - P[i][1]) - (ax - P[i][0]) * (bz - az)) / L;
+      if (d > md) (md = d), (m = i);
+    }
+    if (m >= 0) (keep[m] = 1), st.push([a, m], [m, b]);
+  }
+  return P.filter((_, i) => keep[i]);
+}
