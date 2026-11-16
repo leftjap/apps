@@ -4,7 +4,8 @@
 // 재는 값(모두 막 나타난 차(fade < 1)·사라진 차는 뺀다):
 //  1. 교차로 상자 안(boxed)에서 5초 넘게 멈춘(0.3m/s 아래) 차: 5초가 되는 순간 따라가던 앞 대상의 까닭으로 나누고, 교차로별로 센다.
 //  2. 그린 몸통(차종별 길이 × 폭, 배율 1 과 1.15. 길이는 render/cars.ts 처럼 room 안에서만 늘인다)이 겹친 쌍: 0.1초마다 회전 상자로 견준다.
-//     같은 차로 앞뒤(같은 구간·같은 차로, 또는 앞 대상 관계), 옆 차로(같은 구간 다른 차로 또는 같은 방향 나란히), 교차로 안(둘 중 하나가 상자 안), 그 밖으로 나눈다.
+//     교차로 안(둘 중 하나가 상자 안), 이음매 곡선(둘 중 하나가 교차로 아닌 이음매의 곡선 위), 같은 차로 앞뒤(같은 구간·같은 차로, 또는 앞 대상 관계),
+//     옆 차로(같은 구간 다른 차로 또는 같은 방향 나란히), 그 밖으로 나누고, 까닭마다 겹친 시간이 많은 10m 칸 3곳을 적는다. 택시는 세단 크기다.
 //  3. 한 단계에 옆으로 0.3m 넘게 움직인 일, 진행 방향이 15° 넘게 꺾인 일: 그 단계에 구간이 바뀌었는지(교차로 드나듦·차로 수 이음매·같은 차로 수 구간 전환)와
 //     상자 안·밖이 바뀌었는지로 나눈다.
 //  4. 땅 위 찻길(등급 5 이하, 교량 아님)을 달리는 차 가운데가 찻길 면(surface-polys 의 car + 교차로 면 − 교통섬) 밖인 시간 비율과 그 자리(10m 칸, 위 15곳).
@@ -108,8 +109,15 @@ function run(dow: number, tod: number, seed: number) {
     for (let i = 0; i < 600; i++) walkers.step(0.5, { ...start, tod: (start.tod - 300 + i * 0.5 + 86400) % 86400 });
   }
   const ground = (i: number) => isGroundRoad(board.roads[carGraph[D.edge[i]].road]);
-  const hl = (i: number) => (c.kind[i] === 1 ? BUS_HL[c.tint[i]] ?? 5.74 : CAR_HL[bodyType(c.tint[i])]);
-  const hw = (i: number) => (c.kind[i] === 1 ? BUS_HW[c.tint[i]] ?? 1.245 : CAR_HW[bodyType(c.tint[i])]);
+  // 택시는 세단 모형으로 그린다(render/cars.ts)
+  const look = (i: number) => (c.kind[i] === 2 ? 0 : bodyType(c.tint[i]));
+  const hl = (i: number) => (c.kind[i] === 1 ? BUS_HL[c.tint[i]] ?? 5.74 : CAR_HL[look(i)]);
+  const hw = (i: number) => (c.kind[i] === 1 ? BUS_HW[c.tint[i]] ?? 1.245 : CAR_HW[look(i)]);
+  /** 교차로가 아닌 이음매(갈림 없는 노드·차로 수가 바뀌는 곳)의 곡선 위인가 */
+  const seam = (i: number) => {
+    const e = D.edge[i];
+    return !D.boxed[i] && ((D.nextE[i] >= 0 && D.s[i] > carGraph[e].len - jn.rIn[e]) || D.s[i] < jn.rOut[e]);
+  };
   const spotOf = (x: number, z: number) => SPOTS.findIndex(([, sx, sz]) => Math.hypot(x - sx, z - sz) < 60);
   const jnOf = (i: number) => {
     const e = D.edge[i];
@@ -314,6 +322,8 @@ function run(dow: number, tod: number, seed: number) {
                 const kind =
                   D.boxed[i] || D.boxed[j]
                     ? '교차로 안'
+                    : seam(i) || seam(j)
+                      ? '이음매 곡선'
                     : (ei === ej && D.lane[i] === D.lane[j]) || lead
                       ? '같은 차로 앞뒤'
                       : (ei === ej || par)
@@ -326,7 +336,7 @@ function run(dow: number, tod: number, seed: number) {
                 for (const Rr of sp >= 0 ? [R[0], R[sp + 1]] : [R[0]]) {
                   inc(Rr.ov[q], tag);
                   Rr.ovPairs[q].add(`${Math.min(c.uid[i], c.uid[j])}-${Math.max(c.uid[i], c.uid[j])}|${tag}`);
-                  if (q) inc(Rr.ovWhere, `${Math.round(c.x[i] / 10) * 10},${Math.round(c.z[i] / 10) * 10} ${tag}`);
+                  if (q) inc(Rr.ovWhere, `${tag}|${Math.round(c.x[i] / 10) * 10},${Math.round(c.z[i] / 10) * 10}`);
                 }
               }
             }
@@ -345,7 +355,10 @@ function run(dow: number, tod: number, seed: number) {
     stuckJn: k ? top(Rr.stuckJn, 10) : top(Rr.stuckJn, 10),
     overlap1: { pairs: pairsBy(Rr.ovPairs[0]), seconds: Object.fromEntries(Object.entries(Rr.ov[0]).map(([a, b]) => [a, +(b * 0.1).toFixed(1)])) },
     overlap115: { pairs: pairsBy(Rr.ovPairs[1]), seconds: Object.fromEntries(Object.entries(Rr.ov[1]).map(([a, b]) => [a, +(b * 0.1).toFixed(1)])) },
-    overlapWhere: top(Rr.ovWhere, 12),
+    // 까닭마다 겹친 시간(0.1초 표본)이 많은 10m 칸 3곳
+    overlapWhere: Object.fromEntries(
+      Object.keys(Rr.ov[1]).map((tag) => [tag, top(Object.fromEntries(Object.entries(Rr.ovWhere).filter(([k]) => k.split('|')[0] === tag).map(([k, n]) => [k.split('|')[1], n])), 3)]),
+    ),
     side: Rr.side,
     turn: Rr.turn,
     sideWhere: top(Rr.sideWhere, 12),

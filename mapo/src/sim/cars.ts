@@ -684,7 +684,7 @@ export function makeCars(
       for (const i of l) {
         acc[i] = lead[lane[i]]; // 잠시 앞차 번호를 담아 둔다
         if (acc[i] >= 0) {
-          const d = s[acc[i]] - s[i];
+          const d = Math.min(s[acc[i]] - s[i], Math.hypot(cars.x[acc[i]] - cars.x[i], cars.z[acc[i]] - cars.z[i]));
           cars.room[i] = Math.min(cars.room[i], d);
           cars.room[acc[i]] = Math.min(cars.room[acc[i]], d);
         }
@@ -745,9 +745,9 @@ export function makeCars(
       let why = front >= 0 ? 1 : 0;
       if (front >= 0) gap = s[front] - s[i];
       else if (nextE[i] >= 0) {
-        // 같은 차로에서 다른 쪽으로 막 갈라져 나간 앞차: 꽁무니가 상자를 벗어날 때까지 따라간다
+        // 같은 차로에서 막 빠져나간 앞차: 다른 쪽으로 갔거나 같은 구간의 다른 차로로 갔어도 곡선은 처음에 겹치므로, 꽁무니가 상자를 벗어날 때까지 따라간다
         const lt = leaveTail[e.id * 8 + lane[i]];
-        if (lt >= 0 && edge[lt] !== nextE[i]) {
+        if (lt >= 0) {
           front = lt;
           why = 2;
           gap = e.len - s[i] + s[lt];
@@ -774,8 +774,8 @@ export function makeCars(
       if (front >= 0) {
         gap -= (size[front] + size[i]) / 2;
         dv = v[i] - v[front];
-        // 교차로 상자 안 곡선은 길을 따라 잰 거리보다 짧을 수 있으므로, 둘 중 하나가 상자 안이면 그려진 자리 사이 거리로도 잰다
-        if (boxed[i] || boxed[front]) gap = Math.min(gap, Math.hypot(cars.x[front] - cars.x[i], cars.z[front] - cars.z[i]) - (size[front] + size[i]) / 2);
+        // 길을 따라 잰 거리는 가운데선 위 거리라, 굽은 길의 안쪽 차로나 교차로·이음매 곡선에서는 실제 차 사이보다 길다. 그려진 자리 사이 거리로도 재서 짧은 쪽을 쓴다
+        gap = Math.min(gap, Math.hypot(cars.x[front] - cars.x[i], cars.z[front] - cars.z[i]) - (size[front] + size[i]) / 2);
       }
       // 교차로가 아닌 곳에서 차로 수가 바뀌면, 구간 끝 40m(빠르면 3.5초 거리) 안에서 다음 구간의 한 차로로 모일 차들을 한 줄로 보고 바로 앞 차를 따라간다(앞선 차가 먼저).
       // 옆 차로 차에게 자리를 내주는 것이라 편안한 감속까지만 늦춘다(아래 merging)
