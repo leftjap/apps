@@ -16,7 +16,7 @@
 //     이웃한 두 선 사이가 2.3~4.8m 인 곳의 가운데 가운데 가장 가까운 것까지 옆 거리. 판 전체와 교차로 다섯 곳 150m 안의 중앙값·90%·95% 지점.
 //  8. 교차로 다섯 곳 90m 안에서 멈춘(0.3m/s 아래) 차 가운데 차 가운데가 서울시 횡단보도 면 위인 비율(0.1초마다).
 //  9. 신호에 선 첫 차(앞 대상이 신호이고 멈춘 차)의 앞 범퍼(그린 길이)에서 가장 가까운 서울시 정지선(20m 안, 진행 방향을 가로지르는 것)까지 거리(0.5초마다):
-//     판 전체와 교차로 다섯 곳 150m 안의 중앙값·90% 지점·1m 안 비율.
+//     판 전체와 교차로 다섯 곳 150m 안의 중앙값·90% 지점·1m 안 비율. 사례 출력: SHOWDEV=n(차로 가운데에서 1m 넘게), SHOWXW=1(횡단보도 위 정차), SHOWLINE=n(정지선에서 1m 넘게).
 //  겹친 두 차가 노드 없이 가로지르는 두 길(OSM 에서 다리·터널·layer 로 높이가 다른 곳) 위에 있으면 위 분류 대신 '높이 다른 길'로 센다(실제로는 겹치지 않음, tools/raw/highways.json 이 있을 때만).
 // 합정 교차로(−497,250)와 홍대입구역 교차로(222,−410) 둘레 60m 는 1~5 를 따로 적는다.
 // 판 폴더는 MAPO_DATA 로 바꿀 수 있다(고치기 전·후를 같은 판으로 견줄 때). 사례 출력: SHOW=n(옆 튐·꺾임), SHOWOFF=n(찻길 밖), SHOWOV=n(겹침)은 표준 오류로 나간다.
@@ -352,6 +352,7 @@ function run(dow: number, tod: number, seed: number) {
   let offShown = 0;
   let ovShown = 0;
   let devShown = 0;
+  let lineShown = 0;
   const cell = 8;
   for (let st = 0; st < steps; st++) {
     now = { ...now, tod: (now.tod + DT) % 86400 };
@@ -488,6 +489,8 @@ function run(dow: number, tod: number, seed: number) {
         if (d >= 0) {
           lineD[0].push(d);
           if (near5(x, z, 150)) lineD[1].push(d);
+          if (d > 1 && near5(x, z, 150) && process.env.SHOWLINE && lineShown++ < Number(process.env.SHOWLINE))
+            console.error(JSON.stringify({ line: +d.toFixed(2), x: +x.toFixed(1), z: +z.toFixed(1), e, lane: D.lane[i], lanes: carGraph[e].lanes, s: +D.s[i].toFixed(1), len: +carGraph[e].len.toFixed(1), why: D.aheadWhy[i], size: D.size[i] }));
         }
       }
       // 5. 멈춘 차의 앞차 간격(그린 길이, 배율 1)

@@ -67,8 +67,8 @@ export function laneStops(edges: Edge[], stopLines: ArrayLike<number>, crosswalk
       for (let k = 0; k <= n; k++) {
         const s = Math.min(e.len, k * STEP);
         pointAt(e.p, e.cum, s, P);
-        const h = headingNear(e, s);
         const off = laneOff(e, l, s);
+        const h = headingNear(e, s, off);
         xs[k] = P[0] - Math.sin(h) * off;
         zs[k] = P[2] + Math.cos(h) * off;
       }

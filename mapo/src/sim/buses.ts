@@ -25,6 +25,8 @@ export interface BusRoute {
   len: number;
   stops: number[];
   stopNames: string[];
+  /** 중앙 정류장 승강장이 표준 자리(그 자리 차로 왼쪽 가장자리에서 0.25m + 반폭)보다 더 왼쪽으로 놓인 거리(m, 정류장마다. 휜 가장자리에 맞춘 몫, 버스도 그만큼 더 비켜 선다) */
+  shift: number[];
   /** 정류장마다 중앙 정류장(길 가운데 승강장)인가 */
   med: boolean[];
   /** 중앙버스차로가 있는 구간에서 그 차로로 달리는가(마을버스는 길가 차로로 달린다) */
@@ -141,7 +143,9 @@ export function makeBusRoutes(runs: BusRun[], edges: Edge[], medStops: [string, 
         stops.push([start[on] + Math.max(0.5, Math.min(e.len - 0.5, at)), name, true]);
       }
     stops.sort((a, b) => a[0] - b[0]);
-    out.push({ ref: run.ref, kind: run.kind, to: run.to, edges: ids, start, len, stops: stops.map((q) => q[0]), stopNames: stops.map((q) => q[1]), med: stops.map((q) => q[2]), usesMed });
+    const R: BusRoute = { ref: run.ref, kind: run.kind, to: run.to, edges: ids, start, len, stops: stops.map((q) => q[0]), stopNames: stops.map((q) => q[1]), med: stops.map((q) => q[2]), shift: [], usesMed };
+    R.shift = R.stops.map((at, k) => (R.med[k] ? -islandAt(R, edges, at).v : 0));
+    out.push(R);
   }
   return out;
 }
@@ -163,6 +167,26 @@ export function busHeadway(r: { kind: number; ref: string }, tod: number): numbe
   if ((h >= 7 && h < 9.5) || (h >= 17.5 && h < 20)) return peak;
   if (h >= 22 || h < 6) return late;
   return day;
+}
+
+/**
+ * 노선 R 의 노선 거리 s 에 서는 중앙 정류장의 승강장: 버스가 서는 자리(승강장 가운데에서 ISLAND_BACK 앞) x·z, 방향 yaw 와,
+ * 승강장 가운데가 표준 자리보다 오른쪽으로 놓인 거리 v(0 이하). 승강장(길이 ISLAND_L)은 그 앞뒤 끝의 일반 차로 왼쪽 가장자리(서울시 선으로 읽은 차로)를 이은 방향으로 놓고,
+ * 오른쪽 변이 승강장 길이에 걸친 왼쪽 가장자리에서 0.25m 떨어지게 둔다. 가운데선이 실제 찻길과 비스듬하거나 휜 곳에서도 승강장이 차로를 덮지 않는다
+ */
+function islandAt(R: BusRoute, edges: Edge[], s: number): { x: number; z: number; yaw: number; v: number } {
+  const c = s - ISLAND_BACK;
+  const [ax, az] = leftAt(R, edges, c - ISLAND_L / 2);
+  const [bx, bz] = leftAt(R, edges, c + ISLAND_L / 2);
+  const [mx, mz] = leftAt(R, edges, c);
+  const yaw = Math.atan2(bz - az, bx - ax);
+  let v = 0;
+  for (let d = -ISLAND_L / 2; d <= ISLAND_L / 2; d += 2.5) {
+    const [qx, qz] = leftAt(R, edges, c + d);
+    v = Math.min(v, -(qx - mx) * Math.sin(yaw) + (qz - mz) * Math.cos(yaw));
+  }
+  const w = v - 0.25 - ISLAND_W / 2; // 승강장 가운데가 가운데 자리 가장자리에서 오른쪽으로(음수면 왼쪽으로) 떨어진 거리
+  return { x: mx - Math.sin(yaw) * w + Math.cos(yaw) * ISLAND_BACK, z: mz + Math.cos(yaw) * w + Math.sin(yaw) * ISLAND_BACK, yaw, v };
 }
 
 /** 노선 R 의 노선 거리 d 자리(노선 밖이면 끝)에서 일반 차로 왼쪽 가장자리 점 [x, z] */
@@ -198,22 +222,8 @@ export function busStopPortals(routes: BusRoute[], edges: Edge[]) {
       let x: number;
       let z: number;
       if (median) {
-        // 중앙 정류장 승강장(버스가 서는 자리 ISLAND_BACK 뒤가 가운데, 길이 ISLAND_L)은 그 앞뒤 끝의 일반 차로 왼쪽 가장자리(서울시 선으로 읽은 차로)를 이은 방향으로 놓고,
-        // 오른쪽 변이 승강장 길이에 걸친 왼쪽 가장자리에서 0.25m 떨어지게 둔다. 가운데선이 실제 찻길과 비스듬하거나 휜 곳에서도 승강장이 차로를 덮지 않는다
-        const c = s - ISLAND_BACK;
-        const [ax, az] = leftAt(R, edges, c - ISLAND_L / 2);
-        const [bx, bz] = leftAt(R, edges, c + ISLAND_L / 2);
-        const [mx, mz] = leftAt(R, edges, c);
-        yaw = Math.atan2(bz - az, bx - ax);
-        // 승강장 길이에 걸쳐 가장자리가 가장 왼쪽으로 오는 자리에 맞춘다(휜 가장자리의 활꼴 몫)
-        let v = 0;
-        for (let d = -ISLAND_L / 2; d <= ISLAND_L / 2; d += 2.5) {
-          const [qx, qz] = leftAt(R, edges, c + d);
-          v = Math.min(v, -(qx - mx) * Math.sin(yaw) + (qz - mz) * Math.cos(yaw));
-        }
-        const w = v - 0.25 - ISLAND_W / 2; // 승강장 가운데가 가운데 자리 가장자리에서 오른쪽으로(음수면 왼쪽으로) 떨어진 거리
-        x = mx - Math.sin(yaw) * w + Math.cos(yaw) * ISLAND_BACK;
-        z = mz + Math.cos(yaw) * w + Math.sin(yaw) * ISLAND_BACK;
+        const q = islandAt(R, edges, s);
+        [x, z, yaw] = [q.x, q.z, q.yaw];
       } else {
         const off = rightEdge(edge, s - R.start[e]) + edge.lw / 2 + 1.2;
         x = tmp[0] - Math.sin(yaw) * off;

@@ -409,8 +409,8 @@ export function makeCars(
       return;
     }
     pointAt(e.p, e.cum, s[i], tmp);
-    const yaw = headingNear(e, s[i]);
     const off = laneOff(e, lane[i], s[i]) - (lane[i] === MED ? islandShift(i, medAt(e, s[i])) : 0);
+    const yaw = headingNear(e, s[i], off);
     cars.x[i] = tmp[0] - Math.sin(yaw) * off;
     cars.y[i] = tmp[1];
     cars.z[i] = tmp[2] + Math.cos(yaw) * off;
@@ -431,8 +431,14 @@ export function makeCars(
     const R = routes[cars.route[i]];
     const at = R.start[rpos[i]] + s[i];
     let w = 0;
-    for (const k of [stopK[i] - 1, stopK[i]]) if (R.med[k]) w = Math.max(w, Math.min(1, Math.max(0, (ISLAND_L / 2 + 22 - Math.abs(at - R.stops[k] + ISLAND_BACK)) / 22)));
-    return Math.max(0, 0.25 + ISLAND_W + 0.15 + 1.25 - med) * w;
+    let extra = 0;
+    for (const k of [stopK[i] - 1, stopK[i]])
+      if (R.med[k]) {
+        const wk = Math.min(1, Math.max(0, (ISLAND_L / 2 + 22 - Math.abs(at - R.stops[k] + ISLAND_BACK)) / 22));
+        if (wk > w) (w = wk), (extra = R.shift[k] ?? 0);
+      }
+    // 승강장이 휜 가장자리에 맞춰 표준 자리보다 더 왼쪽에 놓인 정류장(buses.ts shift)에서는 그만큼 더 비킨다
+    return Math.max(0, 0.25 + ISLAND_W + 0.15 + 1.25 + extra - med) * w;
   }
 
   /** 시간대 교통량(차로 1km 에 몇 대) */

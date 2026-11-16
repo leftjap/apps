@@ -148,6 +148,8 @@ export function readSection(hits: [number, number][], twoWay: boolean, medBus: b
 }
 
 const STEP = 2;
+/** 차로 가운데 옆 거리가 길을 따라 바뀌는 기울기 한도 */
+const SLOPE = 0.15;
 
 /**
  * 길 조각 한 방향(p: 그 방향 순서의 [x,y,z,...], cum: 누적 길이)의 차로를 읽는다. 읽은 단면이 모자라면 null.
@@ -303,6 +305,19 @@ export function readDirection(
     }
     const s0 = k === 0 ? 0 : (S[g.i0 - 1] + S[g.i0]) / 2;
     const s1 = k === groups.length - 1 ? len : (S[g.i1] + S[g.i1 + 1]) / 2;
+    // 이웃 단면 사이 옆 거리 기울기를 0.15(약 8.5°) 안으로 누른다: 선이 끝나거나 다른 선을 짚은 자리의 계단을 완만한 비탈로 바꿔, 차가 한 단계에 옆으로 튀지 않게
+    const limit = (get: (k: number) => number, set: (k: number, v: number) => void) => {
+      const m = st.length;
+      const f = new Array<number>(m);
+      const b = new Array<number>(m);
+      for (let k = 0; k < m; k++) f[k] = k ? Math.max(f[k - 1] - SLOPE * (st[k] - st[k - 1]), Math.min(f[k - 1] + SLOPE * (st[k] - st[k - 1]), get(k))) : get(k);
+      for (let k = m - 1; k >= 0; k--) b[k] = k < m - 1 ? Math.max(b[k + 1] - SLOPE * (st[k + 1] - st[k]), Math.min(b[k + 1] + SLOPE * (st[k + 1] - st[k]), get(k))) : get(k);
+      for (let k = 0; k < m; k++) set(k, (f[k] + b[k]) / 2);
+    };
+    for (let l = 0; l < n; l++) limit((k) => off[k * n + l], (k, v) => (off[k * n + l] = v));
+    if (med.length) limit((k) => med[k], (k, v) => (med[k] = v));
+    // 이웃 차로 가운데 사이는 2.6m 넘게(따로 이은 두 차로가 붙거나 엇갈리지 않게, 오른쪽 차로를 민다)
+    for (let k = 0; k < st.length; k++) for (let l = 1; l < n; l++) off[k * n + l] = Math.max(off[k * n + l], off[k * n + l - 1] + 2.6);
     return simplify({ s0, s1, n, st, off, med });
   });
   return { a: S[first], b: S[last], runs };

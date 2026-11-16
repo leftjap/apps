@@ -66,9 +66,11 @@ export interface Edge {
 
 const H0 = [0, 0, 0];
 const H1 = [0, 0, 0];
-/** 구간 e 의 s 지점 진행 방향. 꺾인 꼭짓점에서 방향과 차로 옆 거리가 한순간에 바뀌지 않게 앞뒤 1.5m 두 점으로 구한다 */
-export function headingNear(e: Edge, s: number): number {
-  const d = Math.min(1.5, e.len / 2);
+/** 구간 e 의 s 지점 진행 방향. 꺾인 꼭짓점에서 방향과 차로 옆 거리가 한순간에 바뀌지 않게 앞뒤 1.5m 두 점으로 구한다.
+ *  off 를 주면(그 자리 차로가 가운데선에서 떨어진 거리) 앞뒤 거리를 그 절반(최대 8m)까지 늘린다: 서울시 선으로 읽은 차로는 OSM 가운데선에서 10m 넘게 떨어진 곳이 있어,
+ *  꼭짓점에서 방향이 1.5m 안에 바뀌면 옆으로 옮긴 차 자리가 옆 거리에 비례해 크게 휘둘린다 */
+export function headingNear(e: Edge, s: number, off = 0): number {
+  const d = Math.min(Math.max(1.5, Math.min(8, Math.abs(off) / 2)), e.len / 2);
   pointAt(e.p, e.cum, Math.max(0, s - d), H0);
   pointAt(e.p, e.cum, Math.min(e.len, s + d), H1);
   return Math.atan2(H1[2] - H0[2], H1[0] - H0[0]);

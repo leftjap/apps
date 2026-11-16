@@ -2,7 +2,7 @@
 // 중앙분리대가 있는 큰길은 한 교차로가 노드 여러 개로 나뉘므로, 상자가 서로 2m 안으로 붙는 노드들을 한 교차로로 묶는다.
 // 갈림이 없는 통과 노드(길 조각의 이음매, 길 중간 횡단보도 자리)는 교차로가 아니므로 묶지 않는다.
 // 차는 교차로에 들어오는 구간(진입 구간)에 올라서면 교차로를 빠져나갈 때까지의 경로를 미리 정하고(cars.ts),
-// 경로는 차로 단위(들어온 차로 끝에서 나갈 차로 시작까지)이고, 곡선이 2.2m 안으로 다가오거나, 같은 차로로 나가거나, 묶인 교차로 안 구간을 함께 쓰면 '부딪는 경로'로 본다.
+// 경로는 차로 단위(들어온 차로 끝에서 나갈 차로 시작까지)이고, 곡선이 2.6m 안으로 다가오거나, 같은 차로로 나가거나, 묶인 교차로 안 구간을 함께 쓰면 '부딪는 경로'로 본다.
 // 차는 부딪는 경로로 교차로에 들어간 차가 있으면 진입 구간 끝의 상자 앞에서 기다린다.
 import { pointAt } from '../poly.ts';
 import { headingNear, laneOff, leftEdge, rightEdge, type Edge } from './graph.ts';
@@ -230,8 +230,8 @@ export function makeJunctions(edges: Edge[]): Junctions {
   /** 구간 e 의 s 지점에서 l번 차로 가운데로 옮긴 점과 방향 */
   const lanePoint = (e: Edge, s: number, l: number) => {
     pointAt(e.p, e.cum, s, P);
-    const h = headingNear(e, s);
     const off = laneOff(e, l, s);
+    const h = headingNear(e, s, off);
     return { x: P[0] - Math.sin(h) * off, y: P[1], z: P[2] + Math.cos(h) * off, h };
   };
   function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[]) {
@@ -307,7 +307,7 @@ export function makeJunctions(edges: Edge[]): Junctions {
     return id;
   }
   const cache = new Map<number, boolean>();
-  /** 두 경로가 부딪는가: 같은 차로로 나가거나, 묶인 교차로 안 구간을 함께 쓰거나, 곡선이 2.2m 안으로 다가온다(같은 차로에서 드는 두 경로는 시작점이 같아 부딪는다) */
+  /** 두 경로가 부딪는가: 같은 차로로 나가거나, 묶인 교차로 안 구간을 함께 쓰거나, 곡선이 2.6m 안으로 다가온다(같은 차로에서 드는 두 경로는 시작점이 같아 부딪는다) */
   function conflict(p1: number, p2: number): boolean {
     if (p1 === p2) return false;
     const key = p1 < p2 ? p1 * 1e6 + p2 : p2 * 1e6 + p1;
@@ -321,12 +321,12 @@ export function makeJunctions(edges: Edge[]): Junctions {
     if (!c) {
       const A = box[p1];
       const B = box[p2];
-      if (A[0] - 2.2 <= B[2] && B[0] - 2.2 <= A[2] && A[1] - 2.2 <= B[3] && B[1] - 2.2 <= A[3]) {
+      if (A[0] - 2.6 <= B[2] && B[0] - 2.6 <= A[2] && A[1] - 2.6 <= B[3] && B[1] - 2.6 <= A[3]) {
         const pa = pts[p1];
         const pb = pts[p2];
         for (let i = 0; !c && i < pa.length; i += 2)
           for (let k = 0; k < pb.length; k += 2)
-            if (Math.abs(pa[i] - pb[k]) < 2.2 && Math.hypot(pa[i] - pb[k], pa[i + 1] - pb[k + 1]) < 2.2) {
+            if (Math.abs(pa[i] - pb[k]) < 2.6 && Math.hypot(pa[i] - pb[k], pa[i + 1] - pb[k + 1]) < 2.6) {
               c = true;
               break;
             }
