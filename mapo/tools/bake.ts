@@ -13,6 +13,8 @@ import { railKind, railProfile, stitch } from './lib/rail.ts';
 import { buildSurface, crosswalkPatches, surfacePolys, type Cross as SurfaceCross } from './lib/surface.ts';
 import { ringArea as loopArea } from './lib/contour.ts';
 import { boardWalkNet } from './lib/walknet.ts';
+import { bakeWalk } from './lib/walkfix.ts';
+import { doorWanted } from '../src/sim/people/zones.ts';
 import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../src/data/surface.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
@@ -2060,11 +2062,12 @@ let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | u
   surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn, dr });
   console.log(`연석 선 ${cb.length}줄, ${(curbLoops.reduce((a, r) => a + r.reduce((b, _, k) => (k >= 2 && k % 2 === 0 ? b + Math.hypot(r[k] - r[k - 2], r[k + 1] - r[k - 1]) : b), 0), 0) / 1000).toFixed(0)}km`);
   // 걷는 길 그래프(src/sim/walknet.ts): 보도 면 뼈대 선·보도 없는 골목·도로 부지 밖 보행로와 횡단보도 연결
-  const walk = boardWalkNet(b, sf.faces, patches.map((p) => p.ring), polys);
+  // 그린 찻길 면 기준으로 선을 옮기고 자르고, 횡단보도를 다시 잇고, 한 덩어리만 남긴다(tools/lib/walkfix.ts, 재작업 W21)
+  const walk = bakeWalk(b, boardWalkNet(b, sf.faces, patches.map((p) => p.ring), polys), sf.faces, patches.map((p) => p.ring), polys, [-BOARD_R, -BOARD_R, BOARD_R, BOARD_R], (i, x, z) => doorWanted(x, z) && Math.abs(loopArea(b.buildings[i].pts)) > 40, (s) => console.log(s));
   walkJson = JSON.stringify(walk);
   const kinds = [0, 0, 0, 0];
   for (let k = 0; k < walk.e.length; k += 5) kinds[walk.e[k + 2] >> 4]++;
-  console.log(`걷는 길: 노드 ${walk.n.length / 2}, 선 ${walk.e.length / 5}(보도 ${kinds[0]}, 골목 ${kinds[1]}, 보행로 ${kinds[2]}, 잇는 선 ${kinds[3]}), 횡단보도 연결 ${walk.x.length / 13}/${b.crosswalks.length}`);
+  console.log(`걷는 길: 노드 ${walk.n.length / 2}, 선 ${walk.e.length / 5}(보도 ${kinds[0]}, 골목 ${kinds[1]}, 보행로 ${kinds[2]}, 잇는 선 ${kinds[3]}), 횡단보도 연결 ${walk.x.length / 17}/${b.crosswalks.length}`);
   const multi = sf.faces.filter((f) => f.nodes > 1).length;
   console.log(`교차로 면 ${sf.faces.length}개(노드 둘 넘게 묶은 것 ${multi}, 교통섬 ${sf.faces.reduce((n, f) => n + f.holes.length, 0)}), 면 안에 들어가 띠를 그리지 않는 조각 ${sf.internal.reduce((n, v) => n + v, 0)}개, 연결로 조각 ${link.reduce((n, v) => n + v, 0)}개, 횡단보도 밑 그리기 전용 찻길 면 ${patches.length}개(${(patches.reduce((a, p) => a + Math.abs(loopArea(p.ring)), 0)).toFixed(0)}m²)`);
 }

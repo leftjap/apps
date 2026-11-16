@@ -9,7 +9,7 @@
 // ⑤ 횡단보도: 축 양 끝에서 바깥으로 큰길 찻길·횡단보도 면을 벗어난 자리(기다리는 자리, 축 위에 없으면 끝에서 5m 안 빈자리)를 정하고, 거기서 곧게 닿는 가장 가까운 선 위 점에 잇는다.
 import { curbAt, GK, type Board, type Road } from '../../src/data/board.ts';
 import { carriageSections, isGroundRoad, roadJoints } from '../../src/data/surface.ts';
-import { underpasses, ZONES } from '../../src/sim/walkers.ts';
+import { underpasses, ZONES } from '../../src/sim/people/zones.ts';
 import { ALLEY, LINK, LINK_N, PATH, SIDEWALK, type WalkJson } from '../../src/sim/walknet.ts';
 import { BOARD_R } from '../../src/geo.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from './bits.ts';
