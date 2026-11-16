@@ -515,3 +515,12 @@ describe('handleRealtimeCommentChange', () => {
     expect(rows.get('c-1').remove).toHaveBeenCalled();
   });
 });
+
+describe('삭제 버튼 — 터치 기기 노출', () => {
+  it('hover 가 없는 터치 기기에서는 삭제 버튼이 항상 보인다', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync(new URL('../../mocks/today-mac.html', import.meta.url), 'utf8');
+    const touchBlocks = [...css.matchAll(/@media \(hover: none\) and \(pointer: coarse\) \{([\s\S]*?)\n  \}/g)].map((m) => m[1]);
+    expect(touchBlocks.some((b) => /\.cv-msg__del\s*\{[^}]*opacity:\s*1/.test(b))).toBe(true);
+  });
+});

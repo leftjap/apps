@@ -2180,6 +2180,10 @@
   }
   .cv-msg:hover .cv-msg__del, .cv-msg:focus-within .cv-msg__del { opacity: 1; }
   .cv-msg__del:hover { color: var(--danger); }
+  /* 터치 기기엔 hover 가 없어 삭제 버튼이 영영 안 보였다 → 항상 노출 + 누를 수 있는 크기 (2026-11-16) */
+  @media (hover: none) and (pointer: coarse) {
+    .cv-msg__del { opacity: 1; font-size: 12px; padding: 4px 6px; margin: -4px 0; }
+  }
 
   /* 클로드 자동 댓글 — sunken 카드 R12 + "자동" 태그 + 2줄 클램프 (§4.2) */
   .cv-msg--ai .cv-msg__card {
