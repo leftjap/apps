@@ -1110,10 +1110,12 @@ export function makeCars(
           id = k === 0 ? nextE[i] : laterEdge(i, edges[id]);
         }
         for (let m = 0; m < XS.length; m += 2) {
-          const c0 = XS[m];
+          let c0 = XS[m];
           const c1 = XS[m + 1];
           if (c0 < head + 0.3 || c0 > rearPred) continue;
           if (rearPred - c1 >= size[i] + 2.5) continue;
+          // 그 앞에 서면 몸이 그 전 횡단보도에 걸치면 그 전 횡단보도 앞에 선다(아직 들어서지 않았으면)
+          for (let q = m - 2; q >= 0; q -= 2) if (c0 - 1.6 - size[i] - 1 < XS[q + 1] && XS[q] >= head + 0.3) c0 = XS[q];
           // 비스듬한 횡단보도는 차로 가운데선이 들어서기 전에 몸 모서리가 먼저 걸치므로 1.6m 앞에 선다
           const g2 = c0 - 1.6 - head + 2;
           if (g2 < gap && c0 - 1.6 - head > (v[i] * v[i]) / (2 * B_HARD) - 0.5) {
