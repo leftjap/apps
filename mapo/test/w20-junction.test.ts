@@ -9,10 +9,10 @@ describe('교차로를 신호와 차로대로 지난다(합정·홍대입구역 
     results = audit({ seconds: 300, keep: 450, count: 300 });
   }, 900_000);
   CASES.forEach(([name], k) =>
-    it(`${name}: 빨간불 통과·허용 안 된 차로 회전·엇갈리는 두 차·몸통 겹침이 모두 0`, () => {
+    it(`${name}: 빨간불 통과·허용 안 된 차로 회전·엇갈리는 두 차·경로 이탈·중앙선 넘기·한 단계 옆 튐·몸통 겹침이 모두 0`, () => {
       const r = results[k];
-      const pick = (o: AuditResult) => ({ red: o.red, lane: o.lane, cross: o.cross, overlap: o.overlap });
-      expect(pick(r), JSON.stringify(r.where)).toEqual({ red: 0, lane: 0, cross: 0, overlap: 0 });
+      const pick = (o: AuditResult) => ({ red: o.red, lane: o.lane, cross: o.cross, offPath: o.offPath, center: o.center, side: o.side, overlap: o.overlap });
+      expect(pick(r), JSON.stringify(r.where)).toEqual({ red: 0, lane: 0, cross: 0, offPath: 0, center: 0, side: 0, overlap: 0 });
       expect(r.passes).toBeGreaterThan(500);
     }),
   );

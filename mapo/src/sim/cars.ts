@@ -15,7 +15,7 @@ import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { BOARD_R } from '../geo.ts';
 import type { Crosswalk } from '../data/board.ts';
-import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, MED, medAt, type Edge } from './graph.ts';
+import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, leftEdge, MED, medAt, type Edge } from './graph.ts';
 import { GREEN, LEFT, makeIntersections, RED, RIGHT, STEP, STRAIGHT, UTURN, YELLOW, type Inter, type LanePath } from './intersection/index.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
@@ -1256,7 +1256,13 @@ export function makeCars(
     for (let i = 0; i < cars.n; i++) {
       if (dwell[i] > 0 && cars.route[i] >= 0) continue;
       const side0 = side[i];
-      side[i] -= Math.sign(side[i]) * Math.min(Math.abs(side[i]), SIDE_V * dt);
+      // 옆 거리를 줄여 간다. 몸이 그 방향 찻길 왼쪽 가장자리(양방향 길의 칠한 중앙선)를 넘은 동안은 빨리(초당 3.5m) 돌아온다
+      let sideV = SIDE_V;
+      const ee = edges[edge[i]];
+      if (side[i] < 0 && lane[i] !== MED && laneOff(ee, lane[i], s[i]) + side[i] - wid[i] < leftEdge(ee, s[i])) sideV = 3.5;
+      // 교차로 상자 40m 앞부터는 상자에 들어서기 전에 차로 가운데로 돌아온다(교차로 안에서는 경로를 그대로 따른다)
+      if (isApproach(ee.id) && ee.len - X.rIn[ee.id] - s[i] < 40) sideV = Math.max(sideV, 3.5);
+      side[i] -= Math.sign(side[i]) * Math.min(Math.abs(side[i]), sideV * dt);
       let ds = v[i] * dt;
       blockBy[i] = -1;
       // 걸음 없이도 그린 자리가 바뀔 수 있다(옆으로 옮겨 가기, 정류장 승강장 비켜 서기). 그 자리도 새로 겹치면 그대로 둔다

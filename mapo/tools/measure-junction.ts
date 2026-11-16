@@ -4,7 +4,7 @@
 //  1 red     자기 움직임이 빨간불인데 게이트(차로 정지 자리)를 넘은 차. 움직임은 실제로 빠져나간 길로 정한다(Intersections.moveOf)
 //  2 lane    진입로를 떠날 때의 차로가 실제 움직임을 허용하지 않음(Intersections.laneMoves, 나가는 길이 둘 이상인 진입로)
 //  3 cross   게이트를 넘은 때부터 뒤꽁무니가 상자를 나갈 때까지 같은 교차로에 있던 두 차의 경로가 30° 넘게 가로지름
-//    offPath 교차로 안 차 가운데가 제 차로 경로에서 0.5m 넘게 벗어남
+//    offPath 교차로 안 차 가운데가 제 차로 경로에서 0.5m 넘게 벗어남(중앙 정류장에서 비켜 서는 중앙버스차로 버스 빼고)
 //  4 walk    보행 초록 횡단보도 면에 차 몸통이 걸침
 //  5 center  상자 밖 양방향 길에서 차 몸 왼쪽이 중앙선(그 방향 찻길 왼쪽 가장자리)을 0.2m 넘게 넘음(중앙버스차로 버스 빼고)
 //  6 side    한 단계(1/30초)에 옆으로 0.3m 넘게 움직임(지난 단계 방향 기준)
@@ -253,10 +253,18 @@ export function audit(o: AuditOptions): AuditResult[] {
             let worst = 0;
             for (let q = 0; q < ps.pts.length; q += 2) {
               let best = Infinity;
-              for (let m = 0; m < path.pts.length; m += 4) best = Math.min(best, Math.hypot(path.pts[m] - ps.pts[q], path.pts[m + 2] - ps.pts[q + 1]));
+              // 경로 꺾은선의 선분까지 거리(경로 점은 구간 거리 0.5m 간격이라 휘는 곳에서는 점 사이가 더 벌어진다)
+              const pp = path.pts;
+              for (let m = 0; m + 4 < pp.length; m += 4) {
+                const ax = pp[m], az = pp[m + 2], bx = pp[m + 4], bz = pp[m + 6];
+                const l2 = (bx - ax) ** 2 + (bz - az) ** 2 || 1e-9;
+                const t = Math.max(0, Math.min(1, ((ps.pts[q] - ax) * (bx - ax) + (ps.pts[q + 1] - az) * (bz - az)) / l2));
+                best = Math.min(best, Math.hypot(ax + t * (bx - ax) - ps.pts[q], az + t * (bz - az) - ps.pts[q + 1]));
+              }
               worst = Math.max(worst, best);
             }
-            if (worst > 0.5 && ps.pts.length) note('offPath', ps.x, ps.z, `e${ps.a} ${worst.toFixed(2)} p${path.id} sim${ps.sim} l${ps.lane}`);
+            // 중앙버스차로 버스는 중앙 정류장 둘레에서 승강장 폭만큼 비켜 서므로(설계 문서 19절) 경로 이탈로 세지 않는다
+            if (worst > 0.5 && ps.pts.length && ps.lane !== MED) note('offPath', ps.x, ps.z, `e${ps.a} ${worst.toFixed(2)} p${path.id} sim${ps.sim} l${ps.lane}`);
             passes.push({ ...ps, path: path.id });
           }
         }
