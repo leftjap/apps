@@ -8,14 +8,16 @@ export const SIDEWALK = 0;
 export const ALLEY = 1;
 export const PATH = 2;
 export const LINK = 3;
+/** walk.json 의 횡단보도 연결 하나가 차지하는 수의 개수 */
+export const LINK_N = 17;
 
 export interface WalkJson {
-  v: 1;
+  v: 2;
   /** 노드 [x, z, ...](dm), 첫 점 뒤는 앞 점과의 차이 */
   n: number[];
   /** 선마다 [a − 앞 선의 a, b − a, 종류 × 16 + 등급 × 2 + 붐비는 길, lo, hi](lo·hi 는 dm, a→b 로 걸을 때) */
   e: number[];
-  /** 횡단보도 연결마다 [횡단보도 번호, na, nb, ax, az, bx, bz, pax, paz, pbx, pbz, 폭, 큰길](좌표·폭은 dm) */
+  /** 횡단보도 연결마다 [횡단보도 번호, na, nb, ax, az, bx, bz, pax, paz, pbx, pbz, 폭, 큰길, aLo, aHi, bLo, bHi](좌표·폭은 dm) */
   x: number[];
 }
 
@@ -37,6 +39,12 @@ export interface CrossLink {
   major: boolean;
   /** 횡단보도 폭(m) */
   wid: number;
+  /** E0·E1 쪽 끝에서 사람이 비켜 설 수 있는 범위: 축에서 E0→E1 오른쪽으로 떨어진 거리의 [최소, 최대](m).
+   *  그 안에서는 기다리는 자리 뒤 1.5m 까지 큰길 찻길·건물·칠이 아니다 */
+  aLo: number;
+  aHi: number;
+  bLo: number;
+  bHi: number;
 }
 
 export interface WalkGraph {
@@ -56,8 +64,9 @@ export interface WalkGraph {
   linkAt: Map<number, number[]>;
   /** 가장 가까운 노드. alley 가 참이면 골목·보행로에 닿은 노드만 본다 */
   nearest(x: number, z: number, alley?: boolean): number;
-  /** 가장 가까운 선(잇는 선 빼고, 200m 안): [노드 a, 이웃 번호 k, a 에서 선을 따라간 거리, 떨어진 거리]. 없으면 null */
-  nearestEdge(x: number, z: number): [number, number, number, number] | null;
+  /** 가장 가까운 선(잇는 선 빼고, 200m 안): [노드 a, 이웃 번호 k, a 에서 선을 따라간 거리, 떨어진 거리]. 없으면 null.
+   *  ok 를 주면 그 노드에서 나가는 선만 본다 */
+  nearestEdge(x: number, z: number, ok?: (a: number) => boolean): [number, number, number, number] | null;
 }
 
 const HOT_W = (kind: number, cls: number) => (kind === PATH || cls >= 6 ? 3 : cls === 5 ? 0.4 : cls === 4 ? 1 : 1.5);
@@ -101,7 +110,7 @@ export function decodeWalk(j: WalkJson): WalkGraph {
   }
   const links: CrossLink[] = [];
   const linkAt = new Map<number, number[]>();
-  for (let k = 0; k < j.x.length; k += 13) {
+  for (let k = 0; k < j.x.length; k += LINK_N) {
     const v = j.x;
     const l: CrossLink = {
       xw: v[k],
@@ -117,6 +126,10 @@ export function decodeWalk(j: WalkJson): WalkGraph {
       pbz: v[k + 10] / 10,
       wid: v[k + 11] / 10,
       major: v[k + 12] === 1,
+      aLo: v[k + 13] / 10,
+      aHi: v[k + 14] / 10,
+      bLo: v[k + 15] / 10,
+      bHi: v[k + 16] / 10,
     };
     for (const n of new Set([l.na, l.nb])) (linkAt.get(n) ?? linkAt.set(n, []).get(n)!).push(links.length);
     links.push(l);
@@ -175,7 +188,7 @@ export function decodeWalk(j: WalkJson): WalkGraph {
       }
       return best;
     },
-    nearestEdge(px, pz) {
+    nearestEdge(px, pz, ok) {
       const cells2 = edgeGrid();
       const cx = Math.floor(px / EC);
       const cz = Math.floor(pz / EC);
@@ -188,6 +201,7 @@ export function decodeWalk(j: WalkJson): WalkGraph {
             for (let m = 0; m < list.length; m += 2) {
               const p = list[m];
               const k = list[m + 1];
+              if (ok && !ok(p)) continue;
               const b = adj[p][k];
               const dx = nx[b * 2] - nx[p * 2];
               const dz = nx[b * 2 + 1] - nx[p * 2 + 1];

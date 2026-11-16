@@ -10,7 +10,7 @@
 import { curbAt, GK, type Board, type Road } from '../../src/data/board.ts';
 import { carriageSections, isGroundRoad, roadJoints } from '../../src/data/surface.ts';
 import { underpasses, ZONES } from '../../src/sim/walkers.ts';
-import { ALLEY, LINK, PATH, SIDEWALK, type WalkJson } from '../../src/sim/walknet.ts';
+import { ALLEY, LINK, LINK_N, PATH, SIDEWALK, type WalkJson } from '../../src/sim/walknet.ts';
 import { BOARD_R } from '../../src/geo.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from './bits.ts';
 
@@ -158,10 +158,10 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
   });
 
   // ②·③ 골목·보행로
-  const ray = (x: number, z: number, nx: number, nz: number, curb: number): [number, boolean] => {
+  const ray = (x: number, z: number, nx: number, nz: number, curb: number, stop = BLDG | HARD): [number, boolean] => {
     for (let d = 0.25; d <= 8; d += 0.25) {
       const f = bitsAt(B, x + nx * d, z + nz * d);
-      if (f & (BLDG | HARD)) return [d, true];
+      if (f & stop) return [d, true];
       if (d > curb && !(f & (LAND | WALK))) return [d, false];
     }
     return [8, false];
@@ -222,7 +222,8 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
           const n = Math.max(2, Math.ceil(L / 1.5));
           for (let q = 0; q <= n; q++) {
             const f = q / n;
-            const [d, isWall] = ray(ax + (bx - ax) * f, az + (bz - az) * f, nx * side, nz * side, alley ? c : Infinity);
+            // 보행로 띠는 칠한 횡단보도에서도 멈춘다(골목 띠는 골목을 가로지르는 칠 위를 그대로 지난다)
+            const [d, isWall] = ray(ax + (bx - ax) * f, az + (bz - az) * f, nx * side, nz * side, alley ? c : Infinity, alley ? BLDG | HARD : BLDG | HARD | XW);
             if (d < lim) (lim = d), (wall = isWall);
           }
           if (!alley) return Math.max(0, Math.min(c, lim - 0.5));
@@ -456,7 +457,30 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
     const nb = splitAt(hb[0], hb[1]);
     if (na === nb) return inp.onCross?.(xw, '양 끝 같은 노드');
     inp.onCross?.(xw, null);
-    links.push(xw, na, nb, a.ex, a.ez, b.ex, b.ez, a.px, a.pz, b.px, b.pz, c.wid, major ? 1 : 0);
+    // 끝마다 사람이 비켜 설 수 있는 폭: 기다리는 자리에서 축을 가로질러(a→b 오른쪽 +) 옮겨도, 거기서 보도 쪽으로 0·0.75·1.5m 물러난
+    // 자리가 모두 큰길 찻길·건물·칠 밖이고 도로 부지·보도 면 안인 범위(칠 폭/2 − 0.3m 안). 모퉁이에서는 연석이 축과 비스듬해 한쪽이 찻길이다
+    const L = Math.hypot(b.ex - a.ex, b.ez - a.ez) || 1;
+    const vx = (b.ex - a.ex) / L;
+    const vz = (b.ez - a.ez) / L;
+    const room = (p: { px: number; pz: number }, back: number) => {
+      const sp = (p.px - a.ex) * -vz + (p.pz - a.ez) * vx;
+      const tp = (p.px - a.ex) * vx + (p.pz - a.ez) * vz;
+      const lim = Math.max(c.wid / 2 - 0.3, Math.abs(sp));
+      const clear = (sv: number) =>
+        [0, 0.75, 1.5].every((r) => {
+          const t = tp + back * r;
+          const f = bitsAt(B, a.ex + vx * t - vz * sv, a.ez + vz * t + vx * sv);
+          return !(f & (HARD | BLDG | XW)) && (f & (LAND | WALK)) !== 0;
+        });
+      let lo = sp;
+      let hi = sp;
+      if (clear(sp)) {
+        while (lo - 0.25 >= -lim && clear(lo - 0.25)) lo -= 0.25;
+        while (hi + 0.25 <= lim && clear(hi + 0.25)) hi += 0.25;
+      }
+      return [lo, hi];
+    };
+    links.push(xw, na, nb, a.ex, a.ez, b.ex, b.ez, a.px, a.pz, b.px, b.pz, c.wid, major ? 1 : 0, ...room(a, -1), ...room(b, 1));
   });
 
   // 작은 조각(선 길이 합 15m 미만, 횡단보도에 닿지 않는 것)은 버린다
@@ -464,7 +488,7 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
   const root = Int32Array.from({ length: N }, (_, i) => i);
   const find = (i: number): number => (root[i] === i ? i : (root[i] = find(root[i])));
   for (const e of edges) root[find(e.a)] = find(e.b);
-  for (let k = 0; k < links.length; k += 13) root[find(links[k + 1])] = find(links[k + 2]);
+  for (let k = 0; k < links.length; k += LINK_N) root[find(links[k + 1])] = find(links[k + 2]);
   const size = new Float64Array(N);
   for (const e of edges) size[find(e.a)] += Math.hypot(nodes[e.b * 2] - nodes[e.a * 2], nodes[e.b * 2 + 1] - nodes[e.a * 2 + 1]);
   const keepNode = (n: number) => size[find(n)] >= 15;
@@ -492,11 +516,11 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
     pa = q.a;
   }
   const x: number[] = [];
-  for (let k = 0; k < links.length; k += 13) {
+  for (let k = 0; k < links.length; k += LINK_N) {
     if (!keepNode(links[k + 1])) continue;
-    x.push(links[k], id(links[k + 1]), id(links[k + 2]), ...links.slice(k + 3, k + 12).map((v) => Math.round(v * 10)), links[k + 12]);
+    x.push(links[k], id(links[k + 1]), id(links[k + 2]), ...links.slice(k + 3, k + 12).map((v) => Math.round(v * 10)), links[k + 12], ...links.slice(k + 13, k + 17).map((v) => Math.round(v * 10)));
   }
-  return { v: 1, n: out, e, x };
+  return { v: 2, n: out, e, x };
 }
 
 /** 점과 선분 사이 거리와 선분 위 비율 */
@@ -539,7 +563,8 @@ function sidewalks(B: Bits, emit: (pts: Chain, widths: number[]) => void) {
   const { w: W, h: H } = B;
   const s = new Uint8Array(W * H);
   let cnt = 0;
-  for (let i = 0; i < W * H; i++) if ((B.v[i] & (WALK | HARD | BLDG)) === WALK) (s[i] = 1), cnt++;
+  // 칠한 횡단보도가 보도까지 덮은 곳은 보도에서 뺀다(뼈대 폭으로 정하는 걷는 띠가 칠 끝을 덮으면 보도를 걷는 사람이 칠을 밟는다)
+  for (let i = 0; i < W * H; i++) if ((B.v[i] & (WALK | HARD | BLDG | XW)) === WALK) (s[i] = 1), cnt++;
   let cur = new Int32Array(cnt);
   for (let i = 0, k = 0; i < W * H; i++) if (s[i]) cur[k++] = i;
   // Zhang–Suen

@@ -84,6 +84,19 @@ describe('보행자', () => {
     expect(wet[park]).toBeLessThan(dry[park] * 0.25);
     expect(walkerTarget(p, at(14, 0), 1e6, 0.5)).toBeLessThan(walkerTarget(p, at(14, 0), 1e6));
   });
+  it('출구 바로 옆 선이 큰 그래프와 끊긴 작은 조각이면, 큰 그래프의 가장 가까운 선에 붙어 사람이 갇히지 않는다', () => {
+    // 격자 골목에서 50m 떨어진 25m 보행로 조각(이어지지 않는다). 출구는 그 조각 바로 옆
+    const rs = [...lanes(), road([[30, 50], [55, 50]], { cls: 7, lanes: 1 })];
+    const g = walkNet(rs);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 42, z: 47 }], fixedProvider(1), 2, 200);
+    sim.burst('x', 30);
+    let far = 0;
+    for (let k = 0; k < 600; k++) {
+      sim.step(0.5, at(14), false);
+      for (let i = 0; i < sim.w.n; i++) if (Math.hypot(sim.w.x[i] - 42, sim.w.z[i] - 50) > 30) far++;
+    }
+    expect(far).toBeGreaterThan(1000);
+  });
   it('최대 인원을 넘지 않는다', () => {
     const sim = makeWalkers(walkNet(lanes()), exits, fixedProvider(1, 500000), 3, 50);
     sim.burst('합정', 80);

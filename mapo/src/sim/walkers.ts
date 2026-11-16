@@ -377,10 +377,32 @@ export function makeWalkers(
     places.push({ ...p, x: l.pax, z: l.paz, island: { ...base, ex: l.pax, ez: l.paz } });
     places.push({ ...p, x: l.pbx, z: l.pbz, island: { ...base, ex: l.pbx, ez: l.pbz } });
   }
+  // 연결 요소(선과 횡단보도 연결로 이어진 노드 묶음)마다 선 길이 합. 출구·문·정류장은 가장 큰 요소나 1km 넘는 요소에만 붙인다.
+  // 큰 그래프와 끊긴 작은 조각(건물 마당 보행로 등)에 붙으면 거기서 나온 사람이 그 조각을 맴돌며 뭉친다
+  const compOf = new Int32Array(g.adj.length).fill(-1);
+  const compLen: number[] = [];
+  for (let s0 = 0; s0 < g.adj.length; s0++) {
+    if (compOf[s0] >= 0) continue;
+    const c = compLen.length;
+    compLen.push(0);
+    compOf[s0] = c;
+    const q = [s0];
+    while (q.length) {
+      const a = q.pop()!;
+      for (const b of g.adj[a]) {
+        compLen[c] += Math.hypot(g.nx[b * 2] - g.nx[a * 2], g.nx[b * 2 + 1] - g.nx[a * 2 + 1]) / 2;
+        if (compOf[b] < 0) (compOf[b] = c), q.push(b);
+      }
+      for (const li of links.at.get(a) ?? [])
+        for (const b of [links.list[li].na, links.list[li].nb]) if (compOf[b] < 0) (compOf[b] = c), q.push(b);
+    }
+  }
+  const bigLen = Math.min(1000, Math.max(0, ...compLen));
+  const onBig = (a: number) => compLen[compOf[a]] >= bigLen;
   const docks: Dock[] = [];
   for (const p of places) {
     // 가장 가까운 선. 걷는 띠 안에서 출구·정류장에 가장 가까운 자리에 붙는다
-    const hit = g.nearestEdge(p.x, p.z);
+    const hit = g.nearestEdge(p.x, p.z, onBig);
     if (!hit) continue;
     const [a, kb, tt] = hit;
     const b = g.adj[a][kb];
@@ -849,15 +871,18 @@ export function makeWalkers(
       const uz = xFz[i] - xNz[i];
       const lu = Math.hypot(ux, uz) || 1;
       xLat[i] = Math.max(0, links.list[xLink[i]].wid / 2 - 0.4) * (0.15 + rand() * 0.85);
+      const l = links.list[xLink[i]];
+      const fromA = nearA(l, xNx[i], xNz[i]);
       xNx[i] -= (uz / lu) * xLat[i];
       xNz[i] += (ux / lu) * xLat[i];
       xFx[i] -= (uz / lu) * xLat[i];
       xFz[i] += (ux / lu) * xLat[i];
+      // 기다리는 자리·건너편 자리는 그 끝에서 비켜 설 수 있는 범위 안으로(모퉁이에서 한쪽이 찻길이다)
+      [xNx[i], xNz[i]] = inRoom(l, fromA, xNx[i], xNz[i]);
+      [xFx[i], xFz[i]] = inRoom(l, !fromA, xFx[i], xFz[i]);
       xSlot[i] = 0;
       // 칠 끝은 축 양 끝에서 같은 쪽으로 비킨 자리. 기다리는 자리가 축 옆으로 비켜 있어도 찻길은 칠 위로 건넌다.
       // 기다리는 자리가 이미 이쪽 칠 끝보다 찻길 쪽이면 그 칠 끝은 건너뛰고, 건너편도 같다
-      const l = links.list[xLink[i]];
-      const fromA = Math.hypot(xNx[i] - l.ax, xNz[i] - l.az) <= Math.hypot(xNx[i] - l.bx, xNz[i] - l.bz);
       const [ax, az, bx, bz] = fromA ? [l.ax, l.az, l.bx, l.bz] : [l.bx, l.bz, l.ax, l.az];
       const L = Math.hypot(bx - ax, bz - az) || 1;
       const vx = (bx - ax) / L;
@@ -924,23 +949,36 @@ export function makeWalkers(
           if (j !== i && j < w.n && mode[j] !== LEAVING && Math.hypot(w.x[j] - x, w.z[j] - z) < 0.7) return false;
     return true;
   }
+  /** (x, z)가 횡단보도 연결 l 의 E0 쪽 기다리는 자리에 더 가까운가 */
+  const nearA = (l: CrossLink, x: number, z: number) => Math.hypot(x - l.pax, z - l.paz) <= Math.hypot(x - l.pbx, z - l.pbz);
+  /** 축에서 E0→E1 오른쪽으로 떨어진 거리 */
+  const across = (l: CrossLink, x: number, z: number) => {
+    const L = Math.hypot(l.bx - l.ax, l.bz - l.az) || 1;
+    return ((x - l.ax) * -(l.bz - l.az) + (z - l.az) * (l.bx - l.ax)) / L;
+  };
+  /** (x, z)를 축을 가로질러 옮겨, E0 쪽(fromA) 또는 E1 쪽 끝에서 비켜 설 수 있는 범위 안에 넣는다 */
+  function inRoom(l: CrossLink, fromA: boolean, x: number, z: number): [number, number] {
+    const s = across(l, x, z);
+    const d = Math.max(fromA ? l.aLo : l.bLo, Math.min(fromA ? l.aHi : l.bHi, s)) - s;
+    const L = Math.hypot(l.bx - l.ax, l.bz - l.az) || 1;
+    return [x - ((l.bz - l.az) / L) * d, z + ((l.bx - l.ax) / L) * d];
+  }
   /** 횡단보도 앞 기다릴 자리에 이미 사람이 있을 때 옮겨 설 빈자리: 지금 자리에서 옆으로 0.75m 씩, 그다음 보도 쪽으로 0.75m 씩 물러나며
-   *  횡단보도 폭 안(축에서 폭/2 − 0.3m)에서 처음 빈 곳. 없으면 null */
+   *  그 끝에서 비켜 설 수 있는 범위 안에서 처음 빈 곳. 없으면 null */
   function freeSpot(i: number, l: CrossLink): [number, number] | null {
     let ux = xFx[i] - xNx[i];
     let uz = xFz[i] - xNz[i];
     const lu = Math.hypot(ux, uz) || 1;
     ux /= lu;
     uz /= lu;
-    const ax = l.bx - l.ax;
-    const az = l.bz - l.az;
-    const la = Math.hypot(ax, az) || 1;
-    const room = Math.max(0.2, l.wid / 2 - 0.3);
+    const fromA = nearA(l, xNx[i], xNz[i]);
+    const [lo, hi] = fromA ? [l.aLo, l.aHi] : [l.bLo, l.bHi];
     for (const row of [0, 0.75, 1.5])
       for (const lat of [0, 0.75, -0.75, 1.5, -1.5, 2.25, -2.25, 3, -3]) {
         const x = w.x[i] - uz * lat - ux * row;
         const z = w.z[i] + ux * lat - uz * row;
-        if (Math.abs(((x - l.ax) * az - (z - l.az) * ax) / la) > room) continue;
+        const s = across(l, x, z);
+        if (s < lo - 0.05 || s > hi + 0.05) continue;
         if (freeAt(i, x, z)) return [x, z];
       }
     return null;

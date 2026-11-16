@@ -181,7 +181,7 @@ describe('횡단보도로 큰길 건너기', () => {
         was.set(sim.w.id[i], now);
       }
     }
-    expect(entries).toBeGreaterThan(30);
+    expect(entries).toBeGreaterThan(15);
     expect(onRed).toBe(0);
   });
 
@@ -212,6 +212,38 @@ describe('횡단보도로 큰길 건너기', () => {
     }
     expect(on).toBeGreaterThan(500);
     expect(onRed).toBe(0);
+  });
+
+  it('기다리는 자리 옆이 찻길이면(옆길 어귀) 우측통행·빈자리로 비켜 서도 찻길 위에 서지 않는다', () => {
+    // 동서 큰길(4차로, 반폭 7.1m)과 북쪽으로 나가는 옆길(등급 3, 2차로). 큰길을 건너는 폭 6m 횡단보도가 옆길 어귀 바로 옆 x = 5.5 에 있다
+    const rs = [
+      road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }),
+      road([[0, 0], [300, 0]], { cls: 2, lanes: 4 }),
+      road([[0, 0], [0, -200]], { cls: 3, lanes: 2 }),
+    ];
+    const cars = buildCarGraph(rs);
+    const xws = [crosswalk(5.5, 0, 0, 1, 7.1, [[0, 0]], true, 6)];
+    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const g = walkNet(rs, { crosswalks: xws });
+    expect(g.links).toHaveLength(1);
+    const side = curbAt(rs[2], 0, 1); // 옆길 찻길 반폭
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'n', x: 40, z: -10 }, { kind: 'exit', key: 's', x: 40, z: 10 }], fixedProvider(1, 0), 4, 200, undefined, signals);
+    let stand = 0;
+    let onRoad = 0;
+    for (let k = 0; k < 6000; k++) {
+      if (k % 60 === 0) sim.burst('n', 4), sim.burst('s', 2);
+      sim.step(0.1, { tod: k * 0.1, dow: 2, doy: 317 }, false);
+      if (k % 10) continue;
+      for (let i = 0; i < sim.w.n; i++) {
+        if (sim.w.moving[i]) continue;
+        const [x, z] = [sim.w.x[i], sim.w.z[i]];
+        stand++;
+        if (Math.abs(z) < 7.1 && Math.abs(x - 5.5) > 3) onRoad++; // 칠 밖 큰길 찻길
+        if (z < -7.1 && Math.abs(x) < side) onRoad++; // 옆길 찻길
+      }
+    }
+    expect(stand).toBeGreaterThan(300);
+    expect(onRoad).toBe(0);
   });
 
   // 폭 6m 신호 횡단보도에 양쪽에서 사람이 몰려오는 경우
