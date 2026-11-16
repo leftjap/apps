@@ -760,21 +760,28 @@ export function makeWalkers(
       });
       if (!Number.isFinite(best)) j = -1;
     } else {
-      // 나온 구역 밖으로 멀어지는 길은 거의 고르지 않는다(구역 밖 사람은 어디로든 간다). 횡단보도가 있으면 열에 서넛은 건넌다
+      // 나온 구역 몫 밖으로 나가거나 몫 밖에서 더 멀어지는 길은 거의 고르지 않는다(구역 밖 사람은 어디로든 간다). 몫은 출구·문을 나눈 것과 같이
+      // 원이 겹친 곳을 먼저 세는 구역에 준 것(zoneOf)이다. 원으로 보면 홍대 사람이 겹친 홍대입구역 몫을 제 구역처럼 돌아다닌다.
+      // 온 길로 되돌아가지는 않지만, 갈림 없는 보도처럼 앞길이 모두 몫 밖으로 나가는 길이면 되돌아선다.
+      // 횡단보도가 있으면 열에 서넛은 건넌다(벌점은 그 비율을 맞춘 뒤 곱한다)
       const z = home[i];
-      const [cx, cz, r] = z < ZONE_IDS.length ? ZONES[ZONE_IDS[z]] : [0, 0, Infinity];
+      const [cx, cz] = z < ZONE_IDS.length ? ZONES[ZONE_IDS[z]] : [0, 0];
       const db = Math.hypot(g.nx[b * 2] - cx, g.nx[b * 2 + 1] - cz);
-      const ws = moves.map((mv) => {
+      const inHome = z < ZONE_IDS.length && zoneOf(g.nx[b * 2], g.nx[b * 2 + 1]) === z;
+      const out = moves.map((mv) => {
+        if (z === ZONE_IDS.length) return false;
         const m = g.adj[mv.dep][mv.k];
-        if (mv.x < 0 && m === from[i] && moves.length > 1) return 0;
-        const v = g.aw[mv.dep][mv.k];
         const dn = Math.hypot(g.nx[m * 2] - cx, g.nx[m * 2 + 1] - cz);
-        return dn > r && dn > db ? v * 0.04 : v;
+        return (inHome || dn > db) && zoneOf(g.nx[m * 2], g.nx[m * 2 + 1]) !== z;
       });
+      const back = moves.map((mv) => mv.x < 0 && g.adj[mv.dep][mv.k] === from[i]);
+      const ahead = moves.some((_, q) => !back[q] && !out[q]);
+      const ws = moves.map((mv, q) => (back[q] && moves.length > 1 && ahead ? 0 : g.aw[mv.dep][mv.k]));
       let wn = 0;
       let wx = 0;
       moves.forEach((mv, q) => (mv.x < 0 ? (wn += ws[q]) : (wx += ws[q])));
       if (wn > 0 && wx > 0) moves.forEach((mv, q) => mv.x >= 0 && (ws[q] *= (wn * 0.5) / wx));
+      out.forEach((o, q) => o && (ws[q] *= 0.04));
       j = pick(ws, rand());
     }
     if (j < 0) return (nextK[i] = -2);
@@ -1132,7 +1139,10 @@ export function makeWalkers(
           dx /= dd;
           dz /= dd;
           const f = follow(i, dx, dz);
-          d *= rLeg[i] === rCross[i] ? Math.max(0.25, f) : f;
+          // 찻길을 건너는 구간과 승강장 위 구간(가는 길 2·3, 나오는 길 0·1)은 멈추지 않고 늦추기만 한다.
+          // 좁은 승강장에서 줄 자리로 가는 사람끼리 서로를 앞사람으로 보고 멈추면 풀리지 않는다
+          const isle = rt[i] === 1 ? rLeg[i] >= 2 : rLeg[i] <= 1;
+          d *= rLeg[i] === rCross[i] || isle ? Math.max(0.25, f) : f;
           if (d === 0) w.moving[i] = 0;
           head[i] = Math.atan2(dz, dx);
           w.x[i] += dx * d;

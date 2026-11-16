@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeSignals, RED } from '../src/sim/signals.ts';
-import { makeWalkers, walkerTarget, zoneTargets, ZONE_IDS, type Portal } from '../src/sim/walkers.ts';
+import { makeWalkers, walkerTarget, zoneTargets, ZONE_IDS, ZONES, type Portal } from '../src/sim/walkers.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { at, crosswalk, fixedProvider, road, walkNet } from './helpers.ts';
 
@@ -83,6 +83,51 @@ describe('보행자', () => {
     expect(wet[street]).toBeGreaterThan(dry[street] * 0.4);
     expect(wet[park]).toBeLessThan(dry[park] * 0.25);
     expect(walkerTarget(p, at(14, 0), 1e6, 0.5)).toBeLessThan(walkerTarget(p, at(14, 0), 1e6));
+  });
+  it('구역에서 나온 사람은 그 구역 몫 안을 돌아다니고, 겹친 이웃 구역(먼저 세는 구역)의 몫으로는 거의 들어가지 않는다', () => {
+    // 홍대 원과 홍대입구역 원이 겹치는 곳에 50m 격자 골목. 홍대 몫(홍대입구역 원 밖) 출구 (400, −400)에서만 사람이 나온다
+    const rs = [];
+    for (let x = 150; x <= 750; x += 50)
+      for (let z = -850; z <= -100; z += 50) {
+        if (x < 750) rs.push(road([[x, z], [x + 50, z]], { cls: 5, lanes: 1 }));
+        if (z < -100) rs.push(road([[x, z], [x, z + 50]], { cls: 5, lanes: 1 }));
+      }
+    const [sx, sz, sr] = ZONES['hongik-stn'];
+    expect(Math.hypot(400 - sx, -400 - sz)).toBeGreaterThan(sr);
+    const sim = makeWalkers(walkNet(rs), [{ kind: 'exit', key: 'h', x: 400, z: -400 }], fixedProvider(1), 3, 400);
+    let inStn = 0;
+    let all = 0;
+    for (let k = 0; k < 6000; k++) {
+      if (k % 50 === 0 && sim.w.n < 300) sim.burst('h', 5);
+      sim.step(0.5, at(14), false);
+      if (k < 1000 || k % 10) continue;
+      for (let i = 0; i < sim.w.n; i++) {
+        all++;
+        if (Math.hypot(sim.w.x[i] - sx, sim.w.z[i] - sz) < sr) inStn++;
+      }
+    }
+    expect(all).toBeGreaterThan(50000);
+    expect(inStn / all).toBeLessThan(0.05);
+  });
+  it('갈림 없는 길이 이웃 구역 몫으로 이어지면, 경계에서 되돌아선다', () => {
+    // 홍대 몫 (450, −250)에서 홍대입구역 원 안 (450, −850)까지 곧게 이어진 골목 하나. 출구는 홍대 몫 (450, −300)
+    const rs = [];
+    for (let z = -850; z < -250; z += 50) rs.push(road([[450, z], [450, z + 50]], { cls: 5, lanes: 1 }));
+    const [sx, sz, sr] = ZONES['hongik-stn'];
+    const sim = makeWalkers(walkNet(rs), [{ kind: 'exit', key: 'h', x: 450, z: -300 }], fixedProvider(1), 3, 400);
+    let inStn = 0;
+    let all = 0;
+    for (let k = 0; k < 4000; k++) {
+      if (k % 50 === 0 && sim.w.n < 200) sim.burst('h', 5);
+      sim.step(0.5, at(14), false);
+      if (k < 1000 || k % 10) continue;
+      for (let i = 0; i < sim.w.n; i++) {
+        all++;
+        if (Math.hypot(sim.w.x[i] - sx, sim.w.z[i] - sz) < sr) inStn++;
+      }
+    }
+    expect(all).toBeGreaterThan(20000);
+    expect(inStn / all).toBeLessThan(0.05);
   });
   it('출구 바로 옆 선이 큰 그래프와 끊긴 작은 조각이면, 큰 그래프의 가장 가까운 선에 붙어 사람이 갇히지 않는다', () => {
     // 격자 골목에서 50m 떨어진 25m 보행로 조각(이어지지 않는다). 출구는 그 조각 바로 옆

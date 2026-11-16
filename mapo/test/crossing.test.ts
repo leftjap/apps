@@ -247,13 +247,16 @@ describe('횡단보도로 큰길 건너기', () => {
   });
 
   // 폭 6m 신호 횡단보도에 양쪽에서 사람이 몰려오는 경우
+  // 장면은 홍대 구역 한가운데(X0, Z0 만큼 옮김)에 둔다. 원점 둘레는 홍대 구역 몫 경계(x ≈ −90)에 걸려, 서쪽으로 간 사람이 곧 되돌아서서
+  // 횡단보도 둘레만 붐빈다. 한가운데에서는 길 양 끝(300m)까지 몫 안이다
+  const [X0, Z0] = [350, -250];
   const busyCrossing = () => {
-    const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })];
+    const rs = [road([[X0 - 300, Z0], [X0, Z0]], { cls: 2, lanes: 4 }), road([[X0, Z0], [X0 + 300, Z0]], { cls: 2, lanes: 4 })];
     const cars = buildCarGraph(rs);
-    const xws = [crosswalk(0, 0, 0, 1, 7.1, [[0, 0]], true, 6)]; // 칠한 면은 연석까지
+    const xws = [crosswalk(X0, Z0, 0, 1, 7.1, [[X0, Z0]], true, 6)]; // 칠한 면은 연석까지
     const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
     const g = walkNet(rs, { crosswalks: xws });
-    const sim = makeWalkers(g, exits, fixedProvider(1, 0), 4, 160, undefined, signals);
+    const sim = makeWalkers(g, exits.map((e) => ({ ...e, x: e.x + X0, z: e.z + Z0 })), fixedProvider(1, 0), 4, 160, undefined, signals);
     return { sim, signals };
   };
 
@@ -267,7 +270,7 @@ describe('횡단보도로 큰길 건너기', () => {
       if (k % 10) continue;
       const w = sim.w;
       const stand: number[] = [];
-      for (let i = 0; i < w.n; i++) if (!w.moving[i] && w.fade[i] > 0.99 && Math.abs(w.x[i]) < 10 && Math.abs(w.z[i]) > 6 && Math.abs(w.z[i]) < 14) stand.push(i);
+      for (let i = 0; i < w.n; i++) if (!w.moving[i] && w.fade[i] > 0.99 && Math.abs(w.x[i] - X0) < 10 && Math.abs(w.z[i] - Z0) > 6 && Math.abs(w.z[i] - Z0) < 14) stand.push(i);
       waiting += stand.length;
       for (const i of stand) for (const j of stand) if (i < j && Math.hypot(w.x[i] - w.x[j], w.z[i] - w.z[j]) < 0.6) close++;
     }
@@ -288,10 +291,10 @@ describe('횡단보도로 큰길 건너기', () => {
       sim.step(0.1, { tod: k * 0.1, dow: 2, doy: 317 }, false);
       const on: number[] = [];
       for (let i = 0; i < w.n; i++) {
-        if (Math.abs(w.z[i]) > 6 || Math.abs(w.x[i]) > 4) continue;
+        if (Math.abs(w.z[i] - Z0) > 6 || Math.abs(w.x[i] - X0) > 4) continue;
         on.push(i);
         const z0 = prevZ.get(w.id[i]);
-        if (z0 !== undefined && Math.abs(w.z[i] - z0) > 0.05) (w.z[i] > z0 ? south : north).push(w.x[i]);
+        if (z0 !== undefined && Math.abs(w.z[i] - z0) > 0.05) (w.z[i] > z0 ? south : north).push(w.x[i] - X0);
       }
       prevZ.clear();
       for (const i of on) prevZ.set(w.id[i], w.z[i]);
