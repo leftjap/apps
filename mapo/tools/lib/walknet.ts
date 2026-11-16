@@ -85,6 +85,8 @@ export interface WalkInput {
   tunnels?: [number, number][];
   /** 붐비는 길 이름 */
   hot?: RegExp;
+  /** 횡단보도마다 이어졌는지와, 안 이어졌으면 그 끝(E0 쪽 a, E1 쪽 b)의 까닭(측정용) */
+  onCross?: (xw: number, why: string | null) => void;
 }
 
 const WALK = 1;
@@ -378,25 +380,33 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
       };
       let d = find(true);
       if (d < 0) d = find(false);
-      if (d < 0) return null;
+      if (d < 0) {
+        // 까닭: 축 끝에서 바깥 3m 자리가 무엇인가
+        const f = bitsAt(B, ex + c.ux * sg * 3, ez + c.uz * sg * 3);
+        return f & BLDG ? '건물' : f & HARD ? '큰길 찻길' : f & XW ? '횡단보도 면' : '자리 없음';
+      }
       d += 0.4;
       const px = ex + c.ux * sg * d;
       const pz = ez + c.uz * sg * d;
       const hit = reach(px, pz, new Set(), 12);
-      if (!hit) return null;
+      if (!hit) return '선 없음';
       return { ex, ez, px, pz, hit };
     };
     const a = side(-1);
     const b = side(1);
-    if (!a || !b) return;
+    if (typeof a === 'string' || typeof b === 'string') {
+      inp.onCross?.(xw, `${typeof a === 'string' ? 'a:' + a : ''}${typeof a === 'string' && typeof b === 'string' ? ' ' : ''}${typeof b === 'string' ? 'b:' + b : ''}`);
+      return;
+    }
     let major = false;
     for (let d = 0; d <= 2 * c.half; d += 0.5) if (bitsAt(B, a.ex + c.ux * d, a.ez + c.uz * d) & HARD) major = true;
     const na = splitAt(a.hit[0], a.hit[1]);
     // 앞에서 나눈 선 번호가 바뀌었을 수 있으므로 건너편은 다시 찾는다
     const hb = reach(b.px, b.pz, new Set(), 12);
-    if (!hb) return;
+    if (!hb) return inp.onCross?.(xw, 'b:선 없음');
     const nb = splitAt(hb[0], hb[1]);
-    if (na === nb) return;
+    if (na === nb) return inp.onCross?.(xw, '양 끝 같은 노드');
+    inp.onCross?.(xw, null);
     links.push(xw, na, nb, a.ex, a.ez, b.ex, b.ez, a.px, a.pz, b.px, b.pz, c.wid, major ? 1 : 0);
   });
 
