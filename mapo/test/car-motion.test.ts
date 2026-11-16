@@ -4,9 +4,10 @@ import { makeBusRoutes } from '../src/sim/buses.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeJunctions } from '../src/sim/junctions.ts';
+import { makeSignals } from '../src/sim/signals.ts';
 import { BODY_LEN, bodyType } from '../src/sim/bodies.ts';
 import { CAR_SHAPES } from '../src/render/cars.ts';
-import { at, fixedProvider, road } from './helpers.ts';
+import { at, crosswalk, fixedProvider, road } from './helpers.ts';
 
 /** 한 단계 동안 차마다(고유 번호로) 진행 방향에 수직으로 움직인 거리 가운데 가장 큰 값과, 옮겨 간 거리 가운데 가장 큰 값 */
 function track(sim: ReturnType<typeof makeCars>, steps: number, dt: number, tod = 14) {
@@ -130,6 +131,38 @@ describe('교차로 꼬리 물기', () => {
       }
     }
     expect(worst).toBeLessThan(5);
+  });
+});
+
+describe('신호 교차로에서 기다리는 자리', () => {
+  it('신호가 있는 진입로에서는 교차로에 못 들어갈 때도 정지선에서 기다린다(정지선과 교차로 사이 횡단보도 위에 서지 않는다)', () => {
+    // 네 갈래 교차로. 서쪽 팔 15m 에 신호 횡단보도, 22m 에 정지선. 나가는 세 길은 30m 앞이 막혀 줄이 선다
+    const g = buildCarGraph([
+      road([[-300, 0], [0, 0]], { cls: 2 }),
+      road([[0, 0], [300, 0]], { cls: 2 }),
+      road([[0, -300], [0, 0]], { cls: 2 }),
+      road([[0, 0], [0, 300]], { cls: 2 }),
+    ]);
+    const signals = makeSignals(g, { crosswalks: [crosswalk(-15, 0, 0, 1, 8, [[-15, 0]])], stopLines: Float32Array.from([-22, 0.2, -22, 7]) });
+    const west = g.find((e) => e.p[0] === -300)!;
+    const outs = g.filter((e) => e.p[0] === 0 && e.p[2] === 0);
+    const sim = makeCars(g, fixedProvider(1), 4, 60, [], signals);
+    sim.setIncidents({ blocks: [], close: [], slow: outs.map((e) => ({ edge: e.id, at: 30, v: 0.05 })) });
+    const D = sim.debug();
+    // 정지선 뒤에서 멈춘 차 표본과 정지선을 넘어 멈춘 차 표본(초록불에 넘은 뒤 앞이 막힌 차는 넘어서 설 수 있다)
+    let before = 0;
+    let past = 0;
+    for (let k = 0; k < 10 * 180; k++) {
+      if (k % 40 === 0) sim.put(west.id, 5, 0);
+      sim.step(0.1, at(14), false);
+      for (let i = 0; i < sim.cars.n; i++) {
+        if (D.edge[i] !== west.id || sim.speedOf(i) >= 0.3) continue;
+        if (sim.cars.x[i] + D.size[i] / 2 > -22 + 0.5) past++;
+        else before++;
+      }
+    }
+    expect(before).toBeGreaterThan(1000);
+    expect(past / (before + past)).toBeLessThan(0.05);
   });
 });
 

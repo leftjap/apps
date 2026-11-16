@@ -900,8 +900,14 @@ export function makeCars(
       const G = jn.groupOfEnd[e.id];
       if (G >= 0 && pathOf[i] >= 0 && planK[i] === 0 && !(claim[i] === G && claimPath[i] === pathOf[i]) && !red) {
         const toBox = e.len - s[i] - size[i] / 2 - jn.rIn[e.id];
-        if (toBox < Math.max(4, v[i] * 2.5 + 2)) {
-          if (mayEnter(i, G, pathOf[i], e, now.tod)) {
+        // 신호가 있는 진입로에서는 정지선(이 앞에 횡단보도가 있다) 가까이에서도 들어갈 수 있는지 보고, 못 들어가면 정지선에서 기다린다.
+        // 정지선에 선 차가 앞 교차로 상자에 걸리는 짧은 구간이면 지금처럼 상자 앞에서 본다
+        const toLine = ap && e.len - ap.setback - size[i] > jn.rOut[e.id] ? e.len - ap.setback - s[i] - size[i] / 2 : -1;
+        const near = Math.max(4, v[i] * 2.5 + 2);
+        if (toBox < near || (toLine > -0.5 && toLine < near)) {
+          const ok = mayEnter(i, G, pathOf[i], e, now.tod);
+          // 들어갈 수 있으면 교차로는 상자 가까이에서 잡는다
+          if (ok && toBox < near) {
             if (claim[i] >= 0 && claim[i] !== G) {
               // 앞 교차로를 아직 다 빠져나가지 못했으면 그 교차로는 둘째 칸에 옮겨 잡아 둔다
               prevClaim[i] = claim[i];
@@ -916,15 +922,16 @@ export function makeCars(
             claimT[i] = 0;
             waitT[i] = 0;
             held[G].push(i);
-          } else if (toBox > -0.5) {
+          } else if (!ok && toBox > -0.5) {
             if (v[i] < 0.5) waitT[i] += dt;
             // 20초 넘게 못 들어가면 막힌 쪽을 피해 빠져나갈 길을 다시 고른다(4초에 한 번꼴)
             if (waitT[i] > 20 && cars.route[i] < 0 && rand() < dt / 4) {
               planN[i] = 0;
               onEdge(i, e);
             }
-            if (toBox + 1.7 < gap) {
-              gap = toBox + 1.7;
+            const stopAt = toLine > -0.5 ? Math.min(toBox + 1.7, toLine + 2) : toBox + 1.7;
+            if (stopAt < gap) {
+              gap = stopAt;
               dv = v[i];
               front = i;
               why = 8;
