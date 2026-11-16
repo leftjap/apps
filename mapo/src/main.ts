@@ -16,6 +16,7 @@ import { makeRails, type TrainSpot } from './render/rails.ts';
 import { makeGroundLabels, makeMarker, makeRings, type GroundLabel } from './render/rings.ts';
 import { makeRoads } from './render/roads.ts';
 import { makeMarks } from './render/marks.ts';
+import { makeCurbs } from './render/curbs.ts';
 import { makeSignalMarks } from './render/signals.ts';
 import { makeFlow } from './render/flow.ts';
 import { makeBusIslands, makeBusStops } from './render/busstops.ts';
@@ -96,7 +97,7 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamp
   // 서울시 차량 신호등(4색등 = 좌회전 화살표)·회전 표지(tools/signals.ts 가 굽는다). 없으면 노면 화살표로 정한다
   fetch(`${BASE}data/signals.json`).then((r) => (r.ok ? (r.json() as Promise<SignalLamps>) : undefined)).catch(() => undefined),
   // 연석 선(그린 찻길 면의 경계, tools/bake.ts 가 굽는다). 없으면 긋지 않는다
-  fetch(`${BASE}data/curbs.json`).then((r) => (r.ok ? (r.json() as Promise<CurbsJson>).then(decodeCurbs) : [])).catch(() => []),
+  fetch(`${BASE}data/curbs.json`).then((r) => (r.ok ? (r.json() as Promise<CurbsJson>).then(decodeCurbs) : { lines: [], tactile: [] })).catch(() => ({ lines: [], tactile: [] })),
 ]).catch((e) => {
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
@@ -167,7 +168,9 @@ const reactor = makeCatReactor(cats);
 // ── 장면 ──
 const roads = makeRoads(board.roads, surface, LM_COLORS);
 // 노면 표시: 서울시 차선 선·안전지대·노면 화살표 그대로(src/render/marks.ts)
-const roadMarks = makeMarks(marks, curbs);
+const roadMarks = makeMarks(marks);
+// 연석(화강석 띠)과 횡단보도 끝 점자블록(src/render/curbs.ts)
+const curbMesh = makeCurbs(curbs);
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);
@@ -235,6 +238,7 @@ view.scene.add(
   makeGround(mask, board.groundAreas),
   roads.group,
   roadMarks,
+  curbMesh,
   flow.mesh,
   signalMarks.group,
   // 길가 정류장은 보도 위 쉼터, 중앙 정류장은 길 가운데 승강장

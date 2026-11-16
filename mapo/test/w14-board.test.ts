@@ -163,4 +163,27 @@ describe('W14 지금 판', () => {
     expect(board.crosswalks.length - linked.size).toBeLessThanOrEqual(115);
     expect(W.links.filter((l) => comp[l.na] !== big || comp[l.nb] !== big).length).toBeLessThanOrEqual(11);
   });
+  // 계획 세션 요청: 횡단보도 면이 건물 외곽선과 겹치지 않는다(겹친 건물 외곽선은 굽기가 깎는다. 2026-11-17 판 45 → 2곳, 여러 번 드나드는 외곽선)
+  it('횡단보도 면이 건물에 덮이지 않는다', () => {
+    const blds = drawnGround(board.buildings.map((bl) => [bl.pts]));
+    let bad = 0;
+    for (const c of board.crosswalks) {
+      let n = 0;
+      let inB = 0;
+      for (const r of c.rings) {
+        let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
+        for (let k = 0; k < r.length; k += 2) (x0 = Math.min(x0, r[k])), (x1 = Math.max(x1, r[k])), (z0 = Math.min(z0, r[k + 1])), (z1 = Math.max(z1, r[k + 1]));
+        for (let x = x0; x <= x1; x += 0.25)
+          for (let z = z0; z <= z1; z += 0.25) {
+            let inside = false;
+            for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) if (r[i + 1] > z !== r[j + 1] > z && x < r[i] + ((z - r[i + 1]) / (r[j + 1] - r[i + 1])) * (r[j] - r[i])) inside = !inside;
+            if (!inside) continue;
+            n++;
+            if (onGround(blds, x, z, 0)) inB++;
+          }
+      }
+      if (n && inB / n > 0.05) bad++;
+    }
+    expect(bad).toBeLessThanOrEqual(2);
+  });
 });

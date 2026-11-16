@@ -28,7 +28,7 @@ import { fitCells, snapArrows } from './lib/arrows.ts';
 import { decodeLanes, type LanesJson } from '../src/data/lanes.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from './lib/bits.ts';
 import { simplifyLoop, traceLoops } from './lib/contour.ts';
-import { exitBody, exitOutline } from '../src/data/exitFit.ts';
+import { exitBody, exitOutline, notchOut } from '../src/data/exitFit.ts';
 import { exitLook } from '../src/data/exits.ts';
 import { findPortals } from '../src/render/rails.ts';
 
@@ -1309,6 +1309,8 @@ const trees: number[] = [];
 }
 // 가로수: 서울시 가로수 위치정보(tools/ground.py 가 받는다). 건물 한가운데·물 위에 찍힌 점은 뺀다
 const streetTreeFile = new URL('./raw/seoul-trees.json', import.meta.url);
+/** 가로수가 시작하는 자리(trees 의 앞은 녹지에 뿌린 나무) */
+const streetTree0 = trees.length;
 if (existsSync(streetTreeFile)) {
   let n = 0;
   for (const [lat, lon] of JSON.parse(readFileSync(streetTreeFile, 'utf8')).trees as [number, number][]) {
@@ -1898,6 +1900,43 @@ let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | u
     ...polys.med.map((m) => [m]),
     ...patches.map((p) => [p.ring]),
   ]);
+  // 횡단보도를 덮은 건물 외곽선은 건물 쪽이 틀린 것으로 본다(재작업 W14): 횡단보도 축 사각형(길이 + 폭)을 외곽선에서 깎아 낸다(src/data/exitFit.ts notchOut, 한 번 드나드는 경우만)
+  {
+    let cut = 0;
+    const touched: number[] = [];
+    const inP = (r: ArrayLike<number>, x: number, z: number) => {
+      let c = false;
+      for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) if (r[i + 1] > z !== r[j + 1] > z && x < r[i] + ((z - r[i + 1]) / (r[j + 1] - r[i + 1])) * (r[j] - r[i])) c = !c;
+      return c;
+    };
+    for (const c of b.crosswalks) {
+      const [px, pz] = [-c.uz * (c.wid / 2), c.ux * (c.wid / 2)];
+      const [fx, fz] = [c.ux * c.half, c.uz * c.half];
+      const rect: [number, number][] = [
+        [c.x - fx - px, c.z - fz - pz],
+        [c.x + fx - px, c.z + fz - pz],
+        [c.x + fx + px, c.z + fz + pz],
+        [c.x - fx + px, c.z - fz + pz],
+      ];
+      const R = Math.hypot(c.half, c.wid / 2) + 1;
+      buildings.forEach((bl, bi) => {
+        if (Math.abs(bl[2] / 10 - c.x) > 300 || Math.abs(bl[3] / 10 - c.z) > 300) return;
+        const pts = Float32Array.from(bl.slice(2), (v) => v / 10);
+        let near = false;
+        for (let k = 0; k < pts.length && !near; k += 2) near = Math.hypot(pts[k] - c.x, pts[k + 1] - c.z) < R + 40;
+        if (!near || !rect.some(([x, z]) => inP(pts, x, z)) && ![...Array(pts.length / 2).keys()].some((k) => inP(rect.flat(), pts[k * 2], pts[k * 2 + 1]))) return;
+        const flip = loopArea(Array.from(pts)) < 0;
+        const P = flip ? Float32Array.from(Array.from({ length: pts.length / 2 }, (_, k) => [pts[pts.length - 2 - k * 2], pts[pts.length - 1 - k * 2]]).flat()) : pts;
+        const q = notchOut(P, rect);
+        if (!q || Math.abs(loopArea(Array.from(q))) < 4) return;
+        bl.length = 2;
+        for (const v of q) bl.push(dm(v));
+        cut++;
+        touched.push(bi);
+      });
+    }
+    console.log(`횡단보도를 덮은 건물 외곽선 ${cut}번 깎음(건물 ${[...new Set(touched)].slice(0, 60).join(',')})`);
+  }
   // 철도 터파기(2호선 합정 → 당산철교, 양화로 가운데에서 땅 위로 올라온다): 옹벽 바깥까지 찻길 면에서 뺀다. 그 위 노면 표시는 남기지 않는다(재작업 W14)
   for (const l of b.lines) {
     const cum = cumLen(l.p);
@@ -1926,7 +1965,17 @@ let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | u
     const G = groundBits!;
     for (const loop of traceLoops(G.v, G.w)) {
       if (Math.abs(loopArea(loop)) * G.cell * G.cell < 2) continue;
-      const q = simplifyLoop(loop, 0.2 / G.cell).map((v, k) => (k % 2 ? G.z0 : G.x0) + v * G.cell);
+      // 칸 경계 계단을 0.3m 안에서 줄이고 차이킨 깎기 두 번으로 매끈하게(연석 띠가 톱니로 보이지 않게)
+      let q = simplifyLoop(loop, 0.3 / G.cell).map((v, k) => (k % 2 ? G.z0 : G.x0) + v * G.cell);
+      for (let it = 0; it < 2; it++) {
+        const o: number[] = [];
+        const n = q.length / 2;
+        for (let k = 0; k < n; k++) {
+          const [ax, az, bx, bz] = [q[k * 2], q[k * 2 + 1], q[((k + 1) % n) * 2], q[((k + 1) % n) * 2 + 1]];
+          o.push(ax * 0.75 + bx * 0.25, az * 0.75 + bz * 0.25, ax * 0.25 + bx * 0.75, az * 0.25 + bz * 0.75);
+        }
+        q = o;
+      }
       // 판 가장자리(잘린 길 끝)는 연석이 아니다: 가장자리 3m 안 점에서 끊는다
       let cur: number[] = [];
       for (let k = 0; k <= q.length; k += 2) {
@@ -1959,15 +2008,53 @@ let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | u
     });
     const tp = pushTreesOffRoad(trees, carSurface([...polys.car.map(([, c]) => c), ...decks, ...polys.med, ...patches.map((p) => p.ring)], sf.faces));
     console.log(`찻길 위 나무 ${tp.moved}그루 보도로 옮김, 못 옮김 ${tp.left}그루`);
+    // 가로수 줄 맞추기(재작업 W14): 찻길에서 4m 안 가로수는 가장 가까운 연석에서 보도 쪽 1.2m(식재대 가운데)로 옮긴다
+    const onCarT = carSurface([...polys.car.map(([, c]) => c), ...decks, ...polys.med, ...patches.map((p) => p.ring)], sf.faces);
+    let lined = 0;
+    for (let i = streetTree0; i < trees.length; i += 2) {
+      const [x, z] = [trees[i] / 10, trees[i + 1] / 10];
+      if (onCarT(x, z)) continue;
+      let best = Infinity;
+      let bu = 0;
+      let bv = 0;
+      for (let k = 0; k < 24; k++) {
+        const [u, v] = [Math.cos((k * Math.PI) / 12), Math.sin((k * Math.PI) / 12)];
+        for (let d = 0.1; d < Math.min(best, 4); d += 0.1)
+          if (onCarT(x + u * d, z + v * d)) {
+            if (d < best) (best = d), (bu = u), (bv = v);
+            break;
+          }
+      }
+      if (best >= 4 || Math.abs(best - 1.2) < 0.15) continue;
+      const nx = x + bu * (best - 1.2);
+      const nz = z + bv * (best - 1.2);
+      if (onCarT(nx, nz)) continue;
+      trees[i] = dm(nx);
+      trees[i + 1] = dm(nz);
+      lined++;
+    }
+    console.log(`가로수 ${lined}그루를 연석에서 1.2m 식재대로 맞춤`);
   }
   console.log(`보도 면 고리 ${polys.walk.length}개(구멍 ${polys.walk.filter((r) => loopArea(r) < 0).length}), 넓이 ${(polys.walk.reduce((a, r) => a + loopArea(r), 0) / 1e4).toFixed(1)}ha, 찻길 띠 ${polys.car.length}개, 분리대 ${polys.med.length}개`);
   // 연석 선은 따로 public/data/curbs.json 에: 줄마다 [점 수, 첫 점 x, z, 뒤 점마다 차이](dm)
+  // 횡단보도 양 끝 점자블록(점형, 노랑): 축을 따라 바깥으로 짚어 그린 찻길 면이 끝나는 자리(연석)에서 보도 쪽 0.1~0.7m, 횡단보도 폭만큼.
+  // [가운데 x, z, 바깥 방향 ×1000 (x, z), 폭](dm) — 서울시 보도공사 설계·시공 매뉴얼(2021 ver2.0) 횡단보도 진입부 점자블록
+  const tactile: number[] = [];
+  for (const c of b.crosswalks)
+    for (const sg of [-1, 1]) {
+      const [ux, uz] = [c.ux * sg, c.uz * sg];
+      let d = c.half - 1;
+      while (d < c.half + 6 && onGround(groundBits!, c.x + ux * d, c.z + uz * d, 0)) d += 0.1;
+      if (d >= c.half + 6) continue;
+      tactile.push(dm(c.x + ux * (d + 0.4)), dm(c.z + uz * (d + 0.4)), Math.round(ux * 1000), Math.round(uz * 1000), dm(c.wid));
+    }
   curbsJson = JSON.stringify({
     v: 1,
     c: curbLoops.map((r) => {
       const c = r.map((v) => Math.round(v * 10));
       return [r.length / 2, ...c.map((v, i) => (i < 2 ? v : v - c[i - 2]))];
     }),
+    t: tactile,
   });
   const cb = curbLoops;
   surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn, dr });

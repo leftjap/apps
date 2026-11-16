@@ -23,7 +23,7 @@ const VERT = /* glsl */ `
   }`;
 
 const FRAG = /* glsl */ `
-  uniform sampler2D uMask; uniform vec3 uLand, uGreen, uWalk, uMinor, uMajor, uWater;
+  uniform sampler2D uMask; uniform vec3 uLand, uGreen, uWalk, uMinor, uMajor, uWater, uPave;
   varying vec4 vA; varying vec2 vB; varying vec3 vW; varying float vDist;
   float vnoise(vec2 p) {
     vec2 i = floor(p), f = fract(p);
@@ -122,9 +122,8 @@ const FRAG = /* glsl */ `
     vec3 white = mix(uWalk, vec3(1.0), 0.6);
     vec3 alb = uLand;
     #define IS(v) (abs(k - (v)) < 0.5)
-    if (IS(${K.HOUSE})) alb = uLand * vec3(1.0, 0.985, 0.955);
-    else if (IS(${K.MIXED})) alb = uLand * vec3(0.985, 0.98, 0.972);
-    else if (IS(${K.COMMERCE})) { alb = mix(uLand, uMinor, 0.3); paved = 1.0; }
+    // 보도 재질(재작업 W14): 보도·광장·한강 포장·교통섬은 회색 블록 300×300mm 한 재질, 시가지 블록 안 땅(건물 앞 공지)은 같은 색에 줄눈 없이
+    if (IS(${K.HOUSE}) || IS(${K.MIXED}) || IS(${K.COMMERCE})) { alb = uPave * 0.97; paved = 1.0; }
     else if (IS(${K.APT}) || IS(${K.PUBLIC})) {
       // 아파트 단지·학교·관공서: 녹지율만큼 잔디밭 조각
       float g = clamp(param / 100.0, 0.0, 0.8);
@@ -133,10 +132,9 @@ const FRAG = /* glsl */ `
       veg = lawn;
     }
     else if (IS(${K.RAIL}) || IS(${K.RAILWAY})) alb = mix(uLand, uMajor, 0.5) * vec3(0.96, 0.94, 0.91) * (0.95 + 0.1 * mottle(p));
-    else if (IS(${K.ROADSIDE})) {
-      // 보도: 블록 안 땅보다 조금 밝은 보도블록과 줄눈
-      alb = mix(uWalk, uMinor, 0.3);
-      alb *= 1.0 - 0.07 * joints(p * 2.0, 0.08);
+    else if (IS(${K.ROADSIDE}) || IS(${K.PLAZA}) || IS(${K.RIVER_PAVED}) || IS(${K.ISLAND})) {
+      // 보도 블록: 300×300mm 회색 블록과 줄눈
+      alb = uPave * (1.0 - 0.08 * joints(p / 0.3, 0.06));
       paved = 1.0;
     }
     else if (IS(${K.UTILITY})) { alb = mix(uLand, uMinor, 0.5); paved = 1.0; }
@@ -149,16 +147,9 @@ const FRAG = /* glsl */ `
       alb = mix(uGreen * 0.9, uLand * vec3(1.0, 0.9, 0.76), 0.35 + 0.3 * rows);
       veg = 1.0;
     }
-    else if (IS(${K.RIVER_PAVED})) { alb = mix(uWalk, uMinor, 0.3); paved = 1.0; }
     else if (IS(${K.REVETMENT})) {
       alb = mix(uMinor, uMajor, 0.5) * 0.9;
       alb *= (0.98 + (hash21(floor(p * 0.8)) - 0.5) * 0.12 * near(p * 0.8)) * (1.0 - 0.1 * joints(p * 0.8, 0.06));
-    }
-    else if (IS(${K.PLAZA})) {
-      // 광장: 큰 돌 포장 줄눈. 그 위로 지나는 보행로 띠(도로 그리기의 보행 색)가 보이도록 조금 어둡게
-      alb = mix(uWalk, uMinor, 0.28);
-      alb *= 1.0 - 0.06 * joints(p, 0.06);
-      paved = 1.0;
     }
     else if (IS(${K.PARKING})) {
       alb = uMinor * 0.9;
@@ -184,7 +175,6 @@ const FRAG = /* glsl */ `
     else if (IS(${K.TRACK})) alb = uLand * vec3(1.0, 0.62, 0.5);
     else if (IS(${K.PLAYGROUND})) alb = uLand * vec3(1.03, 0.82, 0.64) * (0.99 + (hash21(floor(p * 1.5)) - 0.5) * 0.12 * near(p * 1.5));
     else if (IS(${K.BLEACHERS})) alb = uMinor * (1.0 - 0.08 * joints(vec2(p.x + p.y, 0.5), 0.3));
-    else if (IS(${K.ISLAND})) alb = mix(uWalk, uGreen, 0.35);
     else if (IS(${K.PIER})) alb = uLand * vec3(0.93, 0.83, 0.68) * (1.0 - 0.1 * joints(vec2(p.x * 3.0, 0.5), 0.1));
     else if (IS(${K.POOL})) alb = uWater * vec3(0.85, 1.1, 1.15);
     // 건물 둘레 그늘(마스크 파랑), 비에 젖은 포장
@@ -238,6 +228,7 @@ export function makeAreas(areas: GroundArea[], mask: THREE.Texture): THREE.Group
     uLand: { value: pal.land },
     uGreen: { value: pal.green },
     uWalk: { value: pal.walk },
+    uPave: { value: pal.paving },
     uMinor: { value: pal.roadMinor },
     uMajor: { value: pal.roadMajor },
     uWater: { value: pal.water },

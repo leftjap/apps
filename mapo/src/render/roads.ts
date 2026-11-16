@@ -398,7 +398,7 @@ function coveredNear(roads: Road[], ri: number, surface: Surface, joints: Float3
 /** surface: 굽기가 정한 띠 구간과 교차로 면(public/data/surface.json) */
 export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
   const lm = { uLmCol: { value: lmColors.map((c) => new THREE.Color(c)) }, uLmGlow: { value: lmColors.map(() => 0) } };
-  const uniforms = { uMajor: { value: pal.tarmac }, uMinor: { value: pal.tarmacMinor }, uWalk: { value: pal.walk }, uLamps: { value: lampMap(roads) }, ...lm };
+  const uniforms = { uMajor: { value: pal.tarmac }, uMinor: { value: pal.tarmacMinor }, uWalk: { value: pal.paving }, uLamps: { value: lampMap(roads) }, ...lm };
   const joints = roadJoints(roads);
   const reach = tunnelReach(roads);
 

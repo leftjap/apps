@@ -16,7 +16,7 @@ export function makeGround(mask: THREE.Texture, areas: GroundArea[] = []): THREE
   const top = new THREE.Mesh(
     new THREE.CircleGeometry(BOARD_R, 160).rotateX(-Math.PI / 2),
     material({
-      uniforms: { uMask: { value: mask }, uLand: { value: pal.land }, uWater: { value: pal.water }, uGreen: { value: pal.green } },
+      uniforms: { uMask: { value: mask }, uLand: { value: pal.paving }, uWater: { value: pal.water }, uGreen: { value: pal.green } },
       vertex: /* glsl */ `
         varying vec3 vW; varying float vDist;
         void main() {
@@ -32,7 +32,8 @@ export function makeGround(mask: THREE.Texture, areas: GroundArea[] = []): THREE
           vec4 m = texture2D(uMask, (vW.xz + 2048.0) / 4096.0);
           float water = smoothstep(0.35, 0.65, m.r);
           float green = smoothstep(0.3, 0.7, m.g) * (1.0 - water);
-          vec3 land = mix(uLand, uGreen, green);
+          // 자료 없는 땅은 시가지 공지 포장으로(보도 블록과 같은 색, 줄눈 없이, 재작업 W14)
+          vec3 land = mix(uLand * 0.97, uGreen, green);
           land *= 1.0 - 0.22 * m.b * (1.0 - 0.6 * green);
           // 물결: 느리게 흐르는 두 줄무늬의 곱
           float w1 = sin(vW.x * 0.021 + uTime * 0.55 + sin(vW.z * 0.013) * 2.4);

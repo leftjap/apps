@@ -18,9 +18,25 @@ export interface SurfaceJson {
 export interface CurbsJson {
   v: 1;
   c: number[][];
+  /** 횡단보도 끝 점자블록 [가운데 x, z, 바깥 방향 ×1000 (x, z), 폭](dm) */
+  t?: number[];
 }
 
-export function decodeCurbs(j: CurbsJson): Float32Array[] {
+export interface Curbs {
+  /** 연석 선 [x, 0, z, ...] */
+  lines: Float32Array[];
+  /** 점자블록 띠: 가운데, 바깥 방향(단위), 폭(m) */
+  tactile: { x: number; z: number; ux: number; uz: number; w: number }[];
+}
+
+export function decodeCurbs(j: CurbsJson): Curbs {
+  const t = j.t ?? [];
+  const tactile: Curbs['tactile'] = [];
+  for (let i = 0; i + 4 < t.length; i += 5) tactile.push({ x: t[i] / 10, z: t[i + 1] / 10, ux: t[i + 2] / 1000, uz: t[i + 3] / 1000, w: t[i + 4] / 10 });
+  return { lines: decodeLines(j), tactile };
+}
+
+function decodeLines(j: CurbsJson): Float32Array[] {
   return j.c.map((a) => {
     const n = a[0];
     const p = new Float32Array(n * 3);

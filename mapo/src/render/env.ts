@@ -28,6 +28,8 @@ const KEYS: Record<string, Key3> = {
   tarmac: ['#8b8a87', '#7c716d', '#3c3f4c'],
   tarmacMinor: ['#9a9792', '#8a7e78', '#464956'],
   curb: ['#e4e1da', '#d2c1b4', '#8d8c96'],
+  // 보도 블록(판 전체 한 재질, 재작업 W14): 회색 콘크리트 블록 300×300mm. 건물 앞 공지는 같은 색에 줄눈 없이
+  paving: ['#d8d4cb', '#c9b8aa', '#a4a0a2'],
 };
 /** [낮, 노을, 밤] 숫자 값 */
 const NUMS: Record<string, [number, number, number]> = {

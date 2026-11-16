@@ -3,16 +3,14 @@
 // 선은 화면에서 한 픽셀보다 가늘어져도 깜박이지 않게 그리는 폭을 화면 크기에 맞춰 넓히고, 칠은 픽셀 단위로 부드럽게 한다. 멀어지면 옅어진다.
 import * as THREE from 'three';
 import { arrowShape, lineStyle, type Marks } from '../data/marks.ts';
-import { material, pal } from './env.ts';
+import { material } from './env.ts';
 
 const DIM = /* glsl */ `
-  uniform vec3 uCurb;
   // 화면에서 한 픽셀이 1.2m 넘게 덮을 만큼 멀면 옅게 지운다
   float far(float px, float d) { return clamp(1.0 - px / 1.2, 0.0, 1.0) * (1.0 - smoothstep(1200.0, 2200.0, d)); }
-  vec3 paint(float c) { return c < 0.5 ? vec3(0.95, 0.95, 0.93) : c < 1.5 ? vec3(0.96, 0.76, 0.24) : c < 2.5 ? vec3(0.27, 0.48, 0.95) : uCurb; }`;
+  vec3 paint(float c) { return c < 0.5 ? vec3(0.95, 0.95, 0.93) : c < 1.5 ? vec3(0.96, 0.76, 0.24) : vec3(0.27, 0.48, 0.95); }`;
 
-/** curbs: 연석 선(찻길 가장자리, src/render/roads.ts). 칠이 아니라 찻길과 보도 사이 경계라 낮·밤 색(pal.curb)으로 0.2m 폭으로 긋는다 */
-export function makeMarks(marks: Marks, curbs: Float32Array[] = []): THREE.Group {
+export function makeMarks(marks: Marks): THREE.Group {
   const group = new THREE.Group();
   // ── 선 ──
   const pos: number[] = [];
@@ -56,7 +54,6 @@ export function makeMarks(marks: Marks, curbs: Float32Array[] = []): THREE.Group
       }
     }
   };
-  for (const c of curbs) addLine(c, { color: 3, w: 0.2, sep: 0, dashL: 0, dashR: 0 });
   for (const l of marks.lines) addLine(l.p, lineStyle(l.k, l.k2));
   // 안전지대 테두리: 실선(중앙선 옆은 황색)
   for (const z of marks.zones) {
@@ -78,7 +75,6 @@ export function makeMarks(marks: Marks, curbs: Float32Array[] = []): THREE.Group
       depthWrite: false,
       offset: 5,
       doubleSide: true,
-      uniforms: { uCurb: { value: pal.curb } },
       vertex: /* glsl */ `
         attribute vec2 aNorm; attribute vec2 aUV; attribute vec4 aSty; attribute float aHalf;
         varying float vLat; varying float vAlong; varying vec4 vSty; varying float vDist;
@@ -155,7 +151,6 @@ export function makeMarks(marks: Marks, curbs: Float32Array[] = []): THREE.Group
       depthWrite: false,
       offset: 5,
       doubleSide: true,
-      uniforms: { uCurb: { value: pal.curb } },
       vertex: /* glsl */ `
         attribute float aKind; varying float vKind; varying vec2 vXZ; varying float vDist;
         void main() { vKind = aKind; vXZ = position.xz; vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
