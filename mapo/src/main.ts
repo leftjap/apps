@@ -6,6 +6,7 @@ import { decodeMarks, type MarksJson } from './data/marks.ts';
 import { toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
 import { makeBuildings } from './render/buildings.ts';
+import { makeDetail } from './render/detail.ts';
 import { makeCarMeshes } from './render/cars.ts';
 import { makeCatMeshes } from './render/cats.ts';
 import { env, updateEnv, weather } from './render/env.ts';
@@ -36,6 +37,7 @@ import { decodeWalk, type WalkJson } from './sim/walknet.ts';
 import { makeSimProvider } from './sim/provider.ts';
 import { makeLiveProvider } from './data/live.ts';
 import { makeLiveSubway } from './data/subway.ts';
+import { loadStreetview, matchBuildings, xz as llToXZ } from './data/streetview.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
@@ -75,10 +77,12 @@ const ambience = makeAmbience();
 const loading = document.querySelector<HTMLElement>('#loading')!;
 // 지명 자리(tools/places.ts 가 OSM 행정동 경계·공원·도로명 주소로 굽는다)
 type Named = { dongs: { name: string; x: number; z: number }[]; places: { text: string; x: number; z: number; turn: number }[] };
-const [board, mask, named, surface, marks, walkJson] = await Promise.all([
+// 로드뷰 기록(data-src/streetview/*.json, 구역마다 따로): 기록한 건물은 난수 색·무늬 대신 기록 값으로 그린다
+const [board, mask, named, streetview, surface, marks, walkJson] = await Promise.all([
   loadBoard(BASE),
   new THREE.TextureLoader().loadAsync(`${BASE}data/mask.png`),
   fetch(`${BASE}data/places.json`).then((r) => r.json() as Promise<Named>),
+  loadStreetview().catch(() => []),
   // 찻길 바닥(교차로 면·띠 구간, tools/lib/surface.ts 가 굽는다)
   fetch(`${BASE}data/surface.json`).then((r) => r.json() as Promise<SurfaceJson>).then(decodeSurface),
   // 노면 표시(서울시 차선 선·안전지대·노면 화살표, tools/bake.ts 가 굽는다)
@@ -163,7 +167,12 @@ const catMeshes = makeCatMeshes(cats, feeders(cats));
 const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.crosswalkMarks);
 const flow = makeFlow(carGraph, signals.junctions, surface.cut);
 flow.update(provider, start);
-const trees = makeTrees(board.trees, seasonOf(start.doy));
+// 로드뷰 기록 구역의 나무(자리·수종은 기록 파일에 있고, 지금 모형은 수종을 쓰지 않는다)
+const svTrees = streetview.flatMap((a) => a.props.flatMap((p) => (p.kind === 'tree' ? llToXZ(p.ll) : [])));
+const trees = makeTrees(svTrees.length ? Float32Array.from([...board.trees, ...svTrees]) : board.trees, seasonOf(start.doy));
+const svMatch = matchBuildings(board.buildings, streetview);
+const buildings = makeBuildings(board.buildings, svMatch.byIndex);
+const detail = makeDetail(buildings.list, buildings.looks, [...svMatch.byIndex.keys()], streetview.flatMap((a) => a.props));
 const rain = makeRain(small ? 3500 : 6000);
 // 실시간 돌발정보(사고·공사·통제): 차로를 막거나 구간을 통제하고, 도로 위 점멸등(공사면 라바콘)으로만 보인다
 const incidentMarks = makeIncidents();
@@ -221,7 +230,8 @@ view.scene.add(
   namesMesh,
   boats.group,
   picnic,
-  makeBuildings(board.buildings),
+  buildings.group,
+  detail.group,
   landmarks.group,
   schools.group,
   trees.mesh,

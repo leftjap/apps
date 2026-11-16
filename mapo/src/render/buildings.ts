@@ -5,14 +5,15 @@
 // 1층 가게 유리와 간판 띠를 그리고, 밤에는 창과 가게·간판에 불을 켠다. 옆 건물과 붙은 벽에는 창을 내지 않는다.
 import * as THREE from 'three';
 import { USE, type Building } from '../data/board.ts';
+import { applyRec, xz, type BuildingRec, type RecLook } from '../data/streetview.ts';
 import { material, pal } from './env.ts';
 
 /** 외벽 모양(셰이더의 style 값). 6 부터는 명소 건물 전용이고 BASE 의 기본 모양을 따르되 색·창이 다르다 */
 export const STYLE = { villa: 0, shop: 1, glass: 2, apt: 3, house: 4, civic: 5, stone: 6, greenGrid: 7, sangsang: 8, mallPanel: 9, blueGlass: 10, tower: 11 } as const;
 const BASE = [0, 1, 2, 3, 4, 5, 5, 2, 5, 1, 2, 2];
 
-/** 명소 건물에서 외벽 모양을 정해 둔 건물. crown: 꼭대기를 긴 축을 따라 기울인 높이 차(m) */
-type Hot = Building & { style?: number; crown?: number };
+/** 명소 건물에서 외벽 모양을 정해 둔 건물. crown: 꼭대기를 긴 축을 따라 기울인 높이 차(m), rec: 로드뷰 기록 값(data/streetview.ts) */
+type Hot = Building & { style?: number; crown?: number; rec?: RecLook };
 
 const centroid = (p: Float32Array): [number, number] => {
   let x = 0;
@@ -50,6 +51,8 @@ export function refine(list: Building[]): Building[] {
   }
   return out;
 }
+
+const hexRGB = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
 
 /** 0~1 고정 난수 */
 const rnd = (a: number, b = 0) => {
@@ -230,6 +233,8 @@ export interface Look {
   shopMask: number;
   /** 아래부터 쌓는 덩어리. 마지막 덩어리에 난간·지붕을 얹는다 */
   tiers: Tier[];
+  /** 로드뷰 기록이 있으면 난수 색·무늬 대신 이 값을 쓴다 */
+  rec?: RecLook;
 }
 
 /** 덩어리: y0~y1 높이에 ring(원래 외곽선과 꼭짓점 수가 같다)을 세운다 */
@@ -307,7 +312,7 @@ export function looks(list: Building[]): Look[] {
       gh = Math.min(5.2, Math.max(3.6, fh * 1.3));
       fh = (usable - gh) / (floors - 1);
     }
-    const L = { style, base, seed, fh: Math.max(2.4, Math.min(12, fh)), gh: Math.min(12, gh), top, parapet, floors, open, roof: roofK, shopK, upK, shopMask, tiers: [] as Tier[] };
+    const L = { style, base, seed, fh: Math.max(2.4, Math.min(12, fh)), gh: Math.min(12, gh), top, parapet, floors, open, roof: roofK, shopK, upK, shopMask, tiers: [] as Tier[], rec: (b as Hot).rec };
     L.tiers = tiersOf(b, L, area, hot !== undefined);
     return L;
   });
@@ -328,6 +333,8 @@ function tiersOf(b: Building, L: Omit<Look, 'tiers'>, area: number, hot: boolean
   const y0 = b.minH ?? 0;
   const one: Tier[] = [{ y0, y1: b.h, ring: p, open: L.open, style: L.style, dark: false }];
   if (hot || y0 > 0.5 || b.lm !== 0) return one;
+  // 로드뷰 기록의 1층: 필로티면 용도와 상관없이 어두운 1층을 두고, 다른 1층이면 빌라 필로티 난수를 쓰지 않는다
+  const recGround = (b as Hot).rec?.ground;
   const mk = (ya: number, yb: number, d: number[] | null, style = L.style, dark = false): Tier | null => {
     const ring = d ? insetEdges(p, d) : p;
     if (!ring) return null;
@@ -336,7 +343,7 @@ function tiersOf(b: Building, L: Omit<Look, 'tiers'>, area: number, hot: boolean
   const out: Tier[] = [];
   if (L.style === STYLE.villa) {
     const s8 = Math.floor(L.seed * 255) / 255;
-    const piloti = L.top > 9 && (s8 * 31) % 1 < 0.55 && L.floors >= 3 && !L.shopK;
+    const piloti = recGround ? recGround === 'piloti' && L.floors >= 2 : L.top > 9 && (s8 * 31) % 1 < 0.55 && L.floors >= 3 && !L.shopK;
     let yb = y0;
     if (piloti) {
       const t = mk(y0, L.fh, Array.from(L.open, (o) => (o ? 0.7 : 0)), L.style, true);
@@ -369,6 +376,11 @@ function tiersOf(b: Building, L: Omit<Look, 'tiers'>, area: number, hot: boolean
     steps.forEach((t, j) => out.push({ ...t, y1: j + 1 < steps.length ? steps[j + 1].y0 : b.h }));
     return out;
   }
+  if (recGround === 'piloti' && L.floors >= 2) {
+    const fh = L.gh > 0 ? L.gh : L.fh;
+    const t = mk(y0, y0 + fh, Array.from(L.open, (o) => (o ? 0.7 : 0)), L.style, true);
+    if (t) return [t, mk(y0 + fh, b.h, null)!];
+  }
   if (L.style === STYLE.shop && L.gh > 0 && L.floors >= 3 && L.floors <= 6 && area < 500 && b.h < 25 && rnd(L.seed, 7) < (inCore(p[0], p[1]) ? 0.5 : 0.85)) {
     const home = mk(y0 + L.gh, b.h, Array.from(L.open, (o) => (o ? 0.5 : 0)), STYLE.villa) ?? mk(y0 + L.gh, b.h, null, STYLE.villa)!;
     return [mk(y0, y0 + L.gh, null)!, home];
@@ -386,13 +398,23 @@ function tiersOf(b: Building, L: Omit<Look, 'tiers'>, area: number, hot: boolean
   return one;
 }
 
-/** 벽·난간·옥상 메시. looks 를 주지 않으면 이 목록만으로 붙은 벽을 잰다 */
-export function prismGeometry(list: Building[], lk: Look[] = looks(list)): THREE.BufferGeometry {
+/** 로드뷰 기록을 꼭짓점 값 16바이트로: [외벽 rgb·재질] [1층 외벽 rgb·표시] [지붕 rgb·0] [유리 rgb·0]. 표시: 1 외벽 2 1층 외벽 4 지붕 8 유리 16 세대 단위 불빛 */
+function recBytes(L: Look): number[] {
+  const r = L.rec!;
+  const c = (v: [number, number, number] | undefined | null) => (v ? v.map((k) => Math.round(k * 255)) : [0, 0, 0]);
+  const flags = (r.wall ? 1 : 0) + (r.wall2 ? 2 : 0) + (r.roof ? 4 : 0) + (r.glass ? 8 : 0) + (L.base === STYLE.apt ? 16 : 0);
+  return [...c(r.wall), r.mat, ...c(r.wall2), flags, ...c(r.roof), 0, ...c(r.glass), 0];
+}
+
+/** 벽·난간·옥상 메시. looks 를 주지 않으면 이 목록만으로 붙은 벽을 잰다. rec: 로드뷰 기록 값을 꼭짓점마다 싣는다(모든 건물에 기록이 있어야 한다) */
+export function prismGeometry(list: Building[], lk: Look[] = looks(list), rec = false): THREE.BufferGeometry {
   const pos: number[] = [];
   const nor: number[] = [];
   const edge: number[] = [];
   const bld: number[] = [];
   const idx: number[] = [];
+  const rb: number[] = [];
+  let recB: number[] = [];
   let v = 0;
   let L: Look;
   let tierStyle = 0;
@@ -401,6 +423,7 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list)): THREE
     nor.push(Math.round(nx * 127), Math.round(ny * 127), Math.round(nz * 127));
     edge.push(u, len, flags, top);
     bld.push(tierStyle, Math.floor(L.seed * 255), Math.round(L.gh * 20), Math.round(L.fh * 20));
+    if (rec) rb.push(...recB);
     return v++;
   };
   const quad = (a: number) => idx.push(a, a + 1, a + 2, a, a + 2, a + 3);
@@ -432,6 +455,7 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list)): THREE
   };
   list.forEach((b, bi) => {
     L = lk[bi];
+    if (rec) recB = recBytes(L);
     const tiers = L.tiers;
     // 기운 꼭대기: 긴 축을 따라 h − crown ~ h
     const crown = (b as Hot).crown ?? 0;
@@ -527,6 +551,12 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list)): THREE
   g.setAttribute('normal', new THREE.Int8BufferAttribute(Int8Array.from(nor), 3, true));
   g.setAttribute('aEdge', new THREE.Float32BufferAttribute(edge, 4));
   g.setAttribute('aBld', new THREE.Uint8BufferAttribute(Uint8Array.from(bld), 4));
+  if (rec) {
+    const u = Uint8Array.from(rb);
+    // 16바이트를 vec4 네 개로(0~1)
+    const ib = new THREE.InterleavedBuffer(u, 16);
+    for (let k = 0; k < 4; k++) g.setAttribute(`aRec${k}`, new THREE.InterleavedBufferAttribute(ib, 4, k * 4, true));
+  }
   g.setIndex(v > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
   return g;
 }
@@ -584,10 +614,17 @@ const VERT = /* glsl */ `
   attribute vec4 aEdge; attribute vec4 aBld;
   uniform float uLift;
   varying vec3 vN; varying vec4 vEdge; varying vec4 vBld; varying vec3 vPos; varying float vDist;
+  #ifdef REC
+  attribute vec4 aRec0, aRec1, aRec2, aRec3;
+  varying vec4 vR0, vR1, vR2, vR3;
+  #endif
   void main() {
     vec3 p = position;
     p.y += uLift * step(0.01, position.y);
     vN = normal; vEdge = aEdge; vBld = aBld; vPos = position;
+    #ifdef REC
+    vR0 = aRec0; vR1 = aRec1; vR2 = aRec2; vR3 = aRec3;
+    #endif
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     vDist = -mv.z;
     gl_Position = projectionMatrix * mv;
@@ -596,6 +633,9 @@ const VERT = /* glsl */ `
 const FRAG = /* glsl */ `
   uniform vec3 uBld, uRoof, uTint; uniform float uGlow;
   varying vec3 vN; varying vec4 vEdge; varying vec4 vBld; varying vec3 vPos; varying float vDist;
+  #ifdef REC
+  varying vec4 vR0, vR1, vR2, vR3;
+  #endif
   ${GLSL_COLORS}
   /** 부드러운 사각형 안(0~1). p 와 경계는 같은 단위, w 는 화면 한 점의 크기 */
   float rect(vec2 p, vec2 lo, vec2 hi, vec2 w) {
@@ -622,6 +662,14 @@ const FRAG = /* glsl */ `
     // 명소 전용 외벽은 실제 색이 보이도록 랜드마크 색을 옅게만 입힌다
     vec3 tint = st > 5.5 ? mix(vec3(1.0), uTint, 0.35) : uTint;
     vec3 wall = wallColor(st, s) * uBld * tint;
+    // 로드뷰 기록: 표시(1 외벽 2 1층 외벽 4 지붕 8 유리 16 세대 단위 불빛)와 재질(0 미확인 1 도장 2 벽돌 3 석재 4 타일 5 유리 6 금속 7 노출 콘크리트)
+    float rf = 0.0, rmat = 0.0;
+    #ifdef REC
+    rf = floor(vR1.a * 255.0 + 0.5);
+    rmat = floor(vR0.a * 255.0 + 0.5);
+    if (mod(rf, 2.0) > 0.5) wall = vR0.rgb * uBld * tint;
+    #endif
+    float recRoof = mod(floor(rf / 4.0), 2.0);
     vec3 col;
     vec3 glow = vec3(0.0);
     float lightsOn = uNight * (1.0 - fi);
@@ -636,12 +684,18 @@ const FRAG = /* glsl */ `
       float k = fract(s * 13.7);
       vec3 rc = st > 5.5 ? vec3(0.78, 0.79, 0.8) : style < 1.5 || style > 3.5 ? (k < 0.42 ? vec3(0.55, 0.72, 0.6) : k < 0.72 ? vec3(0.76, 0.76, 0.74) : k < 0.88 ? vec3(0.95, 0.95, 0.93) : vec3(0.62, 0.58, 0.54))
                                            : (k < 0.6 ? vec3(0.74, 0.75, 0.75) : vec3(0.9, 0.9, 0.89));
+      #ifdef REC
+      if (recRoof > 0.5) rc = vR2.rgb;
+      #endif
       rc *= 0.94 + 0.08 * hash21(floor(vPos.xz / 3.0) + s * 17.0);
       col = lit(rc * uRoof * tint, n);
     } else if (part > 2.5) {
       // 경사 지붕: 기와·금속 지붕 색, 비탈을 따라 골
       float k = fract(s * 5.9);
       vec3 rc = k < 0.35 ? vec3(0.42, 0.47, 0.55) : k < 0.6 ? vec3(0.66, 0.38, 0.3) : k < 0.8 ? vec3(0.36, 0.33, 0.31) : vec3(0.38, 0.52, 0.45);
+      #ifdef REC
+      if (recRoof > 0.5) rc = vR2.rgb;
+      #endif
       float gw = fwidth(vPos.y) * 3.0;
       rc *= 1.0 - 0.12 * smoothstep(0.5 - gw, 0.5, abs(fract(vPos.y / 0.35) - 0.5) * 2.0) * step(gw, 0.3);
       col = lit(rc * uTint * mix(uRoof, uBld, 0.5), n);
@@ -673,6 +727,27 @@ const FRAG = /* glsl */ `
       vec3 alb = wall;
       // 벽돌: 0.15m 줄눈(가까이서만)
       float brick = isBrick(st, s);
+      #ifdef REC
+      // 기록 1층 외벽 색(1층 높이 안)
+      if (mod(floor(rf / 2.0), 2.0) > 0.5 && y < (hasGround ? gh : fh)) alb = vR1.rgb * uBld * tint;
+      if (rmat > 0.5) brick = step(1.5, rmat) * step(rmat, 2.5);
+      // 석재·타일 판 줄눈, 금속 판 세로 이음, 노출 콘크리트 판과 폼타이 구멍
+      if (rmat > 2.5 && rmat < 4.5) {
+        vec2 sp = vec2(u / (rmat < 3.5 ? 1.2 : 0.6), y / (rmat < 3.5 ? 0.6 : 0.3));
+        vec2 sw = fwidth(sp);
+        float j = max(smoothstep(0.95 - sw.x, 0.95, fract(sp.x)), smoothstep(0.93 - sw.y, 0.93, fract(sp.y)));
+        alb *= 1.0 - (0.07 * j - 0.025 * hash21(floor(sp) + s)) * clamp(1.5 - max(sw.x, sw.y) * 3.0, 0.0, 1.0);
+      } else if (rmat > 5.5 && rmat < 6.5) {
+        float sx = u / 0.5, sw = fwidth(sx);
+        alb *= 1.0 - 0.08 * smoothstep(0.92 - sw, 0.92, fract(sx)) * clamp(1.5 - sw * 3.0, 0.0, 1.0);
+      } else if (rmat > 6.5) {
+        vec2 cp = vec2(u / 1.8, y / 0.9), cw = fwidth(cp);
+        float pl = max(smoothstep(0.97 - cw.x, 0.97, fract(cp.x)), smoothstep(0.95 - cw.y, 0.95, fract(cp.y)));
+        vec2 hp = fract(cp * vec2(3.0, 2.0)) - 0.5;
+        float hole = 1.0 - smoothstep(0.05, 0.08, length(hp * vec2(0.6, 0.45)));
+        alb *= 1.0 - (0.06 * pl + 0.12 * hole - 0.03 * hash21(floor(cp) + s)) * clamp(1.5 - max(cw.x, cw.y) * 4.0, 0.0, 1.0);
+      }
+      #endif
       if (brick > 0.5) {
         vec2 bp = vec2(u / 0.26 + 0.5 * mod(floor(y / 0.15), 2.0), y / 0.15);
         vec2 bwid = fwidth(bp);
@@ -735,6 +810,9 @@ const FRAG = /* glsl */ `
         float span = 1.0 - rect(q, vec2(-1.0, lo.y), vec2(2.0, 2.0), w);
         alb = mix(alb, glassCol * 0.75, span * windows);
       }
+      #ifdef REC
+      if (mod(floor(rf / 8.0), 2.0) > 0.5) glassCol = vR3.rgb * 0.8;
+      #endif
       if (style > 2.5 && style < 3.5) {
         // 아파트: 발코니 난간 띠
         float rail = rect(q, vec2(0.0, 0.3), vec2(1.0, 0.36), w) * windows;
@@ -810,6 +888,12 @@ const FRAG = /* glsl */ `
       // 밤 불빛
       float on = step(cellR2, litFrac);
       vec3 warm = mix(vec3(1.0, 0.8, 0.52), vec3(0.82, 0.9, 1.0), step(0.78, fract(cellR * 17.0)));
+      if (mod(floor(rf / 16.0), 2.0) > 0.5) {
+        // 기록한 아파트: 두 칸이 한 세대라 같이 켜지고 꺼진다. 세대마다 조명 색이 조금 다르다
+        float unitR = hash21(vec2(floor(bid / 2.0) * 3.7 + 1.3, floorI * 1.9) + s * 29.0);
+        on = step(unitR, litFrac * 1.1);
+        warm = mix(vec3(1.0, 0.8, 0.52), vec3(0.86, 0.9, 1.0), step(0.7, fract(unitR * 13.0)));
+      }
       if (style > 1.5 && style < 2.5) {
         // 사무실: 층 단위로 켜진다
         on = step(hash21(vec2(floorI, s * 51.0)), litFrac * 1.2);
@@ -831,10 +915,12 @@ const FRAG = /* glsl */ `
     gl_FragColor = vec4(fogged(col, vDist), 1.0);
   }`;
 
-export function buildingMaterial(tint = '#ffffff') {
+/** rec: 로드뷰 기록 값(aRec0~3)을 읽는 셰이더 */
+export function buildingMaterial(tint = '#ffffff', rec = false) {
+  const def = rec ? '#define REC\n' : '';
   return material({
-    vertex: VERT,
-    fragment: FRAG,
+    vertex: def + VERT,
+    fragment: def + FRAG,
     doubleSide: true,
     uniforms: { uBld: { value: pal.bld }, uRoof: { value: pal.roof }, uTint: { value: new THREE.Color(tint) }, uGlow: { value: 0 }, uLift: { value: 0 } },
   });
@@ -842,7 +928,7 @@ export function buildingMaterial(tint = '#ffffff') {
 
 // ───────────────────────── 옥상·외벽 소품 ─────────────────────────
 /** 소품 종류(셰이더의 kind) */
-const PROP = { room: 0, ac: 1, tank: 2, machine: 3, awning: 4, sign: 5 } as const;
+const PROP = { room: 0, ac: 1, tank: 2, machine: 3, awning: 4, sign: 5, roomRGB: 6, hip: 7 } as const;
 
 /** 소품 자리: [x, y, z, 방향, 너비(x), 높이, 깊이(z), 종류, r, g, b, 난수] */
 export function propsOf(list: Building[], lk: Look[]): number[] {
@@ -882,7 +968,18 @@ export function propsOf(list: Building[], lk: Look[]): number[] {
       };
       const taken: [number, number, number][] = [];
       const free = (x: number, z: number, r: number) => taken.every(([tx, tz, tr]) => Math.hypot(tx - x, tz - z) > tr + r);
-      if (L.base === STYLE.apt) {
+      const items = L.rec?.detail?.roofItems;
+      if (items) {
+        // 로드뷰·항공사진으로 기록한 옥상 소품만 둔다(기본 기계실·실외기는 두지 않는다)
+        for (const it of items) {
+          const [x, z] = xz(it.ll);
+          const c = hexRGB(it.color);
+          if (it.kind === 'hipRoom') {
+            push(x, roofY, z, yaw, it.w, it.h, it.d, PROP.roomRGB, c, s);
+            push(x, roofY + it.h, z, yaw, it.w + 0.5, it.roofH ?? 2, it.d + 0.5, PROP.hip, hexRGB(it.roofColor ?? it.color), s);
+          } else push(x, roofY, z, yaw, it.w, it.h, it.d, PROP.machine, c, s);
+        }
+      } else if (L.base === STYLE.apt) {
         // 아파트: 판상형은 계단실마다 엘리베이터 기계실, 타워형은 가운데 기계실과 옆 물탱크실
         const slab = o.L / Math.max(1, o.W) >= 2.2;
         const hz = Math.max(1.5, Math.min(2.4, o.W * 0.3));
@@ -917,17 +1014,18 @@ export function propsOf(list: Building[], lk: Look[]): number[] {
           const x = o.cx + o.ax * k;
           const z = o.cz + o.az * k;
           if (fits(x, z, hx, hz, 0.4)) {
-            push(x, roofY, z, yaw, hx * 2, 2.6, hz * 2, PROP.room, [s, L.style, 0], s);
+            if (L.rec?.wall) push(x, roofY, z, yaw, hx * 2, 2.6, hz * 2, PROP.roomRGB, L.rec.wall, s);
+            else push(x, roofY, z, yaw, hx * 2, 2.6, hz * 2, PROP.room, [s, L.style, 0], s);
             taken.push([x, z, Math.hypot(hx, hz)]);
             break;
           }
         }
       }
-      // 물탱크(빌라·주택 일부)와 실외기
+      // 물탱크(빌라·주택 일부)와 실외기(옥상 소품을 기록한 건물은 두지 않는다)
       const tries = L.base === STYLE.glass ? 10 : 6;
-      let acs = L.base === STYLE.shop ? 3 + Math.floor(rnd(s, 2) * 5) : L.base === STYLE.villa ? 1 + Math.floor(rnd(s, 2) * 3) : 2 + Math.floor(rnd(s, 2) * 4);
+      let acs = items ? 0 : L.base === STYLE.shop ? 3 + Math.floor(rnd(s, 2) * 5) : L.base === STYLE.villa ? 1 + Math.floor(rnd(s, 2) * 3) : 2 + Math.floor(rnd(s, 2) * 4);
       if (o.L * o.W < 40) acs = Math.min(acs, 1);
-      let tank = (L.base === STYLE.villa || L.base === STYLE.house) && rnd(s, 4) < 0.35;
+      let tank = !items && (L.base === STYLE.villa || L.base === STYLE.house) && rnd(s, 4) < 0.35;
       for (let k = 0; k < tries * 3 && (acs > 0 || tank); k++) {
         const a = (rnd(s, 10 + k) - 0.5) * o.L * 0.9;
         const c = (rnd(s, 40 + k) - 0.5) * o.W * 0.9;
@@ -961,12 +1059,13 @@ export function propsOf(list: Building[], lk: Look[]): number[] {
       const nx = dz, nz = -dx;
       const yaw = Math.atan2(-dz, -dx);
       const r = rnd(s, 100 + i);
-      if (L.shopK && L.shopMask & 2 && r < 0.45) {
+      const awn = L.rec?.awning;
+      if (L.shopK && L.shopMask & 2 && awn !== null && (awn ? signs === 0 && i === L.open.indexOf(2) : r < 0.45)) {
         // 차양: 가게 칸 몇 개에 걸쳐
         const w = Math.min(len - 1, 3 + rnd(s, 110 + i) * 6);
         const t = 0.5 + (rnd(s, 120 + i) - 0.5) * Math.max(0, len - w - 1);
         const at = Math.max(w / 2 + 0.3, Math.min(len - w / 2 - 0.3, t * len));
-        push(ax + dx * at + nx * 0.55, L.gh - 0.75, az + dz * at + nz * 0.55, yaw, w, 0.12, 1.1, PROP.awning, AWN[Math.floor(rnd(s, 130 + i) * AWN.length)], L.shopK + 0.9 * rnd(s, 140 + i));
+        push(ax + dx * at + nx * 0.55, L.gh - 0.75, az + dz * at + nz * 0.55, yaw, w, 0.12, 1.1, PROP.awning, awn ?? AWN[Math.floor(rnd(s, 130 + i) * AWN.length)], L.shopK + 0.9 * rnd(s, 140 + i));
       }
       if (L.upK && signs < 1 && L.floors >= 3 && rnd(s, 150 + i) < 0.5) {
         const end = rnd(s, 160 + i) < 0.5 ? 0.9 : len - 0.9;
@@ -988,10 +1087,16 @@ const PROP_VERT = /* glsl */ `
   void main() {
     vec3 o = position;
     vec3 p = o * aS.xyz;
+    vec3 nn = normal;
     if (aS.w > 3.5 && aS.w < 4.5) p.y -= (o.z + 0.5) * 0.5;   // 차양은 바깥으로 기운다
+    if (aS.w > 6.5) {
+      // 사각뿔 지붕: 윗면 네 점을 꼭대기 한 점으로 모은다
+      if (o.y > 0.5) p.xz = vec2(0.0);
+      if (abs(nn.y) < 0.5) nn = normalize(vec3(nn.x * aS.y, 0.5 * (abs(nn.x) > 0.5 ? aS.x : aS.z), nn.z * aS.y));
+    }
     float cs = cos(aP.w), sn = sin(aP.w);
     vec3 w = vec3(aP.x + p.x * cs - p.z * sn, aP.y + p.y, aP.z + p.x * sn + p.z * cs);
-    vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);
+    vN = vec3(nn.x * cs - nn.z * sn, nn.y, nn.x * sn + nn.z * cs);
     vO = o; vS = aS; vC = aC; vPos = w;
     vec4 mv = viewMatrix * vec4(w, 1.0);
     vDist = -mv.z;
@@ -1011,9 +1116,13 @@ const PROP_FRAG = /* glsl */ `
     vec3 c;
     vec3 glow = vec3(0.0);
     vec3 m = vO * vS.xyz;            // 상자 안 자리(m)
-    if (kind < 0.5) {
-      // 옥탑: 건물과 같은 벽색, 앞(+x 면)에 문, 옆에 작은 창
-      c = wallColor(vC.y, vC.x) * uBld;
+    if (kind > 6.5) {
+      // 사각뿔 지붕(슁글): 처마와 나란한 줄
+      c = vC.rgb * uRoof;
+      c *= 1.0 - 0.1 * step(0.6, fract(vO.y * vS.y / 0.32));
+    } else if (kind < 0.5 || kind > 5.5) {
+      // 옥탑: 건물과 같은 벽색(기록이 있으면 기록 색), 앞(+x 면)에 문, 옆에 작은 창
+      c = kind > 5.5 ? vC.rgb * uBld : wallColor(vC.y, vC.x) * uBld;
       float top = step(0.5, n.y);
       float door = step(0.49, vO.x) * step(abs(m.z), 0.45) * step(m.y, 2.05);
       float win = step(0.49, abs(vO.z)) * step(abs(m.x), 0.4) * step(1.2, m.y) * step(m.y, 1.8);
@@ -1088,19 +1197,26 @@ export function makeProps(list: Building[], lk: Look[]): THREE.Mesh {
   return mesh;
 }
 
-export function makeBuildings(all: Building[]): THREE.Object3D {
-  const list = refine(all);
+/** recs: 판 건물 번호 → 로드뷰 기록. 기록이 있는 건물은 기록 값을 읽는 메시로 따로 그린다(기록이 없는 건물의 꼭짓점은 늘지 않는다) */
+export function makeBuildings(all: Building[], recs: Map<number, BuildingRec> = new Map()): { group: THREE.Object3D; list: Building[]; looks: Look[] } {
+  const list = refine(all.map((b, i) => (recs.has(i) ? applyRec(b, recs.get(i)!) : b)));
   const lk = looks(list);
   const keep = list.map((b) => b.lm === 0);
   const group = new THREE.Group();
-  const mesh = new THREE.Mesh(
-    prismGeometry(
-      list.filter((_, i) => keep[i]),
-      lk.filter((_, i) => keep[i]),
-    ),
-    buildingMaterial(),
-  );
-  mesh.frustumCulled = false;
-  group.add(mesh, makeProps(list.filter((_, i) => keep[i]), lk.filter((_, i) => keep[i])));
-  return group;
+  for (const rec of [false, true]) {
+    const pick = list.map((_, i) => keep[i] && !!lk[i].rec === rec);
+    if (!pick.some(Boolean)) continue;
+    const mesh = new THREE.Mesh(
+      prismGeometry(
+        list.filter((_, i) => pick[i]),
+        lk.filter((_, i) => pick[i]),
+        rec,
+      ),
+      buildingMaterial('#ffffff', rec),
+    );
+    mesh.frustumCulled = false;
+    group.add(mesh);
+  }
+  group.add(makeProps(list.filter((_, i) => keep[i]), lk.filter((_, i) => keep[i])));
+  return { group, list, looks: lk };
 }
