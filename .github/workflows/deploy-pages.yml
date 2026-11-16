@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       mapo: ${{ steps.mapo.outcome }}
+      mapo_test: ${{ steps.mapo_test.outcome }}
     steps:
       - uses: actions/checkout@v4
 
@@ -177,7 +178,7 @@ jobs:
           node --test test/*.test.js
           node build.mjs
 
-      # 마포 라이브 3D (2026-11-13) — 마포구 미니어처 웹 토이. 테스트가 통과해야 dist 를 만든다.
+      # 마포 라이브 3D (2026-11-13) — 마포구 미니어처 웹 토이. 빌드한 뒤 시험을 따로 돌린다(아래).
       # 지도 자료(public/data)는 구워서 커밋해 두므로 CI 에서는 OSM 을 받지 않는다.
       # 실패해도 다른 앱 배포는 막지 않되, 아래 deploy 잡 끝에서 실행 결과를 실패로 표시한다
       - name: Build mapo
@@ -192,8 +193,18 @@ jobs:
         run: |
           cd mapo
           pnpm install --frozen-lockfile
-          pnpm test
           pnpm build
+
+      # 시험은 빌드와 따로 돌린다. 시험이 실패해도 빌드가 되면 배포해 /apps/mapo/ 가 404 가 되지 않게 하고(2026-11-17 두 번째 404),
+      # 실패는 아래 deploy 잡 끝에서 실행 결과를 실패로 표시해 알린다
+      - name: Test mapo
+        id: mapo_test
+        continue-on-error: true
+        env:
+          TZ: Asia/Seoul
+        run: |
+          cd mapo
+          pnpm test
 
       - name: Combine into _site
         run: |
@@ -269,4 +280,9 @@ jobs:
         if: needs.build.outputs.mapo == 'failure'
         run: |
           echo "::error::mapo 빌드 또는 테스트가 실패해 이번 배포에서 /apps/mapo/ 가 빠졌습니다."
+          exit 1
+      - name: Fail if mapo tests failed
+        if: needs.build.outputs.mapo_test == 'failure'
+        run: |
+          echo "::error::mapo 시험이 실패했습니다(빌드는 배포됨). 실패한 시험을 고칠 것."
           exit 1
