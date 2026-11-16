@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { makeSignals, GREEN } from '../src/sim/signals.ts';
+import { makeSignals, GREEN, RED } from '../src/sim/signals.ts';
 import { makeWalkers } from '../src/sim/walkers.ts';
 import { makeCars } from '../src/sim/cars.ts';
+import { makeBusRoutes } from '../src/sim/buses.ts';
 import { at, crosswalk, fixedProvider, road, walkNet } from './helpers.ts';
+import { curbAt } from '../src/data/board.ts';
 
 // (0,0)에서 만나는 동서 큰길(4차로, 찻길 반폭 7.1m)과 남북 골목
 const tee = () => [
@@ -143,6 +145,72 @@ describe('횡단보도로 큰길 건너기', () => {
         }
     }
     expect(crossed).toBeGreaterThan(50);
+    expect(onRed).toBe(0);
+  });
+
+  it('축이 신호 무리를 가르는 45° 에 걸친 횡단보도도 보행 신호등과 같은 무리를 보고 건넌다', () => {
+    // 동서 큰길 중간 신호 횡단보도(차 무리 축 0°). 자료의 축은 45.1° 라 보행 신호등은 보행 무리를 보이는데,
+    // 걷는 길 연결 끝은 0.1m 로 반올림되어 축이 45° 아래로 기울 수 있다(판의 횡단보도 760). 그 기운 연결을 만든다
+    const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })];
+    const cars = buildCarGraph(rs);
+    const a = (45.1 * Math.PI) / 180;
+    const xws = [crosswalk(0, 0, Math.cos(a), Math.sin(a), 10.6, [[0, 0]], true, 4)];
+    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const g = walkNet(rs, { crosswalks: xws });
+    expect(g.links).toHaveLength(1);
+    const l = g.links[0];
+    l.bx += 0.15;
+    expect(signals.groupOf(0, Math.atan2(l.bz - l.az, l.bx - l.ax))).not.toBe(signals.groupOf(0, a));
+    const walk = signals.groupOf(0, a); // 보행 신호등(pedState)이 보는 무리
+    const sim = makeWalkers(g, exits, fixedProvider(1, 0), 4, 120, undefined, signals);
+    const inside = (x: number, z: number) => Math.abs(z) < 6.5 && Math.abs(x * Math.sin(a) - z * Math.cos(a)) < 2; // 연석 안쪽 0.6m 넘게 찻길
+    const was = new Map<number, boolean>();
+    let entries = 0;
+    let onRed = 0;
+    for (let k = 0; k < 9000; k++) {
+      if (k % 150 === 0) sim.burst('s', 3), sim.burst('n', 3);
+      const tod = k * 0.1;
+      sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
+      const red = signals.state(0, walk, tod) === RED;
+      for (let i = 0; i < sim.w.n; i++) {
+        const now = inside(sim.w.x[i], sim.w.z[i]);
+        if (now && was.get(sim.w.id[i]) === false) {
+          entries++;
+          if (red) onRed++;
+        }
+        was.set(sim.w.id[i], now);
+      }
+    }
+    expect(entries).toBeGreaterThan(30);
+    expect(onRed).toBe(0);
+  });
+
+  it('긴 신호 횡단보도(32m)는 초록불이 모자라면 서둘러 건너, 건너는 동안 빨간불이 되지 않는다', () => {
+    // 8차로(찻길 반폭 약 14m) 중간 신호 횡단보도. 보행 초록불은 22초라 1m/s 로는 다 못 건넌다
+    const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 8 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 8 })];
+    const cars = buildCarGraph(rs);
+    const xws = [crosswalk(0, 0, 0, 1, 16, [[0, 0]], true, 5)];
+    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const g = walkNet(rs, { crosswalks: xws });
+    expect(g.links).toHaveLength(1);
+    const half = curbAt(rs[0], 0, 1); // 찻길 반폭
+    expect(half).toBeGreaterThan(12);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 's', x: -80, z: 22 }, { kind: 'exit', key: 'n', x: 80, z: -22 }], fixedProvider(1, 0), 4, 120, undefined, signals);
+    const walk = signals.groupOf(0, Math.PI / 2);
+    let on = 0;
+    let onRed = 0;
+    for (let k = 0; k < 9000; k++) {
+      if (k % 150 === 0) sim.burst('s', 3), sim.burst('n', 3);
+      const tod = k * 0.1;
+      sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
+      const red = signals.state(0, walk, tod) === RED;
+      for (let i = 0; i < sim.w.n; i++)
+        if (Math.abs(sim.w.z[i]) < half && Math.abs(sim.w.x[i]) < 3) {
+          on++;
+          if (red) onRed++;
+        }
+    }
+    expect(on).toBeGreaterThan(500);
     expect(onRed).toBe(0);
   });
 
@@ -309,4 +377,20 @@ describe('중앙버스정류장', () => {
     for (let k = 0; k < 200; k++) sim.step(0.1, { tod: (tod += 0.1), dow: 2, doy: 317 }, false);
     expect(sim.w.n).toBe(6 - waiting);
   });
+});
+
+describe('길가 버스 정류장과 횡단보도', () => {
+  // 동서 일방 큰길. 정류장(노선 거리 300m) 바로 앞(303m)과 뒤(296m)에 폭 5m 횡단보도
+  const rs = () => [road([[0, 0], [600, 0]], { oneway: true })];
+  for (const at of [303, 296]) {
+    it(`정류장에 선 버스 몸통(앞문 포함)이 횡단보도 칠 위에 놓이지 않게 정류장을 민다(횡단보도 ${at}m)`, () => {
+      const g = buildCarGraph(rs());
+      const xws = [crosswalk(at, 0, 0, 1, 8, [], false, 5)];
+      const [r] = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1], stops: [300], stopNames: ['정류장'] }], g, [], xws);
+      // 버스 길이 최대 12m: 가운데에서 앞뒤 6m 가 칠 면(축에서 ±2.5m) 밖이어야 한다
+      expect(Math.abs(r.stops[0] - at)).toBeGreaterThanOrEqual(6 + 2.5);
+      // 멀리 밀지 않는다
+      expect(Math.abs(r.stops[0] - 300)).toBeLessThan(15);
+    });
+  }
 });

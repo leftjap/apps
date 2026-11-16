@@ -108,6 +108,15 @@ describe('자료로 정한 신호', () => {
     expect(s.groupOf(0, Math.PI / 2)).toBe(1);
   });
 
+  it('신호 없는 횡단보도의 축이 신호 횡단보도 칠 안을 지나면(자료에 겹쳐 그려진 횡단보도) 그 신호를 따른다', () => {
+    const g = buildCarGraph([road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })]);
+    const a = Math.PI / 2 - 0.5; // 신호 횡단보도와 29° 비스듬히 겹친다
+    const xws = [crosswalk(0, 0, 0, 1, 8, [[0, 0]]), crosswalk(1, 0, Math.cos(a), Math.sin(a), 8, [], false), crosswalk(60, 0, 0, 1, 8, [], false)];
+    const s = makeSignals(g, { crosswalks: xws, stopLines: new Float32Array() });
+    expect(s.crossSite[0]).toBe(0);
+    expect(s.crossSite[1]).toBe(0);
+    expect(s.crossSite[2]).toBe(-1);
+  });
   it('정지선 자료가 있으면 그 자리를 정지선으로 쓴다', () => {
     const g = cross();
     // 서쪽에서 들어오는 차로(교차로 서쪽 22m)를 가로지르는 정지선

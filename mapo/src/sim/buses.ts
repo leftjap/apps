@@ -59,6 +59,7 @@ function project(e: Edge, x: number, z: number): [number, number] {
 }
 
 export function makeBusRoutes(runs: BusRun[], edges: Edge[], medStops: [string, string, number, number][] = MED_STOPS, crosswalks: Crosswalk[] = []): BusRoute[] {
+  const tmp = [0, 0, 0];
   const byRoad = new Map<string, number>();
   for (const e of edges) byRoad.set(`${e.road}${e.rev ? '-' : '+'}`, e.id);
   const out: BusRoute[] = [];
@@ -87,6 +88,26 @@ export function makeBusRoutes(runs: BusRun[], edges: Edge[], medStops: [string, 
     const stops: [number, string, boolean][] = run.stops
       .map((s, i) => [s, run.stopNames[i], false] as [number, string, boolean])
       .filter(([s]) => s < len && !(usesMed && edgeAt(s).med));
+    // 길가 정류장: 선 버스 몸통(가장 긴 버스 12m 의 반)이 이 길을 가로지르는 횡단보도 칠에 걸치면 횡단보도 앞(가운데가 횡단보도를
+    // 지났으면 뒤)으로 민다. 앞문이 칠 위에 놓이면 타러 가는 사람이 횡단보도로 들어선다
+    const marks: [number, number][] = []; // [노선 위 거리, 버스 가운데가 떨어져야 할 거리]
+    ids.forEach((id, k) => {
+      const e = edges[id];
+      for (const c of crosswalks) {
+        if (Math.hypot(c.x - e.p[0], c.z - e.p[2]) > e.len + 25) continue;
+        const [ac, lc] = project(e, c.x, c.z);
+        if (Math.abs(lc) > 20 || ac <= 0 || ac >= e.len) continue;
+        const yaw = headingAt(e.p, pointAt(e.p, e.cum, ac, tmp));
+        if (Math.abs(Math.cos(yaw) * c.ux + Math.sin(yaw) * c.uz) > Math.SQRT1_2) continue; // 이 길과 나란한 횡단보도(옆 골목을 건넌다)
+        marks.push([start[k] + ac, c.wid / 2 + 6]);
+      }
+    });
+    for (const q of stops)
+      for (let guard = 0; guard < 3; guard++) {
+        const m = marks.find(([at, r]) => Math.abs(q[0] - at) < r);
+        if (!m) break;
+        q[0] = Math.max(0.5, Math.min(len - 0.5, m[0] >= q[0] ? m[0] - m[1] : m[0] + m[1]));
+      }
     // 중앙 정류장: 이 노선이 중앙버스차로로 지나는 구간의 일반 차로 왼쪽 가장자리 바로 밖(분리대 위 6m 안)에 있는 것
     if (usesMed)
       for (const [, name, x, z] of medStops) {

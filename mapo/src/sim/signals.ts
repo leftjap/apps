@@ -270,6 +270,27 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
       crossSite[i] = best;
     }
 
+  // 신호 없는 횡단보도의 축이 신호 횡단보도 칠 안을 지나면(자료에 두 번 겹쳐 그려진 횡단보도) 그 신호를 따른다.
+  // 따르지 않으면 그 축으로 건너는 사람이 빨간불인 신호 횡단보도 칠 위로 들어선다
+  const inRing = (r: ArrayLike<number>, x: number, z: number) => {
+    let c = false;
+    for (let a = 0, j = r.length - 2; a < r.length; j = a, a += 2) if (r[a + 1] > z !== r[j + 1] > z && x < r[a] + ((z - r[a + 1]) / (r[j + 1] - r[a + 1])) * (r[j] - r[a])) c = !c;
+    return c;
+  };
+  const lightOf = Int32Array.from({ length: crossSite.length }, (_, i) => i); // 보행 신호 무리를 정할 횡단보도(겹친 것은 그 신호 횡단보도)
+  (data?.crosswalks ?? []).forEach((c, i) => {
+    if (c.sig) return;
+    for (const { c: q, i: j } of sigXw) {
+      if (crossSite[j] < 0 || Math.hypot(q.x - c.x, q.z - c.z) > q.half + c.half + q.wid) continue;
+      for (let t = -1; t <= 1; t += 0.05)
+        if (q.rings.some((r) => inRing(r, c.x + c.ux * c.half * t, c.z + c.uz * c.half * t))) {
+          crossSite[i] = crossSite[j];
+          lightOf[i] = j;
+          return;
+        }
+    }
+  });
+
   /** 묶음 c 의 무리 group 신호(GREEN·YELLOW·RED) */
   function state(c: number, group: number, tod: number): number {
     const u = (((tod + list[c].offset) % CYCLE) + CYCLE) % CYCLE;
@@ -292,8 +313,14 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
   }
   /** 방향 h 로 걷는 사람·차가 속한 무리 */
   const groupOf = (c: number, h: number) => (axisGap(h, list[c].axis) < Math.PI / 4 ? 0 : 1);
+  /** 횡단보도마다 건너는 사람이 따르는 무리(보행 신호등과 같이 자료의 축으로 정한다, 신호가 없으면 0).
+   *  걷는 길 연결 끝은 0.1m 로 반올림되어 축이 45° 언저리이면 다른 무리로 갈린다 */
+  const crossGroup = Int8Array.from(crossSite, (c, i) => {
+    const q = data!.crosswalks[lightOf[i]];
+    return c < 0 ? 0 : groupOf(c, Math.atan2(q.uz, q.ux));
+  });
 
-  return { list, approach, state, greenLeft, siteAt, siteNear, groupOf, junctions: boxes, crossSite };
+  return { list, approach, state, greenLeft, siteAt, siteNear, groupOf, junctions: boxes, crossSite, crossGroup };
 }
 
 export type Signals = ReturnType<typeof makeSignals>;

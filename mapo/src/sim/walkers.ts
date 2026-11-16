@@ -158,6 +158,7 @@ const BOARDING = 4; // 버스 문으로 걸어가는 중
 const MAX_WAIT = 300; // 정류장에서 버스를 기다리는 가장 긴 시간(초)
 const QUEUE_GAP = 1.5; // 정류장 줄에서 앞뒤 사람 사이(m). 사람을 실제보다 키워 그리므로 넉넉하게 둔다
 const ALIGHT_T = 1.6; // 버스 문에서 보도까지 걸어 나오는 시간(초)
+const HURRY = 2; // 초록불이 모자라 서둘러 건널 때 가장 빠른 걸음(m/s)
 const TURN_RATE = 7; // 몸 방향이 1초에 도는 가장 큰 각(라디안). 모퉁이·되돌아서기에서 한 프레임에 확 꺾이지 않게
 
 /** 외곽선 [x,z, ...] 넓이 */
@@ -315,6 +316,7 @@ export function makeWalkers(
   const xBx = new Float32Array(max);
   const xBz = new Float32Array(max);
   const xLat = new Float32Array(max); // 횡단보도에서 축 오른쪽으로 비켜 걷는 거리(m)
+  const xSpd = new Float32Array(max); // 찻길을 건너는 동안의 걸음(m/s). 초록불이 모자라면 서둘러 걷는다
   // 중앙버스정류장 오가기: 1 승강장으로 감, 2 승강장에서 보도로 나옴. 네 자리(rx·rz 의 0~3)를 차례로 걷는다(rLeg).
   // rLeg 1 을 시작하기 전에 신호·차를 보고(rHold), rCross 번째 구간이 찻길을 건너는 구간이다.
   // 승강장은 버스 쪽 가장자리에 줄을 서고, 반대쪽 가장자리로 걸어 다닌다
@@ -548,7 +550,7 @@ export function makeWalkers(
     onLeave?.(w.x[i], w.z[i]);
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, xLeg, xAx, xAz, xBx, xBz, home, tx, tz, ox, oz, alightT, dodge, curK, head, queued, xSlot, xLat, rt, rLeg, rHold, rCross, rLink, ...rx, ...rz, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, xLeg, xAx, xAz, xBx, xBz, home, tx, tz, ox, oz, alightT, dodge, curK, head, queued, xSlot, xLat, xSpd, rt, rLeg, rHold, rCross, rLink, ...rx, ...rz, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
       a[i] = a[j];
   }
 
@@ -872,14 +874,23 @@ export function makeWalkers(
 
   /** 신호 묶음 c 에서 방향 h 로 건너기 시작해도 되는가: 초록불이 8초 넘게 남았다(건너는 동안 빨간불이 되지 않게) */
   const green = (c: number, h: number, tod: number) => signals!.greenLeft(c, signals!.groupOf(c, h), tod) > 8;
-  /** 횡단보도 앞에서 건너기 시작해도 되는가: 보행 신호가 있으면 다 건널 만큼 초록불이 남았을 때, 없으면 차가 다가오지 않을 때 */
-  function mayStart(i: number, l: CrossLink, span: number, tod: number): boolean {
+  /** 횡단보도 앞에서 span(m)을 건너기 시작할 걸음(m/s). 건너기 시작하면 안 되면 0.
+   *  보행 신호가 있으면 다 건널 만큼 초록불이 남았을 때 제 걸음으로 건넌다. 모자라면 남은 초록불(1초 남김) 안에 다 건너는 걸음이
+   *  HURRY 아래일 때만 그 걸음으로 서둘러 건넌다(긴 횡단보도를 천천히 건너다 빨간불을 맞지 않게). 신호가 없으면 차가 다가오지 않을 때.
+   *  신호 무리는 보행 신호등과 같이 횡단보도 자료의 축으로 정한 것(crossGroup)을 본다. 옆 빈자리·줄 뒤에서 건너편 자리를 보는
+   *  방향으로 고르면 비스듬한 횡단보도에서 다른 무리를 본다 */
+  function startSpeed(i: number, l: CrossLink, span: number, tod: number): number {
     const c = signals?.crossSite[l.xw] ?? -1;
     if (c >= 0) {
-      const h = Math.atan2(xFz[i] - w.z[i], xFx[i] - w.x[i]);
-      return signals!.greenLeft(c, signals!.groupOf(c, h), tod) > Math.min(span / speed[i] + 1, 18);
+      const grp = signals!.crossGroup[l.xw];
+      const left = signals!.greenLeft(c, grp, tod) - 1;
+      if (left * speed[i] >= span) return speed[i];
+      // 초록불 내내 HURRY 로도 다 못 건너는 긴 횡단보도는 초록불이 켜지고 2초 안에 출발하면 그 초록불 안에 건너는 걸음을 쓴다
+      const P = signals!.list[c].plan;
+      const most = Math.max(HURRY, span / ((grp === 0 ? P[0] : P[3] - P[2]) - 3));
+      return left * most >= span ? span / left : 0;
     }
-    return !(l.major && cross.traffic?.(l));
+    return l.major && cross.traffic?.(l) ? 0 : speed[i];
   }
 
   /** i 가 지금 자리에 놓이면 0.6m 안에 다른 사람이 있는가 */
@@ -950,7 +961,8 @@ export function makeWalkers(
           const dx = w.x[j] - w.x[i];
           const dz = w.z[j] - w.z[i];
           const along = dx * hx + dz * hz;
-          if (along <= 0 || along >= 1.4 || Math.abs(dz * hx - dx * hz) >= 0.5) continue;
+          // 앞뒤로 0.3m 안에 나란히 선 사람은 앞사람으로 보지 않는다(초록불에 함께 출발한 무리가 서로를 앞사람으로 보고 모두 늦춘다)
+          if (along <= 0.3 || along >= 1.4 || Math.abs(dz * hx - dx * hz) >= 0.5) continue;
           if (w.moving[j] && Math.cos(head[j] - h) < 0.3) continue;
           const q = Math.max(0, Math.min(1, (along - 0.7) / 0.7));
           if (q < f) (f = q), (followStand = !w.moving[j]);
@@ -1068,14 +1080,16 @@ export function makeWalkers(
           for (let k = rLeg[i]; k < rCross[i]; k++) span += Math.hypot(rx[k + 1][i] - rx[k][i], rz[k + 1][i] - rz[k][i]);
           xFx[i] = rx[rCross[i]][i];
           xFz[i] = rz[rCross[i]][i];
-          if (!mayStart(i, l, span, now.tod)) {
+          const v = startSpeed(i, l, span, now.tod);
+          if (!v) {
             w.moving[i] = 0;
             if (dd > 1e-3) head[i] = Math.atan2(dz, dx);
             continue;
           }
+          xSpd[i] = v;
           rHold[i] = 0;
         }
-        let d = Math.min(dd, speed[i] * dt);
+        let d = Math.min(dd, (rLeg[i] >= 1 && rLeg[i] <= rCross[i] ? xSpd[i] : speed[i]) * dt);
         if (dd > 1e-3) {
           dx /= dd;
           dz /= dd;
@@ -1123,11 +1137,13 @@ export function makeWalkers(
           const span =
             (xLeg[i] === 0 ? Math.hypot(xAx[i] - xNx[i], xAz[i] - xNz[i]) + Math.hypot(xBx[i] - xAx[i], xBz[i] - xAz[i]) : Math.hypot(xBx[i] - xNx[i], xBz[i] - xNz[i])) +
             Math.hypot(xFx[i] - xBx[i], xFz[i] - xBz[i]);
-          if (!mayStart(i, l, span, now.tod)) {
+          const v = startSpeed(i, l, span, now.tod);
+          if (!v) {
             w.moving[i] = 0;
             head[i] = h;
             continue;
           }
+          xSpd[i] = v;
           xing[i] = 3;
         }
         if (xing[i] === 3 && xLeg[i] === 1 && (xFx[i] - xBx[i]) * (xBx[i] - xAx[i]) + (xFz[i] - xBz[i]) * (xBz[i] - xAz[i]) <= 0) xLeg[i] = 2;
@@ -1136,7 +1152,7 @@ export function makeWalkers(
         const dx = gx - w.x[i];
         const dz = gz - w.z[i];
         const dd = Math.hypot(dx, dz);
-        let d = Math.min(dd, speed[i] * dt);
+        let d = Math.min(dd, (xing[i] === 3 ? xSpd[i] : speed[i]) * dt);
         if (dd > 1e-3) {
           // 앞사람을 따라간다. 건너편으로 가는 중에는 멈추지 않고 늦추기만 한다(건너편에서 기다리는 사람 때문에 찻길에 서지 않게)
           const f = follow(i, dx / dd, dz / dd);
