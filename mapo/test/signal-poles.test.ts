@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { decodeBoard } from '../src/data/board.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { decodeLanes } from '../src/data/lanes.ts';
-import { GREEN, LEFT, makeSignals, RED, STRAIGHT, YELLOW } from '../src/sim/signals.ts';
+import { GREEN, LEFT, makeIntersections, RED, STRAIGHT, YELLOW } from '../src/sim/intersection/index.ts';
 import { pedState, signalPoles } from '../src/render/signals.ts';
 
 const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
 const edges = buildCarGraph(board.roads, decodeLanes(JSON.parse(readFileSync(new URL('../public/data/lanes.json', import.meta.url), 'utf8'))));
-const signals = makeSignals(edges, { crosswalks: board.crosswalks, stopLines: board.stopLines });
+const signals = makeIntersections(edges, { crosswalks: board.crosswalks, stopLines: board.stopLines }).S;
 const poles = signalPoles(edges, signals, board.crosswalks, board.stopLines);
 
 /** 점에서 가장 가까운 정지선(선분)까지 거리 */
@@ -74,11 +74,10 @@ describe('신호 색', () => {
       }
     }
   });
-  it('보행 신호는 그 횡단보도를 건너는 사람이 쓰는 무리가 초록일 때만 초록이다', () => {
-    const p = poles.ped[0];
-    const c = signals.crossSite[p.xw];
-    const xw = board.crosswalks[p.xw];
-    const g = signals.groupOf(c, Math.atan2(xw.uz, xw.ux));
-    for (let t = 0; t < 200; t += 3) expect(pedState(signals, p.xw, xw, t) === GREEN).toBe(signals.greenLeft(c, g, t) > 0);
+  it('보행 신호등은 그 횡단보도의 보행 신호(사람이 건너기 시작할 때 보는 신호)가 초록일 때만 초록이다', () => {
+    for (const p of poles.ped.slice(0, 40)) {
+      const xw = board.crosswalks[p.xw];
+      for (let t = 0; t < 200; t += 3) expect(pedState(signals, p.xw, xw, t) === GREEN).toBe(signals.walkLeft(p.xw, t) > 0);
+    }
   });
 });

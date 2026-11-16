@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Crosswalk } from '../src/data/board.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeCars } from '../src/sim/cars.ts';
-import { makeSignals } from '../src/sim/signals.ts';
+import { makeIntersections } from '../src/sim/intersection/index.ts';
 import { laneStops } from '../src/sim/stops.ts';
 import { at, fixedProvider, road } from './helpers.ts';
 
@@ -46,7 +46,7 @@ describe('횡단보도 비워 두기', () => {
   it('앞이 막혀 서는 차는 횡단보도 면 위에 서지 않는다', () => {
     const g = buildCarGraph([road([[0, 0], [400, 0]], { oneway: true, lanes: 1 })]);
     const list = [xwalk(200, 205)];
-    const signals = makeSignals(g, { crosswalks: list, stopLines: new Float32Array(0) });
+    const signals = makeIntersections(g, { crosswalks: list, stopLines: new Float32Array(0) });
     const sim = makeCars(g, fixedProvider(1), 3, 40, [], signals, { list, busy: new Uint32Array(1) });
     // 횡단보도 너머 8m 에서 차들이 거의 멈춘다
     sim.setIncidents({ blocks: [], close: [], slow: [{ edge: g[0].id, at: 238, v: 0.05 }] });

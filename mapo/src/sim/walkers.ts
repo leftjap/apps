@@ -10,7 +10,7 @@ import type { CrossLink, WalkGraph } from './walknet.ts';
 import type { DataProvider } from './provider.ts';
 import { PLACES, placeLevel, placeMask } from './places.ts';
 import { pick, rng } from './rng.ts';
-import type { Signals } from './signals.ts';
+import type { SignalPlan as Signals } from './intersection/index.ts';
 
 export interface Walkers {
   n: number;
@@ -1170,8 +1170,6 @@ export function makeWalkers(
     }
   }
 
-  /** 신호 묶음 c 에서 방향 h 로 건너기 시작해도 되는가: 초록불이 8초 넘게 남았다(건너는 동안 빨간불이 되지 않게) */
-  const green = (c: number, h: number, tod: number) => signals!.greenLeft(c, signals!.groupOf(c, h), tod) > 8;
   /** 횡단보도 앞에서 span(m)을 건너기 시작할 걸음(m/s). 건너기 시작하면 안 되면 0.
    *  보행 신호가 있으면 다 건널 만큼 초록불이 남았을 때 제 걸음으로 건넌다. 모자라면 남은 초록불(1초 남김) 안에 다 건너는 걸음이
    *  HURRY 아래일 때만 그 걸음으로 서둘러 건넌다(긴 횡단보도를 천천히 건너다 빨간불을 맞지 않게). 신호가 없으면 차가 다가오지 않을 때.
@@ -1180,12 +1178,10 @@ export function makeWalkers(
   function startSpeed(i: number, l: CrossLink, span: number, tod: number): number {
     const c = signals?.crossSite[l.xw] ?? -1;
     if (c >= 0) {
-      const grp = signals!.crossGroup[l.xw];
-      const left = signals!.greenLeft(c, grp, tod) - 1;
+      const left = signals!.walkLeft(l.xw, tod) - 1;
       if (left * speed[i] >= span) return speed[i];
       // 초록불 내내 HURRY 로도 다 못 건너는 긴 횡단보도는 초록불이 켜지고 2초 안에 출발하면 그 초록불 안에 건너는 걸음을 쓴다
-      const P = signals!.list[c].plan;
-      const most = Math.max(HURRY, span / ((grp === 0 ? P[0] : P[3] - P[2]) - 3));
+      const most = Math.max(HURRY, span / (signals!.walkLen(l.xw) - 3));
       return left * most >= span ? span / left : 0;
     }
     return l.major && cross.traffic?.(l) ? 0 : speed[i];

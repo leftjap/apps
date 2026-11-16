@@ -6,13 +6,13 @@ import { nearestS } from '../src/poly.ts';
 import { makeFlow } from '../src/render/flow.ts';
 import { buildCarGraph, laneOff } from '../src/sim/graph.ts';
 import { decodeLanes } from '../src/data/lanes.ts';
-import { makeJunctions } from '../src/sim/junctions.ts';
+import { buildIntersections } from '../src/sim/intersection/index.ts';
 
 // 흐름 색 띠는 교차로 상자 밖 구간에만 그린다. 상자 안은 여러 방향 띠가 겹쳐 색이 뭉친다(2026-11-16 도로 감사).
 const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
 const roadLanes = decodeLanes(JSON.parse(readFileSync(new URL('../public/data/lanes.json', import.meta.url), 'utf8')));
 const edges = buildCarGraph(board.roads, roadLanes);
-const jn = makeJunctions(edges);
+const jn = buildIntersections(edges);
 
 /** 구간 e 만 그린 흐름 띠가 놓인 길 가운데선 자리들(띠 점에서 차로 쪽으로 옮긴 거리를 되돌린다) */
 function drawn(e: (typeof edges)[number]): [number, number][] {
@@ -35,8 +35,8 @@ describe('도로 흐름 띠', () => {
     let total = 0;
     for (const e of edges) {
       if (e.cls > 3) continue;
-      const a = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
-      const b = e.len - (jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
+      const a = jn.jStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
+      const b = e.len - (jn.jEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
       const pts = drawn(e);
       // 띠 조각의 양 끝이 놓인 가운데선 자리 가운데 하나라도 상자 안이면 그 조각 길이를 센다
       const out = (x: number, z: number) => {

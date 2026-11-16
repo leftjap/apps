@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeCars, type Cars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { makeJunctions } from '../src/sim/junctions.ts';
+import { buildIntersections } from '../src/sim/intersection/index.ts';
 import type { DataProvider } from '../src/sim/provider.ts';
 import { fixedProvider, road } from './helpers.ts';
 
@@ -98,7 +98,7 @@ describe('꼬리 물기', () => {
     const jam = g.find((e) => e.p[0] === 120 && e.p[e.p.length - 3] > R - 1)!;
     const east = g.find((e) => e.p[0] === 0 && e.p[e.p.length - 3] === 120)!;
     const sim = makeCars(g, slowOn(new Set([jam.key]), 0.04), 6, 400);
-    const box = makeJunctions(g).rOut[east.id];
+    const box = buildIntersections(g).rOut[east.id];
     sim.fill(300);
     let stuck = 0;
     for (let k = 0; k < 2400; k++) {
@@ -156,7 +156,7 @@ describe('처음 채우기', () => {
       road([[0, 0], [0, 60]], { cls: 1, lanes: 4 }),
       road([[0, -60], [0, 0]], { cls: 1, lanes: 4 }),
     ]);
-    const jn = makeJunctions(g);
+    const jn = buildIntersections(g);
     const sim = makeCars(g, fixedProvider(0.3), 5, 400);
     sim.fill(400);
     const c = sim.cars;

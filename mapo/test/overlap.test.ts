@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { makeSignals, RED } from '../src/sim/signals.ts';
+import { makeIntersections, RED } from '../src/sim/intersection/index.ts';
 import { at, crosswalk, fixedProvider, road } from './helpers.ts';
 
 // 동쪽으로 가는 길이 (0,0)의 보행 신호 횡단보도에서 끊기고, 그 앞 조각이 10m 로 짧다
@@ -11,22 +11,22 @@ const midBlock = () => {
     road([[-10, 0], [0, 0]], { oneway: true, lanes: 1, cls: 2 }),
     road([[0, 0], [400, 0]], { oneway: true, lanes: 1, cls: 2 }),
   ]);
-  const s = makeSignals(g, { crosswalks: [crosswalk(0, 0, 0, 1, 6, [[0, 0]])], stopLines: new Float32Array() });
+  const s = makeIntersections(g, { crosswalks: [crosswalk(0, 0, 0, 1, 6, [[0, 0]])], stopLines: new Float32Array() });
   return { g, s };
 };
-/** 신호 c 무리 0 이 t 부터 secs 초 넘게 빨간불인 첫 시각 */
-const redFrom = (s: ReturnType<typeof makeSignals>, c: number, secs: number) => {
+/** 진입로 a 의 직진이 t 부터 secs 초 넘게 빨간불인 첫 시각 */
+const redFrom = (s: ReturnType<typeof makeIntersections>, a: number, secs: number) => {
   let t = 0;
-  while (t < 200 && !(s.state(c, 0, t) === RED && s.state(c, 0, t + secs) === RED)) t += 0.5;
+  while (t < 200 && !(s.S.state(a, 2, t) === RED && s.S.state(a, 2, t + secs) === RED)) t += 0.5;
   return t;
 };
 
 describe('신호 지키기', () => {
   it('정지선 바로 앞 조각이 짧아도 빨간불이면 그 앞 조각에서부터 늦춰 정지선 앞에 선다', () => {
     const { g, s } = midBlock();
-    const ap = s.approach.get(1)!;
+    const ap = s.S.approach.get(1)!;
     expect(ap).toBeDefined();
-    const t0 = redFrom(s, ap.c, 20);
+    const t0 = redFrom(s, 1, 20);
     expect(t0).toBeLessThan(200);
     const sim = makeCars(g, fixedProvider(1), 3, 4, [], s);
     sim.put(0, 250, 0); // 정지선까지 약 150m, 제 속도
@@ -40,8 +40,8 @@ describe('신호 지키기', () => {
 
   it('그릴 때 늘일 수 있는 길이(room)는 앞차·뒤차와의 가운데 거리와 정지선까지 거리를 넘지 않는다', () => {
     const { g, s } = midBlock();
-    const ap = s.approach.get(1)!;
-    const t0 = redFrom(s, ap.c, 24); // 길 중간 신호의 차 빨간불은 27초
+    const ap = s.S.approach.get(1)!;
+    const t0 = redFrom(s, 1, 24); // 길 중간 신호의 차 빨간불은 27초
     expect(t0).toBeLessThan(200);
     const sim = makeCars(g, fixedProvider(1), 3, 6, [], s);
     for (const at0 of [330, 300, 270]) sim.put(0, at0, 0);

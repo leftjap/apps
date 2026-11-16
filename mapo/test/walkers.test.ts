@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { makeSignals, RED } from '../src/sim/signals.ts';
+import { makeIntersections, RED } from '../src/sim/intersection/index.ts';
 import { makeWalkers, walkerTarget, zoneTargets, ZONE_IDS, ZONES, type Portal } from '../src/sim/walkers.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { at, crosswalk, fixedProvider, road, walkNet } from './helpers.ts';
@@ -359,7 +359,7 @@ describe('찻길과 신호', () => {
     // 동서로 놓인 4차로 큰길과, 그 길을 남북으로 가로지르는 보행로. 출구는 남쪽 끝
     const roads = [road([[-300, 0], [300, 0]], { cls: 1, lanes: 4 }), road([[0, -60], [0, 60]], { cls: 7, lanes: 1 })];
     const cars = buildCarGraph(roads);
-    const signals = makeSignals(cars);
+    const signals = makeIntersections(cars).S;
     const g = walkNet(roads);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 0, z: 55 }], fixedProvider(1, 0), 4, 40, undefined, signals);
     let deep = 0;
@@ -379,7 +379,7 @@ describe('찻길과 신호', () => {
       road([[0, -300], [0, 0]], { cls: 3, lanes: 4 }),
       road([[0, 0], [0, 300]], { cls: 3, lanes: 4 }),
     ];
-    const signals = makeSignals(buildCarGraph(roads));
+    const signals = makeIntersections(buildCarGraph(roads)).S;
     expect(signals.list.length).toBe(0);
     const g = walkNet(roads);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 40, z: 10 }, { kind: 'exit', key: 'x', x: 10, z: 40 }], fixedProvider(1, 0), 9, 80, undefined, signals);
@@ -415,12 +415,12 @@ describe('찻길과 신호', () => {
       road([[0, -300], [0, 0]], { cls: 2, lanes: 4 }),
       road([[0, 0], [0, 300]], { cls: 2, lanes: 4 }),
     ];
-    const signals = makeSignals(buildCarGraph(roads));
+    const signals = makeIntersections(buildCarGraph(roads)).S;
     const g = walkNet(roads);
-    // 동서 방향(무리 0)이 35초 넘게 빨간불인 시각(큰길 쪽이 초록을 더 받아 빨간불은 40초가 안 된다)
-    const grp = signals.groupOf(0, 0);
+    // 동서 방향 직진이 35초 넘게 빨간불인 시각
+    const ew = [...signals.approach.entries()].find(([, ap]) => ap.group === 0)![0];
     let t0 = 0;
-    while (t0 < 200 && !(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 35) === RED)) t0 += 1;
+    while (t0 < 200 && !(signals.state(ew, 2, t0) === RED && signals.state(ew, 2, t0 + 35) === RED)) t0 += 1;
     expect(t0).toBeLessThan(200);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -40, z: 9 }], fixedProvider(1, 0), 9, 40, undefined, signals);
     sim.burst('x', 30);
@@ -444,7 +444,7 @@ describe('찻길과 신호', () => {
     ];
     // 남쪽 보도를 잇는, 남북 찻길(|x| < 7.1)을 동서로 건너는 신호 횡단보도(폭 4m, z = 9.45)
     const xws = [crosswalk(0, 9.45, 1, 0, 7.1, [], true, 4)];
-    const signals = makeSignals(buildCarGraph(roads), { crosswalks: xws, stopLines: new Float32Array() });
+    const signals = makeIntersections(buildCarGraph(roads), { crosswalks: xws, stopLines: new Float32Array() }).S;
     const g = walkNet(roads, { crosswalks: xws });
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -60, z: 9 }, { kind: 'exit', key: 'y', x: 60, z: 9 }], fixedProvider(1, 0), 9, 80, undefined, signals);
     let standOnRoad = 0;

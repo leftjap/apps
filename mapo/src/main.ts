@@ -43,7 +43,7 @@ import { makeLiveSubway } from './data/subway.ts';
 import { loadStreetview, matchBuildings, treeKind, xz as llToXZ } from './data/streetview.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
-import { makeSignals, type SignalLamps } from './sim/signals.ts';
+import { makeIntersections, type SignalLamps } from './sim/intersection/index.ts';
 import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
 import { matchIncidents, spotXZ, type Incident } from './sim/incidents.ts';
 import { doorWanted, makeWalkers, underpasses, ZONES } from './sim/walkers.ts';
@@ -107,11 +107,11 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamp
 const start = clock.now();
 const walkGraph = decodeWalk(walkJson);
 const carGraph = buildCarGraph(board.roads, roadLanes, marks.arrows);
-// 신호는 보행 신호 횡단보도가 있는 교차로·길 중간 횡단보도에 두고, 정지선은 서울시 차선 자료의 정지선 자리를 쓴다
-const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines, lamps });
+// 교차로와 신호(src/sim/intersection/): 신호는 보행 신호 횡단보도가 있는 교차로·길 중간 횡단보도에 두고, 정지 자리는 서울시 차선 자료의 정지선을 쓴다
+const inter = makeIntersections(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines, lamps });
 // 횡단보도마다 지금 사람이 건너고 있는 자리(축 2m 칸 비트): 차는 자기 차로 앞에 사람이 있으면 서고, 사람은 신호 없는 횡단보도에서 차가 다가오면 기다린다
 const crossBusy = new Uint32Array(board.crosswalks.length);
-const cars = makeCars(carGraph, provider, 11, MAX_CARS, makeBusRoutes(board.buses, carGraph, undefined, board.crosswalks), signals, { list: board.crosswalks, busy: crossBusy });
+const cars = makeCars(carGraph, provider, 11, MAX_CARS, makeBusRoutes(board.buses, carGraph, undefined, board.crosswalks), inter, { list: board.crosswalks, busy: crossBusy });
 // 차는 보는 곳(카메라가 겨눈 자리 둘레) 위주로 실제 밀도에 가깝게 채우고, 화면 밖에서만 놓고 뺀다
 const onScreenP = new THREE.Vector3();
 const onScreen = (x: number, z: number) => {
@@ -155,7 +155,7 @@ const walkers = makeWalkers(
   5,
   MAX_PEOPLE,
   undefined,
-  signals,
+  inter.S,
   { busy: crossBusy, traffic: (l) => cars.approaching(l.xw) },
 );
 // 사람도 차와 같은 보는 곳을 먼저 실제 붐빔대로 채우고, 화면 밖에서만 놓고 뺀다
@@ -179,8 +179,8 @@ const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
-const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.crosswalkMarks, board.stopLines);
-const flow = makeFlow(carGraph, signals.junctions, surface.cut);
+const signalMarks = makeSignalMarks(carGraph, inter.S, board.crosswalks, board.crosswalkMarks, board.stopLines);
+const flow = makeFlow(carGraph, inter.X, surface.cut);
 flow.update(provider, start);
 // 로드뷰 기록 구역의 나무: 판 나무 뒤에 붙이고, 수종은 기록 값으로 정한다
 const svTreeRecs = streetview.flatMap((a) => a.props.flatMap((p) => (p.kind === 'tree' ? [p] : [])));
@@ -740,7 +740,7 @@ const tags = makeTags(
 );
 
 // 개발 중 화면 확인용 손잡이(배포본에는 들어가지 않는다)
-if (import.meta.env.DEV) Object.assign(window, { __dbg: { view, cats, states: () => catStates, cars, walkers, board, select, followTarget, clock, signals, trains: () => trainSpots } });
+if (import.meta.env.DEV) Object.assign(window, { __dbg: { view, cats, states: () => catStates, cars, walkers, board, select, followTarget, clock, inter, trains: () => trainSpots } });
 
 // ── 프레임 ──
 view.resize();

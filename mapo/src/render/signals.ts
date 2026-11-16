@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import type { Crosswalk } from '../data/board.ts';
 import { laneOff, leftEdge, rightEdge, type Edge } from '../sim/graph.ts';
-import { GREEN, LEFT, RED, STRAIGHT, YELLOW, type Approach, type Signals } from '../sim/signals.ts';
+import { GREEN, LEFT, RED, STRAIGHT, YELLOW, type Approach, type SignalPlan as Signals } from '../sim/intersection/index.ts';
 import { pointAt } from '../poly.ts';
 import { material } from './env.ts';
 import { sizeGlsl } from './size.ts';
@@ -66,9 +66,8 @@ export interface PedPole {
 
 /** 보행 신호 색: 그 횡단보도를 건너는 방향이 쓰는 무리가 초록이면 GREEN, 아니면 RED */
 export function pedState(signals: Signals, i: number, xw: Crosswalk, tod: number): number {
-  const c = signals.crossSite[i];
-  if (c < 0) return RED;
-  return signals.state(c, signals.groupOf(c, Math.atan2(xw.uz, xw.ux)), tod) === GREEN ? GREEN : RED;
+  void xw;
+  return signals.walkState(i, tod) === GREEN ? GREEN : RED;
 }
 
 /** 신호등 자리. stopLines 는 서울시 정지선 [x0, z0, x1, z1, ...] */

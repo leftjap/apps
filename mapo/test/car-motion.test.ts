@@ -1,10 +1,9 @@
-// 차가 그려지는 자리가 한 단계에 튀지 않는가(tools/measure-cars.ts 로 판에서 확인한 결함의 재현)
+// 차가 그려지는 자리가 한 단계에 튀지 않는가(판에서 확인한 결함의 재현)
 import { describe, expect, it } from 'vitest';
 import { makeBusRoutes } from '../src/sim/buses.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { makeJunctions } from '../src/sim/junctions.ts';
-import { makeSignals } from '../src/sim/signals.ts';
+import { buildIntersections, makeIntersections } from '../src/sim/intersection/index.ts';
 import { BODY_LEN, bodyType } from '../src/sim/bodies.ts';
 import { CAR_SHAPES } from '../src/render/cars.ts';
 import { at, crosswalk, fixedProvider, road } from './helpers.ts';
@@ -122,11 +121,11 @@ describe('교차로 꼬리 물기', () => {
       road([[11, -200], [11, 0]], { cls: 3, oneway: true }),
       road([[11, 200], [11, 0]], { cls: 3, oneway: true }),
     ]);
-    const jn = makeJunctions(g);
+    const jn = buildIntersections(g);
     const west = g.find((e) => e.p[0] === -300)!;
     const east = g.find((e) => e.p[0] === 11 && e.p[3] === 300)!;
     const mid = g.find((e) => e.p[0] === 0 && e.p[3] === 11)!;
-    expect(jn.groupOfEnd[west.id]).toBeGreaterThanOrEqual(0);
+    expect(jn.jEnd[west.id]).toBeGreaterThanOrEqual(0);
     const box = jn.rOut[mid.id];
     const sim = makeCars(g, fixedProvider(1), 4, 40);
     sim.setIncidents({ blocks: [], close: [], slow: [{ edge: east.id, at: 40, v: 0.05 }] });
@@ -156,7 +155,7 @@ describe('신호 교차로에서 기다리는 자리', () => {
       road([[0, -300], [0, 0]], { cls: 2 }),
       road([[0, 0], [0, 300]], { cls: 2 }),
     ]);
-    const signals = makeSignals(g, { crosswalks: [crosswalk(-15, 0, 0, 1, 8, [[-15, 0]])], stopLines: Float32Array.from([-22, 0.2, -22, 7]) });
+    const signals = makeIntersections(g, { crosswalks: [crosswalk(-15, 0, 0, 1, 8, [[-15, 0]])], stopLines: Float32Array.from([-22, 0.2, -22, 7]) });
     const west = g.find((e) => e.p[0] === -300)!;
     const outs = g.filter((e) => e.p[0] === 0 && e.p[2] === 0);
     const sim = makeCars(g, fixedProvider(1), 4, 60, [], signals);

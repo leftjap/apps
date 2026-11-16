@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { pointAt } from '../poly.ts';
 import type { Now } from '../sim/clock.ts';
 import { laneOff, type Edge } from '../sim/graph.ts';
-import type { Junctions } from '../sim/junctions.ts';
+import type { Intersections } from '../sim/intersection/index.ts';
 import type { DataProvider } from '../sim/provider.ts';
 import { material } from './env.ts';
 
@@ -18,9 +18,9 @@ export const FLOW_LEVELS = [
 ] as const;
 
 /** 구간 e 에서 교차로 상자 밖이고 찻길 띠가 그려진 부분: 점마다 [x,y,z, 구간 위 거리 s]. 없으면 빈 배열. cut 은 길 조각마다 띠 구간(src/data/surface.ts) */
-function outsideBoxes(e: Edge, jn: Junctions, cut?: ArrayLike<number>): number[] {
-  let s0 = jn.groupOfStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
-  let s1 = e.len - (jn.groupOfEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
+function outsideBoxes(e: Edge, jn: Intersections, cut?: ArrayLike<number>): number[] {
+  let s0 = jn.jStart[e.id] >= 0 ? jn.rOut[e.id] : 0;
+  let s1 = e.len - (jn.jEnd[e.id] >= 0 ? jn.rIn[e.id] : 0);
   if (cut) {
     // 띠 구간은 길 조각 기준 거리다. 구간은 조각의 그 방향에서 s0 부터 시작하고, 조각을 거슬러 가면 조각의 끝이 그 방향의 시작이다
     const [a, b] = [cut[e.road * 2], Math.min(e.full, cut[e.road * 2 + 1])];
@@ -37,7 +37,7 @@ function outsideBoxes(e: Edge, jn: Junctions, cut?: ArrayLike<number>): number[]
   return out;
 }
 
-export function makeFlow(edges: Edge[], jn: Junctions, cut?: ArrayLike<number>) {
+export function makeFlow(edges: Edge[], jn: Intersections, cut?: ArrayLike<number>) {
   const used = edges.filter((e) => e.cls <= 3);
   const pos: number[] = [];
   const side: number[] = [];

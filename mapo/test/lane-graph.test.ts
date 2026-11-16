@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DirLanes, RoadLanes } from '../src/data/lanes.ts';
 import { buildCarGraph, laneOff, lanePos } from '../src/sim/graph.ts';
-import { makeJunctions } from '../src/sim/junctions.ts';
+import { buildIntersections } from '../src/sim/intersection/index.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { at, fixedProvider, road } from './helpers.ts';
 
@@ -54,7 +54,7 @@ describe('서울시 선으로 읽은 차로로 차 그래프 만들기', () => {
   it('교차로 상자는 서울시 차선이 끝나는 자리와 시작하는 자리에서 시작한다', () => {
     // 동쪽 끝 노드에 갈림길을 붙여 교차로로 만든다
     const g2 = buildCarGraph([...roads, road([[200, 0], [200, 100]], { oneway: true, lanes: 1 })], lanes);
-    const jn = makeJunctions(g2);
+    const jn = buildIntersections(g2);
     const end = g2.find((e) => e.road === 0 && e.lanes === 3)!;
     expect(jn.rIn[end.id]).toBeCloseTo(10, 1); // 차로 끝(방향 s 190)에서 조각 끝(200)까지
   });
@@ -86,10 +86,15 @@ describe('노면 화살표로 교차로 차로 배정', () => {
   it('차로마다 그 차로에 놓인 화살표를 읽는다', () => {
     expect(Array.from(a.turns)).toEqual([1, 2, 2]);
   });
-  it('좌회전은 화살표가 있는 0번 차로가 나갈 길 차로를 안쪽부터 맡고(남는 차로까지), 직진은 1·2번 차로가 나란히 잇는다', () => {
-    expect(Array.from(a.lmap[a.next.indexOf(north.id)]).slice(0, 2)).toEqual([0, 2]);
-    const t = Array.from(a.lmap[a.next.indexOf(east.id)]);
-    expect(t.slice(2, 6)).toEqual([0, 1, 1, 3]); // 1번 → 나갈 길 0번, 2번 → 1~2번(비율대로, 엇갈리지 않게)
+  it('좌회전 차로 경로는 0번 차로에서 나갈 길 안쪽(0번) 차로로, 직진은 1·2번 차로가 나갈 길 차로에 비율대로 나란히 잇는다', () => {
+    const X = buildIntersections(g);
+    const ex = X.exits.get(a.id)!;
+    const k = (o: number) => ex.findIndex((x) => x.edges[x.edges.length - 1] === o);
+    expect(X.path(a.id, 0, k(north.id))!.lanes.at(-1)).toBe(0);
+    expect(X.path(a.id, 1, k(north.id))).toBeUndefined();
+    expect(X.path(a.id, 1, k(east.id))!.lanes.at(-1)).toBe(0);
+    expect(X.path(a.id, 2, k(east.id))!.lanes.at(-1)).toBe(2);
+    expect(X.path(a.id, 0, k(east.id))).toBeUndefined();
   });
   it('좌회전 차로의 차는 왼쪽으로만, 직진 차로의 차는 오른쪽으로 꺾지 않는다', () => {
     const sim = makeCars(g, fixedProvider(1), 5, 30);

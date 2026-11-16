@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { decodeBoard } from '../src/data/board.ts';
 import { decodeWalk } from '../src/sim/walknet.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { makeSignals } from '../src/sim/signals.ts';
+import { makeIntersections } from '../src/sim/intersection/index.ts';
 import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { arrivals } from '../src/sim/trains.ts';
@@ -76,7 +76,7 @@ for (const [name, dow, h, tx, tz, dist, tilt, turn] of CASES) {
   const acc = { have: 0, real: 0, n: 0, near: 0, verts: 0, kIn: 0, kOut: 0, samples: 0 };
   for (const seed of SEEDS) {
     const provider = makeSimProvider();
-    const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
+    const signals = makeIntersections(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines }).S;
     const sim = makeWalkers(graph, portals, provider, seed, 8000, undefined, signals, { busy: new Uint32Array(board.crosswalks.length), traffic: () => false });
     const cam = camera(tx, tz, dist, tilt, turn);
     // main.ts 의 보는 곳: 반지름 = 보는 거리 × 1.2, 250~2,200m

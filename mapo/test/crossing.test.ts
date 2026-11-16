@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildCarGraph } from '../src/sim/graph.ts';
-import { makeSignals, GREEN, RED } from '../src/sim/signals.ts';
+import { makeIntersections, GREEN, RED } from '../src/sim/intersection/index.ts';
 import { makeWalkers } from '../src/sim/walkers.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { makeBusRoutes } from '../src/sim/buses.ts';
@@ -126,7 +126,7 @@ describe('횡단보도로 큰길 건너기', () => {
     const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })];
     const cars = buildCarGraph(rs);
     const xws = [xw(true)];
-    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const signals = makeIntersections(cars, { crosswalks: xws, stopLines: new Float32Array() }).S;
     expect(signals.crossSite[0]).toBe(0);
     const g = walkNet(rs, { crosswalks: xws });
     const sim = makeWalkers(g, exits, fixedProvider(1, 0), 4, 60, undefined, signals);
@@ -137,12 +137,12 @@ describe('횡단보도로 큰길 건너기', () => {
       if (k % 200 === 0) sim.burst('s', 3), sim.burst('n', 3);
       sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
       tod += 0.1;
-      const walkGreen = signals.state(0, 1, tod) === GREEN;
+      const walkGreen = signals.walkState(0, tod) === GREEN;
       for (let i = 0; i < sim.w.n; i++)
         if (Math.abs(sim.w.z[i]) < 6.6 && Math.abs(sim.w.x[i]) < 3) {
           crossed++;
           // 차가 초록불인데 찻길 위에 있는 사람
-          if (!walkGreen && signals.state(0, 0, tod) === GREEN) onRed++;
+          if (!walkGreen && signals.state([...signals.approach.keys()][0], 2, tod) === GREEN) onRed++;
         }
     }
     expect(crossed).toBeGreaterThan(50);
@@ -156,13 +156,12 @@ describe('횡단보도로 큰길 건너기', () => {
     const cars = buildCarGraph(rs);
     const a = (45.1 * Math.PI) / 180;
     const xws = [crosswalk(0, 0, Math.cos(a), Math.sin(a), 10.6, [[0, 0]], true, 4)];
-    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const signals = makeIntersections(cars, { crosswalks: xws, stopLines: new Float32Array() }).S;
     const g = walkNet(rs, { crosswalks: xws });
     expect(g.links).toHaveLength(1);
     const l = g.links[0];
     l.bx += 0.15;
-    expect(signals.groupOf(0, Math.atan2(l.bz - l.az, l.bx - l.ax))).not.toBe(signals.groupOf(0, a));
-    const walk = signals.groupOf(0, a); // 보행 신호등(pedState)이 보는 무리
+    void l;
     const sim = makeWalkers(g, exits, fixedProvider(1, 0), 4, 120, undefined, signals);
     const inside = (x: number, z: number) => Math.abs(z) < 6.5 && Math.abs(x * Math.sin(a) - z * Math.cos(a)) < 2; // 연석 안쪽 0.6m 넘게 찻길
     const was = new Map<number, boolean>();
@@ -172,7 +171,7 @@ describe('횡단보도로 큰길 건너기', () => {
       if (k % 150 === 0) sim.burst('s', 3), sim.burst('n', 3);
       const tod = k * 0.1;
       sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
-      const red = signals.state(0, walk, tod) === RED;
+      const red = signals.walkState(0, tod) === RED;
       for (let i = 0; i < sim.w.n; i++) {
         const now = inside(sim.w.x[i], sim.w.z[i]);
         if (now && was.get(sim.w.id[i]) === false) {
@@ -191,20 +190,19 @@ describe('횡단보도로 큰길 건너기', () => {
     const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 8 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 8 })];
     const cars = buildCarGraph(rs);
     const xws = [crosswalk(0, 0, 0, 1, 16, [[0, 0]], true, 5)];
-    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const signals = makeIntersections(cars, { crosswalks: xws, stopLines: new Float32Array() }).S;
     const g = walkNet(rs, { crosswalks: xws });
     expect(g.links).toHaveLength(1);
     const half = curbAt(rs[0], 0, 1); // 찻길 반폭
     expect(half).toBeGreaterThan(12);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 's', x: -80, z: 22 }, { kind: 'exit', key: 'n', x: 80, z: -22 }], fixedProvider(1, 0), 4, 120, undefined, signals);
-    const walk = signals.groupOf(0, Math.PI / 2);
     let on = 0;
     let onRed = 0;
     for (let k = 0; k < 9000; k++) {
       if (k % 150 === 0) sim.burst('s', 3), sim.burst('n', 3);
       const tod = k * 0.1;
       sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
-      const red = signals.state(0, walk, tod) === RED;
+      const red = signals.walkState(0, tod) === RED;
       for (let i = 0; i < sim.w.n; i++)
         if (Math.abs(sim.w.z[i]) < half && Math.abs(sim.w.x[i]) < 3) {
           on++;
@@ -224,7 +222,7 @@ describe('횡단보도로 큰길 건너기', () => {
     ];
     const cars = buildCarGraph(rs);
     const xws = [crosswalk(5.5, 0, 0, 1, 7.1, [[0, 0]], true, 6)];
-    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const signals = makeIntersections(cars, { crosswalks: xws, stopLines: new Float32Array() }).S;
     const g = walkNet(rs, { crosswalks: xws });
     expect(g.links).toHaveLength(1);
     const side = curbAt(rs[2], 0, 1); // 옆길 찻길 반폭
@@ -255,7 +253,7 @@ describe('횡단보도로 큰길 건너기', () => {
     const rs = [road([[X0 - 300, Z0], [X0, Z0]], { cls: 2, lanes: 4 }), road([[X0, Z0], [X0 + 300, Z0]], { cls: 2, lanes: 4 })];
     const cars = buildCarGraph(rs);
     const xws = [crosswalk(X0, Z0, 0, 1, 7.1, [[X0, Z0]], true, 6)]; // 칠한 면은 연석까지
-    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const signals = makeIntersections(cars, { crosswalks: xws, stopLines: new Float32Array() }).S;
     const g = walkNet(rs, { crosswalks: xws });
     const sim = makeWalkers(g, exits.map((e) => ({ ...e, x: e.x + X0, z: e.z + Z0 })), fixedProvider(1, 0), 4, 160, undefined, signals);
     return { sim, signals };
@@ -366,7 +364,7 @@ describe('중앙버스정류장', () => {
     const rs = [road([[-300, 0], [0, 0]], { cls: 2, lanes: 4 }), road([[0, 0], [300, 0]], { cls: 2, lanes: 4 })];
     const cars = buildCarGraph(rs);
     const xws = [crosswalk(0, 0, 0, 1, 9, [[0, 0]], true, 5)];
-    const signals = makeSignals(cars, { crosswalks: xws, stopLines: new Float32Array() });
+    const signals = makeIntersections(cars, { crosswalks: xws, stopLines: new Float32Array() }).S;
     const g = walkNet(rs, { crosswalks: xws });
     const sim = makeWalkers(g, [{ kind: 'stop', key: 'm', x: 18, z: 0, median: true, yaw: 0 }], fixedProvider(1, 0), 6, 50, undefined, signals);
     return { sim, signals };
@@ -384,12 +382,12 @@ describe('중앙버스정류장', () => {
     for (let k = 0; k < 2400; k++) {
       sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
       tod += 0.1;
-      const walkGreen = signals.state(0, 1, tod) === GREEN;
+      const walkGreen = signals.walkState(0, tod) === GREEN;
       for (let i = 0; i < sim.w.n; i++) {
         const { x, z } = { x: sim.w.x[i], z: sim.w.z[i] };
         if (Math.abs(z) > 7.1 || onIsland(x, z)) continue;
         if (!onCrossing(x)) wrong++;
-        else if (!walkGreen && signals.state(0, 0, tod) === GREEN) onRed++;
+        else if (!walkGreen && signals.state([...signals.approach.keys()][0], 2, tod) === GREEN) onRed++;
       }
     }
     expect(wrong).toBe(0);

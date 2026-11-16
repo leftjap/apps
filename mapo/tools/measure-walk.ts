@@ -12,7 +12,7 @@ import { decodeBoard, GK } from '../src/data/board.ts';
 import { carriageSections, decodeSurface, isGroundRoad, roadJoints } from '../src/data/surface.ts';
 import { decodeWalk } from '../src/sim/walknet.ts';
 import { buildCarGraph, ISLAND_BACK, ISLAND_L, ISLAND_W } from '../src/sim/graph.ts';
-import { makeSignals, RED } from '../src/sim/signals.ts';
+import { makeIntersections, RED } from '../src/sim/intersection/index.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
@@ -136,9 +136,10 @@ function run(dow: number, tod: number, seed: number) {
   const provider = makeSimProvider();
   const start = { tod, dow, doy: 320 };
   const carGraph = buildCarGraph(board.roads);
-  const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
+  const inter = makeIntersections(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
+  const signals = inter.S;
   const crossBusy = new Uint32Array(board.crosswalks.length);
-  const cars = makeCars(carGraph, provider, 11, 5000, makeBusRoutes(board.buses, carGraph, undefined, board.crosswalks), signals, { list: board.crosswalks, busy: crossBusy });
+  const cars = makeCars(carGraph, provider, 11, 5000, makeBusRoutes(board.buses, carGraph, undefined, board.crosswalks), inter, { list: board.crosswalks, busy: crossBusy });
   cars.setFocus(0, 0, 2200, () => false);
   cars.fill(cars.target(start));
   cars.fillBuses(start);
@@ -247,8 +248,8 @@ function run(dow: number, tod: number, seed: number) {
         const site = xi >= 0 ? signals.crossSite[xi] : -1;
         if (site >= 0) {
           const c = board.crosswalks[xi];
-          const sg = (x - c.x) * c.ux + (z - c.z) * c.uz < 0 ? 1 : -1; // 들어선 쪽 반대 끝으로 건넌다
-          const red = signals.state(site, signals.groupOf(site, Math.atan2(c.uz * sg, c.ux * sg)), now.tod) === RED;
+          void c;
+          const red = signals.walkState(xi, now.tod) === RED;
           // 같은 횡단보도를 나온 지 5초 안에 다시 들어선 것(두 단 횡단보도의 섬, 칠한 면 가장자리를 따라 건넘)은 같은 건넘이다
           const back = left.get(id);
           const again = back !== undefined && back[0] === xi && now.tod - back[1] < 5;
@@ -285,7 +286,7 @@ function run(dow: number, tod: number, seed: number) {
         wasXw.set(id, xi);
         const f = bitsAt(B, x, z);
         const major = (f & MAJOR) !== 0 && !(f & XW) && !onIsland(x, z) && !tunnels.some(([tx, tz]) => Math.hypot(tx - x, tz - z) < 20);
-        if (major && wasMajor.get(id) === false && signals.siteNear(x, z, 30) < 0) majorEntry++;
+        if (major && wasMajor.get(id) === false && !signals.list.some((s) => Math.hypot(s.x - x, s.z - z) < 30)) majorEntry++;
         wasMajor.set(id, major);
       }
       for (const id of [...wasMajor.keys()]) if (!seen.has(id)) wasMajor.delete(id), wasXw.delete(id), redOn.delete(id), left.delete(id);

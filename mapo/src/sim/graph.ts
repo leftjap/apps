@@ -194,41 +194,6 @@ export interface Arrow {
 }
 /** 화살표 종류 → 갈 수 있는 쪽(1 좌회전, 2 직진, 4 우회전, 8 유턴. 유턴은 꺾는 쪽도 함께 준다). 금지 표시·양보·오르막은 넣지 않는다 */
 const ARROW_TURNS: Record<number, number> = { 5: 1, 6: 4, 7: 2, 8: 3, 9: 6, 10: 9, 11: 9, 13: 5, 14: 7, 15: 11, 20: 12 };
-/** 교차로에서 a 끝에서 b 시작으로 가는 쪽(1 좌, 2 직진, 4 우): a 에서 갈 수 있는 구간 가운데 75° 안으로 곧은 것 하나가 직진(같은 이름 길이 있으면 그 길,
- *  없으면 가장 곧은 것)이고, 나머지는 꺾는 쪽이다 */
-export const turnOf = (a: Edge, b: Edge) => {
-  const all = edgesOf(a);
-  let best = -1;
-  let bestKey = Infinity;
-  for (const k of a.next) {
-    const t = Math.abs(turnAngle(a, all[k]));
-    if (t >= (5 * Math.PI) / 12) continue;
-    const key = (a.name && all[k].name === a.name ? 0 : 10) + t;
-    if (key < bestKey) (bestKey = key), (best = k);
-  }
-  const t = turnAngle(a, b);
-  const side = t < 0 ? 1 : 4;
-  // 비스듬히(25° 넘게) 꺾여 이어지는 길: 어느 차로에도 직진 화살표가 없고 그쪽 화살표만 있으면 그쪽으로 꺾는 것이다
-  if (b.id === best) return Math.abs(t) > (25 * Math.PI) / 180 && a.turns.some((m) => (m & side) !== 0) && !a.turns.some((m) => (m & 2) !== 0) ? side : 2;
-  return side;
-};
-/** 구간 e 가 든 그래프의 구간 배열 */
-const owner = new WeakMap<Edge, Edge[]>();
-const edgesOf = (e: Edge) => owner.get(e)!;
-/** 구간 e 의 차로 l(−1 이면 아무 차로)에 유턴 화살표가 있는가. 유턴은 서울시 노면 유턴 표시가 있는 차로에서만 한다 */
-export const uTurnOk = (e: Edge, l: number) => (l < 0 ? e.turns.some((m) => (m & 8) !== 0) : (e.turns[Math.min(Math.max(0, l), e.lanes - 1)] & 8) !== 0);
-/** 차로 l 에서 next 구간 b 로 갈 수 있는가: 화살표가 있는 차로는 화살표대로. 화살표가 없는 차로는 직진은 어디서나, 좌회전은 맨 왼쪽 차로, 우회전은 맨 오른쪽 차로
- *  (가로변 버스전용차로가 있으면 그 왼쪽 차로)에서만 한다(도로교통법 제25조). 그쪽 화살표를 그은 차로가 따로 있으면 그 차로만 */
-export const turnAllowed = (a: Edge, b: Edge, l: number) => {
-  const k = Math.min(Math.max(0, l), a.lanes - 1);
-  const t = turnOf(a, b);
-  const m = a.turns[k];
-  if (m) return (m & t) !== 0;
-  if (t === 2 || a.lanes < 2) return true;
-  if (a.turns.some((x) => (x & t) !== 0)) return false;
-  return t === 1 ? k === 0 : k === a.lanes - 1 || (a.bus >= 0 && k === a.bus - 1);
-};
-
 export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] = []): Edge[] {
   const edges: Edge[] = [];
   roads.forEach((r, road) => {
@@ -287,7 +252,6 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] 
       });
     }
   });
-  for (const e of edges) owner.set(e, edges);
   const starts = new Map<number, number[]>();
   for (const e of edges) {
     const k = nodeKey(e.p[0], e.p[2]);
@@ -385,12 +349,13 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] 
           }
     }
   }
-  // 차로 잇기: 갈림 없는 이음매(들어온 구간의 다음이 하나, 다음 구간에 들어오는 구간이 하나)는 차로 자리로, 교차로는 화살표가 가리키는 차로에서 꺾는 쪽 차로끼리 나란히
+  // 차로 잇기: 갈림 없는 이음매(들어온 구간의 다음이 하나, 다음 구간에 들어오는 구간이 하나)는 차로 자리로, 교차로는 비율대로
+  // (교차로를 지나는 차는 src/sim/intersection/ 의 차로 경로가 나갈 차로를 정한다)
   for (const a of edges)
     a.lmap = a.next.map((k) => {
       const b = edges[k];
       if (a.next.length === 1 && prev[k].length === 1) return nearMap(a, b);
-      return turnMap(a, b);
+      return spreadMap(a.lanes, b.lanes);
     });
   return edges;
 }
@@ -483,48 +448,6 @@ function sinkTunnels(edges: Edge[], prev: number[][], roads: Road[]) {
     e.p = p;
     e.cum = cum;
   }
-}
-
-/** 교차로에서 a 끝에서 b 시작으로 꺾는 각(오른쪽 +, 라디안) */
-export function turnAngle(a: Edge, b: Edge): number {
-  let t = headingNear(b, 0) - headingNear(a, a.len);
-  while (t > Math.PI) t -= 2 * Math.PI;
-  while (t < -Math.PI) t += 2 * Math.PI;
-  return t;
-}
-
-/** 교차로 차로 잇기: 그쪽으로 갈 수 있는 차로(노면 화살표, 없으면 모든 차로)를 왼쪽으로 꺾으면 안쪽(왼쪽) 차로끼리, 오른쪽으로 꺾으면 바깥(오른쪽) 차로끼리 나란히 잇는다.
- *  곧게 가면 비율대로. 그쪽으로 갈 수 없는 차로는 가장 가까운 갈 수 있는 차로와 같은 곳으로 잇는다(서로 엇갈리지 않게) */
-function turnMap(a: Edge, b: Edge): Int8Array {
-  const t = turnAngle(a, b);
-  const ok = Array.from({ length: a.lanes }, (_, l) => l).filter((l) => turnAllowed(a, b, l));
-  const use = ok.length ? ok : Array.from({ length: a.lanes }, (_, l) => l);
-  const na = use.length;
-  const nb = b.lanes;
-  let sub: Int8Array;
-  if (Math.abs(t) < Math.PI / 6) sub = spreadMap(na, nb);
-  else {
-    sub = new Int8Array(na * 2);
-    for (let l = 0; l < na; l++) {
-      // 꺾는 쪽에서 센 차로 번호
-      const k = t < 0 ? l : na - 1 - l;
-      let lo = Math.min(k, nb - 1);
-      let hi = lo + 1;
-      // 들어온 차로가 적으면 꺾는 쪽에서 가장 먼 차로가 남은 차로를 맡는다
-      if (na < nb && k === na - 1) hi = nb;
-      if (t > 0) [lo, hi] = [nb - hi, nb - lo];
-      sub[l * 2] = lo;
-      sub[l * 2 + 1] = hi;
-    }
-  }
-  const out = new Int8Array(a.lanes * 2);
-  for (let l = 0; l < a.lanes; l++) {
-    let j = 0;
-    for (let q = 1; q < na; q++) if (Math.abs(use[q] - l) < Math.abs(use[j] - l)) j = q;
-    out[l * 2] = sub[j * 2];
-    out[l * 2 + 1] = sub[j * 2 + 1];
-  }
-  return out;
 }
 
 /** 멀리서 조금 키워 그린 차 몸통의 반폭(m): 가장 넓은 승용차·버스 × 1.15 */
