@@ -751,7 +751,8 @@ let hudAge = Infinity;
 let frames = 0;
 let fpsAt = last;
 function frame(t: number) {
-  const dt = Math.min(0.1, (t - last) / 1000);
+  // requestAnimationFrame 시각이 앞서 잰 시각보다 이를 수 있어(첫 프레임) 0 아래로 내려가지 않게 한다
+  const dt = Math.max(0, Math.min(0.1, (t - last) / 1000));
   last = t;
   time += dt;
   clock.tick(dt);

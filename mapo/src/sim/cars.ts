@@ -870,6 +870,8 @@ export function makeCars(
 
   function step(dt: number, now: Now, spawn = true) {
     dwells.length = 0;
+    // 0 이하 단계(화면 프레임 시각이 거꾸로 간 첫 프레임)는 건너뛴다. 음수 단계로 차가 구간 시작 뒤로 물러나 교차로 한가운데 포개졌다
+    if (!(dt > 0)) return;
     fresh.length = 0;
     speedAge += dt;
     if (speedAge > 1) {
