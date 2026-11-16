@@ -2,7 +2,8 @@
 // 구울 때 교차점마다 끊어 두었으므로 조각의 끝점끼리만 이어 주면 된다.
 import { type Road } from '../data/board.ts';
 import { BOARD_R } from '../geo.ts';
-import { cumLen, pointAt } from '../poly.ts';
+import { cumLen, headingAt, pointAt } from '../poly.ts';
+import { BODY_HW, BUS_HW } from './bodies.ts';
 
 /** 차선 자료가 없는 길의 차로 폭(m) */
 export const LANE = 3.3;
@@ -126,5 +127,76 @@ export function buildCarGraph(roads: Road[]): Edge[] {
     if (!fill.length) break;
     for (const e of fill) e.med = medOff(roadOf[e.id].gap);
   }
+  keepApart(edges, roadOf);
   return edges;
+}
+
+/** 멀리서 조금 키워 그린 차 몸통의 반폭(m): 가장 넓은 승용차·버스 × 1.15 */
+const CAR_HALF = Math.max(...BODY_HW) * 1.15;
+const BUS_HALF = Math.max(...BUS_HW) * 1.15;
+
+/**
+ * 마주 오는 두 한 방향 찻길: 자료(가운데선·차로 수·차로 폭)에서 두 찻길의 차로가 포개지거나 분리대가 좁아 중앙버스차로 버스가 건너편 찻길로 넘어가는 곳이 있다.
+ * 한 방향 찻길마다 왼쪽에 마주 오는 다른 길의 한 방향 찻길이 있으면, 두 찻길 왼쪽 가장자리 사이(분리대, 포개지면 음수)가 가장 좁은 곳을 재고
+ * 그 가운데보다 왼쪽으로 차 몸통이 넘어가지 않게 한다: 중앙버스차로는 버스를 일반 차로 쪽으로 붙이고, 그래도 모자라면
+ * 오른쪽 가장자리는 그대로 둔 채 왼쪽 가장자리를 옮겨 차로를 좁힌다(차로 폭 2.4m 까지, 더 모자라면 찻길을 오른쪽으로 옮긴다).
+ * 구간 양 끝 3m(교차로·이음매에서 두 찻길이 만나는 곳)와 높이가 2.5m 넘게 다른 찻길(고가도로 위아래)은 재지 않는다
+ */
+function keepApart(edges: Edge[], roadOf: Road[]) {
+  const one = edges.filter((e) => roadOf[e.id].oneway);
+  const C = 10;
+  const key = (x: number, z: number) => Math.floor(x / C) * 100003 + Math.floor(z / C);
+  const grid = new Map<number, number[]>(); // 칸마다 [구간, x, z, 방향, 높이] 5개씩
+  const P = [0, 0, 0];
+  for (const e of one)
+    for (let d = 0; d <= e.len; d += 2) {
+      const seg = pointAt(e.p, e.cum, d, P);
+      const k = key(P[0], P[2]);
+      (grid.get(k) ?? grid.set(k, []).get(k)!).push(e.id, P[0], P[2], headingAt(e.p, seg), P[1]);
+    }
+  const left = (e: Edge) => e.lw / 2 - e.off0; // 가운데선에서 왼쪽 가장자리까지
+  const gap = new Map<number, number>();
+  for (const e of one) {
+    let G = Infinity;
+    for (let d = 3; d <= e.len - 3; d += 4) {
+      const seg = pointAt(e.p, e.cum, d, P);
+      const h = headingAt(e.p, seg);
+      const hx = Math.cos(h);
+      const hz = Math.sin(h);
+      for (let gx = -2; gx <= 2; gx++)
+        for (let gz = -2; gz <= 2; gz++) {
+          const l = grid.get(key(P[0] + gx * C, P[2] + gz * C));
+          if (!l) continue;
+          for (let k = 0; k < l.length; k += 5) {
+            const o = edges[l[k]];
+            if (o.road === e.road || Math.cos(l[k + 3] - h) > -0.85 || Math.abs(l[k + 4] - P[1]) > 2.5) continue;
+            const dx = l[k + 1] - P[0];
+            const dz = l[k + 2] - P[2];
+            const lat = dx * hz - dz * hx; // 왼쪽이 +
+            if (Math.abs(dx * hx + dz * hz) > 1.5 || lat <= 0 || lat > 25) continue;
+            G = Math.min(G, lat - left(e) - left(o));
+          }
+        }
+    }
+    if (G < Infinity) gap.set(e.id, G);
+  }
+  for (const [id, G] of gap) {
+    const e = edges[id];
+    const le = left(e);
+    const room = G / 2 - 0.05; // 왼쪽 가장자리 밖으로 쓸 수 있는 거리(음수면 안쪽으로 비켜야 한다)
+    let need = 0;
+    if (e.med) {
+      const near = BUS_HALF + CAR_HALF - e.lw / 2 + 0.3; // 버스가 1차로 차 몸통과 닿지 않는 가장 가까운 자리(굽은 길에서 비스듬해지는 몫 0.3m)
+      const fit = room - BUS_HALF;
+      if (fit >= near) e.med = Math.min(e.med, fit);
+      else {
+        e.med = near;
+        need = near - fit;
+      }
+    } else need = Math.max(0, CAR_HALF - e.lw / 2 - room);
+    if (need <= 0) continue;
+    const right = e.off0 + (e.lanes - 0.5) * e.lw;
+    e.lw = Math.max(2.4, Math.min(e.lw, (right + le - need) / e.lanes));
+    e.off0 = -le + need + e.lw / 2;
+  }
 }

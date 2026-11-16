@@ -1,5 +1,6 @@
 // 그린 차 몸통끼리 겹치지 않는가(tools/measure-cars.ts 의 겹침 측정으로 판에서 찾은 까닭의 재현)
 import { describe, expect, it } from 'vitest';
+import { makeBusRoutes } from '../src/sim/buses.ts';
 import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { BODY_HW, bodyType } from '../src/sim/bodies.ts';
@@ -107,6 +108,46 @@ describe('포개진 두 길', () => {
         worst = Math.max(worst, overlaps(sim));
       }
     }
+    expect(worst).toBe(0);
+  });
+});
+
+describe('마주 오는 찻길', () => {
+  it('자료에서 마주 오는 두 한 방향 찻길의 차로가 포개져 있어도 마주 지나는 차끼리 겹치지 않는다', () => {
+    // 방향마다 2차로(폭 3.3m)인 두 한 방향 찻길의 가운데선이 5m 떨어져 있다(두 찻길 폭 합 6.6m 보다 좁다)
+    const g = buildCarGraph([
+      road([[-300, 0], [300, 0]], { oneway: true, lanes: 2, cls: 2 }),
+      road([[300, -5], [-300, -5]], { oneway: true, lanes: 2, cls: 2 }),
+    ]);
+    const east = g.find((e) => e.p[0] === -300)!;
+    const west = g.find((e) => e.p[0] === 300)!;
+    const sim = makeCars(g, fixedProvider(1), 4, 60);
+    let worst = 0;
+    for (let k = 0; k < 10 * 60; k++) {
+      if (k % 30 === 0) for (const l of [0, 1]) (sim.put(east.id, 5, l), sim.put(west.id, 5, l));
+      sim.step(0.1, at(14), false);
+      worst = Math.max(worst, overlaps(sim));
+    }
+    expect(sim.cars.n).toBeGreaterThan(30);
+    expect(worst).toBe(0);
+  });
+});
+
+describe('좁은 분리대의 중앙버스차로', () => {
+  it('분리대가 좁아도 마주 오는 중앙버스차로 버스끼리, 버스와 옆 차로 차가 겹치지 않는다', () => {
+    // 방향마다 2차로(폭 3.3m) 큰길, 두 찻길 사이 분리대는 3m(가운데선 사이 9.6m). 두 방향 모두 중앙버스차로
+    const med = { oneway: true, lanes: 2, cls: 1, medBus: true, gap: 3, measured: true };
+    const g = buildCarGraph([road([[-600, 0], [600, 0]], med), road([[600, -9.6], [-600, -9.6]], med)]);
+    expect(g.every((e) => e.med > 0)).toBe(true);
+    const runs = [1, 2].map((r) => ({ ref: `${r}`, kind: 0, to: '', segs: [r], stops: [], stopNames: [] }));
+    const sim = makeCars(g, fixedProvider(1), 4, 40, makeBusRoutes(runs, g, []));
+    let worst = 0;
+    for (let k = 0; k < 10 * 80; k++) {
+      if (k % 60 === 0) for (const r of [0, 1]) (sim.addBus(r, 2), sim.put(g[r].id, 5, 0));
+      sim.step(0.1, at(14), false);
+      worst = Math.max(worst, overlaps(sim));
+    }
+    expect(sim.cars.kind.subarray(0, sim.cars.n).filter((k) => k === 1).length).toBeGreaterThan(4);
     expect(worst).toBe(0);
   });
 });
