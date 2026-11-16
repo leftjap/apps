@@ -8,6 +8,7 @@ import type { Cars } from '../sim/cars.ts';
 import { material } from './env.ts';
 import { sizeGlsl } from './size.ts';
 import { BUS_KINDS } from '../sim/buses.ts';
+import { bodyType } from '../sim/bodies.ts';
 import { instanced, merge, part } from './util.ts';
 
 type Pt = [number, number];
@@ -112,7 +113,7 @@ interface Look {
 
 // 승용차 옆모습(x 앞, y 위, m). 세단은 쏘나타·K5, SUV 는 투싼·쏘렌토, 경차는 모닝·캐스퍼, 승합은 카니발 크기다.
 // body 는 바퀴 위 몸통(범퍼·보닛·트렁크 곡선), cabin 은 유리 캐빈(앞유리·지붕·뒷유리 곡선)이다
-const CAR_SHAPES = {
+export const CAR_SHAPES = {
   sedan: {
     body: [[-2.42, 0.3], [2.38, 0.3], [2.47, 0.42], [2.46, 0.6], [2.36, 0.72], [1.9, 0.8], [1.15, 0.9], [-1.62, 0.97], [-2.15, 0.96], [-2.38, 0.88], [-2.46, 0.7], [-2.45, 0.45]] as Pt[],
     cabin: [[-1.75, 0.92], [1.22, 0.88], [0.95, 1.02], [0.45, 1.34], [0.1, 1.43], [-0.75, 1.45], [-1.25, 1.36], [-1.75, 1.0]] as Pt[],
@@ -208,18 +209,6 @@ export const SHAPES = {
   coach: () => busShape(COACH, 3.5, false),
   minibus: () => busShape(MINI, 2.92, false),
 };
-
-/** 승용차 차종 비율 [세단, SUV, 경차, 승합(카니발·스타리아)]. 길 위의 차(등록 대수) 기준 어림값 */
-export const CAR_MIX = [0.4, 0.38, 0.1, 0.12];
-/** 차의 색 값(0~1 균등)과 섞이지 않게 다른 자리 수로 차종을 고른다 */
-export function bodyType(t: number): number {
-  let u = (t * 7919) % 1;
-  for (let k = 0; k < CAR_MIX.length - 1; k++) {
-    if (u < CAR_MIX[k]) return k;
-    u -= CAR_MIX[k];
-  }
-  return CAR_MIX.length - 1;
-}
 
 /** 승용차 색 [누적 비율 끝, 색]. 흰색(진주색 포함)·회색·검정이 4분의 3쯤이고 은색·파랑·빨강·기타가 나머지다 */
 const CAR_COLORS: [number, [number, number, number]][] = [

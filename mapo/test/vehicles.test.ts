@@ -1,7 +1,8 @@
 import type * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { cumLen } from '../src/poly.ts';
-import { bodyType, CAR_MIX, SHAPES } from '../src/render/cars.ts';
+import { SHAPES } from '../src/render/cars.ts';
+import { bodyType, CAR_MIX } from '../src/sim/bodies.ts';
 import { carPose, findPortals, trainCar } from '../src/render/rails.ts';
 
 // 동쪽으로 곧게 놓인 노선: 0~500m 는 높이 2m(지상), 500m 부터 6% 로 내려가 −14m 에서 평평해진다. 650m(높이 −7m)부터 터널 조각이다

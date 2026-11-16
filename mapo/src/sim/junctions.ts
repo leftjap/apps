@@ -101,11 +101,29 @@ export function makeJunctions(edges: Edge[]): Junctions {
         reach[kb] = Math.max(reach[kb], over + 1);
       }
   }
+  // 꺾이는 곳: 들어오는 구간에서 나가는 구간으로 θ 만큼 꺾이면, 가운데선에서 W 떨어진 차로의 두 직선은 노드에서 W·tan(θ/2) 떨어진 곳에서 만난다.
+  // 상자가 그보다 작으면 안쪽 차로의 곡선 두 끝이 서로 엇갈려 곡선이 뒤로 돌므로, 상자를 그 거리 + 1.5m 로 늘린다
+  const laneW = (e: Edge) => Math.max(Math.abs(laneOffset(e, 0)), Math.abs(laneOffset(e, e.lanes - 1)));
+  // 교차로 노드는 정지선이 상자 안으로 들어오지 않게 그대로 두고, 갈림 없는 이음매만 늘린다
+  for (const a of edges)
+    for (const k of a.next) {
+      if (!pass(endNode[a.id])) continue;
+      const b = edges[k];
+      let t = Math.abs(headingNear(b, 0) - headingNear(a, a.len));
+      if (t > Math.PI) t = 2 * Math.PI - t;
+      const need = Math.min(30, Math.max(laneW(a), laneW(b)) * Math.tan(Math.min(t, 2.6) / 2) + 1.5);
+      reach[a.id * 2] = Math.max(reach[a.id * 2], need);
+      reach[b.id * 2 + 1] = Math.max(reach[b.id * 2 + 1], need);
+    }
+  // 구간 하나의 두 끝 상자가 구간 길이(1m 남김)를 넘으면 바라는 크기에 비례해 나눈다(한쪽이 작으면 다른 쪽이 더 쓴다)
   const rIn = new Float32Array(edges.length);
   const rOut = new Float32Array(edges.length);
   for (const e of edges) {
-    rIn[e.id] = Math.min(Math.max(r[endNode[e.id]], reach[e.id * 2]), e.len * 0.45);
-    rOut[e.id] = Math.min(Math.max(r[startNode[e.id]], reach[e.id * 2 + 1]), e.len * 0.45);
+    const wi = Math.max(r[endNode[e.id]], reach[e.id * 2]);
+    const wo = Math.max(r[startNode[e.id]], reach[e.id * 2 + 1]);
+    const k = Math.min(1, (e.len - 1) / (wi + wo));
+    rIn[e.id] = Math.max(0, wi * k);
+    rOut[e.id] = Math.max(0, wo * k);
   }
 
   // 교차로 묶기: 갈림이 있는 노드(들어오는 구간이나 나가는 구간이 둘 이상)끼리 상자가 2m 안으로 붙으면 하나로
@@ -152,13 +170,29 @@ export function makeJunctions(edges: Edge[]): Junctions {
         }
     if (best >= 0) groupOfNode[n] = groupOfNode[best];
   }
+  // 두 교차로를 잇는 구간의 곧은 부분(상자 사이)에 승용차 한 대(5.2m + 간격 2.5m)도 설 수 없으면, 뒤 교차로를 기다리는 차가 앞 교차로 상자 안에 서므로 하나로 묶는다
+  const gp = Array.from({ length: groupIx.size }, (_, i) => i);
+  const gfind = (i: number): number => (gp[i] === i ? i : (gp[i] = gfind(gp[i])));
+  for (const e of edges) {
+    const a = groupOfNode[startNode[e.id]];
+    const b = groupOfNode[endNode[e.id]];
+    if (a >= 0 && b >= 0 && a !== b && e.len - rIn[e.id] - rOut[e.id] < 7.7) gp[gfind(a)] = gfind(b);
+  }
+  const pre = Int32Array.from(groupOfNode); // 묶기 전 교차로(상자 늘리기는 이 묶음으로 한다)
+  const renum = new Map<number, number>();
+  for (let n = 0; n < N; n++) {
+    if (groupOfNode[n] < 0) continue;
+    const root = gfind(groupOfNode[n]);
+    if (!renum.has(root)) renum.set(root, renum.size);
+    groupOfNode[n] = renum.get(root)!;
+  }
   const groupOfEnd = Int32Array.from(endNode, (n) => groupOfNode[n]);
   const groupOfStart = Int32Array.from(startNode, (n) => groupOfNode[n]);
   // 노드 여러 개로 묶인 교차로: 진입 구간에서 기다리는 자리와 빠져나간 뒤 자리가 이웃 노드의 길과 겹치지 않을 때까지 상자를 늘린다
   const members = new Map<number, { e: Edge; end: number }[]>();
   for (const e of edges) {
-    const gs = groupOfStart[e.id];
-    const ge = groupOfEnd[e.id];
+    const gs = pre[startNode[e.id]];
+    const ge = pre[endNode[e.id]];
     if (ge >= 0) (members.get(ge) ?? members.set(ge, []).get(ge)!).push({ e, end: 1 });
     if (gs >= 0 && gs !== ge) (members.get(gs) ?? members.set(gs, []).get(gs)!).push({ e, end: 0 });
   }
@@ -166,7 +200,7 @@ export function makeJunctions(edges: Edge[]): Junctions {
     if (new Set(list.map((m) => (m.end ? endNode[m.e.id] : startNode[m.e.id]))).size < 2) continue;
     for (const m of list) {
       const e = m.e;
-      if (groupOfStart[e.id] === groupOfEnd[e.id]) continue; // 교차로 안 구간
+      if (pre[startNode[e.id]] === pre[endNode[e.id]]) continue; // 교차로 안 구간
       for (let d = Math.ceil(m.end ? rIn[e.id] : rOut[e.id]); d <= 30 && d < e.len * 0.45; d++) {
         pointAt(e.p, e.cum, m.end ? e.len - d : d, P0);
         let hit = false;
@@ -296,5 +330,5 @@ export function makeJunctions(edges: Edge[]): Junctions {
     return c;
   }
 
-  return { groupOfEnd, groupOfStart, rIn, rOut, count: groupIx.size, pathId, conflict, curve };
+  return { groupOfEnd, groupOfStart, rIn, rOut, count: renum.size, pathId, conflict, curve };
 }

@@ -4,6 +4,7 @@
 // 버스는 노선의 구간 열을 따라 맨 오른쪽 차로로 달리고, 정류장마다 잠시 선다. 중앙버스차로가 있는 구간에서는 그 차로로 달리고(마을버스 빼고)
 // 중앙 정류장 가까이에서는 승강장 폭만큼 더 왼쪽으로 비켜 서서 오른쪽 문이 승강장에 닿는다. 일반 차는 중앙버스차로를 쓰지 않는다.
 import { headingAt, pointAt } from '../poly.ts';
+import { BODY_LEN, bodyType } from './bodies.ts';
 import { busHeadway, type BusRoute } from './buses.ts';
 import { GREEN, YELLOW, type Signals } from './signals.ts';
 import type { Now } from './clock.ts';
@@ -109,6 +110,9 @@ export function makeCars(
   const waitT = new Float32Array(max); // 교차로 앞에서 기다린 시간(초)
   const boxed = new Uint8Array(max); // 교차로 상자 안 곡선 위에 있는가
   const stopT = new Float32Array(max); // 멈춰 선 지 몇 초
+  // 측정용: 이번 단계에 따라간 앞 대상(차 번호, 자기 자신이면 정지선·상자 앞 같은 서는 자리, 없으면 −1)과 그 까닭(AHEAD 번호)
+  const ahead = new Int32Array(max).fill(-1);
+  const aheadWhy = new Uint8Array(max);
   const held: number[][] = Array.from({ length: jn.count }, () => []);
   const coming: number[][] = Array.from({ length: jn.count }, () => []);
 
@@ -263,8 +267,8 @@ export function makeCars(
     cars.route[i] = route;
     cars.uid[i] = nextUid++;
     cars.kind[i] = route >= 0 ? 1 : rand() < 0.09 ? 2 : 0;
-    size[i] = route >= 0 ? BUS_LEN[routes[route].kind] ?? 11.5 : 4.6;
     cars.tint[i] = route >= 0 ? routes[route].kind : rand();
+    size[i] = route >= 0 ? BUS_LEN[routes[route].kind] ?? 11.5 : BODY_LEN[cars.kind[i] === 2 ? 0 : bodyType(cars.tint[i])];
     cars.brake[i] = 0;
     cars.fade[i] = 0;
     cars.room[i] = 99;
@@ -307,6 +311,10 @@ export function makeCars(
     cars.route[i] = cars.route[j];
     cars.uid[i] = cars.uid[j];
     cars.room[i] = cars.room[j];
+    cars.x[i] = cars.x[j];
+    cars.y[i] = cars.y[j];
+    cars.z[i] = cars.z[j];
+    cars.yaw[i] = cars.yaw[j];
     edge[i] = edge[j];
     nextE[i] = nextE[j];
     s[i] = s[j];
@@ -347,22 +355,27 @@ export function makeCars(
     const e = edges[edge[i]];
     // 교차로 상자 안에서는 들어온 차로와 나갈 차로를 잇는 곡선을 따라간다
     let inBox = false;
+    let med = false; // 곡선 한쪽 끝이 중앙버스차로
     boxed[i] = 0;
     if (nextE[i] >= 0 && s[i] > e.len - jn.rIn[e.id]) {
       const o = edges[nextE[i]];
-      jn.curve(e, o, lane[i], outLane(i, o), s[i] - (e.len - jn.rIn[e.id]), cv);
+      const lo = outLane(i, o);
+      jn.curve(e, o, lane[i], lo, s[i] - (e.len - jn.rIn[e.id]), cv);
+      med = lane[i] === MED || lo === MED;
       inBox = true;
       boxed[i] = jn.groupOfEnd[e.id] >= 0 ? 1 : 0;
     } else if (prevE[i] >= 0 && s[i] < jn.rOut[e.id]) {
       const a = edges[prevE[i]];
       jn.curve(a, e, prevLane[i], lane[i], jn.rIn[a.id] + s[i], cv);
+      med = prevLane[i] === MED || lane[i] === MED;
       inBox = true;
       boxed[i] = jn.groupOfStart[e.id] >= 0 ? 1 : 0;
     }
     if (inBox) {
-      cars.x[i] = cv[0];
+      const w = med && cars.route[i] >= 0 ? islandShift(i, e) : 0;
+      cars.x[i] = cv[0] + Math.sin(cv[3]) * w;
       cars.y[i] = cv[1];
-      cars.z[i] = cv[2];
+      cars.z[i] = cv[2] - Math.cos(cv[3]) * w;
       cars.yaw[i] = cv[3];
       return;
     }
@@ -706,7 +719,8 @@ export function makeCars(
         claimT[i] += dt;
         // 교차로로 들어가는 중이거나 안에 있거나, 빠져나간 구간에서 뒤꽁무니가 아직 상자 안이면 잡고 있는다
         const keep = jn.groupOfEnd[e.id] === claim[i] || (edge[i] === claimExit[i] && rear < jn.rOut[e.id]);
-        if (keep && claimT[i] < 30) {
+        // 30초 넘게 못 들어간 차는 잡은 교차로를 놓는다. 상자 안에 들어선 차는 빠져나갈 때까지 놓지 않는다(놓으면 부딪는 경로의 차가 들어와 겹친다)
+        if (keep && (claimT[i] < 30 || boxed[i])) {
           if (prevClaim[i] !== claim[i]) held[claim[i]].push(i);
         } else claim[i] = -1;
       }
@@ -728,12 +742,14 @@ export function makeCars(
       let front = acc[i];
       let gap = Infinity;
       let dv = 0;
+      let why = front >= 0 ? 1 : 0;
       if (front >= 0) gap = s[front] - s[i];
       else if (nextE[i] >= 0) {
         // 같은 차로에서 다른 쪽으로 막 갈라져 나간 앞차: 꽁무니가 상자를 벗어날 때까지 따라간다
         const lt = leaveTail[e.id * 8 + lane[i]];
         if (lt >= 0 && edge[lt] !== nextE[i]) {
           front = lt;
+          why = 2;
           gap = e.len - s[i] + s[lt];
         }
         // 다음 구간들에서 같은 차로의 맨 뒤 차를 찾는다. 짧은 구간 너머에 선 차도 제동 거리 안에서 미리 본다
@@ -746,6 +762,7 @@ export function makeCars(
           if (t >= 0) {
             if (d + s[t] < gap) {
               front = t;
+              why = 2;
               gap = d + s[t];
             }
             break;
@@ -778,6 +795,7 @@ export function makeCars(
             gap = g2;
             dv = v[i] - v[best];
             front = best;
+            why = 3;
             merging = best;
           }
         }
@@ -818,6 +836,7 @@ export function makeCars(
                 gap = g2;
                 dv = v[i] - v[j] * cosd;
                 front = j;
+                why = 4;
               }
             }
       }
@@ -835,6 +854,7 @@ export function makeCars(
             gap = toLine + 2;
             dv = v[i];
             front = i;
+            why = 5;
           }
         }
       }
@@ -848,6 +868,7 @@ export function makeCars(
           gap = toLine + 2;
           dv = v[i];
           front = i;
+          why = 6;
         }
       }
       // 횡단보도: 사람이 건너고 있으면 그 앞(횡단보도 반 폭 + 1.2m)에 선다. 이 구간과 다음 구간을 본다
@@ -867,6 +888,7 @@ export function makeCars(
               gap = toLine + 2;
               dv = v[i];
               front = i;
+              why = 7;
               if (k === 0) red = true; // 이 구간 끝 교차로는 잡지 않는다
             }
           }
@@ -905,6 +927,7 @@ export function makeCars(
               gap = toBox + 1.7;
               dv = v[i];
               front = i;
+              why = 8;
             }
           }
         }
@@ -914,6 +937,7 @@ export function makeCars(
         gap = slowAt[e.id] - 25 - s[i] + 2;
         dv = v[i] - slowV[e.id];
         front = i;
+        why = 9;
       }
       if (r >= 0 && stopK[i] < routes[r].stops.length) {
         // 다음 정류장을 멈춰 선 앞차처럼 다룬다. 앞에 2m를 두고 서므로 2m를 더해 정류장 바로 위에 서게 한다
@@ -928,6 +952,7 @@ export function makeCars(
           gap = toStop + 2;
           dv = v[i];
           front = i;
+          why = 10;
         }
       }
       // 돌발로 서행하는 자리(앞뒤 25m)에서는 서행 속도를 넘지 않는다
@@ -950,6 +975,8 @@ export function makeCars(
         cars.room[front] = Math.min(cars.room[front], dc);
       } else if (front === i) cars.room[i] = Math.min(cars.room[i], 2 * Math.max(0, gap - 2 + size[i] / 2));
       if (front >= 0 && front === merging) a = Math.max(a, -1.2 * B_COMF);
+      ahead[i] = front;
+      aheadWhy[i] = front >= 0 ? why : 0;
       a = Math.max(-8, Math.min(A_MAX, a));
       const slow = v[i] < 0.3 * VFREE[e.cls] * vf[i];
       cars.brake[i] += ((a < -0.5 || slow ? 1 : 0) - cars.brake[i]) * Math.min(1, dt * 6);
@@ -1035,7 +1062,7 @@ export function makeCars(
       if (cars.n >= max) return;
       put(cars.n, edges[edgeId], at, lane);
       cars.kind[cars.n] = 0;
-      size[cars.n] = 4.6;
+      size[cars.n] = BODY_LEN[bodyType(cars.tint[cars.n])];
       locate(cars.n++);
     },
     target,
@@ -1074,6 +1101,9 @@ export function makeCars(
     speedOf: (i: number) => v[i],
     /** i번 버스가 다음에 설 정류장 이름 */
     nextStop: (i: number) => (cars.route[i] >= 0 ? routes[cars.route[i]].stopNames[stopK[i]] ?? '' : ''),
+    /** 측정용 읽기 전용 값: 구간·구간 위 거리·속도·차로·다음 구간·상자 안·시뮬레이션 길이, 따라간 앞 대상과 까닭
+     *  (1 같은 차로 앞차, 2 다음 구간 앞차, 3 차로 합침, 4 다른 구간 차, 5 신호, 6 다음 구간 신호, 7 횡단보도 사람, 8 교차로 진입 대기, 9 돌발 서행, 10 정류장) */
+    debug: () => ({ edge, s, v, lane, nextE, boxed, size, ahead, aheadWhy, junctions: jn }),
     meanSpeed: () => (cars.n ? v.subarray(0, cars.n).reduce((a, b) => a + b, 0) / cars.n : 0),
   };
 }
