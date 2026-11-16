@@ -177,6 +177,13 @@ export function makeCars(
   const slowV = new Float32Array(edges.length);
   /** 구간 e 에서 차로 ln 이 막혀 있으면 옆 차로(바깥쪽이 있으면 바깥쪽)로 */
   const free = (e: Edge, ln: number) => (ln !== blockLane[e.id] || e.lanes < 2 ? ln : ln + 1 < e.lanes ? ln + 1 : ln - 1);
+  /** 일반 차가 쓸 수 있는 차로 수: 가로변 버스전용차로(맨 오른쪽)는 뺀다 */
+  const carLanes = (e: Edge) => (e.bus >= 0 ? e.bus : e.lanes);
+  /** 일반 차가 차로 위 자리 x(차로 번호 + 차로 안 자리)에서 달릴 차로 */
+  const carLane = (e: Edge, x: number) => {
+    const ln = free(e, Math.min(carLanes(e) - 1, Math.max(0, Math.floor(x))));
+    return ln === e.bus ? ln - 1 : ln;
+  };
   function avoid(k: number): number {
     if (closed[k]) return 1e-4;
     const e = edges[k];
@@ -380,7 +387,7 @@ export function makeCars(
   // 차로 위 자리 x = 차로 번호 + 그 차로 안 자리(0~1). 지금 구간에서는 pref × 차로 수이고, 다음 구간으로 넘어갈 때 graph.ts lanePos 의 차로 잇기 표로 옮긴다
   /** 차 i 가 구간 o 의 차로 위 자리 x 에서 달릴 차로(버스는 맨 오른쪽, 중앙버스차로 노선이면 중앙버스차로) */
   const laneAt = (i: number, o: Edge, x: number) =>
-    cars.route[i] >= 0 ? (o.med && routes[cars.route[i]].usesMed ? MED : free(o, o.lanes - 1)) : free(o, Math.min(o.lanes - 1, Math.max(0, Math.floor(x))));
+    cars.route[i] >= 0 ? (o.med && routes[cars.route[i]].usesMed ? MED : o.bus >= 0 ? o.bus : free(o, o.lanes - 1)) : carLane(o, x);
   /** 차 i 가 지금 구간 다음의 구간 o 에서 달릴 차로 위 자리와 차로 */
   const nextPosOf = (i: number, o: Edge) => lanePos(edges[edge[i]], o, pref[i] * edges[edge[i]].lanes);
   const outLane = (i: number, o: Edge) => laneAt(i, o, nextPosOf(i, o));
@@ -547,7 +554,7 @@ export function makeCars(
     const hi = e.len - jn.rIn[id] - 3;
     if (hi <= lo) return false;
     const at = lo + rand() * (hi - lo);
-    const ln = free(e, Math.floor(rand() * e.lanes));
+    const ln = carLane(e, rand() * carLanes(e));
     const seg = pointAt(e.p, e.cum, at, tmp);
     const yaw = headingAt(e.p, seg);
     const off = laneOff(e, ln, at);
@@ -620,8 +627,8 @@ export function makeCars(
       while (p + 4 < piece.length && piece[p + 3] < x) p += 4;
       const e = edges[piece[p]];
       const w = piece[p + 3] - (p ? piece[p - 1] : 0);
-      const u = ((x - (piece[p + 3] - w)) / w) * piece[p + 2] * e.lanes;
-      const ln = free(e, Math.min(e.lanes - 1, Math.floor(u / piece[p + 2])));
+      const u = ((x - (piece[p + 3] - w)) / w) * piece[p + 2] * carLanes(e);
+      const ln = carLane(e, u / piece[p + 2]);
       const i = cars.n;
       put(i, e, Math.min(e.len - 0.1, piece[p + 1] + u - ln * piece[p + 2]), ln);
       locate(i);
@@ -858,9 +865,13 @@ export function makeCars(
         gap = Math.min(gap, Math.hypot(cars.x[front] - cars.x[i], cars.z[front] - cars.z[i]) - (size[front] + size[i]) / 2);
       }
       // 교차로가 아닌 곳에서 차로 수가 바뀌면, 구간 끝 40m(빠르면 3.5초 거리) 안에서 다음 구간의 한 차로로 모일 차들을 한 줄로 보고 바로 앞 차를 따라간다(앞선 차가 먼저).
+      // 교차로에서도, 정지 자리가 상자 안(차선이 교차로 한참 앞에서 끝나 곡선 위)인 진입로는 신호를 기다리는 동안 한 차로로 모이는 두 곡선 위 차가 겹치므로
+      // 상자 안과 그 바로 앞에서 같은 줄로 본다(모든 교차로에 적용하면 판 전체 속도가 9% 떨어졌다).
       // 옆 차로 차에게 자리를 내주는 것이라 편안한 감속까지만 늦춘다(아래 merging)
       let merging = -1;
-      if (cars.route[i] < 0 && nextE[i] >= 0 && jn.groupOfEnd[e.id] < 0 && e.len - s[i] < Math.max(40, v[i] * 3.5) && edges[nextE[i]].lanes !== e.lanes) {
+      const sb = jn.groupOfEnd[e.id] < 0 ? -1 : stopBack(e, lane[i]);
+      const mergeZone = jn.groupOfEnd[e.id] < 0 ? Math.max(40, v[i] * 3.5) : sb >= 0 && sb < jn.rIn[e.id] - 0.5 ? jn.rIn[e.id] + size[i] : -1;
+      if (cars.route[i] < 0 && nextE[i] >= 0 && e.len - s[i] < mergeZone && (jn.groupOfEnd[e.id] >= 0 || edges[nextE[i]].lanes !== e.lanes)) {
         const ne = edges[nextE[i]];
         const tl = outLane(i, ne);
         let best = -1;
@@ -899,6 +910,8 @@ export function makeCars(
           for (let gz = z0; gz <= z1; gz++)
             for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
               if (j === i || j === front || edge[j] === edge[i] || Math.abs(cars.y[j] - cars.y[i]) > 2.5) continue;
+              // 길을 따라 내 뒤를 따라오는 차(그 차의 앞차가 나)는 이음매 곡선에서 비스듬히 앞에 보여도 앞차가 아니다(서로 앞차로 보고 둘 다 서 버린다)
+              if (ahead[j] === i && aheadWhy[j] >= 1 && aheadWhy[j] <= 3) continue;
               const dx = cars.x[j] - cars.x[i];
               const dz = cars.z[j] - cars.z[i];
               const along = dx * hx + dz * hz;
@@ -1155,7 +1168,7 @@ export function makeCars(
       for (let k = 0; k < 6 && cars.n - nBus < want && cars.n < max; k++) {
         const e = entries[pick(entryW, rand())];
         if (closed[e.id]) continue;
-        const ln = free(e, Math.floor(rand() * e.lanes));
+        const ln = carLane(e, rand() * carLanes(e));
         const t = tail[e.id * 8 + ln];
         if (t >= 0 && s[t] < 16) continue;
         put(cars.n, e, 0.5, ln);

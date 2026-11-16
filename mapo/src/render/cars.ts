@@ -435,6 +435,7 @@ export function makeCarMeshes(max: number) {
     const n = kinds.map(() => 0);
     for (const kd of kinds) kd.pick.value = -1;
     for (let i = 0; i < c.n; i++) {
+      if (c.y[i] < -2) continue; // 찻길 터널 안(땅 밑)의 차는 그리지 않는다(sim/graph.ts sinkTunnels)
       const k = c.kind[i] === 1 ? (c.tint[i] === 3 ? 7 : c.tint[i] === 2 ? 6 : 5) : c.kind[i] === 2 ? 4 : bodyType(c.tint[i]);
       const kd = kinds[k];
       if (n[k] >= kd.max) continue;

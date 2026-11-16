@@ -21,6 +21,8 @@ import { decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts'
 import { roadCorners } from '../src/data/corners.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { bakeLanes } from './lib/carlanes.ts';
+import { roadLevels } from './lib/levels.ts';
+import { carSurface, pushTreesOffRoad } from './lib/treeplace.ts';
 
 type Tags = Record<string, string>;
 interface LL {
@@ -1804,6 +1806,11 @@ let walkJson = '';
   // 보도 면 등 다각형(W2 가 걷는 자리를 만든다. 앱은 읽지 않는다): dm
   const dmR = (r: number[]) => r.map((v) => Math.round(v * 10));
   surfacePolysJson = JSON.stringify({ v: 1, car: polys.car.map(([i, r]) => [i, ...dmR(r)]), med: polys.med.map(dmR), isl: polys.isl.map(dmR), walk: polys.walk.map(dmR), draw: polys.draw.map(dmR) });
+  // 찻길 면 위에 찍힌 가로수를 보도로 옮긴다(tools/lib/treeplace.ts, tools/treeplace.ts 와 같은 함수)
+  {
+    const tp = pushTreesOffRoad(trees, carSurface(polys.car.map(([, c]) => c), sf.faces));
+    console.log(`찻길 위 나무 ${tp.moved}그루 보도로 옮김, 못 옮김 ${tp.left}그루`);
+  }
   console.log(`보도 면 고리 ${polys.walk.length}개(구멍 ${polys.walk.filter((r) => loopArea(r) < 0).length}), 넓이 ${(polys.walk.reduce((a, r) => a + loopArea(r), 0) / 1e4).toFixed(1)}ha, 찻길 띠 ${polys.car.length}개, 분리대 ${polys.med.length}개`);
   surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn, dr });
   // 걷는 길 그래프(src/sim/walknet.ts): 보도 면 뼈대 선·보도 없는 골목·도로 부지 밖 보행로와 횡단보도 연결
@@ -1907,6 +1914,11 @@ let marksJson = '';
   const by = new Map<number, number>();
   for (const l of lines) by.set(Math.floor(l[0] / 10), (by.get(Math.floor(l[0] / 10)) ?? 0) + 1);
   console.log(`노면 표시: 선 ${lines.length}줄(정지선 ${by.get(4) ?? 0}, 차선 ${by.get(6) ?? 0}, 중앙선 ${by.get(1) ?? 0}, 진로변경제한선 ${by.get(8) ?? 0}, 유도선 ${by.get(12) ?? 0}, 자전거횡단 ${by.get(13) ?? 0}), 교량 위 ${high.length}줄(땅 표시인데 교량 위라 올린 것 ${lifted}, 교량을 못 찾거나 물 위라 뺀 것 ${skipped}), 안전지대 ${zones.length}개(황색 ${zones.filter((z) => z[0]).length}), 화살표 ${arrows.length / 4}개`);
+}
+// 높이 다른 찻길: 찻길 터널 조각 표시, 다른 찻길을 노드 없이 넘는 다리 올리기(tools/lib/levels.ts, tools/levels.ts 와 같은 함수)
+{
+  const lv = roadLevels(out.r, raw('highways'));
+  console.log(`찻길 터널 조각 ${lv.tunnels}, 올린 다리 넘는 자리 ${lv.raised.length}, 다리가 아니라 못 올린 곳 ${lv.skipped.length}`);
 }
 const json = JSON.stringify(out);
 writeFileSync(new URL('../public/data/board.json', import.meta.url), json);

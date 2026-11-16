@@ -25,7 +25,20 @@ describe('서울시 선으로 읽은 차로로 차 그래프 만들기', () => {
     expect(laneOff(a, 1, 50)).toBeCloseTo(1.8, 2); // 1m 의 1.6 과 99m 의 2.0 사이
     expect(laneOff(b, 0, 50)).toBeCloseTo(-4.8, 2);
     expect(a.plain).toBe(false);
-    expect(g.find((e) => e.road === 1)!.plain).toBe(true);
+  });
+  it('선이 없는 조각이 갈림 없는 이음매로 선을 읽은 구간과 이어지면 그 끝의 차로 자리를 이어받는다(이음매에서 차로가 엇갈리지 않게)', () => {
+    const p = g.find((e) => e.road === 1)!;
+    expect(laneOff(p, 0, 50)).toBeCloseTo(-1.6, 2);
+    expect(laneOff(p, 1, p.len)).toBeCloseTo(1.6, 2);
+    expect(Array.from(p.lmap[0])).toEqual([0, 1, 1, 2]);
+  });
+  it('양방향 길에서 한 방향만 선을 읽었으면 선이 없는 방향은 읽은 방향의 왼쪽 가장자리(실제 가운데선) 너머에 놓는다', () => {
+    // 동쪽 방향 차로 가운데 0.6·3.8m(왼쪽 가장자리 −1.0m, OSM 가운데선이 실제 중앙선보다 1m 오른쪽), 서쪽 방향은 선이 없다
+    const two: RoadLanes = [[{ a: -1, b: -1, runs: [run(0, 100, [[0, 0.6, 3.8], [100, 0.6, 3.8]])] }, null]];
+    const g3 = buildCarGraph([road([[0, 0], [100, 0]], { lanes: 4 })], two);
+    const back = g3.find((e) => e.rev)!;
+    expect(laneOff(back, 0, 50)).toBeCloseTo(1.0 + 3.3 / 2, 2);
+    expect(laneOff(back, 1, 50)).toBeCloseTo(1.0 + 3.3 * 1.5, 2);
   });
   it('차로가 생기는 이음매에서는 옆 거리가 가까운 차로끼리 잇는다: 왼쪽 차로는 새 차로와 제자리 차로로 나뉘고 오른쪽 차로는 제자리로 간다', () => {
     expect(Array.from(a.lmap[0])).toEqual([0, 2, 2, 3]);

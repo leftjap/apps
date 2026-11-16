@@ -60,6 +60,8 @@ export interface Edge {
   /** 원래 도로 조각 번호와, 저장된 방향을 거슬러 가는가 */
   road: number;
   rev: boolean;
+  /** 가로변 버스전용차로(서울시 파란 버스전용차선이 그은 맨 오른쪽 차로)의 차로 번호. 없으면 −1. 버스만 달리고 일반 차는 들어가지 않는다 */
+  bus: number;
   /** 중앙버스차로: 0 이면 없고, 아니면 일반 차로 왼쪽 가장자리에서 버스차로 가운데까지 거리(m, 구간 가운데 자리). 한 방향 큰길 왼쪽 분리대 안이다 */
   med: number;
 }
@@ -271,6 +273,7 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] 
           road,
           rev,
           med: run.med.length || (r.oneway && r.medBus) ? 1 : 0,
+          bus: (rev ? r.busL : r.busR) && n >= 2 ? n - 1 : -1,
         });
       });
     }
@@ -305,6 +308,8 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] 
   // 분리대가 있는 한 방향 큰길 조각이 같은 이름 길을 따라 앞뒤 네 조각 안에서 중앙버스차로와 이어지면 중앙버스차로로 잇는다
   const prev: number[][] = edges.map(() => []);
   for (const e of edges) for (const k of e.next) prev[k].push(e.id);
+  inheritLanes(edges, prev, roads);
+  sinkTunnels(edges, prev, roads);
   const roadOf = edges.map((e) => roads[e.road]);
   const open = (e: Edge) => !e.med && roadOf[e.id].oneway && e.cls <= 3 && roadOf[e.id].gap > 1;
   // 같은 조각이 차로 수 구간으로 나뉜 구간은 한 조각으로 센다
@@ -320,8 +325,13 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] 
     if (!fill.length) break;
     for (const e of fill) e.med = 1;
   }
-  // 중앙버스차로 자리: 서울시 선으로 읽은 구간은 그 자리, 아니면 분리대 폭으로 어림한다
-  for (const e of edges) if (e.med) e.med = e.mo.length ? Math.max(0.5, medAt(e, e.len / 2)) : medOff(roadOf[e.id].gap);
+  // 중앙버스차로 자리: 서울시 선으로 읽은 구간은 그 자리, 아니면 분리대 폭으로 어림한다.
+  // 읽은 자리가 일반 차로 왼쪽 가장자리에서 4.5m 넘게 떨어지면 건너편 찻길의 중앙버스전용차선을 읽은 것이라 버린다(양화로 −820,390 7.6m, 수색로 9.2m)
+  for (const e of edges) {
+    if (!e.med) continue;
+    if (e.mo.length && medAt(e, e.len / 2) > 4.5) e.mo = new Float32Array(0);
+    e.med = e.mo.length ? Math.max(0.5, medAt(e, e.len / 2)) : medOff(roadOf[e.id].gap);
+  }
   keepApart(edges, roadOf);
   // 노면 화살표: 서울시 선으로 차로를 읽은 구간에서 차로가 끝나는 자리 앞 45m 안, 그 차로 가운데 반폭 안에 같은 방향으로 놓인 화살표
   const ag = new Map<number, number[]>();
@@ -362,6 +372,96 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] 
       return turnMap(a, b);
     });
   return edges;
+}
+
+/**
+ * 서울시 선이 없는 방향(plain)의 차로 자리를 이웃한 선 읽은 구간에 맞춘다. OSM 가운데선 × 차로 폭으로 펼친 자리는 칠한 차로와 1~3m 어긋나,
+ * ① 같은 방향으로 갈림 없이 이어지는 이음매에서 차로 곡선이 엇갈리고(두 차로가 한 차로로 모임), ② 양방향 길의 다른 방향 차로와 포개졌다.
+ * ① 차로 수가 같고 25° 안으로 이어지는 앞(뒤) 구간의 끝(시작) 자리를 이어받는다(양쪽이면 그 사이를 고르게). 이어받은 구간도 다음 구간에 넘긴다.
+ * ② 그래도 남은 양방향 길의 선 없는 방향은, 같은 조각 다른 방향(중앙버스차로 없음)의 왼쪽 가장자리(실제 중앙선) 너머에 차로 폭으로 펼친다
+ */
+function inheritLanes(edges: Edge[], prev: number[][], roads: Road[]) {
+  const known = edges.map((e) => !e.plain);
+  const offs = (e: Edge, s: number) => Array.from({ length: e.lanes }, (_, l) => laneOff(e, l, s));
+  const aligned = (a: Edge, b: Edge) => {
+    let t = Math.abs(headingNear(b, 0) - headingNear(a, a.len));
+    if (t > Math.PI) t = 2 * Math.PI - t;
+    return t < (25 * Math.PI) / 180;
+  };
+  const seam = () => {
+    for (let changed = true, pass = 0; changed && pass < 8; pass++) {
+      changed = false;
+      for (const e of edges) {
+        if (known[e.id]) continue;
+        const p = prev[e.id].length === 1 ? edges[prev[e.id][0]] : undefined;
+        const q = e.next.length === 1 ? edges[e.next[0]] : undefined;
+        const from = p && known[p.id] && p.next.length === 1 && p.lanes === e.lanes && aligned(p, e) ? offs(p, p.len) : null;
+        const to = q && known[q.id] && prev[q.id].length === 1 && q.lanes === e.lanes && aligned(e, q) ? offs(q, 0) : null;
+        if (!from && !to) continue;
+        e.st = from && to ? Float32Array.of(0, e.len) : Float32Array.of(0);
+        e.lo = Float32Array.from(from && to ? [...from, ...to] : from ?? to!);
+        known[e.id] = true;
+        changed = true;
+      }
+    }
+  };
+  seam();
+  // ② 양방향 길: 같은 조각 다른 방향 구간들의 단면마다 왼쪽 가장자리를 이 방향 거리로 옮겨 적는다
+  const byRoad = new Map<number, Edge[]>();
+  for (const e of edges) (byRoad.get(e.road) ?? byRoad.set(e.road, []).get(e.road)!).push(e);
+  for (const e of edges) {
+    if (known[e.id] || roads[e.road].oneway) continue;
+    const other = (byRoad.get(e.road) ?? []).filter((o) => o.rev !== e.rev);
+    if (!other.length || other.some((o) => !known[o.id] || o.med)) continue;
+    const rows: [number, number][] = [];
+    for (const o of other)
+      for (const s of new Set([0, ...o.st, o.len])) if (s >= 0 && s <= o.len) rows.push([o.full - (o.s0 + s) - e.s0, -leftEdge(o, s)]);
+    rows.sort((a, b) => a[0] - b[0]);
+    const lw = roads[e.road].lw;
+    e.st = Float32Array.from(rows, (r) => r[0]);
+    e.lo = Float32Array.from(rows.flatMap(([, b]) => Array.from({ length: e.lanes }, (_, l) => b + (l + 0.5) * lw)));
+    known[e.id] = true;
+  }
+  seam();
+  for (const e of edges) if (known[e.id]) e.plain = false;
+}
+
+/** 찻길 터널 깊이(m)와, 입구에서 그 깊이까지 내려가는 거리(m) */
+const TUNNEL_DEPTH = 8;
+const TUNNEL_RAMP = 30;
+/**
+ * 찻길 터널(지하차도·강변북로 지하 구간) 구간을 땅 밑으로 내린다. 구운 판은 터널을 땅 높이에 두어 그 위를 가로지르는 찻길 차와 같은 높이에서 겹쳐 보였다.
+ * 입구(터널이 아닌 구간과 만나는 끝)에서 터널을 따라간 거리 d 에 대해 깊이 TUNNEL_DEPTH × smoothstep(d / TUNNEL_RAMP) 만큼 내리고(2m 마다 다시 찍는다),
+ * 그리는 쪽은 땅 밑 2m 보다 깊은 차를 그리지 않는다(render/cars.ts). 차는 입구로 들어가며 사라지고 나오며 나타난다
+ */
+function sinkTunnels(edges: Edge[], prev: number[][], roads: Road[]) {
+  const tun = edges.map((e) => !!roads[e.road].tunnel);
+  if (!tun.some((t) => t)) return;
+  // 구간 시작·끝에서 가장 가까운 입구까지 터널을 따라간 거리
+  const dIn = edges.map((e) => (tun[e.id] && prev[e.id].some((k) => tun[k]) ? Infinity : 0));
+  const dOut = edges.map((e) => (tun[e.id] && e.next.some((k) => tun[k]) ? Infinity : 0));
+  for (let pass = 0; pass < 20; pass++)
+    for (const e of edges) {
+      if (!tun[e.id]) continue;
+      for (const k of prev[e.id]) if (tun[k]) dIn[e.id] = Math.min(dIn[e.id], dIn[k] + edges[k].len);
+      for (const k of e.next) if (tun[k]) dOut[e.id] = Math.min(dOut[e.id], dOut[k] + edges[k].len);
+    }
+  const P = [0, 0, 0];
+  for (const e of edges) {
+    if (!tun[e.id]) continue;
+    const n = Math.max(1, Math.ceil(e.len / 2));
+    const p = new Float32Array((n + 1) * 3);
+    const cum = new Float32Array(n + 1);
+    for (let k = 0; k <= n; k++) {
+      const s = (e.len * k) / n;
+      pointAt(e.p, e.cum, s, P);
+      const t = Math.min(1, Math.min(dIn[e.id] + s, dOut[e.id] + e.len - s) / TUNNEL_RAMP);
+      p.set([P[0], P[1] - TUNNEL_DEPTH * t * t * (3 - 2 * t), P[2]], k * 3);
+      cum[k] = s;
+    }
+    e.p = p;
+    e.cum = cum;
+  }
 }
 
 /** 교차로에서 a 끝에서 b 시작으로 꺾는 각(오른쪽 +, 라디안) */
@@ -432,7 +532,7 @@ function keepApart(edges: Edge[], roadOf: Road[]) {
     }
   const gap = new Map<number, number>();
   for (const e of one) {
-    if (!e.plain) continue;
+    if (!e.plain && !e.med) continue;
     let G = Infinity;
     for (let d = 3; d <= e.len - 3; d += 4) {
       const seg = pointAt(e.p, e.cum, d, P);
@@ -464,13 +564,16 @@ function keepApart(edges: Edge[], roadOf: Road[]) {
     if (e.med) {
       const near = BUS_HALF + CAR_HALF - e.lw / 2 + 0.3; // 버스가 1차로 차 몸통과 닿지 않는 가장 가까운 자리(굽은 길에서 비스듬해지는 몫 0.3m)
       const fit = room - BUS_HALF;
+      // 선으로 읽은 중앙버스차로가 그 자리를 넘으면 읽은 자리를 버리고 어림한 자리를 쓴다
+      if (e.mo.length && medAt(e, e.len / 2) > Math.max(near, fit)) e.mo = new Float32Array(0);
       if (fit >= near) e.med = Math.min(e.med, fit);
       else {
         e.med = near;
         need = near - fit;
       }
     } else need = Math.max(0, CAR_HALF - e.lw / 2 - room);
-    if (need <= 0) continue;
+    // 선으로 읽은 차로는 칠한 자리 그대로 둔다(중앙버스차로만 옮긴다)
+    if (need <= 0 || !e.plain) continue;
     const n = e.lanes;
     for (let k = 0; k < e.st.length; k++) {
       const w = laneWidth(e, 0, e.st[k]);

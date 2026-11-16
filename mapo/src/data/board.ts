@@ -86,6 +86,8 @@ export interface Road {
   lanes: number;
   oneway: boolean;
   bridge: boolean;
+  /** 찻길 터널(지하차도·지하 구간, tools/lib/levels.ts). 높이는 땅(0m)으로 구워 두고, 차 그래프가 땅 밑으로 내린다 */
+  tunnel?: boolean;
   name: string;
   /** 0 = 일반, 4 = 서강대교, 5 = 양화대교 */
   lm: number;
@@ -271,7 +273,8 @@ function decodeRaw(j: BoardJson): Board {
         lanes,
         oneway,
         bus: !!(r[2] & 2),
-        bridge: !!r[3],
+        bridge: r[3] === 1,
+        tunnel: r[3] === 2,
         name: j.names[r[4]] ?? '',
         lm: r[5],
         p: m(r, 6),
