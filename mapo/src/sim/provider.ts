@@ -1,7 +1,7 @@
 // 시뮬레이션에 들어가는 바깥 자료. 1단계는 시간대 곡선으로 만들고, 2단계에서 이 구현만 실데이터로 바꾼다.
 import type { Now } from './clock.ts';
 import { clamp01, commute, daytime, inService, nightlife } from './curves.ts';
-import { ZONES } from './walkers.ts';
+import { ZONES } from './people/zones.ts';
 
 export const LEVELS = ['여유', '보통', '약간 붐빔', '붐빔'] as const;
 

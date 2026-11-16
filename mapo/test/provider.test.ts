@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ZONES } from '../src/sim/walkers.ts';
+import { ZONES } from '../src/sim/people/zones.ts';
 import { LEVELS, makeSimProvider } from '../src/sim/provider.ts';
 
 const p = makeSimProvider();

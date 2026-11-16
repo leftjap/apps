@@ -46,7 +46,7 @@ import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeIntersections, type SignalLamps } from './sim/intersection/index.ts';
 import { arrivals, stationBoard, trainsAt } from './sim/trains.ts';
 import { matchIncidents, spotXZ, type Incident } from './sim/incidents.ts';
-import { doorWanted, makeWalkers, underpasses, ZONES } from './sim/walkers.ts';
+import { BODY_SCALE, makePeople, underpasses, ZONES } from './sim/people/index.ts';
 import { makeHud, type Card, type CardLine, type Layer, type SeasonPick, type Weather } from './ui/hud.ts';
 import { arrivalBadge, makeTags } from './ui/tags.ts';
 import './ui/hud.css';
@@ -130,38 +130,33 @@ cars.fillBuses(start);
 // 사람은 역 출구와 버스 정류장에서만 나타나고 사라진다
 const stops = busStopPortals(cars.routes, carGraph);
 const medStop = new Set(stops.portals.filter((p) => p.median).map((p) => p.key));
-const walkers = makeWalkers(
+// 사람(src/sim/people/, 재작업 W21): 역 출구·버스 승하차 자리·건물 문(걷는 길 자료에 구운 문턱)에서만 나타나고 사라지며, 몸이 있어 사람·차와 겹치지 않는다
+const walkers = makePeople(
   walkGraph,
   [
     ...board.exits.map((e) => ({ kind: 'exit' as const, key: e.st, x: e.x, z: e.z })),
-    // 버스 정류장. 중앙 정류장(길 가운데 승강장)은 승강장 끝 횡단보도를 건너 오간다
+    // 버스 정류장. 중앙 정류장(길 가운데 승강장)은 승강장을 지나는 횡단보도를 반씩 건너 오간다
     ...stops.portals,
     // 망원한강공원 인구는 공원 안에 있는 사람이다. 공원 안(피크닉 자리)에서 나타나 공원 길을 걷고, 일부만 강변북로 밑 나들목으로 들고 난다
     ...underpasses(board.roads, ...ZONES.mangwon).map(([x, z]) => ({ kind: 'exit' as const, key: '망원나들목', x, z })),
     ...Array.from({ length: board.picnic.length / 2 }, (_, i) => ({ kind: 'exit' as const, key: '망원한강공원', x: board.picnic[i * 2], z: board.picnic[i * 2 + 1] })),
-    // 구역 안과 명소 둘레 건물(바닥 40㎡ 넘는 것)의 출입구: 구역 인구 대부분은 가게·집 안에 있다가 드나든다(망원 구역 안 건물은 공원 밖 주택가라 쓰지 않는다)
-    ...board.buildings.flatMap((b) => {
-      let x = 0;
-      let z = 0;
-      for (let k = 0; k < b.pts.length; k += 2) (x += b.pts[k]), (z += b.pts[k + 1]);
-      x /= b.pts.length / 2;
-      z /= b.pts.length / 2;
-      let a = 0;
-      for (let i = 0, j = b.pts.length - 2; i < b.pts.length; j = i, i += 2) a += b.pts[j] * b.pts[i + 1] - b.pts[i] * b.pts[j + 1];
-      return doorWanted(x, z) && Math.abs(a) / 2 > 40 ? [{ kind: 'door' as const, key: '', x, z, poly: b.pts, h: b.h }] : [];
-    }),
   ],
   provider,
   5,
   MAX_PEOPLE,
-  undefined,
-  inter.S,
-  { busy: crossBusy, traffic: (l) => cars.approaching(l.xw) },
+  {
+    buildings: board.buildings,
+    walkLeft: (xw, tod) => (inter.S.crossSite[xw] < 0 ? -1 : inter.S.walkLeft(xw, tod)),
+    busy: crossBusy,
+    traffic: (xw) => cars.approaching(xw),
+    cars: cars.cars,
+  },
 );
-// 사람도 차와 같은 보는 곳을 먼저 실제 붐빔대로 채우고, 화면 밖에서만 놓고 뺀다
-walkers.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
-// 처음부터 길에 사람이 있도록 5분쯤 미리 돌려 둔다(신호가 바뀌도록 시각도 함께 흘린다)
-for (let i = 0; i < 600; i++) walkers.step(0.5, { ...start, tod: (start.tod - 300 + i * 0.5 + 86400) % 86400 });
+// 사람은 보는 곳(보는 거리 × 1.2, 150m 부터)을 실제의 EXAG 배까지 채운다
+const peopleR = () => Math.min(2200, Math.max(150, view.viewDist() * 1.2));
+walkers.setFocus(focusAt.x, focusAt.z, peopleR());
+// 처음부터 길에 사람이 있도록 5분 미리 돌린다: 문·출구에서 나와 걸어간 사람들이다(화면 한가운데에 놓지 않는다)
+walkers.warm(300, start);
 const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
 const reactor = makeCatReactor(cats);
 
@@ -784,7 +779,7 @@ function frame(t: number) {
     if (Math.hypot(target.x - focusAt.x, target.z - focusAt.z) > focusAt.r * 0.2 || Math.abs(r - focusAt.r) > focusAt.r * 0.2) {
       focusAt = { x: target.x, z: target.z, r, age: 0 };
       cars.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
-      walkers.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
+      walkers.setFocus(focusAt.x, focusAt.z, peopleR());
     }
   }
   cars.step(dt, now);
@@ -800,7 +795,7 @@ function frame(t: number) {
   walkers.step(dt, now);
   // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
   // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더와 같은 크기 기준, render/size.ts)
-  reactor.setGap((0.27 + 0.32) * sizeAt('mover', view.viewDist()));
+  reactor.setGap((0.27 * BODY_SCALE + 0.32) * sizeAt('mover', view.viewDist()));
   catStates = reactor.step(dt, cats.map((c) => catAt(c, now)), layers.people ? walkers.w : { ...walkers.w, n: 0 }, walkers.hold);
 
   updateEnv(now, time, sky, dt);

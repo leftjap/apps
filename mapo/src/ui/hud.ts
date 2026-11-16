@@ -223,7 +223,9 @@ export function makeHud(ev: HudEvents) {
     /** 보는 곳(카메라가 겨눈 자리 둘레) 안에서 화면 1명·1대가 실제 몇 명·몇 대인가. 보는 곳 밖은 더 성기게 둔다 */
     setScale(people: number, cars: number) {
       const n = (v: number) => (v < 1.05 ? '1' : v < 10 ? v.toFixed(1) : String(Math.round(v)));
-      q('[data-scale]').textContent = `보는 곳 사람 1명 ≈ 실제 ${n(people)}명 · 차 1대 ≈ 실제 ${n(cars)}대`;
+      // 사람은 보는 곳을 실제보다 넉넉하게(최대 2배) 그린다: 그만큼 정직하게 알린다
+      const ppl = people < 0.95 ? `보는 곳 사람은 실제의 약 ${(1 / people).toFixed(1)}배로 그림` : `보는 곳 사람 1명 ≈ 실제 ${n(people)}명`;
+      q('[data-scale]').textContent = `${ppl} · 차 1대 ≈ 실제 ${n(cars)}대`;
     },
     setAreas(areas: AreaStatus[]) {
       const sorted = [...areas].sort((a, b) => b.level - a.level || b.pplMin - a.pplMin).slice(0, 5);

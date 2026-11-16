@@ -11,7 +11,7 @@
 // 휴대폰을 드는 동안에는 우산을 접는다.
 import * as THREE from 'three';
 import type { Season } from '../sim/season.ts';
-import type { Walkers } from '../sim/walkers.ts';
+import { BODY_SCALE, type Walkers } from '../sim/people/index.ts';
 import { env, material, pal } from './env.ts';
 import { sizeAt, sizeGlsl } from './size.ts';
 import { instanced, merge, part } from './util.ts';
@@ -101,7 +101,7 @@ const NEAR_PX = 14;
 export function walkerLod(e: ArrayLike<number>, projK: number, x: number, z: number): number {
   const cw = e[3] * x + e[7] * 0.8 + e[11] * z + e[15];
   if (cw <= 0.5) return 0;
-  const k = sizeAt('mover', cw);
+  const k = Math.max(BODY_SCALE, sizeAt('mover', cw));
   const px = (1.47 * k * projK) / cw;
   // 사람 키만큼(화면 좌표로) 여유를 두고 화면 밖이면 뺀다
   const m = px / (projK * Math.tan((16 * Math.PI) / 180)) + 0.05;
@@ -277,7 +277,8 @@ export function makeWalkerMesh(max: number) {
             p.y += abs(cos(aInst.w)) * 0.035 * move * aLook.z;
           }
           vec4 cv = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
-          float s = ${SCALE} * aMore.x * (age < 0.5 ? 0.72 : 1.0);
+          // 사람은 실제보다 BODY_SCALE 배로 그린다(지오 지시 1.5배). 멀리서 키우는 배율이 그보다 크면 그 배율을 쓴다
+          float s = max(${BODY_SCALE.toFixed(2)}, ${SCALE}) * aMore.x * (age < 0.5 ? 0.72 : 1.0);
           p *= s;
           float cs = cos(aInst.z), sn = sin(aInst.z);
           vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, p.y + 0.05, aInst.y + p.x * sn + p.z * cs);

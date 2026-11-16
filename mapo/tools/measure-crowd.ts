@@ -1,7 +1,7 @@
-// 보이는 곳 사람 수 측정(브라우저 없이 사람만 돌린다): node tools/measure-crowd.ts [초] [씨앗,...] [old]
+// 보이는 곳 사람 수 측정(브라우저 없이 사람만 돌린다): node tools/measure-crowd.ts [초] [씨앗,...]
 // 가까이 보는 세 시점(토 21:00 클럽거리, 토 18:00 걷고싶은거리, 일 14:00 연트럴파크)과 판 전체(토 21:00)를 앱과 같은 카메라(화각 32°, 1440×900)로 두고,
 // 화면 안(투영 좌표 ±1) 사람 수를 실제 추정 인원과 견준다. 실제 추정은 구역 인구 × 밖에 나온 몫 × 명소 가중치를 걷는 선에 퍼뜨린 것(walkers.expected)이다.
-// old 를 주면 보는 곳을 정하지 않는다(옛 방식: 모든 구역을 같은 배율로 줄인다). 사람 모형 정점 수도 앱과 같은 그리기 단계(walkerLod)로 센다.
+// 사람 모형 정점 수도 앱과 같은 그리기 단계(walkerLod)로 센다. 재작업 W21 부터 사람은 src/sim/people(보는 곳 과장 EXAG 배, 문은 walk.json 에 구운 문턱).
 // main.ts 와 같은 출입구(역 출구·정류장·나들목·한강공원·건물 문)를 쓰고, 차는 돌리지 않는다(정류장에 버스가 서지 않는다).
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
@@ -12,13 +12,12 @@ import { makeIntersections } from '../src/sim/intersection/index.ts';
 import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { arrivals } from '../src/sim/trains.ts';
-import { doorWanted, makeWalkers, underpasses, ZONES } from '../src/sim/walkers.ts';
+import { makePeople, underpasses, ZONES } from '../src/sim/people/index.ts';
 import { FAR_VERTS, NEAR_VERTS, walkerLod } from '../src/render/walkers.ts';
 import { BOARD_R } from '../src/geo.ts';
 
 const SECS = Number(process.argv[2] ?? 90);
 const SEEDS = (process.argv[3] ?? '5,9').split(',').map(Number);
-const OLD = process.argv[4] === 'old';
 // [이름, 요일, 시각(시), 보는 지점 x, z, 거리(0 이면 판 전체에 맞춤), 기울기, 돌림] (앱 주소의 view 와 같은 값)
 const CASES: [string, number, number, number, number, number, number, number][] = [
   ['토 21:00 클럽거리', 6, 21, 290, 40, 130, 25, 0],
@@ -40,16 +39,6 @@ const portals = [
   ...stops.portals,
   ...underpasses(board.roads, ...ZONES.mangwon).map(([x, z]) => ({ kind: 'exit' as const, key: '망원나들목', x, z })),
   ...Array.from({ length: board.picnic.length / 2 }, (_, i) => ({ kind: 'exit' as const, key: '망원한강공원', x: board.picnic[i * 2], z: board.picnic[i * 2 + 1] })),
-  ...board.buildings.flatMap((b) => {
-    let x = 0;
-    let z = 0;
-    for (let k = 0; k < b.pts.length; k += 2) (x += b.pts[k]), (z += b.pts[k + 1]);
-    x /= b.pts.length / 2;
-    z /= b.pts.length / 2;
-    let a = 0;
-    for (let i = 0, j = b.pts.length - 2; i < b.pts.length; j = i, i += 2) a += b.pts[j] * b.pts[i + 1] - b.pts[i] * b.pts[j + 1];
-    return doorWanted(x, z) && Math.abs(a) / 2 > 40 ? [{ kind: 'door' as const, key: '', x, z, poly: b.pts, h: b.h }] : [];
-  }),
 ];
 
 function camera(tx: number, tz: number, dist: number, tiltDeg: number, turnDeg: number) {
@@ -77,12 +66,12 @@ for (const [name, dow, h, tx, tz, dist, tilt, turn] of CASES) {
   for (const seed of SEEDS) {
     const provider = makeSimProvider();
     const signals = makeIntersections(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines }).S;
-    const sim = makeWalkers(graph, portals, provider, seed, 8000, undefined, signals, { busy: new Uint32Array(board.crosswalks.length), traffic: () => false });
+    const sim = makePeople(graph, portals, provider, seed, 8000, { buildings: board.buildings, walkLeft: (xw, tod) => (signals.crossSite[xw] < 0 ? -1 : signals.walkLeft(xw, tod)), busy: new Uint32Array(board.crosswalks.length) });
     const cam = camera(tx, tz, dist, tilt, turn);
-    // main.ts 의 보는 곳: 반지름 = 보는 거리 × 1.2, 250~2,200m
-    if (!OLD) sim.setFocus(tx, tz, Math.min(2200, Math.max(250, cam.d * 1.2)), cam.onScreen);
+    // main.ts 의 사람 보는 곳: 반지름 = 보는 거리 × 1.2, 150~2,200m
+    sim.setFocus(tx, tz, Math.min(2200, Math.max(150, cam.d * 1.2)));
     const start = { tod: h * 3600, dow, doy: 320 };
-    for (let i = 0; i < 600; i++) sim.step(0.5, { ...start, tod: (start.tod - 300 + i * 0.5 + 86400) % 86400 });
+    sim.warm(300, start);
     let now = { ...start };
     let prev = now.tod;
     for (let s = 0; s < SECS * 10; s++) {
@@ -111,7 +100,7 @@ for (const [name, dow, h, tx, tz, dist, tilt, turn] of CASES) {
   rows.push(`| ${name} | ${f(acc.have)} | ${f(acc.real)} | ${((acc.have / acc.real) * 100).toFixed(0)}% | ${f(acc.n)} | ${f(acc.kIn, 2)} / ${f(acc.kOut, 2)} | ${f(acc.near)} | ${(acc.verts / S / 1e6).toFixed(2)}M |`);
   console.log(rows[rows.length - 1]);
 }
-console.log(`\n${OLD ? '옛 방식(보는 곳 없음)' : '보는 곳 먼저'}, 씨앗 ${SEEDS.join('·')}, 미리 300초 뒤 ${SECS}초 동안 1초마다`);
+console.log(`\n보는 곳 먼저(과장), 씨앗 ${SEEDS.join('·')}, 미리 300초 뒤 ${SECS}초 동안 1초마다`);
 console.log('| 시점 | 화면 안 사람 | 실제 추정(화면 안) | 비율 | 판 전체 사람 | 배율 안/밖 | 자세한 모형 | 사람 정점 |');
 console.log('|---|---|---|---|---|---|---|---|');
 for (const r of rows) console.log(r);
