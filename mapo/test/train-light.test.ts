@@ -4,8 +4,8 @@ import { decodeBoard } from '../src/data/board.ts';
 import { makeLiveSubway } from '../src/data/subway.ts';
 import { cumLen } from '../src/poly.ts';
 import { findPortals } from '../src/render/rails.ts';
-import { CAR_PITCH, carSpans, exitFlash, GAP_M, GAP_MAX, GAP_PX, lightLen, poolLevel, portalRamp } from '../src/render/trainLight.ts';
-import { arrivals, DWELL, trainsAt, type LineDef } from '../src/sim/trains.ts';
+import { CAR_PITCH, carPoses, carSpans, exitFlash, GAP_M, GAP_MAX, GAP_PX, lightLen, makeTrack, poolLevel, portalRamp } from '../src/render/trainLight.ts';
+import { arrivals, DWELL, makeProfile, trainsAt, type LineDef } from '../src/sim/trains.ts';
 
 // 지하 열차는 땅 위에 노선 색 빛으로 그린다: 칸마다 나뉜 띠, 머리 쪽이 조금 더 밝고, 역에 서면 승강장 길이만큼 빛이 고이고,
 // 그 역 출구 지붕이 사람들이 나오는 때(열차가 서는 순간) 잠깐 밝아진다
@@ -126,5 +126,65 @@ describe('터널 입구에서 모형과 빛 잇기', () => {
     expect(portalRamp(ps[0] + 30, ps)).toBeLessThan(1);
     expect(portalRamp(ps[0] + 60, ps)).toBe(1);
     expect(portalRamp(1234, [])).toBe(1);
+  });
+});
+
+// 노선 꺾은선은 15m 마다 꼭짓점이 있고 한 꼭짓점에서 최대 16.5° 꺾인다. 칸을 그 꺾은선 위에 놓으면 꼭짓점을 지나는 순간 방향이 한 번에 바뀌어 끊겨 보인다
+describe('커브에서 칸 놓기', () => {
+  const LEN = CAR_PITCH - GAP_M;
+  const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+  for (const l of board.lines)
+    for (const dir of [0, 1] as const)
+      it(`${l.name} 방향 ${dir}: 1/60초마다 움직여도 머리 칸 이동 거리가 고르고(최대/평균 < 1.2), 방향이 한 걸음에 2° 넘게 바뀌지 않고, 칸 사이 틈이 ${GAP_M}±0.2m`, () => {
+        const len = l.cum[l.cum.length - 1];
+        const tr = makeTrack(l.p, l.cum, dir ? -2.3 : 2.3);
+        const stops = dir ? l.stops.map((s) => len - s).reverse() : l.stops;
+        const pr = makeProfile(len, stops);
+        const fwd = dir ? -1 : 1;
+        let prev: ReturnType<typeof carPoses> | null = null;
+        let prevS = 0;
+        const ratios: number[] = [];
+        let maxTurn = 0;
+        let gMin = Infinity;
+        let gMax = -Infinity;
+        for (let t = 0; t <= pr.dur; t += 1 / 60) {
+          const s = dir ? len - pr.distAt(t) : pr.distAt(t);
+          const ps = carPoses(tr, l.cars, s, dir);
+          for (let k = 0; k + 1 < ps.length; k++) {
+            const a = ps[k];
+            const b = ps[k + 1];
+            if (!a || !b) continue;
+            const ux = (Math.cos(a.yaw) + Math.cos(b.yaw)) * fwd;
+            const uz = (Math.sin(a.yaw) + Math.sin(b.yaw)) * fwd;
+            const rx = a.x - Math.cos(a.yaw) * fwd * (LEN / 2) - (b.x + Math.cos(b.yaw) * fwd * (LEN / 2));
+            const rz = a.z - Math.sin(a.yaw) * fwd * (LEN / 2) - (b.z + Math.sin(b.yaw) * fwd * (LEN / 2));
+            const g = (rx * ux + rz * uz) / Math.hypot(ux, uz);
+            gMin = Math.min(gMin, g);
+            gMax = Math.max(gMax, g);
+          }
+          const ds = Math.abs(s - prevS);
+          if (prev && ps[0] && prev[0] && ds > 0.05) ratios.push(Math.hypot(ps[0].x - prev[0].x, ps[0].z - prev[0].z) / ds);
+          if (prev && ds > 0.01) ps.forEach((p, k) => p && prev![k] && (maxTurn = Math.max(maxTurn, Math.abs(wrap(p.yaw - prev![k]!.yaw)))));
+          prev = ps;
+          prevS = s;
+        }
+        const mean = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+        expect(Math.max(...ratios) / mean).toBeLessThan(1.2);
+        expect((maxTurn * 180) / Math.PI).toBeLessThan(2);
+        expect(gMin).toBeGreaterThan(GAP_M - 0.2);
+        expect(gMax).toBeLessThan(GAP_M + 0.2);
+      });
+
+  it('곧은 선에서는 칸이 선 위(방향별 선로 2.3m 옆)에 20m 간격으로 놓이고, 열차 가운데가 s 다', () => {
+    const p = Float32Array.from([0, 0, 0, 1000, 0, 0]);
+    const ps = carPoses(makeTrack(p, cumLen(p), 2.3), 10, 500, 0);
+    const xs = ps.map((c) => c!.x);
+    expect(xs.reduce((a, b) => a + b, 0) / 10).toBeCloseTo(500, 3);
+    for (let i = 1; i < 10; i++) expect(xs[i - 1] - xs[i]).toBeCloseTo(CAR_PITCH, 3);
+    for (const c of ps) expect(c!.z).toBeCloseTo(2.3, 3), expect(c!.yaw).toBeCloseTo(0, 6), expect(c!.s).toBeCloseTo(c!.x, 3);
+    // 가운데가 노선 밖으로 나간 칸(−60·−40·−20m)은 놓지 않고, 가장자리에 걸친 칸(0m)도 제 길이로 놓는다
+    const edge = carPoses(makeTrack(p, cumLen(p), 2.3), 10, 30, 0);
+    expect(edge.filter((c) => !c)).toHaveLength(3);
+    expect(edge[6]!.x).toBeCloseTo(0, 3);
   });
 });

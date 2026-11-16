@@ -1,7 +1,7 @@
 // 실시간 지하철 위치(중계 함수 supabase/functions/mapo-subway 가 추린 값)로 판 위 열차를 움직인다.
 // 열차마다 '받은 시각에 어느 역 둘레에서 어떤 상태(진입·도착·출발·전역 출발)였는지'로 그때 자리를 정하고,
 // 받은 뒤 지난 시간만큼 앞으로 옮긴 다음, 다음 자료가 올 때까지 역마다 서며(시간표 열차와 같은 25초) 달리게 한다.
-// 새 자료로 자리가 바뀌면 몇 초에 걸쳐 따라가 순간 이동하지 않는다. 자료가 6분 넘게 끊기면 쓰지 않는다(시간표 열차로 돌아간다).
+// 새 자료로 자리가 바뀌면 그리는 열차는 순간 이동하지도 뒤로 가지도 않고, 빠르게 달리거나(최고 FOLLOW_MAX) 멈춰 기다리며 따라간다. 자료가 6분 넘게 끊기면 쓰지 않는다(시간표 열차로 돌아간다).
 // 역 안내판은 공식 역 도착 정보(realtimeStationArrival, 판 밖 먼 열차까지 있다)를 먼저 쓰고, 없으면 판 위 실제 열차, 그것도 없으면 시간표 값에 '시간표'를 붙인다.
 // 판 위에는 실제 열차만 그리므로 '정차 중'은 그 역에 실제 열차가 서 있을 때만 쓴다.
 import { DWELL, type Arrival, type BoardRow, type LineDef, type TrainPos } from '../sim/trains.ts';
@@ -37,6 +37,14 @@ export interface LiveArrival {
 }
 
 const V = 12; // 역 사이를 달리는 속도(m/s, 어림)
+/** 그리는 열차가 자료대로의 자리를 따라갈 때: 뒤처졌으면 FOLLOW_BRAKE(m/s²)로 서면 딱 닿을 만큼 더 빨리(최고 FOLLOW_MAX m/s),
+ *  앞섰으면 어긋난 거리를 FOLLOW_T 초에 줄일 만큼 느리게(멈출 때까지) 달리고, 속도는 초마다 FOLLOW_ACC(m/s²)만큼만 바꾼다 */
+const FOLLOW_T = 4;
+const FOLLOW_MAX = 1.8 * V;
+const FOLLOW_BRAKE = 2;
+const FOLLOW_ACC = 3;
+/** 이보다 멀리(m) 어긋나면 다른 열차로 보고 새 자리에 바로 놓는다 */
+const SAME = 2500;
 const ACC = 1; // 가속·감속(m/s²)
 /** 상하행 값 가운데 판 노선의 거리 값이 커지는 쪽(방향 0). 응답과 판 노선 모양으로 맞췄다 */
 const DIR0: Record<string, string> = { '2': '0', '6': '0', K: '1', A: '1' };
@@ -61,8 +69,9 @@ interface State {
   s: number;
   v: number;
   dwell: number;
-  /** 그려지는 자리 = s + off. 새 자료로 자리가 바뀌면 off 가 0으로 줄어들며 따라간다 */
-  off: number;
+  /** 그려지는 자리와 그 속도(m/s, 진행 방향으로). 자료대로의 자리(s)를 따라가며, 뒤로 가지 않는다 */
+  shown: number;
+  u: number;
   seen: number;
 }
 
@@ -120,7 +129,7 @@ export function makeLiveSubway(lines: LineDef[]) {
       const at = stops[k].s;
       let key = keys.get(r.line + r.no);
       if (key === undefined) keys.set(r.line + r.no, (key = 900000 + keys.size));
-      const t: State = { key, line, stops, dir, s: at, v: 0, dwell: 0, off: 0, seen: now };
+      const t: State = { key, line, stops, dir, s: at, v: 0, dwell: 0, shown: 0, u: 0, seen: now };
       if (r.st === '1') t.dwell = DWELL / 2; // 도착해 서 있다(얼마나 서 있었는지 모르니 반쯤 남은 것으로)
       else if (r.st === '2') (t.s = at + sign * 5), (t.v = 2); // 막 출발했다
       else if (r.st === '0') (t.s = at - sign * 120), (t.v = V); // 역에 들어서고 있다
@@ -133,10 +142,8 @@ export function makeLiveSubway(lines: LineDef[]) {
       // 받은 뒤 지난 시간만큼 앞으로 옮긴다(10분까지)
       for (let left = Math.min(600, Math.max(0, (now - r.rcv) / 1000)); left > 0; left -= 0.5) move(t, Math.min(0.5, left), true);
       const old = trains.get(key);
-      if (old) {
-        const d = old.s + old.off - t.s;
-        if (Math.abs(d) < 500) t.off = d;
-      }
+      if (old && old.dir === dir && Math.abs(old.shown - t.s) < SAME) (t.shown = old.shown), (t.u = old.u);
+      else (t.shown = t.s), (t.u = t.v);
       next.set(key, t);
     }
     // 이번 자료에 없는 열차는 3분까지 마저 움직인다(판 둘레 역을 막 벗어났을 수 있다)
@@ -173,8 +180,12 @@ export function makeLiveSubway(lines: LineDef[]) {
     },
     step(dt: number) {
       for (const [k, t] of trains) {
-        t.off *= Math.exp(-dt / 2);
         move(t, dt, false);
+        const sign = t.dir ? -1 : 1;
+        const err = (t.s - t.shown) * sign;
+        const want = Math.min(FOLLOW_MAX, Math.max(0, t.v + (err > 0 ? Math.sqrt(2 * FOLLOW_BRAKE * err) : err / FOLLOW_T)));
+        t.u = Math.max(0, t.u + Math.min(FOLLOW_ACC * dt, Math.max(-FOLLOW_ACC * dt, want - t.u)));
+        t.shown += sign * t.u * dt;
         const L = len(t.line);
         if ((t.dir === 0 && t.s > L + 400) || (t.dir === 1 && t.s < -400)) trains.delete(k);
       }
@@ -183,8 +194,9 @@ export function makeLiveSubway(lines: LineDef[]) {
     positions(): TrainPos[] {
       const out: TrainPos[] = [];
       for (const t of trains.values()) {
-        const s = t.s + t.off;
-        if (s >= 0 && s <= len(t.line)) out.push({ line: t.line.id, dir: t.dir, s, key: t.key, at: t.dwell > 0 ? DWELL - t.dwell : -1 });
+        const s = t.shown;
+        // 역에 선 것(빛이 고이는 것)은 그리는 열차가 그 자리에 다다랐을 때만
+        if (s >= 0 && s <= len(t.line)) out.push({ line: t.line.id, dir: t.dir, s, key: t.key, at: t.dwell > 0 && Math.abs(t.s - s) < 2 ? DWELL - t.dwell : -1 });
       }
       return out;
     },

@@ -99,4 +99,31 @@ describe('실시간 지하철', () => {
     expect(sub.ready(T0 + 60_000)).toBe(true);
     expect(sub.ready(T0 + 7 * 60_000)).toBe(false);
   });
+  it('새 자료로 자리가 바뀌면 그리는 자리는 순간 이동하지도, 뒤로 가지도 않고 평균 걸음의 2배 안에서 따라간다', () => {
+    for (const [stn, st, dt] of [['신촌', '0', 0], ['합정', '0', 0], ['홍대입구', '1', 0]] as const) {
+      const sub = makeLiveSubway([line2]);
+      sub.set([train('합정', '0', '2')], T0);
+      const shown: number[] = [];
+      for (let k = 0; k < 60 * 60; k++) sub.step(1 / 60), shown.push(sub.positions()[0].s);
+      // 1분 뒤 받은 자료가 지금 그리는 자리보다 한참 앞(신촌 진입)·뒤(합정 진입)·조금 앞(홍대입구 도착)이라고 한다
+      sub.set([train(stn, '0', st, T0 + 60_000 + dt)], T0 + 60_000);
+      for (let k = 0; k < 240 * 60; k++) sub.step(1 / 60), shown.push(sub.positions()[0]?.s ?? NaN);
+      const steps = shown.slice(1).map((s, i) => s - shown[i]).filter((d) => !Number.isNaN(d));
+      const moving = steps.filter((d) => d > 1e-4);
+      const mean = moving.reduce((a, b) => a + b, 0) / moving.length;
+      expect(Math.min(...steps)).toBeGreaterThanOrEqual(0);
+      expect(Math.max(...steps)).toBeLessThanOrEqual(2 * mean);
+    }
+  });
+  it('따라간 뒤에는 받은 자료대로의 자리와 같아진다', () => {
+    const sub = makeLiveSubway([line2]);
+    sub.set([train('합정', '0', '2')], T0);
+    for (let k = 0; k < 60 * 60; k++) sub.step(1 / 60);
+    // 1분 뒤 홍대입구를 막 떠났다는 자료: 지금 그리는 자리보다 수백 m 앞이다
+    const fresh = makeLiveSubway([line2]);
+    for (const x of [sub, fresh]) x.set([train('홍대입구', '0', '2', T0 + 60_000)], T0 + 60_000);
+    expect(fresh.positions()[0].s - sub.positions()[0].s).toBeGreaterThan(300);
+    for (let k = 0; k < 90 * 60; k++) sub.step(1 / 60), fresh.step(1 / 60);
+    expect(sub.positions()[0].s).toBeCloseTo(fresh.positions()[0].s, 0);
+  });
 });

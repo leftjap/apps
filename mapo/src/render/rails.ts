@@ -13,7 +13,7 @@ import { headingAt, pointAt } from '../poly.ts';
 import type { TrainPos } from '../sim/trains.ts';
 import { env, material, pal, UNDER_Y } from './env.ts';
 import { sizeGlsl } from './size.ts';
-import { carSpans, GAP_M, GAP_MAX, GAP_PX, poolLevel, portalRamp } from './trainLight.ts';
+import { carPoses, GAP_M, GAP_MAX, GAP_PX, makeTrack, poolLevel, portalRamp } from './trainLight.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
 
 const VERT = /* glsl */ `
@@ -738,7 +738,13 @@ export function makeRails(lines: Line[]) {
   throughMesh.renderOrder = -3.05;
   for (const m of [lightMesh, throughMesh]) (m.frustumCulled = false), group.add(m);
 
-  const byId = new Map(lines.map((l) => [l.id, { l, c: new THREE.Color(l.color), st: STYLE[l.id] ?? 0, portals: findPortals(l).map((p) => p.sP) }]));
+  // 칸은 노선 꺾은선이 아니라 꼭짓점을 둥글게 이은 선로(방향별 선로는 2.3m 옆, 역에 고인 빛은 가운데) 위에 놓는다(trainLight.ts makeTrack)
+  const byId = new Map(
+    lines.map((l) => [
+      l.id,
+      { l, c: new THREE.Color(l.color), st: STYLE[l.id] ?? 0, portals: findPortals(l).map((p) => p.sP), mid: makeTrack(l.p, l.cum, 0), track: [makeTrack(l.p, l.cum, 2.3), makeTrack(l.p, l.cum, -2.3)] },
+    ]),
+  );
   /** 열차를 놓고, 고르기·따라가기에 쓸 열차별 가운데 칸 위치를 돌려준다 */
   function update(trains: TrainPos[]): TrainSpot[] {
     let n = 0;
@@ -757,23 +763,18 @@ export function makeRails(lines: Line[]) {
     for (const t of trains) {
       const lv = poolLevel(t.at);
       if (lv <= 0) continue;
-      const { l, c } = byId.get(t.line)!;
+      const { l, c, mid } = byId.get(t.line)!;
       if (!carPose(l, t.s).under) continue;
-      const seg = pointAt(l.p, l.cum, t.s, tmp);
-      putLight(tmp[0], tmp[2], headingAt(l.p, seg), 1, c, lv * 0.75, l.cars * CAR_LEN + 10, 13, 0);
+      const at = carPoses(mid, 1, t.s, t.dir)[0];
+      if (at) putLight(at.x, at.z, at.yaw, 1, c, lv * 0.75, l.cars * CAR_LEN + 10, 13, 0);
     }
     for (const t of trains) {
-      const { l, c, st, portals } = byId.get(t.line)!;
-      const len = l.cum[l.cum.length - 1];
+      const { l, c, st, portals, track } = byId.get(t.line)!;
       const mid = Math.floor(l.cars / 2);
-      for (const { s, k, light: lit } of carSpans(l.cars, t.s, t.dir)) {
-        if (s < 0 || s > len) continue;
-        const seg = pointAt(l.p, l.cum, s, tmp);
-        const yaw = headingAt(l.p, seg);
-        const off = t.dir ? -2.3 : 2.3; // 방향별 선로
-        const x = tmp[0] - Math.sin(yaw) * off;
-        const z = tmp[2] + Math.cos(yaw) * off;
-        const y = tmp[1];
+      // 칸마다 앞뒤 끝을 방향별 선로 위에 얹는다. 커브에서도 방향이 걸음마다 조금씩 바뀌고 칸 사이 틈이 일정하다
+      for (const car of carPoses(track[t.dir], l.cars, t.s, t.dir)) {
+        if (!car) continue;
+        const { s, k, light: lit, x, y, z, yaw } = car;
         const pose = carPose(l, s);
         const under = pose.under;
         // 운전실: 맨 앞 칸의 진행 방향 끝(전조등), 맨 뒤 칸의 반대 끝(후미등). 부호는 그 끝이 +x 쪽인지
