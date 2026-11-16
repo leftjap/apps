@@ -293,6 +293,10 @@ export function looks(list: Building[]): Look[] {
     else if (h >= 40) style = STYLE.glass;
     else if (area > 900 || b.shop) style = STYLE.shop;
     else style = area < 45 && h <= 7 ? STYLE.house : STYLE.villa;
+    // 로드뷰로 기록한 창 모양이 외벽 모양을 정한다: 커튼월은 유리 무늬, 펀치창·띠창으로 기록한 높은 업무 건물은 상가 무늬
+    const win = (b as Hot).rec?.win;
+    if (hot === undefined && win === 'curtain') style = STYLE.glass;
+    else if (hot === undefined && win && style === STYLE.glass) style = STYLE.shop;
     // 지붕은 자료(OSM 태그, 굽기가 오래된 저층 단독에 단 박공)를 따른다
     const roofK = roof;
     const pitched = roofK >= 2 && roofK !== 5;
@@ -1272,7 +1276,8 @@ export function makeProps(list: Building[], lk: Look[]): THREE.Mesh {
 export function makeBuildings(all: Building[], recs: Map<number, BuildingRec> = new Map()): { group: THREE.Object3D; list: Building[]; looks: Look[] } {
   const list = refine(all.map((b, i) => (recs.has(i) ? applyRec(b, recs.get(i)!) : b)));
   const lk = looks(list);
-  const keep = list.map((b) => b.lm === 0);
+  // 로드뷰 기록에서 hide 로 적은 구조물(출구 지붕과 겹치는 작은 건물)은 그리지 않는다
+  const keep = list.map((b) => b.lm === 0 && !(b as { hidden?: boolean }).hidden);
   const group = new THREE.Group();
   for (const rec of [false, true]) {
     const pick = list.map((_, i) => keep[i] && !!lk[i].rec === rec);

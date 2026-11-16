@@ -8,7 +8,7 @@ import type { Look } from './buildings.ts';
 import { material, pal } from './env.ts';
 
 /** 소품 종류(셰이더의 kind) */
-export const DK = { slab: 0, rail: 1, ac: 2, eave: 3, band: 4, wallBase: 5, ironFence: 6, pillar: 7, paving: 8, line: 9, wood: 10, pole: 11, lamp: 12, stair: 13, opening: 14, glassBay: 15, glassRail: 16 } as const;
+export const DK = { slab: 0, rail: 1, ac: 2, eave: 3, band: 4, wallBase: 5, ironFence: 6, pillar: 7, paving: 8, line: 9, wood: 10, pole: 11, lamp: 12, stair: 13, opening: 14, glassBay: 15, glassRail: 16, screen: 17 } as const;
 
 const hexRGB = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
 const rnd = (a: number, b = 0) => {
@@ -106,6 +106,13 @@ export function detailOf(b: Building, L: Look): { box: number[]; cyl: number[] }
       const t = e.len * bd.at;
       push(box, e.ax + e.dx * t + e.nx * 0.07, bd.y0, e.az + e.dz * t + e.nz * 0.07, Math.atan2(e.dz, e.dx), bd.w, bd.y1 - bd.y0, 0.14, DK.band, hexRGB(bd.color));
     }
+  }
+  for (const bb of d.billboards ?? []) {
+    // 대형 LED 광고판: 벽에서 0.25m 띄운 0.4m 두께 틀, 앞면이 화면
+    const e = E.filter((q) => q.face === bb.face).sort((p, q) => q.len - p.len)[0];
+    if (!e) continue;
+    const t = e.len * bb.at;
+    push(box, e.ax + e.dx * t + e.nx * 0.45, bb.y0, e.az + e.dz * t + e.nz * 0.45, Math.atan2(e.dz, e.dx), bb.w, bb.y1 - bb.y0, 0.4, DK.screen, hexRGB(bb.color ?? '#1d2430'), (bb.w * 7.3 + bb.y0) % 1);
   }
   if (d.opening) {
     const op = d.opening;
@@ -284,10 +291,26 @@ const FRAG = /* glsl */ `
       if (n.y > 0.5) c = vec3(0.17, 0.27, 0.39) * uBld;
       float on = step(vC.w, clamp(uLit * 1.2 + 0.045 * uNight, 0.0, 1.0));
       glow = mix(vec3(1.0, 0.8, 0.52), vec3(0.86, 0.9, 1.0), step(0.7, fract(vC.w * 13.0))) * on * (1.0 - band) * (1.0 - mull) * side * 0.8;
-    } else {
+    } else if (k < 16.5) {
       // 유리 난간: 흰 손잡이와 1.5m 마다 기둥, 그 사이 옅은 푸른 유리
       float post = step(0.96, fract(m.x / 1.5));
       c = mix(c * uBld, vec3(0.94) * uBld, max(step(0.9, vO.y), post));
+    } else {
+      // LED 광고판: 검은 틀(0.3m) 안 앞면이 화면. 낮에도 빛나고 밤에 더 밝다. 몇 초마다 다른 장면(색 덩어리)으로 바뀐다
+      float front = step(vO.z, -0.49) * side;   // 바깥(벽 반대쪽)이 상자의 -z 면
+      float inner = step(0.3, m.x + vS.x * 0.5) * step(m.x + vS.x * 0.5, vS.x - 0.3) * step(0.3, m.y) * step(m.y, vS.y - 0.3);
+      float scene = floor(uTime / 7.0 + vC.w * 13.0);
+      vec2 uv = vec2((m.x + vS.x * 0.5) / vS.x, m.y / vS.y);
+      vec3 a = 0.5 + 0.5 * cos(6.2832 * (hash21(vec2(scene, 1.0) + vC.w) + vec3(0.0, 0.33, 0.67)));
+      vec3 b2 = 0.5 + 0.5 * cos(6.2832 * (hash21(vec2(scene, 2.0) + vC.w) + vec3(0.0, 0.33, 0.67)));
+      vec3 img = mix(a, b2, smoothstep(0.3, 0.7, uv.x + 0.3 * sin(uv.y * 3.0 + scene)));
+      img = mix(vec3(dot(img, vec3(0.33))), img, 0.55);   // 광고 화면은 밝지만 원색 덩어리는 아니다
+      img = mix(vC.rgb, img, 0.8);
+      c = mix(vec3(0.06, 0.06, 0.07), img * 0.55, front * inner);
+      glow = img * front * inner * 0.9;
+      vec3 col0 = lit(c, n) + glow * (0.35 + 0.65 * uNight) * (1.0 - fi);
+      gl_FragColor = vec4(fogged(col0, vDist), 1.0);
+      return;
     }
     vec3 col = lit(c, n) + glow * uNight * (1.0 - fi);
     gl_FragColor = vec4(fogged(col, vDist), 1.0);

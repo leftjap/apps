@@ -55,6 +55,8 @@ export interface Detail {
   roofItems?: RoofItem[];
   /** 벽에 낸 어두운 입구(주차장 진입로 등) */
   opening?: { face: Face; w: number; h: number; conf: Conf; note?: string };
+  /** 벽에 붙인 대형 LED 광고판(홍대입구 둘레에 많다). at: 면의 어디쯤(가운데, 0~1), y0·y1: 아래·위 높이(m), color: 화면 바탕색(모르면 어두운 화면) */
+  billboards?: { face: Face; at: number; w: number; y0: number; y1: number; color?: string; conf: Conf; note?: string }[];
   /** 지붕 끝 처마 띠 */
   eave?: { faces: Face[]; depth: number; drop: number; color: string; conf: Conf; note?: string };
 }
@@ -85,6 +87,8 @@ export interface BuildingRec {
   seen: string;
   note?: string;
   detail?: Detail;
+  /** 다른 모형과 겹치는 구조물이라 그리지 않는다(출구 지붕이 작은 건물로 들어가 출구 맞추기가 못 지운 것 등) */
+  hide?: boolean;
 }
 
 export interface StreetRec {
@@ -197,6 +201,8 @@ export interface RecLook {
   awning?: [number, number, number] | null;
   /** 창을 내지 않는 벽(주차장 진입로 구조물 등) */
   noWin: boolean;
+  /** 기록한 창 모양: curtain 이면 커튼월 무늬, punched·band 면 커튼월 대신 상가 무늬(외벽 모양을 정한다) */
+  win?: 'punched' | 'band' | 'curtain';
   detail?: Detail;
 }
 
@@ -213,6 +219,7 @@ export function recLook(r: BuildingRec): RecLook {
     ground: known(r.ground) ? r.ground : undefined,
     awning: r.awning === null ? null : known(r.awning) ? hex(r.awning.color) : undefined,
     noWin: r.windows === 'none',
+    win: r.windows === 'punched' || r.windows === 'band' || r.windows === 'curtain' ? r.windows : undefined,
     detail: r.detail,
   };
 }
@@ -222,8 +229,9 @@ const storey = (b: Building) => (b.use === 3 ? 2.8 : 3.1);
 const ROOF = { flat: 1, gable: 2, hip: 3 } as const;
 
 /** 기록을 판 건물에 덮어쓴다: 층수(다르면 높이도), 높이, 지붕 모양, 가게 자료가 없는 가게 1층. 외곽선은 바꾸지 않는다 */
-export function applyRec(b: Building, r: BuildingRec): Building & { rec: RecLook } {
-  const o: Building & { rec: RecLook } = { ...b, rec: recLook(r) };
+export function applyRec(b: Building, r: BuildingRec): Building & { rec: RecLook; hidden?: boolean } {
+  const o: Building & { rec: RecLook; hidden?: boolean } = { ...b, rec: recLook(r) };
+  if (r.hide) o.hidden = true;
   if (known(r.levels)) {
     if (r.h === undefined && r.levels !== b.levels) {
       const old = b.levels ? b.levels : Math.max(1, Math.round((b.h - 1) / storey(b)));

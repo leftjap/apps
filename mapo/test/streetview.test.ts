@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { decodeBoard, USE, type Building } from '../src/data/board.ts';
 import { applyRec, matchBuildings, recLook, treeKind, UNKNOWN, type AreaRec, type BuildingRec } from '../src/data/streetview.ts';
 import { toLatLon } from '../src/geo.ts';
-import { looks, prismGeometry, propsOf, refine } from '../src/render/buildings.ts';
-import { detailOf, siteOf } from '../src/render/detail.ts';
+import { looks, prismGeometry, propsOf, refine, STYLE } from '../src/render/buildings.ts';
+import { detailOf, DK, siteOf } from '../src/render/detail.ts';
 
 const box = (x0: number, z0: number, w: number, d: number) => new Float32Array([x0, z0, x0 + w, z0, x0 + w, z0 + d, x0, z0 + d]);
 const bld = (o: Partial<Building> & { pts: Float32Array; h: number }): Building => ({ lm: 0, minH: 0, roof: 0, ...o });
@@ -62,6 +62,10 @@ describe('층수·지붕·1층 덮어쓰기', () => {
     expect(applyRec(b, rec(5, 5, { roof: 'hip' })).roof).toBe(3);
     expect(applyRec(b, rec(5, 5, { roof: 'gable' })).roof).toBe(2);
     expect(applyRec(b, rec(5, 5, { roof: 'flat' })).roof).toBe(1);
+  });
+  it('hide 로 기록한 구조물(출구 지붕이 건물로 들어간 것 등)은 그리지 않는 표시를 단다', () => {
+    expect(applyRec(bld({ pts: box(0, 0, 5, 5), h: 4.2 }), rec(2, 2, { hide: true })).hidden).toBe(true);
+    expect(applyRec(bld({ pts: box(0, 0, 5, 5), h: 4.2 }), rec(2, 2)).hidden).toBeUndefined();
   });
   it('1층이 가게인데 가게 자료가 없으면 소매 가게 1층을 둔다', () => {
     const o = applyRec(b, rec(5, 5, { ground: 'shop' }));
@@ -248,6 +252,38 @@ describe('단지 바닥 소품', () => {
     expect(kinds.filter((k) => k === 9).length).toBe(6);
     expect(kinds.filter((k) => k === 5).length).toBe(1);
     expect(kinds.filter((k) => k === 6).length).toBe(1);
+  });
+});
+
+describe('기록한 창 모양', () => {
+  it('커튼월로 기록한 낮은 상가는 유리 커튼월 무늬로, 펀치창으로 기록한 높은 업무 건물은 상가 무늬로 그린다', () => {
+    const low = applyRec(bld({ pts: box(0, 0, 20, 20), h: 15, use: USE.commercial, levels: 4 }), rec(10, 10, { windows: 'curtain' }));
+    const tall = applyRec(bld({ pts: box(40, 0, 20, 20), h: 60, use: USE.commercial, levels: 15 }), rec(50, 10, { windows: 'punched' }));
+    const plain = bld({ pts: box(80, 0, 20, 20), h: 60, use: USE.commercial, levels: 15 });
+    const [a, b, c] = looks(refine([low, tall, plain]));
+    expect(a.base).toBe(STYLE.glass);
+    expect(b.base).toBe(STYLE.shop);
+    expect(c.base).toBe(STYLE.glass);
+  });
+});
+
+describe('외벽 LED 광고판', () => {
+  it('기록한 면의 가장 긴 변에 광고판 상자를 벽 밖으로 붙인다', () => {
+    const b = applyRec(
+      bld({ pts: box(0, 0, 30, 16), h: 40, use: USE.commercial, levels: 10 }),
+      rec(15, 8, { detail: { billboards: [{ face: 'S', at: 0.25, w: 8, y0: 20, y1: 32, conf: 'yes' }] } }),
+    );
+    const list = refine([b]);
+    const d = detailOf(list[0], looks(list)[0]);
+    const n = d.box.length / 12;
+    const scr = Array.from({ length: n }, (_, i) => i).filter((i) => d.box[i * 12 + 7] === DK.screen);
+    expect(scr.length).toBe(1);
+    const i = scr[0] * 12;
+    expect(d.box[i + 4]).toBe(8);
+    expect(d.box[i + 5]).toBe(12);
+    expect(d.box[i + 1]).toBe(20);
+    expect(d.box[i]).toBeCloseTo(22.5, 5);
+    expect(d.box[i + 2]).toBeGreaterThan(16);
   });
 });
 
