@@ -578,6 +578,27 @@ export function surfacePolys(
       const j = Math.floor((z + boardR) / CELL);
       return i < 0 || j < 0 || i >= N || j >= N ? -1 : j * N + i;
     };
+    // (x, z) 에서 바깥쪽 (nx, nz) 로 c 부터 6m 안에 보도 면이 없으면 c + 0.35m 부터 채운다
+    const fillOut = (x: number, z: number, nx: number, nz: number, c: number) => {
+      for (let o = c; o < c + 6; o += 0.5) {
+        const q = at(x + nx * o, z + nz * o);
+        if (q >= 0 && grid[q]) return;
+      }
+      let useRw = false;
+      for (let o = c + 0.35; o < c + 6 && rw.length && !useRw; o += 0.5) {
+        const q = at(x + nx * o, z + nz * o);
+        if (q >= 0 && rw[q] && !blocked[q]) useRw = true;
+      }
+      for (let o = c + 0.35; o < c + 6; o += 0.25) {
+        const q = at(x + nx * o, z + nz * o);
+        if (q < 0 || blocked[q]) break;
+        if (useRw && !rw[q]) {
+          if (o > c + 3) break; // 실폭도로 면이 연석에서 조금(3m 안) 떨어져 시작할 수 있다
+          continue;
+        }
+        if (!grid[q]) (grid[q] = 2), useRw ? filledRw++ : filled++;
+      }
+    };
     roads.forEach((r, ri) => {
       if (!isGroundRoad(r) || r.cls > 3 || built.internal[ri]) return;
       let s0 = 0;
@@ -589,33 +610,26 @@ export function surfacePolys(
         for (let t = 0.2; t < L; t += 0.4) {
           const x = ax + ((bx - ax) * t) / L;
           const z = az + ((bz - az) * t) / L;
-          for (const sd of [1, -1]) {
-            const c = curbAt(r, s0 + t, sd);
-            let has = false;
-            for (let o = c; o < c + 6 && !has; o += 0.5) {
-              const q = at(x + nx * o * sd, z + nz * o * sd);
-              if (q >= 0 && grid[q]) has = true;
-            }
-            if (has) continue;
-            let useRw = false;
-            for (let o = c + 0.35; o < c + 6 && rw.length && !useRw; o += 0.5) {
-              const q = at(x + nx * o * sd, z + nz * o * sd);
-              if (q >= 0 && rw[q] && !blocked[q]) useRw = true;
-            }
-            for (let o = c + 0.35; o < c + 6; o += 0.25) {
-              const q = at(x + nx * o * sd, z + nz * o * sd);
-              if (q < 0 || blocked[q]) break;
-              if (useRw && !rw[q]) {
-                if (o > c + 3) break; // 실폭도로 면이 연석에서 조금(3m 안) 떨어져 시작할 수 있다
-                continue;
-              }
-              if (!grid[q]) (grid[q] = 2), useRw ? filledRw++ : filled++;
-            }
-          }
+          for (const sd of [1, -1]) fillOut(x, z, nx * sd, nz * sd, curbAt(r, s0 + t, sd));
         }
         s0 += L;
       }
     });
+    // 큰길 교차로 면의 바깥 테두리도 같은 방식으로(교차로 모퉁이에 붙은 횡단보도 끝). 갈래를 자르는 단면 바깥은 찻길 띠라 바로 막힌다
+    for (const f of built.faces) {
+      if (f.cls > 3) continue;
+      const o = f.outer;
+      const sg = ringArea(o) > 0 ? 1 : -1;
+      for (let k = 0; k < o.length; k += 2) {
+        const [ax, az, bx, bz] = [o[k], o[k + 1], o[(k + 2) % o.length], o[(k + 3) % o.length]];
+        const L = Math.hypot(bx - ax, bz - az);
+        if (L < 1e-6) continue;
+        // 넓이가 양수인 고리는 진행 방향 오른쪽이 바깥
+        const nx = ((bz - az) / L) * sg;
+        const nz = (-(bx - ax) / L) * sg;
+        for (let t = 0.2; t < L; t += 0.4) fillOut(ax + ((bx - ax) * t) / L, az + ((bz - az) * t) / L, nx, nz, 0);
+      }
+    }
   }
   const walk: number[][] = [];
   for (const loop of traceLoops(grid, N)) {

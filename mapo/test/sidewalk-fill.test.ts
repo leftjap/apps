@@ -42,4 +42,14 @@ describe('보도 면 채우기', () => {
     expect(inside(p.walk, 0, 12)).toBe(false);
     expect(inside(p.walk, 70, 16)).toBe(true);
   });
+  it('교차로 면 바깥 테두리 쪽도 6m 안에 보도 면이 없으면 같은 방식으로 채운다(교차로 모퉁이에 붙은 횡단보도 끝)', () => {
+    // 동서 큰길 두 조각 사이(x −10~10)가 교차로 면이다. 남쪽에는 도로 부지 자료가 없다
+    const rs = [road([[-80, 0], [-10, 0]], { cls: 2, lanes: 4 }), road([[10, 0], [80, 0]], { cls: 2, lanes: 4 })];
+    const face = { cls: 2, outer: [-10, -7.1, 10, -7.1, 10, 7.1, -10, 7.1], holes: [], nodes: 2, arms: 2 };
+    const b2 = { cut: Float32Array.from([0, Infinity, 0, Infinity]), faces: [face], internal: new Uint8Array(2) };
+    const p = surfacePolys(rs, b2, roadJoints(rs), areas, [GK.ROADSIDE], 100, [], [building], true);
+    expect(inside(p.walk, 0, 9)).toBe(true); // 교차로 면 남쪽
+    expect(inside(p.walk, 0, 5)).toBe(false); // 교차로 면 안
+    expect(inside(p.walk, 0, 12)).toBe(false); // 건물 안
+  });
 });

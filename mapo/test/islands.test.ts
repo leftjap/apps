@@ -32,4 +32,13 @@ describe('교차로 면 안의 섬', () => {
     expect(n).toBe(0);
     expect(f.holes).toHaveLength(0);
   });
+  it('면 테두리 밖으로 분리대가 이어지는 빈 곳(분리대 끝머리)은 분리대에만 닿으면 섬으로 낸다', () => {
+    // 오른쪽 갈래 가운데(z 15~25)가 비어 있고, 면 밖으로 같은 폭의 분리대가 이어진다
+    const cov = [rect(0, 0, 40, 15), rect(0, 25, 40, 40), rect(0, 15, 25, 25)];
+    const f = face();
+    expect(carveIslands([f], cov)).toBe(0);
+    const g = face();
+    expect(carveIslands([g], cov, [rect(40, 15, 60, 25)])).toBe(1);
+    expect(Math.abs(ringArea(g.holes[0]))).toBeGreaterThan(140);
+  });
 });

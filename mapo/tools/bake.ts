@@ -1788,7 +1788,7 @@ let walkJson = '';
       return q.length < 2 ? [] : [[...q.flatMap((t) => [t.lx, t.lz]), ...q.reverse().flatMap((t) => [t.rx, t.rz])]];
     });
     const before = polys.isl.length;
-    const carved = carveIslands(sf.faces, [...ribbons, ...polys.med, ...b.crosswalks.flatMap((c) => c.rings), ...b.crosswalkMarks, ...patches.map((p) => p.ring), ...paint]);
+    const carved = carveIslands(sf.faces, [...ribbons, ...polys.med, ...b.crosswalks.flatMap((c) => c.rings), ...b.crosswalkMarks, ...patches.map((p) => p.ring), ...paint], polys.med);
     polys.isl = sf.faces.flatMap((f) => f.holes);
     console.log(`교차로 면 안 섬 ${carved}개 더 냄(교통섬 ${before} → ${polys.isl.length}개)`);
   }

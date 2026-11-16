@@ -73,6 +73,29 @@ describe('횡단보도로 큰길 건너기', () => {
     expect(off).toBe(0);
   });
 
+  it('기다리는 자리가 축 옆으로 비켜 있어도(축 끝 바로 밖이 건물) 찻길은 칠한 폭 안으로 건넌다', () => {
+    const rs = roads();
+    const xws = [xw(false)];
+    const g = walkNet(rs, { crosswalks: xws, walls: [Float32Array.from([-2, -9.2, 2, -9.2, 2, -20, -2, -20])] });
+    expect(g.links).toHaveLength(1);
+    const l = g.links[0];
+    expect(Math.max(Math.abs(l.pax), Math.abs(l.pbx))).toBeGreaterThan(2);
+    const sim = makeWalkers(g, exits, fixedProvider(1, 0), 3, 60, undefined, undefined);
+    let crossed = 0;
+    let off = 0;
+    for (let k = 0; k < 6000; k++) {
+      if (k % 200 === 0) sim.burst('s', 3), sim.burst('n', 3);
+      sim.step(0.1, at(14), false);
+      for (let i = 0; i < sim.w.n; i++) {
+        if (Math.abs(sim.w.z[i]) > 7.1) continue; // 찻길 밖
+        if (Math.abs(sim.w.x[i]) <= 2.05) crossed++;
+        else off++;
+      }
+    }
+    expect(crossed).toBeGreaterThan(50);
+    expect(off).toBe(0);
+  });
+
   it('건너편 출구가 더 가까운 사람은 횡단보도까지 걸어가 건넌 뒤 그 출구로 들어간다', () => {
     const rs = roads();
     const g = walkNet(rs, { crosswalks: [xw(false)] });

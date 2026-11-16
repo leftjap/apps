@@ -117,4 +117,22 @@ describe('걷는 길 그래프: 건너는 선', () => {
     const g = walkNet([road([[0, 0], [200, 0]], { cls: 2, lanes: 4 })], { crosswalks: [crosswalk(100, 0, 0, 1, 1.5, [], true, 4)] });
     expect(g.links.length).toBe(0);
   });
+  it('축을 따라 나간 끝 너머가 찻길이면, 칠 밖 찻길이 3m 안이 되는 옆 빈자리에서 기다린다(모퉁이·짧은 길에 붙은 횡단보도)', () => {
+    // 횡단보도 북쪽 끝 너머로 짧은 큰길(4m)이 이어져, 축을 따라서는 4m 넘게 칠 밖 찻길을 지나야 보도에 닿는다. 그 길 옆 보도는 비어 있다
+    const xw = crosswalk(100, 0, 0, 1, 7.1, [], true, 4);
+    const g = walkNet([road([[0, 0], [200, 0]], { cls: 2, lanes: 4 }), road([[100, -7.1], [100, -11.1]], { cls: 3, lanes: 1, oneway: true })], { crosswalks: [xw] });
+    expect(g.links.length).toBe(1);
+    const l = g.links[0];
+    const north = l.paz < 0 ? [l.pax, l.paz] : [l.pbx, l.pbz];
+    expect(Math.abs(north[0] - 100)).toBeGreaterThan(1.5);
+    expect(north[1]).toBeGreaterThan(-11.1);
+  });
+  it('가운데 분리대에서 칠이 끊긴 횡단보도는 분리대를 칠 밖 찻길로 치지 않고 잇는다', () => {
+    // 찻길 반폭 7.1m 가운데 폭 3.6m 분리대, 칠은 분리대 양옆 두 조각
+    const xw = crosswalk(100, 0, 0, 1, 7.1, [], true, 4);
+    const piece = (z0: number, z1: number) => Float32Array.from([98, z0, 102, z0, 102, z1, 98, z1]);
+    xw.rings = [piece(-7.1, -1.8), piece(1.8, 7.1)];
+    const g = walkNet([road([[0, 0], [200, 0]], { cls: 2, lanes: 4 })], { crosswalks: [xw], med: [[0, -1.8, 200, -1.8, 200, 1.8, 0, 1.8]] });
+    expect(g.links.length).toBe(1);
+  });
 });

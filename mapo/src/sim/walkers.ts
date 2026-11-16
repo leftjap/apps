@@ -308,6 +308,12 @@ export function makeWalkers(
   const head = new Float32Array(max); // 걷는 방향(판단에 쓴다). 그려지는 몸 방향(w.yaw)은 이쪽으로 TURN_RATE 만큼씩 돈다
   const queued = new Uint8Array(max); // 신호를 기다리는 사람 뒤에 줄을 서서 멈췄다
   const xSlot = new Uint8Array(max); // 횡단보도 앞에서 빈자리를 찾아 옮겨 간 횟수
+  // 건너는 길: 이쪽 기다리는 자리(N) → 이쪽 칠 끝(A) → 건너편 칠 끝(B) → 건너편 기다리는 자리(F). xLeg 는 지금 가는 자리(0 A, 1 B, 2 F)
+  const xLeg = new Uint8Array(max);
+  const xAx = new Float32Array(max);
+  const xAz = new Float32Array(max);
+  const xBx = new Float32Array(max);
+  const xBz = new Float32Array(max);
   const xLat = new Float32Array(max); // 횡단보도에서 축 오른쪽으로 비켜 걷는 거리(m)
   // 중앙버스정류장 오가기: 1 승강장으로 감, 2 승강장에서 보도로 나옴. 네 자리(rx·rz 의 0~3)를 차례로 걷는다(rLeg).
   // rLeg 1 을 시작하기 전에 신호·차를 보고(rHold), rCross 번째 구간이 찻길을 건너는 구간이다.
@@ -542,7 +548,7 @@ export function makeWalkers(
     onLeave?.(w.x[i], w.z[i]);
     const j = --w.n;
     if (i === j) return;
-    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, home, tx, tz, ox, oz, alightT, dodge, curK, head, queued, xSlot, xLat, rt, rLeg, rHold, rCross, rLink, ...rx, ...rz, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
+    for (const a of [from, to, sx, sz, t, speed, off, offWant, side, life, mode, endT, dockOf, holdT, faceX, faceZ, nextK, turnU, startV, nextOff, nextSide, nextX, nextDep, xing, xLink, xNx, xNz, xFx, xFz, xDx, xDz, xLeg, xAx, xAz, xBx, xBz, home, tx, tz, ox, oz, alightT, dodge, curK, head, queued, xSlot, xLat, rt, rLeg, rHold, rCross, rLink, ...rx, ...rz, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female])
       a[i] = a[j];
   }
 
@@ -846,6 +852,19 @@ export function makeWalkers(
       xFx[i] -= (uz / lu) * xLat[i];
       xFz[i] += (ux / lu) * xLat[i];
       xSlot[i] = 0;
+      // 칠 끝은 축 양 끝에서 같은 쪽으로 비킨 자리. 기다리는 자리가 축 옆으로 비켜 있어도 찻길은 칠 위로 건넌다.
+      // 기다리는 자리가 이미 이쪽 칠 끝보다 찻길 쪽이면 그 칠 끝은 건너뛰고, 건너편도 같다
+      const l = links.list[xLink[i]];
+      const fromA = Math.hypot(xNx[i] - l.ax, xNz[i] - l.az) <= Math.hypot(xNx[i] - l.bx, xNz[i] - l.bz);
+      const [ax, az, bx, bz] = fromA ? [l.ax, l.az, l.bx, l.bz] : [l.bx, l.bz, l.ax, l.az];
+      const L = Math.hypot(bx - ax, bz - az) || 1;
+      const vx = (bx - ax) / L;
+      const vz = (bz - az) / L;
+      xAx[i] = ax - vz * xLat[i];
+      xAz[i] = az + vx * xLat[i];
+      xBx[i] = bx - vz * xLat[i];
+      xBz[i] = bz + vx * xLat[i];
+      xLeg[i] = (xNx[i] - ax) * vx + (xNz[i] - az) * vz >= 0 ? 1 : 0;
       return;
     }
     depart(i, to[i], k, startV[i] + excess);
@@ -1100,15 +1119,20 @@ export function makeWalkers(
         const l = links.list[xLink[i]];
         if (xing[i] === 2) {
           const h = Math.atan2(xFz[i] - xNz[i], xFx[i] - xNx[i]);
-          if (!mayStart(i, l, Math.hypot(xFx[i] - xNx[i], xFz[i] - xNz[i]), now.tod)) {
+          // 건널 거리: 칠 끝 둘을 거쳐 건너편 기다리는 자리까지
+          const span =
+            (xLeg[i] === 0 ? Math.hypot(xAx[i] - xNx[i], xAz[i] - xNz[i]) + Math.hypot(xBx[i] - xAx[i], xBz[i] - xAz[i]) : Math.hypot(xBx[i] - xNx[i], xBz[i] - xNz[i])) +
+            Math.hypot(xFx[i] - xBx[i], xFz[i] - xBz[i]);
+          if (!mayStart(i, l, span, now.tod)) {
             w.moving[i] = 0;
             head[i] = h;
             continue;
           }
           xing[i] = 3;
         }
-        const gx = xing[i] === 1 ? xNx[i] : xing[i] === 3 ? xFx[i] : xDx[i];
-        const gz = xing[i] === 1 ? xNz[i] : xing[i] === 3 ? xFz[i] : xDz[i];
+        if (xing[i] === 3 && xLeg[i] === 1 && (xFx[i] - xBx[i]) * (xBx[i] - xAx[i]) + (xFz[i] - xBz[i]) * (xBz[i] - xAz[i]) <= 0) xLeg[i] = 2;
+        const gx = xing[i] === 1 ? xNx[i] : xing[i] === 3 ? [xAx, xBx, xFx][xLeg[i]][i] : xDx[i];
+        const gz = xing[i] === 1 ? xNz[i] : xing[i] === 3 ? [xAz, xBz, xFz][xLeg[i]][i] : xDz[i];
         const dx = gx - w.x[i];
         const dz = gz - w.z[i];
         const dd = Math.hypot(dx, dz);
@@ -1150,7 +1174,8 @@ export function makeWalkers(
             const spot = freeSpot(i, l);
             if (spot) [xNx[i], xNz[i]] = spot;
             xSlot[i]++;
-          } else xing[i]++;
+          } else if (xing[i] === 3 && xLeg[i] < 2) xLeg[i]++;
+          else xing[i]++;
         }
         continue;
       }

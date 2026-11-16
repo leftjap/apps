@@ -45,6 +45,7 @@ export function boardWalkNet(
     hardFaces: faces.filter((f) => f.cls <= 3).map((f) => [f.outer, ...f.holes]),
     softAlleys: alleys,
     hard: [...major, ...polys.med.map((m) => [m])],
+    refuge: polys.med.map((m) => [m]),
     land: [
       ...b.groundAreas.filter((a) => a.kind === GK.ROADSIDE || a.kind === GK.PLAZA).map((a) => [a.outer, ...a.holes]),
       ...polys.car.map(([, r]) => [r]),
@@ -74,6 +75,8 @@ export interface WalkInput {
   softAlleys: ArrayLike<number>[][];
   /** 큰길 찻길 띠(교차로를 지나 끝까지)·분리대 */
   hard: ArrayLike<number>[][];
+  /** 분리대: 건너는 선이 지나도 칠 밖 찻길로 치지 않는다(칠이 분리대에서 끊긴 횡단보도) */
+  refuge?: ArrayLike<number>[][];
   /** 도로 부지(도시생태현황도 도로 부지·광장과 찻길 면) */
   land: ArrayLike<number>[][];
   buildings: ArrayLike<number>[];
@@ -96,6 +99,7 @@ const HARD = 2;
 const LAND = 4;
 const BLDG = 8;
 const XW = 16;
+const MED = 32;
 const CELL = 0.5;
 const REACH = 8; // 끝점·횡단보도를 이을 가장 먼 거리(m)
 
@@ -112,6 +116,7 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
   for (const b of inp.buildings) fillBits(B, [b], BLDG);
   for (const c of inp.crosswalks) for (const r of c.rings ?? []) fillBits(B, [r], XW);
   for (const r of inp.paint ?? []) fillBits(B, [r], XW);
+  for (const s of inp.refuge ?? []) fillBits(B, s, MED);
   const hot = inp.hot ?? /$^/;
   const tunnels = inp.tunnels ?? [];
   const nearTunnel = (x: number, z: number) => tunnels.some(([tx, tz]) => Math.hypot(tx - x, tz - z) < 20);
@@ -382,14 +387,10 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
       };
       let d = find(true);
       if (d < 0) d = find(false);
-      if (d >= 0) {
-        const px = ex + c.ux * sg * (d + 0.4);
-        const pz = ez + c.uz * sg * (d + 0.4);
-        const hit = reach(px, pz, new Set(), 12);
-        if (hit) return { ex, ez, px, pz, hit };
-      }
-      // 축을 따라 찾지 못했거나 거기서 선에 곧게 닿지 못하면(건물에 막힘 등) 끝에서 5m 안, 건너편 쪽이 아닌 곳에서
-      // 0.4m 둘레가 비어 있는 자리 가운데 선에 곧게 닿는 가장 가까운 자리
+      // 기다릴 자리 후보: 축을 따라 찾은 자리, 그다음 끝에서 5m 안, 건너편 쪽이 아닌 곳에서 0.4m 둘레가 비어 있는 자리(가까운 것부터).
+      // 모퉁이·짧은 길에 붙은 끝은 축을 따라가면 칠 밖 찻길을 몇 m 지나야 보도에 닿으므로, 짝은 아래에서 칠 밖 찻길이 가장 짧은 것으로 고른다
+      const cands: { px: number; pz: number }[] = [];
+      if (d >= 0) cands.push({ px: ex + c.ux * sg * (d + 0.4), pz: ez + c.uz * sg * (d + 0.4) });
       const spots: [number, number, number][] = [];
       for (let dx = -5; dx <= 5; dx += 0.25)
         for (let dz = -5; dz <= 5; dz += 0.25) {
@@ -405,33 +406,49 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
           if (ok) spots.push([x, z, r]);
         }
       spots.sort((p, q) => p[2] - q[2]);
-      for (const [px, pz] of spots.filter((_, k) => k < 12 || k % 8 === 0).slice(0, 40)) {
-        const hit = reach(px, pz, new Set(), 12);
-        if (hit) return { ex, ez, px, pz, hit };
+      for (const [px, pz] of spots.filter((_, k) => k < 12 || k % 8 === 0).slice(0, 40)) cands.push({ px, pz });
+      const out: { ex: number; ez: number; px: number; pz: number; hit: [number, number, number] }[] = [];
+      for (const q of cands) {
+        if (out.length >= 6) break;
+        if (out.some((o) => Math.hypot(o.px - q.px, o.pz - q.pz) < 0.75)) continue;
+        const hit = reach(q.px, q.pz, new Set(), 12);
+        if (hit) out.push({ ex, ez, ...q, hit });
       }
+      if (out.length) return out;
       if (d >= 0 || spots.length) return '선 없음';
       // 까닭: 축 끝에서 바깥 3m 자리가 무엇인가
       const f = bitsAt(B, ex + c.ux * sg * 3, ez + c.uz * sg * 3);
       return f & BLDG ? '건물' : f & HARD ? '큰길 찻길' : f & XW ? '횡단보도 면' : '자리 없음';
     };
-    const a = side(-1);
-    const b = side(1);
-    if (typeof a === 'string' || typeof b === 'string') {
-      inp.onCross?.(xw, `${typeof a === 'string' ? 'a:' + a : ''}${typeof a === 'string' && typeof b === 'string' ? ' ' : ''}${typeof b === 'string' ? 'b:' + b : ''}`);
+    // 큰길 찻길을 건너는가(아니면 골목을 건넌다: 골목 선의 걷는 띠가 길 폭을 덮는다)
+    let major = false;
+    for (let d = -c.half; d <= c.half; d += 0.5) if (bitsAt(B, c.x + c.ux * d, c.z + c.uz * d) & HARD) major = true;
+    const as = side(-1);
+    const bs = side(1);
+    if (typeof as === 'string' || typeof bs === 'string') {
+      inp.onCross?.(xw, `${major ? '' : '골목 위 '}${typeof as === 'string' ? 'a:' + as : ''}${typeof as === 'string' && typeof bs === 'string' ? ' ' : ''}${typeof bs === 'string' ? 'b:' + bs : ''}`);
       return;
     }
-    // 기다리는 자리끼리 잇는 건너는 선이 칠한 횡단보도 면 밖의 큰길 찻길을 3m 넘게 지나면 잇지 않는다(줄무늬는 연석 앞 0.5~1m 에서 끝난다)
-    {
-      const L = Math.hypot(b.px - a.px, b.pz - a.pz);
+    // 기다리는 자리끼리 잇는 건너는 선이 칠한 횡단보도 면 밖의 큰길 찻길을 3m 넘게 지나면 잇지 않는다(줄무늬는 연석 앞 0.5~1m 에서 끝난다).
+    // 분리대는 칠이 끊겨도 서서 건너는 곳이라 세지 않는다. 후보 짝 가운데 칠 밖 찻길이 가장 짧은 짝(같으면 앞 후보)을 쓴다
+    const bareOf = (p: { px: number; pz: number }, q: { px: number; pz: number }) => {
+      const L = Math.hypot(q.px - p.px, q.pz - p.pz);
       let bare = 0;
       for (let d = 0; d <= L; d += 0.25) {
-        const f = bitsAt(B, a.px + ((b.px - a.px) * d) / (L || 1), a.pz + ((b.pz - a.pz) * d) / (L || 1));
-        if (f & HARD && !(f & XW)) bare += 0.25;
+        const f = bitsAt(B, p.px + ((q.px - p.px) * d) / (L || 1), p.pz + ((q.pz - p.pz) * d) / (L || 1));
+        if (f & HARD && !(f & (XW | MED))) bare += 0.25;
       }
-      if (bare > 3) return inp.onCross?.(xw, '칠 밖 찻길 3m 넘음');
-    }
-    let major = false;
-    for (let d = 0; d <= 2 * c.half; d += 0.5) if (bitsAt(B, a.ex + c.ux * d, a.ez + c.uz * d) & HARD) major = true;
+      return bare;
+    };
+    let best = Infinity;
+    let a = as[0];
+    let b = bs[0];
+    for (const p of as)
+      for (const q of bs) {
+        const v = bareOf(p, q);
+        if (v < best) (best = v), (a = p), (b = q);
+      }
+    if (best > 3) return inp.onCross?.(xw, '칠 밖 찻길 3m 넘음');
     const na = splitAt(a.hit[0], a.hit[1]);
     // 앞에서 나눈 선 번호가 바뀌었을 수 있으므로 건너편은 다시 찾는다
     const hb = reach(b.px, b.pz, new Set(), 12);

@@ -5,8 +5,11 @@ import { fillRings, ringArea, simplifyLoop, traceLoops } from './contour.ts';
 const CELL = 0.25;
 const MIN_AREA = 6; // 이보다 작은 빈 곳은 띠 사이 틈으로 본다(m²)
 
-/** faces 의 holes 에 섬 고리(바깥 고리와 반대 방향, m)를 더하고 더한 수를 돌려준다. cover 는 찻길 띠·횡단보도 칠 고리들 */
-export function carveIslands(faces: { outer: ArrayLike<number>; holes: ArrayLike<number>[] }[], cover: ArrayLike<number>[]): number {
+/**
+ * faces 의 holes 에 섬 고리(바깥 고리와 반대 방향, m)를 더하고 더한 수를 돌려준다. cover 는 찻길 띠·횡단보도 칠 고리들.
+ * refuge 는 분리대 고리들: 면 밖으로 분리대만 이어지는 빈 곳(분리대 끝머리)은 면 테두리에 닿아도 섬으로 낸다
+ */
+export function carveIslands(faces: { outer: ArrayLike<number>; holes: ArrayLike<number>[] }[], cover: ArrayLike<number>[], refuge: ArrayLike<number>[] = []): number {
   const boxes = cover.map((r) => {
     let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
     for (let k = 0; k < r.length; k += 2) (x0 = Math.min(x0, r[k])), (x1 = Math.max(x1, r[k])), (z0 = Math.min(z0, r[k + 1])), (z1 = Math.max(z1, r[k + 1]));
@@ -29,7 +32,14 @@ export function carveIslands(faces: { outer: ArrayLike<number>; holes: ArrayLike
       const [a, b, c, d] = boxes[i];
       if (c >= x0 && a <= x1 && d >= z0 && b <= z1) fillRings(free, n, [g(r)], 0);
     });
-    // 빈 곳 덩어리마다: 면 밖과 맞닿으면(모퉁이 호 쪽) 버리고, 넓이와 두께(0.5m 깎아도 남는가)를 본다
+    // 빈 곳 덩어리마다: 분리대가 아닌 면 밖과 맞닿으면(모퉁이 호 쪽) 버리고, 넓이와 두께(0.5m 깎아도 남는가)를 본다
+    // 면 밖의 분리대 칸
+    const med = new Uint8Array(n * n);
+    for (const r of refuge) {
+      let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+      for (let k = 0; k < r.length; k += 2) (a = Math.min(a, r[k])), (c = Math.max(c, r[k])), (b = Math.min(b, r[k + 1])), (d = Math.max(d, r[k + 1]));
+      if (c >= x0 - 1 && a <= x1 + 1 && d >= z0 - 1 && b <= z1 + 1) fillRings(med, n, [g(r)], 1);
+    }
     const seen = new Uint8Array(n * n);
     for (let start = 0; start < n * n; start++) {
       if (!free[start] || seen[start]) continue;
@@ -44,7 +54,7 @@ export function carveIslands(faces: { outer: ArrayLike<number>; holes: ArrayLike
           const X = x + dx;
           const Z = z + dz;
           if (X < 0 || Z < 0 || X >= n || Z >= n || !face[Z * n + X]) {
-            touch = true;
+            if (X < 0 || Z < 0 || X >= n || Z >= n || !med[Z * n + X]) touch = true;
             continue;
           }
           const j = Z * n + X;

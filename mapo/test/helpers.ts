@@ -105,6 +105,7 @@ export function walkNet(
       hardFaces: [],
       softAlleys: soft,
       hard,
+      refuge: (o.med ?? []).map((m) => [m]),
       land: [...car, ...(o.land ?? []).map((r) => [r])],
       buildings: o.walls ?? [],
       roads,
