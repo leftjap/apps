@@ -493,7 +493,7 @@ export function makeWalkers(
         dockWNow[z][q] = dockW[z][q] * (z === PLACE_Z ? Math.max(0.01, pl) : 1 + GATHER * pl);
       });
     weigh();
-    refocus();
+    dirty = true;
   }
   const short = new Float32Array(PLACE_Z + 1); // 구역마다 모자란 인원(버스에서 내릴 사람)
 
@@ -524,7 +524,9 @@ export function makeWalkers(
   const inW = new Float64Array(PLACE_Z + 1); // 칸마다 보는 곳 안 선 무게 합
   const fEdges = Array.from({ length: PLACE_Z + 1 }, () => [] as number[]); // 칸마다 보는 곳 안 선과 누적 무게(화면 밖에 사람을 놓을 자리)
   const fCum = Array.from({ length: PLACE_Z + 1 }, () => [] as number[]);
-  let focus: { x: number; z: number; r: number } | null = null;
+  let asked: { x: number; z: number; r: number } | null = null; // 정한 보는 곳
+  let focus: { x: number; z: number; r: number } | null = null; // 사람을 먼저 채울 원(정한 보는 곳을 상한이 허락하는 만큼 넓힌 것)
+  let dirty = false; // 다음 단계에서 보는 곳 안 몫을 다시 나눈다
   let seen: (x: number, z: number) => boolean = () => true;
   const inFocus = (x: number, z: number) => !!focus && Math.hypot(x - focus.x, z - focus.z) < focus.r;
   const dockInF = new Uint8Array(docks.length);
@@ -549,8 +551,28 @@ export function makeWalkers(
     }
   }
   weigh();
-  /** 보는 곳 안 선 무게와 문·출구 무게를 나눈다 */
-  function refocus() {
+  /** 사람을 먼저 채울 원을 정하고, 그 안 선 무게와 문·출구 무게를 나눈다. 원은 정한 보는 곳 반지름의 1·1.4·2·2.8배(2,200m 까지) 가운데
+   *  실제 붐빔대로 채워도 상한의 85% 를 넘지 않는 가장 넓은 것이다(보는 곳 둘레가 실제 붐빔과 같아 가장자리에서 사람 흐름이 덜 끊긴다) */
+  function refocus(real: number[]) {
+    dirty = false;
+    focus = null;
+    if (asked) {
+      const { x, z, r } = asked;
+      const R = [1, Math.SQRT2, 2, 2 * Math.SQRT2].map((k) => Math.max(r, Math.min(2200, r * k)));
+      const part = R.map(() => new Float64Array(PLACE_Z + 1));
+      for (let e = 0; e < NE; e++) {
+        const d = Math.hypot(eX[e] - x, eZ[e] - z);
+        for (let j = 0; j < R.length; j++)
+          if (d < R[j]) {
+            part[j][eCell[e]] += eW[e];
+            if (ePlace[e]) part[j][PLACE_Z] += eW[e];
+          }
+      }
+      let j = R.length - 1;
+      while (j > 0 && real.reduce((a, v, c) => a + (totW[c] > 0 ? (v * part[j][c]) / totW[c] : 0), 0) > 0.85 * max) j--;
+      focus = { x, z, r: R[j] };
+      docks.forEach((d, k) => (dockInF[k] = inFocus(d.x, d.z) ? 1 : 0));
+    } else dockInF.fill(0);
     inW.fill(0);
     for (let c = 0; c <= PLACE_Z; c++) (fEdges[c].length = 0), (fCum[c].length = 0);
     if (focus)
@@ -1308,6 +1330,7 @@ export function makeWalkers(
 
   function step(dt: number, now: Now, ambient = true) {
     refreshPlaces(now);
+    if (dirty) refocus(outside(provider, now, rain));
     if (cross.busy) {
       for (const k of marked) cross.busy[k] = 0;
       marked.length = 0;
@@ -1633,12 +1656,11 @@ export function makeWalkers(
     for (let i = 0; i < w.n; i++) if (mode[i] !== LEAVING) have[home[i]]++;
     return have;
   };
-  /** 보는 곳을 정한다: 중심 (x, z), 반지름 r(m), 화면에 보이는 자리인지 알려 주는 함수 */
+  /** 보는 곳을 정한다: 중심 (x, z), 반지름 r(m), 화면에 보이는 자리인지 알려 주는 함수. 다음 단계부터 쓴다 */
   const setFocus = (x: number, z: number, r: number, visible: (x: number, z: number) => boolean) => {
-    focus = { x, z, r };
+    asked = { x, z, r };
     seen = visible;
-    docks.forEach((d, k) => (dockInF[k] = inFocus(d.x, d.z) ? 1 : 0));
-    refocus();
+    dirty = true;
   };
   /** 화면 1명이 실제 몇 명인가: [보는 곳 안, 밖] */
   const scale = (): [number, number] => [kIn, kOut];
