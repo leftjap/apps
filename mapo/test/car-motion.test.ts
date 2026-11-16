@@ -56,6 +56,19 @@ describe('그린 자리 이어짐', () => {
     expect(side).toBeLessThan(0.3);
   });
 
+  it('중앙버스차로 자리가 다른 두 조각의 이음매를 승강장 가까이에서 지날 때도 버스가 옆으로 튀지 않는다', () => {
+    // 위와 같은 길에서 정류장 앞 조각의 분리대 자료가 5.6m 라 중앙버스차로가 일반 차로 쪽으로 0.35m 붙어 있다
+    const med = { oneway: true, lanes: 3, cls: 1, medBus: true, gap: 8.1, measured: true };
+    const g = buildCarGraph([road([[-600, 9], [-10, 9]], { ...med, gap: 5.6 }), road([[-10, 9], [600, 9]], med), road([[600, -9], [-600, -9]], med)]);
+    expect(g[0].med).not.toBeCloseTo(g[1].med, 2);
+    const routes = makeBusRoutes([{ ref: '603', kind: 0, to: '', segs: [1, 2], stops: [], stopNames: [] }], g, [['1', '가운데정류장', 0, 2.8]]);
+    const sim = makeCars(g, fixedProvider(1), 4, 10, routes);
+    sim.addBus(0, 400);
+    const { side } = track(sim, 900, 1 / 30);
+    expect(sim.dwells.length + sim.cars.n).toBeGreaterThan(0);
+    expect(side).toBeLessThan(0.3);
+  });
+
   it('차로가 많은 길이 갈림 없이 급하게 꺾여도 안쪽 차로 차가 뒤로 돌거나 방향이 한 단계에 15° 넘게 꺾이지 않는다', () => {
     const deg = Math.PI / 180;
     const dir = (t: number, d: number): [number, number] => [d * Math.cos(t * deg), d * Math.sin(t * deg)];

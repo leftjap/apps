@@ -359,23 +359,27 @@ export function makeCars(
     // 교차로 상자 안에서는 들어온 차로와 나갈 차로를 잇는 곡선을 따라간다
     let inBox = false;
     let med = false; // 곡선 한쪽 끝이 중앙버스차로
+    let mw = 0; // 곡선 위 그 자리의 중앙버스차로 자리(두 구간의 med 를 곡선을 따라 잇는다)
     boxed[i] = 0;
     if (nextE[i] >= 0 && s[i] > e.len - jn.rIn[e.id]) {
       const o = edges[nextE[i]];
       const lo = outLane(i, o);
-      jn.curve(e, o, lane[i], lo, s[i] - (e.len - jn.rIn[e.id]), cv);
+      const d = s[i] - (e.len - jn.rIn[e.id]);
+      jn.curve(e, o, lane[i], lo, d, cv);
       med = lane[i] === MED || lo === MED;
+      mw = medAlong(e, o, d);
       inBox = true;
       boxed[i] = jn.groupOfEnd[e.id] >= 0 ? 1 : 0;
     } else if (prevE[i] >= 0 && s[i] < jn.rOut[e.id]) {
       const a = edges[prevE[i]];
       jn.curve(a, e, prevLane[i], lane[i], jn.rIn[a.id] + s[i], cv);
       med = prevLane[i] === MED || lane[i] === MED;
+      mw = medAlong(a, e, jn.rIn[a.id] + s[i]);
       inBox = true;
       boxed[i] = jn.groupOfStart[e.id] >= 0 ? 1 : 0;
     }
     if (inBox) {
-      const w = med && cars.route[i] >= 0 ? islandShift(i, e) : 0;
+      const w = med && cars.route[i] >= 0 ? islandShift(i, mw) : 0;
       cars.x[i] = cv[0] + Math.sin(cv[3]) * w;
       cars.y[i] = cv[1];
       cars.z[i] = cv[2] - Math.cos(cv[3]) * w;
@@ -384,20 +388,27 @@ export function makeCars(
     }
     pointAt(e.p, e.cum, s[i], tmp);
     const yaw = headingNear(e, s[i]);
-    const off = laneOffset(e, lane[i]) - (lane[i] === MED ? islandShift(i, e) : 0);
+    const off = laneOffset(e, lane[i]) - (lane[i] === MED ? islandShift(i, e.med) : 0);
     cars.x[i] = tmp[0] - Math.sin(yaw) * off;
     cars.y[i] = tmp[1];
     cars.z[i] = tmp[2] + Math.cos(yaw) * off;
     cars.yaw[i] = yaw;
   }
 
-  /** 중앙버스차로 버스가 중앙 정류장 둘레에서 승강장 폭만큼 왼쪽으로 비켜서는 거리(m). 승강장 안에서 다 비키고, 승강장 끝에서 22m 밖은 0 */
-  function islandShift(i: number, e: Edge): number {
+  /** 상자 안 곡선(a 끝에서 b 시작까지, 들어선 뒤 d m)의 그 자리 중앙버스차로 자리 med. 한쪽에만 중앙버스차로가 있으면 그쪽 값 */
+  function medAlong(a: Edge, b: Edge, d: number): number {
+    if (!a.med || !b.med) return a.med || b.med;
+    const u = Math.max(0, Math.min(1, d / Math.max(0.1, jn.rIn[a.id] + jn.rOut[b.id])));
+    return a.med + (b.med - a.med) * u;
+  }
+  /** 중앙버스차로 버스가 중앙 정류장 둘레에서 승강장 폭만큼 왼쪽으로 비켜서는 거리(m). 승강장 안에서 다 비키고, 승강장 끝에서 22m 밖은 0.
+   *  med 는 그 자리의 중앙버스차로 자리(일반 차로 왼쪽 가장자리에서 버스차로 가운데까지)로, 비켜선 버스는 med 와 상관없이 같은 자리에 선다 */
+  function islandShift(i: number, med: number): number {
     const R = routes[cars.route[i]];
     const at = R.start[rpos[i]] + s[i];
     let w = 0;
     for (const k of [stopK[i] - 1, stopK[i]]) if (R.med[k]) w = Math.max(w, Math.min(1, Math.max(0, (ISLAND_L / 2 + 22 - Math.abs(at - R.stops[k] + ISLAND_BACK)) / 22)));
-    return Math.max(0, 0.25 + ISLAND_W + 0.15 + 1.25 - e.med) * w;
+    return Math.max(0, 0.25 + ISLAND_W + 0.15 + 1.25 - med) * w;
   }
 
   /** 시간대 교통량(차로 1km 에 몇 대) */
