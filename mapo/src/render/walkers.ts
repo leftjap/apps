@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import type { Season } from '../sim/season.ts';
 import type { Walkers } from '../sim/walkers.ts';
 import { env, material, pal } from './env.ts';
+import { sizeAt, sizeGlsl } from './size.ts';
 import { instanced, merge, part } from './util.ts';
 
 // 몸의 기준 높이(m). 셰이더도 같은 값을 쓴다
@@ -96,11 +97,11 @@ export const FAR_VERTS = FAR_FIG.attributes.position.count;
 const NEAR_PX = 14;
 
 /** 한 사람을 어떻게 그릴까: 0 그리지 않음(화면 밖·카메라 뒤), 1 자세한 모형, 2 단순한 모형.
- *  e 는 투영 × 시점 행렬 원소, projK 는 화면 높이 / (2·tan(화각/2)). 확대 배율은 셰이더의 zoomScale 과 같은 식이다 */
+ *  e 는 투영 × 시점 행렬 원소, projK 는 화면 높이 / (2·tan(화각/2)). 확대 배율은 셰이더와 같은 크기 기준(size.ts)이다 */
 export function walkerLod(e: ArrayLike<number>, projK: number, x: number, z: number): number {
   const cw = e[3] * x + e[7] * 0.8 + e[11] * z + e[15];
   if (cw <= 0.5) return 0;
-  const k = Math.min(6.5, Math.max(1.6, (8 * cw) / (projK * 1.6)));
+  const k = sizeAt('mover', cw);
   const px = (1.47 * k * projK) / cw;
   // 사람 키만큼(화면 좌표로) 여유를 두고 화면 밖이면 뺀다
   const m = px / (projK * Math.tan((16 * Math.PI) / 180)) + 0.05;
@@ -152,7 +153,7 @@ export function wearOf(t: number, age: number, female: number, warm: number): [n
   return [outer, hair, hat + 4 * scarf, bag + 4 * short];
 }
 
-const SCALE = 'zoomScale(-cv.z, 1.6, 8.0, 1.6, 6.5)';
+const SCALE = sizeGlsl('mover');
 /** 셰이더에 넣을 실수 표기 */
 const num = (v: number) => v.toFixed(4);
 

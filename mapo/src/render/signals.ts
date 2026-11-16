@@ -6,6 +6,7 @@ import type { Crosswalk } from '../data/board.ts';
 import type { Edge } from '../sim/graph.ts';
 import type { Signals } from '../sim/signals.ts';
 import { material } from './env.ts';
+import { sizeGlsl } from './size.ts';
 import { instanced, merge, part, ribbon, ribbonGeometry, type Ribbon } from './util.ts';
 
 /** 횡단보도 면 외곽선 하나를 칠한다. 줄무늬는 건너는 축(ux, uz)을 따라 (sx, sz)에서부터 0.5m 칠하고 0.5m 띈다 */
@@ -105,7 +106,7 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
         varying vec3 vN; varying float vPart; varying float vState; varying float vDist;
         void main() {
           vec4 cv = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
-          vec3 p = position * zoomScale(-cv.z, 5.0, 7.0, 1.0, 3.0);
+          vec3 p = position * ${sizeGlsl('signal')};
           float cs = cos(aInst.z), sn = sin(aInst.z);
           vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, p.y, aInst.y + p.x * sn + p.z * cs);
           vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);

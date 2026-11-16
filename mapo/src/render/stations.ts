@@ -8,6 +8,7 @@ import { exitLook, type ExitKind } from '../data/exits.ts';
 import { exitBody } from '../data/exitFit.ts';
 import { nearestS, pointAt } from '../poly.ts';
 import { material, UNDER_Y } from './env.ts';
+import { sizeGlsl } from './size.ts';
 import { exitFlash } from './trainLight.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
 
@@ -329,7 +330,7 @@ export function makeStations(board: Board) {
       void main() {
         vec4 cv = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
         // 출구마다 실제 길이(x)·폭(z)·높이 배율로 늘인다
-        vec3 p = position * vec3(aSize.x, aSize.z, aSize.y) * zoomScale(-cv.z, 4.0, 9.0, 1.0, 3.4);
+        vec3 p = position * vec3(aSize.x, aSize.z, aSize.y) * ${sizeGlsl('exit')};
         float cs = cos(aInst.z), sn = sin(aInst.z);
         vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, p.y + 0.05, aInst.y + p.x * sn + p.z * cs);
         vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);

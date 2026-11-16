@@ -3,6 +3,7 @@
 // 중앙버스정류장은 길 가운데 분리대 위 승강장(낮은 단, 긴 지붕, 일반 차로 쪽 유리 난간, 양 끝 표지)으로 따로 그린다.
 import * as THREE from 'three';
 import { material } from './env.ts';
+import { sizeGlsl } from './size.ts';
 import { ISLAND_BACK, ISLAND_L, ISLAND_W } from '../sim/graph.ts';
 import { instanced, merge, part } from './util.ts';
 
@@ -30,7 +31,7 @@ export function makeBusStops(stops: { x: number; z: number; yaw: number }[]) {
         varying vec3 vN; varying float vPart; varying float vDist;
         void main() {
           vec4 cv = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
-          vec3 p = position * zoomScale(-cv.z, 3.0, 6.0, 1.0, 3.0);
+          vec3 p = position * ${sizeGlsl('shelter')};
           float cs = cos(aInst.z), sn = sin(aInst.z);
           // 앞(+x)은 진행 방향, +z 는 진행 방향 오른쪽
           vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, p.y, aInst.y + p.x * sn + p.z * cs);
@@ -59,14 +60,14 @@ function island(): THREE.BufferGeometry {
   const h = ISLAND_W / 2;
   const parts = [
     part(new THREE.BoxGeometry(ISLAND_L, 0.2, ISLAND_W).translate(0, 0.1, 0), 3),
-    part(new THREE.BoxGeometry(ISLAND_L - 6, 0.12, ISLAND_W + 0.5).translate(0, 2.9, -0.15), 0),
+    part(new THREE.BoxGeometry(ISLAND_L - 6, 0.12, ISLAND_W + 0.5).translate(0, 3.5, -0.15), 0),   // 버스(높이 3.18m)가 처마 밑으로 들어온다
     part(new THREE.BoxGeometry(ISLAND_L - 2, 1.1, 0.05).translate(0, 0.75, h - 0.08), 1),
-    part(new THREE.CylinderGeometry(0.07, 0.07, 3.3, 5).translate(-ISLAND_L / 2 + 0.6, 1.65, 0), 0),
-    part(new THREE.BoxGeometry(0.1, 0.8, 1.2).translate(-ISLAND_L / 2 + 0.6, 3.0, 0), 2),
-    part(new THREE.CylinderGeometry(0.07, 0.07, 3.3, 5).translate(ISLAND_L / 2 - 0.6, 1.65, 0), 0),
-    part(new THREE.BoxGeometry(0.1, 0.8, 1.2).translate(ISLAND_L / 2 - 0.6, 3.0, 0), 2),
+    part(new THREE.CylinderGeometry(0.07, 0.07, 3.8, 5).translate(-ISLAND_L / 2 + 0.6, 1.9, 0), 0),
+    part(new THREE.BoxGeometry(0.1, 0.8, 1.2).translate(-ISLAND_L / 2 + 0.6, 3.5, 0), 2),
+    part(new THREE.CylinderGeometry(0.07, 0.07, 3.8, 5).translate(ISLAND_L / 2 - 0.6, 1.9, 0), 0),
+    part(new THREE.BoxGeometry(0.1, 0.8, 1.2).translate(ISLAND_L / 2 - 0.6, 3.5, 0), 2),
   ];
-  for (let x = -ISLAND_L / 2 + 4; x <= ISLAND_L / 2 - 4; x += 5.5) parts.push(part(new THREE.CylinderGeometry(0.06, 0.06, 2.8, 5).translate(x, 1.5, h - 0.2), 0));
+  for (let x = -ISLAND_L / 2 + 4; x <= ISLAND_L / 2 - 4; x += 5.5) parts.push(part(new THREE.CylinderGeometry(0.06, 0.06, 3.4, 5).translate(x, 1.8, h - 0.2), 0));
   return merge(parts);
 }
 
@@ -84,7 +85,7 @@ export function makeBusIslands(stops: { x: number; z: number; yaw: number }[]) {
         void main() {
           vec4 cv = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
           // 길이·폭은 실제 크기로 두고(찻길과 맞아야 한다) 높이만 멀리서 볼 때 키운다
-          vec3 p = vec3(position.x, position.y * zoomScale(-cv.z, 3.0, 6.0, 1.0, 2.5), position.z);
+          vec3 p = vec3(position.x, position.y * ${sizeGlsl('island')}, position.z);
           float cs = cos(aInst.z), sn = sin(aInst.z);
           vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, p.y, aInst.y + p.x * sn + p.z * cs);
           vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);

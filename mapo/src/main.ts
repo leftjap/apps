@@ -19,6 +19,7 @@ import { makeMarks } from './render/marks.ts';
 import { makeSignalMarks } from './render/signals.ts';
 import { makeFlow } from './render/flow.ts';
 import { makeBusIslands, makeBusStops } from './render/busstops.ts';
+import { sizeAt } from './render/size.ts';
 import { makeView } from './render/scene.ts';
 import { makeSchools } from './render/schools.ts';
 import { makeStations } from './render/stations.ts';
@@ -777,12 +778,8 @@ function frame(t: number) {
   walkers.setRain(Math.max(weather.rain, weather.snow * 0.7));
   walkers.step(dt, now);
   // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
-  // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더의 zoomScale 과 같은 식)
-  const projK = view.renderer.domElement.clientHeight / (2 * Math.tan((32 * Math.PI) / 360));
-  const vd = view.viewDist();
-  const ws = Math.min(6.5, Math.max(1.6, (8 * vd) / (projK * 1.6)));
-  const cs = Math.min(15, Math.max(1.6, (10 * vd) / (projK * 0.45)), 2.5 * ws);
-  reactor.setGap(0.27 * cs + 0.32 * ws);
+  // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더와 같은 크기 기준, render/size.ts)
+  reactor.setGap((0.27 + 0.32) * sizeAt('mover', view.viewDist()));
   catStates = reactor.step(dt, cats.map((c) => catAt(c, now)), layers.people ? walkers.w : { ...walkers.w, n: 0 }, walkers.hold);
 
   updateEnv(now, time, sky, dt);

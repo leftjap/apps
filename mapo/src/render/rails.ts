@@ -12,6 +12,7 @@ import type { Line } from '../data/board.ts';
 import { headingAt, pointAt } from '../poly.ts';
 import type { TrainPos } from '../sim/trains.ts';
 import { env, material, pal, UNDER_Y } from './env.ts';
+import { sizeGlsl } from './size.ts';
 import { carSpans, GAP_M, GAP_MAX, GAP_PX, poolLevel, portalRamp } from './trainLight.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
 
@@ -680,7 +681,7 @@ export function makeRails(lines: Line[]) {
   const trainMesh = new THREE.Mesh(
     geo,
     material({
-      vertex: trainVert('aInst.y < 0.0 ? 1.5 : zoomScale(-cv.z, 3.2, 5.0, 1.5, 4.5)'),
+      vertex: trainVert(`aInst.y < 0.0 ? 1.0 : ${sizeGlsl('mover')}`),
       fragment: trainFrag('1.0'),
     }),
   );
@@ -692,7 +693,7 @@ export function makeRails(lines: Line[]) {
   const sub = instanced(car, MAX_CARS, { aInst: 4, aCol: 4, aMore: 4 });
   const subMat = material({
     under: true,
-    vertex: trainVert('zoomScale(-cv.z, 3.2, 7.0, 1.4, 5.5)'),
+    vertex: trainVert(sizeGlsl('mover')),
     fragment: trainFrag('focusIn(vXZ)'),
   });
   const subMesh = new THREE.Mesh(sub.geo, subMat);

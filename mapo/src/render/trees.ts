@@ -3,13 +3,14 @@
 import * as THREE from 'three';
 import type { Season } from '../sim/season.ts';
 import { material } from './env.ts';
+import { sizeGlsl } from './size.ts';
 import { instanced, merge, part } from './util.ts';
 
 /** 계절 → [잎 색 A, 잎 색 B, A·B 를 나무마다 딱 갈라 쓰는가(0 섞기, 1 가르기), 수관 크기] */
 const LOOK: Record<Season, [string, string, number, number]> = {
   blossom: ['#f8c3d4', '#b9db92', 1, 1],
   green: ['#a9cf86', '#6fa86a', 0, 1],
-  autumn: ['#ecb24a', '#cc5e36', 0, 1],
+  autumn: ['#c2ad6e', '#937a5a', 0, 1],
   winter: ['#a79a86', '#8a8272', 0, 0.62],
 };
 
@@ -36,7 +37,7 @@ export function makeTrees(xz: Float32Array, season: Season) {
         varying vec3 vN; varying float vPart; varying float vSeed; varying float vDist; varying float vH; varying vec2 vXZ;
         void main() {
           vec4 c = viewMatrix * vec4(aInst.x, 0.0, aInst.y, 1.0);
-          float s = aInst.z * zoomScale(-c.z, 8.0, 9.0, 1.0, 2.6);
+          float s = aInst.z * ${sizeGlsl('tree', '-c.z')};
           vec3 p = position;
           if (aPart > 0.5) p = vec3(p.x * uCrown, 2.8 + (p.y - 2.8) * mix(1.0, uCrown, 0.8), p.z * uCrown);   // 겨울: 가지만 남은 작은 수관
           p *= s;

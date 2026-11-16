@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import type { Cars } from '../sim/cars.ts';
 import { material } from './env.ts';
+import { sizeGlsl } from './size.ts';
 import { BUS_KINDS } from '../sim/buses.ts';
 import { instanced, merge, part } from './util.ts';
 
@@ -250,7 +251,7 @@ const VERT = /* glsl */ `
   void main() {
     vec4 cv = viewMatrix * vec4(aInst.xyz, 1.0);
     float picked = step(abs(float(gl_InstanceID) - uPick), 0.5);
-    float s = zoomScale(-cv.z, 4.5, 9.0, 1.3, 4.2) * aMore.z * (1.0 + 0.15 * picked);
+    float s = ${sizeGlsl('mover')} * aMore.z * (1.0 + 0.15 * picked);
     // 멀리서 키워 그려도 길이는 앞뒤 차·정지선까지(aRoom) 안에서만 늘인다(줄 선 차끼리 겹치거나 정지선을 넘어 보이지 않게)
     float sl = min(s, max(aMore.z, (aRoom - 0.8) / (2.0 * uDim.x)));   // 0.8m 는 굽은 길과 한 단계 늦은 값의 여유
     vec3 p = vec3(position.x * sl, position.y * s, position.z * s);
@@ -353,7 +354,7 @@ const GLOW_VERT = /* glsl */ `
   varying vec2 vP; varying float vPart; varying float vBrake; varying float vDist;
   void main() {
     vec4 cv = viewMatrix * vec4(aInst.xyz, 1.0);
-    float s = zoomScale(-cv.z, 4.5, 9.0, 1.3, 4.2) * aMore.z;
+    float s = ${sizeGlsl('mover')} * aMore.z;
     vec3 p = position * s;
     float cs = cos(aInst.w), sn = sin(aInst.w);
     vec3 w = vec3(aInst.x + p.x * cs - p.z * sn, aInst.y + 0.2, aInst.z + p.x * sn + p.z * cs);

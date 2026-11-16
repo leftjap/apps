@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import type { CatDef, CatState, Coat } from '../sim/cats.ts';
 import { material, pal } from './env.ts';
+import { sizeGlsl } from './size.ts';
 import { instanced, merge, part } from './util.ts';
 
 const COAT_ID: Record<Coat, number> = { cheese: 0, calico: 1, mackerel: 2, tuxedo: 3 };
@@ -50,11 +51,8 @@ function feeder(): THREE.BufferGeometry {
   ]);
 }
 
-/**
- * 고양이·급식소가 함께 쓰는 과장 배율. 가까이서는 사람과 같은 배율(1.6배)이라 실제 크기 비율 그대로 보이고,
- * 멀어지면 몸길이가 화면에서 10픽셀쯤은 되게 키우되 사람 배율의 2.5배를 넘지 않아 사람보다 커 보이지 않는다
- */
-const SCALE = 'min(zoomScale(-cv.z, 0.45, 10.0, 1.6, 15.0), 2.5 * zoomScale(-cv.z, 1.6, 8.0, 1.6, 6.5))';
+/** 고양이·급식소가 함께 쓰는 배율: 사람·차와 같은 크기 기준이라 사람과의 크기 비율이 늘 실제와 같다 */
+const SCALE = sizeGlsl('mover');
 
 export function makeCatMeshes(cats: CatDef[], feederSpots: [number, number][]) {
   const group = new THREE.Group();
