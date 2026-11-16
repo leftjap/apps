@@ -696,12 +696,20 @@ export function makeCars(
       // 경로는 차로 단위라, 다른 차로에서 들어와 한 차로로 모이는 두 차도 곡선이 만나 부딪는 경로다
       if (jn.conflict(p, hp)) return false;
     }
-    // 묶인 교차로 안의 신호가 지금 초록불이 아니면 들어가지 않는다(들어간 뒤에는 그 신호에 서지 않고 빠져나간다)
-    if (signals)
+    // 묶인 교차로 안의 신호는 그 정지선까지 가는 동안(지금 속도, 적어도 4m/s) 초록불이 남아 있을 때만 들어간다(들어간 뒤에는 그 신호에 서지 않고 빠져나간다)
+    if (signals) {
+      let dist = e.len - s[i];
       for (let k = 1; k < n - 1; k++) {
-        const ap = signals.approach.get(plan[b + k]);
-        if (ap && signals.state(ap.c, ap.group, tod) !== GREEN) return false;
+        const ek = edges[plan[b + k]];
+        const ap = signals.approach.get(ek.id);
+        if (ap && signals.greenLeft(ap.c, ap.group, tod) < (dist + ek.len - ap.setback) / Math.max(4, v[i]) + 1) return false;
+        dist += ek.len;
       }
+      // 빠져나갈 구간의 정지선이 상자 끝에서 10m 안이면(교차로를 빠져나오자마자 길 중간 횡단보도 신호) 그 신호도 지나갈 만큼 초록불이 남아야 들어간다
+      const xe = edges[plan[b + n - 1]];
+      const xap = signals.approach.get(xe.id);
+      if (xap && xe.len - xap.setback < jn.rOut[xe.id] + 10 && signals.greenLeft(xap.c, xap.group, tod) < (dist + xe.len - xap.setback) / Math.max(4, v[i]) + 1) return false;
+    }
     // 빠져나갈 차로에 이 차와, 먼저 같은 차로로 나가려고 들어간 차들이 설 자리가 없으면 교차로 안에 서 버리므로 들어가지 않는다(꼬리 물기 금지)
     const x = edges[plan[b + n - 1]];
     const xl = exitLane(i);
@@ -942,8 +950,8 @@ export function makeCars(
       // 신호: 빨간불(멈출 수 있으면 노란불도)이면 정지선을 멈춰 선 앞차처럼 다룬다
       const ap = signals?.approach.get(e.id);
       let red = false;
-      // 묶인 교차로 안의 신호는 이미 교차로를 잡고 들어온 차를 세우지 않는다
-      if (ap && !(claim[i] >= 0 && jn.groupOfStart[e.id] === claim[i])) {
+      // 묶인 교차로 안 구간(양 끝이 잡은 교차로)의 신호는 이미 교차로를 잡고 들어온 차를 세우지 않는다. 교차로를 빠져나온 구간 끝의 신호(길 중간 횡단보도 등)는 지킨다
+      if (ap && !(claim[i] >= 0 && jn.groupOfStart[e.id] === claim[i] && jn.groupOfEnd[e.id] === claim[i])) {
         const st = signals!.state(ap.c, ap.group, now.tod);
         const toLine = e.len - stopBack(e, lane[i], ap) - s[i] - size[i] / 2;
         if (st !== GREEN && toLine > -0.5 && !(st === YELLOW && toLine < (v[i] * v[i]) / 6)) {

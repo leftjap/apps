@@ -76,6 +76,42 @@ describe('신호 교차로', () => {
     }
     expect(sim.cars.n === 0 || sim.cars.x[0] > 5).toBe(true);
   });
+  it('빨간불에 정지선을 넘는 차와, 노란불이 켜졌을 때 편안히(3m/s²) 멈출 수 있었는데 지나가는 차가 없다', () => {
+    const g = cross();
+    const s = makeSignals(g);
+    const into = g.filter((e) => Math.hypot(e.p[e.p.length - 3], e.p[e.p.length - 1]) < 1);
+    const sim = makeCars(g, fixedProvider(1), 7, 200, [], s);
+    const D = sim.debug();
+    const last = new Map<number, { e: number; d: number; could: boolean; wrong: boolean }>();
+    let crossed = 0;
+    let bad = 0;
+    let tod = 0;
+    for (let k = 0; k < 10 * 300; k++) {
+      // 진입 구간마다 3.3초 간격으로 차를 넣는다(노란불이 여러 거리에서 켜지게)
+      if (k % 33 === 0) for (const e of into) sim.put(e.id, 5 + (k % 7), (k / 33) % 2);
+      sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
+      tod += 0.1;
+      for (let i = 0; i < sim.cars.n; i++) {
+        const ap = s.approach.get(D.edge[i]);
+        if (!ap) continue;
+        const st = s.state(ap.c, ap.group, tod);
+        const d = g[D.edge[i]].len - ap.setback - (D.s[i] + D.size[i] / 2);
+        const p = last.get(sim.cars.uid[i]);
+        const same = p?.e === D.edge[i];
+        const could = (same && p!.could) || (st !== GREEN && d > (D.v[i] * D.v[i]) / 6 + 0.5);
+        // 앞 범퍼가 정지선을 넘는 순간의 신호로 판단하고, 0.5m 넘게 더 나아간 차만 센다
+        const now = st === RED || (st !== GREEN && could);
+        const wrong = same && ((p!.d > 0 && d <= 0) || (d <= 0 && d > -0.5 && D.v[i] < 0.3)) ? now : same ? p!.wrong : false;
+        if (same && p!.d > -0.5 && d <= -0.5) {
+          crossed++;
+          if (wrong) bad++;
+        }
+        last.set(sim.cars.uid[i], { e: D.edge[i], d, could: st === GREEN ? false : could, wrong });
+      }
+    }
+    expect(crossed).toBeGreaterThan(100);
+    expect(bad).toBe(0);
+  });
   it('시간대와 상관없이 같은 시각은 같은 신호', () => {
     const s = makeSignals(cross());
     expect(s.state(0, 0, at(9).tod)).toBe(s.state(0, 0, at(9).tod));

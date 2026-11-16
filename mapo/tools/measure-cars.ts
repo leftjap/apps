@@ -15,6 +15,8 @@
 //     진행 방향과 25° 안으로 나란한 서울시 선(중앙선·버스전용차선·차선·가장자리구역선·진로변경제한선·주차금지·주정차금지·중앙버스전용차선, 12m 안)을 찾아
 //     이웃한 두 선 사이가 2.3~4.8m 인 곳의 가운데 가운데 가장 가까운 것까지 옆 거리. 판 전체와 교차로 다섯 곳 150m 안의 중앙값·90%·95% 지점.
 //  8. 교차로 다섯 곳 90m 안에서 멈춘(0.3m/s 아래) 차 가운데 차 가운데가 서울시 횡단보도 면 위인 비율(0.1초마다).
+// 10. 신호 지키기: 신호 진입로에서 차 앞 범퍼가 그 차로 정지 자리를 넘는 순간의 신호. 빨간불이면 '빨간불 넘기', 노란불이 켜졌을 때 정지 자리까지
+//     (앞 범퍼가 정지 자리를 넘던 순간의 신호로, 0.5m 넘게 더 나아간 차만 센다. 정지선에 붙어 선 차의 흔들림은 세지 않는다) v²/6 (감속 3m/s²) 넘게 남아 멈출 수 있었는데 노란·빨간불에 넘으면 '노란불 정지 가능 통과'. 묶인 교차로 안 구간(진입 구간이 같은 교차로 안)인지로 나눈다.
 //  9. 신호에 선 첫 차(앞 대상이 신호이고 멈춘 차)의 앞 범퍼(그린 길이)에서 가장 가까운 서울시 정지선(20m 안, 진행 방향을 가로지르는 것)까지 거리(0.5초마다):
 //     판 전체와 교차로 다섯 곳 150m 안의 중앙값·90% 지점·1m 안 비율. 사례 출력: SHOWDEV=n(차로 가운데에서 1m 넘게), SHOWXW=1(횡단보도 위 정차), SHOWLINE=n(정지선에서 1m 넘게).
 //  겹친 두 차가 노드 없이 가로지르는 두 길(OSM 에서 다리·터널·layer 로 높이가 다른 곳) 위에 있으면 위 분류 대신 '높이 다른 길'로 센다(실제로는 겹치지 않음, tools/raw/highways.json 이 있을 때만).
@@ -340,6 +342,10 @@ function run(dow: number, tod: number, seed: number) {
   let movingN = 0;
   const waitWhere: Record<string, number> = {};
   const lineD: number[][] = [[], []];
+  const runs: Record<string, number> = {}; // 10. 까닭별 횟수
+  const runWhere: Record<string, number> = {};
+  let crossings = 0;
+  const lineState = new Map<number, { e: number; d: number; could: boolean; at0: number }>(); // 차마다 지난 단계 [구간, 정지 자리까지 거리, 노란불에 멈출 수 있었나, 정지 자리를 넘던 순간(2 빨강, 1 멈출 수 있던 노랑, 0 그 밖, −1 아직)]
   const speeds: number[] = [];
   const counts: number[] = [];
 
@@ -457,6 +463,36 @@ function run(dow: number, tod: number, seed: number) {
           if (D.aheadWhy[f] === 8) inc(waitWhere, `${Math.round(c.x[f] / 10) * 10},${Math.round(c.z[f] / 10) * 10}`);
           inc(stopWhy, c.kind[f] === 1 && D.v[f] === 0 && D.aheadWhy[f] === 0 ? '정류장' : WHY[D.aheadWhy[f]] + (D.aheadWhy[f] >= 1 && D.aheadWhy[f] <= 4 ? '(끝 못 찾음)' : ''));
         }
+      }
+      // 10. 신호 지키기
+      {
+        const ap = signals.approach.get(e);
+        if (ap) {
+          const g = carGraph[e];
+          const sb = signals.stops?.back(e, D.lane[i]) ?? -1;
+          const line = g.len - (sb >= 0 ? sb : ap.setback);
+          const d = line - (D.s[i] + D.size[i] / 2);
+          const stt = signals.state(ap.c, ap.group, now.tod);
+          const ps = lineState.get(u);
+          const same = !!ps && ps.e === e;
+          const could = (same && ps!.could) || (stt !== 0 && d > (D.v[i] * D.v[i]) / 6 + 0.5);
+          // 앞 범퍼가 정지 자리(0m)를 넘는 순간의 신호를 적어 두고, 0.5m 넘게 더 나아가면 센다(정지선에 붙어 선 차의 흔들림은 세지 않는다)
+          // 정지 자리 둘레(0~−0.5m)에 멈춰 있는 동안은 지금 신호로 다시 적는다(빨간불에 살짝 넘어 섰다가 초록불에 떠나는 차)
+          const cls = stt === 2 ? 2 : stt === 1 && could ? 1 : 0;
+          const at0 = same && ps!.d > 0 && d <= 0 ? cls : same && d <= 0 && d > -0.5 && D.v[i] < 0.3 ? cls : same ? ps!.at0 : -1;
+          if (same && ps!.d > -0.5 && d <= -0.5 && on) {
+            crossings++;
+            const inner = jn.groupOfStart[e] >= 0 && jn.groupOfStart[e] === jn.groupOfEnd[e];
+            const kind = at0 === 2 ? '빨간불 넘기' : at0 === 1 ? '노란불 정지 가능 통과' : '';
+            if (kind) {
+              const k = `${kind}${inner ? '(묶인 교차로 안)' : ''}${c.kind[i] === 1 ? '(버스)' : ''}`;
+              inc(runs, k);
+              inc(runWhere, `${k} ${Math.round(x / 10) * 10},${Math.round(z / 10) * 10}`);
+              if (process.env.SHOWRUN) console.error(JSON.stringify({ run: k, x: +x.toFixed(1), z: +z.toFixed(1), e, lane: D.lane[i], s: +D.s[i].toFixed(1), v: +D.v[i].toFixed(1), why: D.aheadWhy[i], boxed: D.boxed[i], stt, prevD: +ps!.d.toFixed(2) }));
+            }
+          }
+          lineState.set(u, { e, d, could: stt === 0 ? false : could, at0 });
+        } else lineState.delete(u);
       }
       // 7. 그려진 차로 가운데까지 거리
       if (st % 60 === 0 && c.kind[i] === 0 && c.y[i] < 0.5 && !inFace(x, z)) {
@@ -621,7 +657,8 @@ function run(dow: number, tod: number, seed: number) {
   const stopLine = { board: { ...q(lineD[0]), within1: within1(lineD[0]) }, jn5: { ...q(lineD[1]), within1: within1(lineD[1]) } };
   const tot = movingN + Object.values(stopWhy).reduce((a, b) => a + b, 0);
   const stopped = Object.fromEntries(Object.entries(stopWhy).sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, +((100 * n) / tot).toFixed(1)]));
-  return { stopped, waitWhere: top(waitWhere, 15), speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), lane, crosswalk, stopLine, out };
+  const redRuns = { crossings, runs, where: top(runWhere, 10) };
+  return { redRuns, stopped, waitWhere: top(waitWhere, 15), speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), lane, crosswalk, stopLine, out };
 }
 
 console.error(
