@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildCarGraph, buildWalkGraph, clearWalkFromCars, laneTest } from '../src/sim/graph.ts';
+import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeSignals, RED } from '../src/sim/signals.ts';
 import { makeWalkers, walkerTarget, zoneTargets, ZONE_IDS, type Portal } from '../src/sim/walkers.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
-import { at, fixedProvider, road } from './helpers.ts';
+import { at, crosswalk, fixedProvider, road, walkNet } from './helpers.ts';
 
 // 100m 간격 격자 골목 (가로 3줄, 세로 3줄)
 const lanes = () => {
@@ -22,31 +22,35 @@ const offGrid = (x: number, z: number) => {
 
 describe('보행 그래프', () => {
   it('꼭짓점이 노드가 되고 맞닿은 길끼리 이어진다', () => {
-    const g = buildWalkGraph(lanes());
+    const g = walkNet(lanes());
     expect(g.adj.length).toBe(9);
     const centre = g.nearest(100, 100);
     expect(g.adj[centre].length).toBe(4);
   });
-  it('간선도로와 교량은 걷지 않는다', () => {
-    const g = buildWalkGraph([road([[0, 0], [100, 0]], { cls: 0 }), road([[0, 50], [100, 50]], { cls: 4, bridge: true, p: Float32Array.from([0, 12, 50, 100, 12, 50]) })]);
-    expect(g.adj.length).toBe(0);
+  it('간선도로 찻길 위와 교량은 걷지 않는다', () => {
+    const g = walkNet([road([[0, 0], [100, 0]], { cls: 0 }), road([[0, 50], [100, 50]], { cls: 4, bridge: true, p: Float32Array.from([0, 12, 50, 100, 12, 50]) })]);
+    for (let n = 0; n < g.adj.length; n++) {
+      if (!g.adj[n].length) continue;
+      expect(Math.abs(g.nx[n * 2 + 1])).toBeGreaterThan(3.8);
+      expect(Math.abs(g.nx[n * 2 + 1] - 50)).toBeGreaterThan(3);
+    }
   });
 });
 
 describe('보행자', () => {
   it('열차가 도착하면 그 역 출구에서 무리가 나온다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), exits, fixedProvider(1), 1, 200);
+    const sim = makeWalkers(walkNet(lanes()), exits, fixedProvider(1), 1, 200);
     sim.burst('합정', 20);
     expect(sim.w.n).toBe(20);
     for (let i = 0; i < 20; i++) expect(Math.hypot(sim.w.x[i] - 102, sim.w.z[i] - 98)).toBeLessThan(15);
   });
   it('모르는 역이면 아무도 나오지 않는다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), exits, fixedProvider(1), 1, 200);
+    const sim = makeWalkers(walkNet(lanes()), exits, fixedProvider(1), 1, 200);
     sim.burst('없는역', 5);
     expect(sim.w.n).toBe(0);
   });
   it('60초 뒤에도 모두 길 위를 걷고 있다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), exits, fixedProvider(1), 2, 200);
+    const sim = makeWalkers(walkNet(lanes()), exits, fixedProvider(1), 2, 200);
     sim.burst('합정', 30);
     const x0 = Array.from(sim.w.x.subarray(0, 30));
     for (let i = 0; i < 600; i++) sim.step(0.1, at(21, 5), false);
@@ -58,7 +62,7 @@ describe('보행자', () => {
     expect(moved).toBeGreaterThan(10);
   });
   it('걸음 위상이 걸은 만큼 늘어난다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), exits, fixedProvider(1), 2, 200);
+    const sim = makeWalkers(walkNet(lanes()), exits, fixedProvider(1), 2, 200);
     sim.burst('합정', 1);
     const p0 = sim.w.phase[0];
     for (let i = 0; i < 50; i++) sim.step(0.1, at(21, 5), false);
@@ -81,7 +85,7 @@ describe('보행자', () => {
     expect(walkerTarget(p, at(14, 0), 1e6, 0.5)).toBeLessThan(walkerTarget(p, at(14, 0), 1e6));
   });
   it('최대 인원을 넘지 않는다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), exits, fixedProvider(1, 500000), 3, 50);
+    const sim = makeWalkers(walkNet(lanes()), exits, fixedProvider(1, 500000), 3, 50);
     sim.burst('합정', 80);
     for (let i = 0; i < 300; i++) sim.step(0.1, at(21, 5), true);
     expect(sim.w.n).toBeLessThanOrEqual(50);
@@ -91,7 +95,7 @@ describe('보행자', () => {
 
 describe('부드럽게 돌기', () => {
   it('모퉁이를 돌거나 되돌아설 때 몸 방향을 한 프레임(1/30초)에 15°넘게 꺾지 않는다', () => {
-    const g = buildWalkGraph([road([[0, 0], [40, 0], [40, 40], [0, 40]], { cls: 4, lanes: 1 })]);
+    const g = walkNet([road([[0, 0], [40, 0], [40, 40], [0, 40]], { cls: 4, lanes: 1 })]);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 10, z: 0 }], fixedProvider(1, 0), 3, 20);
     sim.burst('x', 6);
     const w = sim.w;
@@ -117,7 +121,7 @@ describe('부드럽게 돌기', () => {
 
 describe('멈춰 서서 구경하기', () => {
   it('붙잡힌 사람은 멈춰 서서 대상을 보며 휴대폰을 들고, 시간이 지나면 다시 걷는다', () => {
-    const g = buildWalkGraph([road([[0, 0], [400, 0]], { cls: 4, lanes: 1 })]);
+    const g = walkNet([road([[0, 0], [400, 0]], { cls: 4, lanes: 1 })]);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 100, z: 0 }], fixedProvider(1, 0), 3, 10);
     sim.burst('x', 1);
     for (let k = 0; k < 20; k++) sim.step(0.1, at(14), false);
@@ -145,7 +149,7 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
   const near = (x: number, z: number, lim: number) => portals().some((p) => Math.hypot(p.x - x, p.z - z) < lim);
 
   it('평소에 생기는 사람도 출구나 정류장에서만 나타난다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), portals(), fixedProvider(1, 50000), 4, 300);
+    const sim = makeWalkers(walkNet(lanes()), portals(), fixedProvider(1, 50000), 4, 300);
     sim.step(0.1, at(14), true);
     expect(sim.w.n).toBeGreaterThan(0);
     for (let i = 0; i < sim.w.n; i++) expect(near(sim.w.x[i], sim.w.z[i], 8)).toBe(true);
@@ -153,7 +157,7 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
 
   it('사라질 때는 출구나 정류장까지 걸어가서 사라진다', () => {
     const left: [number, number][] = [];
-    const sim = makeWalkers(buildWalkGraph(lanes()), portals(), fixedProvider(1, 0), 5, 300, (x, z) => left.push([x, z]));
+    const sim = makeWalkers(walkNet(lanes()), portals(), fixedProvider(1, 0), 5, 300, (x, z) => left.push([x, z]));
     sim.burst('합정', 25);
     for (let k = 0; k < 6000 && sim.w.n; k++) sim.step(0.1, at(14), false);
     expect(left.length).toBe(25 - sim.w.n);
@@ -163,7 +167,7 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
   });
 
   it('정류장에 간 사람은 버스를 기다렸다가 타고, 버스에서 내린 사람이 나타난다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 6, 50);
+    const sim = makeWalkers(walkNet(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 6, 50);
     sim.alight('s', 6, 150, 108);
     expect(sim.w.n).toBe(6);
     for (let k = 0; k < 6000 && sim.waitingAt('s') === 0; k++) sim.step(0.1, at(14), false);
@@ -177,7 +181,7 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
   });
 
   it('정류장에서 기다리는 사람은 한 점에 몰리지 않고 보도를 따라 줄을 선다', () => {
-    const sim = makeWalkers(buildWalkGraph(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 8, 50);
+    const sim = makeWalkers(walkNet(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 8, 50);
     sim.alight('s', 14, 150, 108);
     for (let k = 0; k < 9000 && sim.waitingAt('s') < 8; k++) sim.step(0.1, at(14), false);
     const still = [];
@@ -191,7 +195,7 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
 
   it('버스가 서면 기다리던 사람이 버스 문까지 걸어가서 타고, 내리는 사람은 버스 문에서 나와 보도로 간다', () => {
     const left: [number, number][] = [];
-    const sim = makeWalkers(buildWalkGraph(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 9, 50, (x, z) => left.push([x, z]));
+    const sim = makeWalkers(walkNet(lanes()), [{ kind: 'stop', key: 's', x: 150, z: 103 }], fixedProvider(1, 0), 9, 50, (x, z) => left.push([x, z]));
     sim.alight('s', 5, 150, 108);
     // 내린 사람은 버스 문 둘레에서 시작해 한 사람씩 0.5초 간격으로 보도로 옮겨 간다(다섯 명이면 4초 안)
     for (let i = 0; i < sim.w.n; i++) expect(Math.hypot(sim.w.x[i] - 150, sim.w.z[i] - 108)).toBeLessThan(1.5);
@@ -208,7 +212,7 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
 
   it('큰길 옆 출구에서 나온 사람은 찻길로 들어가지 않고 그쪽 보도로 걷는다', () => {
     // 동서로 놓인 4차로 길(폭 14.2m), 출구는 남쪽 보도(z = +10)
-    const g = buildWalkGraph([road([[0, 0], [300, 0]], { cls: 2, lanes: 4 }), road([[300, 0], [600, 0]], { cls: 2, lanes: 4 })]);
+    const g = walkNet([road([[0, 0], [300, 0]], { cls: 2, lanes: 4 }), road([[300, 0], [600, 0]], { cls: 2, lanes: 4 })]);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 280, z: 10 }], fixedProvider(1, 0), 7, 50);
     sim.burst('x', 20);
     for (let k = 0; k < 100; k++) {
@@ -219,39 +223,22 @@ describe('들고 나는 곳: 역 출구와 버스 정류장', () => {
 });
 
 describe('차도와 겹친 보행로', () => {
-  it('차로 위에 그려진 보행로는 걷지 않고, 차로와 겹치지 않는 쪽만 걷는다', () => {
-    // 동서로 놓인 한 방향 3차로(차로 폭 ±4.95m). 차로 한가운데(z = 2)를 따라 그려진 보행로, 길 가장자리 밖(z = 12)의 보행로
+  it('차로 위에 그려진 보행로(지도 자료의 보도 선)는 걷지 않아, 사람이 찻길에 들어서지 않는다', () => {
+    // 동서로 놓인 한 방향 3차로(찻길 z −5.45~5.45). 차로 한가운데(z = 2)를 따라 그려진 보행로와, 찻길 가장자리에 걸친 보행로(z = 6)
     const roads = [
       road([[-300, 0], [300, 0]], { cls: 1, lanes: 3, oneway: true }),
       road([[-200, 2], [200, 2]], { cls: 7, lanes: 1 }),
       road([[-200, 6], [200, 6]], { cls: 6, lanes: 1 }),
     ];
-    const g = buildWalkGraph(roads);
-    clearWalkFromCars(g, buildCarGraph(roads));
-    const edge = (z: number) => {
-      const a = g.nearest(-200, z);
-      return { a, k: g.adj[a].findIndex((b) => Math.abs(g.nx[b * 2 + 1] - z) < 0.1) };
-    };
-    const onLanes = edge(2);
-    expect(g.aw[onLanes.a][onLanes.k]).toBe(0);
-    // z = 6 보행로(걷는 띠 0~2.6m): 차로 쪽(북쪽, 서→동으로 걸을 때 왼쪽)은 막고 남쪽만 걷는다
-    const beside = edge(6);
-    expect(g.aw[beside.a][beside.k]).toBeGreaterThan(0);
-    expect(g.dir[beside.a][beside.k]).toBe(1);
-  });
-  it('짧은 조각이 이어진 길도 보도가 다른 길 차로 위면 그쪽으로 걷지 않는다', () => {
-    // 동서 한 방향 4차로 큰길(차로 z −6.6~6.6)과, 그 북쪽 z = −9 에 붙어 동쪽으로 가는 한 방향 합류 길(5m 마다 꼭짓점).
-    // 합류 길의 바깥(진행 방향 오른쪽 = 남쪽) 보도는 z −6.1~−4.5 로 큰길 차로 위이므로 북쪽 보도로 걷는다
-    const merge: [number, number][] = [];
-    for (let x = -100; x <= 100; x += 5) merge.push([x, -9]);
-    const roads = [road([[-300, 0], [300, 0]], { cls: 1, lanes: 4, oneway: true }), road(merge, { cls: 1, lanes: 1, oneway: true })];
-    const g = buildWalkGraph(roads);
-    clearWalkFromCars(g, buildCarGraph(roads));
-    for (const x of [-50, 0, 50]) {
-      const a = g.nearest(x, -9);
-      const k = g.adj[a].findIndex((b) => g.nx[b * 2] > x);
-      expect(g.aw[a][k] === 0 || g.dir[a][k] === -1).toBe(true);
+    const g = walkNet(roads);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -150, z: 8 }, { kind: 'exit', key: 'x', x: 150, z: -8 }], fixedProvider(1, 0), 4, 60);
+    let onRoad = 0;
+    for (let k = 0; k < 2000; k++) {
+      if (k % 100 === 0) sim.burst('x', 3);
+      sim.step(0.1, at(14), false);
+      for (let i = 0; i < sim.w.n; i++) if (Math.abs(sim.w.z[i]) < 5.45) onRoad++;
     }
+    expect(onRoad).toBe(0);
   });
 });
 
@@ -261,8 +248,8 @@ describe('찻길과 신호', () => {
     const roads = [road([[-300, 0], [300, 0]], { cls: 1, lanes: 4 }), road([[0, -60], [0, 60]], { cls: 7, lanes: 1 })];
     const cars = buildCarGraph(roads);
     const signals = makeSignals(cars);
-    const g = buildWalkGraph(roads);
-    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 0, z: 55 }], fixedProvider(1, 0), 4, 40, undefined, signals, laneTest(cars), laneTest(cars, 1.2));
+    const g = walkNet(roads);
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 0, z: 55 }], fixedProvider(1, 0), 4, 40, undefined, signals);
     let deep = 0;
     for (let k = 0; k < 2000; k++) {
       if (k % 100 === 0) sim.burst('x', 3);
@@ -282,7 +269,7 @@ describe('찻길과 신호', () => {
     ];
     const signals = makeSignals(buildCarGraph(roads));
     expect(signals.list.length).toBe(0);
-    const g = buildWalkGraph(roads);
+    const g = walkNet(roads);
     const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 40, z: 10 }, { kind: 'exit', key: 'x', x: 10, z: 40 }], fixedProvider(1, 0), 9, 80, undefined, signals);
     let onRoad = 0;
     for (let k = 0; k < 3000; k++) {
@@ -296,13 +283,16 @@ describe('찻길과 신호', () => {
 
 
   it('한 방향 큰길(중앙분리대가 있는 길의 한쪽)에서는 바깥쪽 보도로만 걷는다', () => {
-    // 동쪽으로만 가는 3차로. 바깥쪽은 진행 방향 오른쪽 = 남쪽(+z)
-    const g = buildWalkGraph([road([[0, 0], [60, 0]], { cls: 1, lanes: 3, oneway: true }), road([[60, 0], [120, 0]], { cls: 1, lanes: 3, oneway: true })]);
-    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 50, z: 9 }], fixedProvider(1, 0), 8, 60);
+    // 분리대(z −1.55~1.55)를 사이에 둔 한 방향 3차로 둘: 동쪽으로 가는 길은 z = 7(찻길 1.55~12.45), 서쪽으로 가는 길은 z = −7. 출구는 남쪽 바깥 보도
+    const g = walkNet(
+      [road([[0, 7], [60, 7], [120, 7]], { cls: 1, lanes: 3, oneway: true }), road([[120, -7], [60, -7], [0, -7]], { cls: 1, lanes: 3, oneway: true })],
+      { med: [[0, -1.55, 120, -1.55, 120, 1.55, 0, 1.55]] },
+    );
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: 50, z: 14.8 }], fixedProvider(1, 0), 8, 60);
     sim.burst('x', 40);
     for (let k = 0; k < 2000; k++) {
       sim.step(0.1, at(14), false);
-      for (let i = 0; i < sim.w.n; i++) expect(sim.w.z[i]).toBeGreaterThan(5);
+      for (let i = 0; i < sim.w.n; i++) expect(sim.w.z[i]).toBeGreaterThan(12.45);
     }
   });
 
@@ -314,7 +304,7 @@ describe('찻길과 신호', () => {
       road([[0, 0], [0, 300]], { cls: 2, lanes: 4 }),
     ];
     const signals = makeSignals(buildCarGraph(roads));
-    const g = buildWalkGraph(roads);
+    const g = walkNet(roads);
     // 동서 방향(무리 0)이 35초 넘게 빨간불인 시각(큰길 쪽이 초록을 더 받아 빨간불은 40초가 안 된다)
     const grp = signals.groupOf(0, 0);
     let t0 = 0;
@@ -333,111 +323,37 @@ describe('찻길과 신호', () => {
     expect(inside).toBe(0);
   });
 
-  it('횡단보도 앞 기다리는 자리가 차로 위(비스듬히 만나는 길 등)면 차로 밖으로 물러서서 기다린다', () => {
+  it('신호 교차로 횡단보도 앞에서는 찻길 밖 보도에 서서 기다리고, 찻길에는 횡단보도로만 들어선다', () => {
     const roads = [
       road([[-300, 0], [0, 0]], { cls: 1, lanes: 4 }),
       road([[0, 0], [300, 0]], { cls: 1, lanes: 4 }),
       road([[0, -300], [0, 0]], { cls: 2, lanes: 4 }),
       road([[0, 0], [0, 300]], { cls: 2, lanes: 4 }),
     ];
-    const signals = makeSignals(buildCarGraph(roads));
-    const g = buildWalkGraph(roads);
-    const grp = signals.groupOf(0, 0);
-    let t0 = 0;
-    while (t0 < 200 && !(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 35) === RED)) t0 += 1;
-    expect(t0).toBeLessThan(200);
-    // 남쪽 보도의 횡단보도 앞(대기 자리 x ≈ −9~−12 둘레)을 차로라고 친다
-    const lanesAt = (x: number, z: number) => x > -16 && x < 0 && z > 0 && z < 12;
-    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -60, z: 9 }], fixedProvider(1, 0), 9, 40, undefined, signals, lanesAt);
-    sim.burst('x', 20);
-    let tod = t0;
-    let onLanes = 0;
+    // 남쪽 보도를 잇는, 남북 찻길(|x| < 7.1)을 동서로 건너는 신호 횡단보도(폭 4m, z = 9.45)
+    const xws = [crosswalk(0, 9.45, 1, 0, 7.1, [], true, 4)];
+    const signals = makeSignals(buildCarGraph(roads), { crosswalks: xws, stopLines: new Float32Array() });
+    const g = walkNet(roads, { crosswalks: xws });
+    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -60, z: 9 }, { kind: 'exit', key: 'y', x: 60, z: 9 }], fixedProvider(1, 0), 9, 80, undefined, signals);
+    let standOnRoad = 0;
+    let offCrossing = 0;
     let waiting = 0;
-    for (let k = 0; k < 350; k++) {
-      sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
-      tod += 0.1;
+    let crossed = 0;
+    for (let k = 0; k < 3000; k++) {
+      if (k % 100 === 0) sim.burst('x', 3), sim.burst('y', 3);
+      sim.step(0.1, { tod: k * 0.1, dow: 2, doy: 317 }, false);
       for (let i = 0; i < sim.w.n; i++) {
-        if (lanesAt(sim.w.x[i], sim.w.z[i]) && !sim.w.moving[i]) onLanes++; // 차로 위에 서서 기다리는 사람
-        if (sim.w.x[i] > -24 && sim.w.x[i] <= -16 && !sim.w.moving[i]) waiting++;
+        const [x, z] = [sim.w.x[i], sim.w.z[i]];
+        const road = Math.abs(x) < 7.1 || Math.abs(z) < 7.1;
+        if (road && !sim.w.moving[i]) standOnRoad++;
+        if (road && !(Math.abs(z - 9.45) < 2.1 && Math.abs(x) < 7.6)) offCrossing++;
+        if (road && Math.abs(x) < 3) crossed++;
+        if (!sim.w.moving[i] && Math.abs(x) > 7.1 && Math.abs(x) < 12 && z > 7.1 && z < 12) waiting++;
       }
     }
-    expect(onLanes).toBe(0);
+    expect(crossed).toBeGreaterThan(50);
     expect(waiting).toBeGreaterThan(0);
-  });
-
-  it('신호 교차로 둘레에서 걷던 길이 차로로 들어가면(노드가 여럿인 교차로 등) 그 앞에서 신호를 지킨다', () => {
-    const roads = [
-      road([[-300, 0], [0, 0]], { cls: 1, lanes: 4 }),
-      road([[0, 0], [300, 0]], { cls: 1, lanes: 4 }),
-      road([[0, -300], [0, 0]], { cls: 2, lanes: 4 }),
-      road([[0, 0], [0, 300]], { cls: 2, lanes: 4 }),
-    ];
-    const signals = makeSignals(buildCarGraph(roads));
-    const g = buildWalkGraph(roads);
-    const grp = signals.groupOf(0, 0);
-    let t0 = 0;
-    while (t0 < 200 && !(signals.state(0, grp, t0) === RED && signals.state(0, grp, t0 + 35) === RED)) t0 += 1;
-    expect(t0).toBeLessThan(200);
-    // 교차로 서쪽 20~26m 의 남쪽 보도를 다른 길의 차로가 가로지른다고 친다
-    const lanesAt = (x: number, z: number) => x > -26 && x < -20 && z > 0 && z < 12;
-    const sim = makeWalkers(g, [{ kind: 'exit', key: 'x', x: -60, z: 9 }], fixedProvider(1, 0), 9, 40, undefined, signals, lanesAt);
-    sim.burst('x', 20);
-    let tod = t0;
-    let entered = 0;
-    for (let k = 0; k < 300; k++) {
-      sim.step(0.1, { tod, dow: 2, doy: 317 }, false);
-      tod += 0.1;
-      for (let i = 0; i < sim.w.n; i++) if (lanesAt(sim.w.x[i], sim.w.z[i])) entered++;
-    }
-    expect(entered).toBe(0);
-  });
-});
-
-describe('골목 폭 안에 퍼져 걷기', () => {
-  // 길이 200m 골목(찻길 폭 5.6m), 양옆 6m 밖에 건물 벽이 늘어서 있다. 양 끝 출구에서 사람이 계속 나와 오간다
-  const alley = (walls: boolean) => {
-    const box = (z0: number, z1: number) => Float32Array.from([0, z0, 200, z0, 200, z1, 0, z1]);
-    const g = buildWalkGraph([road([[0, 0], [200, 0]], { cls: 4, lanes: 1 })], walls ? [box(6, 20), box(-20, -6)] : []);
-    const sim = makeWalkers(g, [{ kind: 'exit', key: 'a', x: 1, z: 0 }, { kind: 'exit', key: 'b', x: 199, z: 0 }], fixedProvider(1, 0), 7, 400);
-    const zs: number[] = [];
-    let east = 0;
-    let eastRight = 0;
-    for (let k = 0; k < 30 * 120; k++) {
-      if (k % 20 === 0) (sim.burst('a', 1), sim.burst('b', 1));
-      sim.step(1 / 30, at(14), false);
-      if (k < 30 * 60 || k % 15) continue;
-      const w = sim.w;
-      for (let i = 0; i < w.n; i++) {
-        if (w.fade[i] < 0.99 || Math.abs(w.x[i] - 100) > 60 || !w.moving[i]) continue;
-        zs.push(w.z[i]);
-        if (Math.cos(w.yaw[i]) > 0.9) (east++, w.z[i] > 0 && eastRight++);
-      }
-    }
-    const mean = zs.reduce((s, v) => s + v, 0) / zs.length;
-    const sd = Math.sqrt(zs.reduce((s, v) => s + (v - mean) ** 2, 0) / zs.length);
-    // 가장 붐비는 1.5m 폭 띠에 든 사람 비율
-    const sorted = [...zs].sort((a, b) => a - b);
-    let most = 0;
-    for (let a = 0, b = 0; a < sorted.length; a++) {
-      while (b < sorted.length && sorted[b] < sorted[a] + 1.5) b++;
-      most = Math.max(most, b - a);
-    }
-    return { n: zs.length, sd, packed: most / zs.length, maxAbs: Math.max(...zs.map(Math.abs)), right: eastRight / Math.max(1, east) };
-  };
-
-  it('보도 없는 골목에서는 건물 벽 사이 폭에 퍼져 걷고 한 줄로 몰리지 않는다', () => {
-    const r = alley(true);
-    expect(r.n).toBeGreaterThan(2000);
-    expect(r.sd).toBeGreaterThan(2.4);
-    expect(r.packed).toBeLessThan(0.3);
-    expect(r.maxAbs).toBeLessThan(5.6);
-  });
-  it('골목에서도 우측통행한다(동쪽으로 가는 사람은 대부분 남쪽(+z) 절반)', () => {
-    expect(alley(true).right).toBeGreaterThan(0.8);
-  });
-  it('건물 자료가 없으면 찻길 가장자리(실제 골목 폭) 안에서 퍼진다', () => {
-    const r = alley(false);
-    expect(r.maxAbs).toBeLessThan(2.9);
-    expect(r.sd).toBeGreaterThan(1.4);
+    expect(standOnRoad).toBe(0);
+    expect(offCrossing).toBe(0);
   });
 });

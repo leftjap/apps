@@ -8,7 +8,7 @@ import { toXZ } from '../geo.ts';
 import { cumLen, pointAt } from '../poly.ts';
 import type { Now } from './clock.ts';
 import { smooth, sunAngles } from './curves.ts';
-import type { WalkGraph } from './graph.ts';
+import type { WalkGraph } from './walknet.ts';
 import { hash01, rng } from './rng.ts';
 
 export type Personality = 'shy' | 'friendly';

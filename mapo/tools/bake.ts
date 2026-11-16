@@ -12,6 +12,7 @@ import { analyseLink, analysePiece, centerLink, cornerRadius, linkSections, fitT
 import { railKind, railProfile, stitch } from './lib/rail.ts';
 import { buildSurface, crosswalkPatches, surfacePolys, type Cross as SurfaceCross } from './lib/surface.ts';
 import { ringArea as loopArea } from './lib/contour.ts';
+import { boardWalkNet } from './lib/walknet.ts';
 import { roadJoints } from '../src/data/surface.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
@@ -1719,6 +1720,7 @@ const out = {
 // 찻길 바닥: 교차로마다 면 하나와 길 조각마다 띠를 그릴 구간(tools/lib/surface.ts). 렌더러가 public/data/surface.json 을 읽는다
 let surfaceJson = '';
 let surfacePolysJson = '';
+let walkJson = '';
 {
   const b = decodeBoard(out as unknown as BoardJson);
   const link = roads.map(() => 0);
@@ -1780,6 +1782,12 @@ let surfacePolysJson = '';
   surfacePolysJson = JSON.stringify({ v: 1, car: polys.car.map(([i, r]) => [i, ...dmR(r)]), med: polys.med.map(dmR), isl: polys.isl.map(dmR), walk: polys.walk.map(dmR), draw: polys.draw.map(dmR) });
   console.log(`보도 면 고리 ${polys.walk.length}개(구멍 ${polys.walk.filter((r) => loopArea(r) < 0).length}), 넓이 ${(polys.walk.reduce((a, r) => a + loopArea(r), 0) / 1e4).toFixed(1)}ha, 찻길 띠 ${polys.car.length}개, 분리대 ${polys.med.length}개`);
   surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn, dr });
+  // 걷는 길 그래프(src/sim/walknet.ts): 보도 면 뼈대 선·보도 없는 골목·도로 부지 밖 보행로와 횡단보도 연결
+  const walk = boardWalkNet(b, sf.faces, patches.map((p) => p.ring), polys);
+  walkJson = JSON.stringify(walk);
+  const kinds = [0, 0, 0, 0];
+  for (let k = 0; k < walk.e.length; k += 5) kinds[walk.e[k + 2] >> 4]++;
+  console.log(`걷는 길: 노드 ${walk.n.length / 2}, 선 ${walk.e.length / 5}(보도 ${kinds[0]}, 골목 ${kinds[1]}, 보행로 ${kinds[2]}, 잇는 선 ${kinds[3]}), 횡단보도 연결 ${walk.x.length / 13}/${b.crosswalks.length}`);
   const multi = sf.faces.filter((f) => f.nodes > 1).length;
   console.log(`교차로 면 ${sf.faces.length}개(노드 둘 넘게 묶은 것 ${multi}, 교통섬 ${sf.faces.reduce((n, f) => n + f.holes.length, 0)}), 면 안에 들어가 띠를 그리지 않는 조각 ${sf.internal.reduce((n, v) => n + v, 0)}개, 연결로 조각 ${link.reduce((n, v) => n + v, 0)}개, 횡단보도 밑 그리기 전용 찻길 면 ${patches.length}개(${(patches.reduce((a, p) => a + Math.abs(loopArea(p.ring)), 0)).toFixed(0)}m²)`);
 }
@@ -1881,6 +1889,7 @@ writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);
 writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), surfacePolysJson);
 writeFileSync(new URL('../public/data/marks.json', import.meta.url), marksJson);
+writeFileSync(new URL('../public/data/walk.json', import.meta.url), walkJson);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));
 
 const waterPx = mask.reduce((s, v, i) => s + (i % 4 === 0 && v ? 1 : 0), 0);
@@ -1895,4 +1904,4 @@ console.log(`이름 랜드마크 건물 ${NAMED_LM.map(([re, n]) => `${re.source
 console.log(`건물 부분 ${parts.filter((p) => p.used).length}/${parts.length}개를 감싸는 건물 대신 세움, 역 엘리베이터 ${elevators.length / 2}곳, 용도 ${[0, 1, 2, 3, 4, 5, 6, 7].map((u) => binfo.filter((v) => v % 8 === u).length).join('/')}`);
 console.log(`출구 ${exits.length}곳 가운데 찻길 위에 있어 보도로 밀어낸 곳 ${exitsPushed}곳`);
 console.log(`랜드마크 ${landmarks.map((l) => `${l.id}(${l.x / 10},${l.z / 10})`).join(' ')}`);
-console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB, surface.json ${(surfaceJson.length / 1e6).toFixed(2)}MB, surface-polys.json ${(surfacePolysJson.length / 1e6).toFixed(2)}MB, marks.json ${(marksJson.length / 1e6).toFixed(2)}MB`);
+console.log(`board.json ${(json.length / 1e6).toFixed(2)}MB, surface.json ${(surfaceJson.length / 1e6).toFixed(2)}MB, surface-polys.json ${(surfacePolysJson.length / 1e6).toFixed(2)}MB, marks.json ${(marksJson.length / 1e6).toFixed(2)}MB, walk.json ${(walkJson.length / 1e6).toFixed(2)}MB`);

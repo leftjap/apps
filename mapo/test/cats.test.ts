@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeCatReactor } from '../src/sim/catReact.ts';
 import { CAT_SPOTS, catAt, catName, makeCats, SLOT, type CatState } from '../src/sim/cats.ts';
-import { buildWalkGraph } from '../src/sim/graph.ts';
-import { road } from './helpers.ts';
+import { road, walkNet } from './helpers.ts';
 
 // 판 전체에 50m 간격 골목 격자를 깐 시험용 그래프
 const grid = () => {
@@ -11,7 +10,7 @@ const grid = () => {
     for (let j = -2000; j < 2000; j += 50) {
       out.push(road([[j, k], [j + 50, k]], { cls: 4, lanes: 1 }), road([[k, j], [k, j + 50]], { cls: 4, lanes: 1 }));
     }
-  return buildWalkGraph(out);
+  return walkNet(out);
 };
 const building = (x: number, z: number) => ({ h: 9, lm: 0, pts: Float32Array.from([x - 5, z - 5, x + 5, z - 5, x + 5, z + 5, x - 5, z + 5]) });
 const cats = makeCats(CAT_SPOTS, grid(), CAT_SPOTS.map((s) => building(s.x + 12, s.z + 12)));

@@ -2,8 +2,7 @@
 import { readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { curbAt, decodeBoard, roadHalf, type BoardJson } from '../src/data/board.ts';
-import { buildWalkGraph } from '../src/sim/graph.ts';
-import { road } from './helpers.ts';
+import { road, walkNet } from './helpers.ts';
 import { BOARD_R } from '../src/geo.ts';
 
 const json: BoardJson = JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8'));
@@ -108,9 +107,11 @@ describe('찻길 가장자리(연석선으로 읽은 값)', () => {
     expect(curbAt(r, 50, -1)).toBeCloseTo(6, 5);
   });
   it('큰길 보도는 연석 바깥으로 걷는다', () => {
-    const g = buildWalkGraph([road([[0, 0], [100, 0]], { edge: { r: prof([0, 100], [9, 9]), l: prof([0, 100], [5, 5]) } })]);
-    const a = g.nodeAt(0, 0);
-    expect(g.lat[a][0]).toEqual([9.8, 11.4]);
-    expect(g.latL[a][0][0]).toBeCloseTo(5.8, 5);
+    // 진행 방향 오른쪽(+z) 연석 9m, 왼쪽 5m. 보도(폭 4m)는 연석 0.35m 밖부터다
+    const g = walkNet([road([[0, 0], [100, 0]], { edge: { r: prof([0, 100], [9, 9]), l: prof([0, 100], [5, 5]) } })]);
+    const zs = Array.from({ length: g.adj.length }, (_, n) => g.nx[n * 2 + 1]);
+    expect(zs.some((z) => z > 9)).toBe(true);
+    expect(zs.some((z) => z < -5)).toBe(true);
+    for (const z of zs) expect(z > 9.35 + 0.5 || z < -5.35 - 0.5).toBe(true);
   });
 });

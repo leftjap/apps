@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildWalkGraph } from '../src/sim/graph.ts';
 import type { DataProvider } from '../src/sim/provider.ts';
 import { makeWalkers, underpasses, walkerScale, ZONES, type Portal } from '../src/sim/walkers.ts';
-import { at, road } from './helpers.ts';
+import { at, road, walkNet } from './helpers.ts';
 
 // 홍대·홍대입구역·연남 구역을 덮는 60m 간격 골목 격자
 function grid() {
@@ -26,7 +25,7 @@ const provider = (pop: Record<string, number>): DataProvider => ({
 const inZone = (id: string, x: number, z: number, pad = 0) => Math.hypot(x - ZONES[id][0], z - ZONES[id][1]) < ZONES[id][2] + pad;
 
 function settle(pop: Record<string, number>, secs = 600, max = 2500) {
-  const sim = makeWalkers(buildWalkGraph(grid()), portals, provider(pop), 3, max);
+  const sim = makeWalkers(walkNet(grid()), portals, provider(pop), 3, max);
   for (let k = 0; k < secs * 2; k++) sim.step(0.5, { ...at(14), tod: 14 * 3600 + k * 0.5 });
   return sim;
 }
@@ -75,7 +74,7 @@ describe('나이대와 성별', () => {
         { id: 'yeonnam', name: '', level: 3, label: '붐빔', pplMin: 6000, pplMax: 6000, crowd: 1, ages: [100, 0, 0, 0, 0, 0, 0, 0], female: 0 },
       ],
     };
-    const sim = makeWalkers(buildWalkGraph(grid()), portals, p, 3, 2500);
+    const sim = makeWalkers(walkNet(grid()), portals, p, 3, 2500);
     for (let k = 0; k < 120; k++) sim.step(0.5, { ...at(14), tod: 14 * 3600 + k * 0.5 });
     let old = 0;
     let kid = 0;
@@ -101,7 +100,7 @@ describe('건물 출입구', () => {
   it('건물에서 나온 사람은 건물 벽에서 나와 보도로 걸어가고, 구역 안쪽에도 사람이 있다', () => {
     // 골목(60m 간격) 바로 옆 건물들
     const doors = [box(131, -1290), box(431, -1290), box(131, -810), box(431, -810)];
-    const sim = makeWalkers(buildWalkGraph(grid()), [...portals, ...doors], provider({ yeonnam: 6000 }), 3, 2500);
+    const sim = makeWalkers(walkNet(grid()), [...portals, ...doors], provider({ yeonnam: 6000 }), 3, 2500);
     for (let k = 0; k < 600; k++) sim.step(0.5, { ...at(14), tod: 14 * 3600 + k * 0.5 });
     let deep = 0;
     for (let i = 0; i < sim.w.n; i++) if (Math.hypot(sim.w.x[i] - 300, sim.w.z[i] + 1050) < 260 && Math.hypot(sim.w.x[i] - 300, sim.w.z[i] + 1050) > 60) deep++;
@@ -124,7 +123,7 @@ describe('건물 출입구', () => {
 
 describe('붐비는 길 걷기', () => {
   // 홍대입구역 구역 안 350m 보행 전용 길, 두 끝에 출구
-  const street = () => buildWalkGraph([road([[400, -643], [750, -643]], { cls: 6, lanes: 1 })]);
+  const street = () => walkNet([road([[400, -643], [750, -643]], { cls: 6, lanes: 1 })]);
   const ends: Portal[] = [
     { kind: 'exit', key: '홍대입구', x: 400, z: -643 },
     { kind: 'exit', key: '홍대입구', x: 750, z: -643 },
