@@ -89,6 +89,8 @@ export interface Intersections {
   laneMoves(a: number, l: number): number;
   /** 진입로 a 의 차로 l 게이트: 구간 끝에서 거리(m, 구간 길이보다 클 수 있다) */
   gate(a: number, l: number): number;
+  /** 교차로에서 나가는 길 x 의 차로 l 에서, 같은 교차로의 다른 경로(이 차로로 나가는 경로 빼고)와 몸이 닿지 않게 되는 자리(구간 시작에서 m). 나갈 자리는 이 너머부터 잰다 */
+  clearOut(x: number, l: number): number;
   /** 진입로 a 의 차로 l 정지 자리(정지선, 없으면 상자 가장자리): 구간 끝에서 거리(m). 신호등을 세울 자리 */
   stopAt(a: number, l: number): number;
   /** 진입로 a 의 차로 l 에서 k번째 나가는 길로 가는 경로(그 차로가 그 움직임을 못 하면 undefined) */
@@ -396,10 +398,36 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
 
   // ── 정지 자리와 게이트 ──
   const stops = laneStops(edges, stopLines, crosswalks);
-  /** 정지선과 상자 가장자리 가운데 교차로에서 먼 쪽 */
+  /** 구간 a 시작 쪽에서 앞 교차로 상자와 그 차로가 지나는 횡단보도(상자 끝 20m 안)가 끝나는 자리(m) */
+  function startClear(a: number, l: number): number {
+    let c = rOut[a];
+    const q = stops.xwOf(a, l === MED ? 0 : l);
+    for (let m = 0; m < q.length; m += 4) if (q[m] < rOut[a] + 20) c = Math.max(c, q[m + 1] + 1.5);
+    return c;
+  }
+  /** 정지선과 상자 가장자리 가운데 교차로에서 먼 쪽. 그 자리에 선 차의 앞부분(앞 범퍼에서 1m, 반폭 1.3m)이 횡단보도 면에 걸치면 걸치지 않을 때까지 물린다
+   *  (정지선 자료가 횡단보도에 붙었거나 횡단보도가 비스듬한 곳) */
+  const g0Cache = new Map<number, number>();
   function gate0(a: number, l: number): number {
-    const b = stops.back(a, l === MED ? 0 : l);
-    return Math.max(rIn[a], b);
+    const key = a * 8 + (l === MED ? 7 : l);
+    const hit = g0Cache.get(key);
+    if (hit !== undefined) return hit;
+    const e = edges[a];
+    let g = Math.max(rIn[a], stops.back(a, l === MED ? 0 : l));
+    // 앞 교차로에서 나온 길이면 게이트에 선 차(6m)가 앞 교차로 상자와 그 횡단보도 끝 너머에 있어야 한다(정지선 자료를 다른 방향·다른 교차로 것으로 짚은 곳)
+    const most = jStart[a] >= 0 ? e.len - startClear(a, l) - 6 : e.len - 0.5;
+    g = Math.max(rIn[a], Math.min(g, most));
+    for (let k = 0; k < 40 && g < most; k++, g += 0.25) {
+      const sv = e.len - g;
+      const v = lp(e, sv, l);
+      const hx = Math.cos(v[3]);
+      const hz = Math.sin(v[3]);
+      let touch = false;
+      for (const back of [0, 1]) for (const side of [-1.3, 0, 1.3]) if (!touch && xwAt(v[0] - hx * back - hz * side, v[2] - hz * back + hx * side) >= 0) touch = true;
+      if (!touch) break;
+    }
+    g0Cache.set(key, g);
+    return g;
   }
   // 게이트에 선 차(앞 범퍼가 게이트, 버스 길이 12m 까지)의 몸이 같은 교차로의 다른 차로 경로와 닿으면 닿지 않을 때까지 게이트를 물린다.
   // 분리대 큰길 교차로처럼 노드가 여럿이면 한 진입로의 끝이 다른 움직임이 지나는 자리 곁에 있다(합정역 독막로)
@@ -445,7 +473,8 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
       return false;
     };
     let g = g0;
-    for (; g < g0 + 30 && g < e.len - 1; g += 0.5) {
+    const most = jStart[a] >= 0 ? e.len - startClear(a, l) - 6 : e.len - 1;
+    for (; g < g0 + 30 && g < most; g += 0.5) {
       let clash = false;
       for (let d = 0; d <= 12 && !clash; d += 1.5) {
         const sv = e.len - g - d;
@@ -457,6 +486,44 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     }
     gateCache.set(key, g);
     return g;
+  }
+
+  // 나가는 길 차로의 '경로에서 떨어지는 자리'
+  const coCache = new Map<number, number>();
+  function clearOut(x: number, l: number): number {
+    const key = x * 8 + (l === MED ? 7 : l);
+    const hit = coCache.get(key);
+    if (hit !== undefined) return hit;
+    const j = jStart[x];
+    const e = edges[x];
+    let c = rOut[x];
+    if (j >= 0 && jEnd[x] !== j) {
+      const pts: number[] = [];
+      for (const b of list[j].into) {
+        const eb = edges[b];
+        const lanes = [...Array.from({ length: eb.lanes }, (_, q) => q), ...(eb.med ? [MED] : [])];
+        (exits.get(b) ?? []).forEach((_, k) =>
+          lanes.forEach((q) => {
+            const p = path(b, q, k);
+            if (!p || (p.edges[p.edges.length - 1] === x && p.lanes[p.lanes.length - 1] === l)) return;
+            for (let i = 0; i < p.pts.length; i += 4) pts.push(p.pts[i], p.pts[i + 2]);
+          }),
+        );
+      }
+      const near = (px: number, pz: number) => {
+        for (let i = 0; i < pts.length; i += 2) if (Math.abs(pts[i] - px) < 2.45 && Math.hypot(pts[i] - px, pts[i + 1] - pz) < 2.45) return true;
+        return false;
+      };
+      for (let sv = rOut[x]; sv < Math.min(e.len - 1, rOut[x] + 30); sv += 0.5) {
+        const v = lp(e, sv, l);
+        let clash = false;
+        for (const side of [-1, 0, 1]) if (near(v[0] - Math.sin(v[3]) * side, v[2] + Math.cos(v[3]) * side)) clash = true;
+        if (!clash) break;
+        c = sv + 0.5;
+      }
+    }
+    coCache.set(key, c);
+    return c;
   }
 
   // ── 곡선 ──
@@ -634,5 +701,5 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return c;
   }
 
-  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, moveOf, curve, stops };
+  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, moveOf, curve, stops };
 }

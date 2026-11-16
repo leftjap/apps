@@ -114,6 +114,8 @@ export function makeCars(
   const pd = new Float32Array(max);
   const go = new Uint8Array(max);
   const past = new Uint8Array(max);
+  // 중앙버스차로 버스가 다음 교차로에서 우회전하려고 중앙버스차로를 나왔다(그 교차로를 지나면 다시 0)
+  const offMed = new Uint8Array(max);
   // 측정용: 이번 단계에 따라간 앞 대상(차 번호, 자기 자신이면 서는 자리, 없으면 −1)과 그 까닭
   const ahead = new Int32Array(max).fill(-1);
   const aheadWhy = new Uint8Array(max);
@@ -152,6 +154,7 @@ export function makeCars(
   const cellNext = new Int32Array(max);
   const cellAt = (x: number) => Math.max(0, Math.min(GW - 1, Math.floor((x + BOARD_R + 200) / CELL)));
   const tmp = [0, 0, 0];
+  const XS: number[] = [];
   const meanV = new Float32Array(edges.length).fill(-1);
   const blockLane = new Int8Array(edges.length).fill(-1);
   const closed = new Uint8Array(edges.length);
@@ -183,7 +186,7 @@ export function makeCars(
   }
   /** 차 i 가 차로 위 자리 x 에서 구간 o 를 달릴 차로(버스는 맨 오른쪽 쪽 그대로, 중앙버스차로 노선이면 중앙버스차로) */
   const laneAt = (i: number, o: Edge, x: number) =>
-    cars.route[i] >= 0 ? (o.med && routes[cars.route[i]].usesMed ? MED : free(o, Math.min(o.lanes - 1, Math.max(0, Math.floor(x))))) : carLane(o, x);
+    cars.route[i] >= 0 ? (o.med && routes[cars.route[i]].usesMed && !offMed[i] ? MED : free(o, Math.min(o.lanes - 1, Math.max(0, Math.floor(x))))) : carLane(o, x);
 
   // ── 교차로 경로 고르기 ──
   /** 진입로 a 의 차로 l 에서 나갈 경로를 고른다. 버스는 노선(q = 노선에서 a 의 자리)을, 일반 차는 그 차로가 허용하는 나가는 길 가운데 무게로 */
@@ -252,6 +255,7 @@ export function makeCars(
         if (jk[i] === P.edges.length - 1) {
           pp[i] = jp[i];
           jp[i] = -1;
+          offMed[i] = 0;
           go[i] = 0;
           past[i] = 0;
         }
@@ -324,6 +328,7 @@ export function makeCars(
     pp[i] = -1;
     go[i] = 0;
     past[i] = 0;
+    offMed[i] = 0;
     if (route < 0) rpos[i] = 0;
     onEdge(i, e);
   }
@@ -350,7 +355,7 @@ export function makeCars(
     if (cars.route[i] >= 0) nBus--;
     const j = --cars.n;
     if (i === j) return;
-    for (const a of [rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, jp, jk, pp, pd, go, past])
+    for (const a of [rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, jp, jk, pp, pd, go, past, offMed])
       a[i] = a[j];
   }
 
@@ -450,7 +455,21 @@ export function makeCars(
    *  다음 정류장이 먼저면 가장 오른쪽. 중앙버스차로는 −1(바꾸지 않는다) */
   function busWant(i: number, e: Edge): number {
     const R = routes[cars.route[i]];
-    if (lane[i] === MED || (e.med && R.usesMed)) return -1;
+    if (lane[i] === MED || (e.med && R.usesMed && !offMed[i])) {
+      // 중앙버스차로에서는 노선 200m 안 다음 교차로가 그 차로에서 못 하는 우회전일 때만(정류장이 먼저면 정류장 뒤) 나온다
+      const stopAt = stopK[i] < R.stops.length ? R.stops[stopK[i]] : Infinity;
+      for (let k = rpos[i], d = -s[i]; k + 1 < R.edges.length && d < 200; k++) {
+        const a = edges[R.edges[k]];
+        d += a.len;
+        if (!isApproach(a.id)) continue;
+        if (R.start[k] + a.len > stopAt && stopAt > R.start[rpos[i]] + s[i]) return -1;
+        const x = (X.exits.get(a.id) ?? []).find((q) => q.edges.every((id, m) => R.edges[k + m] === id));
+        if (!x || x.move !== RIGHT || X.laneMoves(a.id, MED) & RIGHT) return -1;
+        offMed[i] = 1;
+        return e.lanes - 1;
+      }
+      return -1;
+    }
     const right = e.bus >= 0 ? e.bus : e.lanes - 1;
     const stopAt = stopK[i] < R.stops.length ? R.stops[stopK[i]] : Infinity;
     const at = R.start[rpos[i]] + s[i];
@@ -632,7 +651,9 @@ export function makeCars(
   /** 구간 e 에서 차를 놓을 수 있는 범위: 상자·이음매 곡선 3m 밖, 진입로는 게이트 8m 앞까지, 교차로 안 구간은 없음 */
   const spawnRange = (e: Edge): [number, number] => {
     if (inner(e.id)) return [0, -1];
-    const lo = X.rOut[e.id] + 3;
+    let lo = X.rOut[e.id] + 3;
+    // 교차로에서 나온 길은 같은 교차로 다른 경로와 닿는 첫머리(clearOut) 너머에만 놓는다
+    if (X.jStart[e.id] >= 0) for (let l = 0; l < e.lanes; l++) lo = Math.max(lo, X.clearOut(e.id, l) + 3);
     const hi = isApproach(e.id) || S.midApproach.has(e.id) ? e.len - Math.max(X.gate(e.id, 0), X.gate(e.id, e.lanes - 1)) - 8 : e.len - X.rIn[e.id] - 3;
     return [lo, hi];
   };
@@ -761,20 +782,27 @@ export function makeCars(
     const L = dist + X.gate(P.a, P.lane) - X.rIn[P.a] + P.end + size[i];
     return v[i] > 4 ? L / v[i] : Math.sqrt((2 * L) / A_MAX) + 1;
   }
-  /** 나갈 차로(경로 끝 구간·차로)에 내가 설 자리가 있는가 */
+  /** 나갈 차로(경로 끝 구간·차로)에 내가 설 자리가 있는가. 자리는 상자 끝이 아니라 그 차로가 지나는 횡단보도(상자 끝 20m 안) 끝부터 잰다(횡단보도 위에 서지 않게).
+   *  나가는 길 끝이 게이트(다음 교차로·길 중간 신호)면, 그 직진이 내가 닿을 때까지 초록으로 남지 않는 한 그 게이트 앞까지만 설 수 있다 */
   function exitRoom(i: number, P: LanePath, tod: number): boolean {
     const x = edges[P.edges[P.edges.length - 1]];
     const xl = P.lanes[P.lanes.length - 1];
     let need = size[i] + 2.5;
     for (const h of held[P.j]) if (h !== i && jp[h] >= 0 && PS[jp[h]].edges[PS[jp[h]].edges.length - 1] === x.id && PS[jp[h]].lanes[PS[jp[h]].lanes.length - 1] === xl) need += size[h] + 2.5;
-    // 나가는 길 끝이 게이트(다음 교차로·길 중간 신호)이고 지금 직진이 초록이 아니면 그 앞까지만
+    let clear = X.clearOut(x.id, xl);
+    const q = stops.xwOf(x.id, xl === MED ? 0 : xl);
+    for (let m = 0; m < q.length; m += 4) if (q[m] < X.rOut[x.id] + 20) clear = Math.max(clear, q[m + 1] + 1.5);
     let cap = Infinity;
-    if ((isApproach(x.id) || S.midApproach.has(x.id)) && S.state(x.id, STRAIGHT, tod) !== GREEN) cap = x.len - X.gate(x.id, xl === MED ? 0 : xl) - X.rOut[x.id];
-    let d = -X.rOut[x.id];
+    if (isApproach(x.id) || S.midApproach.has(x.id)) {
+      const line = x.len - X.gate(x.id, xl === MED ? 0 : xl);
+      const reach = (P.end - X.rOut[x.id] + line + size[i]) / Math.max(4, v[i]);
+      if (!(S.state(x.id, STRAIGHT, tod) === GREEN && S.greenLeft(x.id, STRAIGHT, tod) > reach + 2)) cap = line - clear;
+    }
+    let d = -clear;
     let xp = xl === MED ? 0.5 : xl + 0.5;
     for (let e = x, k = 0; k < 4 && d < 40; k++) {
       const t = tail[e.id * 8 + (xl === MED && e.med ? MED : Math.min(e.lanes - 1, Math.floor(xp)))];
-      if (t >= 0) return Math.min(cap, d + s[t] - size[t] / 2) >= need;
+      if (t >= 0 && t !== i) return Math.min(cap, d + s[t] - size[t] / 2) >= need;
       d += e.len;
       if (e.next.length !== 1) break;
       xp = lanePos(e, edges[e.next[0]], xp);
@@ -854,10 +882,16 @@ export function makeCars(
           xs.push(q2[m + 2]);
         }
     }
-    // 너머 자리: 다음 구간 그 차로 맨 뒤 차의 꽁무니
+    // 너머 자리: 다음 구간 그 차로 맨 뒤 차의 꽁무니, 다음 구간 끝이 게이트(교차로·길 중간 신호)면 내 움직임이 닿을 때까지 초록으로 남지 않는 한 그 게이트까지
     if (nx) {
       const t = tail[nx.id * 8 + nl];
       if (t >= 0 && t !== i && s[t] - size[t] / 2 < xEnd + size[i] + 1) return false;
+      if (isApproach(nx.id) || S.midApproach.has(nx.id)) {
+        const line = nx.len - X.gate(nx.id, nl === MED ? 0 : nl);
+        const mv = jp[i] >= 0 && PS[jp[i]].a === nx.id ? PS[jp[i]].move : STRAIGHT;
+        const reach = (dist + X.gate(a.id, la === MED ? 0 : la) + line) / Math.max(4, v[i]);
+        if (line - xEnd < size[i] + 1 && !(S.state(nx.id, mv, tod) === GREEN && S.greenLeft(nx.id, mv, tod) > reach + 2)) return false;
+      }
     }
     const L = dist + X.gate(a.id, la === MED ? 0 : la) + xEnd + size[i];
     const tClear = v[i] > 4 ? L / v[i] : Math.sqrt((2 * L) / A_MAX) + 1;
@@ -1054,6 +1088,8 @@ export function makeCars(
       if (front >= 0 && front !== i && !(jp[i] >= 0 && past[i]) && pp[i] < 0) {
         const head = s[i] + size[i] / 2;
         const rearPred = head + gap + (v[front] * v[front]) / (2 * B_COMF);
+        // 이 구간과 다음 두 구간의 횡단보도 구간(구간 이음매에 걸친 횡단보도는 하나로 잇는다)
+        XS.length = 0;
         let off = 0;
         for (let id = e.id, k = 0; id >= 0 && k < 3 && off < rearPred; k++) {
           const pl = k === 0 ? lane[i] : pathLane(i, id);
@@ -1062,18 +1098,25 @@ export function makeCars(
           for (let m = 0; m < q.length; m += 4) {
             const c0 = off + q[m];
             const c1 = off + q[m + 1];
-            if (c0 < head + 0.3 || c0 > rearPred) continue;
-            if (rearPred - c1 >= size[i] + 1) continue;
-            const g2 = c0 - 1 - head + 2;
-            if (g2 < gap && c0 - 1 - head > (v[i] * v[i]) / (2 * B_HARD) - 0.5) {
-              gap = g2;
-              dv = v[i];
-              front = i;
-              why = 11;
-            }
+            if (XS.length && c0 <= XS[XS.length - 1] + 0.6) XS[XS.length - 1] = Math.max(XS[XS.length - 1], c1);
+            else XS.push(c0, c1);
           }
           off += edges[id].len;
           id = k === 0 ? nextE[i] : laterEdge(i, edges[id]);
+        }
+        for (let m = 0; m < XS.length; m += 2) {
+          const c0 = XS[m];
+          const c1 = XS[m + 1];
+          if (c0 < head + 0.3 || c0 > rearPred) continue;
+          if (rearPred - c1 >= size[i] + 2.5) continue;
+          // 비스듬한 횡단보도는 차로 가운데선이 들어서기 전에 몸 모서리가 먼저 걸치므로 1.6m 앞에 선다
+          const g2 = c0 - 1.6 - head + 2;
+          if (g2 < gap && c0 - 1.6 - head > (v[i] * v[i]) / (2 * B_HARD) - 0.5) {
+            gap = g2;
+            dv = v[i];
+            front = i;
+            why = 11;
+          }
         }
       }
       // 게이트: 교차로 진입로(경로를 골랐다)와 길 중간 신호
@@ -1198,7 +1241,7 @@ export function makeCars(
       if (r >= 0 && !solid(i, e)) {
         const w = busWant(i, e);
         if (w >= 0 && w !== lane[i] && Math.abs(side[i]) < 0.3) {
-          const tl = lane[i] + Math.sign(w - lane[i]);
+          const tl = lane[i] === MED ? 0 : lane[i] + Math.sign(w - lane[i]);
           if (tl >= 0 && tl < e.lanes && laneGap(i, e, tl)) shiftLane(i, e, tl);
         }
       }
