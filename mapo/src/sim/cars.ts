@@ -6,7 +6,7 @@
 import { headingAt, pointAt } from '../poly.ts';
 import { BODY_HW, BODY_LEN, BUS_HW, bodyType } from './bodies.ts';
 import { busHeadway, type BusRoute } from './buses.ts';
-import { GREEN, YELLOW, type Signals } from './signals.ts';
+import { GREEN, YELLOW, type Approach, type Signals } from './signals.ts';
 import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { BOARD_R } from '../geo.ts';
@@ -90,6 +90,14 @@ export function makeCars(
   const dwell = new Float32Array(max); // 정류장에 남은 정차 시간(초)
   const wait = new Float32Array(routes.length); // 노선별 다음 출발까지(초)
   const jn = signals?.junctions ?? makeJunctions(edges);
+  // 차로마다 정지 자리(서울시 정지선, 없으면 횡단보도 바깥 변 1m 앞)와 횡단보도 면 위 구간(src/sim/stops.ts)
+  const stops = signals?.stops ?? null;
+  const XS: number[] = [];
+  /** 구간 e 의 차로 l 정지 자리(구간 끝에서 앞 범퍼까지 m). 차로 정지 자리가 없으면 신호 정지선(ap), 그것도 없으면 −1 */
+  const stopBack = (e: Edge, l: number, ap?: Approach) => {
+    const b = stops ? stops.back(e.id, l) : -1;
+    return b >= 0 ? b : ap ? ap.setback : -1;
+  };
   // 교차로 경로: 진입 구간에 올라서면 교차로를 빠져나가는 구간까지 미리 정한다
   const PLAN = 10;
   const plan = new Int32Array(max * PLAN);
@@ -651,9 +659,9 @@ export function makeCars(
    *  x 끝 신호가 초록불이 아니면 정지선까지만 설 수 있다 */
   function roomOn(i: number, x: Edge, tod: number): number {
     const ap = signals?.approach.get(x.id);
-    const cap = ap && signals!.state(ap.c, ap.group, tod) !== GREEN ? x.len - ap.setback - jn.rOut[x.id] : Infinity;
-    let d = -jn.rOut[x.id];
     let xp = exitPos(i);
+    const cap = ap && signals!.state(ap.c, ap.group, tod) !== GREEN ? x.len - stopBack(x, laneAt(i, x, xp), ap) - jn.rOut[x.id] : Infinity;
+    let d = -jn.rOut[x.id];
     for (let e = x, k = 0; k < 4 && d < 40; k++) {
       const t = tail[e.id * 8 + laneAt(i, e, xp)];
       if (t >= 0) return Math.min(cap, d + s[t] - size[t] / 2);
@@ -882,13 +890,48 @@ export function makeCars(
               }
             }
       }
+      // 횡단보도 비워 두기: 앞차(6m/s 보다 느린)가 지금 자리에 선다고 볼 때 그 뒤에 서면 내 몸이 횡단보도 면 위에 걸치고, 횡단보도 너머에 내가 다 들어갈 자리가 없으면
+      // 횡단보도 바깥 변 1m 앞에 선다. 이 구간과, 이 구간 끝이 교차로가 아니면 다음 구간의 그 차로를 본다(교차로 상자 안은 정지선 너머 8m 까지만 보고, 그 너머는 교차로 잡기가 맡는다)
+      if (front >= 0 && front !== i && v[front] < 6 && stops) {
+        const head = s[i] + size[i] / 2;
+        const stopFront = head + gap - 2;
+        // 두 구간에 걸친 횡단보도는 한 구간으로 잇는다
+        XS.length = 0;
+        for (let k = 0, id = e.id, off = 0, ln = lane[i]; k < 2 && id >= 0; k++) {
+          const ee = edges[id];
+          const sp = stops.xwAll(id);
+          // 교차로 앞 구간은 상자 앞과, 정지선 너머 8m 안(정지선과 교차로 사이 횡단보도)까지
+          const hb = jn.groupOfEnd[id] >= 0 ? stopBack(ee, ln) : -1;
+          const until = jn.groupOfEnd[id] >= 0 ? Math.max(ee.len - jn.rIn[id], hb >= 0 ? ee.len - hb + 8 : 0) : Infinity;
+          for (let q = 0; q < sp.length && sp[q] < until; q += 2) {
+            if (XS.length && off + sp[q] <= XS[XS.length - 1] + 0.6) XS[XS.length - 1] = off + sp[q + 1];
+            else XS.push(off + sp[q], off + sp[q + 1]);
+          }
+          if (k === 0 && (nextE[i] < 0 || jn.groupOfEnd[id] >= 0)) break;
+          off += ee.len;
+          id = nextE[i];
+          ln = outLane(i, edges[id]);
+        }
+        for (let q = 0; q < XS.length; q += 2) {
+          const c0 = XS[q];
+          const c1 = XS[q + 1];
+          if (c0 < head + 0.5 || stopFront <= c0 - 1 || stopFront - c1 >= size[i] + 0.5) continue;
+          const g2 = c0 - 1 - head + 2;
+          if (g2 < gap) {
+            gap = g2;
+            dv = v[i];
+            front = i;
+            why = 11;
+          }
+        }
+      }
       // 신호: 빨간불(멈출 수 있으면 노란불도)이면 정지선을 멈춰 선 앞차처럼 다룬다
       const ap = signals?.approach.get(e.id);
       let red = false;
       // 묶인 교차로 안의 신호는 이미 교차로를 잡고 들어온 차를 세우지 않는다
       if (ap && !(claim[i] >= 0 && jn.groupOfStart[e.id] === claim[i])) {
         const st = signals!.state(ap.c, ap.group, now.tod);
-        const toLine = e.len - ap.setback - s[i] - size[i] / 2;
+        const toLine = e.len - stopBack(e, lane[i], ap) - s[i] - size[i] / 2;
         if (st !== GREEN && toLine > -0.5 && !(st === YELLOW && toLine < (v[i] * v[i]) / 6)) {
           red = true;
           if (claim[i] === jn.groupOfEnd[e.id] && planK[i] === 0) claim[i] = -1; // 신호에 서는 동안 교차로를 잡아 두지 않는다
@@ -905,7 +948,8 @@ export function makeCars(
       const ap2 = !ap && nextE[i] >= 0 && jn.groupOfEnd[e.id] < 0 ? signals?.approach.get(nextE[i]) : undefined;
       if (ap2) {
         const st = signals!.state(ap2.c, ap2.group, now.tod);
-        const toLine = e.len - s[i] + edges[nextE[i]].len - ap2.setback - size[i] / 2;
+        const ne = edges[nextE[i]];
+        const toLine = e.len - s[i] + ne.len - stopBack(ne, outLane(i, ne), ap2) - size[i] / 2;
         if (st !== GREEN && toLine > -0.5 && !(st === YELLOW && toLine < (v[i] * v[i]) / 6) && toLine + 2 < gap) {
           gap = toLine + 2;
           dv = v[i];
@@ -944,7 +988,8 @@ export function makeCars(
         const toBox = e.len - s[i] - size[i] / 2 - jn.rIn[e.id];
         // 신호가 있는 진입로에서는 정지선(이 앞에 횡단보도가 있다) 가까이에서도 들어갈 수 있는지 보고, 못 들어가면 정지선에서 기다린다.
         // 정지선에 선 차가 앞 교차로 상자에 걸리는 짧은 구간이면 지금처럼 상자 앞에서 본다
-        const toLine = ap && e.len - ap.setback - size[i] > jn.rOut[e.id] ? e.len - ap.setback - s[i] - size[i] / 2 : -1;
+        const hb = stopBack(e, lane[i], ap);
+        const toLine = hb >= 0 && e.len - hb - size[i] > jn.rOut[e.id] ? e.len - hb - s[i] - size[i] / 2 : -1;
         const near = Math.max(4, v[i] * 2.5 + 2);
         if (toBox < near || (toLine > -0.5 && toLine < near)) {
           const ok = mayEnter(i, G, pathOf[i], e, now.tod);
@@ -1156,7 +1201,7 @@ export function makeCars(
     /** i번 버스가 다음에 설 정류장 이름 */
     nextStop: (i: number) => (cars.route[i] >= 0 ? routes[cars.route[i]].stopNames[stopK[i]] ?? '' : ''),
     /** 측정용 읽기 전용 값: 구간·구간 위 거리·속도·차로·다음 구간·상자 안·시뮬레이션 길이, 따라간 앞 대상과 까닭
-     *  (1 같은 차로 앞차, 2 다음 구간 앞차, 3 차로 합침, 4 다른 구간 차, 5 신호, 6 다음 구간 신호, 7 횡단보도 사람, 8 교차로 진입 대기, 9 돌발 서행, 10 정류장) */
+     *  (1 같은 차로 앞차, 2 다음 구간 앞차, 3 차로 합침, 4 다른 구간 차, 5 신호, 6 다음 구간 신호, 7 횡단보도 사람, 8 교차로 진입 대기, 9 돌발 서행, 10 정류장, 11 횡단보도 비워 두기) */
     debug: () => ({ edge, s, v, lane, nextE, boxed, size, ahead, aheadWhy, junctions: jn }),
     meanSpeed: () => (cars.n ? v.subarray(0, cars.n).reduce((a, b) => a + b, 0) / cars.n : 0),
   };

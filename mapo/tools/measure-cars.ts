@@ -257,7 +257,7 @@ function stopLineDist(x: number, z: number, hx: number, hz: number): number {
 
 const pct = (a: number[], q: number) => (a.length ? [...a].sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(q * a.length))] : NaN);
 const inc = (o: Record<string, number>, k: string, n = 1) => (o[k] = (o[k] ?? 0) + n);
-const WHY = ['없음', '같은 차로 앞차', '다음 구간 앞차', '차로 합침', '다른 구간 차', '신호', '다음 구간 신호', '횡단보도 사람', '교차로 진입 대기', '돌발 서행', '정류장'];
+const WHY = ['없음', '같은 차로 앞차', '다음 구간 앞차', '차로 합침', '다른 구간 차', '신호', '다음 구간 신호', '횡단보도 사람', '교차로 진입 대기', '돌발 서행', '정류장', '횡단보도 비워 두기'];
 
 function run(dow: number, tod: number, seed: number) {
   const provider = makeSimProvider();
@@ -477,6 +477,8 @@ function run(dow: number, tod: number, seed: number) {
         stopped5++;
         if (onCrosswalk(x, z)) {
           onXw5++;
+          if (process.env.SHOWXW && st % 300 === 0)
+            console.error(JSON.stringify({ xw: 1, t: +(st * DT).toFixed(1), x: +x.toFixed(1), z: +z.toFixed(1), uid: c.uid[i], e, lane: D.lane[i], s: +D.s[i].toFixed(1), len: +carGraph[e].len.toFixed(1), rIn: +jn.rIn[e].toFixed(1), rOut: +jn.rOut[e].toFixed(1), boxed: D.boxed[i], why: D.aheadWhy[i], ahead: D.ahead[i] >= 0 ? [c.uid[D.ahead[i]], D.edge[D.ahead[i]], +D.s[D.ahead[i]].toFixed(1), +D.v[D.ahead[i]].toFixed(2), D.aheadWhy[D.ahead[i]]] : null, nextE: D.nextE[i], size: D.size[i] }));
           inc(xwWhere, `${Math.round(x / 5) * 5},${Math.round(z / 5) * 5} ${WHY[D.aheadWhy[i]]}${D.boxed[i] ? ' 상자 안' : ''}`);
         }
       }

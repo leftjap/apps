@@ -7,6 +7,7 @@
 import type { Crosswalk } from '../data/board.ts';
 import { leftEdge, rightEdge, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
+import { laneStops } from './stops.ts';
 import { pointAt } from '../poly.ts';
 import { hash01 } from './rng.ts';
 
@@ -320,7 +321,9 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
     return c < 0 ? 0 : groupOf(c, Math.atan2(q.uz, q.ux));
   });
 
-  return { list, approach, state, greenLeft, siteAt, siteNear, groupOf, junctions: boxes, crossSite, crossGroup };
+  // 차로마다 정지 자리와 횡단보도 면 위 구간(자료가 있을 때)
+  const stops = data ? laneStops(edges, data.stopLines, data.crosswalks) : null;
+  return { list, approach, state, greenLeft, siteAt, siteNear, groupOf, junctions: boxes, crossSite, crossGroup, stops };
 }
 
 export type Signals = ReturnType<typeof makeSignals>;
