@@ -38,7 +38,7 @@ import { decodeWalk, type WalkJson } from './sim/walknet.ts';
 import { makeSimProvider } from './sim/provider.ts';
 import { makeLiveProvider } from './data/live.ts';
 import { makeLiveSubway } from './data/subway.ts';
-import { loadStreetview, matchBuildings, xz as llToXZ } from './data/streetview.ts';
+import { loadStreetview, matchBuildings, treeKind, xz as llToXZ } from './data/streetview.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeSignals } from './sim/signals.ts';
@@ -168,11 +168,14 @@ const catMeshes = makeCatMeshes(cats, feeders(cats));
 const signalMarks = makeSignalMarks(carGraph, signals, board.crosswalks, board.crosswalkMarks, board.stopLines);
 const flow = makeFlow(carGraph, signals.junctions, surface.cut);
 flow.update(provider, start);
-// 로드뷰 기록 구역의 나무(자리·수종은 기록 파일에 있고, 지금 모형은 수종을 쓰지 않는다)
-const svTrees = streetview.flatMap((a) => a.props.flatMap((p) => (p.kind === 'tree' ? llToXZ(p.ll) : [])));
+// 로드뷰 기록 구역의 나무: 판 나무 뒤에 붙이고, 수종은 기록 값으로 정한다
+const svTreeRecs = streetview.flatMap((a) => a.props.flatMap((p) => (p.kind === 'tree' ? [p] : [])));
+const svTrees = svTreeRecs.flatMap((p) => llToXZ(p.ll));
+const svKinds = svTreeRecs.map((p) => treeKind(p.species));
 const trees = makeTrees(svTrees.length ? Float32Array.from([...board.trees, ...svTrees]) : board.trees, seasonOf(start.doy));
 // 수종(tools/trees.ts 가 board.json 나무 순서대로 굽는다). 오기 전에는 모두 '그 밖 활엽' 모형으로 그린다
-fetch(`${BASE}data/trees.json`).then((r) => r.json() as Promise<{ k: string }>).then((j) => trees.setKinds(Array.from(j.k, Number))).catch(() => {});
+trees.setKinds([...Array.from({ length: board.trees.length / 2 }, () => 5), ...svKinds]);
+fetch(`${BASE}data/trees.json`).then((r) => r.json() as Promise<{ k: string }>).then((j) => trees.setKinds([...Array.from(j.k, Number), ...svKinds])).catch(() => {});
 const svMatch = matchBuildings(board.buildings, streetview);
 const buildings = makeBuildings(board.buildings, svMatch.byIndex);
 const detail = makeDetail(buildings.list, buildings.looks, [...svMatch.byIndex.keys()], streetview.flatMap((a) => a.props));

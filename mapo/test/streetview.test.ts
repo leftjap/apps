@@ -2,9 +2,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeBoard, USE, type Building } from '../src/data/board.ts';
-import { applyRec, matchBuildings, recLook, UNKNOWN, type AreaRec, type BuildingRec } from '../src/data/streetview.ts';
+import { applyRec, matchBuildings, recLook, treeKind, UNKNOWN, type AreaRec, type BuildingRec } from '../src/data/streetview.ts';
 import { toLatLon } from '../src/geo.ts';
-import { looks, propsOf, refine } from '../src/render/buildings.ts';
+import { looks, prismGeometry, propsOf, refine } from '../src/render/buildings.ts';
 import { detailOf, siteOf } from '../src/render/detail.ts';
 
 const box = (x0: number, z0: number, w: number, d: number) => new Float32Array([x0, z0, x0 + w, z0, x0 + w, z0 + d, x0, z0 + d]);
@@ -157,6 +157,84 @@ describe('단지 모형: 발코니·계단실·처마', () => {
   it('원통 계단실 하나, 처마 띠는 남쪽 변을 따라', () => {
     expect(d.cyl.length / 12).toBe(1);
     expect(of(3).length).toBeGreaterThan(0);
+  });
+});
+
+describe('단지 모형: 유리 발코니 칸·꼭대기 층 들임·작은 창', () => {
+  const pts = box(0, 0, 40, 16);
+  const b = applyRec(
+    bld({ pts, h: 26, use: USE.apartments, levels: 9 }),
+    rec(20, 8, {
+      levels: 9,
+      wall: ['#eeeeea'],
+      detail: {
+        balconies: { faces: ['S'], from: 1, depth: 0.5, rail: '#ffffff', slab: ['#eeeeea'], rails: 'bars', ac: 0, conf: 'yes', glassBays: { faces: ['S'], glass: '#9cc4dc', band: '#2c4563', ac: 1 } },
+        setback: { faces: ['S'], depth: 1.5, floors: 1, rail: 'glass', conf: 'part' },
+        smallWindows: ['N'],
+      },
+    }),
+  );
+  const list = refine([b]);
+  const [L] = looks(list);
+  const d = detailOf(list[0], L);
+  const n = d.box.length / 12;
+  const of = (k: number) => Array.from({ length: n }, (_, i) => i).filter((i) => d.box[i * 12 + 7] === k);
+  const bays = Math.round(40 / 2.9);
+  it('남쪽 면은 칸마다 유리 발코니 칸과 흰 난간 칸이 번갈아 있다(들인 꼭대기 층 빼고)', () => {
+    const glass = of(15).length, slabs = of(0).length;
+    expect(glass).toBe(Math.ceil(bays / 2) * 7);
+    expect(slabs).toBe(Math.floor(bays / 2) * 7);
+  });
+  it('유리 칸에는 층마다 실외기가 달린다', () => {
+    expect(of(2).length).toBe(Math.ceil(bays / 2) * 7);
+  });
+  it('꼭대기 층은 남쪽 변만 1.5m 들이고, 들인 자리 앞에 유리 난간을 둔다', () => {
+    const top = L.tiers[L.tiers.length - 1];
+    expect(L.tiers.length).toBe(2);
+    expect(top.y0).toBeCloseTo(8 * L.fh, 1);
+    expect(Math.max(...Array.from(top.ring).filter((_, i) => i % 2 === 1))).toBeCloseTo(14.5, 5);
+    expect(Math.min(...Array.from(top.ring).filter((_, i) => i % 2 === 1))).toBeCloseTo(0, 5);
+    expect(of(16).length).toBeGreaterThan(0);
+  });
+  it('작은 창으로 기록한 북쪽 면의 벽 꼭짓점에만 작은 창 표시가 붙는다', () => {
+    const g = prismGeometry(list, [L], true);
+    const nor = g.attributes.normal.array as Int8Array;
+    const r3 = g.attributes.aRec3 as unknown as { count: number; getW: (i: number) => number };
+    let north = 0, other = 0;
+    for (let i = 0; i < r3.count; i++) {
+      const wall = nor[i * 3 + 1] === 0;
+      if (!wall) continue;
+      if (nor[i * 3 + 2] < -100) north += r3.getW(i) > 0.5 / 255 ? 1 : 0;
+      else other += r3.getW(i) > 0.5 / 255 ? 1 : 0;
+    }
+    expect(north).toBeGreaterThan(0);
+    expect(other).toBe(0);
+  });
+});
+
+describe('창 없는 벽', () => {
+  it('창을 none 으로 기록하면 모든 벽 꼭짓점에 창 없음 표시(2)가 붙는다', () => {
+    const b = applyRec(bld({ pts: box(0, 0, 10, 6), h: 3.2, use: USE.apartments, levels: 1 }), rec(5, 3, { windows: 'none', levels: 1, h: 3.2 }));
+    const list = refine([b]);
+    const g = prismGeometry(list, looks(list), true);
+    const nor = g.attributes.normal.array as Int8Array;
+    const r3 = g.attributes.aRec3 as unknown as { count: number; getW: (i: number) => number };
+    let walls = 0, marked = 0;
+    for (let i = 0; i < r3.count; i++) if (nor[i * 3 + 1] === 0) (walls += 1), (marked += Math.round(r3.getW(i) * 255) === 2 ? 1 : 0);
+    expect(walls).toBeGreaterThan(0);
+    expect(marked).toBe(walls);
+  });
+});
+
+describe('기록 나무 수종', () => {
+  it('수종 이름을 나무 모형 번호로', () => {
+    expect(treeKind('소나무')).toBe(4);
+    expect(treeKind('소나무류(잣나무로 보임)')).toBe(4);
+    expect(treeKind('느티나무')).toBe(2);
+    expect(treeKind('벚나무')).toBe(3);
+    expect(treeKind('은행나무')).toBe(0);
+    expect(treeKind('양버즘나무')).toBe(1);
+    expect(treeKind('미확인(활엽수)')).toBe(5);
   });
 });
 

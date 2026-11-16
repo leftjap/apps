@@ -5,7 +5,7 @@
 // 1층 가게 유리와 간판 띠를 그리고, 밤에는 창과 가게·간판에 불을 켠다. 옆 건물과 붙은 벽에는 창을 내지 않는다.
 import * as THREE from 'three';
 import { USE, type Building } from '../data/board.ts';
-import { applyRec, xz, type BuildingRec, type RecLook } from '../data/streetview.ts';
+import { applyRec, faceOf, xz, type BuildingRec, type RecLook } from '../data/streetview.ts';
 import { material, pal } from './env.ts';
 
 /** 외벽 모양(셰이더의 style 값). 6 부터는 명소 건물 전용이고 BASE 의 기본 모양을 따르되 색·창이 다르다 */
@@ -333,6 +333,19 @@ function tiersOf(b: Building, L: Omit<Look, 'tiers'>, area: number, hot: boolean
   const n = p.length / 2;
   const y0 = b.minH ?? 0;
   const one: Tier[] = [{ y0, y1: b.h, ring: p, open: L.open, style: L.style, dark: false }];
+  const sb = (b as Hot).rec?.detail?.setback;
+  if (sb && !hot && b.lm === 0 && L.floors > sb.floors) {
+    // 로드뷰 기록: 꼭대기 층 들임(기록한 면만, 외곽선 꼭짓점 수는 그대로)
+    const d = Array.from({ length: n }, (_, i) => {
+      const j = (i + 1) % n;
+      const len = Math.hypot(p[j * 2] - p[i * 2], p[j * 2 + 1] - p[i * 2 + 1]) || 1;
+      return L.open[i] !== 0 && sb.faces.includes(faceOf((p[j * 2 + 1] - p[i * 2 + 1]) / len, -(p[j * 2] - p[i * 2]) / len)) ? sb.depth : 0;
+    });
+    const f0 = L.floors - sb.floors;
+    const yt = L.gh > 0 ? y0 + L.gh + (f0 - 1) * L.fh : y0 + f0 * L.fh;
+    const ring = insetEdges(p, d);
+    if (ring) return [{ y0, y1: yt, ring: p, open: L.open, style: L.style, dark: false }, { y0: yt, y1: b.h, ring, open: L.open.map((o, i) => (d[i] > 0 ? 2 : o)), style: L.style, dark: false }];
+  }
   if (hot || y0 > 0.5 || b.lm !== 0) return one;
   // 로드뷰 기록의 1층: 필로티면 용도와 상관없이 어두운 1층을 두고, 다른 1층이면 빌라 필로티 난수를 쓰지 않는다
   const recGround = (b as Hot).rec?.ground;
@@ -399,12 +412,12 @@ function tiersOf(b: Building, L: Omit<Look, 'tiers'>, area: number, hot: boolean
   return one;
 }
 
-/** 로드뷰 기록을 꼭짓점 값 16바이트로: [외벽 rgb·재질] [1층 외벽 rgb·표시] [지붕 rgb·0] [유리 rgb·0]. 표시: 1 외벽 2 1층 외벽 4 지붕 8 유리 16 세대 단위 불빛 */
+/** 로드뷰 기록을 꼭짓점 값 16바이트로: [외벽 rgb·재질] [1층 외벽 rgb·표시] [지붕 rgb·0] [유리 rgb·창]. 표시: 1 외벽 2 1층 외벽 4 지붕 8 유리 16 세대 단위 불빛. 창: 0 보통 1 작은 창 2 창 없음 */
 function recBytes(L: Look): number[] {
   const r = L.rec!;
   const c = (v: [number, number, number] | undefined | null) => (v ? v.map((k) => Math.round(k * 255)) : [0, 0, 0]);
   const flags = (r.wall ? 1 : 0) + (r.wall2 ? 2 : 0) + (r.roof ? 4 : 0) + (r.glass ? 8 : 0) + (L.base === STYLE.apt ? 16 : 0);
-  return [...c(r.wall), r.mat, ...c(r.wall2), flags, ...c(r.roof), 0, ...c(r.glass), 0];
+  return [...c(r.wall), r.mat, ...c(r.wall2), flags, ...c(r.roof), 0, ...c(r.glass), r.noWin ? 2 : 0];
 }
 
 /** 벽·난간·옥상 메시. looks 를 주지 않으면 이 목록만으로 붙은 벽을 잰다. rec: 로드뷰 기록 값을 꼭짓점마다 싣는다(모든 건물에 기록이 있어야 한다) */
@@ -416,6 +429,7 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list), rec = 
   const idx: number[] = [];
   const rb: number[] = [];
   let recB: number[] = [];
+  let small: string[] = [];
   let v = 0;
   let L: Look;
   let tierStyle = 0;
@@ -424,7 +438,11 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list), rec = 
     nor.push(Math.round(nx * 127), Math.round(ny * 127), Math.round(nz * 127));
     edge.push(u, len, flags, top);
     bld.push(tierStyle, Math.floor(L.seed * 255), Math.round(L.gh * 20), Math.round(L.fh * 20));
-    if (rec) rb.push(...recB);
+    if (rec) {
+      rb.push(...recB);
+      // 작은 창으로 기록한 면의 벽: 마지막 바이트 1
+      if (ny === 0 && rb[rb.length - 1] === 0 && small.length && small.includes(faceOf(nx, nz))) rb[rb.length - 1] = 1;
+    }
     return v++;
   };
   const quad = (a: number) => idx.push(a, a + 1, a + 2, a, a + 2, a + 3);
@@ -456,7 +474,7 @@ export function prismGeometry(list: Building[], lk: Look[] = looks(list), rec = 
   };
   list.forEach((b, bi) => {
     L = lk[bi];
-    if (rec) recB = recBytes(L);
+    if (rec) (recB = recBytes(L)), (small = L.rec?.detail?.smallWindows ?? []);
     const tiers = L.tiers;
     // 기운 꼭대기: 긴 축을 따라 h − crown ~ h
     const crown = (b as Hot).crown ?? 0;
@@ -778,6 +796,13 @@ const FRAG = /* glsl */ `
       }
       if (st > 5.5 && st < 6.5) { lo = vec2(0.42, 0.12); hi = vec2(0.58, 0.92); }   // 석재 기둥: 좁고 긴 세로 창
       if (st > 6.5 && st < 7.5) { lo = vec2(0.1, 0.14); hi = vec2(0.9, 0.86); }     // 녹색 유리 격자
+      // 로드뷰 기록: 작은 창 면(발코니 창 대신 좁은 창, 난간 띠·세대 벽 없음)
+      float smallWin = 0.0;
+      #ifdef REC
+      smallWin = step(0.002, vR3.a) * step(vR3.a, 0.006);
+      if (smallWin > 0.5) { lo = vec2(0.36, 0.42); hi = vec2(0.64, 0.82); }
+      if (vR3.a > 0.006) windows = 0.0;   // 창 없는 벽
+      #endif
       vec2 q = vec2(bx, fy);
       float win = rect(q, lo, hi, w) * windows;
       if (st > 7.5 && st < 8.5) {
@@ -814,7 +839,7 @@ const FRAG = /* glsl */ `
       #ifdef REC
       if (mod(floor(rf / 8.0), 2.0) > 0.5) glassCol = vR3.rgb * 0.8;
       #endif
-      if (style > 2.5 && style < 3.5) {
+      if (style > 2.5 && style < 3.5 && smallWin < 0.5) {
         // 아파트: 발코니 난간 띠
         float rail = rect(q, vec2(0.0, 0.3), vec2(1.0, 0.36), w) * windows;
         alb = mix(alb, vec3(0.7, 0.72, 0.74) * uBld, rail);

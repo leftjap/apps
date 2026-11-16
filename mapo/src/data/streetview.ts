@@ -32,7 +32,22 @@ export interface RoofItem {
 /** 한 건물을 더 자세히 그릴 때 쓰는 값(지금은 서교대아아파트) */
 export interface Detail {
   /** 층마다 내민 발코니 바닥과 난간. from: 몇 번째 층(0 = 1층)부터, slab: 칸마다 번갈아 쓰는 바닥 끝 색 */
-  balconies?: { faces: Face[]; from: number; depth: number; rail: string; slab: string[]; rails: 'bars' | 'solid'; ac: number; conf: Conf };
+  balconies?: {
+    faces: Face[];
+    from: number;
+    depth: number;
+    rail: string;
+    slab: string[];
+    rails: 'bars' | 'solid';
+    ac: number;
+    conf: Conf;
+    /** 이 면들은 칸을 번갈아(짝수 칸) 푸른 유리로 막은 발코니로: 유리 색, 바닥 끝 띠 색, 실외기 비율 */
+    glassBays?: { faces: Face[]; glass: string; band: string; ac: number };
+  };
+  /** 꼭대기 층 들임: 이 면들을 위 floors 개 층만큼 depth(m) 들이고, 들인 자리 앞에 난간을 둔다 */
+  setback?: { faces: Face[]; depth: number; floors: number; rail: 'glass' | 'bars'; conf: Conf; note?: string };
+  /** 발코니 창 대신 작은 창을 내는 면 */
+  smallWindows?: Face[];
   /** 원통 계단실: 가운데 ll, 반지름, 지붕 위로 나온 높이, 층마다 아래·위 띠 색 */
   stair?: { kind: 'round'; ll: LL; r: number; top: number; bands: [string, string]; conf: Conf; note?: string };
   /** 벽에 붙인 세로 띠(이름 띠 등). at: 면의 어디쯤(0~1) */
@@ -96,7 +111,7 @@ export type PropRec = PropBase &
     | { kind: 'tree'; ll: LL; species: string; height: '5-' | '5-10' | '10+' }
     | { kind: 'fence'; line: LL[]; base: 'concrete' | 'brick'; baseColor: string; baseH: number; fence: 'iron' | 'none'; fenceColor: string; fenceH: number }
     | { kind: 'gate'; ll: LL; w: number; d: number; h: number; color: string; top: 'arch' | 'flat' }
-    | { kind: 'paving'; ll: LL; w: number; d: number; yaw: number; surface: 'asphalt' | 'planting' | 'block' }
+    | { kind: 'paving'; ll: LL; w: number; d: number; yaw: number; surface: 'asphalt' | 'concrete' | 'planting' | 'block' }
     | { kind: 'parking'; ll: LL; yaw: number; n: number; w: number; d: number; orient: 'perp' | 'parallel' }
     | { kind: 'pergola'; ll: LL; w: number; d: number; h: number; yaw: number; color: string }
     | { kind: 'lamp'; ll: LL; type: 'pole' | 'globe'; h: number }
@@ -117,6 +132,19 @@ export interface AreaRec {
 }
 
 export const xz = (ll: LL): [number, number] => toXZ(ll[0], ll[1]);
+
+const FACES: Face[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+/** 바깥 법선(판 좌표 x 동쪽, z 남쪽) → 면 방향(8방위) */
+export function faceOf(nx: number, nz: number): Face {
+  const deg = ((Math.atan2(nx, -nz) * 180) / Math.PI + 360) % 360;
+  return FACES[Math.round(deg / 45) % 8];
+}
+
+/** 기록한 수종 → 나무 모형 번호(render/trees.ts: 0 은행 1 양버즘 2 느티 3 벚 4 소나무류 5 그 밖 활엽) */
+export function treeKind(species: string): number {
+  const k = ['은행', '양버즘', '느티', '벚', '소나무'].findIndex((n) => species.includes(n));
+  return k < 0 ? 5 : k;
+}
 
 const inPoly = (p: ArrayLike<number>, x: number, z: number) => {
   let c = false;
@@ -167,6 +195,8 @@ export interface RecLook {
   ground?: Ground;
   /** null = 차양 없음, undefined = 미확인 */
   awning?: [number, number, number] | null;
+  /** 창을 내지 않는 벽(주차장 진입로 구조물 등) */
+  noWin: boolean;
   detail?: Detail;
 }
 
@@ -182,6 +212,7 @@ export function recLook(r: BuildingRec): RecLook {
     mat: known(r.mat) ? MATS.indexOf(r.mat) + 1 : 0,
     ground: known(r.ground) ? r.ground : undefined,
     awning: r.awning === null ? null : known(r.awning) ? hex(r.awning.color) : undefined,
+    noWin: r.windows === 'none',
     detail: r.detail,
   };
 }

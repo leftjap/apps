@@ -3,14 +3,13 @@
 // 기록이 있는 구역에만 생기므로 판 전체 정점은 거의 늘지 않는다. 멀면(900m 넘게) 그리지 않는다.
 import * as THREE from 'three';
 import type { Building } from '../data/board.ts';
-import { xz, type Face, type PropRec } from '../data/streetview.ts';
+import { faceOf, xz, type Face, type PropRec } from '../data/streetview.ts';
 import type { Look } from './buildings.ts';
 import { material, pal } from './env.ts';
 
 /** 소품 종류(셰이더의 kind) */
-export const DK = { slab: 0, rail: 1, ac: 2, eave: 3, band: 4, wallBase: 5, ironFence: 6, pillar: 7, paving: 8, line: 9, wood: 10, pole: 11, lamp: 12, stair: 13, opening: 14 } as const;
+export const DK = { slab: 0, rail: 1, ac: 2, eave: 3, band: 4, wallBase: 5, ironFence: 6, pillar: 7, paving: 8, line: 9, wood: 10, pole: 11, lamp: 12, stair: 13, opening: 14, glassBay: 15, glassRail: 16 } as const;
 
-const FACES: Face[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const hexRGB = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
 const rnd = (a: number, b = 0) => {
   const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
@@ -27,9 +26,7 @@ function edges(p: Float32Array) {
     const len = Math.hypot(p[j * 2] - ax, p[j * 2 + 1] - az) || 1;
     const dx = (p[j * 2] - ax) / len, dz = (p[j * 2 + 1] - az) / len;
     const nx = dz, nz = -dx;
-    // 판 좌표는 x 동쪽, z 남쪽: 방위각 = atan2(동, 북)
-    const deg = ((Math.atan2(nx, -nz) * 180) / Math.PI + 360) % 360;
-    out.push({ ax, az, dx, dz, len, nx, nz, face: FACES[Math.round(deg / 45) % 8], i });
+    out.push({ ax, az, dx, dz, len, nx, nz, face: faceOf(nx, nz), i });
   }
   return out;
 }
@@ -48,21 +45,32 @@ export function detailOf(b: Building, L: Look): { box: number[]; cyl: number[] }
   const floorY = (f: number) => (L.gh > 0 ? (f === 0 ? y0 : y0 + L.gh + (f - 1) * L.fh) : y0 + f * L.fh);
   const seed = L.seed * 1000;
 
+  const sb = d.setback;
+  /** 꼭대기 층을 들인 면이면 들인 층 수 */
+  const cut = (face: Face) => (sb && sb.faces.includes(face) ? sb.floors : 0);
   if (d.balconies) {
     const bc = d.balconies;
     const rail = hexRGB(bc.rail);
     const slabs = bc.slab.map(hexRGB);
+    const gb = bc.glassBays;
     for (const e of E) {
       if (!bc.faces.includes(e.face) || e.len < 3 || L.open[e.i] === 0) continue;
       // 외벽 셰이더의 아파트 칸(2.9m)과 같은 칸
       const nb = Math.max(1, Math.round(e.len / 2.9));
       const bw = e.len / nb;
       const yaw = Math.atan2(e.dz, e.dx);
+      const glassFace = !!gb && gb.faces.includes(e.face);
       for (let k = 0; k < nb; k++) {
         const t = (k + 0.5) * bw;
         const mx = e.ax + e.dx * t, mz = e.az + e.dz * t;
-        for (let f = bc.from; f < L.floors; f++) {
+        for (let f = bc.from; f < L.floors - cut(e.face); f++) {
           const y = floorY(f);
+          if (glassFace && k % 2 === 0) {
+            // 푸른 유리로 막은 발코니 칸: 아래 남색 띠, 위 유리(밤에는 세대마다 불), 앞에 실외기
+            push(box, mx + e.nx * 0.22, y - 0.25, mz + e.nz * 0.22, yaw, bw - 0.2, L.fh, 0.44, DK.glassBay, hexRGB(gb!.glass), rnd(seed + k * 7.1, f * 3.3));
+            if (rnd(seed + e.i * 17 + k, f + 3) < gb!.ac) push(box, mx + e.dx * (bw / 2 - 0.75) + e.nx * 0.62, y + 0.05, mz + e.dz * (bw / 2 - 0.75) + e.nz * 0.62, yaw, 0.82, 0.58, 0.3, DK.ac, [0.92, 0.92, 0.9]);
+            continue;
+          }
           const out = bc.depth / 2;
           push(box, mx + e.nx * out, y - 0.18, mz + e.nz * out, yaw, bw - 0.25, 0.18, bc.depth, DK.slab, slabs[k % slabs.length]);
           push(box, mx + e.nx * (bc.depth - 0.03), y, mz + e.nz * (bc.depth - 0.03), yaw, bw - 0.25, 1.05, 0.05, DK.rail, rail, bc.rails === 'bars' ? 1 : 0);
@@ -74,9 +82,18 @@ export function detailOf(b: Building, L: Look): { box: number[]; cyl: number[] }
       }
     }
   }
+  if (sb && sb.rail === 'glass') {
+    // 들인 꼭대기 층 앞(아래층 지붕 끝) 유리 난간
+    for (const e of E) {
+      if (!cut(e.face) || e.len < 1.5 || L.open[e.i] === 0) continue;
+      const mx = e.ax + e.dx * (e.len / 2), mz = e.az + e.dz * (e.len / 2);
+      push(box, mx - e.nx * 0.05, floorY(L.floors - sb.floors), mz - e.nz * 0.05, Math.atan2(e.dz, e.dx), e.len, 1.1, 0.06, DK.glassRail, [0.72, 0.84, 0.88]);
+    }
+  }
   if (d.eave) {
     const c = hexRGB(d.eave.color);
-    for (const e of E) {
+    // 처마는 맨 위 덩어리(들인 꼭대기 층) 변에서 내민다
+    for (const e of edges(L.tiers[L.tiers.length - 1].ring)) {
       if (!d.eave.faces.includes(e.face) || e.len < 1.5) continue;
       const mx = e.ax + e.dx * (e.len / 2), mz = e.az + e.dz * (e.len / 2);
       push(box, mx + e.nx * (d.eave.depth / 2 - 0.1), b.h - 0.12, mz + e.nz * (d.eave.depth / 2 - 0.1), Math.atan2(e.dz, e.dx), e.len + 0.3, 0.12, d.eave.depth, DK.eave, c, d.eave.drop);
@@ -134,7 +151,7 @@ export function siteOf(props: PropRec[]): number[] {
       push(x, 0, z, 0, p.w, p.h, p.d, DK.pillar, hexRGB(p.color), p.top === 'arch' ? 1 : 0);
     } else if (p.kind === 'paving') {
       const [x, z] = xz(p.ll);
-      const c: Record<typeof p.surface, [number, number, number]> = { asphalt: [0.36, 0.37, 0.38], planting: [0.36, 0.42, 0.27], block: [0.66, 0.63, 0.59] };
+      const c: Record<typeof p.surface, [number, number, number]> = { asphalt: [0.36, 0.37, 0.38], concrete: [0.68, 0.68, 0.66], planting: [0.36, 0.42, 0.27], block: [0.66, 0.63, 0.59] };
       push(x, 0.02, z, dir(p.yaw).yaw, p.w, 0.06, p.d, DK.paving, c[p.surface], p.surface === 'planting' ? 1 : 0);
     } else if (p.kind === 'parking') {
       const [x, z] = xz(p.ll);
@@ -252,9 +269,25 @@ const FRAG = /* glsl */ `
       c = mix(c, glass * uBld * 0.75 + mix(uFogCol, uSkyCol, 0.5) * fres * 0.25, g);
       if (n.y > 0.5) c = vec3(0.86, 0.86, 0.84) * uBld;
       glow = vec3(0.95, 0.9, 0.78) * g * 0.3;
-    } else {
+    } else if (k < 14.5) {
       // 주차장 입구: 어둡게
       c = vec3(0.08, 0.08, 0.09);
+    } else if (k < 15.5) {
+      // 유리 발코니 칸: 아래 0.45m 남색 띠(바닥 끝), 위는 푸른 유리와 흰 창살(1m), 밤에는 세대마다 불
+      float band = step(m.y, 0.45);
+      float mull = step(0.94, fract(m.x / 1.0 + 0.5)) * side;
+      vec3 view = normalize(vPos - cameraPosition);
+      float fres = 0.35 + 0.65 * pow(1.0 - abs(dot(view, n)), 3.0);
+      vec3 gl = vC.rgb * uBld * 0.72 + mix(uFogCol, uSkyCol, 0.5) * fres * 0.3 * (1.0 - 0.6 * uNight);
+      c = mix(gl, vec3(0.9, 0.92, 0.92) * uBld, mull);
+      c = mix(c, vec3(0.17, 0.27, 0.39) * uBld, band);
+      if (n.y > 0.5) c = vec3(0.17, 0.27, 0.39) * uBld;
+      float on = step(vC.w, clamp(uLit * 1.2 + 0.045 * uNight, 0.0, 1.0));
+      glow = mix(vec3(1.0, 0.8, 0.52), vec3(0.86, 0.9, 1.0), step(0.7, fract(vC.w * 13.0))) * on * (1.0 - band) * (1.0 - mull) * side * 0.8;
+    } else {
+      // 유리 난간: 흰 손잡이와 1.5m 마다 기둥, 그 사이 옅은 푸른 유리
+      float post = step(0.96, fract(m.x / 1.5));
+      c = mix(c * uBld, vec3(0.94) * uBld, max(step(0.9, vO.y), post));
     }
     vec3 col = lit(c, n) + glow * uNight * (1.0 - fi);
     gl_FragColor = vec4(fogged(col, vDist), 1.0);
