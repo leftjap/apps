@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeBoard, USE, type Building } from '../src/data/board.ts';
-import { applyRec, matchBuildings, recLook, treeKind, UNKNOWN, type AreaRec, type BuildingRec } from '../src/data/streetview.ts';
+import { addedBuildings, applyRec, matchBuildings, recLook, treeKind, UNKNOWN, type AreaRec, type BuildingRec } from '../src/data/streetview.ts';
 import { toLatLon } from '../src/geo.ts';
 import { looks, prismGeometry, propsOf, refine, STYLE } from '../src/render/buildings.ts';
 import { detailOf, DK, siteOf } from '../src/render/detail.ts';
@@ -299,6 +299,18 @@ describe('단지 바닥 소품', () => {
     expect(top[0]).toBeGreaterThan(bottom[0]);
     expect(top[2]).toBeCloseTo(bottom[2]);
   });
+  it('옛 철길은 선을 따라 레일 두 줄과 0.6m 마다 침목을 깐다', () => {
+    const s = siteOf([{ kind: 'track', line: [toLatLon(0, 0), toLatLon(0, -10)], conf: 'yes', seen: '' }]);
+    const boxes = Array.from({ length: s.length / 12 }, (_, i) => s.slice(i * 12, i * 12 + 12));
+    const rails = boxes.filter((b) => b[4] > 5);
+    const ties = boxes.filter((b) => b[4] <= 5);
+    expect(rails.length).toBe(2);
+    expect(ties.length).toBe(17);
+    // 레일은 북쪽(−z)으로 놓이고 궤간(1.435m)만큼 떨어진다
+    expect(Math.abs(rails[0][0] - rails[1][0])).toBeCloseTo(1.5, 1);
+    expect(rails.every((b) => Math.abs(b[2] + 5) < 0.01)).toBe(true);
+    expect(ties.every((b) => b[6] > 2 && b[1] + b[5] < rails[0][1] + rails[0][5])).toBe(true);
+  });
 });
 
 describe('기록한 창 모양', () => {
@@ -333,6 +345,53 @@ describe('외벽 LED 광고판', () => {
   });
 });
 
+describe('판 자료에 없는 건물 더하기', () => {
+  const sq = [toLatLon(0, 0), toLatLon(8, 0), toLatLon(8, 9), toLatLon(0, 9)];
+  it('외곽선을 적은 기록은 그 외곽선(넓이가 양수인 방향)과 높이로 새 건물을 만든다', () => {
+    const add = addedBuildings([area([rec(4, 4, { outline: sq, h: 21, levels: 6 }), rec(30, 30, { key: 'b' })])]);
+    expect(add.length).toBe(1);
+    const p = add[0].pts;
+    let a = 0;
+    for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) a += p[j] * p[i + 1] - p[i] * p[j + 1];
+    expect(a / 2).toBeGreaterThan(70);
+    expect(add[0].h).toBe(21);
+    expect(add[0].levels).toBe(6);
+    // 거꾸로 돈 외곽선도 같은 방향으로 바로잡는다
+    const rev = addedBuildings([area([rec(4, 4, { outline: [...sq].reverse(), levels: 6 })])]);
+    let b = 0;
+    const q = rev[0].pts;
+    for (let i = 0, j = q.length - 2; i < q.length; j = i, i += 2) b += q[j] * q[i + 1] - q[i] * q[j + 1];
+    expect(b).toBeCloseTo(a, 1);
+    expect(rev[0].h).toBeGreaterThan(18); // 높이를 안 적으면 층수로 어림
+  });
+  it('더한 건물에 기록이 이어진다', () => {
+    const areas = [area([rec(4, 4, { outline: sq, h: 21 })])];
+    const list = [bld({ pts: box(50, 50, 10, 10), h: 10 }), ...addedBuildings(areas)];
+    const { byIndex, missing } = matchBuildings(list, areas);
+    expect(missing).toEqual([]);
+    expect(byIndex.has(1)).toBe(true);
+  });
+});
+
+describe('사선 격자 외피', () => {
+  it('면마다 사선 골조를 벽 밖에 붙이고, 지붕을 넘지 않는다', () => {
+    const b = applyRec(bld({ pts: box(0, 0, 10, 10), h: 20, use: USE.commercial, levels: 6 }), rec(5, 5, { detail: { lattice: { color: '#ffffff', period: 10, bar: 0.5, conf: 'yes' } } }));
+    const list = refine([b]);
+    const d = detailOf(list[0], looks(list)[0]);
+    const st = Array.from({ length: d.box.length / 12 }, (_, i) => d.box.slice(i * 12, i * 12 + 12)).filter((q) => q[7] === DK.strut);
+    // 네 면 × 두 방향 × 높이 20m 를 반 주기(5m)로 나눈 4 칸
+    expect(st.length).toBe(32);
+    for (const q of st) {
+      const half = (Math.abs(Math.sin(q[11])) * q[4]) / 2; // 기울인 골조의 반 높이
+      expect(q[1] + half).toBeLessThanOrEqual(20.01);
+      expect(q[1] - half).toBeGreaterThanOrEqual(-0.01);
+      expect(Math.abs(q[11])).toBeGreaterThan(0.1); // 기운 각도(라디안)
+      const out = Math.max(-q[0], q[0] - 10, -q[2], q[2] - 10); // 벽 밖
+      expect(out).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('기록 파일', () => {
   const dir = new URL('../data-src/streetview/', import.meta.url);
   const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
@@ -341,7 +400,7 @@ describe('기록 파일', () => {
   const HEX = /^#[0-9a-f]{6}$/;
   it('파일이 하나 이상 있다', () => expect(files.length).toBeGreaterThan(0));
   it('건물 기록은 모두 판 건물 하나에 이어지고, 두 기록이 한 건물을 겹쳐 잡지 않는다', () => {
-    const { byIndex, missing } = matchBuildings(board.buildings, areas);
+    const { byIndex, missing } = matchBuildings([...board.buildings, ...addedBuildings(areas)], areas);
     expect(missing.map((r) => r.key)).toEqual([]);
     expect(byIndex.size).toBe(areas.reduce((s, a) => s + a.buildings.length, 0));
   });
@@ -359,7 +418,7 @@ describe('기록 파일', () => {
         expect(['shop', 'piloti', 'lobby', 'house', 'ramp', UNKNOWN]).toContain(r.ground);
         expect(['yes', 'part', 'sky']).toContain(r.conf);
       }
-      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp', 'steps', 'booth']).toContain(p.kind);
+      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp', 'steps', 'booth', 'track']).toContain(p.kind);
     }
   });
 });

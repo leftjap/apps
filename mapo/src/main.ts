@@ -40,7 +40,7 @@ import { decodeWalk, type WalkJson } from './sim/walknet.ts';
 import { makeSimProvider } from './sim/provider.ts';
 import { makeLiveProvider } from './data/live.ts';
 import { makeLiveSubway } from './data/subway.ts';
-import { loadStreetview, matchBuildings, treeKind, xz as llToXZ } from './data/streetview.ts';
+import { addedBuildings, loadStreetview, matchBuildings, treeKind, xz as llToXZ } from './data/streetview.ts';
 import { BOATS, boatAt } from './sim/boats.ts';
 import { picnicOn, seasonOf, type Season } from './sim/season.ts';
 import { makeIntersections, type SignalLamps } from './sim/intersection/index.ts';
@@ -102,6 +102,9 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamp
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
 });
+
+// 로드뷰로 찾은, 판 자료(OSM·Overture·GIS)에 없는 건물을 판 건물 목록 끝에 더한다(앞 번호는 그대로라 걷는 길의 문 번호가 바뀌지 않는다)
+board.buildings.push(...addedBuildings(streetview));
 
 // ── 시뮬레이션 ──
 const start = clock.now();

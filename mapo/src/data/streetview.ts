@@ -57,6 +57,8 @@ export interface Detail {
   opening?: { face: Face; w: number; h: number; conf: Conf; note?: string };
   /** 벽에 붙인 대형 LED 광고판(홍대입구 둘레에 많다). at: 면의 어디쯤(가운데, 0~1), y0·y1: 아래·위 높이(m), color: 화면 바탕색(모르면 어두운 화면) */
   billboards?: { face: Face; at: number; w: number; y0: number; y1: number; color?: string; conf: Conf; note?: string }[];
+  /** 사선 격자 외피: 면마다 벽 밖에 흰 골조를 사선으로 엇갈려 마름모 무늬를 낸다. period 는 같은 방향 사선이 면 끝에서 끝까지 갔다 돌아오는 높이(m), bar 는 골조 폭 */
+  lattice?: { color: string; period: number; bar: number; faces?: Face[]; conf: Conf; note?: string };
   /** 지붕 끝 처마 띠 */
   eave?: { faces: Face[]; depth: number; drop: number; color: string; conf: Conf; note?: string };
 }
@@ -89,6 +91,8 @@ export interface BuildingRec {
   detail?: Detail;
   /** 다른 모형과 겹치는 구조물이라 그리지 않는다(출구 지붕이 작은 건물로 들어가 출구 맞추기가 못 지운 것 등) */
   hide?: boolean;
+  /** 판 자료(OSM·Overture·GIS)에 없는 건물의 외곽선(경위도). 적으면 판에 새 건물로 더한다(addedBuildings) */
+  outline?: LL[];
 }
 
 export interface StreetRec {
@@ -123,6 +127,8 @@ export type PropRec = PropBase &
     | { kind: 'lamp'; ll: LL; type: 'pole' | 'globe'; h: number; /** 기둥 색(분홍 기둥 등). 없으면 회색 */ color?: string }
     /** 계단식 돌 좌석: 앞(아랫단) 가운데 ll 이 아니라 전체 가운데 ll, 방위각 yaw 쪽으로 n 단을 올라 높이 h. w 는 가로, d 는 오르는 방향 깊이 */
     | { kind: 'steps'; ll: LL; w: number; d: number; h: number; n: number; yaw: number; color: string }
+    /** 옛 철길: 선을 따라 레일 두 줄(궤간 gauge, 없으면 1.435m)과 침목 */
+    | { kind: 'track'; line: LL[]; gauge?: number }
     /** 부스·안내소·무대처럼 길에 놓인 상자: 가운데 ll, 길이 w 를 방위각 yaw 쪽으로 눕히고 폭 d, 높이 h. base 를 적으면 아래 baseH 를 그 색 띠로 */
     | { kind: 'booth'; ll: LL; w: number; d: number; h: number; yaw: number; color: string; base?: string; baseH?: number }
   );
@@ -228,6 +234,24 @@ export function recLook(r: BuildingRec): RecLook {
     win: r.windows === 'punched' || r.windows === 'band' || r.windows === 'curtain' ? r.windows : undefined,
     detail: r.detail,
   };
+}
+
+/** 외곽선을 적은 기록(판 자료에 없는 건물)을 판 건물로 만든다. 판 건물 목록 끝에 붙여 쓴다(앞 번호는 그대로) */
+export function addedBuildings(areas: AreaRec[]): Building[] {
+  const out: Building[] = [];
+  for (const a of areas)
+    for (const r of a.buildings) {
+      if (!r.outline || r.outline.length < 3) continue;
+      const pts = r.outline.flatMap((ll) => xz(ll));
+      let s2 = 0;
+      for (let i = 0, j = pts.length - 2; i < pts.length; j = i, i += 2) s2 += pts[j] * pts[i + 1] - pts[i] * pts[j + 1];
+      if (s2 < 0) for (let i = 0, j = pts.length - 2; i < j; i += 2, j -= 2) [pts[i], pts[i + 1], pts[j], pts[j + 1]] = [pts[j], pts[j + 1], pts[i], pts[i + 1]];
+      const levels = known(r.levels) ? r.levels : 0;
+      const h = r.h ?? Math.round(((levels || 3) * 3.1 + 1) * 10) / 10;
+      // 용도 4 = 상업(USE.commercial), 평지붕
+      out.push({ h, lm: 0, pts: Float32Array.from(pts), use: 4, levels, roof: 1, minH: 0 });
+    }
+  return out;
 }
 
 /** 층 높이 어림(m): 아파트 2.8, 그 밖 3.1 */

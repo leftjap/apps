@@ -1,5 +1,5 @@
 // 로드뷰 기록으로 더 자세히 그리는 것: 층마다 내민 발코니와 난간·실외기, 원통 계단실, 처마 띠, 벽의 세로 띠, 주차장 입구(detailOf),
-// 담·철제 펜스·정문 기둥·포장·주차 칸 선·퍼걸러·가로등·계단식 좌석(siteOf). 모두 상자 하나(원통 계단실은 원통 하나)를 인스턴스로 그린다.
+// 담·철제 펜스·정문 기둥·포장·주차 칸 선·퍼걸러·가로등·계단식 좌석·옛 철길(siteOf). 사선 격자 외피는 기울인 상자로 그린다. 모두 상자 하나(원통 계단실은 원통 하나)를 인스턴스로 그린다.
 // 기록이 있는 구역에만 생기므로 판 전체 정점은 거의 늘지 않는다. 멀면(900m 넘게) 그리지 않는다.
 import * as THREE from 'three';
 import type { Building } from '../data/board.ts';
@@ -8,7 +8,7 @@ import type { Look } from './buildings.ts';
 import { material, pal } from './env.ts';
 
 /** 소품 종류(셰이더의 kind) */
-export const DK = { slab: 0, rail: 1, ac: 2, eave: 3, band: 4, wallBase: 5, ironFence: 6, pillar: 7, paving: 8, line: 9, wood: 10, pole: 11, lamp: 12, stair: 13, opening: 14, glassBay: 15, glassRail: 16, screen: 17 } as const;
+export const DK = { slab: 0, rail: 1, ac: 2, eave: 3, band: 4, wallBase: 5, ironFence: 6, pillar: 7, paving: 8, line: 9, wood: 10, pole: 11, lamp: 12, stair: 13, opening: 14, glassBay: 15, glassRail: 16, screen: 17, strut: 18 } as const;
 
 const hexRGB = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
 const rnd = (a: number, b = 0) => {
@@ -114,6 +114,33 @@ export function detailOf(b: Building, L: Look): { box: number[]; cyl: number[] }
     const t = e.len * bb.at;
     push(box, e.ax + e.dx * t + e.nx * 0.45, bb.y0, e.az + e.dz * t + e.nz * 0.45, Math.atan2(e.dz, e.dx), bb.w, bb.y1 - bb.y0, 0.4, DK.screen, hexRGB(bb.color ?? '#1d2430'), (bb.w * 7.3 + bb.y0) % 1);
   }
+  if (d.lattice) {
+    // 사선 격자 외피: 면마다 반 주기(period/2) 높이마다 면 끝에서 끝으로 가는 사선 골조 두 방향. 덤 칸에 기운 각도(라디안)를 싣고, 셰이더가 상자를 면 안에서 돌린다
+    const lt = d.lattice;
+    const c = hexRGB(lt.color);
+    const top = b.h;
+    const half = lt.period / 2;
+    for (const e of E) {
+      if (e.len < 2 || (lt.faces && !lt.faces.includes(e.face))) continue;
+      const yaw = Math.atan2(e.dz, e.dx);
+      const n = Math.ceil((top - y0) / half - 1e-6);
+      for (const dir of [1, -1])
+        for (let k = 0; k < n; k++) {
+          // k 번째 칸: 아래 ya 에서 위 yb 까지, 방향 dir 이 바뀌며 지그재그. 지붕을 넘는 칸은 그만큼 짧게
+          const ya = y0 + k * half;
+          const yb = Math.min(top, ya + half);
+          const f = (yb - ya) / half;
+          const up = (k % 2 === 0) === (dir === 1);
+          const s0 = up ? 0 : e.len, s1 = up ? e.len * f : e.len * (1 - f);
+          const sm = (s0 + s1) / 2;
+          const run = s1 - s0;
+          const len = Math.hypot(run, yb - ya);
+          const roll = Math.atan2(yb - ya, run);
+          const ang = roll > Math.PI / 2 ? roll - Math.PI : roll < -Math.PI / 2 ? roll + Math.PI : roll;
+          push(box, e.ax + e.dx * sm + e.nx * 0.2, (ya + yb) / 2, e.az + e.dz * sm + e.nz * 0.2, yaw, len, lt.bar, 0.3, DK.strut, c, ang);
+        }
+    }
+  }
   if (d.opening) {
     const op = d.opening;
     const e = E.filter((q) => q.face === op.face).sort((p, q) => q.len - p.len)[0];
@@ -186,6 +213,20 @@ export function siteOf(props: PropRec[]): number[] {
       push(x, 0, z, 0, 0.14, p.h, 0.14, DK.pole, c);
       if (p.type === 'pole') push(x + 0.55, p.h - 0.1, z, 0, 1.2, 0.14, 0.32, DK.lamp, [0.85, 0.85, 0.82]);
       else push(x, p.h, z, 0, 0.42, 0.42, 0.42, DK.lamp, [0.95, 0.95, 0.92]);
+    } else if (p.kind === 'track') {
+      // 옛 철길: 레일 두 줄(조각마다 하나)과 0.6m 마다 침목. 침목은 레일보다 낮다
+      const g = (p.gauge ?? 1.435) / 2 + 0.035;
+      for (let i = 0; i + 1 < p.line.length; i++) {
+        const [ax, az] = xz(p.line[i]);
+        const [bx, bz] = xz(p.line[i + 1]);
+        const len = Math.hypot(bx - ax, bz - az);
+        if (len < 0.01) continue;
+        const ux = (bx - ax) / len, uz = (bz - az) / len;
+        const yaw = Math.atan2(uz, ux);
+        const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+        for (const s of [-1, 1]) push(mx - uz * g * s, 0.02, mz + ux * g * s, yaw, len, 0.13, 0.07, DK.slab, [0.42, 0.4, 0.38]);
+        for (let t = 0; t <= len + 1e-6; t += 0.6) push(ax + ux * t, 0.02, az + uz * t, yaw, 0.22, 0.09, 2.4, DK.wood, [0.36, 0.29, 0.23]);
+      }
     } else if (p.kind === 'booth') {
       const [x, z] = xz(p.ll);
       const yaw = dir(p.yaw).yaw;
@@ -214,10 +255,18 @@ const VERT = /* glsl */ `
     vec3 p = o * aS.xyz;
     float k = aS.w;
     if (k > 2.5 && k < 3.5) p.y -= (0.5 - o.z) * aC.w;   // 처마: 바깥(−z)으로 갈수록 내려간다
+    vec3 nn = normal;
+    if (k > 17.5) {
+      // 사선 골조: 가운데(aP.y)를 축으로 면 안(x·y)에서 aC.w 만큼 기울인다
+      float cr = cos(aC.w), sr = sin(aC.w);
+      p.y -= 0.5 * aS.y;
+      p = vec3(p.x * cr - p.y * sr, p.x * sr + p.y * cr, p.z);
+      nn = vec3(nn.x * cr - nn.y * sr, nn.x * sr + nn.y * cr, nn.z);
+    }
     float yaw = k > 12.5 && k < 13.5 ? 0.0 : aP.w;
     float cs = cos(yaw), sn = sin(yaw);
     vec3 w = vec3(aP.x + p.x * cs - p.z * sn, aP.y + p.y, aP.z + p.x * sn + p.z * cs);
-    vN = vec3(normal.x * cs - normal.z * sn, normal.y, normal.x * sn + normal.z * cs);
+    vN = vec3(nn.x * cs - nn.z * sn, nn.y, nn.x * sn + nn.z * cs);
     vO = o; vS = aS; vC = aC; vPos = w; vYaw = aP.w;
     vec4 mv = viewMatrix * vec4(w, 1.0);
     vDist = -mv.z;
@@ -310,6 +359,8 @@ const FRAG = /* glsl */ `
       // 유리 난간: 흰 손잡이와 1.5m 마다 기둥, 그 사이 옅은 푸른 유리
       float post = step(0.96, fract(m.x / 1.5));
       c = mix(c * uBld, vec3(0.94) * uBld, max(step(0.9, vO.y), post));
+    } else if (k > 17.5) {
+      // 사선 골조: 칠한 색 그대로
     } else {
       // LED 광고판: 검은 틀(0.3m) 안 앞면이 화면. 낮에도 빛나고 밤에 더 밝다. 몇 초마다 다른 장면(색 덩어리)으로 바뀐다
       float front = step(vO.z, -0.49) * side;   // 바깥(벽 반대쪽)이 상자의 -z 면
