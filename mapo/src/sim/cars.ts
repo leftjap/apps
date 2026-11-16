@@ -11,7 +11,7 @@ import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { BOARD_R } from '../geo.ts';
 import type { Crosswalk } from '../data/board.ts';
-import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, MED, medAt, type Edge } from './graph.ts';
+import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, MED, medAt, turnAllowed, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
@@ -210,6 +210,14 @@ export function makeCars(
     const r = cars.route[i];
     if (r >= 0) return rpos[i] + ahead < routes[r].edges.length ? routes[r].edges[rpos[i] + ahead] : -1;
     if (!e.next.length) return -1;
+    // 교차로 앞 구간에서는 노면 화살표가 지금 차로에 허락하는 쪽만 고른다(그런 쪽이 없으면 모두)
+    if (ahead === 1 && jn.groupOfEnd[e.id] >= 0 && e.id === edge[i]) {
+      const by = e.next.filter((k) => turnAllowed(e, edges[k], lane[i]));
+      if (by.length && by.length < e.next.length) {
+        const w = by.map((k) => e.nextW[e.next.indexOf(k)] * avoid(k) * (canLeave[k] ? 1 : 1e-3));
+        return by[pick(w, rand())];
+      }
+    }
     const ok = e.next.filter((k) => canLeave[k]);
     if (ok.length && ok.length < e.next.length) {
       const w = ok.map((k) => e.nextW[e.next.indexOf(k)] * avoid(k));

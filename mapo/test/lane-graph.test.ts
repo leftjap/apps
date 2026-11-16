@@ -51,3 +51,43 @@ describe('서울시 선으로 읽은 차로로 차 그래프 만들기', () => {
     for (const e of g3) for (const k of e.next) expect(g3[k].rev).toBe(e.rev);
   });
 });
+
+describe('노면 화살표로 교차로 차로 배정', () => {
+  // 동쪽으로 가는 한 방향 3차로가 x=100 교차로에서 북(왼쪽, −z)·동(직진)·남(오른쪽)으로 갈린다. 0번 차로에 좌회전, 1·2번 차로에 직진 화살표
+  const dir: DirLanes = { a: 1, b: 92, runs: [run(0, 100, [[1, -3.2, 0, 3.2], [99, -3.2, 0, 3.2]])] };
+  const roads = [
+    road([[0, 0], [100, 0]], { oneway: true, lanes: 3 }),
+    road([[100, 0], [100, -100]], { oneway: true, lanes: 2 }),
+    road([[100, 0], [200, 0]], { oneway: true, lanes: 3 }),
+    road([[100, 0], [100, 100]], { oneway: true, lanes: 2 }),
+  ];
+  const arrows = [
+    { kind: 5, x: 80, z: -3.2, fx: 1, fz: 0 },
+    { kind: 7, x: 80, z: 0, fx: 1, fz: 0 },
+    { kind: 7, x: 80, z: 3.2, fx: 1, fz: 0 },
+  ];
+  const g = buildCarGraph(roads, [[dir, null], null, null, null], arrows);
+  const a = g.find((e) => e.road === 0)!;
+  const north = g.find((e) => e.road === 1)!;
+  const east = g.find((e) => e.road === 2)!;
+  it('차로마다 그 차로에 놓인 화살표를 읽는다', () => {
+    expect(Array.from(a.turns)).toEqual([1, 2, 2]);
+  });
+  it('좌회전은 화살표가 있는 0번 차로가 나갈 길 차로를 안쪽부터 맡고(남는 차로까지), 직진은 1·2번 차로가 나란히 잇는다', () => {
+    expect(Array.from(a.lmap[a.next.indexOf(north.id)]).slice(0, 2)).toEqual([0, 2]);
+    const t = Array.from(a.lmap[a.next.indexOf(east.id)]);
+    expect(t.slice(2, 6)).toEqual([0, 1, 1, 3]); // 1번 → 나갈 길 0번, 2번 → 1~2번(비율대로, 엇갈리지 않게)
+  });
+  it('좌회전 차로의 차는 왼쪽으로만, 직진 차로의 차는 오른쪽으로 꺾지 않는다', () => {
+    const sim = makeCars(g, fixedProvider(1), 5, 30);
+    const seen = new Set<string>();
+    for (let k = 0; k < 10 * 120; k++) {
+      if (k % 25 === 0 && k < 10 * 60) sim.put(a.id, 5, Math.floor(k / 25) % 3);
+      sim.step(0.1, at(14), false);
+      const d = sim.debug();
+      for (let i = 0; i < sim.cars.n; i++) if (d.edge[i] === a.id && d.nextE[i] >= 0) seen.add(`${d.lane[i]}>${g[d.nextE[i]].road}`);
+    }
+    expect([...seen].filter((s) => s.startsWith('0>')).sort()).toEqual(['0>1']);
+    expect([...seen].filter((s) => !s.startsWith('0>') && s.endsWith('>3'))).toEqual([]);
+  });
+});

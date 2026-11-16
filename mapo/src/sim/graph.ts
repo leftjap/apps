@@ -50,6 +50,8 @@ export interface Edge {
   nextW: number[];
   /** next[j] 로 넘어갈 때 차로 l 이 맡는 다음 구간 차로 범위 [lmap[j][2l], lmap[j][2l+1]) */
   lmap: Int8Array[];
+  /** 차로마다 노면 화살표로 갈 수 있는 쪽(1 좌회전·유턴, 2 직진, 4 우회전 비트). 0 이면 화살표가 없다 */
+  turns: Uint8Array;
   /** 판 가장자리에서 시작해 새 차가 들어오는 구간 */
   entry: boolean;
   name: string;
@@ -178,7 +180,41 @@ function subLine(p: Float32Array, cum: Float32Array, s0: number, s1: number): Fl
   return Float32Array.from(out);
 }
 
-export function buildCarGraph(roads: Road[], lanes?: RoadLanes): Edge[] {
+/** 노면 화살표(src/data/marks.ts): 종류(A055_KND_CDE 번호), 자리, 가리키는 방향(단위 벡터) */
+export interface Arrow {
+  kind: number;
+  x: number;
+  z: number;
+  fx: number;
+  fz: number;
+}
+/** 화살표 종류 → 갈 수 있는 쪽(1 좌회전·유턴, 2 직진, 4 우회전). 금지 표시·양보·오르막은 넣지 않는다 */
+const ARROW_TURNS: Record<number, number> = { 5: 1, 6: 4, 7: 2, 8: 3, 9: 6, 10: 1, 11: 1, 13: 5, 14: 7, 15: 3, 20: 4 };
+/** 교차로에서 a 끝에서 b 시작으로 가는 쪽(1 좌, 2 직진, 4 우): a 에서 갈 수 있는 구간 가운데 75° 안으로 곧은 것 하나가 직진(같은 이름 길이 있으면 그 길,
+ *  없으면 가장 곧은 것)이고, 나머지는 꺾는 쪽이다 */
+export const turnOf = (a: Edge, b: Edge) => {
+  const all = edgesOf(a);
+  let best = -1;
+  let bestKey = Infinity;
+  for (const k of a.next) {
+    const t = Math.abs(turnAngle(a, all[k]));
+    if (t >= (5 * Math.PI) / 12) continue;
+    const key = (a.name && all[k].name === a.name ? 0 : 10) + t;
+    if (key < bestKey) (bestKey = key), (best = k);
+  }
+  if (b.id === best) return 2;
+  return turnAngle(a, b) < 0 ? 1 : 4;
+};
+/** 구간 e 가 든 그래프의 구간 배열 */
+const owner = new WeakMap<Edge, Edge[]>();
+const edgesOf = (e: Edge) => owner.get(e)!;
+/** 차로 l 에서 next 구간 b 로 갈 수 있는가: 그 차로에 화살표가 없거나 화살표가 그쪽을 가리킨다 */
+export const turnAllowed = (a: Edge, b: Edge, l: number) => {
+  const m = a.turns[Math.min(Math.max(0, l), a.lanes - 1)];
+  return !m || (m & turnOf(a, b)) !== 0;
+};
+
+export function buildCarGraph(roads: Road[], lanes?: RoadLanes, arrows: Arrow[] = []): Edge[] {
   const edges: Edge[] = [];
   roads.forEach((r, road) => {
     // 골목·진입로는 버스가 지나는 곳만 차가 다닌다
@@ -224,6 +260,7 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes): Edge[] {
           next: [],
           nextW: [],
           lmap: [],
+          turns: new Uint8Array(n),
           entry: false,
           name: r.name,
           key: edges.length,
@@ -234,6 +271,7 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes): Edge[] {
       });
     }
   });
+  for (const e of edges) owner.set(e, edges);
   const starts = new Map<number, number[]>();
   for (const e of edges) {
     const k = nodeKey(e.p[0], e.p[2]);
@@ -265,8 +303,12 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes): Edge[] {
   for (const e of edges) for (const k of e.next) prev[k].push(e.id);
   const roadOf = edges.map((e) => roads[e.road]);
   const open = (e: Edge) => !e.med && roadOf[e.id].oneway && e.cls <= 3 && roadOf[e.id].gap > 1;
+  // 같은 조각이 차로 수 구간으로 나뉜 구간은 한 조각으로 센다
   const reach = (e: Edge, step: (e: Edge) => number[], left: number): boolean =>
-    step(e).some((k) => edges[k].name === e.name && (edges[k].med > 0 || (left > 1 && open(edges[k]) && reach(edges[k], step, left - 1))));
+    step(e).some((k) => {
+      const same = edges[k].road === e.road;
+      return edges[k].name === e.name && (edges[k].med > 0 || ((left > 1 || same) && open(edges[k]) && reach(edges[k], step, same ? left : left - 1)));
+    });
   // 앞뒤가 바로 중앙버스차로인 40m 미만 한 방향 조각(교차로 안 조각 등)은 이름·분리대와 상관없이 잇는다. 이은 조각이 다음 조각을 이을 수 있으므로 바뀌지 않을 때까지 되풀이한다
   const between = (e: Edge) => !e.med && roadOf[e.id].oneway && e.cls <= 3 && e.len < 40 && prev[e.id].some((k) => edges[k].med > 0) && e.next.some((k) => edges[k].med > 0);
   for (let pass = 0; pass < 4; pass++) {
@@ -277,7 +319,38 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes): Edge[] {
   // 중앙버스차로 자리: 서울시 선으로 읽은 구간은 그 자리, 아니면 분리대 폭으로 어림한다
   for (const e of edges) if (e.med) e.med = e.mo.length ? Math.max(0.5, medAt(e, e.len / 2)) : medOff(roadOf[e.id].gap);
   keepApart(edges, roadOf);
-  // 차로 잇기: 갈림 없는 이음매(들어온 구간의 다음이 하나, 다음 구간에 들어오는 구간이 하나)는 차로 자리로, 교차로는 꺾는 쪽 차로끼리 나란히
+  // 노면 화살표: 서울시 선으로 차로를 읽은 구간에서 차로가 끝나는 자리 앞 45m 안, 그 차로 가운데 반폭 안에 같은 방향으로 놓인 화살표
+  const ag = new Map<number, number[]>();
+  arrows.forEach((a, i) => {
+    const k = Math.floor(a.x / 20) * 100003 + Math.floor(a.z / 20);
+    (ag.get(k) ?? ag.set(k, []).get(k)!).push(i);
+  });
+  const P = [0, 0, 0];
+  const Q = [0, 0, 0];
+  for (const e of edges) {
+    if (e.plain || !arrows.length) continue;
+    const end = e.lb >= 0 ? e.lb : e.len;
+    for (let d = Math.max(0, end - 45); d <= end + 2 && d <= e.len; d += 10) {
+      pointAt(e.p, e.cum, d, P);
+      for (let gx = -1; gx <= 1; gx++)
+        for (let gz = -1; gz <= 1; gz++)
+          for (const i of ag.get((Math.floor(P[0] / 20) + gx) * 100003 + Math.floor(P[2] / 20) + gz) ?? []) {
+            const a = arrows[i];
+            const m = ARROW_TURNS[a.kind];
+            if (!m) continue;
+            const s = Math.max(0, Math.min(e.len, d + (a.x - P[0]) * Math.cos(headingNear(e, d)) + (a.z - P[2]) * Math.sin(headingNear(e, d))));
+            if (s < end - 45 || s > end + 2 || Math.abs(s - d) > 5) continue;
+            const h = headingNear(e, s);
+            if (a.fx * Math.cos(h) + a.fz * Math.sin(h) < 0.8) continue;
+            pointAt(e.p, e.cum, s, Q);
+            const lat = (a.x - Q[0]) * -Math.sin(h) + (a.z - Q[2]) * Math.cos(h);
+            let best = -1;
+            for (let l = 0; l < e.lanes; l++) if (Math.abs(lat - laneOff(e, l, s)) < laneWidth(e, l, s) / 2 && (best < 0 || Math.abs(lat - laneOff(e, l, s)) < Math.abs(lat - laneOff(e, best, s)))) best = l;
+            if (best >= 0) e.turns[best] |= m;
+          }
+    }
+  }
+  // 차로 잇기: 갈림 없는 이음매(들어온 구간의 다음이 하나, 다음 구간에 들어오는 구간이 하나)는 차로 자리로, 교차로는 화살표가 가리키는 차로에서 꺾는 쪽 차로끼리 나란히
   for (const a of edges)
     a.lmap = a.next.map((k) => {
       const b = edges[k];
@@ -295,23 +368,36 @@ export function turnAngle(a: Edge, b: Edge): number {
   return t;
 }
 
-/** 교차로 차로 잇기: 왼쪽으로 꺾으면 안쪽(왼쪽) 차로끼리, 오른쪽으로 꺾으면 바깥(오른쪽) 차로끼리 나란히 잇는다. 곧게 가면 비율대로 */
+/** 교차로 차로 잇기: 그쪽으로 갈 수 있는 차로(노면 화살표, 없으면 모든 차로)를 왼쪽으로 꺾으면 안쪽(왼쪽) 차로끼리, 오른쪽으로 꺾으면 바깥(오른쪽) 차로끼리 나란히 잇는다.
+ *  곧게 가면 비율대로. 그쪽으로 갈 수 없는 차로는 가장 가까운 갈 수 있는 차로와 같은 곳으로 잇는다(서로 엇갈리지 않게) */
 function turnMap(a: Edge, b: Edge): Int8Array {
   const t = turnAngle(a, b);
-  const na = a.lanes;
+  const ok = Array.from({ length: a.lanes }, (_, l) => l).filter((l) => turnAllowed(a, b, l));
+  const use = ok.length ? ok : Array.from({ length: a.lanes }, (_, l) => l);
+  const na = use.length;
   const nb = b.lanes;
-  if (Math.abs(t) < Math.PI / 6) return spreadMap(na, nb);
-  const out = new Int8Array(na * 2);
-  for (let l = 0; l < na; l++) {
-    // 꺾는 쪽에서 센 차로 번호
-    const k = t < 0 ? l : na - 1 - l;
-    let lo = Math.min(k, nb - 1);
-    let hi = lo + 1;
-    // 들어온 차로가 적으면 꺾는 쪽에서 가장 먼 차로가 남은 차로를 맡는다
-    if (na < nb && k === na - 1) hi = nb;
-    if (t > 0) [lo, hi] = [nb - hi, nb - lo];
-    out[l * 2] = lo;
-    out[l * 2 + 1] = hi;
+  let sub: Int8Array;
+  if (Math.abs(t) < Math.PI / 6) sub = spreadMap(na, nb);
+  else {
+    sub = new Int8Array(na * 2);
+    for (let l = 0; l < na; l++) {
+      // 꺾는 쪽에서 센 차로 번호
+      const k = t < 0 ? l : na - 1 - l;
+      let lo = Math.min(k, nb - 1);
+      let hi = lo + 1;
+      // 들어온 차로가 적으면 꺾는 쪽에서 가장 먼 차로가 남은 차로를 맡는다
+      if (na < nb && k === na - 1) hi = nb;
+      if (t > 0) [lo, hi] = [nb - hi, nb - lo];
+      sub[l * 2] = lo;
+      sub[l * 2 + 1] = hi;
+    }
+  }
+  const out = new Int8Array(a.lanes * 2);
+  for (let l = 0; l < a.lanes; l++) {
+    let j = 0;
+    for (let q = 1; q < na; q++) if (Math.abs(use[q] - l) < Math.abs(use[j] - l)) j = q;
+    out[l * 2] = sub[j * 2];
+    out[l * 2 + 1] = sub[j * 2 + 1];
   }
   return out;
 }

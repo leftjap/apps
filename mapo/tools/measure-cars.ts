@@ -262,7 +262,7 @@ const WHY = ['없음', '같은 차로 앞차', '다음 구간 앞차', '차로 �
 function run(dow: number, tod: number, seed: number) {
   const provider = makeSimProvider();
   const start = { tod, dow, doy: 320 };
-  const carGraph = buildCarGraph(board.roads, roadLanes);
+  const carGraph = buildCarGraph(board.roads, roadLanes, marks.arrows);
   const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
   const crossBusy = new Uint32Array(board.crosswalks.length);
   const sim = makeCars(carGraph, provider, seed, 5000, makeBusRoutes(board.buses, carGraph, undefined, board.crosswalks), signals, { list: board.crosswalks, busy: crossBusy });

@@ -101,7 +101,7 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes] = aw
 // ── 시뮬레이션 ──
 const start = clock.now();
 const walkGraph = decodeWalk(walkJson);
-const carGraph = buildCarGraph(board.roads, roadLanes);
+const carGraph = buildCarGraph(board.roads, roadLanes, marks.arrows);
 // 신호는 보행 신호 횡단보도가 있는 교차로·길 중간 횡단보도에 두고, 정지선은 서울시 차선 자료의 정지선 자리를 쓴다
 const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
 // 횡단보도마다 지금 사람이 건너고 있는 자리(축 2m 칸 비트): 차는 자기 차로 앞에 사람이 있으면 서고, 사람은 신호 없는 횡단보도에서 차가 다가오면 기다린다

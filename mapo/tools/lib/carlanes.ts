@@ -5,7 +5,7 @@
 //    4.8m 넘는 사이는 자료에서 차선이 빠진 곳이 많아 2.9m 마다 한 차로로 채운다. 중앙버스전용차선 바로 오른쪽 사이는 중앙 정류장 승강장 자리라 비운다). 연석 쪽 가장자리선에서 멈춘다.
 //    왼쪽 경계에서 연석 쪽 경계까지 차선이 하나도 없는 단면은 그 폭을 자료의 차로 수(맞지 않으면 3.3m 마다)로 고르게 나눈다.
 //  - 중앙버스차로가 붙은 한 방향 길은 왼쪽 경계(중앙버스전용차선) 왼쪽의 다음 선까지 사이 가운데를 버스차로 가운데로 삼는다.
-// 단면마다 읽은 차로 수를 길을 따라 고르게 다듬어(앞뒤 6m 최빈값, 24m 보다 짧은 구간은 이웃에 합침) 차로 수가 같은 구간(run)으로 나누고,
+// 단면마다 읽은 차로 수를 길을 따라 고르게 다듬어(앞뒤 6m 최빈값, 24m 보다 짧은 구간은 이웃에 합침. 양쪽보다 차로가 적은 구간은 8m 만 넘으면 남김) 차로 수가 같은 구간(run)으로 나누고,
 // 구간마다 차로 가운데의 옆 거리를 단면 자리(s)마다 적는다. 처음·마지막으로 읽은 단면(a·b)은 차로 선이 시작하고 끝나는 자리다(교차로 앞뒤).
 import type { MarkLine } from '../../src/data/marks.ts';
 import { cumLen } from '../../src/poly.ts';
@@ -110,6 +110,11 @@ export function readSection(hits: [number, number][], twoWay: boolean, medBus: b
         closed = true;
         break;
       }
+      continue;
+    }
+    // 한 방향 길에서 차로를 찾기 전 만난 가장자리구역선은 찻길 왼쪽 가장자리다(그 왼쪽은 중앙 정류장·분리대 자리라 차로로 채우지 않는다)
+    if (!twoWay && !lanes.length && k === 7 && gap > 4.8) {
+      prev = t;
       continue;
     }
     if (gap <= 4.8) lanes.push((prev + t) / 2);
@@ -230,7 +235,9 @@ export function readDirection(
     for (let k = 0; k < groups.length; k++) {
       const g = groups[k];
       const l = (g.i1 - g.i0 + 1) * STEP;
-      if (l < minRun && (worst < 0 || l < (groups[worst].i1 - groups[worst].i0 + 1) * STEP)) worst = k;
+      // 양쪽 이웃보다 차로가 적은 구간(중앙 정류장 승강장 옆처럼 차로가 줄어드는 곳)은 8m 만 넘으면 남긴다
+      const dip = k > 0 && k < groups.length - 1 && g.n < groups[k - 1].n && g.n < groups[k + 1].n;
+      if (l < (dip ? 8 : minRun) && (worst < 0 || l < (groups[worst].i1 - groups[worst].i0 + 1) * STEP)) worst = k;
     }
     if (worst < 0) break;
     const g = groups[worst];

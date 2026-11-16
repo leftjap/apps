@@ -60,15 +60,20 @@ function project(e: Edge, x: number, z: number): [number, number] {
 
 export function makeBusRoutes(runs: BusRun[], edges: Edge[], medStops: [string, string, number, number][] = MED_STOPS, crosswalks: Crosswalk[] = []): BusRoute[] {
   const tmp = [0, 0, 0];
-  const byRoad = new Map<string, number>();
-  for (const e of edges) byRoad.set(`${e.road}${e.rev ? '-' : '+'}`, e.id);
+  // 도로 조각의 한 방향은 차로 수 구간마다 구간 여럿이 될 수 있다(src/sim/graph.ts). 진행 순서대로 모두 잇는다
+  const byRoad = new Map<string, number[]>();
+  for (const e of edges) {
+    const k = `${e.road}${e.rev ? '-' : '+'}`;
+    (byRoad.get(k) ?? byRoad.set(k, []).get(k)!).push(e.id);
+  }
+  for (const list of byRoad.values()) list.sort((a, b) => edges[a].s0 - edges[b].s0);
   const out: BusRoute[] = [];
   for (const run of runs) {
     const ids: number[] = [];
     for (const v of run.segs) {
-      const id = byRoad.get(`${Math.abs(v) - 1}${v < 0 ? '-' : '+'}`);
-      if (id === undefined) break; // 굽기에서 이어진 조각만 내보내므로 생기지 않지만, 생기면 거기서 끊는다
-      ids.push(id);
+      const list = byRoad.get(`${Math.abs(v) - 1}${v < 0 ? '-' : '+'}`);
+      if (!list) break; // 굽기에서 이어진 조각만 내보내므로 생기지 않지만, 생기면 거기서 끊는다
+      ids.push(...list);
     }
     if (!ids.length) continue;
     const start: number[] = [];
@@ -160,6 +165,19 @@ export function busHeadway(r: { kind: number; ref: string }, tod: number): numbe
   return day;
 }
 
+/** 노선 R 의 노선 거리 d 자리(노선 밖이면 끝)에서 일반 차로 왼쪽 가장자리 점 [x, z] */
+function leftAt(R: BusRoute, edges: Edge[], d: number): [number, number] {
+  d = Math.max(0, Math.min(R.len, d));
+  let k = 0;
+  while (k < R.edges.length - 1 && R.start[k + 1] <= d) k++;
+  const e = edges[R.edges[k]];
+  const at = Math.min(e.len, d - R.start[k]);
+  const P = [0, 0, 0];
+  const h = headingAt(e.p, pointAt(e.p, e.cum, at, P));
+  const off = leftEdge(e, at);
+  return [P[0] - Math.sin(h) * off, P[2] + Math.cos(h) * off];
+}
+
 /**
  * 버스 정류장을 사람이 타고 내리는 곳으로 바꾼다. 정류장 자리는 그 구간의 진행 방향 오른쪽 보도이고,
  * 중앙 정류장은 일반 차로 왼쪽 가장자리 밖 분리대 위 승강장 가운데다(버스는 그 왼쪽 중앙버스차로에 서서 오른쪽 문을 연다).
@@ -175,12 +193,32 @@ export function busStopPortals(routes: BusRoute[], edges: Edge[]) {
       while (e < R.edges.length - 1 && R.start[e + 1] <= s) e++;
       const edge = edges[R.edges[e]];
       const seg = pointAt(edge.p, edge.cum, s - R.start[e], tmp);
-      const yaw = headingAt(edge.p, seg);
       const median = R.med[k];
-      const at = s - R.start[e];
-      const off = median ? leftEdge(edge, at) - 0.25 - ISLAND_W / 2 : rightEdge(edge, at) + edge.lw / 2 + 1.2;
-      const x = tmp[0] - Math.sin(yaw) * off;
-      const z = tmp[2] + Math.cos(yaw) * off;
+      let yaw = headingAt(edge.p, seg);
+      let x: number;
+      let z: number;
+      if (median) {
+        // 중앙 정류장 승강장(버스가 서는 자리 ISLAND_BACK 뒤가 가운데, 길이 ISLAND_L)은 그 앞뒤 끝의 일반 차로 왼쪽 가장자리(서울시 선으로 읽은 차로)를 이은 방향으로 놓고,
+        // 오른쪽 변이 승강장 길이에 걸친 왼쪽 가장자리에서 0.25m 떨어지게 둔다. 가운데선이 실제 찻길과 비스듬하거나 휜 곳에서도 승강장이 차로를 덮지 않는다
+        const c = s - ISLAND_BACK;
+        const [ax, az] = leftAt(R, edges, c - ISLAND_L / 2);
+        const [bx, bz] = leftAt(R, edges, c + ISLAND_L / 2);
+        const [mx, mz] = leftAt(R, edges, c);
+        yaw = Math.atan2(bz - az, bx - ax);
+        // 승강장 길이에 걸쳐 가장자리가 가장 왼쪽으로 오는 자리에 맞춘다(휜 가장자리의 활꼴 몫)
+        let v = 0;
+        for (let d = -ISLAND_L / 2; d <= ISLAND_L / 2; d += 2.5) {
+          const [qx, qz] = leftAt(R, edges, c + d);
+          v = Math.min(v, -(qx - mx) * Math.sin(yaw) + (qz - mz) * Math.cos(yaw));
+        }
+        const w = v - 0.25 - ISLAND_W / 2; // 승강장 가운데가 가운데 자리 가장자리에서 오른쪽으로(음수면 왼쪽으로) 떨어진 거리
+        x = mx - Math.sin(yaw) * w + Math.cos(yaw) * ISLAND_BACK;
+        z = mz + Math.cos(yaw) * w + Math.sin(yaw) * ISLAND_BACK;
+      } else {
+        const off = rightEdge(edge, s - R.start[e]) + edge.lw / 2 + 1.2;
+        x = tmp[0] - Math.sin(yaw) * off;
+        z = tmp[2] + Math.cos(yaw) * off;
+      }
       const name = R.stopNames[k];
       let p = portals.find((q) => q.name === name && q.median === median && Math.hypot(q.x - x, q.z - z) < 25);
       if (!p) portals.push((p = { kind: 'stop', key: `stop-${portals.length}`, x, z, name, yaw, median }));
