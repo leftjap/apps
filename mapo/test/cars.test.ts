@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { busHeadway, busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 import { makeCars } from '../src/sim/cars.ts';
-import { buildCarGraph } from '../src/sim/graph.ts';
+import { buildCarGraph, laneOff } from '../src/sim/graph.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { at, crosswalk, fixedProvider, road } from './helpers.ts';
 
@@ -36,7 +36,7 @@ describe('차 그래프', () => {
   it('양방향 도로의 차로는 진행 방향 오른쪽에 놓인다', () => {
     const [e] = buildCarGraph([road([[0, 0], [100, 0]], { lanes: 4 })]);
     expect(e.lanes).toBe(2);
-    expect(e.off0).toBeGreaterThan(0);
+    expect(laneOff(e, 0, 50)).toBeGreaterThan(0);
   });
 });
 

@@ -2,7 +2,7 @@
 // 사고·공사는 그 자리 차로 하나를 막고(차가 옆 차로로 비켜 간다), 통제는 그 둘레 구간에 차를 들이지 않는다.
 // 막힌 차로 옆을 지나는 차는 앞뒤 25m 에서 5m/s 까지 늦추고(좁아진 자리를 조심해 지난다), 차로가 하나뿐인 길은 막으면 길이 끊기므로 3m/s 로 지나가게 한다.
 import { headingAt, pointAt } from '../poly.ts';
-import type { Edge } from './graph.ts';
+import { laneOff, type Edge } from './graph.ts';
 
 export interface Incident {
   id: string;
@@ -78,8 +78,9 @@ export function matchIncidents(edges: Edge[], list: Incident[]) {
     for (const e of edges) {
       const p = project(e, q.x, q.z);
       if (p.d >= REACH) continue;
-      const lane = Math.max(0, Math.min(e.lanes - 1, Math.round((p.right - e.off0) / e.lw)));
-      const d = Math.hypot(p.right - (e.off0 + lane * e.lw), Math.max(0, p.d - Math.abs(p.right)));
+      let lane = 0;
+      for (let l = 1; l < e.lanes; l++) if (Math.abs(p.right - laneOff(e, l, p.s)) < Math.abs(p.right - laneOff(e, lane, p.s))) lane = l;
+      const d = Math.hypot(p.right - laneOff(e, lane, p.s), Math.max(0, p.d - Math.abs(p.right)));
       if (!best || d < best.d) best = { e, s: p.s, lane, d };
     }
     if (!best) continue;
@@ -94,6 +95,7 @@ export function matchIncidents(edges: Edge[], list: Incident[]) {
 export function spotXZ(e: Edge, sp: IncidentSpot): [number, number, number] {
   const seg = pointAt(e.p, e.cum, Math.min(e.len, Math.max(0, sp.s)), tmp);
   const yaw = headingAt(e.p, seg);
-  const off = sp.lane >= 0 ? e.off0 + sp.lane * e.lw : e.off0 + ((e.lanes - 1) * e.lw) / 2;
+  const at = Math.min(e.len, Math.max(0, sp.s));
+  const off = sp.lane >= 0 ? laneOff(e, sp.lane, at) : (laneOff(e, 0, at) + laneOff(e, e.lanes - 1, at)) / 2;
   return [tmp[0] - Math.sin(yaw) * off, tmp[2] + Math.cos(yaw) * off, yaw];
 }

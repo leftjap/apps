@@ -4,7 +4,7 @@
 import type { BusRun, Crosswalk } from '../data/board.ts';
 import { MED_STOPS } from '../data/medStops.ts';
 import { headingAt, pointAt } from '../poly.ts';
-import { ISLAND_BACK, ISLAND_L, ISLAND_W, type Edge } from './graph.ts';
+import { ISLAND_BACK, ISLAND_L, ISLAND_W, leftEdge, rightEdge, type Edge } from './graph.ts';
 
 /** 서울 시내버스 도색 */
 export const BUS_KINDS = [
@@ -118,7 +118,7 @@ export function makeBusRoutes(runs: BusRun[], edges: Edge[], medStops: [string, 
           const e = edges[id];
           if (!e.med) return;
           const [along, lat] = project(e, x, z);
-          const miss = Math.abs(lat - (e.off0 - e.lw / 2 - 0.25 - ISLAND_W / 2));
+          const miss = Math.abs(lat - (leftEdge(e, along) - 0.25 - ISLAND_W / 2));
           if (along > 0.5 && along < e.len - 0.5 && miss < best) (best = miss), (at = along), (on = k);
         });
         if (on < 0) continue;
@@ -177,7 +177,8 @@ export function busStopPortals(routes: BusRoute[], edges: Edge[]) {
       const seg = pointAt(edge.p, edge.cum, s - R.start[e], tmp);
       const yaw = headingAt(edge.p, seg);
       const median = R.med[k];
-      const off = median ? edge.off0 - edge.lw / 2 - 0.25 - ISLAND_W / 2 : edge.off0 + edge.lanes * edge.lw + 1.2;
+      const at = s - R.start[e];
+      const off = median ? leftEdge(edge, at) - 0.25 - ISLAND_W / 2 : rightEdge(edge, at) + edge.lw / 2 + 1.2;
       const x = tmp[0] - Math.sin(yaw) * off;
       const z = tmp[2] + Math.cos(yaw) * off;
       const name = R.stopNames[k];

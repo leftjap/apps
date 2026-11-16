@@ -4,7 +4,7 @@
 // 보행 신호는 보행 신호 횡단보도 양 끝에 2구(빨강 위, 초록 아래) 기둥으로 세운다. 불빛은 매 프레임 시뮬레이션 신호 상태로 바꾼다.
 import * as THREE from 'three';
 import type { Crosswalk } from '../data/board.ts';
-import type { Edge } from '../sim/graph.ts';
+import { laneOff, leftEdge, rightEdge, type Edge } from '../sim/graph.ts';
 import { GREEN, RED, type Signals } from '../sim/signals.ts';
 import { pointAt } from '../poly.ts';
 import { material } from './env.ts';
@@ -70,7 +70,8 @@ export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswa
     const hx = (e.p[seg * 3 + 3] - e.p[seg * 3]) / hl;
     const hz = (e.p[seg * 3 + 5] - e.p[seg * 3 + 2]) / hl;
     // 진행 방향 오른쪽 r = (−hz, hx). 이 방향 차로 가운데
-    const mid = e.off0 + ((e.lanes - 1) / 2) * e.lw;
+    const at = Math.max(0, e.len - ap.setback);
+    const mid = (laneOff(e, 0, at) + laneOff(e, e.lanes - 1, at)) / 2;
     const cx = P[0] - hz * mid;
     const cz = P[2] + hx * mid;
     // 이 방향 차로를 가로지르는 가장 가까운 정지선
@@ -98,7 +99,7 @@ export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswa
       // 정지선 자료가 없는 진입로: 정지 자리에서 이 방향 차로를 가로지르는 선으로 친다
       ux = -hz;
       uz = hx;
-      len = e.lanes * e.lw;
+      len = rightEdge(e, at) - leftEdge(e, at);
       rx = cx + ux * (len / 2);
       rz = cz + uz * (len / 2);
     }

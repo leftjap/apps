@@ -4,12 +4,14 @@ import { decodeBoard } from '../src/data/board.ts';
 import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
 import { nearestS } from '../src/poly.ts';
 import { makeFlow } from '../src/render/flow.ts';
-import { buildCarGraph } from '../src/sim/graph.ts';
+import { buildCarGraph, laneOff } from '../src/sim/graph.ts';
+import { decodeLanes } from '../src/data/lanes.ts';
 import { makeJunctions } from '../src/sim/junctions.ts';
 
 // 흐름 색 띠는 교차로 상자 밖 구간에만 그린다. 상자 안은 여러 방향 띠가 겹쳐 색이 뭉친다(2026-11-16 도로 감사).
 const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
-const edges = buildCarGraph(board.roads);
+const roadLanes = decodeLanes(JSON.parse(readFileSync(new URL('../public/data/lanes.json', import.meta.url), 'utf8')));
+const edges = buildCarGraph(board.roads, roadLanes);
 const jn = makeJunctions(edges);
 
 /** 구간 e 만 그린 흐름 띠가 놓인 길 가운데선 자리들(띠 점에서 차로 쪽으로 옮긴 거리를 되돌린다) */
@@ -17,9 +19,13 @@ function drawn(e: (typeof edges)[number]): [number, number][] {
   const { mesh } = makeFlow([e], jn);
   const pos = mesh.geometry.getAttribute('position').array as Float32Array;
   const nrm = mesh.geometry.getAttribute('aNorm').array as Float32Array;
-  const off = e.off0 + ((e.lanes - 1) / 2) * e.lw;
   const out: [number, number][] = [];
-  for (let i = 0; i < pos.length / 3; i += 2) out.push([pos[i * 3] - nrm[i * 2] * off, pos[i * 3 + 2] - nrm[i * 2 + 1] * off]); // 점마다 좌우 두 꼭짓점을 같은 자리에 둔다
+  for (let i = 0; i < pos.length / 3; i += 2) {
+    // 점마다 좌우 두 꼭짓점을 같은 자리에 둔다. 차로들 가운데 옆 거리는 길을 따라 바뀌므로 그 점을 가운데선에 내린 자리의 값으로 되돌린다
+    const { s } = nearestS(e.p, e.cum, pos[i * 3], pos[i * 3 + 2]);
+    const off = (laneOff(e, 0, s) + laneOff(e, e.lanes - 1, s)) / 2;
+    out.push([pos[i * 3] - nrm[i * 2] * off, pos[i * 3 + 2] - nrm[i * 2 + 1] * off]);
+  }
   return out;
 }
 

@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeBoard } from '../src/data/board.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
+import { decodeLanes } from '../src/data/lanes.ts';
 import { GREEN, makeSignals } from '../src/sim/signals.ts';
 import { pedState, signalPoles } from '../src/render/signals.ts';
 
 const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
-const edges = buildCarGraph(board.roads);
+const edges = buildCarGraph(board.roads, decodeLanes(JSON.parse(readFileSync(new URL('../public/data/lanes.json', import.meta.url), 'utf8'))));
 const signals = makeSignals(edges, { crosswalks: board.crosswalks, stopLines: board.stopLines });
 const poles = signalPoles(edges, signals, board.crosswalks, board.stopLines);
 

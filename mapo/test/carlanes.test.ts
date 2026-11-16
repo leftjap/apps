@@ -8,7 +8,7 @@ import { encodeDir, lineIndex, readDirection } from '../tools/lib/carlanes.ts';
 const line = (k: number, z: number, x0 = 0, x1 = 100): MarkLine => ({ k, k2: 1, p: Float32Array.from([x0, 0, z, x1, 0, z]) });
 const east = Float32Array.from([0, 0, 0, 100, 0, 0]);
 const west = Float32Array.from([100, 0, 0, 0, 0, 0]);
-const read = (lines: MarkLine[], p = east, twoWay = false, medBus = false) => readDirection(lineIndex(lines), p, cumLen(p), twoWay, medBus);
+const read = (lines: MarkLine[], p = east, twoWay = false, medBus = false, hint = 0) => readDirection(lineIndex(lines), p, cumLen(p), twoWay, medBus, hint);
 
 describe('차로 가운데선 굽기', () => {
   it('한 방향 길: 왼쪽 가장자리선에서 오른쪽 연석선까지 이웃한 두 선 사이 가운데가 차로 가운데다', () => {
@@ -23,9 +23,15 @@ describe('차로 가운데선 굽기', () => {
     const f = read(lines, east, true)!;
     expect(f.runs[0].n).toBe(2);
     expect(f.runs[0].off.slice(0, 2).map((v) => +v.toFixed(2))).toEqual([2, 5.3]);
-    const b = read(lines, west, true)!;
+    // 서쪽으로 가면 −z 가 오른쪽: 중앙선(−0.4)과 연석선(6.5) 사이 6.9m 에 차선이 없다. 자료 차로 수가 1 이면 그 가운데 한 차로
+    const b = read(lines, west, true, false, 1)!;
     expect(b.runs[0].n).toBe(1);
-    expect(b.runs[0].off[0]).toBeCloseTo(3.05, 2); // 서쪽으로 가면 −z 가 오른쪽: 중앙선(−0.4)과 연석선(6.5) 가운데
+    expect(b.runs[0].off[0]).toBeCloseTo(3.05, 2);
+  });
+  it('차선이 하나도 칠해지지 않은 찻길은 자료 차로 수를 모르거나 맞지 않으면 3.3m 마다 한 차로로 나눈다', () => {
+    const d = read([line(1, -5), line(9, 10.8)], east, false, false, 0)!; // 자료 차로 수를 모른다
+    expect(d.runs[0].n).toBe(5);
+    expect(d.runs[0].off[0]).toBeCloseTo(-5 + 15.8 / 10, 2);
   });
   it('길을 따라 차로가 하나 늘면 그 자리에서 차로 수 구간이 나뉜다', () => {
     const d = read([line(7, -5), line(6, -1.8), line(6, 1.4), line(9, 4.8, 0, 50), line(6, 4.8, 50, 100), line(9, 8, 50, 100)])!;

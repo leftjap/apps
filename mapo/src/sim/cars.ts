@@ -11,7 +11,7 @@ import type { Now } from './clock.ts';
 import { commute, daytime, nightlife } from './curves.ts';
 import { BOARD_R } from '../geo.ts';
 import type { Crosswalk } from '../data/board.ts';
-import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOffset, MED, type Edge } from './graph.ts';
+import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, MED, medAt, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
@@ -100,7 +100,6 @@ export function makeCars(
   const claim = new Int32Array(max).fill(-1);
   const claimPath = new Int32Array(max);
   const claimExit = new Int32Array(max); // 잡은 경로의 나가는 구간
-  const claimLane = new Uint8Array(max); // 잡을 때의 차로
   const claimXL = new Uint8Array(max); // 잡은 경로로 빠져나갈 구간의 차로
   const claimT = new Float32Array(max); // 잡아 둔 지 몇 초
   const prevClaim = new Int32Array(max).fill(-1);
@@ -127,7 +126,7 @@ export function makeCars(
   // 차를 놓을 수 있는 구간(판 밖으로 나갈 수 있는 구간, 그런 구간이 없는 시험용 길이면 모두)
   const placeable = canLeave.some((c) => c) ? canLeave : new Uint8Array(edges.length).fill(1);
   const entries = edges.filter((e) => e.entry);
-  const entryW = entries.map((e) => e.lanes * Math.max(0, 4 - e.cls));
+  const entryW = entries.map((e) => e.vol * Math.max(0, 4 - e.cls));
   const speed = new Float32Array(edges.length).fill(10);
   // 구간 가운데 자리(도로 속도는 장소 둘레 혼잡에 따라 달라진다)
   const midX = new Float32Array(edges.length);
@@ -254,7 +253,10 @@ export function makeCars(
     }
     planN[i] = n;
     nextE[i] = n > 1 ? plan[b + 1] : -1;
-    if (n > 1) pathOf[i] = jn.pathId(plan.subarray(b, b + n), n);
+    if (n > 1) {
+      lanesAlong(i, b, n, 0, LI);
+      pathOf[i] = jn.pathId(plan.subarray(b, b + n), n, LI);
+    }
   }
 
   function put(i: number, e: Edge, at: number, ln: number, route = -1) {
@@ -337,7 +339,6 @@ export function makeCars(
     claim[i] = claim[j];
     claimPath[i] = claimPath[j];
     claimExit[i] = claimExit[j];
-    claimLane[i] = claimLane[j];
     claimXL[i] = claimXL[j];
     stopT[i] = stopT[j];
     boxed[i] = boxed[j];
@@ -352,8 +353,13 @@ export function makeCars(
 
   const cv = [0, 0, 0, 0];
   /** 차 i 가 차로 lanes 개인 구간에서 달릴 차로(버스는 맨 오른쪽) */
-  const laneIn = (i: number, lanes: number) => (cars.route[i] >= 0 ? lanes - 1 : Math.min(lanes - 1, Math.floor(pref[i] * lanes)));
-  const outLane = (i: number, o: Edge) => (cars.route[i] >= 0 && o.med && routes[cars.route[i]].usesMed ? MED : free(o, laneIn(i, o.lanes)));
+  // 차로 위 자리 x = 차로 번호 + 그 차로 안 자리(0~1). 지금 구간에서는 pref × 차로 수이고, 다음 구간으로 넘어갈 때 graph.ts lanePos 의 차로 잇기 표로 옮긴다
+  /** 차 i 가 구간 o 의 차로 위 자리 x 에서 달릴 차로(버스는 맨 오른쪽, 중앙버스차로 노선이면 중앙버스차로) */
+  const laneAt = (i: number, o: Edge, x: number) =>
+    cars.route[i] >= 0 ? (o.med && routes[cars.route[i]].usesMed ? MED : free(o, o.lanes - 1)) : free(o, Math.min(o.lanes - 1, Math.max(0, Math.floor(x))));
+  /** 차 i 가 지금 구간 다음의 구간 o 에서 달릴 차로 위 자리와 차로 */
+  const nextPosOf = (i: number, o: Edge) => lanePos(edges[edge[i]], o, pref[i] * edges[edge[i]].lanes);
+  const outLane = (i: number, o: Edge) => laneAt(i, o, nextPosOf(i, o));
   function locate(i: number) {
     const e = edges[edge[i]];
     // 교차로 상자 안에서는 들어온 차로와 나갈 차로를 잇는 곡선을 따라간다
@@ -388,7 +394,7 @@ export function makeCars(
     }
     pointAt(e.p, e.cum, s[i], tmp);
     const yaw = headingNear(e, s[i]);
-    const off = laneOffset(e, lane[i]) - (lane[i] === MED ? islandShift(i, e.med) : 0);
+    const off = laneOff(e, lane[i], s[i]) - (lane[i] === MED ? islandShift(i, medAt(e, s[i])) : 0);
     cars.x[i] = tmp[0] - Math.sin(yaw) * off;
     cars.y[i] = tmp[1];
     cars.z[i] = tmp[2] + Math.cos(yaw) * off;
@@ -397,9 +403,11 @@ export function makeCars(
 
   /** 상자 안 곡선(a 끝에서 b 시작까지, 들어선 뒤 d m)의 그 자리 중앙버스차로 자리 med. 한쪽에만 중앙버스차로가 있으면 그쪽 값 */
   function medAlong(a: Edge, b: Edge, d: number): number {
-    if (!a.med || !b.med) return a.med || b.med;
+    const ma = a.med ? medAt(a, a.len - jn.rIn[a.id]) : 0;
+    const mb = b.med ? medAt(b, jn.rOut[b.id]) : 0;
+    if (!ma || !mb) return ma || mb;
     const u = Math.max(0, Math.min(1, d / Math.max(0.1, jn.rIn[a.id] + jn.rOut[b.id])));
-    return a.med + (b.med - a.med) * u;
+    return ma + (mb - ma) * u;
   }
   /** 중앙버스차로 버스가 중앙 정류장 둘레에서 승강장 폭만큼 왼쪽으로 비켜서는 거리(m). 승강장 안에서 다 비키고, 승강장 끝에서 22m 밖은 0.
    *  med 는 그 자리의 중앙버스차로 자리(일반 차로 왼쪽 가장자리에서 버스차로 가운데까지)로, 비켜선 버스는 med 와 상관없이 같은 자리에 선다 */
@@ -444,7 +452,7 @@ export function makeCars(
       const r = provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id], midH[e.id]);
       const curve = base + (JAM - base) * Math.max(0, Math.min(1, (0.65 - r) / 0.5));
       const k = Math.min(curve + (Math.min(curve, base / Math.max(r, 0.15)) - curve) * (1 - busy), 1000 / (6.6 + 1.3 * r * VFREE[e.cls]));
-      real[e.id] = (k * e.len * e.lanes) / 1000;
+      real[e.id] = (k * e.len * e.vol) / 1000;
       F += real[e.id] * inF[e.id];
       O += real[e.id] * (1 - inF[e.id]);
     }
@@ -512,7 +520,7 @@ export function makeCars(
     const ln = free(e, Math.floor(rand() * e.lanes));
     const seg = pointAt(e.p, e.cum, at, tmp);
     const yaw = headingAt(e.p, seg);
-    const off = e.off0 + ln * e.lw;
+    const off = laneOff(e, ln, at);
     const x = tmp[0] - Math.sin(yaw) * off;
     const z = tmp[2] + Math.cos(yaw) * off;
     if (nearFocus(x, z) !== inside || seen(x, z)) return false;
@@ -561,7 +569,7 @@ export function makeCars(
     let total = 0;
     for (const e of edges) {
       if (!placeable[e.id] || closed[e.id]) continue;
-      const perM = has ? real[e.id] / e.len : e.lanes;
+      const perM = has ? real[e.id] / e.len : e.vol;
       // 교차로 상자와 그 앞뒤 3m 에는 놓지 않는다(상자 안에 엇갈린 방향 차가 처음부터 포개지지 않게, spawnHidden 과 같은 범위)
       const lo = jn.rOut[e.id] + 3;
       const hi = e.len - jn.rIn[e.id] - 3;
@@ -613,13 +621,31 @@ export function makeCars(
     const a = edges[edge[i]];
     const b = edges[edge[j]];
     if (a.cls !== b.cls) return a.cls < b.cls;
-    if (a.lanes !== b.lanes) return a.lanes > b.lanes;
+    if (a.vol !== b.vol) return a.vol > b.vol;
     return cars.uid[i] < cars.uid[j];
   }
 
   /** 정해 둔 경로로 교차로를 빠져나갈 때의 차로 */
   function exitLane(i: number): number {
-    return planN[i] > 1 ? outLane(i, edges[plan[i * PLAN + planN[i] - 1]]) : lane[i];
+    return planN[i] > 1 ? laneAt(i, edges[plan[i * PLAN + planN[i] - 1]], exitPos(i)) : lane[i];
+  }
+  /** 정해 둔 경로(지금 구간부터)를 따라가 빠져나갈 구간에 닿았을 때의 차로 위 자리 */
+  function exitPos(i: number): number {
+    const b = i * PLAN;
+    let x = pref[i] * edges[plan[b + planK[i]]].lanes;
+    for (let k = planK[i] + 1; k < planN[i]; k++) x = lanePos(edges[plan[b + k - 1]], edges[plan[b + k]], x);
+    return x;
+  }
+  const LI = new Int8Array(PLAN);
+  /** 차 i 가 경로(plan 의 b 부터 n 구간)의 k0번째 구간을 지금 달릴 때, k0번째부터 경로 끝까지 구간마다 달릴 차로를 out 에 쓴다 */
+  function lanesAlong(i: number, b: number, n: number, k0: number, out: Int8Array) {
+    out[k0] = lane[i];
+    let x = pref[i] * edges[plan[b + k0]].lanes;
+    for (let k = k0 + 1; k < n; k++) {
+      const o = edges[plan[b + k]];
+      x = lanePos(edges[plan[b + k - 1]], o, x);
+      out[k] = laneAt(i, o, x);
+    }
   }
   /** 차 i 가 교차로를 빠져나갈 구간 x 의 그 차로에서 상자 끝부터 맨 뒤 차 꽁무니까지 빈 길이.
    *  x 끝 신호가 초록불이 아니면 정지선까지만 설 수 있다 */
@@ -627,11 +653,13 @@ export function makeCars(
     const ap = signals?.approach.get(x.id);
     const cap = ap && signals!.state(ap.c, ap.group, tod) !== GREEN ? x.len - ap.setback - jn.rOut[x.id] : Infinity;
     let d = -jn.rOut[x.id];
+    let xp = exitPos(i);
     for (let e = x, k = 0; k < 4 && d < 40; k++) {
-      const t = tail[e.id * 8 + outLane(i, e)];
+      const t = tail[e.id * 8 + laneAt(i, e, xp)];
       if (t >= 0) return Math.min(cap, d + s[t] - size[t] / 2);
       d += e.len;
       if (e.next.length !== 1) break;
+      xp = lanePos(e, edges[e.next[0]], xp);
       e = edges[e.next[0]];
     }
     return cap;
@@ -640,14 +668,11 @@ export function makeCars(
   function mayEnter(i: number, g: number, p: number, e: Edge, tod: number): boolean {
     const b = i * PLAN;
     const n = planN[i];
-    // 경로 위 가장 적은 차로 수: 다른 차로에서 같은 경로로 들어온 두 차가 이 차로 수 안으로 모이는가
-    let fewest = 8;
-    for (let k = 0; k < n; k++) fewest = Math.min(fewest, edges[plan[b + k]].lanes);
     for (const h of held[g]) {
       if (h === i) continue;
       const hp = claim[h] === g ? claimPath[h] : prevPath[h];
+      // 경로는 차로 단위라, 다른 차로에서 들어와 한 차로로 모이는 두 차도 곡선이 만나 부딪는 경로다
       if (jn.conflict(p, hp)) return false;
-      if (hp === p && claimLane[h] !== lane[i] && laneIn(h, fewest) === laneIn(i, fewest)) return false;
     }
     // 묶인 교차로 안의 신호가 지금 초록불이 아니면 들어가지 않는다(들어간 뒤에는 그 신호에 서지 않고 빠져나간다)
     if (signals)
@@ -770,9 +795,12 @@ export function makeCars(
         const horizon = 20 + v[i] * 2 + (v[i] * v[i]) / (2 * B_COMF);
         let d = e.len - s[i];
         let id = nextE[i];
-        for (let k = 1; id >= 0 && d < horizon; k++) {
+        let xp = pref[i] * e.lanes;
+        for (let k = 1, pe = e; id >= 0 && d < horizon; k++) {
           const ne = edges[id];
-          const t = tail[ne.id * 8 + outLane(i, ne)];
+          xp = lanePos(pe, ne, xp);
+          pe = ne;
+          const t = tail[ne.id * 8 + laneAt(i, ne, xp)];
           if (t >= 0) {
             if (d + s[t] < gap) {
               front = t;
@@ -893,7 +921,7 @@ export function makeCars(
             const bits = xw.busy[xi];
             if (!bits) continue;
             const ln = k === 0 ? lane[i] : outLane(i, edges[id]);
-            const uc = uv + sgn * laneOffset(edges[id], ln);
+            const uc = uv + sgn * laneOff(edges[id], ln, xs);
             let hit = false;
             for (let b = Math.max(0, Math.floor((uc - 1.8) / 2)); b <= Math.min(31, Math.floor((uc + 1.8) / 2)); b++) if (bits & (1 << b)) hit = true;
             if (!hit) continue;
@@ -931,7 +959,6 @@ export function makeCars(
             claim[i] = G;
             claimPath[i] = pathOf[i];
             claimExit[i] = plan[i * PLAN + planN[i] - 1];
-            claimLane[i] = lane[i];
             claimXL[i] = exitLane(i);
             claimT[i] = 0;
             waitT[i] = 0;
@@ -1016,9 +1043,14 @@ export function makeCars(
         s[i] -= e.len;
         prevE[i] = e.id;
         prevLane[i] = lane[i];
-        e = edges[nextE[i]];
+        const o = edges[nextE[i]];
+        const x = nextPosOf(i, o);
+        lane[i] = laneAt(i, o, x);
+        // 새 구간의 차로 안 자리로 옮긴다(소수 오차로 이웃 차로로 넘어가지 않게 차로 안쪽에 둔다)
+        const lx = Math.min(o.lanes - 1, Math.max(0, Math.floor(x)));
+        pref[i] = (lx + Math.max(0.001, Math.min(0.999, x - lx))) / o.lanes;
+        e = o;
         edge[i] = e.id;
-        lane[i] = outLane(i, e);
         if (cars.route[i] >= 0) rpos[i]++;
         onEdge(i, e);
       }

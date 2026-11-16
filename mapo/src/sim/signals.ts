@@ -5,7 +5,7 @@
 // 교차로가 아닌 곳의 보행 신호 횡단보도(굽기에서 그 자리에서 길 조각을 끊어 두었다). 자료가 없으면 큰길(주간선·보조간선)이 낀 교차로.
 // 신호 시각은 실제와 다르다.
 import type { Crosswalk } from '../data/board.ts';
-import type { Edge } from './graph.ts';
+import { leftEdge, rightEdge, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
 import { pointAt } from '../poly.ts';
 import { hash01 } from './rng.ts';
@@ -119,8 +119,8 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
         if (Math.abs(along) > 0.5) continue;
         const lat = ((mx - P[0]) * -hz + (mz - P[2]) * hx) / hl;
         const cos = Math.abs((lx * hx + lz * hz) / (ll * hl));
-        const lo = e.off0 - e.lw;
-        const hi = e.off0 + e.lanes * e.lw + 0.5;
+        const lo = leftEdge(e, s) - e.lw / 2;
+        const hi = rightEdge(e, s) + e.lw / 2 + 0.5;
         // 이 방향 차로를 가로지르는 정지선(차로 가운데 쪽 절반이 이 방향 차로에 걸친다)
         if (cos < 0.45 && lat > lo - ll / 2 && lat < hi + ll / 2 && Math.min(hi, lat + ll / 2) - Math.max(lo, lat - ll / 2) > 1) best = Math.max(best, s);
         break;
@@ -139,7 +139,7 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
     // 묶음 밖에서 들어오는 길(간선도로·고속 진입로는 신호를 받지 않는다)
     const into = edges.filter((e) => e.cls >= 1 && e.cls <= 3 && nodes.has(key(...endOf(e))) && !nodes.has(key(e.p[0], e.p[2])));
     if (into.length < 3 || (data ? !signalled(members) : !into.some((e) => e.cls <= 2))) continue;
-    const main = [...into].sort((a, b) => a.cls - b.cls || b.lanes - a.lanes)[0];
+    const main = [...into].sort((a, b) => a.cls - b.cls || b.vol - a.vol)[0];
     const axis = ((endHeading(main) % Math.PI) + Math.PI) % Math.PI;
     const g = into.map((e) => (axisGap(endHeading(e), axis) < Math.PI / 4 ? 0 : 1));
     // 한 방향으로만 합류하는 곳: 자료가 없으면 신호를 두지 않고, 자료가 있으면 차는 모두 무리 0, 무리 1 은 사람만 건넌다
@@ -157,7 +157,7 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
     into.forEach((e, i) => {
       // 가로지르는 길의 절반 폭 바깥에 횡단보도(폭 3.2m)를 두고, 그 앞에 정지선을 둔다
       const cross = (incoming.get(key(...endOf(e))) ?? []).filter((o) => axisGap(endHeading(o), endHeading(e)) > Math.PI / 4);
-      const half = Math.max(3, ...cross.map((o) => (o.off0 > 0 ? o.lanes * o.lw : (o.lanes * o.lw) / 2)));
+      const half = Math.max(3, ...cross.map((o) => Math.max(Math.abs(leftEdge(o, o.len)), Math.abs(rightEdge(o, o.len)))));
       // 비스듬히 만나는 길은 교차로 상자가 길어지므로 정지선을 상자 앞까지 물린다
       const guess = Math.min(e.len - 2, Math.max(half + 4, boxes.rIn[e.id] + 0.5));
       approach.set(e.id, { c, group: g[i], crosswalk: half + 1.6, setback: Math.min(e.len - 2, Math.max(setbackOf(e, guess), boxes.rIn[e.id] + 0.5)) });
@@ -186,7 +186,7 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
   }
   // 교차로 신호의 초록 시간: 두 무리에 들어오는 길의 중요도(차로 수 × 등급 무게)에 비례해 나눈다.
   // 실제 서울 큰 교차로처럼 큰길 쪽이 더 길고, 작은 길 쪽도 사람이 큰길을 건널 만큼(24초)은 남긴다
-  const weight = (e: Edge) => e.lanes * (4 - Math.min(3, e.cls));
+  const weight = (e: Edge) => e.vol * (4 - Math.min(3, e.cls));
   list.forEach((site, c) => {
     if (site.plan !== PLAN) return;
     const w = [0, 0];
@@ -207,7 +207,7 @@ export function makeSignals(edges: Edge[], data?: SignalData) {
     for (let k = 0; k < 20 && ahead < 600; k++) {
       const ps = prev[cur.id].map((i) => edges[i]);
       if (!ps.length) break;
-      const p = ps.find((q) => q.name && q.name === cur.name) ?? ps.sort((a, b) => b.lanes - a.lanes)[0];
+      const p = ps.find((q) => q.name && q.name === cur.name) ?? ps.sort((a, b) => b.vol - a.vol)[0];
       const up = approach.get(p.id);
       if (up) {
         if (up.c !== ap.c) links.push({ up: up.c, gu: up.group, dn: ap.c, gd: ap.group, d: ahead, w: Math.min(weight(edges[id]), weight(p)) });

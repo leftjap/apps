@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeCars } from '../src/sim/cars.ts';
-import { buildCarGraph } from '../src/sim/graph.ts';
+import { buildCarGraph, laneOff } from '../src/sim/graph.ts';
 import { effectOf, matchIncidents, type Incident } from '../src/sim/incidents.ts';
 import { at, fixedProvider, road } from './helpers.ts';
 
@@ -22,7 +22,7 @@ describe('돌발 지점을 차 구간에 붙이기', () => {
   const east = g.find((e) => e.p[3] > e.p[0])!;
   const west = g.find((e) => e.p[3] < e.p[0])!;
   it('사고는 가장 가까운 구간의 그 자리 차로 하나를 막는다', () => {
-    const m = matchIncidents(g, [inc(100, east.off0 + east.lw + 0.3)]);
+    const m = matchIncidents(g, [inc(100, laneOff(east, 1, 100) + 0.3)]);
     expect(m.blocks).toEqual([{ edge: east.id, lane: 1, at: expect.closeTo(100, 0) }]);
     expect(m.close).toEqual([]);
     expect(m.spots[0]).toMatchObject({ id: 'a', edge: east.id, effect: 'lane' });

@@ -11,12 +11,20 @@
 //  4. 땅 위 찻길(등급 5 이하, 교량 아님)을 달리는 차 가운데가 찻길 면(surface-polys 의 car + 교차로 면 − 교통섬) 밖인 시간 비율과 그 자리(10m 칸, 위 15곳).
 //  5. 멈춘 차(0.3m/s 아래)가 차를 따라갈 때 그 차와의 범퍼 사이(그린 길이, 배율 1): 중앙값, 5% 지점, 1m 미만 비율.
 //  6. 판 전체 차 평균 속도와 대수(1초마다).
+//  7. 그려진 차로 가운데까지 거리(1초마다, 재작업 W1 정의): 땅 위 승용차 가운데 교차로 면 밖에 있는 차의 가운데에서 진행 방향과 직각으로 단면을 긋고,
+//     진행 방향과 25° 안으로 나란한 서울시 선(중앙선·버스전용차선·차선·가장자리구역선·진로변경제한선·주차금지·주정차금지·중앙버스전용차선, 12m 안)을 찾아
+//     이웃한 두 선 사이가 2.3~4.8m 인 곳의 가운데 가운데 가장 가까운 것까지 옆 거리. 판 전체와 교차로 다섯 곳 150m 안의 중앙값·90%·95% 지점.
+//  8. 교차로 다섯 곳 90m 안에서 멈춘(0.3m/s 아래) 차 가운데 차 가운데가 서울시 횡단보도 면 위인 비율(0.1초마다).
+//  9. 신호에 선 첫 차(앞 대상이 신호이고 멈춘 차)의 앞 범퍼(그린 길이)에서 가장 가까운 서울시 정지선(20m 안, 진행 방향을 가로지르는 것)까지 거리(0.5초마다):
+//     판 전체와 교차로 다섯 곳 150m 안의 중앙값·90% 지점·1m 안 비율.
 //  겹친 두 차가 노드 없이 가로지르는 두 길(OSM 에서 다리·터널·layer 로 높이가 다른 곳) 위에 있으면 위 분류 대신 '높이 다른 길'로 센다(실제로는 겹치지 않음, tools/raw/highways.json 이 있을 때만).
 // 합정 교차로(−497,250)와 홍대입구역 교차로(222,−410) 둘레 60m 는 1~5 를 따로 적는다.
 // 판 폴더는 MAPO_DATA 로 바꿀 수 있다(고치기 전·후를 같은 판으로 견줄 때). 사례 출력: SHOW=n(옆 튐·꺾임), SHOWOFF=n(찻길 밖), SHOWOV=n(겹침)은 표준 오류로 나간다.
 import { existsSync, readFileSync } from 'node:fs';
 import { decodeBoard } from '../src/data/board.ts';
 import { decodeSurface, isGroundRoad } from '../src/data/surface.ts';
+import { decodeMarks } from '../src/data/marks.ts';
+import { decodeLanes } from '../src/data/lanes.ts';
 import { decodeWalk } from '../src/sim/walknet.ts';
 import { buildCarGraph, MED } from '../src/sim/graph.ts';
 import { makeSignals } from '../src/sim/signals.ts';
@@ -156,6 +164,97 @@ const CAR_HW = [0.93, 0.95, 0.8, 1.0];
 const BUS_HL = [5.74, 5.74, 6.04, 3.72]; // 노선 종류(tint) 0·1 시내, 2 광역, 3 마을
 const BUS_HW = [1.245, 1.245, 1.245, 1.1];
 
+// 7·8·9 를 재는 교차로 다섯 곳
+const JN5: [string, number, number][] = [['합정', -497, 250], ['홍대입구역', 222, -410], ['동교동삼거리', 694, -804], ['서교동사거리', -68, -135], ['망원역', -776, -495]];
+const near5 = (x: number, z: number, r: number) => JN5.some(([, cx, cz]) => Math.hypot(x - cx, z - cz) < r);
+const roadLanes = existsSync(`${DATA}/lanes.json`) ? decodeLanes(data('lanes.json')) : undefined;
+const marks = decodeMarks(data('marks.json'));
+const LANE_K = new Set([1, 5, 6, 7, 8, 9, 10, 17]);
+const markGrid = new Map<number, number[]>(); // 20m 칸 → 땅 위 선분 [ax, az, bx, bz, ...]
+for (const l of marks.lines) {
+  if (!LANE_K.has(l.k)) continue;
+  for (let k = 0; k + 5 < l.p.length; k += 3) {
+    if (l.p[k + 1] > 0.5 || l.p[k + 4] > 0.5) continue;
+    const [ax, az, bx, bz] = [l.p[k], l.p[k + 2], l.p[k + 3], l.p[k + 5]];
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 10));
+    const seen = new Set<number>();
+    for (let q = 0; q <= n; q++) {
+      const key = Math.floor((ax + ((bx - ax) * q) / n) / 20) * 4096 + Math.floor((az + ((bz - az) * q) / n) / 20);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      (markGrid.get(key) ?? markGrid.set(key, []).get(key)!).push(ax, az, bx, bz);
+    }
+  }
+}
+const inRing = (ring: ArrayLike<number>, x: number, z: number) => {
+  let cc = false;
+  for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2)
+    if (ring[i + 1] > z !== ring[j + 1] > z && x < ring[i] + ((z - ring[i + 1]) / (ring[j + 1] - ring[i + 1])) * (ring[j] - ring[i])) cc = !cc;
+  return cc;
+};
+/** 넓이 비교용 50m 칸 격자에 고리들을 넣는다 */
+const ringGrid = (rings: ArrayLike<number>[]) => {
+  const g = new Map<number, ArrayLike<number>[]>();
+  for (const r of rings) {
+    let mnx = Infinity, mxx = -Infinity, mnz = Infinity, mxz = -Infinity;
+    for (let k = 0; k < r.length; k += 2) (mnx = Math.min(mnx, r[k])), (mxx = Math.max(mxx, r[k])), (mnz = Math.min(mnz, r[k + 1])), (mxz = Math.max(mxz, r[k + 1]));
+    for (let gx = Math.floor(mnx / 50); gx <= Math.floor(mxx / 50); gx++) for (let gz = Math.floor(mnz / 50); gz <= Math.floor(mxz / 50); gz++) (g.get(gx * 4096 + gz) ?? g.set(gx * 4096 + gz, []).get(gx * 4096 + gz)!).push(r);
+  }
+  return (x: number, z: number) => (g.get(Math.floor(x / 50) * 4096 + Math.floor(z / 50)) ?? []).some((r) => inRing(r, x, z));
+};
+const onCrosswalk = ringGrid(board.crosswalks.flatMap((c) => c.rings));
+/** 차 가운데 (x, z), 진행 방향 yaw 에서 가장 가까운 그려진 차로 가운데까지 옆 거리(못 찾으면 −1) */
+function laneDev(x: number, z: number, yaw: number): number {
+  const ux = Math.cos(yaw);
+  const uz = Math.sin(yaw);
+  const nx = -uz;
+  const nz = ux;
+  const ts: number[] = [];
+  const seen = new Set<string>();
+  for (let gx = -1; gx <= 1; gx++)
+    for (let gz = -1; gz <= 1; gz++) {
+      const l = markGrid.get((Math.floor(x / 20) + gx) * 4096 + Math.floor(z / 20) + gz) ?? [];
+      for (let k = 0; k < l.length; k += 4) {
+        const [ax, az, bx, bz] = [l[k], l[k + 1], l[k + 2], l[k + 3]];
+        const id = `${ax},${az},${bx},${bz}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const rx = bx - ax;
+        const rz = bz - az;
+        const rl = Math.hypot(rx, rz) || 1;
+        if (Math.abs(rx * uz - rz * ux) / rl > Math.sin(0.44)) continue;
+        const den = nx * rz - nz * rx;
+        if (Math.abs(den) < 1e-9) continue;
+        const t = ((ax - x) * rz - (az - z) * rx) / den;
+        const u = ((ax - x) * nz - (az - z) * nx) / den;
+        if (u < 0 || u > 1 || Math.abs(t) > 12) continue;
+        ts.push(t);
+      }
+    }
+  ts.sort((a, b) => a - b);
+  let best = Infinity;
+  for (let k = 1; k < ts.length; k++) {
+    const gap = ts[k] - ts[k - 1];
+    if (gap < 2.3 || gap > 4.8) continue;
+    best = Math.min(best, Math.abs((ts[k] + ts[k - 1]) / 2));
+  }
+  return best < Infinity ? best : -1;
+}
+const inFace = ringGrid(surface.faces.map((f) => f.outer));
+/** 앞 범퍼 (x, z) 에서 진행 방향 (hx, hz) 을 가로지르는 가장 가까운 서울시 정지선까지(20m 안, 없으면 −1) */
+function stopLineDist(x: number, z: number, hx: number, hz: number): number {
+  const S = board.stopLines;
+  let best = Infinity;
+  for (let k = 0; k < S.length; k += 4) {
+    const [ax, az, bx, bz] = [S[k], S[k + 1], S[k + 2], S[k + 3]];
+    const L = Math.hypot(bx - ax, bz - az) || 1;
+    if (Math.abs(((bx - ax) * hx + (bz - az) * hz) / L) > 0.6) continue;
+    const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / (L * L)));
+    best = Math.min(best, Math.hypot(ax + (bx - ax) * t - x, az + (bz - az) * t - z));
+  }
+  return best <= 20 ? best : -1;
+}
+
 const pct = (a: number[], q: number) => (a.length ? [...a].sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(q * a.length))] : NaN);
 const inc = (o: Record<string, number>, k: string, n = 1) => (o[k] = (o[k] ?? 0) + n);
 const WHY = ['없음', '같은 차로 앞차', '다음 구간 앞차', '차로 합침', '다른 구간 차', '신호', '다음 구간 신호', '횡단보도 사람', '교차로 진입 대기', '돌발 서행', '정류장'];
@@ -163,7 +262,7 @@ const WHY = ['없음', '같은 차로 앞차', '다음 구간 앞차', '차로 �
 function run(dow: number, tod: number, seed: number) {
   const provider = makeSimProvider();
   const start = { tod, dow, doy: 320 };
-  const carGraph = buildCarGraph(board.roads);
+  const carGraph = buildCarGraph(board.roads, roadLanes);
   const signals = makeSignals(carGraph, { crosswalks: board.crosswalks, stopLines: board.stopLines });
   const crossBusy = new Uint32Array(board.crosswalks.length);
   const sim = makeCars(carGraph, provider, seed, 5000, makeBusRoutes(board.buses, carGraph, undefined, board.crosswalks), signals, { list: board.crosswalks, busy: crossBusy });
@@ -230,6 +329,17 @@ function run(dow: number, tod: number, seed: number) {
     gapWhy: {} as Record<string, number>,
   });
   const R = [mk(), mk(), mk()];
+  // 7·8·9: 판 전체 [0], 교차로 다섯 곳 [1]
+  const dev: number[][] = [[], []];
+  let devSkip = 0;
+  let stopped5 = 0;
+  let onXw5 = 0;
+  const xwWhere: Record<string, number> = {};
+  const devWhere: Record<string, number> = {};
+  const stopWhy: Record<string, number> = {}; // 1초마다 멈춘 차의 까닭(앞차 줄이면 맨 앞 차의 까닭)
+  let movingN = 0;
+  const waitWhere: Record<string, number> = {};
+  const lineD: number[][] = [[], []];
   const speeds: number[] = [];
   const counts: number[] = [];
 
@@ -241,6 +351,7 @@ function run(dow: number, tod: number, seed: number) {
   let shown = 0;
   let offShown = 0;
   let ovShown = 0;
+  let devShown = 0;
   const cell = 8;
   for (let st = 0; st < steps; st++) {
     now = { ...now, tod: (now.tod + DT) % 86400 };
@@ -328,13 +439,53 @@ function run(dow: number, tod: number, seed: number) {
         for (const Rr of sets) {
           if (off && Rr === R[0] && process.env.SHOWOFF && offShown++ < Number(process.env.SHOWOFF) && st % 600 === 0) {
             const g = carGraph[e];
-            console.error(JSON.stringify({ off: 1, x: +x.toFixed(1), z: +z.toFixed(1), e, road: g.road, name: g.name, cls: g.cls, lanes: g.lanes, lane: D.lane[i], lw: g.lw, off0: g.off0, med: g.med, s: +D.s[i].toFixed(1), len: +g.len.toFixed(1), boxed: D.boxed[i], rIn: +jn.rIn[e].toFixed(1), rOut: +jn.rOut[e].toFixed(1), bus: c.kind[i] === 1 }));
+            console.error(JSON.stringify({ off: 1, x: +x.toFixed(1), z: +z.toFixed(1), e, road: g.road, name: g.name, cls: g.cls, lanes: g.lanes, lane: D.lane[i], lw: g.lw, med: g.med, s: +D.s[i].toFixed(1), len: +g.len.toFixed(1), boxed: D.boxed[i], rIn: +jn.rIn[e].toFixed(1), rOut: +jn.rOut[e].toFixed(1), bus: c.kind[i] === 1 }));
           }
           if (off) {
             Rr.offN++;
             inc(Rr.offWhere, `${g.name || '(이름 없음)'} ${Math.round(x / 10) * 10},${Math.round(z / 10) * 10} ${part}`);
             inc(Rr.offPart, part);
           } else Rr.onN++;
+        }
+      }
+      if (st % 60 === 0) {
+        if (D.v[i] >= 0.3) movingN++;
+        else {
+          let f = i;
+          for (let k = 0; k < 30 && D.aheadWhy[f] >= 1 && D.aheadWhy[f] <= 4 && D.ahead[f] >= 0 && D.ahead[f] < c.n && D.ahead[f] !== f; k++) f = D.ahead[f];
+          if (D.aheadWhy[f] === 8) inc(waitWhere, `${Math.round(c.x[f] / 10) * 10},${Math.round(c.z[f] / 10) * 10}`);
+          inc(stopWhy, c.kind[f] === 1 && D.v[f] === 0 && D.aheadWhy[f] === 0 ? '정류장' : WHY[D.aheadWhy[f]] + (D.aheadWhy[f] >= 1 && D.aheadWhy[f] <= 4 ? '(끝 못 찾음)' : ''));
+        }
+      }
+      // 7. 그려진 차로 가운데까지 거리
+      if (st % 60 === 0 && c.kind[i] === 0 && c.y[i] < 0.5 && !inFace(x, z)) {
+        const d = laneDev(x, z, yaw);
+        if (d < 0) devSkip++;
+        else {
+          dev[0].push(d);
+          if (near5(x, z, 150)) {
+            dev[1].push(d);
+            const g = carGraph[e] as (typeof carGraph)[number] & { plain?: boolean };
+            if (d > 1 && process.env.SHOWDEV && devShown++ < Number(process.env.SHOWDEV))
+              console.error(JSON.stringify({ dev: +d.toFixed(2), x: +x.toFixed(1), z: +z.toFixed(1), yaw: Math.round((yaw * 180) / Math.PI), e, road: g.road, rev: g.rev, name: g.name, lanes: g.lanes, lane: D.lane[i], s: +D.s[i].toFixed(1), len: +g.len.toFixed(1), boxed: D.boxed[i], seam: seam(i), rIn: +jn.rIn[e].toFixed(1), rOut: +jn.rOut[e].toFixed(1), prevE: D.nextE[i] }));
+            if (d > 1) inc(devWhere, `${D.boxed[i] ? '교차로 곡선' : seam(i) ? '이음매 곡선' : g.plain ? '직선(선 없음)' : '직선'} ${g.name || g.road} ${Math.round(x / 10) * 10},${Math.round(z / 10) * 10}`);
+          }
+        }
+      }
+      // 8. 교차로 다섯 곳 90m 안 멈춘 차가 횡단보도 위
+      if (st % 6 === 0 && D.v[i] < 0.3 && near5(x, z, 90)) {
+        stopped5++;
+        if (onCrosswalk(x, z)) {
+          onXw5++;
+          inc(xwWhere, `${Math.round(x / 5) * 5},${Math.round(z / 5) * 5} ${WHY[D.aheadWhy[i]]}${D.boxed[i] ? ' 상자 안' : ''}`);
+        }
+      }
+      // 9. 신호에 선 첫 차의 앞 범퍼와 정지선
+      if (st % 30 === 0 && D.v[i] < 0.3 && D.ahead[i] === i && (D.aheadWhy[i] === 5 || D.aheadWhy[i] === 6)) {
+        const d = stopLineDist(x + Math.cos(yaw) * hl(i), z + Math.sin(yaw) * hl(i), Math.cos(yaw), Math.sin(yaw));
+        if (d >= 0) {
+          lineD[0].push(d);
+          if (near5(x, z, 150)) lineD[1].push(d);
         }
       }
       // 5. 멈춘 차의 앞차 간격(그린 길이, 배율 1)
@@ -456,7 +607,16 @@ function run(dow: number, tod: number, seed: number) {
     offWhere: top(Rr.offWhere, 15),
     gap: { n: Rr.gaps.length, median: +pct(Rr.gaps, 0.5).toFixed(2), p5: +pct(Rr.gaps, 0.05).toFixed(2), under1: +((100 * Rr.gaps.filter((g) => g < 1).length) / Math.max(1, Rr.gaps.length)).toFixed(2), under1Why: Rr.gapWhy },
   }));
-  return { speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), out };
+  const q = (a: number[]) => ({ n: a.length, median: +pct(a, 0.5).toFixed(2), p90: +pct(a, 0.9).toFixed(2), p95: +pct(a, 0.95).toFixed(2) });
+  const devPart: Record<string, number> = {};
+  for (const [k, n] of Object.entries(devWhere)) inc(devPart, k.split(' ')[0], n);
+  const lane = { board: q(dev[0]), jn5: q(dev[1]), skip: devSkip, over1: devPart, over1Where: top(devWhere, 12) };
+  const crosswalk = { stopped: stopped5, onCrosswalk: +((100 * onXw5) / Math.max(1, stopped5)).toFixed(2), where: top(xwWhere, 8) };
+  const within1 = (a: number[]) => +((100 * a.filter((d) => d <= 1).length) / Math.max(1, a.length)).toFixed(1);
+  const stopLine = { board: { ...q(lineD[0]), within1: within1(lineD[0]) }, jn5: { ...q(lineD[1]), within1: within1(lineD[1]) } };
+  const tot = movingN + Object.values(stopWhy).reduce((a, b) => a + b, 0);
+  const stopped = Object.fromEntries(Object.entries(stopWhy).sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, +((100 * n) / tot).toFixed(1)]));
+  return { stopped, waitWhere: top(waitWhere, 15), speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), lane, crosswalk, stopLine, out };
 }
 
 console.error(
