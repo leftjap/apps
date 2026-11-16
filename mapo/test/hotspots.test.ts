@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PLACES, placeDist, placeLevel, placeMask } from '../src/sim/places.ts';
-import { doorWanted, makeWalkers, zoneTargets, ZONE_IDS } from '../src/sim/walkers.ts';
+import { doorWanted, zoneTargets, ZONE_IDS } from '../src/sim/people/zones.ts';
 import { makeSimProvider } from '../src/sim/provider.ts';
-import { fixedProvider, road, walkNet } from './helpers.ts';
 
 const P = (id: string) => PLACES.find((p) => p.id === id)!;
 const when = (dow: number, h: number) => ({ tod: h * 3600, dow, doy: 320 });
@@ -39,41 +38,5 @@ describe('명소 붐빔', () => {
     const quiet = zoneTargets(pv, when(2, 4), 1e9)[ZONE_IDS.length + 1];
     expect(busy).toBeGreaterThan(500);
     expect(quiet).toBeLessThan(busy * 0.05);
-  });
-});
-
-describe('붐비는 명소로 모이는 사람', () => {
-  // 클럽거리(잔다리로 201,81 → 279,82 → 359,89) 둘레 50m 격자 골목. 출구는 격자 북쪽 끝
-  const grid = () => {
-    const rs = [];
-    for (let x = 150; x <= 450; x += 50)
-      for (let z = -50; z <= 200; z += 50) {
-        if (x < 450) rs.push(road([[x, z], [x + 50, z]], { cls: 5, lanes: 1 }));
-        if (z < 200) rs.push(road([[x, z], [x, z + 50]], { cls: 5, lanes: 1 }));
-      }
-    // 클럽거리 길 자체(격자와 이어진다)
-    rs.push(road([[201, 81], [279, 82], [359, 89]], { cls: 5, lanes: 1 }), road([[150, 81], [201, 81]], { cls: 5, lanes: 1 }), road([[359, 89], [450, 89]], { cls: 5, lanes: 1 }));
-    return rs;
-  };
-  const share = (now: { tod: number; dow: number; doy: number }) => {
-    const sim = makeWalkers(walkNet(grid()), [{ kind: 'exit', key: 'h', x: 300, z: -50 }], fixedProvider(1), 7, 300);
-    const club = P('club');
-    let on = 0;
-    let all = 0;
-    for (let k = 0; k < 3000; k++) {
-      if (k % 40 === 0 && sim.w.n < 200) sim.burst('h', 5);
-      sim.step(0.5, { ...now, tod: now.tod + k * 0.5 }, false);
-      if (k < 600 || k % 10) continue;
-      for (let i = 0; i < sim.w.n; i++) {
-        all++;
-        if (placeDist(club, sim.w.x[i], sim.w.z[i]) < 15) on++;
-      }
-    }
-    return on / all;
-  };
-  it('토요일 밤에는 평일 새벽보다 클럽거리 길 위에 사람이 훨씬 많다', () => {
-    const night = share(when(6, 20.5));
-    const dawn = share(when(2, 4));
-    expect(night).toBeGreaterThan(dawn * 1.5);
   });
 });

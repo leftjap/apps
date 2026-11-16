@@ -1,5 +1,5 @@
 // 판 전체를 덮는 칸 격자(칸마다 비트 8개). 고리(짝홀 규칙)를 칸 가운데 기준으로 칠하거나 지운다.
-// 보행 그래프 굽기(walknet.ts)와 걷는 자리 측정(tools/measure-walk.ts)이 함께 쓴다.
+// 보행 그래프 굽기(walknet.ts·walkfix.ts)가 쓴다.
 
 export interface Bits {
   /** 왼쪽 위 칸 모서리(m) */
