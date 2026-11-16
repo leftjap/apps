@@ -592,6 +592,19 @@ export function shopOpen(k: number, r: number, hour: number): number {
   return hh >= open && hh <= close ? 1 : 0;
 }
 
+/**
+ * 시각 hour(0~24)에 사무실 층이 켜져 있을 비율. 9~18:30 대부분, 저녁부터 줄어 22시 25%, 자정 10%, 새벽 5%.
+ * 셰이더 officeLit 과 같은 식(커튼월 사무실이 밤 11시에도 층마다 하얗게 켜지던 것을 고친다)
+ */
+export function officeLit(hour: number): number {
+  const h = ((hour % 24) + 24) % 24;
+  if (h < 6) return 0.1 - (0.05 * h) / 6;
+  if (h < 9) return 0.06 + (0.79 * (h - 6)) / 3;
+  if (h < 18.5) return 0.85;
+  if (h < 22) return 0.85 - (0.6 * (h - 18.5)) / 3.5;
+  return 0.25 - (0.15 * (h - 22)) / 2;
+}
+
 /** 외벽 색(용도·난수). 셰이더와 옥탑 색이 같은 식을 쓴다 */
 const GLSL_COLORS = /* glsl */ `
 vec3 wallColor(float style, float s) {
@@ -604,6 +617,10 @@ vec3 wallColor(float style, float s) {
   if (style < 3.5) return k < 0.6 ? vec3(0.96, 0.95, 0.91) : vec3(0.92, 0.89, 0.82);
   if (style < 4.5) return k < 0.5 ? vec3(0.92, 0.88, 0.8) : vec3(0.72, 0.5, 0.42);
   return k < 0.55 ? vec3(0.86, 0.85, 0.82) : vec3(0.72, 0.47, 0.4);
+}
+float officeLit() {
+  float h = mod(uHour, 24.0);
+  return h < 6.0 ? 0.1 - 0.05 * h / 6.0 : h < 9.0 ? 0.06 + 0.79 * (h - 6.0) / 3.0 : h < 18.5 ? 0.85 : h < 22.0 ? 0.85 - 0.6 * (h - 18.5) / 3.5 : 0.25 - 0.15 * (h - 22.0) / 2.0;
 }
 float shopOpen(float k, float r) {
   if (k > 3.5 && k < 4.5) return 1.0;
@@ -660,6 +677,20 @@ const FRAG = /* glsl */ `
   float rect(vec2 p, vec2 lo, vec2 hi, vec2 w) {
     vec2 a = smoothstep(lo - w, lo + w, p) * (1.0 - smoothstep(hi - w, hi + w, p));
     return a.x * a.y;
+  }
+  /**
+   * 1층 유리(가게·로비)를 평평한 판 대신 칸 나눈 유리로: 약 1.6m 마다 문살, 문 높이 가로대, 아래 0.35m 밑판(돌려주는 값 0~1).
+   * inner 는 실내 밝기(천장 쪽이 밝고 바닥 쪽이 어둡다, 유리 칸마다 진열이 달라 조금씩 다르다)
+   */
+  float glassBays(float u, float uw, float y, float gh, float uid, float s, float detail, out float inner) {
+    float mu = u / (uw / max(2.0, floor(uw / 1.6 + 0.5)));
+    float mw = fwidth(mu);
+    float mull = 1.0 - smoothstep(0.03, 0.03 + mw, min(fract(mu), 1.0 - fract(mu)));
+    float tw = fwidth(y);
+    float tr = 1.0 - smoothstep(0.05, 0.05 + tw, abs(y - min(2.3, gh - 1.3)));
+    float kick = 1.0 - smoothstep(0.35, 0.35 + tw, y);
+    inner = mix(0.35, 1.0, smoothstep(0.3, gh - 1.2, y)) * (0.7 + 0.4 * hash21(vec2(floor(mu), uid) + s * 5.1));
+    return max(max(mull, tr), kick) * clamp(detail * 1.5, 0.0, 1.0);
   }
   void main() {
     float fi = focusIn(vPos.xz);
@@ -824,6 +855,8 @@ const FRAG = /* glsl */ `
       float sign = 0.0;
       vec3 signCol = vec3(0.0);
       float shopGlass = 0.0;
+      float shopFrame = 0.0;
+      float shopIn = 1.0;
       float doorLit = 0.0;
 
       if (style > 1.5 && style < 2.5) {
@@ -847,17 +880,22 @@ const FRAG = /* glsl */ `
         float wallStrip = step(mod(bid, 2.0), 0.5) * (1.0 - smoothstep(0.0, 0.06 + w.x, bx));
         glass *= 1.0 - wallStrip; frame *= 1.0 - wallStrip;
       }
-      if (upK > 0.5 && st < 8.5) {
-        // 위층 가게(실제 층): 2층 가게면 2층, 3층 위 가게면 3~5층 창 아래 간판 띠(칸의 30%), 세로 간판(건물의 20%)
-        float sr = hash21(vec2(bid * 0.37 + 5.0, floorI) + s * 7.0);
+      if (upK > 0.5 && st < 8.5 && (style < 1.5 || style > 2.5)) {
+        // 위층 가게(실제 층): 2층 가게면 2층, 3층 위 가게면 3~5층 창 아래 간판 띠, 세로 간판(건물의 20%).
+        // 띠는 칸마다 흩지 않고 한 면의 한 층에 이어 붙인 판(약 6m 마다 다른 가게)으로 그린다. 커튼월 사무 건물에는 두지 않는다
         float atF = on2F * step(0.5, floorI) * step(floorI, 1.5) + on3F * step(1.5, floorI) * step(floorI, 4.5);
-        float band = rect(q, vec2(0.04, 0.03), vec2(0.96, 0.22), w) * step(0.7, sr) * min(1.0, atF);
+        float faceR = hash21(vec2(floor(len * 7.3) + 2.0, floorI) + s * 7.0);
+        float pn = max(1.0, floor(len / 6.0 + 0.5));
+        float pu = u / (len / pn);
+        float px = fract(pu);
+        float sr = hash21(vec2(floor(pu) * 0.37 + 5.0, floorI) + s * 7.0);
+        float band = rect(vec2(px, fy), vec2(0.015, 0.04), vec2(0.985, 0.25), vec2(fwidth(pu), w.y)) * step(faceR, 0.6) * min(1.0, atF) * step(4.0, len);
         float vert = rect(vec2(u, y), vec2(0.35, gh + 0.4), vec2(1.15, min(top - 0.8, gh + fh * 2.0)), vec2(fwidth(u), fwidth(y))) * step(0.8, fract(s * 23.0));
         sign = max(band, vert) * windows;
         signCol = signColor(upK, fract(sr * 7.0 + floorI * 0.31));
         // 간판 글자(흰 획)
         float gx = fract(u / 0.55), gyy = fract(y / 0.5);
-        float glyph = step(0.25, gx) * step(gx, 0.75) * step(0.3, gyy) * step(gyy, 0.75) * step(0.35, hash21(floor(vec2(u / 0.55, y / 0.5)) + sr));
+        float glyph = step(0.25, gx) * step(gx, 0.75) * step(0.3, gyy) * step(gyy, 0.75) * step(0.35, hash21(floor(vec2(u / 0.55, y / 0.5)) + sr)) * (1.0 - band * (1.0 - step(0.2, px) * step(px, 0.6)));
         signCol = mix(signCol, signCol.r + signCol.g + signCol.b > 2.2 ? vec3(0.1) : vec3(1.0), glyph * 0.85 * detail);
       }
       // 1층
@@ -873,6 +911,8 @@ const FRAG = /* glsl */ `
           vec2 uwd = vec2(fwidth(u / uw), fwidth(y));
           // 지하 가게만 있으면 유리 없이 간판 띠만
           shopGlass = rect(uq, vec2(0.05, 0.12), vec2(0.95, gh - 1.0), uwd) * on1F;
+          shopFrame = glassBays(u, uw, y, gh, uid, s, detail, shopIn) * shopGlass;
+          shopGlass *= 1.0 - shopFrame;
           float ur = hash21(vec2(uid, 7.0) + s * 3.7);
           float sb = rect(uq, vec2(0.02, gh - 0.92), vec2(0.98, gh - 0.12), uwd);
           sign = max(sign, sb);
@@ -886,6 +926,8 @@ const FRAG = /* glsl */ `
           // 로비 유리
           lo = vec2(0.08, 0.04); hi = vec2(0.92, 0.82);
           shopGlass = rect(q, lo, hi, w);
+          shopFrame = glassBays(u, bw, y, gh, bid, s, detail, shopIn) * shopGlass;
+          shopGlass *= 1.0 - shopFrame;
           glass = 0.0; frame = 0.0;
           doorLit = step(0.3, cellR);
         }
@@ -900,6 +942,7 @@ const FRAG = /* glsl */ `
       alb = mix(alb, frameCol * uBld, frame);
       alb = mix(alb, signCol, sign);
       alb = mix(alb, vec3(0.16, 0.15, 0.14), shopGlass * 0.85);
+      alb = mix(alb, vec3(0.24, 0.25, 0.27) * uBld, shopFrame);
       // 바닥 쪽 그늘
       alb *= mix(0.8, 1.0, smoothstep(0.0, 8.0, y));
       col = lit(alb, n);
@@ -921,15 +964,17 @@ const FRAG = /* glsl */ `
         warm = mix(vec3(1.0, 0.8, 0.52), vec3(0.86, 0.9, 1.0), step(0.7, fract(unitR * 13.0)));
       }
       if (style > 1.5 && style < 2.5) {
-        // 사무실: 층 단위로 켜진다
-        on = step(hash21(vec2(floorI, s * 51.0)), litFrac * 1.2);
-        warm = vec3(0.85, 0.92, 1.0);
+        // 사무실: 층 단위로, 시각에 따라(officeLit) 켜지고, 켜진 층도 구역(4칸)마다 꺼진 곳이 있다.
+        // 실내 천장등이라 창 위쪽이 밝고 아래쪽은 어둡다(유리 전체가 하얀 판처럼 빛나지 않게)
+        on = step(hash21(vec2(floorI, s * 51.0)), officeLit()) * step(hash21(vec2(floor(bid / 4.0), floorI) + s * 3.3), 0.8);
+        warm = vec3(0.85, 0.9, 0.95) * 0.5 * mix(0.35, 1.0, smoothstep(0.35, 0.95, fy));
       }
-      float e = mix(litFrac * 0.35 * windows * meanWin, glass * on * (0.55 + 0.45 * fract(cellR * 31.0)), detail);
+      float farLit = style > 1.5 && style < 2.5 ? officeLit() * 0.8 * 0.7 : litFrac * 0.35;
+      float e = mix(farLit * windows * meanWin, glass * on * (0.55 + 0.45 * fract(cellR * 31.0)), detail);
       glow += warm * e;
       // 가게 유리: 영업 중일 때만(주점은 호박색, 그 밖은 따뜻한 흰빛), 로비 유리는 예전처럼
       vec3 shopLight = shopK > 2.5 && shopK < 3.5 ? vec3(1.0, 0.68, 0.42) : vec3(1.0, 0.85, 0.62);
-      glow += (shopK > 0.5 ? shopLight * doorLit * 0.95 : vec3(1.0, 0.78, 0.5) * doorLit * min(1.0, 0.35 + uLit * 2.4) * 1.1) * shopGlass;
+      glow += (shopK > 0.5 ? shopLight * doorLit * 0.8 : vec3(1.0, 0.8, 0.56) * doorLit * min(1.0, 0.35 + uLit * 2.4) * 0.75) * shopIn * shopGlass;
       float signK = hasGround && y < gh ? shopK : upK;
       glow += signCol * sign * 0.6 * shopOpen(signK, fract(s * 17.3)) * step(0.25, fract(s * 41.0 + floorI * 0.37));
       // 2층 가게(카페 등): 영업 중이면 2층 창이 가게 불빛으로

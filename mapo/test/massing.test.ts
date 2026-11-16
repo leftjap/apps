@@ -1,7 +1,7 @@
 // 건물 유형별 덩어리: 변마다 들이기, 빌라 북쪽 사선 후퇴·필로티, 단독주택 박공, 상가주택·업무 빌딩 단차, 아파트 옥상 구조물
 import { describe, expect, it } from 'vitest';
 import { USE, type Building } from '../src/data/board.ts';
-import { insetEdges, looks, prismGeometry, propsOf, refine, shopOpen, STYLE } from '../src/render/buildings.ts';
+import { insetEdges, looks, prismGeometry, propsOf, officeLit, refine, shopOpen, STYLE } from '../src/render/buildings.ts';
 
 const box = (x0: number, z0: number, w: number, d: number) => new Float32Array([x0, z0, x0 + w, z0, x0 + w, z0 + d, x0, z0 + d]);
 const bld = (o: Partial<Building> & { pts: Float32Array; h: number }): Building => ({ lm: 0, minH: 0, roof: 0, ...o });
@@ -155,6 +155,14 @@ describe('가게 불빛', () => {
     expect(shopOpen(5, 0.5, 20.5)).toBe(0);
     expect(shopOpen(6, 0.5, 21)).toBe(1);
     expect(shopOpen(6, 0.5, 22.5)).toBe(0);
+  });
+  it('사무실 층 불은 낮에 대부분 켜고 저녁부터 줄어 한밤에는 열에 하나 남짓', () => {
+    expect(officeLit(11)).toBeGreaterThan(0.8);
+    expect(officeLit(18.5)).toBeGreaterThan(0.6);
+    expect(officeLit(21)).toBeLessThan(0.45);
+    expect(officeLit(23.3)).toBeLessThan(0.18);
+    expect(officeLit(3)).toBeLessThan(0.08);
+    expect(officeLit(7.5)).toBeLessThan(officeLit(9));
   });
   it('위층 가게만 있는 건물은 1층 가게 없이 위층 가게 종류만 갖는다', () => {
     const [L] = looks([bld({ pts: box(0, 0, 11, 13), h: 13.8, use: USE.villa, levels: 4, shop: 0, shopUp: 5, shopMask: 8, shops: 1 })]);
