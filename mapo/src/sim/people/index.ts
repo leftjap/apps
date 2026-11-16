@@ -65,6 +65,9 @@ export interface CarBodies {
 
 /** 사람 몸 반지름(m). 1.5배로 키운 그림(머리 반지름 0.27 × 1.5)과 같다. 두 사람 가운데는 2 × BODY_R 보다 가깝지 않다 */
 export const BODY_R = 0.4;
+/** 두 사람 가운데 사이 가장 가까운 거리(m): 몸통(반지름 0.2 × 1.5 = 0.3)끼리는 절대 닿지 않는다. 평소에는 머리(0.4)까지 띄워 2 × BODY_R 를 지키고,
+ *  막혀 비집고 지나갈 때만 이 거리까지 다가간다 */
+export const PASS_D = 0.6;
 /** 사람 그림 배율(지오 지시 2026-11-17 '사람 크기 1.5배 안팎', render/walkers.ts) */
 export const BODY_SCALE = 1.5;
 /** 보는 곳 사람 과장 배수: 보는 곳 안은 실제 인원의 이 배수까지 그린다(화면 배율 표시가 그만큼을 알린다) */
@@ -257,7 +260,7 @@ export function makePeople(
 
   // ── 좁은 길(두 사람이 엇갈려 지날 수 없는 띠)의 차지: 방향 있는 선마다 지금 그 선을 걷는 사람 수 ──
   const narrow = new Uint8Array(hes.length);
-  for (let k = 0; k < hes.length; k++) narrow[k] = hes[k].x < 0 && hes[k].hi - hes[k].lo < 2 * BODY_R + 0.2 ? 1 : 0;
+  for (let k = 0; k < hes.length; k++) narrow[k] = hes[k].x < 0 && hes[k].hi - hes[k].lo < 4 * BODY_R + 0.1 ? 1 : 0;
   const occ = new Int32Array(hes.length);
   /** 좁은 선 k 로 들어서면 마주 오는 사람이 있는가: k 와 그 뒤로 갈래 없이 이어진 좁은 선들(25m)에 반대 방향으로 걷는 사람이 있다 */
   function opposed(k: number): boolean {
@@ -513,6 +516,8 @@ export function makePeople(
           const dz = w.z[j] - z;
           const d2 = dx * dx + dz * dz;
           if (d2 >= D2) continue;
+          // 0.8초 넘게 막힌 사람은 머리를 스치며(가운데 사이 PASS_D 까지, 몸통끼리는 닿지 않는다) 비집고 지나간다(마주 서거나 엉켜 굳지 않게)
+          if (d2 >= PASS_D * PASS_D && i < w.n && blockT[i] > 0.8) continue;
           // 이미 겹쳐 있던 사이라면 멀어지는 걸음은 된다(겹침을 새로 만들거나 키우지만 않는다)
           if (i < w.n && !dead[i]) {
             const ox = w.x[j] - w.x[i];
@@ -723,7 +728,7 @@ export function makePeople(
     w.age[i] = u < lk.ages[0] ? 0 : u < lk.ages[1] ? 1 : u < lk.ages[2] ? 2 : 3;
     w.female[i] = rand() < lk.female ? 1 : 0;
     spd[i] = (w.age[i] === 3 ? 1.0 : w.age[i] === 0 ? 1.05 : 1.25) + rand() * 0.3;
-    lane[i] = (rand() < 0.9 ? 1 : -1) * (0.25 + rand() * 0.6);
+    lane[i] = rand();
     life[i] = 120 + rand() * 480;
     goal[i] = -1;
     dodge[i] = 0;
@@ -853,7 +858,12 @@ export function makePeople(
   };
   const laneU = (i: number, h: number) => {
     const e = hes[h];
-    const u = (lane[i] > 0 ? e.hi * lane[i] : -e.lo * lane[i]) + dodge[i];
+    // 우측통행: 띠 오른쪽 가장자리에서 몸 반지름 안쪽부터, 띠 오른쪽 절반 안에서 사람마다 다른 자리(lane 0~1).
+    // 마주 오는 사람은 그 사람의 오른쪽(이 띠의 왼쪽)을 걸으므로, 띠가 몸 두 개보다 넓으면 마주쳐 막히지 않는다
+    // 마주 오는 두 줄 사이가 몸 하나(0.85m) 넘게 비도록 띠 폭에 따라 안쪽으로 들어가는 한도를 둔다
+    const W = e.hi - e.lo;
+    const fmax = W > 1.7 ? Math.max(0, 1 - 0.85 / (W - 0.84)) : 0;
+    const u = e.hi - 0.42 - lane[i] * fmax * Math.max(0, W / 2 - 0.42) + dodge[i];
     return Math.max(e.lo, Math.min(e.hi, u));
   };
   /** 앞사람: 가려는 방향(dx, dz)으로 몸 앞에 있는 가장 가까운 사람의 틈과 그 사람이 같은 쪽으로 가는 빠르기 */
@@ -894,14 +904,15 @@ export function makePeople(
       const jd = Math.cos(w.yaw[aheadJ]) * dx + Math.sin(w.yaw[aheadJ]) * dz;
       if (jd > 0.5) k = Math.max(k, Math.min(1, (spd[aheadJ] * jd) / Math.max(0.1, v)) * Math.min(1, gap / 0.3));
     }
+    // 0.8초 넘게 막혔으면 앞사람 틈과 상관없이 천천히 비집고 나아가 본다(몸통 사이 PASS_D 는 지킨다)
+    if (blockT[i] > 0.8) k = Math.max(k, 0.4);
     const step = Math.min(dd, v * dt * k);
-    if (step > 1e-4) blockT[i] = 0;
     const x0 = w.x[i];
     const z0 = w.z[i];
     if (step > 1e-4) {
-      if (tryMove(i, x0 + dx * step, z0 + dz * step)) return step;
+      if (tryMove(i, x0 + dx * step, z0 + dz * step)) return (blockT[i] = 0), step;
       const w1 = why;
-      if (tryMove(i, x0 + dx * step * 0.5, z0 + dz * step * 0.5)) return step * 0.5;
+      if (tryMove(i, x0 + dx * step * 0.5, z0 + dz * step * 0.5)) return (blockT[i] = Math.max(0, blockT[i] - dt)), step * 0.5;
       // 걷는 길 밖으로 나가는 걸음이면 선 가운데 쪽으로(띠는 늘 가운데선을 품는다)
       if (w1 === 1 && fallX !== undefined && fallZ !== undefined) {
         const fx = fallX - x0;
@@ -914,7 +925,7 @@ export function makePeople(
     // 앞이 막혔을 때: 마주 오는 사람이면 곧바로, 같은 쪽으로 가다 선 사람(신호·정류장 줄이 아닌)이면 2초 뒤 한쪽(대개 오른쪽)으로 비켜 선다.
     // 비킨 만큼 옆자리를 옮겨 두어(dodge) 되돌아오며 비비지 않는다
     const j = aheadJ;
-    if (j >= 0 && step <= 1e-4) blockT[i] += dt;
+    blockT[i] += dt;
     blk[i] = step <= 1e-4 ? j : -1;
     const faceJ = j >= 0 && Math.cos(head[j]) * dx + Math.sin(head[j]) * dz < -0.3;
     const passJ = j >= 0 && !faceJ && mode[j] === WALK && !w.moving[j] && blockT[i] > 2;
@@ -1619,7 +1630,7 @@ export function makePeople(
   const debugOf = (i: number) => {
     const e = hes[he[i]];
     const [s, u] = proj(he[i], w.x[i], w.z[i]);
-    return { mode: mode[i], he: he[i], a: e.a, b: e.b, L: e.L, s, u, lo: e.lo, hi: e.hi, nk: nk[i], nkL: nk[i] >= 0 ? hes[nk[i]].L : -1, stuck: stuckT[i], goal: goal[i], D: goal[i] >= 0 ? D[goal[i]][e.b] : -1, radB: RAD[e.b], dodge: dodge[i], tx: tx[i], tz: tz[i], via: viaNode[i], why, blk: blk[i], waitT: waitT[i], narrow: narrow[he[i]], nkNarrow: nk[i] >= 0 ? narrow[nk[i]] : -1 };
+    return { mode: mode[i], he: he[i], a: e.a, b: e.b, L: e.L, s, u, lo: e.lo, hi: e.hi, nk: nk[i], nkL: nk[i] >= 0 ? hes[nk[i]].L : -1, stuck: stuckT[i], goal: goal[i], D: goal[i] >= 0 ? D[goal[i]][e.b] : -1, radB: RAD[e.b], dodge: dodge[i], tx: tx[i], tz: tz[i], via: viaNode[i], why, blk: blk[i], blockT: blockT[i], waitT: waitT[i], narrow: narrow[he[i]], nkNarrow: nk[i] >= 0 ? narrow[nk[i]] : -1 };
   };
   /** 측정용: 칸마다 보는 곳 안·밖 목표와 지금 인원, 보는 곳 원 */
   const popStats = () => ({ wantIn: Array.from(wantIn), haveIn: Array.from(haveIn), wantOut: Array.from(wantOut), haveOut: Array.from(haveOut), focus, kIn, kOut, n: w.n, pending: pending.length });
