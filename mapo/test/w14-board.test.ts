@@ -7,6 +7,8 @@ import { carriageSections, decodeSurface, isGroundRoad, tunnelReach, type Surfac
 import { drawnGround, onGround } from '../tools/lib/groundclip.ts';
 import { fitCells } from '../tools/lib/arrows.ts';
 import { arrowShape } from '../src/data/marks.ts';
+import { decodeWalk, type WalkJson } from '../src/sim/walknet.ts';
+import { fillBits } from '../tools/lib/bits.ts';
 import { centerCrossings, seamBreaks } from '../tools/lib/lanecheck.ts';
 
 // 재작업 W14, 지금 판(public/data): 노면 표시는 그린 찻길 면 안에만, 화살표는 차로 가운데에, 나무는 찻길·데크 위에 없다
@@ -96,5 +98,69 @@ describe('W14 지금 판', () => {
     });
     expect(found).toBeGreaterThan(2000);
     expect(bad.slice(0, 10)).toEqual([]);
+  });
+  // 계획 세션 요청: 계단 가장자리 바닥 면(0.6m 안 짧은 변이 직각으로 꺾이는 꼭짓점 4개 넘는 고리)이 다시 생기지 않는다.
+  // 교통섬 구멍·횡단보도 밑 면은 0, 교차로 면 바깥 고리는 2026-11-17 판 239개(모퉁이 호의 cm 반올림 등, 원인 미확인)보다 늘지 않는다
+  it('계단 가장자리 바닥 면이 없다', () => {
+    const steps = (r: ArrayLike<number>) => {
+      const n = r.length / 2;
+      let c = 0;
+      for (let i = 0; i < n; i++) {
+        const [a, j] = [(i + n - 1) % n, (i + 1) % n];
+        const [ux, uz, vx, vz] = [r[i * 2] - r[a * 2], r[i * 2 + 1] - r[a * 2 + 1], r[j * 2] - r[i * 2], r[j * 2 + 1] - r[i * 2 + 1]];
+        const [lu, lv] = [Math.hypot(ux, uz), Math.hypot(vx, vz)];
+        if (lu > 0.6 || lv > 0.6 || lu < 1e-3 || lv < 1e-3) continue;
+        if (Math.abs((ux * vx + uz * vz) / (lu * lv)) < 0.17) c++;
+      }
+      return c;
+    };
+    expect(surface.faces.flatMap((f) => f.holes).filter((r) => steps(r) >= 4)).toHaveLength(0);
+    expect(surface.draw.filter((f) => steps(f.outer) >= 4)).toHaveLength(0);
+    expect(surface.faces.filter((f) => steps(f.outer) >= 4).length).toBeLessThanOrEqual(239);
+  });
+  // 계획 세션 요청: 보도 선이 찻길 면(횡단보도 면 빼고) 안에 들어간 길이, 걷는 길 그물에 이어지지 않은 횡단보도, 큰 덩어리 밖에 닿은 횡단보도 연결.
+  // 2026-11-17 판: 보도 선 159km 가운데 443m, 연결 없는 횡단보도 115/889, 작은 덩어리에 닿은 연결 11. 0 으로 만들지 못해 늘지 않는지만 본다(메모)
+  it('걷는 길: 찻길 위 보도 선·막다른 횡단보도가 늘지 않는다', () => {
+    const W = decodeWalk(read('walk.json') as WalkJson);
+    const G = drawnGround([
+      ...polys.car.filter((c) => !reach[c[0]]).map((c) => [dm(c.slice(1))]),
+      ...surface.faces.map((f) => [f.outer, ...f.holes]),
+      ...surface.draw.map((f) => [f.outer]),
+    ]);
+    for (const c of board.crosswalks) fillBits(G, c.rings, 1, true);
+    fillBits(G, board.crosswalkMarks, 1, true);
+    const N = W.nx.length / 2;
+    let onRoad = 0;
+    for (let a = 0; a < N; a++)
+      W.adj[a].forEach((b, k) => {
+        if (b < a || W.kind[a][k] !== 0) return;
+        const [ax, az, bx, bz] = [W.nx[a * 2], W.nx[a * 2 + 1], W.nx[b * 2], W.nx[b * 2 + 1]];
+        const L = Math.hypot(bx - ax, bz - az);
+        const n = Math.max(1, Math.ceil(L / 0.5));
+        let inn = 0;
+        for (let q = 0; q <= n; q++) if (onGround(G, ax + ((bx - ax) * q) / n, az + ((bz - az) * q) / n, 0)) inn++;
+        onRoad += (L * inn) / (n + 1);
+      });
+    const extra: number[][] = Array.from({ length: N }, () => []);
+    for (const l of W.links) extra[l.na].push(l.nb), extra[l.nb].push(l.na);
+    const comp = new Int32Array(N).fill(-1);
+    const sizes: number[] = [];
+    for (let s0 = 0; s0 < N; s0++) {
+      if (comp[s0] >= 0) continue;
+      const st = [s0];
+      comp[s0] = sizes.length;
+      let sz = 0;
+      while (st.length) {
+        const v = st.pop()!;
+        sz++;
+        for (const w of [...W.adj[v], ...extra[v]]) if (comp[w] < 0) (comp[w] = sizes.length), st.push(w);
+      }
+      sizes.push(sz);
+    }
+    const big = sizes.indexOf(Math.max(...sizes));
+    const linked = new Set(W.links.map((l) => l.xw));
+    expect(onRoad).toBeLessThan(450);
+    expect(board.crosswalks.length - linked.size).toBeLessThanOrEqual(115);
+    expect(W.links.filter((l) => comp[l.na] !== big || comp[l.nb] !== big).length).toBeLessThanOrEqual(11);
   });
 });

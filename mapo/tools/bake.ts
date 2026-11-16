@@ -1838,7 +1838,8 @@ let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | u
   console.log(`찻길 터널 속 교차로 면 ${nFaces - sf.faces.length}개 뺌`);
   // 횡단보도가 OSM 길 밖에 걸친 자리는 그리기 전용 찻길 면으로 채운다(서울시 연석 쪽 선까지)
   const curbLines = tgis.filter((l) => ['007', '009', '010', '011', '015'].includes(l.k)).map((l) => l.p.flatMap(([a, c]) => toXZ(a, c)));
-  const patches = crosswalkPatches(b.roads, sf, crosses, curbLines);
+  // 0.1m 칸으로 따라간 면이라 가장자리가 계단 모양이다: 0.25m 안에서 곧게 줄인다(재작업 W14, 계단 가장자리 검사 test/w14-board.test.ts)
+  const patches = crosswalkPatches(b.roads, sf, crosses, curbLines).map((p) => ({ ...p, ring: simplifyLoop(p.ring, 0.25) })).filter((p) => p.ring.length >= 6);
   // 보도 면: 도시생태현황도 도로 부지·광장 − 찻길 면 − 건물 외곽선. 큰길 쪽 연석 밖 6m 안에 보도 면이 없으면 실폭도로 면(행정안전부, tools/public.py)이
   // 이어지는 데까지, 실폭도로 면도 없으면 연석에서 건물·찻길에 막히는 곳까지(6m 안) 채운다
   const rwFile = new URL('./raw/gis-roads.json', import.meta.url);
