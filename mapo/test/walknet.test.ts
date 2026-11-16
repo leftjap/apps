@@ -97,3 +97,24 @@ describe('걷는 길 그래프: 횡단보도 면', () => {
     for (const [x, z] of samples(g)) expect(Math.abs(x - 100) > 2 || Math.abs(z) > 9).toBe(true);
   });
 });
+
+describe('걷는 길 그래프: 건물에 막힌 횡단보도 끝', () => {
+  it('축을 따라 바깥에 바로 건물이 있으면 끝 옆 빈자리에서 기다린다', () => {
+    // 횡단보도 북쪽(−z) 끝 바로 밖에 건물(축 둘레 x 98~102)이 붙어 있다. 그 옆 보도는 비어 있다
+    const xw = crosswalk(100, 0, 0, 1, 7.1, [], true, 4);
+    const g = walkNet([road([[0, 0], [200, 0]], { cls: 2, lanes: 4 })], { crosswalks: [xw], walls: [Float32Array.from([98, -7.4, 102, -7.4, 102, -20, 98, -20])] });
+    expect(g.links.length).toBe(1);
+    const l = g.links[0];
+    const north = l.paz < 0 ? [l.pax, l.paz] : [l.pbx, l.pbz];
+    expect(Math.abs(north[0] - 100)).toBeGreaterThan(2);
+    expect(north[1]).toBeLessThan(-7.1);
+  });
+});
+
+describe('걷는 길 그래프: 건너는 선', () => {
+  it('기다리는 자리끼리 잇는 건너는 선이 칠한 횡단보도 면 밖의 큰길 찻길을 3m 넘게 지나면 잇지 않는다', () => {
+    // 칠한 면이 찻길 가운데 3m(축 반길이 1.5m)뿐이라, 양 끝 기다리는 자리까지 칠 밖 찻길이 5.6m 씩 남는다
+    const g = walkNet([road([[0, 0], [200, 0]], { cls: 2, lanes: 4 })], { crosswalks: [crosswalk(100, 0, 0, 1, 1.5, [], true, 4)] });
+    expect(g.links.length).toBe(0);
+  });
+});

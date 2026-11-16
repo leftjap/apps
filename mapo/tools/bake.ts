@@ -13,7 +13,8 @@ import { railKind, railProfile, stitch } from './lib/rail.ts';
 import { buildSurface, crosswalkPatches, surfacePolys, type Cross as SurfaceCross } from './lib/surface.ts';
 import { ringArea as loopArea } from './lib/contour.ts';
 import { boardWalkNet } from './lib/walknet.ts';
-import { roadJoints } from '../src/data/surface.ts';
+import { carriageSections, isGroundRoad, roadJoints } from '../src/data/surface.ts';
+import { carveIslands } from './lib/islands.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
 import { decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts';
@@ -1769,6 +1770,21 @@ let walkJson = '';
   // 횡단보도가 OSM 길 밖에 걸친 자리는 그리기 전용 찻길 면으로 채운다(서울시 연석 쪽 선까지)
   const curbLines = tgis.filter((l) => ['007', '009', '010', '011', '015'].includes(l.k)).map((l) => l.p.flatMap(([a, c]) => toXZ(a, c)));
   const patches = crosswalkPatches(b.roads, sf, crosses, curbLines);
+  const polys = surfacePolys(b.roads, sf, roadJoints(b.roads), b.groundAreas, [GK.ROADSIDE, GK.PLAZA], BOARD_R, patches.map((p) => p.ring));
+  // 교차로 면 안의 섬: 어느 찻길 띠(교차로를 지나 끝까지)·분리대·횡단보도 칠·찻길에 칠한 표시(안전지대·차선 둘레·화살표)에도 덮이지 않고
+  // 면 테두리에 닿지 않는 곳(연결로와 본선 사이 삼각형 등)
+  {
+    const joints = roadJoints(b.roads);
+    const ribbons = b.roads.flatMap((r, i) => {
+      if (!isGroundRoad(r)) return [];
+      const q = carriageSections(r, 0, Infinity, joints.subarray(i * 4, i * 4 + 4));
+      return q.length < 2 ? [] : [[...q.flatMap((t) => [t.lx, t.lz]), ...q.reverse().flatMap((t) => [t.rx, t.rz])]];
+    });
+    const before = polys.isl.length;
+    const carved = carveIslands(sf.faces, [...ribbons, ...polys.med, ...b.crosswalks.flatMap((c) => c.rings), ...b.crosswalkMarks, ...patches.map((p) => p.ring), ...paint]);
+    polys.isl = sf.faces.flatMap((f) => f.holes);
+    console.log(`교차로 면 안 섬 ${carved}개 더 냄(교통섬 ${before} → ${polys.isl.length}개)`);
+  }
   // 고리마다 첫 점은 cm, 그 뒤는 앞 점과의 차이(cm)
   const enc = (r: number[]) => {
     const c = r.map((v) => Math.round(v * 100));
@@ -1778,7 +1794,6 @@ let walkJson = '';
   const dr = patches.map((p) => [p.cls, ...enc(p.ring), 0]);
   // 보도 면 등 다각형(W2 가 걷는 자리를 만든다. 앱은 읽지 않는다): dm
   const dmR = (r: number[]) => r.map((v) => Math.round(v * 10));
-  const polys = surfacePolys(b.roads, sf, roadJoints(b.roads), b.groundAreas, [GK.ROADSIDE, GK.PLAZA], BOARD_R, patches.map((p) => p.ring));
   surfacePolysJson = JSON.stringify({ v: 1, car: polys.car.map(([i, r]) => [i, ...dmR(r)]), med: polys.med.map(dmR), isl: polys.isl.map(dmR), walk: polys.walk.map(dmR), draw: polys.draw.map(dmR) });
   console.log(`보도 면 고리 ${polys.walk.length}개(구멍 ${polys.walk.filter((r) => loopArea(r) < 0).length}), 넓이 ${(polys.walk.reduce((a, r) => a + loopArea(r), 0) / 1e4).toFixed(1)}ha, 찻길 띠 ${polys.car.length}개, 분리대 ${polys.med.length}개`);
   surfaceJson = JSON.stringify({ v: 1, cut: Array.from(sf.cut, (v) => (v === Infinity ? -1 : Math.round(v * 10))), jn, dr });

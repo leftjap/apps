@@ -6,7 +6,7 @@
 //    골목이 건물 외곽선을 지나는 곳은 끊는다.
 // ③ 도로 부지 밖 보행로(등급 6·7, 공원 길·숲길): 도로 부지·큰길 찻길·건물 밖 부분만 쓴다(도로 부지 안 보도는 ①이 맡는다).
 // ④ 끝점 잇기: 끝점마다 8m 안의 다른 선 가운데 큰길 찻길·건물·횡단보도 면을 지나지 않고 곧게 닿는 가장 가까운 점에 잇는다(골목 어귀, 끊긴 보도 끝).
-// ⑤ 횡단보도: 축 양 끝에서 바깥으로 큰길 찻길·횡단보도 면을 벗어난 자리(기다리는 자리)를 정하고, 거기서 곧게 닿는 가장 가까운 선 위 점에 잇는다.
+// ⑤ 횡단보도: 축 양 끝에서 바깥으로 큰길 찻길·횡단보도 면을 벗어난 자리(기다리는 자리, 축 위에 없으면 끝에서 5m 안 빈자리)를 정하고, 거기서 곧게 닿는 가장 가까운 선 위 점에 잇는다.
 import { curbAt, GK, type Board, type Road } from '../../src/data/board.ts';
 import { carriageSections, isGroundRoad, roadJoints } from '../../src/data/surface.ts';
 import { underpasses, ZONES } from '../../src/sim/walkers.ts';
@@ -25,6 +25,7 @@ export function boardWalkNet(
   faces: { cls: number; outer: ArrayLike<number>; holes: ArrayLike<number>[] }[],
   draw: ArrayLike<number>[],
   polys: { car: [number, ArrayLike<number>][]; med: ArrayLike<number>[]; isl: ArrayLike<number>[]; walk: ArrayLike<number>[] },
+  onCross?: WalkInput['onCross'],
 ): WalkJson {
   const joints = roadJoints(b.roads);
   // 길 조각 띠를 교차로를 지나 끝까지 그린 것
@@ -57,6 +58,7 @@ export function boardWalkNet(
     paint: draw,
     tunnels: underpasses(b.roads, ...ZONES.mangwon),
     hot: HOT,
+    onCross,
   });
 }
 
@@ -380,23 +382,53 @@ export function buildWalkNet(inp: WalkInput): WalkJson {
       };
       let d = find(true);
       if (d < 0) d = find(false);
-      if (d < 0) {
-        // 까닭: 축 끝에서 바깥 3m 자리가 무엇인가
-        const f = bitsAt(B, ex + c.ux * sg * 3, ez + c.uz * sg * 3);
-        return f & BLDG ? '건물' : f & HARD ? '큰길 찻길' : f & XW ? '횡단보도 면' : '자리 없음';
+      if (d >= 0) {
+        const px = ex + c.ux * sg * (d + 0.4);
+        const pz = ez + c.uz * sg * (d + 0.4);
+        const hit = reach(px, pz, new Set(), 12);
+        if (hit) return { ex, ez, px, pz, hit };
       }
-      d += 0.4;
-      const px = ex + c.ux * sg * d;
-      const pz = ez + c.uz * sg * d;
-      const hit = reach(px, pz, new Set(), 12);
-      if (!hit) return '선 없음';
-      return { ex, ez, px, pz, hit };
+      // 축을 따라 찾지 못했거나 거기서 선에 곧게 닿지 못하면(건물에 막힘 등) 끝에서 5m 안, 건너편 쪽이 아닌 곳에서
+      // 0.4m 둘레가 비어 있는 자리 가운데 선에 곧게 닿는 가장 가까운 자리
+      const spots: [number, number, number][] = [];
+      for (let dx = -5; dx <= 5; dx += 0.25)
+        for (let dz = -5; dz <= 5; dz += 0.25) {
+          const r = Math.hypot(dx, dz);
+          if (r > 5 || (dx * c.ux + dz * c.uz) * sg < 0.3) continue;
+          const x = ex + dx;
+          const z = ez + dz;
+          let ok = true;
+          for (const [ox, oz] of [[0, 0], [0.4, 0], [-0.4, 0], [0, 0.4], [0, -0.4]]) {
+            const f = bitsAt(B, x + ox, z + oz);
+            if (f & (HARD | BLDG | XW) || (ox === 0 && oz === 0 && !(f & (LAND | WALK)))) ok = false;
+          }
+          if (ok) spots.push([x, z, r]);
+        }
+      spots.sort((p, q) => p[2] - q[2]);
+      for (const [px, pz] of spots.filter((_, k) => k < 12 || k % 8 === 0).slice(0, 40)) {
+        const hit = reach(px, pz, new Set(), 12);
+        if (hit) return { ex, ez, px, pz, hit };
+      }
+      if (d >= 0 || spots.length) return '선 없음';
+      // 까닭: 축 끝에서 바깥 3m 자리가 무엇인가
+      const f = bitsAt(B, ex + c.ux * sg * 3, ez + c.uz * sg * 3);
+      return f & BLDG ? '건물' : f & HARD ? '큰길 찻길' : f & XW ? '횡단보도 면' : '자리 없음';
     };
     const a = side(-1);
     const b = side(1);
     if (typeof a === 'string' || typeof b === 'string') {
       inp.onCross?.(xw, `${typeof a === 'string' ? 'a:' + a : ''}${typeof a === 'string' && typeof b === 'string' ? ' ' : ''}${typeof b === 'string' ? 'b:' + b : ''}`);
       return;
+    }
+    // 기다리는 자리끼리 잇는 건너는 선이 칠한 횡단보도 면 밖의 큰길 찻길을 3m 넘게 지나면 잇지 않는다(줄무늬는 연석 앞 0.5~1m 에서 끝난다)
+    {
+      const L = Math.hypot(b.px - a.px, b.pz - a.pz);
+      let bare = 0;
+      for (let d = 0; d <= L; d += 0.25) {
+        const f = bitsAt(B, a.px + ((b.px - a.px) * d) / (L || 1), a.pz + ((b.pz - a.pz) * d) / (L || 1));
+        if (f & HARD && !(f & XW)) bare += 0.25;
+      }
+      if (bare > 3) return inp.onCross?.(xw, '칠 밖 찻길 3m 넘음');
     }
     let major = false;
     for (let d = 0; d <= 2 * c.half; d += 0.5) if (bitsAt(B, a.ex + c.ux * d, a.ez + c.uz * d) & HARD) major = true;
