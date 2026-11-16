@@ -1,0 +1,334 @@
+// 차가 달릴 차로 가운데선을 서울시 차선(marks.json, tools/bake.ts 가 굽는다)에서 읽는다.
+// 길 조각의 방향마다 2m 간격으로 길과 직각인 단면을 긋고, 단면과 만나는 선 가운데 길과 나란한 것(25° 안)을 본다.
+//  - 왼쪽 경계: 양방향 길은 가운데선에 가장 가까운 중앙선(황색), 한 방향 길은 가운데선 왼쪽에서 가장 가까운 경계선(중앙선·중앙버스전용차선·가장자리선).
+//  - 거기서 오른쪽으로 선을 차례로 짚어, 이웃한 두 선 사이가 2.3~4.8m 면 그 가운데를 차로 가운데로 삼는다(2.3m 보다 좁은 사이는 겹선·잡음).
+//    연석 쪽 가장자리선이나 4.8m 넘는 사이에서 멈춘다. 차로가 하나도 없는데 경계선까지 7m 안이면 넓은 한 차로로 본다.
+//  - 중앙버스차로가 붙은 한 방향 길은 왼쪽 경계(중앙버스전용차선) 왼쪽의 다음 선까지 사이 가운데를 버스차로 가운데로 삼는다.
+// 단면마다 읽은 차로 수를 길을 따라 고르게 다듬어(앞뒤 6m 최빈값, 14m 보다 짧은 구간은 이웃에 합침) 차로 수가 같은 구간(run)으로 나누고,
+// 구간마다 차로 가운데의 옆 거리를 단면 자리(s)마다 적는다. 처음·마지막으로 읽은 단면(a·b)은 차로 선이 시작하고 끝나는 자리다(교차로 앞뒤).
+import type { MarkLine } from '../../src/data/marks.ts';
+import { cumLen } from '../../src/poly.ts';
+import type { DirLanes, Run } from '../../src/data/lanes.ts';
+
+export type { DirLanes, Run };
+
+/** 차로를 가르는 선(측정과 같은 종류): 1 중앙선, 5 버스전용차선(가로), 6 차선, 7 가장자리구역선, 8 진로변경제한선, 9 주차금지, 10 주정차금지, 17 중앙버스전용차선 */
+const USE = new Set([1, 5, 6, 7, 8, 9, 10, 17]);
+const CURB = new Set([7, 9, 10]);
+const BOUND = new Set([1, 17, 7, 9, 10]);
+const PAR = Math.sin((25 * Math.PI) / 180);
+const REACH = 16;
+const CELL = 20;
+const key = (cx: number, cz: number) => (cx + 4000) * 8000 + (cz + 4000);
+
+export interface LineIndex {
+  /** 선분마다 [ax, ay, az, bx, by, bz, 종류] */
+  seg: Float32Array;
+  grid: Map<number, number[]>;
+}
+
+export function lineIndex(lines: MarkLine[]): LineIndex {
+  const out: number[] = [];
+  const grid = new Map<number, number[]>();
+  for (const l of lines) {
+    if (!USE.has(l.k)) continue;
+    for (let k = 0; k + 5 < l.p.length; k += 3) {
+      const id = out.length / 7;
+      out.push(l.p[k], l.p[k + 1], l.p[k + 2], l.p[k + 3], l.p[k + 4], l.p[k + 5], l.k);
+      const seen = new Set<number>();
+      const L = Math.hypot(l.p[k + 3] - l.p[k], l.p[k + 5] - l.p[k + 2]);
+      const n = Math.max(1, Math.ceil(L / (CELL / 2)));
+      for (let i = 0; i <= n; i++) {
+        const x = l.p[k] + ((l.p[k + 3] - l.p[k]) * i) / n;
+        const z = l.p[k + 2] + ((l.p[k + 5] - l.p[k + 2]) * i) / n;
+        const c = key(Math.floor(x / CELL), Math.floor(z / CELL));
+        if (seen.has(c)) continue;
+        seen.add(c);
+        (grid.get(c) ?? grid.set(c, []).get(c)!).push(id);
+      }
+    }
+  }
+  return { seg: Float32Array.from(out), grid };
+}
+
+/** 점 (x, y, z)에서 진행 방향 (ux, uz)와 직각인 단면이 만나는 나란한 선: [옆 거리(오른쪽 +), 종류] 를 옆 거리 순으로 */
+export function transect(idx: LineIndex, x: number, y: number, z: number, ux: number, uz: number, reach = REACH): [number, number][] {
+  const nx = -uz;
+  const nz = ux;
+  const out: [number, number][] = [];
+  const seen = new Set<number>();
+  for (let s = -reach; s <= reach + 1e-6; s += CELL / 2) {
+    const cx = Math.floor((x + nx * s) / CELL);
+    const cz = Math.floor((z + nz * s) / CELL);
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++)
+        for (const id of idx.grid.get(key(cx + dx, cz + dz)) ?? []) {
+          if (seen.has(id)) continue;
+          seen.add(id);
+          const g = idx.seg;
+          const o = id * 7;
+          const rx = g[o + 3] - g[o];
+          const rz = g[o + 5] - g[o + 2];
+          const rl = Math.hypot(rx, rz);
+          if (rl < 1e-6 || Math.abs(rx * uz - rz * ux) / rl > PAR) continue;
+          const den = nx * rz - nz * rx;
+          if (Math.abs(den) < 1e-9) continue;
+          const t = ((g[o] - x) * rz - (g[o + 2] - z) * rx) / den;
+          const u = ((g[o] - x) * nz - (g[o + 2] - z) * nx) / den;
+          if (u < 0 || u > 1 || Math.abs(t) > reach) continue;
+          if (Math.abs(g[o + 1] + (g[o + 4] - g[o + 1]) * u - y) > 2) continue; // 높이가 다른 선(고가 위아래)
+          out.push([t, g[o + 6]]);
+        }
+  }
+  return out.sort((a, b) => a[0] - b[0]);
+}
+
+/** 단면 하나에서 이 방향 차로 가운데들(왼쪽부터), 중앙버스차로 가운데(없으면 NaN), 연석 쪽 경계선까지 닿았는가(못 닿았으면 오른쪽 차로 선이 끊긴 단면일 수 있다).
+ *  왼쪽 경계나 차로를 못 찾으면 null */
+export function readSection(hits: [number, number][], twoWay: boolean, medBus: boolean): { lanes: number[]; med: number; closed: boolean } | null {
+  let b = -1;
+  if (twoWay) {
+    for (let i = 0; i < hits.length; i++) if (hits[i][1] === 1 && Math.abs(hits[i][0]) <= 3.5 && (b < 0 || Math.abs(hits[i][0]) < Math.abs(hits[b][0]))) b = i;
+  } else for (let i = 0; i < hits.length; i++) if (BOUND.has(hits[i][1]) && hits[i][0] < -0.5 && hits[i][0] > -REACH) b = i;
+  if (b < 0) return null;
+  const lanes: number[] = [];
+  let prev = hits[b][0];
+  let closed = false;
+  for (let i = b + 1; i < hits.length; i++) {
+    const [t, k] = hits[i];
+    const gap = t - prev;
+    if (gap < 2.3) {
+      if (CURB.has(k) && lanes.length) {
+        closed = true;
+        break;
+      }
+      continue;
+    }
+    if (gap > 4.8) {
+      if (!lanes.length && BOUND.has(k) && gap <= 7) {
+        lanes.push((prev + t) / 2);
+        closed = true;
+      }
+      break;
+    }
+    lanes.push((prev + t) / 2);
+    prev = t;
+    if (CURB.has(k) || (k === 1 && twoWay)) {
+      closed = true;
+      break;
+    }
+  }
+  let med = NaN;
+  if (medBus && !twoWay && hits[b][1] === 17)
+    for (let i = b - 1; i >= 0; i--) {
+      const gap = hits[b][0] - hits[i][0];
+      if (gap < 2.3) continue;
+      if (gap <= 4.8) med = (hits[b][0] + hits[i][0]) / 2;
+      break;
+    }
+  return lanes.length ? { lanes, med, closed } : null;
+}
+
+const STEP = 2;
+
+/**
+ * 길 조각 한 방향(p: 그 방향 순서의 [x,y,z,...], cum: 누적 길이)의 차로를 읽는다. 읽은 단면이 모자라면 null.
+ * minRun: 이보다 짧은 차로 수 구간은 이웃에 합친다
+ */
+export function readDirection(idx: LineIndex, p: ArrayLike<number>, cum: ArrayLike<number>, twoWay: boolean, medBus: boolean, minRun = 14): DirLanes | null {
+  const len = cum[cum.length - 1];
+  if (len < 4) return null;
+  const S: number[] = [];
+  const raw: ReturnType<typeof readSection>[] = [];
+  let seg = 0;
+  for (let s = 1; s <= len - 1 + 1e-6; s += STEP) {
+    while (seg < cum.length - 2 && cum[seg + 1] < s) seg++;
+    const L = cum[seg + 1] - cum[seg] || 1;
+    const t = (s - cum[seg]) / L;
+    const o = seg * 3;
+    const x = p[o] + (p[o + 3] - p[o]) * t;
+    const y = p[o + 1] + (p[o + 4] - p[o + 1]) * t;
+    const z = p[o + 2] + (p[o + 5] - p[o + 2]) * t;
+    const ux = (p[o + 3] - p[o]) / L;
+    const uz = (p[o + 5] - p[o + 2]) / L;
+    S.push(s);
+    raw.push(readSection(transect(idx, x, y, z, ux, uz), twoWay, medBus));
+  }
+  const N = S.length;
+  // 차로 선이 시작·끝나는 자리: 연달아 셋 넘게 읽힌 첫·마지막 단면
+  let first = -1;
+  let last = -1;
+  for (let i = 0; i + 2 < N; i++) if (raw[i] && raw[i + 1] && raw[i + 2]) (first < 0 ? (first = i) : 0), (last = i + 2);
+  const read = raw.filter(Boolean).length;
+  if (first < 0 || read < Math.max(3, N * 0.3)) return null;
+  // 단면마다 차로 수. 연석 쪽 경계선까지 닿지 못한 단면(오른쪽 차로 선이 먼저 끝난 교차로 앞뒤 등)은 30m 안 가장 가까운 닿은 단면의 차로 수보다 적게 세지 않는다.
+  // 못 읽은 단면은 가까운 읽은 단면 값. 앞뒤 3단면 최빈값으로 고르게
+  const closedAt: number[] = [];
+  raw.forEach((r, i) => r?.closed && closedAt.push(i));
+  const nOf = raw.map((r, i) => {
+    if (!r) return 0;
+    if (r.closed) return r.lanes.length;
+    let best = -1;
+    for (const j of closedAt) if (Math.abs(j - i) * STEP <= 30 && (best < 0 || Math.abs(j - i) < Math.abs(best - i))) best = j;
+    return best < 0 ? r.lanes.length : Math.max(r.lanes.length, raw[best]!.lanes.length);
+  });
+  const near = (i: number) => {
+    for (let d = 0; d < N; d++) {
+      if (i - d >= first && nOf[i - d]) return i - d;
+      if (i + d <= last && nOf[i + d]) return i + d;
+    }
+    return first;
+  };
+  const filled = nOf.map((n, i) => (i >= first && i <= last && n ? n : nOf[near(i)]));
+  const smooth = filled.map((_, i) => {
+    const c = new Map<number, number>();
+    for (let k = Math.max(0, i - 3); k <= Math.min(N - 1, i + 3); k++) c.set(filled[k], (c.get(filled[k]) ?? 0) + 1);
+    let best = filled[i];
+    for (const [v, n] of c) if (n > (c.get(best) ?? 0)) best = v;
+    return best;
+  });
+  // 차로 수가 같은 연속 단면 묶음. 짧은 묶음은 더 긴 이웃에 합친다(되풀이)
+  type G = { i0: number; i1: number; n: number };
+  let groups: G[] = [];
+  for (let i = 0; i < N; i++) {
+    const g = groups[groups.length - 1];
+    if (g && g.n === smooth[i]) g.i1 = i;
+    else groups.push({ i0: i, i1: i, n: smooth[i] });
+  }
+  for (let guard = 0; guard < 50 && groups.length > 1; guard++) {
+    let worst = -1;
+    for (let k = 0; k < groups.length; k++) {
+      const g = groups[k];
+      const l = (g.i1 - g.i0 + 1) * STEP;
+      if (l < minRun && (worst < 0 || l < (groups[worst].i1 - groups[worst].i0 + 1) * STEP)) worst = k;
+    }
+    if (worst < 0) break;
+    const g = groups[worst];
+    const A = groups[worst - 1];
+    const B = groups[worst + 1];
+    const into = !A ? B : !B ? A : A.i1 - A.i0 >= B.i1 - B.i0 ? A : B;
+    into.i0 = Math.min(into.i0, g.i0);
+    into.i1 = Math.max(into.i1, g.i1);
+    groups.splice(worst, 1);
+    const merged: G[] = [];
+    for (const q of groups) {
+      const m = merged[merged.length - 1];
+      if (m && m.n === q.n) m.i1 = q.i1;
+      else merged.push(q);
+    }
+    groups = merged;
+  }
+  // 묶음마다 단면별 옆 거리. 차로 l 은 그 차로 수로 읽었거나, 연석까지 닿지 못해 왼쪽 차로만 읽은 단면에서 읽는다(앞뒤 셋의 중앙값).
+  // 못 읽은 단면은 앞뒤 읽은 단면 사이를 잇거나 끝 값을 그대로 쓴다
+  const runs: Run[] = groups.map((g, k) => {
+    const n = g.n;
+    const ok = (i: number, l: number) => !!raw[i] && raw[i]!.lanes.length > l && (raw[i]!.lanes.length === n || (!raw[i]!.closed && raw[i]!.lanes.length < n));
+    const goodOf: number[][] = [];
+    for (let l = 0; l < n; l++) {
+      goodOf.push([]);
+      for (let i = g.i0; i <= g.i1; i++) if (ok(i, l)) goodOf[l].push(i);
+    }
+    const good = goodOf[0];
+    const st: number[] = [];
+    const off: number[] = [];
+    const med: number[] = [];
+    const hasMed = medBus && good.some((i) => Number.isFinite(raw[i]!.med));
+    const medGood = good.filter((i) => Number.isFinite(raw[i]!.med));
+    const interp = (list: number[], i: number, f: (j: number) => number) => {
+      if (!list.length) return NaN;
+      let lo = -1;
+      let hi = -1;
+      for (const j of list) {
+        if (j <= i) lo = j;
+        if (j >= i && hi < 0) hi = j;
+      }
+      if (lo < 0) return f(hi);
+      if (hi < 0 || hi === lo) return f(lo);
+      return f(lo) + ((f(hi) - f(lo)) * (i - lo)) / (hi - lo);
+    };
+    for (let i = g.i0; i <= g.i1; i++) {
+      st.push(S[i]);
+      for (let l = 0; l < n; l++) {
+        const vals = [i - 1, i, i + 1].filter((j) => j >= g.i0 && j <= g.i1 && ok(j, l)).map((j) => raw[j]!.lanes[l]);
+        vals.sort((a, b) => a - b);
+        // 이 차로를 어디서도 읽지 못했으면(차로 수를 이웃 단면에서 빌린 구간) 왼쪽 차로에서 3.2m 씩
+        off.push(vals.length === 3 ? vals[1] : goodOf[l].length ? interp(goodOf[l], i, (j) => raw[j]!.lanes[l]) : off[off.length - 1] + 3.2);
+      }
+      if (hasMed) med.push(interp(medGood, i, (j) => raw[j]!.med));
+    }
+    const s0 = k === 0 ? 0 : (S[g.i0 - 1] + S[g.i0]) / 2;
+    const s1 = k === groups.length - 1 ? len : (S[g.i1] + S[g.i1 + 1]) / 2;
+    return simplify({ s0, s1, n, st, off, med });
+  });
+  return { a: S[first], b: S[last], runs };
+}
+
+/** 앞뒤 단면 사이 직선으로 0.08m 안에 들어오는 단면을 지운다(구간 끝 단면은 남긴다) */
+function simplify(r: Run): Run {
+  const n = r.n;
+  const m = r.st.length;
+  const keep = new Uint8Array(m);
+  keep[0] = keep[m - 1] = 1;
+  const rec = (a: number, b: number) => {
+    let worst = 0;
+    let at = -1;
+    for (let i = a + 1; i < b; i++) {
+      const u = (r.st[i] - r.st[a]) / (r.st[b] - r.st[a]);
+      let d = 0;
+      for (let l = 0; l < n; l++) d = Math.max(d, Math.abs(r.off[i * n + l] - (r.off[a * n + l] + (r.off[b * n + l] - r.off[a * n + l]) * u)));
+      if (r.med.length) d = Math.max(d, Math.abs(r.med[i] - (r.med[a] + (r.med[b] - r.med[a]) * u)));
+      if (d > worst) (worst = d), (at = i);
+    }
+    if (at >= 0 && worst > 0.08) {
+      keep[at] = 1;
+      rec(a, at);
+      rec(at, b);
+    }
+  };
+  if (m > 2) rec(0, m - 1);
+  const out: Run = { s0: r.s0, s1: r.s1, n, st: [], off: [], med: [] };
+  for (let i = 0; i < m; i++) {
+    if (!keep[i]) continue;
+    out.st.push(r.st[i]);
+    for (let l = 0; l < n; l++) out.off.push(r.off[i * n + l]);
+    if (r.med.length) out.med.push(r.med[i]);
+  }
+  return out;
+}
+
+/** 한 방향 차로를 파일 꼴로: [a, b, 구간 수, (s0, s1, n, 단면 수, 버스차로 1·0, (st, off×n, med?)...)...]. 거리는 dm, 옆 거리는 cm */
+export function encodeDir(d: DirLanes): number[] {
+  const out = [Math.round(d.a * 10), Math.round(d.b * 10), d.runs.length];
+  for (const r of d.runs) {
+    out.push(Math.round(r.s0 * 10), Math.round(r.s1 * 10), r.n, r.st.length, r.med.length ? 1 : 0);
+    r.st.forEach((s, i) => {
+      out.push(Math.round(s * 10));
+      for (let l = 0; l < r.n; l++) out.push(Math.round(r.off[i * r.n + l] * 100));
+      if (r.med.length) out.push(Math.round(r.med[i] * 100));
+    });
+  }
+  return out;
+}
+
+/** 차가 다니는 도로 조각(src/sim/graph.ts buildCarGraph 와 같은 조건): 등급 3 이하, 버스가 지나는 등급 5 이하 */
+export const carRoad = (r: { cls: number; bus?: boolean; p: ArrayLike<number> }) => (r.cls <= 3 || (r.bus === true && r.cls <= 5)) && r.p.length >= 6;
+
+/** 도로 조각마다 차로를 읽어 lanes.json 문자열과 굽기 기록을 돌려준다 */
+export function bakeLanes(roads: { cls: number; bus?: boolean; oneway: boolean; medBus: boolean; p: Float32Array }[], lines: MarkLine[]): { json: string; log: string } {
+  const idx = lineIndex(lines);
+  let dirs = 0;
+  let readN = 0;
+  let runs = 0;
+  const out = roads.map((r) => {
+    if (!carRoad(r)) return 0;
+    const cum = cumLen(r.p);
+    const rev = new Float32Array(r.p.length);
+    for (let i = 0; i < r.p.length; i += 3) rev.set(r.p.subarray(i, i + 3), r.p.length - 3 - i);
+    const res = [readDirection(idx, r.p, cum, !r.oneway, r.medBus), r.oneway ? null : readDirection(idx, rev, cumLen(rev), true, false)];
+    dirs += r.oneway ? 1 : 2;
+    for (const d of res) if (d) (readN++, (runs += d.runs.length));
+    return res.some(Boolean) ? res.map((d) => (d ? encodeDir(d) : 0)) : 0;
+  });
+  const json = JSON.stringify({ v: 1, r: out });
+  return { json, log: `차로 가운데선: 차가 다니는 방향 ${dirs}개 가운데 서울시 선으로 읽은 것 ${readN}개(차로 수 구간 ${runs}개), lanes.json ${(json.length / 1e6).toFixed(2)}MB` };
+}

@@ -19,6 +19,8 @@ import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raste
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
 import { decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts';
 import { roadCorners } from '../src/data/corners.ts';
+import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
+import { bakeLanes } from './lib/carlanes.ts';
 
 type Tags = Record<string, string>;
 interface LL {
@@ -1911,6 +1913,12 @@ writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);
 writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), surfacePolysJson);
 writeFileSync(new URL('../public/data/marks.json', import.meta.url), marksJson);
+// 차로 가운데선: 차가 다니는 조각마다 서울시 차선으로 방향별 차로를 읽는다(tools/lib/carlanes.ts, tools/lanes.ts 와 같은 함수)
+{
+  const baked = bakeLanes(decodeBoard(out as unknown as BoardJson).roads, decodeMarks(JSON.parse(marksJson) as MarksJson).lines);
+  writeFileSync(new URL('../public/data/lanes.json', import.meta.url), baked.json);
+  console.log(baked.log);
+}
 writeFileSync(new URL('../public/data/walk.json', import.meta.url), walkJson);
 writeFileSync(new URL('../public/data/mask.png', import.meta.url), encodePng(mask, SIZE));
 
