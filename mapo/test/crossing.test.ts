@@ -347,8 +347,12 @@ describe('차와 횡단보도', () => {
     expect(front).toBeLessThan(-2);
     expect(front).toBeGreaterThan(-8);
     expect(sim.approaching(0)).toBe(true);
-    // 맞은편 차로 쪽(북쪽 끝 0~4m)에만 사람이 있으면 서지 않는다
+    // 맞은편 차로 쪽(북쪽 끝 0~4m)에만 사람이 있어도 그 횡단보도 면 위에 사람이 있는 동안은 지나가지 않는다(2026-11-17 W12: 사람이 있는 면을 차가 지나가지 않게)
     busy[0] = 0b11;
+    for (let k = 0; k < 100; k++) sim.step(0.1, at(14), false);
+    expect(sim.cars.x[0] + 2.3).toBeLessThan(-2);
+    // 다 건너면 지나간다
+    busy[0] = 0;
     for (let k = 0; k < 300; k++) sim.step(0.1, at(14), false);
     expect(sim.cars.x[0]).toBeGreaterThan(5);
   });

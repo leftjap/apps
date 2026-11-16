@@ -1,6 +1,6 @@
 // 차로마다 서는 자리. 교차로·신호 앞 진입 구간의 차로마다 서울시 정지선(일시정지선 004, 구운 판의 stopLines)이 그 차로 가운데선을 가로지르는 자리를
 // 정지 자리로 쓴다. 정지선이 없으면 그 차로가 지나는 횡단보도 면(구간 끝에 가장 가까운 것)의 바깥 변 1m 앞이다.
-// 차로마다 그 차로 가운데선이 횡단보도 면 위를 지나는 구간도 적어 둔다(차는 앞이 막혔을 때 횡단보도 위에 서지 않는다, cars.ts).
+// 차로마다 그 차로를 달리는 차 몸통(가운데선과 양옆 1m)이 횡단보도 면 위를 지나는 구간도 적어 둔다(차는 앞이 막혔을 때 횡단보도 위에 서지 않고, 사람이 건너는 면 앞에 선다, cars.ts).
 import type { Crosswalk } from '../data/board.ts';
 import { pointAt } from '../poly.ts';
 import { headingNear, laneOff, lanePos, MED, type Edge } from './graph.ts';
@@ -12,6 +12,8 @@ export interface LaneStops {
   xw(e: number, l: number): Float32Array;
   /** 구간 e 의 어느 차로든 횡단보도 면 위를 지나는 구간을 합친 것(차로를 바꾸는 이음매 곡선 위 차도 덮는다) */
   xwAll(e: number): Float32Array;
+  /** 구간 e 의 차로 l 이 지나는 횡단보도: [s0, s1, 횡단보도 번호, 그 차로가 건너는 축 위 자리(축 시작에서 m), ...] 4개씩 */
+  xwOf(e: number, l: number): Float32Array;
 }
 
 /** 정지선을 찾는 범위: 구간 끝에서 46m 안(차선이 끝나는 자리를 알면 그 6m 뒤까지) */
@@ -50,10 +52,16 @@ export function laneStops(edges: Edge[], stopLines: ArrayLike<number>, crosswalk
     for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) if (r[i + 1] > z !== r[j + 1] > z && x < r[i] + ((z - r[i + 1]) / (r[j + 1] - r[i + 1])) * (r[j] - r[i])) c = !c;
     return c;
   };
-  const onCrosswalk = (x: number, z: number) => (ringGrid.get(key(x, z)) ?? []).some((i) => inRing(rings[i], x, z));
+  const ringCw: number[] = crosswalks.flatMap((c, ci) => c.rings.map(() => ci));
+  /** 점 (x, z)를 덮는 횡단보도 번호(없으면 −1) */
+  const crosswalkAt = (x: number, z: number) => {
+    const i = (ringGrid.get(key(x, z)) ?? []).find((r) => inRing(rings[r], x, z));
+    return i === undefined ? -1 : ringCw[i];
+  };
 
   const backs = new Float32Array(edges.length * 8).fill(-1);
   const spans: Float32Array[] = new Array(edges.length * 8);
+  const spanCw: Float32Array[] = new Array(edges.length * 8);
   const EMPTY = new Float32Array(0);
   const P = [0, 0, 0];
   const fromStart: [number, number][] = [];
@@ -64,6 +72,8 @@ export function laneStops(edges: Edge[], stopLines: ArrayLike<number>, crosswalk
       const n = Math.max(1, Math.ceil(e.len / STEP));
       const xs = new Float32Array(n + 1);
       const zs = new Float32Array(n + 1);
+      const nx = new Float32Array(n + 1); // 진행 방향 오른쪽
+      const nz = new Float32Array(n + 1);
       for (let k = 0; k <= n; k++) {
         const s = Math.min(e.len, k * STEP);
         pointAt(e.p, e.cum, s, P);
@@ -71,19 +81,34 @@ export function laneStops(edges: Edge[], stopLines: ArrayLike<number>, crosswalk
         const h = headingNear(e, s, off);
         xs[k] = P[0] - Math.sin(h) * off;
         zs[k] = P[2] + Math.cos(h) * off;
+        nx[k] = -Math.sin(h);
+        nz[k] = Math.cos(h);
       }
-      // 횡단보도 면 위 구간
+      // 횡단보도 면 위 구간과 그 횡단보도, 차로가 건너는 축 위 자리(구간 가운데 점)
       const sp: number[] = [];
+      const cw: number[] = [];
       let open = -1;
+      let cur = -1;
+      const close = (k: number) => {
+        const a = Math.max(0, open * STEP - STEP / 2);
+        const b = Math.min(e.len, k * STEP + STEP / 2);
+        const c = crosswalks[cur];
+        const m = Math.round((open + k) / 2);
+        sp.push(a, b);
+        cw.push(a, b, cur, (xs[m] - (c.x - c.ux * c.half)) * c.ux + (zs[m] - (c.z - c.uz * c.half)) * c.uz);
+        open = -1;
+      };
       for (let k = 0; k <= n; k++) {
-        const on = onCrosswalk(xs[k], zs[k]);
-        if (on && open < 0) open = k;
-        if ((!on || k === n) && open >= 0) {
-          sp.push(Math.max(0, open * STEP - STEP / 2), Math.min(e.len, (on ? k : k - 1) * STEP + STEP / 2));
-          open = -1;
-        }
+        // 차로 가운데와 양옆 1m(차 몸통 가장자리): 셋 가운데 하나라도 면 위면 그 횡단보도를 지난다
+        let at = crosswalkAt(xs[k], zs[k]);
+        if (at < 0) at = crosswalkAt(xs[k] + nx[k], zs[k] + nz[k]);
+        if (at < 0) at = crosswalkAt(xs[k] - nx[k], zs[k] - nz[k]);
+        if (open >= 0 && at !== cur) close(k - 1);
+        if (at >= 0 && open < 0) (open = k), (cur = at);
       }
+      if (open >= 0) close(n);
       spans[e.id * 8 + l] = sp.length ? Float32Array.from(sp) : EMPTY;
+      spanCw[e.id * 8 + l] = cw.length ? Float32Array.from(cw) : EMPTY;
       // 정지 자리: 구간 끝에 가장 가까운 정지선, 없으면 가장 가까운 횡단보도 면의 바깥 변 1m 앞
       const sMax = e.lb >= 0 ? Math.min(e.len, e.lb + 6) : e.len;
       const k0 = Math.max(0, Math.floor((e.len - REACH) / STEP));
@@ -146,6 +171,7 @@ export function laneStops(edges: Edge[], stopLines: ArrayLike<number>, crosswalk
   });
   return {
     xwAll: (e) => all[e],
+    xwOf: (e, l) => spanCw[e * 8 + Math.min(7, Math.max(0, l))] ?? EMPTY,
     back: (e, l) => backs[e * 8 + Math.min(7, Math.max(0, l))],
     xw: (e, l) => spans[e * 8 + Math.min(7, Math.max(0, l))] ?? EMPTY,
   };

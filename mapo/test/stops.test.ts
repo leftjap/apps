@@ -61,3 +61,20 @@ describe('횡단보도 비워 두기', () => {
     expect(onIt).toBe(0);
   });
 });
+
+describe('사람이 건너는 횡단보도 앞에 서기', () => {
+  it('교차로를 지나 나갈 구간 첫머리의 횡단보도(꼭짓점과 맞지 않는 면)에 사람이 있으면 그 앞에 선다', () => {
+    // 동쪽으로 가는 길이 x=100 에서 끝나고 다음 조각이 이어진다. 횡단보도 면은 다음 조각 4~8m(꼭짓점 없이 면만 있다)
+    const g = buildCarGraph([road([[0, 0], [100, 0]], { oneway: true, lanes: 1 }), road([[100, 0], [300, 0]], { oneway: true, lanes: 1 })]);
+    const list = [xwalk(104, 108)];
+    const busy = new Uint32Array(1);
+    const sim = makeCars(g, fixedProvider(1), 2, 5, [], undefined, { list, busy });
+    sim.put(g[0].id, 30, 0);
+    busy[0] = 1 << 4; // 축 8~10m 칸에 사람
+    for (let k = 0; k < 10 * 30; k++) sim.step(0.1, at(14), false);
+    const D = sim.debug();
+    const front = sim.cars.x[0] + D.size[0] / 2;
+    expect(front).toBeLessThan(104);
+    expect(front).toBeGreaterThan(100);
+  });
+});

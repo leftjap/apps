@@ -17,6 +17,8 @@
 //  8. 교차로 다섯 곳 90m 안에서 멈춘(0.3m/s 아래) 차 가운데 차 가운데가 서울시 횡단보도 면 위인 비율(0.1초마다).
 // 10. 신호 지키기: 신호 진입로에서 차 앞 범퍼가 그 차로 정지 자리를 넘는 순간의 신호. 빨간불이면 '빨간불 넘기', 노란불이 켜졌을 때 정지 자리까지
 //     (앞 범퍼가 정지 자리를 넘던 순간의 신호로, 0.5m 넘게 더 나아간 차만 센다. 정지선에 붙어 선 차의 흔들림은 세지 않는다) v²/6 (감속 3m/s²) 넘게 남아 멈출 수 있었는데 노란·빨간불에 넘으면 '노란불 정지 가능 통과'. 묶인 교차로 안 구간(진입 구간이 같은 교차로 안)인지로 나눈다.
+// 11. 사람이 있는 횡단보도 면을 지나간 차(0.1초마다, 사람 켬): 차 몸통(그린 크기, 배율 1)의 가운데·네 귀·앞뒤 가운데 가운데 하나가 사람이 서 있는 횡단보도 면 안이면
+//     (차, 면) 한 쌍으로 한 번 센다. 까닭: 신호 횡단보도인데 차 신호와 보행 신호가 함께 초록(위상), 신호 횡단보도에서 상자 안 회전 차, 신호 없는 횡단보도, 그 밖.
 //  9. 신호에 선 첫 차(앞 대상이 신호이고 멈춘 차)의 앞 범퍼(그린 길이)에서 가장 가까운 서울시 정지선(20m 안, 진행 방향을 가로지르는 것)까지 거리(0.5초마다):
 //     판 전체와 교차로 다섯 곳 150m 안의 중앙값·90% 지점·1m 안 비율. 사례 출력: SHOWDEV=n(차로 가운데에서 1m 넘게), SHOWXW=1(횡단보도 위 정차), SHOWLINE=n(정지선에서 1m 넘게).
 //  겹친 두 차가 노드 없이 가로지르는 두 길(OSM 에서 다리·터널·layer 로 높이가 다른 곳) 위에 있으면 위 분류 대신 '높이 다른 길'로 센다(실제로는 겹치지 않음, tools/raw/highways.json 이 있을 때만).
@@ -243,6 +245,15 @@ function laneDev(x: number, z: number, yaw: number): number {
   return best < Infinity ? best : -1;
 }
 const inFace = ringGrid(surface.faces.map((f) => f.outer));
+// 11: 횡단보도 면마다 [횡단보도 번호, 고리], 20m 칸 격자
+const xwRings: { ci: number; r: Float32Array }[] = board.crosswalks.flatMap((c, ci) => c.rings.map((r) => ({ ci, r })));
+const xwGrid = new Map<number, number[]>();
+xwRings.forEach(({ r }, k) => {
+  let mnx = Infinity, mxx = -Infinity, mnz = Infinity, mxz = -Infinity;
+  for (let q = 0; q < r.length; q += 2) (mnx = Math.min(mnx, r[q])), (mxx = Math.max(mxx, r[q])), (mnz = Math.min(mnz, r[q + 1])), (mxz = Math.max(mxz, r[q + 1]));
+  for (let gx = Math.floor(mnx / 20); gx <= Math.floor(mxx / 20); gx++) for (let gz = Math.floor(mnz / 20); gz <= Math.floor(mxz / 20); gz++) (xwGrid.get(gx * 4096 + gz) ?? xwGrid.set(gx * 4096 + gz, []).get(gx * 4096 + gz)!).push(k);
+});
+const xwRingAt = (x: number, z: number) => (xwGrid.get(Math.floor(x / 20) * 4096 + Math.floor(z / 20)) ?? []).find((k) => inRing(xwRings[k].r, x, z)) ?? -1;
 /** 앞 범퍼 (x, z) 에서 진행 방향 (hx, hz) 을 가로지르는 가장 가까운 서울시 정지선까지(20m 안, 없으면 −1) */
 function stopLineDist(x: number, z: number, hx: number, hz: number): number {
   const S = board.stopLines;
@@ -342,6 +353,9 @@ function run(dow: number, tod: number, seed: number) {
   let movingN = 0;
   const waitWhere: Record<string, number> = {};
   const lineD: number[][] = [[], []];
+  const pedHits: Record<string, number> = {}; // 11
+  const pedWhere: Record<string, number> = {};
+  const pedSeen = new Set<string>();
   const runs: Record<string, number> = {}; // 10. 까닭별 횟수
   const runWhere: Record<string, number> = {};
   let crossings = 0;
@@ -545,6 +559,49 @@ function run(dow: number, tod: number, seed: number) {
       speeds.push(sim.meanSpeed());
       counts.push(c.n);
     }
+    // 11. 사람이 있는 횡단보도 면을 지나간 차
+    if (st % 6 === 0 && walkers) {
+      const W = walkers.w;
+      const busyRing = new Set<number>();
+      for (let k = 0; k < W.n; k++) {
+        if (W.fade[k] < 1) continue;
+        const r = xwRingAt(W.x[k], W.z[k]);
+        if (r >= 0) busyRing.add(r);
+      }
+      if (busyRing.size)
+        for (let i = 0; i < c.n; i++) {
+          if (c.fade[i] < 1 || c.y[i] > 1) continue;
+          const cs = Math.cos(c.yaw[i]);
+          const sn = Math.sin(c.yaw[i]);
+          const L = hl(i);
+          const Wd = hw(i);
+          let hit = -1;
+          for (const [a, b] of [[0, 0], [1, 1], [1, -1], [-1, 1], [-1, -1], [1, 0], [-1, 0]]) {
+            const r = xwRingAt(c.x[i] + a * L * cs - b * Wd * sn, c.z[i] + a * L * sn + b * Wd * cs);
+            if (r >= 0 && busyRing.has(r)) {
+              hit = r;
+              break;
+            }
+          }
+          if (hit < 0) continue;
+          const key = `${c.uid[i]}|${hit}`;
+          if (pedSeen.has(key)) continue;
+          pedSeen.add(key);
+          const ci = xwRings[hit].ci;
+          const site = signals.crossSite[ci];
+          let why = '신호 없는 횡단보도';
+          if (site >= 0) {
+            const pedGreen = signals.state(site, signals.crossGroup[ci], now.tod) === 0;
+            const e = D.edge[i];
+            const ap = signals.approach.get(e) ?? (D.boxed[i] ? undefined : undefined);
+            const carGreen = ap ? signals.state(ap.c, ap.group, now.tod) === 0 : false;
+            why = D.boxed[i] ? `신호 횡단보도 상자 안 차(보행 ${pedGreen ? '초록' : '빨강'})` : pedGreen && carGreen ? '신호 위상(차·보행 함께 초록)' : `신호 횡단보도 그 밖(보행 ${pedGreen ? '초록' : '빨강'})`;
+          }
+          if (!near5(c.x[i], c.z[i], 150)) why = `${why} [다섯 교차로 밖]`;
+          inc(pedHits, why);
+          inc(pedWhere, `${why} ${Math.round(c.x[i] / 10) * 10},${Math.round(c.z[i] / 10) * 10}`);
+        }
+    }
     // 2. 그린 몸통 겹침(0.1초마다)
     if (st % 6 === 0) {
       const grid = new Map<number, number[]>();
@@ -658,7 +715,8 @@ function run(dow: number, tod: number, seed: number) {
   const tot = movingN + Object.values(stopWhy).reduce((a, b) => a + b, 0);
   const stopped = Object.fromEntries(Object.entries(stopWhy).sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, +((100 * n) / tot).toFixed(1)]));
   const redRuns = { crossings, runs, where: top(runWhere, 10) };
-  return { redRuns, stopped, waitWhere: top(waitWhere, 15), speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), lane, crosswalk, stopLine, out };
+  const pedCross = { hits: pedHits, where: top(pedWhere, 10) };
+  return { pedCross, redRuns, stopped, waitWhere: top(waitWhere, 15), speed: +(speeds.reduce((a, b) => a + b, 0) / speeds.length).toFixed(3), cars: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length), lane, crosswalk, stopLine, out };
 }
 
 console.error(

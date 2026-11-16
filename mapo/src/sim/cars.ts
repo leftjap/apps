@@ -13,6 +13,7 @@ import { BOARD_R } from '../geo.ts';
 import type { Crosswalk } from '../data/board.ts';
 import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, MED, medAt, turnAllowed, type Edge } from './graph.ts';
 import { makeJunctions } from './junctions.ts';
+import { laneStops } from './stops.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
 
@@ -90,8 +91,16 @@ export function makeCars(
   const dwell = new Float32Array(max); // 정류장에 남은 정차 시간(초)
   const wait = new Float32Array(routes.length); // 노선별 다음 출발까지(초)
   const jn = signals?.junctions ?? makeJunctions(edges);
-  // 차로마다 정지 자리(서울시 정지선, 없으면 횡단보도 바깥 변 1m 앞)와 횡단보도 면 위 구간(src/sim/stops.ts)
-  const stops = signals?.stops ?? null;
+  // 차로마다 정지 자리(서울시 정지선, 없으면 횡단보도 바깥 변 1m 앞)와 횡단보도 면 위 구간(src/sim/stops.ts). 신호 자료가 없으면 횡단보도로만 만든다
+  const stops = signals?.stops ?? (xw ? laneStops(edges, new Float32Array(0), xw.list) : null);
+  // 횡단보도마다 그 면을 지나는 [구간, 구간 위 거리](사람이 건너기 전에 다가오는 차를 본다, approaching)
+  const xwEdges: [number, number][][] = (xw?.list ?? []).map(() => []);
+  if (stops && xw)
+    for (const e of edges)
+      for (let l = 0; l < e.lanes; l++) {
+        const q = stops.xwOf(e.id, l);
+        for (let k = 0; k < q.length; k += 4) if (!xwEdges[q[k + 2]].some(([id]) => id === e.id)) xwEdges[q[k + 2]].push([e.id, (q[k] + q[k + 1]) / 2]);
+      }
   const XS: number[] = [];
   /** 구간 e 의 차로 l 정지 자리(구간 끝에서 앞 범퍼까지 m). 차로 정지 자리가 없으면 신호 정지선(ap), 그것도 없으면 −1 */
   const stopBack = (e: Edge, l: number, ap?: Approach) => {
@@ -158,33 +167,6 @@ export function makeCars(
   const cellNext = new Int32Array(max);
   const cellAt = (x: number) => Math.max(0, Math.min(GW - 1, Math.floor((x + BOARD_R + 200) / CELL)));
   const tmp = [0, 0, 0];
-  // 구간마다 그 위의 횡단보도 [구간 시작에서 거리, 횡단보도 번호, 반 폭, 축 위 꼭짓점 자리(E0 에서 m), 구간 오른쪽이 축 방향이면 +1]:
-  // 횡단보도 축이 지나는 꼭짓점이 구간 꼭짓점과 같은 곳. 차는 자기 차로가 지나는 축 자리 둘레에 사람이 있을 때만 선다
-  const xwOn: [number, number, number, number, number][][] = edges.map(() => []);
-  const xwEdges: [number, number][][] = (xw?.list ?? []).map(() => []); // 횡단보도 → [구간, 거리]
-  if (xw) {
-    const at = new Map<string, [number, number][]>();
-    for (const e of edges)
-      for (let k = 0; k < e.p.length; k += 3) {
-        const key = `${Math.round(e.p[k] * 10)},${Math.round(e.p[k + 2] * 10)}`;
-        (at.get(key) ?? at.set(key, []).get(key)!).push([e.id, e.cum[k / 3]]);
-      }
-    xw.list.forEach((c, xi) => {
-      for (let k = 0; k < c.verts.length; k += 2)
-        for (const [id, d] of at.get(`${Math.round(c.verts[k] * 10)},${Math.round(c.verts[k + 1] * 10)}`) ?? []) {
-          const e = edges[id];
-          const seg = Math.max(0, Math.min(e.p.length / 3 - 2, e.cum.indexOf(d)));
-          const hx = e.p[seg * 3 + 3] - e.p[seg * 3];
-          const hz = e.p[seg * 3 + 5] - e.p[seg * 3 + 2];
-          const hl = Math.hypot(hx, hz) || 1;
-          const uv = (c.verts[k] - (c.x - c.ux * c.half)) * c.ux + (c.verts[k + 1] - (c.z - c.uz * c.half)) * c.uz;
-          const sgn = (-hz * c.ux + hx * c.uz) / hl >= 0 ? 1 : -1;
-          xwOn[id].push([d, xi, c.wid / 2, uv, sgn]);
-          xwEdges[xi].push([id, d]);
-        }
-    });
-  }
-
   /** 막힌 길일수록 덜 고른다: 들어설 첫머리에 빈 길이(가장 넉넉한 차로의 맨 뒤 차까지)가 60m 보다 짧을수록,
    *  그 구간 차들의 평균 속도가 제 속도의 절반보다 느릴수록 무게를 줄인다 */
   const meanV = new Float32Array(edges.length).fill(-1); // 구간 차들의 평균 속도(1초마다, 차가 없으면 −1)
@@ -979,19 +961,16 @@ export function makeCars(
           why = 6;
         }
       }
-      // 횡단보도: 사람이 건너고 있으면 그 앞(횡단보도 반 폭 + 1.2m)에 선다. 이 구간과 다음 구간을 본다
-      if (xw) {
+      // 횡단보도: 내 차로가 지나는 횡단보도 면(이 구간과 다음 구간, 교차로 상자 안 포함)에 사람이 건너고 있으면 그 면 1m 앞에 선다
+      if (xw && stops) {
         let d0 = -s[i];
         for (let id = e.id, k = 0; id >= 0 && k < 2; k++) {
-          for (const [xs, xi, hw, uv, sgn] of xwOn[id]) {
-            const bits = xw.busy[xi];
-            if (!bits) continue;
-            const ln = k === 0 ? lane[i] : outLane(i, edges[id]);
-            const uc = uv + sgn * laneOff(edges[id], ln, xs);
-            let hit = false;
-            for (let b = Math.max(0, Math.floor((uc - 1.8) / 2)); b <= Math.min(31, Math.floor((uc + 1.8) / 2)); b++) if (bits & (1 << b)) hit = true;
-            if (!hit) continue;
-            const toLine = d0 + xs - hw - 1.2 - size[i] / 2;
+          const ln = k === 0 ? lane[i] : outLane(i, edges[id]);
+          const q = stops.xwOf(id, ln === MED ? 0 : ln);
+          for (let m = 0; m < q.length; m += 4) {
+            // 그 횡단보도 위 어디든 사람이 건너고 있으면 선다(넓은 횡단보도 건너편 사람도 다 건널 때까지)
+            if (!xw.busy[q[m + 2]]) continue;
+            const toLine = d0 + q[m] - 1 - size[i] / 2;
             if (toLine > -0.5 && toLine + 2 < gap) {
               gap = toLine + 2;
               dv = v[i];
