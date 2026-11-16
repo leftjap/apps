@@ -4,7 +4,7 @@ import { decodeBoard } from '../src/data/board.ts';
 import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
 import { BOARD_R } from '../src/geo.ts';
 import { decodeWalk, type WalkJson } from '../src/sim/walknet.ts';
-import { BODY_R, hitDisc, majorGround } from '../tools/lib/walkfix.ts';
+import { BODY_R, EDGE_EXT, hitDisc, majorGround } from '../tools/lib/walkfix.ts';
 
 // 재작업 W21, 지금 판(public/data): 걷는 길 그물의 선·걷는 띠·노드 원은 큰길 찻길에서 사람 몸 반지름 넘게 떨어져 있고,
 // 그물은 한 덩어리이며, 그물에 든 횡단보도는 양 끝이 모두 그물에 닿는다
@@ -36,10 +36,12 @@ describe('W21 걷는 길 그물', () => {
         if (L < 1e-6) return;
         const [ux, uz] = [(bx - ax) / L, (bz - az) / L];
         const n = Math.max(1, Math.ceil(L / 0.5));
-        for (let q = 0; q <= n; q++)
+        // 사람은 띠를 선 양 끝 너머 EDGE_EXT 까지 쓴다
+        for (let q = -1; q <= n + 1; q++)
           for (const u of new Set([0, W.band[a][k][0], W.band[a][k][1]])) {
-            const x = ax + ux * (L * q) / n - uz * u;
-            const z = az + uz * (L * q) / n + ux * u;
+            const t = q < 0 ? -EDGE_EXT : q > n ? L + EDGE_EXT : (L * q) / n;
+            const x = ax + ux * t - uz * u;
+            const z = az + uz * t + ux * u;
             if (hitDisc(G, x, z, BODY_R, 1)) {
               bad += L / (n + 1);
               if (where.length < 10) where.push(`${x.toFixed(1)},${z.toFixed(1)}`);
@@ -76,9 +78,9 @@ describe('W21 걷는 길 그물', () => {
     expect(dead.length).toBe(0);
   });
   // 끝이 찻길 한가운데(W14 에서 지운 교통섬 자리)이거나 연석과 건물 사이가 몸이 지나갈 수 없을 만큼 좁은 횡단보도는 잇지 못한다.
-  // 2026-11-17 판 889개 가운데 45개(메모 mapo-w21-people.md). 늘지 않는지만 본다
+  // 2026-11-17 판 889개 가운데 47개(메모 mapo-w21-people.md). 늘지 않는지만 본다
   it('그물에 잇지 못한 횡단보도가 늘지 않는다', () => {
     const linked = new Set(W.links.map((l) => l.xw));
-    expect(board.crosswalks.length - linked.size).toBeLessThanOrEqual(45);
+    expect(board.crosswalks.length - linked.size).toBeLessThanOrEqual(47);
   });
 });

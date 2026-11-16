@@ -6,7 +6,8 @@
 //     거기서 곧게(안 되면 칸을 따라 돌아서) 그물에 닿는 잇는 선을 낸다. 건너는 길은 기다리는 자리 → 축 끝 → 축 → 건너편 축 끝 → 기다리는 자리다.
 //  ④ 그물은 한 덩어리만 남긴다. 떨어진 조각은 30m 안이면 칸을 따라 잇고, 그래도 떨어진 조각은 버린다.
 //  ⑤ 건물 문: 문턱(벽에서 0.5m)에서 걷는 띠까지 곧게 가는 길이 큰길 찻길을 지나지 않는 자리만 문으로 둔다.
-import { carriageSections, isGroundRoad, roadJoints, tunnelReach } from '../../src/data/surface.ts';
+import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../../src/data/surface.ts';
+import { cumLen } from '../../src/poly.ts';
 
 /** 교차로 면(등급·바깥 고리·교통섬) */
 export type Face = { cls: number; outer: ArrayLike<number>; holes: ArrayLike<number>[] };
@@ -20,6 +21,8 @@ export const BODY_R = 0.4;
 export const CLEAR = 0.45;
 /** 건물 벽에서 떨어질 거리(m) */
 const WALL_CLEAR = 0.2;
+/** 걷는 띠를 선 양 끝 너머로 쓰는 거리(m). 사람은 선 끝을 넘지 않고 노드에서 갈아탄다 */
+export const EDGE_EXT = 0;
 /** 칠한 횡단보도 끝에서 기다리는 자리까지 칠 밖 찻길을 지나는 가장 긴 거리(m, 한쪽 끝). 줄무늬는 연석 앞 0.5~1m 에서 끝난다 */
 export const MAX_BARE = 6;
 const ROAD = 1;
@@ -47,7 +50,30 @@ export function majorGround(
     const s = carriageSections(r, 0, Infinity, joints.subarray(i * 4, i * 4 + 4));
     fillBits(B, [[...s.flatMap((q) => [q.lx, q.lz]), ...s.reverse().flatMap((q) => [q.rx, q.rz])]], ROAD, true);
   });
+  // 큰길 띠는 교차로를 지나 끝까지(골목 띠를 뺀 자리 가운데 큰길 찻길은 되살린다)
+  roads.forEach((r, i) => {
+    if (!isGroundRoad(r) || r.cls > 3 || reach[i]) return;
+    const s = carriageSections(r, 0, Infinity, joints.subarray(i * 4, i * 4 + 4));
+    fillBits(B, [[...s.flatMap((q) => [q.lx, q.lz]), ...s.reverse().flatMap((q) => [q.rx, q.rz])]], ROAD);
+  });
   for (const [i, ring] of car) if (roads[i].cls <= 3 && !reach[i]) fillBits(B, [ring], ROAD);
+  // 터널 길(등급 5 이하)은 입구에서 몸이 들어설 높이(깊이 5.2m, 입구 벽)까지는 땅 위 찻길로 친다(입구 경사 위로 걷지 않게)
+  roads.forEach((r, i) => {
+    const rc = reach[i];
+    if (!rc || r.cls > 5) return;
+    const L = cumLen(r.p);
+    const len = L[L.length - 1];
+    let a = -1;
+    for (let s = 0; s <= len + 1e-6; s += 0.5) {
+      const shallow = tunnelDepth(rc, Math.min(s, len), len) < 5.2;
+      if (shallow && a < 0) a = s;
+      if ((!shallow || s + 0.5 > len) && a >= 0) {
+        const sec = carriageSections(r, a, Math.min(len, shallow ? len : s), joints.subarray(i * 4, i * 4 + 4));
+        if (sec.length >= 2) fillBits(B, [[...sec.flatMap((q) => [q.lx, q.lz]), ...sec.reverse().flatMap((q) => [q.rx, q.rz])]], ROAD);
+        a = -1;
+      }
+    }
+  });
   for (const m of med) fillBits(B, [m], ROAD);
   for (const d of draw) fillBits(B, [d], ROAD);
   return B;
@@ -141,14 +167,21 @@ export function fixWalkNet(inp: FixInput): WalkJson {
   for (const b of inp.buildings) fillBits(B, [b], BLDG);
   for (const c of inp.crosswalks) for (const r of c.rings ?? []) fillBits(B, [r], XW);
   // 큰길 찻길·건물 칸을 CLEAR 만큼 넓힌 칸(네모로 넓혀 원보다 넉넉하다): 1 몸이 찻길·건물에 닿음, 2 몸이 찻길에 닿음
-  // 건물 벽은 몸이 스치는 정도(WALL_CLEAR)까지 다가가도 된다(좁은 보도가 끊기지 않게)
-  const NR = dilate(B, ROAD, ROAD, Math.ceil(CLEAR / CELL));
+  // 건물 벽은 몸이 스치는 정도(WALL_CLEAR)까지 다가가도 된다(좁은 보도가 끊기지 않게).
+  // 칸 NEAR: 1 큰길 찻길 칸에서 2칸 안, 2 3칸 안, 4 건물 칸에서 1칸 안. 2칸 안은 막힘, 3칸 안은 몸 둘레를 직접 잰다
+  const N2 = dilate(B, ROAD, ROAD, 2);
+  const N3 = dilate(B, ROAD, ROAD, 3);
   const NB = dilate(B, BLDG, BLDG, Math.ceil(WALL_CLEAR / CELL));
-  for (let k = 0; k < NR.v.length; k++) NR.v[k] = (NR.v[k] & 1 ? 3 : 0) | (NB.v[k] & 1);
-  const NEAR = NR;
+  for (let k = 0; k < N2.v.length; k++) N2.v[k] = (N2.v[k] & 1) | (N3.v[k] & 1 ? 2 : 0) | (NB.v[k] & 1 ? 4 : 0);
+  const NEAR = N2;
   const [bx0, bz0, bx1, bz1] = inp.bounds;
+  /** 몸이 큰길 찻길에 닿는가(시험과 같은 방식: 몸 반지름과 여유 두 둘레) */
+  const roadNear = (x: number, z: number) => {
+    const f = bitsAt(NEAR, x, z);
+    return (f & 1) !== 0 || ((f & 2) !== 0 && (hitDisc(B, x, z, BODY_R, ROAD) || hitDisc(B, x, z, CLEAR, ROAD)));
+  };
   // 판 가장자리 1m 안도 막힌 곳으로 친다(판 밖 찻길은 칠하지 않았다)
-  const blocked = (x: number, z: number) => x < bx0 + 1 || z < bz0 + 1 || x > bx1 - 1 || z > bz1 - 1 || (bitsAt(NEAR, x, z) & 1) !== 0;
+  const blocked = (x: number, z: number) => x < bx0 + 1 || z < bz0 + 1 || x > bx1 - 1 || z > bz1 - 1 || (bitsAt(NEAR, x, z) & 4) !== 0 || roadNear(x, z);
 
   // ── 읽기 ──
   const nodes: number[] = [];
@@ -244,7 +277,7 @@ export function fixWalkNet(inp: FixInput): WalkJson {
         return;
       }
     }
-    for (let q = 0; q <= n; q++) if (!ok[q]) cutWhy[e.kind * 2 + (bitsAt(NEAR, ax + ((bx - ax) * q) / n, az + ((bz - az) * q) / n) & 2 ? 0 : 1)] += L / (n + 1);
+    for (let q = 0; q <= n; q++) if (!ok[q]) cutWhy[e.kind * 2 + (roadNear(ax + ((bx - ax) * q) / n, az + ((bz - az) * q) / n) ? 0 : 1)] += L / (n + 1);
     const ux = (bx - ax) / L;
     const uz = (bz - az) / L;
     let q = 0;
@@ -458,7 +491,7 @@ export function fixWalkNet(inp: FixInput): WalkJson {
     const h = reachLine(x, z, Math.min(R, 15), ok);
     if (h) {
       const m = splitAt(h[0], h[1]);
-      if (m !== from) edges.push({ a: from, b: m, kind: LINK, cls: 4, hot: false, lo: 0, hi: 0 }), addGrid(edges.length - 1);
+      if (m !== from) edges.push({ a: from, b: m, kind: LINK, cls: 4, hot: false, lo: -1.2, hi: 1.2 }), addGrid(edges.length - 1);
       return m;
     }
     const r = route(x, z, R, ok);
@@ -467,7 +500,7 @@ export function fixWalkNet(inp: FixInput): WalkJson {
     let p = from;
     for (let k = 2; k < r.pts.length; k += 2) {
       const q = k === r.pts.length - 2 ? m : node(r.pts[k], r.pts[k + 1]);
-      if (q !== p) edges.push({ a: p, b: q, kind: LINK, cls: 4, hot: false, lo: 0, hi: 0 }), addGrid(edges.length - 1);
+      if (q !== p) edges.push({ a: p, b: q, kind: LINK, cls: 4, hot: false, lo: -1.2, hi: 1.2 }), addGrid(edges.length - 1);
       p = q;
     }
     return m;
@@ -659,6 +692,35 @@ export function fixWalkNet(inp: FixInput): WalkJson {
     e.hi = Math.max(0, hi);
   }
 
+  // ── 마지막 확인(시험과 같은 자리): 0.5m 마다 가운데선과 띠 양 끝에 선 몸이 큰길 찻길에 닿으면 그쪽 띠를 줄인다 ──
+  {
+    let shrunk = 0;
+    let bad = 0;
+    for (const e of edges) {
+      if (!keep(e.a)) continue;
+      const [ax, az, bx, bz] = [X(e.a), Z(e.a), X(e.b), Z(e.b)];
+      const L = Math.hypot(bx - ax, bz - az);
+      if (L < 1e-6) continue;
+      const ux = (bx - ax) / L;
+      const uz = (bz - az) / L;
+      const n = Math.max(1, Math.ceil(L / 0.5));
+      // 사람은 띠를 선 양 끝 너머 EDGE_EXT 까지 쓴다(모퉁이에서 다음 선으로 갈아탈 때)
+      const hit = (u: number) => {
+        for (let q = -1; q <= n + 1; q++) {
+          const t = q < 0 ? -EDGE_EXT : q > n ? L + EDGE_EXT : (L * q) / n;
+          if (hitDisc(B, ax + ux * t - uz * u, az + uz * t + ux * u, BODY_R, ROAD)) return true;
+        }
+        return false;
+      };
+      e.lo = Math.ceil(e.lo * 10 - 1e-6) / 10;
+      e.hi = Math.floor(e.hi * 10 + 1e-6) / 10;
+      while (e.hi > 0 && hit(e.hi)) (e.hi = Math.max(0, Math.round((e.hi - 0.1) * 10) / 10)), shrunk++;
+      while (e.lo < 0 && hit(e.lo)) (e.lo = Math.min(0, Math.round((e.lo + 0.1) * 10) / 10)), shrunk++;
+      if (hit(0)) bad++;
+    }
+    log(`마지막 확인: 띠 줄임 ${shrunk}번, 가운데선이 닿는 선 ${bad}`);
+  }
+
   // ── 노드 원 반지름: 16 방향으로 몸을 둘 수 있는 거리(이웃 선 띠 반폭보다 크지 않게) ──
   const N = nodes.length / 2;
   const deg: number[][] = Array.from({ length: N }, () => []);
@@ -666,8 +728,10 @@ export function fixWalkNet(inp: FixInput): WalkJson {
   const rad = new Float32Array(N);
   for (let n = 0; n < N; n++) {
     if (!deg[n].length) continue;
-    let r = 8;
-    for (const i of deg[n]) r = Math.min(r, -edges[i].lo, edges[i].hi);
+    // 이웃 선 띠 가운데 가장 넓은 반폭(최대 3m)까지: 한쪽으로 치우친 띠(가장자리를 따라가는 선)에서도 모퉁이를 돌 수 있게
+    let r = 0;
+    for (const i of deg[n]) r = Math.max(r, -edges[i].lo, edges[i].hi);
+    r = Math.min(3, Math.max(r, 0.6));
     for (let k = 0; k < 16 && r > 0; k++) {
       const a = (k * Math.PI) / 8;
       r = Math.min(r, room(X(n), Z(n), Math.cos(a), Math.sin(a), r));
@@ -678,7 +742,7 @@ export function fixWalkNet(inp: FixInput): WalkJson {
   // ── ⑤ 건물 문: 문턱에서 걷는 띠까지 곧게, 큰길 찻길을 지나지 않는다 ──
   const doors: number[] = [];
   if (inp.doorOk) {
-    const roadAt = (x: number, z: number) => (bitsAt(NEAR, x, z) & 2) !== 0;
+    const roadAt = roadNear;
     inp.buildings.forEach((p, bi) => {
       let cx = 0;
       let cz = 0;
