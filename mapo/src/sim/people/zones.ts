@@ -49,6 +49,15 @@ const placeArea = PLACES.map((p) => {
   return L * 2 * p.r + Math.PI * p.r * p.r;
 });
 
+/** 명소마다 가운데(꺾은선 점 평균)가 든 칸(구역 밖이면 구역 밖 명소 칸) */
+const placeCell = PLACES.map((p) => {
+  let x = 0;
+  let z = 0;
+  for (let k = 0; k < p.pts.length; k += 2) (x += p.pts[k]), (z += p.pts[k + 1]);
+  const c = zoneOf(x / (p.pts.length / 2), z / (p.pts.length / 2));
+  return c === OUT_Z ? PLACE_Z : c;
+});
+
 /** 구역마다 지금 밖에 나와 걷는 실제 사람 수. 그다음 칸은 구역 밖 출구·정류장 둘레의 사람(구역 인원의 12%),
  *  마지막 칸은 구역 원 밖 명소 둘레의 사람(명소마다 늘어난 인원 × 지금 붐빔 × 밖에 나온 몫)과 홍대 둘레 명소의 바닥 몫 */
 export function outside(provider: DataProvider, now: Now, rain = 0): number[] {
@@ -57,11 +66,13 @@ export function outside(provider: DataProvider, now: Now, rain = 0): number[] {
   for (const a of provider.areas(now)) pop[a.id] = (a.pplMin + a.pplMax) / 2;
   const t = ZONE_IDS.map((id) => (pop[id] ?? 0) * (OUT_SHARE[id] ?? OUT_BASE) * act * rainKeep(id, rain));
   t.push(t.reduce((a, b) => a + b, 0) * 0.12);
-  let extra = PLACES.reduce((a, p) => a + p.rest * placeLevel(p, now), 0) * OUT_BASE;
+  t.push(PLACES.reduce((a, p) => a + p.rest * placeLevel(p, now), 0) * OUT_BASE * rainKeep('', rain));
+  // 홍대 둘레 명소의 바닥 몫은 명소 가운데가 든 칸(대개 홍대·연남 구역)에 더한다: 그 칸 문·출구 가운데 명소 둘레가 더 많이 내보낸다
   PLACES.forEach((p, k) => {
-    if (HOT_PLACES.has(p.id)) extra += (placeArea[k] / FLOOR_AREA) * Math.max(0, HOT_FLOOR - placeLevel(p, now));
+    if (!HOT_PLACES.has(p.id)) return;
+    const c = placeCell[k];
+    t[c] += (placeArea[k] / FLOOR_AREA) * Math.max(0, HOT_FLOOR - placeLevel(p, now)) * rainKeep(c < ZONE_IDS.length ? ZONE_IDS[c] : '', rain);
   });
-  t.push(extra * rainKeep('', rain));
   return t;
 }
 /** 이 자리 건물에 사람이 드나드는 문을 두는가: 망원한강공원 밖 구역 원 안이나 명소 둘레(20m) */
