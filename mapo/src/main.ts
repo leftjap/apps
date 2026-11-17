@@ -35,7 +35,7 @@ import { CAT_SPOTS, catAt, catName, feeders, makeCats, PERSONALITY_KO, type CatS
 import { makeClock } from './sim/clock.ts';
 import { sunAngles } from './sim/curves.ts';
 import { buildCarGraph } from './sim/graph.ts';
-import { decodeLanes, type LanesJson } from './data/lanes.ts';
+import { decodeLanes, type RoadJson } from './data/road.ts';
 import { decodeWalk, type WalkJson } from './sim/walknet.ts';
 import { makeSimProvider } from './sim/provider.ts';
 import { makeLiveProvider } from './data/live.ts';
@@ -98,8 +98,8 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamp
   fetch(`${BASE}data/marks.json`).then((r) => r.json() as Promise<MarksJson>).then(decodeMarks),
   // 걷는 길 그래프(보도 면 안의 보도 선·골목·보행로와 횡단보도 연결, tools/lib/walknet.ts 가 굽는다)
   fetch(`${BASE}data/walk.json`).then((r) => r.json() as Promise<WalkJson>),
-  // 차로 가운데선(서울시 차선으로 읽은 방향별 차로, tools/lanes.ts 가 굽는다)
-  fetch(`${BASE}data/lanes.json`).then((r) => r.json() as Promise<LanesJson>).then(decodeLanes),
+  // 길 정본(차로: 굽기가 정한 최종 차로, tools/road.ts 가 굽는다. 설계 문서 51절)
+  fetch(`${BASE}data/road.json`).then((r) => r.json() as Promise<RoadJson>).then((j) => decodeLanes(j.lanes)),
   // 서울시 차량 신호등(4색등 = 좌회전 화살표)·회전 표지(tools/signals.ts 가 굽는다). 없으면 노면 화살표로 정한다
   fetch(`${BASE}data/signals.json`).then((r) => (r.ok ? (r.json() as Promise<SignalLamps>) : undefined)).catch(() => undefined),
   // 연석 선(그린 찻길 면의 경계, tools/bake.ts 가 굽는다). 없으면 긋지 않는다

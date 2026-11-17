@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DirLanes, RoadLanes } from '../src/data/lanes.ts';
+import type { DirLanes, RoadLanes } from '../src/data/road.ts';
 import { buildCarGraph, laneOff, lanePos } from '../src/sim/graph.ts';
 import { buildIntersections } from '../src/sim/intersection/index.ts';
 import { makeCars } from '../src/sim/cars.ts';

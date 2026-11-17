@@ -1,4 +1,5 @@
-// 차가 달릴 차로 가운데선을 서울시 차선(marks.json, tools/bake.ts 가 굽는다)에서 읽는다.
+// 길 정본 굽기 1단계(설계 문서 51절): 차가 달릴 차로 가운데선을 서울시 차선(자르기 전 땅 위 선)에서 읽는다. 이 읽기는 방향마다 따로이고,
+// 선 없는 방향 채우기·반대 방향 포개짐·이음매 맞추기는 src/sim/lanes.ts resolveLanes 가 판 전체에 건다.
 // 길 조각의 방향마다 2m 간격으로 길과 직각인 단면을 긋고, 단면과 만나는 선 가운데 길과 나란한 것(25° 안)을 본다.
 //  - 왼쪽 경계: 양방향 길은 가운데선에 가장 가까운 중앙선(황색), 한 방향 길은 가운데선 왼쪽에서 가장 가까운 경계선(중앙선·중앙버스전용차선·가장자리선).
 //  - 거기서 오른쪽으로 선을 차례로 짚어, 이웃한 두 선 사이가 2.3~4.8m 면 그 가운데를 차로 가운데로 삼는다(2.3m 보다 좁은 사이는 겹선·잡음,
@@ -10,9 +11,8 @@
 import type { MarkLine } from '../../src/data/marks.ts';
 import { cumLen } from '../../src/poly.ts';
 import type { Road } from '../../src/data/board.ts';
-import type { DirLanes, Run } from '../../src/data/lanes.ts';
-
-export type { DirLanes, Run };
+import type { DirLanes, RoadLanes, Run } from '../../src/data/road.ts';
+import { carRoad } from '../../src/sim/graph.ts';
 
 /** 차로를 가르는 선(측정과 같은 종류): 1 중앙선, 5 버스전용차선(가로), 6 차선, 7 가장자리구역선, 8 진로변경제한선, 9 주차금지, 10 주정차금지, 17 중앙버스전용차선 */
 const USE = new Set([1, 5, 6, 7, 8, 9, 10, 17]);
@@ -356,39 +356,19 @@ function simplify(r: Run): Run {
   return out;
 }
 
-/** 한 방향 차로를 파일 꼴로: [a, b, 구간 수, (s0, s1, n, 단면 수, 버스차로 1·0, (st, off×n, med?)...)...]. 거리는 dm, 옆 거리는 cm */
-export function encodeDir(d: DirLanes): number[] {
-  const out = [Math.round(d.a * 10), Math.round(d.b * 10), d.runs.length];
-  for (const r of d.runs) {
-    out.push(Math.round(r.s0 * 10), Math.round(r.s1 * 10), r.n, r.st.length, r.med.length ? 1 : 0);
-    r.st.forEach((s, i) => {
-      out.push(Math.round(s * 10));
-      for (let l = 0; l < r.n; l++) out.push(Math.round(r.off[i * r.n + l] * 100));
-      if (r.med.length) out.push(Math.round(r.med[i] * 100));
-    });
-  }
-  return out;
-}
-
-/** 차가 다니는 도로 조각(src/sim/graph.ts buildCarGraph 와 같은 조건): 등급 3 이하, 버스가 지나는 등급 5 이하 */
-export const carRoad = (r: { cls: number; bus?: boolean; p: ArrayLike<number> }) => (r.cls <= 3 || (r.bus === true && r.cls <= 5)) && r.p.length >= 6;
-
-/** 도로 조각마다 차로를 읽어 lanes.json 문자열과 굽기 기록을 돌려준다 */
-export function bakeLanes(roads: Road[], lines: MarkLine[]): { json: string; log: string } {
+/** 차가 다니는 도로 조각마다 [진행 방향, 반대 방향] 을 서울시 선으로 읽는다(못 읽은 방향은 null) */
+export function readLanes(roads: Road[], lines: MarkLine[]): { lanes: RoadLanes; dirs: number; read: number } {
   const idx = lineIndex(lines);
   let dirs = 0;
-  let readN = 0;
-  let runs = 0;
-  const out = roads.map((r) => {
-    if (!carRoad(r)) return 0;
-    const cum = cumLen(r.p);
+  let read = 0;
+  const lanes: RoadLanes = roads.map((r) => {
+    if (!carRoad(r)) return null;
     const rev = new Float32Array(r.p.length);
     for (let i = 0; i < r.p.length; i += 3) rev.set(r.p.subarray(i, i + 3), r.p.length - 3 - i);
-    const res = [readDirection(idx, r.p, cum, !r.oneway, r.medBus, r.lf), r.oneway ? null : readDirection(idx, rev, cumLen(rev), true, false, r.lb)];
+    const res: [DirLanes | null, DirLanes | null] = [readDirection(idx, r.p, cumLen(r.p), !r.oneway, r.medBus, r.lf), r.oneway ? null : readDirection(idx, rev, cumLen(rev), true, false, r.lb)];
     dirs += r.oneway ? 1 : 2;
-    for (const d of res) if (d) (readN++, (runs += d.runs.length));
-    return res.some(Boolean) ? res.map((d) => (d ? encodeDir(d) : 0)) : 0;
+    read += res.filter(Boolean).length;
+    return res[0] || res[1] ? res : null;
   });
-  const json = JSON.stringify({ v: 1, r: out });
-  return { json, log: `차로 가운데선: 차가 다니는 방향 ${dirs}개 가운데 서울시 선으로 읽은 것 ${readN}개(차로 수 구간 ${runs}개), lanes.json ${(json.length / 1e6).toFixed(2)}MB` };
+  return { lanes, dirs, read };
 }

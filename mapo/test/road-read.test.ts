@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { MarkLine } from '../src/data/marks.ts';
-import { decodeDir } from '../src/data/lanes.ts';
+import { decodeDir, encodeDir } from '../src/data/road.ts';
 import { cumLen } from '../src/poly.ts';
-import { encodeDir, lineIndex, readDirection } from '../tools/lib/carlanes.ts';
+import { lineIndex, readDirection } from '../tools/road/read.ts';
 
 // 동쪽(+x)으로 가는 100m 길. 진행 방향 오른쪽이 +z 이다
 const line = (k: number, z: number, x0 = 0, x1 = 100): MarkLine => ({ k, k2: 1, p: Float32Array.from([x0, 0, z, x1, 0, z]) });

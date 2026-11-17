@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { decodeBoard } from '../src/data/board.ts';
-import { decodeLanes, type LanesJson } from '../src/data/lanes.ts';
+import { decodeLanes, type RoadJson } from '../src/data/road.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { carriageSections, decodeSurface, isGroundRoad, tunnelReach, type SurfaceJson } from '../src/data/surface.ts';
 import { drawnGround, onGround } from '../tools/lib/groundclip.ts';
@@ -16,7 +16,7 @@ const read = (f: string) => JSON.parse(readFileSync(new URL(`../public/data/${f}
 const board = decodeBoard(read('board.json'));
 const surface = decodeSurface(read('surface.json') as SurfaceJson);
 const marks = decodeMarks(read('marks.json') as MarksJson);
-const lanes = decodeLanes(read('lanes.json') as LanesJson);
+const lanes = decodeLanes((read('road.json') as RoadJson).lanes).dirs;
 const polys = read('surface-polys.json') as { car: number[][]; med: number[][] };
 const reach = tunnelReach(board.roads);
 const dm = (a: number[]) => a.map((v) => v / 10);
@@ -69,15 +69,17 @@ describe('W14 지금 판', () => {
   // 계획 세션 요청(합정역 사거리 지그재그): 차로 가운데선이 갈림 없는 조각 이음매에서 끊기지 않고, 칠한 중앙선을 넘지 않는다.
   // 2026-11-17 판: 이음매 끊김은 판 전체 2곳(독막로 −217,354, 서강로9길 1143,−222, 0.88m), 합정 200m 안 0곳.
   // 중앙선 넘김(4m 마다 짚은 점)은 판 전체 216점(양화로 2958 −1351,946 이 117점), 합정 200m 안 2점(이름 없는 연결로 3051 −520,187~191).
-  // 더 나빠지지 않게 지금 값을 넘지 않는지 본다
+  // 더 나빠지지 않게 지금 값을 넘지 않는지 본다.
+  // 재작업 W23: 길 정본(road.json)이 생긴 뒤로는 서울시 선으로 읽은 방향만이 아니라 차가 실제로 쓰는 모든 방향(이어받거나 나눈 방향 포함)을 잰다.
+  // 그래서 중앙선 넘김은 368점(합정 200m 안 3점)이다. 이음매 끊김은 그대로 2곳
   it('차로 가운데선: 이음매 끊김·중앙선 넘김이 지금보다 늘지 않는다', () => {
     const nearH = (x: number, z: number) => Math.hypot(x + 497, z - 250) < 200;
     const sb = seamBreaks(board.roads, lanes);
     const cc = centerCrossings(board.roads, lanes, marks.lines);
     expect(sb.filter((q) => nearH(q.x, q.z))).toEqual([]);
     expect(sb.length).toBeLessThanOrEqual(2);
-    expect(cc.filter((q) => nearH(q.x, q.z)).length).toBeLessThanOrEqual(2);
-    expect(cc.length).toBeLessThanOrEqual(219); // 중앙선을 매끈하게 다시 표본한 뒤 219
+    expect(cc.filter((q) => nearH(q.x, q.z)).length).toBeLessThanOrEqual(3);
+    expect(cc.length).toBeLessThanOrEqual(368); // 차가 쓰는 모든 방향(W23)
   });
   // 계획 세션 요청: 칸을 찾은 화살표는 바깥 테두리가 양옆 칠한 선 안에 0.2m 넘게 여유를 두고 들어간다(실패 0). 칸을 못 찾은 화살표 수는 메모에
   it('화살표 테두리가 놓인 차선 칸 안에 양쪽 0.2m 여유로 들어간다', () => {

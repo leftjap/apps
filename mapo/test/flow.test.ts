@@ -5,12 +5,12 @@ import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
 import { nearestS } from '../src/poly.ts';
 import { makeFlow } from '../src/render/flow.ts';
 import { buildCarGraph, laneOff } from '../src/sim/graph.ts';
-import { decodeLanes } from '../src/data/lanes.ts';
+import { decodeLanes } from '../src/data/road.ts';
 import { buildIntersections } from '../src/sim/intersection/index.ts';
 
 // 흐름 색 띠는 교차로 상자 밖 구간에만 그린다. 상자 안은 여러 방향 띠가 겹쳐 색이 뭉친다(2026-11-16 도로 감사).
 const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
-const roadLanes = decodeLanes(JSON.parse(readFileSync(new URL('../public/data/lanes.json', import.meta.url), 'utf8')));
+const roadLanes = decodeLanes(JSON.parse(readFileSync(new URL('../public/data/road.json', import.meta.url), 'utf8')).lanes);
 const edges = buildCarGraph(board.roads, roadLanes);
 const jn = buildIntersections(edges);
 

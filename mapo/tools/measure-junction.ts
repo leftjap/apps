@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { decodeBoard, type Board, type Road } from '../src/data/board.ts';
 import { decodeMarks } from '../src/data/marks.ts';
-import { decodeLanes } from '../src/data/lanes.ts';
+import { decodeLanes } from '../src/data/road.ts';
 import { cumLen, pointAt } from '../src/poly.ts';
 import { buildCarGraph, headingNear, leftEdge, MED } from '../src/sim/graph.ts';
 import { GREEN, makeIntersections, RED, STRAIGHT } from '../src/sim/intersection/index.ts';
@@ -139,7 +139,7 @@ export function setup(o: AuditOptions, k: number) {
   const full = decodeBoard(data('board.json'));
   const board = o.keep ? clip(full, o.keep) : full;
   const [name, dow, tod] = CASES[k];
-  const g = buildCarGraph(board.roads, decodeLanes(data('lanes.json')), decodeMarks(data('marks.json')).arrows);
+  const g = buildCarGraph(board.roads, decodeLanes(data('road.json').lanes), decodeMarks(data('marks.json')).arrows);
   const inter = makeIntersections(g, { crosswalks: board.crosswalks, stopLines: board.stopLines, lamps: data('signals.json') });
   const busy = new Uint32Array(board.crosswalks.length);
   const sim = makeCars(g, makeSimProvider(), o.seed ?? 11, 5000, makeBusRoutes(board.buses, g, undefined, board.crosswalks), inter, { list: board.crosswalks, busy });

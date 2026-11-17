@@ -1,9 +1,9 @@
-// 차로 가운데선(lanes.json) 점검(재작업 W14, 계획 세션 요청): 차는 OSM 길 조각 + 차로 가운데 옆 거리 표로 자리를 정하므로
+// 차로 가운데선(road.json 의 lanes) 점검(재작업 W14, 계획 세션 요청): 차는 OSM 길 조각 + 차로 가운데 옆 거리 표로 자리를 정하므로
 // (1) 같은 차로가 갈림 없는 조각 이음매에서 끊기면(앞 조각 끝과 뒤 조각 시작의 옆 거리가 어긋나면) 차가 옆으로 튀고,
 // (2) 차로 가운데가 칠한 황색 중앙선(서울시 차선 001)의 오른쪽이 아니면(중앙선이 차로 오른쪽 3.5m 안에 있으면) 차가 중앙선을 넘어 달린다.
 import type { Road } from '../../src/data/board.ts';
 import type { MarkLine } from '../../src/data/marks.ts';
-import type { DirLanes, RoadLanes } from '../../src/data/lanes.ts';
+import type { DirLanes, RoadLanes } from '../../src/data/road.ts';
 import { cumLen } from '../../src/poly.ts';
 
 const key = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;

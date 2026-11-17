@@ -4,7 +4,7 @@
 // (3.6m 안)로 옮기고 방향도 그 자리 길 방향으로 바로잡는다. 차로를 읽지 못한 길(서울시 선이 없는 골목 등)은 그린 찻길 폭(가장자리)을
 // 그 방향 차로 수로 고르게 나눈 칸 가운데로 옮긴다(그 길에는 칠한 차선이 없어 선과 어긋날 일이 없다).
 import { curbAt, type Road } from '../../src/data/board.ts';
-import type { RoadLanes, Run } from '../../src/data/lanes.ts';
+import type { RoadLanes, Run } from '../../src/data/road.ts';
 import { cumLen } from '../../src/poly.ts';
 
 const PAR = Math.cos((45 * Math.PI) / 180);

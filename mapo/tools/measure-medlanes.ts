@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { decodeBoard } from '../src/data/board.ts';
 import { buildCarGraph, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, MED } from '../src/sim/graph.ts';
-import { decodeLanes } from '../src/data/lanes.ts';
+import { decodeLanes } from '../src/data/road.ts';
 import { busStopPortals, makeBusRoutes } from '../src/sim/buses.ts';
 
 // 구운 판의 중앙버스정류장 승강장(버스가 서는 자리에서 ISLAND_BACK 뒤가 가운데, 길이 ISLAND_L, 폭 ISLAND_W)마다
@@ -12,7 +12,7 @@ const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.
 
 /** 승강장마다 [이름, 가장 깊이 들어온 차로 가운데선의 여유(m, 음수면 테두리 안), 그 차로 종류] */
 export function medianLaneClearance(): [string, number, string][] {
-  const edges = buildCarGraph(board.roads, decodeLanes(JSON.parse(readFileSync(new URL('../public/data/lanes.json', import.meta.url), 'utf8'))));
+  const edges = buildCarGraph(board.roads, decodeLanes(JSON.parse(readFileSync(new URL('../public/data/road.json', import.meta.url), 'utf8')).lanes));
   const routes = makeBusRoutes(board.buses, edges, undefined, board.crosswalks);
   const { portals } = busStopPortals(routes, edges);
   const out: [string, number, string][] = [];

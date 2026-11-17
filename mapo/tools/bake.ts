@@ -21,13 +21,12 @@ import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, 
 import { curbAt, decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts';
 import { roadCorners } from '../src/data/corners.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
-import { bakeLanes } from './lib/carlanes.ts';
+import { bakeRoad } from './road/index.ts';
 import { roadLevels } from './lib/levels.ts';
 import { carSurface, pushTreesOffRoad } from './lib/treeplace.ts';
 import { clipLine, drawnGround, dropOverlaps, onGround, smoothLine } from './lib/groundclip.ts';
 import { widenEdges } from './lib/laneedges.ts';
 import { fitCells, snapArrows } from './lib/arrows.ts';
-import { decodeLanes, type LanesJson } from '../src/data/lanes.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from './lib/bits.ts';
 import { simplifyLoop, traceLoops } from './lib/contour.ts';
 import { exitBody, exitOutline, notchOut } from '../src/data/exitFit.ts';
@@ -2122,7 +2121,7 @@ let marksWholeJson = '';
   };
   const lines: number[][] = [];
   const high: number[][] = [];
-  /** 자르기 전 땅 위 선: 차로 가운데선 굽기(carlanes)는 자르기 전 선을 읽는다 */
+  /** 자르기 전 땅 위 선: 길 정본 굽기(tools/road/)는 자르기 전 선을 읽는다 */
   const whole: number[][] = [];
   let skipped = 0;
   let lifted = 0;
@@ -2210,16 +2209,18 @@ writeFileSync(new URL('../public/data/board.json', import.meta.url), json);
 writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);
 writeFileSync(new URL('../public/data/curbs.json', import.meta.url), curbsJson);
 writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), surfacePolysJson);
-// 차로 가운데선: 차가 다니는 조각마다 서울시 차선으로 방향별 차로를 읽는다(tools/lib/carlanes.ts, tools/lanes.ts 와 같은 함수)
+// 길 정본: 차가 다니는 조각마다 서울시 차선으로 방향별 차로를 읽고 선 없는 방향까지 최종 차로를 정한다(tools/road/, tools/road.ts 와 같은 함수, 설계 문서 51절).
+// 자르기 전 땅 위 선은 tools/road.ts 가 다시 굽을 수 있게 tools/raw/ 에 남긴다
 {
   const bd = decodeBoard(out as unknown as BoardJson);
-  const baked = bakeLanes(bd.roads, decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines);
-  writeFileSync(new URL('../public/data/lanes.json', import.meta.url), baked.json);
+  writeFileSync(new URL('./raw/seoul-lines-ground.json', import.meta.url), marksWholeJson);
+  const baked = bakeRoad(bd.roads, decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines);
+  writeFileSync(new URL('../public/data/road.json', import.meta.url), baked.json);
   console.log(baked.log);
   // 노면 화살표를 그 화살표가 놓인 차선 칸 가운데로, 길 방향에 맞춰 옮긴다(tools/lib/arrows.ts, 재작업 W14). 옮긴 뒤 찻길 면 밖이면 뺀다
   const mj = JSON.parse(marksJson) as MarksJson;
   const ar = decodeMarks(mj).arrows;
-  const sn = snapArrows(bd.roads, decodeLanes(JSON.parse(baked.json) as LanesJson), ar);
+  const sn = snapArrows(bd.roads, baked.reads, ar);
   // 놓인 차선 칸(양옆 칠한 선 사이) 가운데로 옮기고 칸 폭을 붙인다. 화살표 옆 폭은 그리는 쪽이 칸 폭에서 양쪽 0.3m 를 뺀 만큼으로 줄인다(src/data/marks.ts arrowShape)
   const drawnLines = decodeMarks(mj).lines;
   // 두 번 맞춘다: 처음 옮긴 자리에서 다시 보면 다른 칸 경계가 잡히는 곳이 있어, 두 번째 결과가 첫 번째와 0.1m 넘게 다르면 칸을 모르는 것으로 둔다

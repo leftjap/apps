@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tunnelDepth, tunnelReach, TUNNEL_DEPTH } from '../src/data/surface.ts';
-import { decodeDir, type RoadLanes } from '../src/data/lanes.ts';
+import { decodeDir, type RoadLanes } from '../src/data/road.ts';
 import { clipLine, drawnGround, onGround } from '../tools/lib/groundclip.ts';
 import { widenEdges } from '../tools/lib/laneedges.ts';
 import { snapArrows } from '../tools/lib/arrows.ts';
@@ -78,7 +78,7 @@ describe('노면 화살표를 차로 가운데로', () => {
     ],
     { oneway: true, lanes: 2 },
   );
-  const dir = decodeDir([0, 1000, 1, 0, 1000, 2, 2, 0, 0, 160, 480, 1000, 160, 480]);
+  const dir = decodeDir([1, 0, 100, 1, 0, 100, 2, 2, 0, 0, 0, 0, 1.6, 4.8, 100, 1.6, 4.8]);
   const lanes: RoadLanes = [[dir, null]];
   it('가장 가까운 차로 가운데로 옮기고 방향을 길에 맞춘다', () => {
     const s = snapArrows([r], lanes, [{ kind: 7, x: 50, z: 2.6, fx: Math.cos(0.2), fz: Math.sin(0.2) }]);
