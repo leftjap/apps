@@ -161,6 +161,8 @@ const walkers = makePeople(
     cars: cars.cars,
   },
 );
+// 차는 사람 몸에 닿지 않는다: 앞길에 선 사람 앞에 서고, 사람 몸에 새로 닿는 걸음을 하지 않는다(재작업 W22)
+cars.setPeople(walkers.w);
 // 사람은 보는 곳(보는 거리 × 1.2, 150m 부터)을 실제의 EXAG 배까지 채운다
 const peopleR = () => Math.min(2200, Math.max(150, view.viewDist() * 1.2));
 walkers.setFocus(focusAt.x, focusAt.z, peopleR());
@@ -199,6 +201,7 @@ trees.setKinds([...Array.from({ length: board.trees.length / 2 }, () => 5), ...s
 fetch(`${BASE}data/trees.json`).then((r) => r.json() as Promise<{ k: string }>).then((j) => trees.setKinds([...Array.from(j.k, Number), ...svKinds])).catch(() => {});
 const svMatch = matchBuildings(board.buildings, streetview);
 const buildings = makeBuildings(board.buildings, svMatch.byIndex);
+view.setSolids(buildings.list);
 const detail = makeDetail(buildings.list, buildings.looks, [...svMatch.byIndex.keys()], streetview.flatMap((a) => a.props));
 const rain = makeRain(small ? 3500 : 6000);
 // 실시간 돌발정보(사고·공사·통제): 차로를 막거나 구간을 통제하고, 도로 위 점멸등(공사면 라바콘)으로만 보인다

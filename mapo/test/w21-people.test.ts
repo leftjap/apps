@@ -66,6 +66,7 @@ beforeAll(() => {
   ];
   const walkLeft = (xw: number, tod: number) => (inter.S.crossSite[xw] < 0 ? -1 : inter.S.walkLeft(xw, tod));
   const p = makePeople(W, portals, provider, 5, 3000, { buildings: board.buildings, walkLeft, busy, traffic: (xw) => cars.approaching(xw), cars: cars.cars });
+  cars.setPeople(p.w);
   p.setFocus(FOCUS[0], FOCUS[1], 200);
   p.warm(120, start);
   // 생기고 사라져도 되는 자리: 건물 문턱, 출구·피크닉 자리, 정류장 자리(버스 문 앞 6m 안)
@@ -201,10 +202,8 @@ describe('W21 사람 규칙(토 21시, 실제 판·차·신호)', () => {
     expect(R.pairs).toEqual([]);
     expect(R.overlap).toBe(0);
   });
-  // 목표는 0 이다. 2026-11-17 남은 것: 망원나들목(강변북로 밑 보행로, 자료에는 같은 높이) 둘레에서 터널 입구 경사로 내려가는 차(높이 −0.5m)와
-  // 나들목을 지나는 사람이 평면으로 겹친 것(1분에 사람·프레임 6~13). W21b(사람이 흘러가게 바꾼 뒤): 나들목 동쪽 골목(−1388, 98)에서 차와 함께 쓰는
-  // 골목을 걷던 한 사람에게 차가 다가와 16 프레임. 늘지 않는지 본다(메모 mapo-w21-people.md, mapo-w21b-flow.md)
-  it('사람과 차 몸통 겹침(목표 0, 나들목 둘레만 남음)', () => expect(R.carN).toBeLessThanOrEqual(16));
+  // W21b 까지 망원나들목 동쪽 골목(−1388, 98)에서 차와 함께 쓰는 골목을 걷던 사람에게 차가 다가와 겹쳤다(16 프레임). W22 부터 차가 사람 몸에 닿지 않는다
+  it('사람과 차 몸통 겹침 0(망원나들목 포함)', () => expect(R.car).toEqual([]));
   it('찻길 면 안(횡단보도 통로·중앙 승강장 밖) 자리 0', () => expect(R.road).toEqual([]));
   it('한 프레임 1m 넘는 이동 0', () => expect(R.jump).toEqual([]));
   // 목표는 0 이다. 2026-11-17 남은 것: 약 2,900명 가운데 50명 안팎. 집(문·출구)으로 가는 사람이 문 앞 외줄 길에서 마주 오는 사람과 비켜 주며 오간 것,

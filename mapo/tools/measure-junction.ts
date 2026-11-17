@@ -6,6 +6,7 @@
 //  3 cross   게이트를 넘은 때부터 뒤꽁무니가 상자를 나갈 때까지 같은 교차로에 있던 두 차의 경로가 30° 넘게 가로지름
 //    offPath 교차로 안 차 가운데가 제 차로 경로에서 0.5m 넘게 벗어남(중앙 정류장에서 비켜 서는 중앙버스차로 버스 빼고)
 //  4 walk    보행 초록 횡단보도 면에 차 몸통이 걸침
+//    stopXw  신호 횡단보도 면에 몸통이 걸친 채 선 차(속도 0.3m/s 아래, 신호와 상관없이. 재작업 W22)
 //  5 center  상자 밖 양방향 길에서 차 몸 왼쪽이 중앙선(그 방향 찻길 왼쪽 가장자리)을 0.2m 넘게 넘음(중앙버스차로 버스 빼고)
 //  6 side    한 단계(1/30초)에 옆으로 0.3m 넘게 움직임(지난 단계 방향 기준)
 //  7 overlap 몸통 겹친 쌍(배율 1, 높이 2.5m 안, 3단계마다)
@@ -50,6 +51,7 @@ export interface AuditResult {
   cross: number;
   offPath: number;
   walk: number;
+  stopXw: number;
   center: number;
   side: number;
   overlap: number;
@@ -158,7 +160,7 @@ export function audit(o: AuditOptions): AuditResult[] {
     const c = sim.cars;
     const D = sim.debug();
     const counted = (x: number, z: number) => !o.count || CENTERS.some(([px, pz]) => Math.hypot(x - px, z - pz) < o.count!);
-    const res: AuditResult = { case: name, red: 0, lane: 0, cross: 0, offPath: 0, walk: 0, center: 0, side: 0, overlap: 0, speed: 0, cars: 0, passes: 0, where: {} };
+    const res: AuditResult = { case: name, red: 0, lane: 0, cross: 0, offPath: 0, walk: 0, stopXw: 0, center: 0, side: 0, overlap: 0, speed: 0, cars: 0, passes: 0, where: {} };
     const note = (kind: keyof AuditResult, x: number, z: number, info = '') => {
       (res[kind] as number)++;
       const w = (res.where[kind] ??= []);
@@ -282,15 +284,18 @@ export function audit(o: AuditOptions): AuditResult[] {
       for (const u of [...last.keys()]) if (!seen.has(u)) last.delete(u);
       for (const u of [...pass.keys()]) if (!seen.has(u)) pass.delete(u);
       if (!on) continue;
-      // 4 보행 초록 횡단보도
+      // 4 보행 초록 횡단보도, 횡단보도 위에 선 차
       if (st % 3 === 0)
         for (const x of xwSig) {
-          if (S.walkState(x, now.tod) !== GREEN) continue;
+          const green = S.walkState(x, now.tod) === GREEN;
           const cw = board.crosswalks[x];
           if (!counted(cw.x, cw.z)) continue;
           for (let i = 0; i < c.n; i++) {
+            if (!green && D.v[i] >= 0.3) continue;
             if (Math.abs(c.x[i] - cw.x) > cw.half + 8 || Math.abs(c.z[i] - cw.z) > cw.half + 8) continue;
-            if (cw.rings.some((r) => bodyInRing(c.x[i], c.z[i], c.yaw[i], D.size[i] / 2, D.wid[i], r))) note('walk', c.x[i], c.z[i], `xw${x} e${D.edge[i]}`);
+            if (!cw.rings.some((r) => bodyInRing(c.x[i], c.z[i], c.yaw[i], D.size[i] / 2, D.wid[i], r))) continue;
+            if (green) note('walk', c.x[i], c.z[i], `xw${x} e${D.edge[i]} v${D.v[i].toFixed(1)}`);
+            if (D.v[i] < 0.3) note('stopXw', c.x[i], c.z[i], `xw${x} e${D.edge[i]}`);
           }
         }
       // 7 겹침
