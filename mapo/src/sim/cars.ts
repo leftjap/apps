@@ -1153,24 +1153,29 @@ export function makeCars(
       const id = XP[k];
       if (id === undefined) break;
       const sv = Math.min(edges[id].len, Math.max(0, c - XP[k + 2]));
-      side[i] = XS[k / 3];
-      pose(i, id, sv, XP[k + 1], SW);
-      side[i] = sd;
-      for (let gx = cellAt(SW[0] - 8); gx <= cellAt(SW[0] + 8); gx++)
-        for (let gz = cellAt(SW[2] - 8); gz <= cellAt(SW[2] + 8); gz++)
-          for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
-            if (j === i || j >= cars.n || Math.abs(cars.y[j] - SW[1]) > 2.5) continue;
-            if (Math.abs(cars.x[j] - SW[0]) > hl + size[j] / 2 + 2 || Math.abs(cars.z[j] - SW[2]) > hl + size[j] / 2 + 2) continue;
-            const dn = depth(SW[0], SW[2], SW[3], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]);
-            // 지금 이미 그만큼 가까이 나란히 있는 차는 빼고, 더 가까워지는 차만
-            if (dn > -0.1 && dn > depth(cars.x[i], cars.z[i], cars.yaw[i], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]) + 0.01) return x - 1;
-            // 옆으로 옮겨 가는 차는 옮겨 갈 자리(옆 거리 0)에서도 본다(재작업 W29)
-            if (Math.abs(side[j]) > 0.3) {
-              restPose(j, RP);
-              const dr = depth(SW[0], SW[2], SW[3], hl, wid[i], RP[0], RP[2], RP[3], size[j] / 2, wid[j]);
-              if (dr > -0.1 && dr > depth(cars.x[i], cars.z[i], cars.yaw[i], hl, wid[i], RP[0], RP[2], RP[3], size[j] / 2, wid[j]) + 0.01) return x - 1;
+      // 옆 거리가 남은 동안은 차로 가운데로 옮겨 가며 지나는 자리(옆 거리의 2/3·1/3·0)도 그려 본다(재작업 W32):
+      // 이음매에서 넘겨받은 옆 거리 그대로만 그리면 옮겨 가며 지나는 옆 차로에 선 차를 못 봤다(월드컵로 xw430 e49, 옆 거리 5.9m)
+      const sk = XS[k / 3];
+      for (let q = 0, nq = Math.abs(sk) > 0.3 ? 4 : 1; q < nq; q++) {
+        side[i] = sk * (1 - q / 3);
+        pose(i, id, sv, XP[k + 1], SW);
+        side[i] = sd;
+        for (let gx = cellAt(SW[0] - 8); gx <= cellAt(SW[0] + 8); gx++)
+          for (let gz = cellAt(SW[2] - 8); gz <= cellAt(SW[2] + 8); gz++)
+            for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
+              if (j === i || j >= cars.n || Math.abs(cars.y[j] - SW[1]) > 2.5) continue;
+              if (Math.abs(cars.x[j] - SW[0]) > hl + size[j] / 2 + 2 || Math.abs(cars.z[j] - SW[2]) > hl + size[j] / 2 + 2) continue;
+              const dn = depth(SW[0], SW[2], SW[3], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]);
+              // 지금 이미 그만큼 가까이 나란히 있는 차는 빼고, 더 가까워지는 차만
+              if (dn > -0.1 && dn > depth(cars.x[i], cars.z[i], cars.yaw[i], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]) + 0.01) return x - 1;
+              // 옆으로 옮겨 가는 차는 옮겨 갈 자리(옆 거리 0)에서도 본다(재작업 W29)
+              if (Math.abs(side[j]) > 0.3) {
+                restPose(j, RP);
+                const dr = depth(SW[0], SW[2], SW[3], hl, wid[i], RP[0], RP[2], RP[3], size[j] / 2, wid[j]);
+                if (dr > -0.1 && dr > depth(cars.x[i], cars.z[i], cars.yaw[i], hl, wid[i], RP[0], RP[2], RP[3], size[j] / 2, wid[j]) + 0.01) return x - 1;
+              }
             }
-          }
+      }
     }
     return Infinity;
   }
@@ -1795,19 +1800,27 @@ export function makeCars(
       blockBy[i] = -1;
       // 걸음 없이도 그린 자리가 바뀔 수 있다(옆으로 옮겨 가기, 정류장 승강장 비켜 서기). 그 자리도 새로 겹치면 그대로 둔다
       let frozen = false;
+      // 지난 걸음에 곧게 간(아래 straightStep) 차는 차로 방향으로 돌아가는 것이 다른 차 몸에 새로 닿으면 방향을 그대로 둔다(제자리에서 돌며 겹치지 않게, 재작업 W32)
+      const held = holdYaw[i];
       holdYaw[i] = 0;
+      const keep = held === 2 && blockedAt(i, edge[i], s[i], lane[i]) ? 2 : 0;
+      holdYaw[i] = keep;
       // 앞으로 가는 걸음이 뒤에 선 차에 막히면(돌면서 꽁무니가 뒤 차 쪽으로 쓸린다) 이번 걸음은 방향을 그대로 두고 나아간다.
       // 앞선 차가 뒤 차 때문에 서면 뒤 차가 기다리는 너머 자리도 비지 않아 둘이 굳었다(월드컵로 xw430, 재작업 W25)
       if (ds > 0 && blockedNext(i, ds) && hitBy >= 0 && behind(i, hitBy)) {
         holdYaw[i] = 1;
-        if (blockedNext(i, ds)) holdYaw[i] = 0;
+        if (blockedNext(i, ds)) holdYaw[i] = keep;
       }
       // 선 채로(걸음 0, 옆 거리 그대로) 있는 차는 새로 겹칠 일이 없어 보지 않는다(차 계산 시간, 재작업 W29)
       if ((ds > 0 || side[i] !== side0) && blockedNext(i, ds)) {
         // 옆으로 옮겨 가다 걸렸으면 옆 거리를 그대로 두고 앞으로만 가 본다(나란히 걸친 두 차가 서로 막아 굳지 않게, 재작업 W22)
         const sideNew = side[i];
         side[i] = side0;
-        if (!(sideNew !== side0 && ds > 0 && !blockedNext(i, ds))) {
+        if (sideNew !== side0 && ds > 0 && !blockedNext(i, ds)) {
+          // 옆 거리를 그대로 두면 갈 수 있다
+        } else if (ds > 0 && hitBy >= 0 && waitsOn(hitBy, i) && leads(i, hitBy) && straightStep(i, ds, hitBy)) {
+          // 나란한 두 차는 앞선 차가 먼저 간다(곧게 한 걸음)
+        } else {
           side[i] = sideNew;
           ds *= 0.5;
           if (ds === 0 || blockedNext(i, ds)) {
@@ -1943,6 +1956,49 @@ export function makeCars(
           const gapAlong = (PC[0] - cars.x[j]) * hx + (PC[2] - cars.z[j]) * hz - (size[i] + size[j]) / 2;
           if (gapAlong < 2 + 1.3 * v[j]) return false;
         }
+    return true;
+  }
+  // ── 나란한 두 차의 우선순위(재작업 W32) ──
+  // 몸통 겹침 막기는 두 차 모두에게 '새로 다가가지 않기'를 요구해, 나란히 달리는 두 차의 차로 자리가 서로 가까워지는 곳(차로 옆 거리가
+  // 흔들리는 서교로 e119, 버스 모서리가 돌며 옆 차로로 나오는 곳)에서는 두 차가 서로를 막아 둘 다 끝까지 섰다.
+  // 나란한(방향 차 20° 안, 앞뒤로 몸이 겹치는) 두 차가 서로를 기다리면(막은 차가 나 때문에 섰다), 두 방향 가운데선으로 잰 가운데가 앞선 차(같으면 고유 번호가 작은 차)만
+  // 먼저 간다: 그 차는 차로를 따라가는 걸음이 막히면 뒤 차의 진행 방향으로 곧게(방향 그대로, 옆 거리로 차로 자리 차이를 받는다) 한 걸음 간다.
+  // 뒤 차 몸의 옆면과 나란히 움직이므로 뒤 차 쪽으로 다가가지 않고, 뒤 차는 앞 차가 지나갈 때까지 기다린다. 우선순위가 한쪽으로만 정해져 고리가 생기지 않는다
+  /** 차 j 가 차 i 때문에 서 있는가(몸통 겹침으로 막혔거나 i 를 앞차로 따라가며 섰다) */
+  const waitsOn = (j: number, i: number) => blockBy[j] === i || (ahead[j] === i && v[j] < 0.3);
+  /** 차 i 가 나란한 차 j 보다 앞섰는가 */
+  function leads(i: number, j: number): boolean {
+    let dy = Math.abs(cars.yaw[i] - cars.yaw[j]) % (2 * Math.PI);
+    if (dy > Math.PI) dy = 2 * Math.PI - dy;
+    if (dy > (20 * Math.PI) / 180) return false;
+    const hx = Math.cos(cars.yaw[i]) + Math.cos(cars.yaw[j]);
+    const hz = Math.sin(cars.yaw[i]) + Math.sin(cars.yaw[j]);
+    const along = ((cars.x[i] - cars.x[j]) * hx + (cars.z[i] - cars.z[j]) * hz) / Math.hypot(hx, hz);
+    if (Math.abs(along) >= (size[i] + size[j]) / 2) return false;
+    return along > 0 || (along === 0 && cars.uid[i] < cars.uid[j]);
+  }
+  /** 앞선 차 i 가 뒤 차 j 진행 방향으로 곧게 ds 가 본다(교차로 경로 밖, 구간을 넘으면 꺾이지 않은 이음매만. 옆 거리는 이음매에서 걸음과 같은 식으로 넘어간다).
+   *  막히지 않으면 옆 거리·방향을 그대로 두고 참 */
+  function straightStep(i: number, ds: number, j: number): boolean {
+    const e = edges[edge[i]];
+    const sv = s[i] + ds;
+    if (sv >= e.len && (nextE[i] < 0 || X.jEnd[e.id] >= 0 || bent(e, edges[nextE[i]]))) return false;
+    const sd = side[i];
+    side[i] = 0;
+    pose(i, e.id, Math.min(sv, e.len), lane[i], PC);
+    side[i] = sd;
+    if (PC[4] || !Number.isFinite(PC[0])) return false;
+    const tx = cars.x[i] + Math.cos(cars.yaw[j]) * ds;
+    const tz = cars.z[i] + Math.sin(cars.yaw[j]) * ds;
+    const w = (tx - PC[0]) * -Math.sin(PC[3]) + (tz - PC[2]) * Math.cos(PC[3]);
+    const h = holdYaw[i];
+    side[i] = w;
+    holdYaw[i] = 2;
+    if (blockedNext(i, ds)) {
+      side[i] = sd;
+      holdYaw[i] = h;
+      return false;
+    }
     return true;
   }
   /** 차 i 가 ds 나아간 자리(구간이 바뀌면 다음 구간)가 막혔는가 */
