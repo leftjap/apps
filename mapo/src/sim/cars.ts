@@ -114,6 +114,10 @@ export function makeCars(
   const pd = new Float32Array(max);
   const go = new Uint8Array(max);
   const past = new Uint8Array(max);
+  // 게이트 앞에 붙은 횡단보도 묶음(그 묶음과 게이트 사이에 내 몸이 설 자리가 없다)이 있으면 들어갈지를 그 묶음 앞에서 정한다(재작업 W25):
+  // 정하는 자리까지 앞 범퍼 거리(gdist), 그 자리를 넘어 들어가기로 굳혔나(commit, 넘은 뒤로는 게이트를 넘은 차처럼 들어가기를 거두지 않는다)
+  const gdist = new Float32Array(max).fill(Infinity);
+  const commit = new Uint8Array(max);
   // 중앙버스차로 버스가 다음 교차로에서 우회전하려고 중앙버스차로를 나왔다(그 교차로를 지나면 다시 0)
   const offMed = new Uint8Array(max);
   // 측정용: 이번 단계에 따라간 앞 대상(차 번호, 자기 자신이면 서는 자리, 없으면 −1)과 그 까닭
@@ -236,11 +240,13 @@ export function makeCars(
     }
     return -1;
   }
-  /** 지나온 경로를 놓는 자리(경로 위 거리): 경로 끝이 아니라 나간 차로가 같은 교차로 다른 경로에서 떨어지는 자리(clearOut) */
+  /** 지나온 경로를 놓는 자리(경로 위 거리): 경로 끝이 아니라 나간 차로가 같은 교차로 다른 경로·다른 나가는 길과 몸이 닿지 않게 되는 자리(holdOut, 재작업 W25) */
   const holdEnd = (P: LanePath) => {
     const x = P.edges[P.edges.length - 1];
-    return P.end + Math.max(0, X.clearOut(x, P.lanes[P.lanes.length - 1]) - X.rOut[x]);
+    return P.end + Math.max(0, X.holdOut(x, P.lanes[P.lanes.length - 1]) - X.rOut[x]);
   };
+  /** 몸 크기 종류(교차로 몸 닿기 견주기): 0 승용차, 1 버스 */
+  const bigOf = (i: number) => (cars.route[i] >= 0 || size[i] > 5.4 ? 1 : 0);
   /** 경로 id 위 거리 d 의 자리 → out [x, y, z, 방향] */
   function pathPose(id: number, d: number, out: number[]) {
     const p = PS[id].pts;
@@ -275,6 +281,8 @@ export function makeCars(
           offMed[i] = 0;
           go[i] = 0;
           past[i] = 0;
+          commit[i] = 0;
+          gdist[i] = Infinity;
         }
       } else dropPath(i);
     }
@@ -315,6 +323,8 @@ export function makeCars(
     jp[i] = -1;
     go[i] = 0;
     past[i] = 0;
+    commit[i] = 0;
+    gdist[i] = Infinity;
   }
 
   function put(i: number, e: Edge, at: number, ln: number, route = -1) {
@@ -341,10 +351,13 @@ export function makeCars(
     prevE[i] = -1;
     side[i] = 0;
     blockBy[i] = -1;
+    holdYaw[i] = 0;
     jp[i] = -1;
     pp[i] = -1;
     go[i] = 0;
     past[i] = 0;
+    commit[i] = 0;
+    gdist[i] = Infinity;
     offMed[i] = 0;
     if (route < 0) rpos[i] = 0;
     onEdge(i, e);
@@ -372,7 +385,7 @@ export function makeCars(
     if (cars.route[i] >= 0) nBus--;
     const j = --cars.n;
     if (i === j) return;
-    for (const a of [rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, jp, jk, pp, pd, go, past, offMed])
+    for (const a of [rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, holdYaw, jp, jk, pp, pd, go, past, commit, gdist, offMed])
       a[i] = a[j];
   }
 
@@ -449,6 +462,7 @@ export function makeCars(
   const PS1 = [0, 0, 0, 0, 0];
   function locate(i: number) {
     pose(i, edge[i], s[i], lane[i], PO);
+    if (holdYaw[i]) PO[3] = cars.yaw[i];
     cars.x[i] = PO[0];
     cars.y[i] = PO[1];
     cars.z[i] = PO[2];
@@ -498,10 +512,11 @@ export function makeCars(
       d += a.len;
       if (!isApproach(a.id)) continue;
       if (R.start[k] + a.len > stopAt && stopAt > at) return right;
-      if (a.id !== e.id) return lane[i];
       const ex = X.exits.get(a.id) ?? [];
       const x = ex.find((q) => q.edges.every((id, m) => R.edges[k + m] === id));
       if (!x) return right;
+      // 다음 교차로가 뒤 구간이면 지금 구간에서 미리 그쪽 끝 차로로 간다(진입로가 짧아 실선 구간 밖이 없는 곳, 재작업 W25)
+      if (a.id !== e.id) return x.move === LEFT || x.move === UTURN ? 0 : x.move === RIGHT ? right : lane[i];
       const users: number[] = [];
       for (let l = 0; l < a.lanes; l++) if (X.laneMoves(a.id, l) & x.move) users.push(l);
       if (!users.length) return right;
@@ -520,8 +535,16 @@ export function makeCars(
   }
   /** 차로를 바꿀 수 없는 곳: 교차로 앞 실선 구간(게이트 30m 앞 안), 상자·이음매 곡선 위, 경로를 고른 뒤 */
   const solid = (i: number, e: Edge) => (isApproach(e.id) && e.len - X.gate(e.id, lane[i]) - s[i] < 30) || s[i] < X.rOut[e.id] || s[i] > e.len - X.rIn[e.id] || pp[i] >= 0;
+  const SL0 = [0, 0, 0, 0, 0];
+  const SL1 = [0, 0, 0, 0, 0];
   function shiftLane(i: number, e: Edge, tl: number) {
-    side[i] += laneOff(e, lane[i], s[i]) - laneOff(e, tl, s[i]);
+    // 옆 거리는 그린 자리 차이로 넘긴다(중앙버스차로 버스가 승강장 비켜서기를 한 채 나올 때 그 거리만큼 튀던 것, 재작업 W25)
+    pose(i, e.id, s[i], lane[i], SL0);
+    const sd = side[i];
+    side[i] = 0;
+    pose(i, e.id, s[i], tl, SL1);
+    side[i] = (SL0[0] - SL1[0]) * -Math.sin(SL1[3]) + (SL0[2] - SL1[2]) * Math.cos(SL1[3]);
+    if (!Number.isFinite(side[i])) side[i] = sd + laneOff(e, lane[i], s[i]) - laneOff(e, tl, s[i]);
     lane[i] = tl;
     pref[i] = (tl + 0.5) / e.lanes;
     // 고른 경로는 새 차로에서 다시 고른다
@@ -535,6 +558,12 @@ export function makeCars(
   const PC = [0, 0, 0, 0, 0];
   let hitBy = -1;
   const blockBy = new Int32Array(max).fill(-1);
+  /** 이번 걸음은 방향을 바꾸지 않고 나아간다(뒤에 선 차 쪽으로 꽁무니를 돌리지 않게, 재작업 W25) */
+  const holdYaw = new Uint8Array(max);
+  /** 차 j 가 차 i 뒤에 있는가: i 가운데가 j 앞 범퍼보다 j 진행 방향으로 앞이고, j 가 i 진행 방향으로 뒤다 */
+  const behind = (i: number, j: number) =>
+    (cars.x[i] - cars.x[j]) * Math.cos(cars.yaw[j]) + (cars.z[i] - cars.z[j]) * Math.sin(cars.yaw[j]) > size[j] / 2 &&
+    (cars.x[j] - cars.x[i]) * Math.cos(cars.yaw[i]) + (cars.z[j] - cars.z[i]) * Math.sin(cars.yaw[i]) < 0;
   const blockUid = new Int32Array(max);
   function hit(ax: number, az: number, ay: number, al: number, aw: number, bx: number, bz: number, by: number, bl: number, bw: number): boolean {
     const dx = bx - ax;
@@ -621,6 +650,7 @@ export function makeCars(
   /** 차 i 를 (구간 eid, 거리 sv, 차로 ln) 자리에 두면 다른 차 몸통이나 사람 몸과 새로 겹치는가(이미 겹친 차·사람과는 더 다가가지 않으면 괜찮다) */
   function blockedAt(i: number, eid: number, sv: number, ln: number): boolean {
     pose(i, eid, sv, ln, PC);
+    if (holdYaw[i]) PC[3] = cars.yaw[i];
     const hl = size[i] / 2;
     if (peds) {
       const dp = pedDepth(PC[0], PC[2], PC[1], PC[3], hl, wid[i]);
@@ -731,12 +761,14 @@ export function makeCars(
     }
     return lo;
   }
+  /** 새 차를 놓을 때 뒤 차 앞으로 비워 둘 거리(m) */
+  const SPAWN_BACK = 40;
   /** 구간 e 에서 차를 놓을 수 있는 범위: 상자·이음매 곡선 3m 밖, 진입로는 게이트 8m 앞까지, 교차로 안 구간은 없음 */
   const spawnRange = (e: Edge): [number, number] => {
     if (inner(e.id)) return [0, -1];
     let lo = X.rOut[e.id] + 3;
     // 교차로에서 나온 길은 같은 교차로 다른 경로와 닿는 첫머리(clearOut) 너머에만 놓는다
-    if (X.jStart[e.id] >= 0) for (let l = 0; l < e.lanes; l++) lo = Math.max(lo, X.clearOut(e.id, l) + 3);
+    if (X.jStart[e.id] >= 0 && X.jEnd[e.id] !== X.jStart[e.id]) for (let l = 0; l < e.lanes; l++) lo = Math.max(lo, X.relEnd(e.id, l) + 3);
     const hi = isApproach(e.id) || S.midApproach.has(e.id) ? e.len - Math.max(X.gate(e.id, 0), X.gate(e.id, e.lanes - 1)) - 8 : e.len - X.rIn[e.id] - 3;
     return [lo, hi];
   };
@@ -765,8 +797,11 @@ export function makeCars(
     for (const j of lists[id]) {
       if (lane[j] !== ln) continue;
       if (Math.abs(s[j] - at) < (size[j] + 4.6) / 2 + 2 + 1.3 * v[j]) return false;
+      // 뒤 차 앞 SPAWN_BACK 안에는 놓지 않는다: 뒤 차가 횡단보도·교차로에 들어가며 잡아 둔 너머 자리를 새 차가 빼앗지 않게(재작업 W25)
+      if (s[j] < at && at - s[j] < SPAWN_BACK) return false;
       if (s[j] > at && (ah < 0 || s[j] < s[ah])) ah = j;
     }
+    if (at < SPAWN_BACK) for (const b of before[id]) for (const j of lists[b]) if (edges[b].len - s[j] + at < SPAWN_BACK) return false;
     const i = cars.n;
     put(i, e, at, ln);
     if (ah >= 0 && s[ah] - at < 60) v[i] = Math.min(v[i], v[ah]);
@@ -866,9 +901,7 @@ export function makeCars(
     const xl = P.lanes[P.lanes.length - 1];
     let need = size[i] + 2.5;
     for (const h of held[P.j]) if (h !== i && jp[h] >= 0 && PS[jp[h]].edges[PS[jp[h]].edges.length - 1] === x.id && PS[jp[h]].lanes[PS[jp[h]].lanes.length - 1] === xl) need += size[h] + 2.5;
-    let clear = X.clearOut(x.id, xl);
-    const q = stops.xwOf(x.id, xl === MED ? 0 : xl);
-    for (let m = 0; m < q.length; m += 4) if (q[m] < X.rOut[x.id] + 20) clear = Math.max(clear, q[m + 1] + 1.5);
+    const clear = X.relEnd(x.id, xl);
     let cap = Infinity;
     if (isApproach(x.id) || S.midApproach.has(x.id)) {
       const line = x.len - X.gate(x.id, xl === MED ? 0 : xl);
@@ -887,23 +920,28 @@ export function makeCars(
     }
     return cap >= need;
   }
+  /** 고른 경로가 지금 차로에서 할 수 없는 움직임인가(노선을 지키느라 맞는 차로로 옮기지 못한 버스) */
+  const wrongLane = (i: number) => jp[i] >= 0 && !(X.laneMoves(PS[jp[i]].a, PS[jp[i]].lane) & PS[jp[i]].move);
   /** 길 우선순위(작을수록 큰길) */
   const rankOf = (e: Edge) => e.cls * 10 - e.vol;
   /** 차 i 가 지금 게이트를 넘어 교차로에 들어가도 되는가 */
   const mayGo = (i: number, dist: number, tod: number) => gateWhy(i, dist, tod) === 0;
-  /** 들어가면 안 되는 까닭: 0 들어간다, 1 빨간불, 2 노란불, 3 부딪는 경로의 차가 교차로를 잡음, 4 나갈 차로에 자리 없음, 5 우선 차 양보, 6 횡단보도 보행 초록 전에 못 빠져나감 */
+  /** 들어가면 안 되는 까닭: 0 들어간다, 1 빨간불, 2 노란불, 3 부딪는 경로의 차가 교차로를 잡음, 4 나갈 차로에 자리 없음, 5 우선 차 양보, 6 횡단보도 보행 초록 전에 못 빠져나감, 7 차로가 그 움직임을 못 함 */
   function gateWhy(i: number, dist: number, tod: number): number {
     const P = PS[jp[i]];
+    // 차로가 그 움직임을 못 하면(맞는 차로로 옮기지 못한 버스) 옮길 때까지 들어가지 않는다(재작업 W25)
+    if (wrongLane(i)) return 7;
     const sig = S.approach.has(P.a);
     if (sig) {
       const st = S.state(P.a, P.move, tod);
       if (st === RED) return 1;
       if (st === YELLOW) return go[i] === 1 && dist < (v[i] * v[i]) / (2 * B_AMBER) + 0.3 ? 0 : 2;
     }
+    // 교차로를 잡은 차 가운데 몸이 닿을 수 있는 경로의 차가 있으면 기다린다(재작업 W25: 경로 가운데선 거리가 아니라 두 차 몸 자리로 견준다)
     for (const h of held[P.j]) {
       if (h === i) continue;
       const hp = jp[h] >= 0 && PS[jp[h]].j === P.j ? jp[h] : pp[h];
-      if (hp >= 0 && X.conflict(P.id, hp)) return 3;
+      if (hp >= 0 && X.touch(P.id, hp, bigOf(i), bigOf(h))) return 3;
     }
     if (!exitRoom(i, P, tod)) return 4;
     // 양보: 신호 교차로의 양보 움직임, 신호 없는 교차로의 작은 길
@@ -932,7 +970,7 @@ export function makeCars(
     let a = -1;
     let b = -1;
     for (let g = 0; g < XG.length; g += 4)
-      if (bound(i, XG[g])) {
+      if (bound(i, XG[g], XG[g + 1])) {
         if (a < 0) (a = XG[g + 2]), (c0 = XG[g]);
         c1 = XG[g + 1];
         b = XG[g + 3];
@@ -1110,7 +1148,15 @@ export function makeCars(
     XA.load = load;
   }
   /** 묶음 시작 c0 가 지금 경로 게이트에서 함께 정할 묶음인가: 게이트 뒤이고 그 앞에 서면 뒤꽁무니가 상자 끝을 넘지 못한다 */
-  const bound = (i: number, c0: number) => c0 >= XA.gate - 0.5 && c0 - 1.6 - size[i] < XA.boxEnd + 0.5;
+  const bound = (i: number, c0: number, c1: number) => (c0 >= XA.gate - 0.5 && c0 - 1.6 - size[i] < XA.boxEnd + 0.5) || glued(i, c0, c1);
+  /** 게이트 앞에 붙은 묶음: 게이트보다 앞에서 시작하고, 그 묶음 끝 너머 1.5m 와 게이트 사이에 내 몸이 다 들어가지 않는다(게이트에 서면 몸이 그 묶음에 걸친다, 재작업 W25) */
+  const glued = (i: number, c0: number, c1: number) => c0 < XA.gate - 0.5 && XA.gate - size[i] < c1 + 1.5;
+  /** 들어갈지를 정하는 자리까지 앞 범퍼 거리: 게이트(dist), 게이트 앞에 붙은 묶음이 있으면 그 1.6m 앞(재작업 W25) */
+  function entryDist(i: number, dist: number): number {
+    xwAhead(i, Math.max(60, dist + 10));
+    for (let g = 0; g < XG.length; g += 4) if (XG[g] > 0.3 && glued(i, XG[g], XG[g + 1])) return Math.min(dist, XG[g] - 1.6);
+    return dist;
+  }
   /** 게이트(앞 범퍼에서 d)가 내가 닿을 때까지 초록으로 남는가(신호 없는 진입로는 연 것으로 본다) */
   function gateOpen(i: number, d: number, a: number, tod: number): boolean {
     if (!S.approach.has(a)) return true;
@@ -1249,7 +1295,7 @@ export function makeCars(
       }
       if (jp[i] >= 0) {
         const j = PS[jp[i]].j;
-        if (go[i] && (past[i] || gateDist(i) < Math.max(3, v[i] * 3))) held[j].push(i);
+        if (go[i] && (past[i] || commit[i] || Math.min(gateDist(i), gdist[i]) < Math.max(3, v[i] * 3))) held[j].push(i);
         else if (gateDist(i) < 60) coming[j].push(i);
       }
     }
@@ -1397,7 +1443,7 @@ export function makeCars(
           // 넘은 게이트나 지나온 경로의 게이트에서 정한 묶음(그 앞에 서면 뒤꽁무니가 상자 끝을 넘지 못한다)
           if (c0 - 1.6 - size[i] < (past[i] ? Math.max(XA.boxEnd, XA.ppEnd) : XA.ppEnd) + 0.5) continue;
           // 게이트에서 함께 정할 묶음
-          if (jp[i] >= 0 && !past[i] && bound(i, c0)) break;
+          if (jp[i] >= 0 && !past[i] && bound(i, c0, XG[g + 1])) break;
           if (!clearOk(i, c0, XG[g + 1], XG[g + 2], XG[g + 3], now.tod)) {
             let stopD = c0 - 1.6;
             for (let k = 0; k < XT.length; k += 3) if (XT[k] > 0 && XT[k] <= c0 && XT[k] > c0 - 6) stopD = Math.min(stopD, XT[k] - 0.3);
@@ -1417,16 +1463,20 @@ export function makeCars(
         if (dist < 0) past[i] = go[i] ? 1 : past[i];
         if (!past[i]) {
           const horizon = (v[i] * v[i]) / (2 * 2) + 25;
-          if (dist < horizon) {
-            const ok = mayGo(i, dist, now.tod);
-            const canStop = dist > (v[i] * v[i]) / (2 * B_HARD) + 0.2;
+          // 정하는 자리: 게이트, 게이트 앞에 붙은 횡단보도 묶음이 있으면 그 앞. 들어가기로 하고 그 자리를 넘으면 굳힌다
+          const de = commit[i] ? dist : entryDist(i, dist);
+          gdist[i] = de;
+          if (go[i] && de < 0) commit[i] = 1;
+          if (de < horizon || commit[i]) {
+            const ok = commit[i] ? true : mayGo(i, de, now.tod);
+            const canStop = !commit[i] && de > (v[i] * v[i]) / (2 * B_HARD) + 0.2;
             if (ok) go[i] = 1;
             else if (go[i] && canStop) go[i] = 0;
-            if (go[i] && !past[i] && gateDist(i) < Math.max(3, v[i] * 3) && !held[PS[jp[i]].j].includes(i)) held[PS[jp[i]].j].push(i);
+            if (go[i] && !past[i] && (commit[i] || de < Math.max(3, v[i] * 3)) && !held[PS[jp[i]].j].includes(i)) held[PS[jp[i]].j].push(i);
             if (!go[i]) {
               if (v[i] < 0.5) waitT[i] += dt;
-              if (dist + 1.7 < gap) {
-                gap = dist + 1.7;
+              if (de + 1.7 < gap) {
+                gap = de + 1.7;
                 dv = v[i];
                 front = i;
                 why = 5;
@@ -1530,7 +1580,8 @@ export function makeCars(
         if (toGate > 30 && toGate < 45 && X.laneMoves(e.id, e.bus) & RIGHT && laneGap(i, e, e.bus)) shiftLane(i, e, e.bus);
       }
       // 버스: 다음 교차로 움직임을 허용하는 차로로 실선 구간 앞에서 한 칸씩 옮긴다
-      if (r >= 0 && !solid(i, e)) {
+      // 지금 차로가 경로 움직임을 못 하는 버스는 실선 구간에서도 게이트 앞까지는 옮긴다(재작업 W25, 차선대로 회전)
+      if (r >= 0 && (!solid(i, e) || (wrongLane(i) && pp[i] < 0 && s[i] < e.len - X.rIn[e.id] - size[i] / 2))) {
         const w = busWant(i, e);
         if (w >= 0 && w !== lane[i] && Math.abs(side[i]) < 0.3) {
           const tl = lane[i] === MED ? 0 : lane[i] + Math.sign(w - lane[i]);
@@ -1554,6 +1605,13 @@ export function makeCars(
       blockBy[i] = -1;
       // 걸음 없이도 그린 자리가 바뀔 수 있다(옆으로 옮겨 가기, 정류장 승강장 비켜 서기). 그 자리도 새로 겹치면 그대로 둔다
       let frozen = false;
+      holdYaw[i] = 0;
+      // 앞으로 가는 걸음이 뒤에 선 차에 막히면(돌면서 꽁무니가 뒤 차 쪽으로 쓸린다) 이번 걸음은 방향을 그대로 두고 나아간다.
+      // 앞선 차가 뒤 차 때문에 서면 뒤 차가 기다리는 너머 자리도 비지 않아 둘이 굳었다(월드컵로 xw430, 재작업 W25)
+      if (ds > 0 && blockedNext(i, ds) && hitBy >= 0 && behind(i, hitBy)) {
+        holdYaw[i] = 1;
+        if (blockedNext(i, ds)) holdYaw[i] = 0;
+      }
       if (blockedNext(i, ds)) {
         // 옆으로 옮겨 가다 걸렸으면 옆 거리를 그대로 두고 앞으로만 가 본다(나란히 걸친 두 차가 서로 막아 굳지 않게, 재작업 W22)
         const sideNew = side[i];
@@ -1798,7 +1856,7 @@ export function makeCars(
     nextStop: (i: number) => (cars.route[i] >= 0 ? routes[cars.route[i]].stopNames[stopK[i]] ?? '' : ''),
     /** 측정용 읽기 전용 값: 구간·거리·속도·차로·다음 구간·길이·반폭, 고른 경로·지나온 경로·들어가기로 했나, 따라간 앞 대상과 까닭
      *  (12 몸통 겹침으로 막은 차, 1 같은 차로 앞차, 2 다음 구간 앞차, 3 차로 합침, 4 다른 구간 차, 5 게이트·신호, 6 다음 구간 신호, 7 횡단보도 사람, 9 돌발 서행, 10 정류장, 11 횡단보도 지키기, 13 앞길 사람) */
-    debug: () => ({ edge, s, v, lane, nextE, size, wid, jp, jk, pp, go, past, ahead, aheadWhy, blockBy, dwell, stopK, inter: I, gateWhy: (i: number, tod: number) => (jp[i] >= 0 ? gateWhy(i, gateDist(i), tod) : -1), xwAhead: (i: number) => (xwAhead(i, 60), { XG: [...XG], XW: [...XW], XT: [...XT], ...XA }) }),
+    debug: () => ({ edge, s, v, lane, nextE, size, wid, jp, jk, pp, go, past, ahead, aheadWhy, blockBy, dwell, stopK, side, inter: I, gateWhy: (i: number, tod: number) => (jp[i] >= 0 ? gateWhy(i, gateDist(i), tod) : -1), xwAhead: (i: number) => (xwAhead(i, 60), { XG: [...XG], XW: [...XW], XT: [...XT], ...XA }) }),
     meanSpeed: () => (cars.n ? v.subarray(0, cars.n).reduce((a, b) => a + b, 0) / cars.n : 0),
   };
 }

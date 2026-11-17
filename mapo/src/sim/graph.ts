@@ -64,6 +64,8 @@ export interface Edge {
   bus: number;
   /** 중앙버스차로: 0 이면 없고, 아니면 일반 차로 왼쪽 가장자리에서 버스차로 가운데까지 거리(m, 구간 가운데 자리). 한 방향 큰길 왼쪽 분리대 안이다 */
   med: number;
+  /** 진행 방향을 이 값으로 고정한다(3m 보다 짧은 꺾인 토막, fixShortKinks) */
+  fixH?: number;
 }
 
 const H0 = [0, 0, 0];
@@ -72,6 +74,7 @@ const H1 = [0, 0, 0];
  *  off 를 주면(그 자리 차로가 가운데선에서 떨어진 거리) 앞뒤 거리를 그 절반(최대 8m)까지 늘린다: 서울시 선으로 읽은 차로는 OSM 가운데선에서 10m 넘게 떨어진 곳이 있어,
  *  꼭짓점에서 방향이 1.5m 안에 바뀌면 옆으로 옮긴 차 자리가 옆 거리에 비례해 크게 휘둘린다 */
 export function headingNear(e: Edge, s: number, off = 0): number {
+  if (e.fixH !== undefined) return e.fixH;
   const d = Math.min(Math.max(1.5, Math.min(8, Math.abs(off) / 2)), e.len / 2);
   pointAt(e.p, e.cum, Math.max(0, s - d), H0);
   pointAt(e.p, e.cum, Math.min(e.len, s + d), H1);
@@ -288,6 +291,7 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes | CanonLanes, arr
   const canon = isCanon(lanes) ? lanes : resolveLanes(roads, lanes);
   const edges = makeEdges(roads, canon.dirs);
   const prev = linkEdges(edges);
+  fixShortKinks(edges, prev);
   sinkTunnels(edges, prev, roads);
 // 노면 화살표: 서울시 선으로 차로를 읽은 구간에서 차로가 끝나는 자리 앞 45m 안, 그 차로 가운데 반폭 안에 같은 방향으로 놓인 화살표
   const ag = new Map<number, number[]>();
@@ -322,6 +326,24 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes | CanonLanes, arr
   }
   setLaneMaps(edges, prev);
   return edges;
+}
+
+/** 3m 보다 짧은 꺾인 토막(OSM 의 꺾인 조각, 월드컵로 xw420 남쪽 1.3m 29°)이 갈림 없이 앞뒤 구간 사이에 끼어 있고 앞뒤는 거의 곧게(15° 안) 이어지면,
+ *  그 토막의 진행 방향을 앞 구간 끝 방향과 뒤 구간 시작 방향의 가운데로 고정한다(재작업 W25). 토막 제 방향으로 차로 자리를 잡으면 옆 거리 10m 차로가 8m 옮겨져
+ *  차가 이음매 곡선으로 한 바퀴 돌며 옆 차로 차와 서로 막았다 */
+export function fixShortKinks(edges: Edge[], prev: number[][]) {
+  const wrap = (a: number) => Math.abs(((a + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+  for (const e of edges) {
+    if (e.len >= 3 || prev[e.id].length !== 1 || e.next.length !== 1) continue;
+    const a = edges[prev[e.id][0]];
+    const c = edges[e.next[0]];
+    if (a.next.length !== 1 || prev[c.id].length !== 1 || a.len < 3 || c.len < 3) continue;
+    const ha = headingNear(a, a.len);
+    const hc = headingNear(c, 0);
+    const he = headingNear(e, e.len / 2);
+    if (wrap(hc - ha) > (15 * Math.PI) / 180 || (wrap(he - ha) <= (15 * Math.PI) / 180 && wrap(hc - he) <= (15 * Math.PI) / 180)) continue;
+    e.fixH = Math.atan2(Math.sin(ha) + Math.sin(hc), Math.cos(ha) + Math.cos(hc));
+  }
 }
 
 /** 차로 잇기: 갈림 없는 이음매(들어온 구간의 다음이 하나, 다음 구간에 들어오는 구간이 하나)는 차로 자리로, 교차로는 비율대로

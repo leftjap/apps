@@ -98,8 +98,16 @@ export interface Intersections {
   /** 차로 허용과 상관없이 만든 경로(노선이 정해진 버스가 맞는 차로로 옮기지 못했을 때만) */
   pathAny(a: number, l: number, k: number): LanePath | undefined;
   paths: LanePath[];
-  /** 두 경로가 부딪는가(같은 차로에서 출발해 갈라지는 앞부분은 빼고, 같은 차로로 모이면 부딪는다) */
+  /** 두 경로가 부딪는가(같은 차로에서 출발해 갈라지는 앞부분은 빼고, 같은 차로로 모이면 부딪는다). 신호 현시·양보를 정할 때 쓴다 */
   conflict(p: number, q: number): boolean;
+  /** 두 경로를 지나는 두 차 몸(bp·bq: 0 승용차, 1 버스)이 어디서든 닿을 수 있는가(재작업 W25). 진입로 게이트에서 나가는 길 holdOut 까지의 몸 자리를 모두 견준다.
+   *  이것이 거짓인 두 경로의 차는 교차로를 함께 잡아도 몸이 닿지 않는다(같은 경로는 같은 차로 앞뒤 차라 거짓) */
+  touch(p: number, q: number, bp: number, bq: number): boolean;
+  /** 나가는 길 x 의 차로 l 에서 교차로 몫이 끝나는 자리(구간 시작에서 m, 재작업 W25): holdOut 과 그 차로가 지나는 횡단보도(상자 끝 20m 안)를 지난 자리.
+   *  나갈 자리는 여기부터 잰다 */
+  relEnd(x: number, l: number): number;
+  /** 나가는 길 x 의 차로 l 에서 같은 교차로 다른 경로·다른 나가는 길 차로와 몸이 닿지 않게 되는 자리(relEnd 에서 횡단보도를 뺀 것). 잡기는 뒤꽁무니가 여기를 지날 때 놓는다 */
+  holdOut(x: number, l: number): number;
   /** 진입로 a 에서 신호·표지가 금하는 움직임(ban)과, 유턴 표지가 있어 유턴 화살표가 없어도 맨 왼쪽 차로에서 유턴할 수 있는가(신호를 정할 때 경로를 만들기 전에 정한다) */
   setRules(a: number, ban: number, uturnSign: boolean): void;
   /** 진입로 a 에서 나가는 길 x 로의 움직임 */
@@ -701,5 +709,150 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return c;
   }
 
-  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, moveOf, curve, stops };
+  // ── 몸이 닿는 경로(재작업 W25) ──
+  // 교차로를 함께 잡을 수 있는 두 경로는 몸이 어디서도 닿지 않아야 한다. 경로마다 '몸 자리 줄'(가운데 자리와 방향, 0.5m 간격)을 만든다:
+  // 진입로에서 앞 범퍼가 게이트에 선 버스의 가운데(게이트 − 6.1m)부터 상자 가장자리까지, 경로 점, 나가는 길 차로에서 holdOut + 6.1m 까지(뒤꽁무니가 holdOut 을 지날 때까지).
+  const BODY = [
+    [2.65, 1.0],
+    [6.1, 1.25],
+  ];
+  /** 두 몸 사이 여유(m) */
+  const GAP = 0.15;
+  const relCache = new Map<number, number>();
+  /** 나가는 길 차로 (x, l)과 같은 교차로의 다른 나가는 길(다른 구간)의 차로가 승용차 몸으로 닿는 마지막 자리(구간 시작에서 m, 상자 끝 40m 안). 없으면 −1 */
+  function converge(x: number, l: number): number {
+    const j = jStart[x];
+    const e = edges[x];
+    const lanesOf = (o: Edge) => [...Array.from({ length: o.lanes }, (_, q) => q), ...(o.med ? [MED] : [])];
+    const others: [number, number][] = [];
+    const seenX = new Set<number>();
+    for (const b of list[j].into)
+      for (const ex of exits.get(b) ?? []) {
+        const o = ex.edges[ex.edges.length - 1];
+        if (seenX.has(o)) continue;
+        seenX.add(o);
+        // 같은 나가는 길의 다른 차로는 나란한 이웃 차로라 넣지 않는다(차로 지키기가 맡는다)
+        if (o !== x) for (const q of lanesOf(edges[o])) others.push([o, q]);
+      }
+    const pts: number[] = [];
+    for (const [o, q] of others) {
+      const eo = edges[o];
+      for (let sv = rOut[o]; sv < Math.min(eo.len, rOut[o] + 40); sv += 1) {
+        const v = lp(eo, sv, q);
+        pts.push(v[0], v[1], v[2]);
+      }
+    }
+    const lim = 2 * BODY[0][1] + 2 * GAP;
+    let last = -1;
+    for (let sv = rOut[x]; sv < Math.min(e.len, rOut[x] + 40); sv += 0.5) {
+      const v = lp(e, sv, l);
+      for (let k = 0; k < pts.length; k += 3) {
+        const dx = pts[k] - v[0];
+        if (dx > lim || dx < -lim || Math.abs(pts[k + 1] - v[1]) > 2.5) continue;
+        if (Math.hypot(dx, pts[k + 2] - v[2]) < lim) {
+          last = sv;
+          break;
+        }
+      }
+    }
+    return last;
+  }
+  const holdCache = new Map<number, number>();
+  function holdOut(x: number, l: number): number {
+    const key = x * 8 + (l === MED ? 7 : l);
+    const hit = holdCache.get(key);
+    if (hit !== undefined) return hit;
+    let c = clearOut(x, l);
+    if (jStart[x] >= 0 && jEnd[x] !== jStart[x]) {
+      const cv = converge(x, l);
+      if (cv >= 0) c = Math.max(c, cv + 1);
+    }
+    c = Math.min(c, edges[x].len);
+    holdCache.set(key, c);
+    return c;
+  }
+  function relEnd(x: number, l: number): number {
+    const key = x * 8 + (l === MED ? 7 : l);
+    const hit = relCache.get(key);
+    if (hit !== undefined) return hit;
+    let c = holdOut(x, l);
+    const q = stops.xwOf(x, l === MED ? 0 : l);
+    for (let m = 0; m < q.length; m += 4) if (q[m] < rOut[x] + 20) c = Math.max(c, q[m + 1] + 1.5);
+    c = Math.min(c, edges[x].len);
+    relCache.set(key, c);
+    return c;
+  }
+  const trackCache = new Map<number, Float32Array>();
+  function track(id: number): Float32Array {
+    const hit = trackCache.get(id);
+    if (hit) return hit;
+    const P = paths[id];
+    const a = edges[P.a];
+    const x = edges[P.edges[P.edges.length - 1]];
+    const lo = P.lanes[P.lanes.length - 1];
+    const out: number[] = [];
+    for (let sv = Math.max(0, a.len - gate(P.a, P.lane) - BODY[1][0]); sv < a.len - rIn[P.a]; sv += STEP) out.push(...lp(a, sv, P.lane));
+    for (let i = 0; i < P.pts.length; i += 4) out.push(P.pts[i], P.pts[i + 1], P.pts[i + 2], P.pts[i + 3]);
+    const stop = Math.min(x.len, holdOut(x.id, lo) + BODY[1][0]);
+    for (let sv = rOut[x.id] + STEP; sv <= stop; sv += STEP) out.push(...lp(x, sv, lo));
+    const t = Float32Array.from(out);
+    trackCache.set(id, t);
+    return t;
+  }
+  /** 두 회전 사각형(가운데, 방향, 반길이, 반폭)이 여유 GAP 안으로 닿는가 */
+  function obb(ax: number, az: number, ay: number, al: number, aw: number, bx: number, bz: number, by: number, bl: number, bw: number): boolean {
+    const dx = bx - ax;
+    const dz = bz - az;
+    for (let k = 0; k < 4; k++) {
+      const t = k === 0 ? ay : k === 1 ? ay + Math.PI / 2 : k === 2 ? by : by + Math.PI / 2;
+      const ra = Math.abs(al * Math.cos(ay - t)) + Math.abs(aw * Math.sin(ay - t));
+      const rb = Math.abs(bl * Math.cos(by - t)) + Math.abs(bw * Math.sin(by - t));
+      if (Math.abs(dx * Math.cos(t) + dz * Math.sin(t)) >= ra + rb + GAP) return false;
+    }
+    return true;
+  }
+  const touchCache = new Map<string, boolean>();
+  function touch(p: number, q: number, bp: number, bq: number): boolean {
+    if (p === q) return false;
+    if (p > q) [p, q, bp, bq] = [q, p, bq, bp];
+    const key = `${p},${q},${bp},${bq}`;
+    const hit = touchCache.get(key);
+    if (hit !== undefined) return hit;
+    const A = paths[p];
+    const B = paths[q];
+    let c = false;
+    if (A.j === B.j) {
+      const xa = A.edges[A.edges.length - 1];
+      const xb = B.edges[B.edges.length - 1];
+      // 같은 나가는 차로로 모이는 두 경로는 늘 부딪는다
+      if (xa === xb && A.lanes[A.lanes.length - 1] === B.lanes[B.lanes.length - 1]) c = true;
+      else {
+        const ta = track(p);
+        const tb = track(q);
+        const [al, aw] = BODY[bp];
+        const [bl, bw] = BODY[bq];
+        const reach = al + bl + aw + bw + GAP;
+        // 같은 차로에서 출발한 두 경로는 함께 지나는 앞부분(0.3m 안)을 빼고 본다(앞뒤로 줄 서 가는 차는 같은 차로 따라가기가 맡는다)
+        let i0 = 0;
+        if (A.a === B.a && A.lane === B.lane) while (i0 < Math.min(ta.length, tb.length) && Math.hypot(ta[i0] - tb[i0], ta[i0 + 2] - tb[i0 + 2]) < 0.3) i0 += 4;
+        // 갈라진 뒤에도 앞부분 자리의 몸은 견주지 않는다(갈라지는 자리에서 앞차 꽁무니와 뒤차 앞머리는 따라가기가 띄운다)
+        const skip = A.a === B.a && A.lane === B.lane ? i0 : 0;
+        for (let i = skip; !c && i < ta.length; i += 4)
+          for (let k = skip; k < tb.length; k += 4) {
+            const dx = ta[i] - tb[k];
+            if (dx > reach || dx < -reach) continue;
+            const dz = ta[i + 2] - tb[k + 2];
+            if (dz > reach || dz < -reach || Math.abs(ta[i + 1] - tb[k + 1]) > 2.5) continue;
+            if (obb(ta[i], ta[i + 2], ta[i + 3], al, aw, tb[k], tb[k + 2], tb[k + 3], bl, bw)) {
+              c = true;
+              break;
+            }
+          }
+      }
+    }
+    touchCache.set(key, c);
+    return c;
+  }
+
+  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, relEnd, holdOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, touch, moveOf, curve, stops };
 }
