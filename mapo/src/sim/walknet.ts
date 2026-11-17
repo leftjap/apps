@@ -80,6 +80,8 @@ export interface WalkGraph {
   doors: { b: number; a: number; k: number; t: number; x: number; z: number }[];
   /** (W28) 걷는 면 자료(walk.json a). 사람 모듈이 풀어 쓴다(src/sim/people/area.ts) */
   area?: number[];
+  /** (W31 S2) 갈래 영역 자료(walk.json j). 사람 모듈이 풀어 쓴다(src/sim/people/junction.ts) */
+  junc?: number[];
   /** 가장 가까운 노드. alley 가 참이면 골목·보행로에 닿은 노드만 본다 */
   nearest(x: number, z: number, alley?: boolean): number;
   /** 가장 가까운 선(잇는 선 빼고, 200m 안): [노드 a, 이웃 번호 k, a 에서 선을 따라간 거리, 떨어진 거리]. 없으면 null.
@@ -210,6 +212,7 @@ export function decodeWalk(j: WalkJson): WalkGraph {
     edgeAt,
     doors,
     area: j.a,
+    junc: j.j,
     nearest(px, pz, alley = false) {
       const cx = Math.floor(px / CELL);
       const cz = Math.floor(pz / CELL);

@@ -12,7 +12,7 @@ delete walk.w;
 delete walk.j;
 const base = JSON.stringify(walk).length;
 walk.w = edgeWidths(walk);
-walk.j = junctions(walk);
+walk.j = junctions(walk, walk.w);
 let areas = 0;
 let nodes = 0;
 for (let k = 0; k < walk.j.length; k += 2 + walk.j[k]) (areas++, (nodes += walk.j[k]));

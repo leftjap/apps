@@ -17,6 +17,8 @@ import { majorGround } from '../tools/lib/walkfix.ts';
 // 2분 미리 돌린 뒤 60초를 1/30초로 돌린다. w31-people.test.ts 가 쓰고, 측정 도구(mapo/tmp/…)도 이 함수를 그대로 부른다.
 //  - 0 규칙: 출구·정류장·문 밖에서 생기거나 사라짐, 몸통 겹침(가운데 PASS_D 안), 찻길 면 안(횡단보도 통로·중앙 승강장 밖), 한 프레임 1m 넘는 이동,
 //    되돌아감(목적지가 있는 사람의 남은 길이 30초 안에 10m 넘게 늘어남. 지금은 돌아다니는 사람이 거의 전부라 목적지가 있는 사람만 센다)
+//    W41: 남은 길은 지금 선 위 앞쪽 문·정류장까지를 센다(debugOf left). 선 끝 + 선 끝에서 목적지까지로만 재면, 길 고르기가 문이 붙은 선으로 갈아탈 때
+//    문 몇 m 앞인데도 선 끝 너머 길(최대 100m)을 더해 되돌아감으로 잡혔다(연트럴 씨앗 11: 1610번 8.6m → 103.7m, 다음 표본에 문으로 들어감)
 //  - 맴돌기: 1초마다 자리를 적어 30초 창 안 모든 자리가 첫 자리에서 10m 안인데 15m 넘게 걸은 사람(w26 과 같은 정의)
 //  - 10초 흐름: 10초마다 보는 곳 안 걷는 사람(신호 대기·정류장 줄·들어가는 사람·머무는 사람 빼고)을 적어 10초 뒤 3m 넘게 나아간 몫
 //  - 20초 정체: 1초마다 보는 곳 안 걷는 사람 가운데, 지난 20초 내내 대기 상태가 아니었는데 20초 동안 1m 안에 머문 몫
@@ -42,6 +44,8 @@ export interface W31Res {
   road: string[];
   jump: string[];
   back: string[];
+  /** 한 프레임에 0.6m/s 넘게 걸었는데 '줄 선 사람'(게이트 앞 줄 뒤에 서 있다)으로 표시된 사람 */
+  staleQ: string[];
   /** 10초 흐름 [3m 넘게 나아간 수, 잰 수] */
   flow10: [number, number];
   /** 20초 정체 [선 사람 표본, 표본] */
@@ -64,7 +68,7 @@ function ground(fx: number, fz: number) {
 
 export function runW31(seed: number, dow: number, hour: number, fx: number, fz: number): W31Res {
   const G = ground(fx, fz);
-  const R: W31Res = { people: 0, pace: [], born: [], gone: [], overlap: [], road: [], jump: [], back: [], flow10: [0, 0], still20: [0, 0], ms: 0 };
+  const R: W31Res = { people: 0, pace: [], born: [], gone: [], overlap: [], road: [], jump: [], back: [], staleQ: [], flow10: [0, 0], still20: [0, 0], ms: 0 };
   const provider = makeSimProvider();
   const start = { tod: hour * 3600, dow, doy: 320 };
   const carGraph = buildCarGraph(board.roads, lanes, marks.arrows);
@@ -105,10 +109,12 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
       for (let k = 2; k < c.pts.length; k += 2) if (segD(x, z, c.pts[k - 2], c.pts[k - 1], c.pts[k], c.pts[k + 1]) <= c.hw + 0.05) return true;
       return false;
     });
-  /** 걷는 중(대기 상태가 아님): 신호 대기·정류장 줄·들어가는 사람·들어가려 문턱으로 가는 사람·머무는 사람 빼고 */
+  /** 걷는 중(대기 상태가 아님): 신호 대기·정류장 줄·들어가는 사람·들어가려 문턱으로 가는 사람·머무는 사람·갈래 영역 게이트 앞에서 차례를 기다리는 사람 빼고.
+   *  게이트 대기(W38)는 신호 대기와 같은 '서 있는 차례 기다림'이다: 차례가 오면 영역에 들어가 지나간다. 걷는 사람으로 세면 게이트가 순환 대기를 끊는 대신
+   *  만든 짧은 기다림이 막힘으로 잡혀, 교착(Y 갈림 40명 중 13명 못 지남)을 그대로 두는 HEAD 보다 흐름이 낮게 나왔다(W36 t16 홍대 토21 씨앗 11: 10초 3m 못 간 표본의 17% 가 게이트 앞·영역 안) */
   const walking = (i: number) => {
     const st = p.stateOf(i);
-    return !(st.mode === M.WAITX || st.mode === M.QUEUE || st.mode === M.LEAVE || st.mode === M.INDOOR || st.hold);
+    return !(st.mode === M.WAITX || st.mode === M.QUEUE || st.mode === M.LEAVE || st.mode === M.INDOOR || st.hold || st.gate);
   };
   const inF = (i: number) => Math.hypot(p.w.x[i] - fx, p.w.z[i] - fz) < R_FOCUS;
   const last = new Map<number, [number, number]>();
@@ -167,6 +173,7 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
         const d = Math.hypot(x - prev[0], z - prev[1]);
         if (d > 1 && R.jump.length < 10) R.jump.push(`${id} ${d.toFixed(2)}m @${x.toFixed(1)},${z.toFixed(1)}`);
         walked.set(id, (walked.get(id) ?? 0) + d);
+        if (d > 0.6 * DT && R.staleQ.length < 10 && p.stateOf(i).queued) R.staleQ.push(`${id} f${f} @${x.toFixed(1)},${z.toFixed(1)}`);
       }
       last.set(id, [x, z]);
       for (let ax = -1; ax <= 1; ax++)
@@ -184,11 +191,11 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
         for (let q = b; q < h.length; q += 3) far = Math.max(far, Math.hypot(h[q] - h[b], h[q + 1] - h[b + 1]));
         if (far < 10 && h[h.length - 1] - h[b + 2] > 15 && !R.pace.some((s) => s.startsWith(`${id}@`))) R.pace.push(`${id}@${x.toFixed(1)},${z.toFixed(1)} mode ${p.stateOf(i).mode} goal ${p.stateOf(i).goal}`);
       }
-      // 되돌아감: 목적지가 있는 걷는 사람의 남은 길(지금 선 끝까지 + 선 끝에서 목적지까지)
+      // 되돌아감: 목적지가 있는 걷는 사람의 남은 길(지금 선 끝까지 + 선 끝에서 목적지까지, 지금 선 위 앞쪽에 문·정류장이 있으면 그 자리까지)
       const dbg = p.debugOf(i);
       const lt = left.get(id) ?? left.set(id, []).get(id)!;
       if (dbg.mode === M.WALK && dbg.goal >= 0 && Number.isFinite(dbg.D)) {
-        const rem = dbg.D + Math.max(0, dbg.L - dbg.s);
+        const rem = dbg.left;
         if (lt.length && lt[lt.length - 3] !== dbg.goal) lt.length = 0;
         lt.push(dbg.goal, f * DT, rem);
         while (lt.length && lt[1] < f * DT - 30) lt.splice(0, 3);
