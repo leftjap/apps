@@ -795,8 +795,7 @@ export function makePeople(
     headW[i] = rand() * Math.PI * 2;
     avoidHe[i] = -1;
     avoidT[i] = 0;
-    // 성기게 움직일 때 같은 프레임에 몰리지 않게 사람마다 밀린 시간을 다르게 시작한다
-    lag[i] = ((w.id[i] * 0.618034) % 1) * SUB;
+    lag[i] = 0;
   }
   /** 문·출구·정류장 k 에서 한 명을 낸다(자리가 비어 있을 때만). 낸 사람 번호, 못 내면 −1 */
   function spawnAt(k: number, near?: [number, number]): number {
@@ -1509,16 +1508,19 @@ export function makePeople(
     carGrid();
     const n = Math.max(1, Math.ceil(dt / SUB - 1e-6));
     const sd = dt / n;
+    // 성기게 움직일 사람은 K 단계에 한 번(K × sd ≤ SUB), 고유 번호로 차례를 나눠 같은 프레임에 몰리지 않게 한다
+    const K = Math.max(1, Math.min(8, Math.floor(SUB / sd + 1e-6)));
     for (let q = 0; q < n; q++) {
       clockS += sd;
+      stepNo++;
       rebuildGrid();
       for (let i = w.n - 1; i >= 0; i--) {
         if (dead[i]) continue;
         let td = sd;
         if (detail) {
-          // 자세히 볼 사람은 매 단계, 나머지는 밀린 시간이 SUB 에 닿을 때 그만큼 한 번에(가장 긴 단계는 SUB + 한 프레임)
+          // 자세히 볼 사람은 매 단계, 나머지는 제 차례(K 단계에 한 번)나 밀린 시간이 SUB 에 닿을 때 밀린 만큼 한 번에
           lag[i] += sd;
-          if (lag[i] < SUB - 1e-6 && !detail(w.x[i], w.z[i])) continue;
+          if (lag[i] < SUB - 1e-6 && (stepNo + w.id[i]) % K !== 0 && !detail(w.x[i], w.z[i])) continue;
           td = lag[i];
           lag[i] = 0;
         }
@@ -1728,6 +1730,7 @@ export function makePeople(
   };
   /** 성기게 움직이기(W19, 앱만 쓴다): fine(x, z) 가 거짓인 사람(화면 밖·작게 보이는 사람)은 SUB 초에 한 번만 움직인다. null 이면 모두 매 단계 */
   let detail: ((x: number, z: number) => boolean) | null = null;
+  let stepNo = 0;
   const setDetail = (fine: ((x: number, z: number) => boolean) | null) => {
     detail = fine;
   };
