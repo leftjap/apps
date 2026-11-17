@@ -371,7 +371,8 @@ export function fixWalkNet(inp: FixInput): WalkJson {
           seen.add(i);
           const e = edges[i];
           const L = Math.hypot(X(e.b) - X(e.a), Z(e.b) - Z(e.a)) || 1e-6;
-          for (let s = 0; s <= L + 1e-6; s += Math.min(0.5, L)) {
+          // 길이가 거의 0 인 선(1e-9m 같은)은 걸음이 너무 잘아 후보가 수억 개로 불어난다(W30 에서 메모리가 넘쳤다)
+          for (let s = 0; s <= L + 1e-6; s += Math.max(0.01, Math.min(0.5, L))) {
             const px = X(e.a) + ((X(e.b) - X(e.a)) * s) / L;
             const pz = Z(e.a) + ((Z(e.b) - Z(e.a)) * s) / L;
             const d = Math.hypot(px - x, pz - z);
@@ -660,12 +661,16 @@ export function fixWalkNet(inp: FixInput): WalkJson {
     let joined = 0;
     const linkNodes = new Set<number>();
     for (let k = 0; k < links.length; k += LINK_N) linkNodes.add(links[k + 1]), linkNodes.add(links[k + 2]);
+    const deg1 = new Int32Array(N);
+    for (const e of edges) deg1[e.a]++, deg1[e.b]++;
     const bigRoot = main.big;
     const okBig = (i: number) => main.find(edges[i].a) === bigRoot;
     for (const [r, ns] of small) {
       if (main.len[r] < 10 && !ns.some((n) => linkNodes.has(n))) continue;
       // 조각 노드 몇 개(끝점부터)에서 큰 덩어리 선까지 칸을 따라 30m 안. 이은 조각은 큰 덩어리로 친다(뿌리를 큰 덩어리에 붙인다)
-      for (const n of ns.filter((_, k) => k % Math.max(1, Math.floor(ns.length / 3)) === 0).slice(0, 3)) {
+      // 끝점(선 하나에만 붙은 노드)을 먼저 본다: 고르게 뽑은 노드 셋만 보면 그물이 조금만 바뀌어도 조각 끝이 빠져 잇지 못했다(W30, 신촌로 동쪽 끝 보도)
+      const tryNodes = [...ns.filter((n) => deg1[n] === 1).slice(0, 4), ...ns.filter((_, k) => k % Math.max(1, Math.floor(ns.length / 3)) === 0).slice(0, 3)];
+      for (const n of tryNodes) {
         const m = linkUp(n, 30, okBig);
         if (m >= 0) {
           joined++;
