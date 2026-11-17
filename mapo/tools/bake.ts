@@ -2214,7 +2214,7 @@ writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), sur
 {
   const bd = decodeBoard(out as unknown as BoardJson);
   writeFileSync(new URL('./raw/seoul-lines-ground.json', import.meta.url), marksWholeJson);
-  const baked = bakeRoad(bd.roads, decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines);
+  const baked = bakeRoad(bd.roads, decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, bd.crosswalks, bd.stopLines);
   writeFileSync(new URL('../public/data/road.json', import.meta.url), baked.json);
   console.log(baked.log);
   // 노면 화살표를 그 화살표가 놓인 차선 칸 가운데로, 길 방향에 맞춰 옮긴다(tools/lib/arrows.ts, 재작업 W14). 옮긴 뒤 찻길 면 밖이면 뺀다

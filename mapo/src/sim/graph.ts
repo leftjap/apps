@@ -66,6 +66,11 @@ export interface Edge {
   med: number;
   /** 진행 방향을 이 값으로 고정한다(3m 보다 짧은 꺾인 토막, fixShortKinks) */
   fixH?: number;
+  /** 같은 차로가 이어지는 앞뒤 구간까지 늘인 중심선(extendFrames): 진행 방향을 이음매 너머 점까지 써서 구하므로, 이음매 양쪽에서 같은 옆 거리가 같은 자리가 된다.
+   *  ext 의 거리 pre 가 이 구간의 시작이다 */
+  ext?: Float32Array;
+  extCum?: Float32Array;
+  pre?: number;
 }
 
 const H0 = [0, 0, 0];
@@ -75,10 +80,69 @@ const H1 = [0, 0, 0];
  *  꼭짓점에서 방향이 1.5m 안에 바뀌면 옆으로 옮긴 차 자리가 옆 거리에 비례해 크게 휘둘린다 */
 export function headingNear(e: Edge, s: number, off = 0): number {
   if (e.fixH !== undefined) return e.fixH;
-  const d = Math.min(Math.max(1.5, Math.min(8, Math.abs(off) / 2)), e.len / 2);
+  const want = Math.max(1.5, Math.min(8, Math.abs(off) / 2));
+  if (e.ext && e.extCum) {
+    const L = e.extCum[e.extCum.length - 1];
+    const c = e.pre! + s;
+    const d = Math.min(want, Math.max(c, L - c, 0.5));
+    pointAt(e.ext, e.extCum, Math.max(0, c - d), H0);
+    pointAt(e.ext, e.extCum, Math.min(L, c + d), H1);
+    return Math.atan2(H1[2] - H0[2], H1[0] - H0[0]);
+  }
+  const d = Math.min(want, e.len / 2);
   pointAt(e.p, e.cum, Math.max(0, s - d), H0);
   pointAt(e.p, e.cum, Math.min(e.len, s + d), H1);
   return Math.atan2(H1[2] - H0[2], H1[0] - H0[0]);
+}
+
+/** 이음매에서 옆 거리로 넘어가는 두 구간인가(a 의 다음이 b 하나, b 로 들어오는 것이 a 하나, 차로 수·중앙버스차로가 같고 가운데선이 15° 안으로 꺾인다).
+ *  더 꺾인 이음매는 차가 이음매 곡선(intersection curve)으로 돈다 */
+export function sameLaneSeam(a: Edge, b: Edge, prev: number[][]): boolean {
+  if (a === b || a.next.length !== 1 || a.next[0] !== b.id || prev[b.id].length !== 1 || a.lanes !== b.lanes || !a.med !== !b.med) return false;
+  // 3m 보다 짧은 조각(OSM 의 꺾인 토막, 월드컵로 r1439 1.3m 29°)은 방향을 보지 않는다(그 토막의 방향은 fixShortKinks 가 앞뒤 가운데로 고정한다)
+  if (a.len < 3 || b.len < 3) return true;
+  const n = a.p.length;
+  const ah = Math.atan2(a.p[n - 1] - a.p[n - 4], a.p[n - 3] - a.p[n - 6]);
+  const bh = Math.atan2(b.p[5] - b.p[2], b.p[3] - b.p[0]);
+  let t = Math.abs(bh - ah);
+  if (t > Math.PI) t = 2 * Math.PI - t;
+  return t <= (15 * Math.PI) / 180;
+}
+
+/** 같은 차로가 이어지는 이음매(sameLaneSeam) 너머 8m 까지 중심선을 늘여 둔다(headingNear 가 쓴다, 재작업 W23·W27).
+ *  이음매 양쪽 구간이 제 구간 안 점으로만 방향을 구하면 옆 거리가 같아도 자리가 옆 거리 × 꺾임각만큼 달랐다(옆 거리 9m·15° 면 2.3m) */
+export function extendFrames(edges: Edge[], prev: number[][]) {
+  const R = 8;
+  for (const e of edges) {
+    const a = prev[e.id].length === 1 ? edges[prev[e.id][0]] : undefined;
+    const b = e.next.length === 1 ? edges[e.next[0]] : undefined;
+    // 방향을 고정한 꺾인 토막(fixShortKinks)은 늘이지 않고 너머로 늘이지도 않는다(토막의 꺾인 모양이 이웃 구간 방향에 섞이면 이음매가 3.8m 어긋났다, 월드컵로 xw420)
+    if (e.fixH !== undefined) continue;
+    const pa = a && a.fixH === undefined && sameLaneSeam(a, e, prev) ? a : undefined;
+    const nb = b && b.fixH === undefined && sameLaneSeam(e, b, prev) ? b : undefined;
+    if (!pa && !nb) continue;
+    const pts: number[] = [];
+    const T = [0, 0, 0];
+    let pre = 0;
+    if (pa) {
+      pre = Math.min(R, pa.len);
+      for (let k = 0; k < 4; k++) {
+        pointAt(pa.p, pa.cum, pa.len - pre + (pre * k) / 4, T);
+        pts.push(T[0], T[1], T[2]);
+      }
+    }
+    for (let i = 0; i < e.p.length; i++) pts.push(e.p[i]);
+    if (nb) {
+      const post = Math.min(R, nb.len);
+      for (let k = 1; k <= 4; k++) {
+        pointAt(nb.p, nb.cum, (post * k) / 4, T);
+        pts.push(T[0], T[1], T[2]);
+      }
+    }
+    e.ext = Float32Array.from(pts);
+    e.extCum = cumLen(e.ext);
+    e.pre = pre ? e.extCum[4] : 0;
+  }
 }
 
 
@@ -293,6 +357,7 @@ export function buildCarGraph(roads: Road[], lanes?: RoadLanes | CanonLanes, arr
   const prev = linkEdges(edges);
   fixShortKinks(edges, prev);
   sinkTunnels(edges, prev, roads);
+  extendFrames(edges, prev);
 // 노면 화살표: 서울시 선으로 차로를 읽은 구간에서 차로가 끝나는 자리 앞 45m 안, 그 차로 가운데 반폭 안에 같은 방향으로 놓인 화살표
   const ag = new Map<number, number[]>();
   arrows.forEach((a, i) => {

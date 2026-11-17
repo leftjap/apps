@@ -9,6 +9,6 @@ const t0 = Date.now();
 const read = (u: string) => JSON.parse(readFileSync(new URL(u, import.meta.url), 'utf8'));
 const board = decodeBoard(read('../public/data/board.json') as BoardJson);
 const lines = decodeMarks(read('./raw/seoul-lines-ground.json') as MarksJson).lines;
-const { json, log } = bakeRoad(board.roads, lines);
+const { json, log } = bakeRoad(board.roads, lines, board.crosswalks, board.stopLines);
 writeFileSync(new URL('../public/data/road.json', import.meta.url), json);
 console.log(`${log}, ${((Date.now() - t0) / 1000).toFixed(1)}초`);
