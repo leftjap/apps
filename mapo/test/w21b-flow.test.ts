@@ -83,9 +83,8 @@ beforeAll(() => {
 
 describe('W21b 붐비는 곳에서 흐름(사람만, 실제 판·신호)', () => {
   for (const [name, , , , , , base] of CASES) {
-    // 목표는 80% 다. 2026-11-17 W21b 끝에 잰 값: 클럽거리 74.8%, 걷고싶은거리 79.3%, 연트럴파크 79.0%(메모 mapo-w21b-flow.md). 못 미친 까닭은 그물 모양
-    // (폭 0 띠·작은 노드 원이 모인 갈래 길에서 사방에서 오는 사람이 엉킴)이라 걷는 바닥을 면으로 다시 만드는 다음 작업에 남긴다. 줄지 않는지 본다
-    it(`${name}: 걷는 사람이 움직인다(목표 80%)`, () => expect(R[name].moving / R[name].walkers).toBeGreaterThan(0.73));
+    // 목표 80%. W21b 74.8·79.3·79.0%, W26 82.3·81.7·82.6%, W28(걷는 면) 83.3·81.6·83.2%
+    it(`${name}: 걷는 사람이 움직인다(목표 80%)`, () => expect(R[name].moving / R[name].walkers).toBeGreaterThan(0.8));
     it(`${name}: 몸통 겹침 0`, () => expect(R[name].overlap).toEqual([]));
     it(`${name}: 보는 곳 인원이 W21 보다 줄지 않는다`, () => expect(R[name].inF).toBeGreaterThan(base));
   }

@@ -1,7 +1,7 @@
 // 걷는 면만 다시 굽는다(재작업 W28): 지금 public/data/walk.json 그물은 그대로 두고 걷는 면(a)만 새로 넣는다. node tools/walk-area.ts
 // pnpm bake·node tools/walk.ts 는 그물을 구운 뒤 이 도구로 걷는 면을 굽는다
 import { readFileSync, writeFileSync } from 'node:fs';
-import { decodeBoard } from '../src/data/board.ts';
+import { decodeBoard, roadHalf } from '../src/data/board.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { carriageSections, isGroundRoad, roadJoints, decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
 import { BOARD_R } from '../src/geo.ts';
@@ -30,43 +30,50 @@ const { blocked } = blockMap({
   underpasses: underpasses(board.roads, ...ZONES.mangwon),
 });
 console.log(`막힘 칸 ${((Date.now() - t0) / 1000).toFixed(1)}초`);
-// 중앙선을 칠한 작은 길(등급 4 이상, 땅 위): 길 가운데선 점의 절반 넘게가 서울시 중앙선(대분류 1) 1.5m 안
+// 노란 선을 칠한 작은 길(#55): 연석선으로 찻길 가장자리를 읽은(보도가 있는) 땅 위 등급 4·5 길 가운데, 길을 2m 마다 따라가며 찻길 반폭(좁은 쪽, 1m 이상) 안에
+// 서울시 노란 선(대분류 1 중앙선·2 가변차선·9·10)이 있는 자리가 30% 넘는 길. 차가 다니는 길이라 사람은 보도로 걷는다
 const marks = decodeMarks(read('marks.json') as MarksJson);
 const CG = 8;
-const cen = new Map<number, number[]>();
+const yellow = new Map<number, number[]>();
 for (const l of marks.lines) {
-  if (l.k !== 1) continue;
+  if (l.k !== 1 && l.k !== 2 && l.k !== 9 && l.k !== 10) continue;
   for (let k = 3; k < l.p.length; k += 3) {
     const [ax, az, bx, bz] = [l.p[k - 3], l.p[k - 1], l.p[k], l.p[k + 2]];
-    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 1));
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az)));
     for (let q = 0; q <= n; q++) {
       const x = ax + ((bx - ax) * q) / n;
       const z = az + ((bz - az) * q) / n;
       const key = Math.floor(x / CG) * 100003 + Math.floor(z / CG);
-      (cen.get(key) ?? cen.set(key, []).get(key)!).push(x, z);
+      (yellow.get(key) ?? yellow.set(key, []).get(key)!).push(x, z);
     }
   }
 }
-const nearCen = (x: number, z: number) => {
+const nearYellow = (x: number, z: number, R: number) => {
   for (let a = -1; a <= 1; a++)
     for (let b = -1; b <= 1; b++) {
-      const c = cen.get((Math.floor(x / CG) + a) * 100003 + Math.floor(z / CG) + b);
-      if (c) for (let k = 0; k < c.length; k += 2) if (Math.hypot(c[k] - x, c[k + 1] - z) < 1.5) return true;
+      const c = yellow.get((Math.floor(x / CG) + a) * 100003 + Math.floor(z / CG) + b);
+      if (c) for (let k = 0; k < c.length; k += 2) if (Math.hypot(c[k] - x, c[k + 1] - z) < R) return true;
     }
   return false;
 };
 const joints = roadJoints(board.roads);
 const carOff: number[][] = [];
 board.roads.forEach((r, i) => {
-  if (r.cls <= 3 || !isGroundRoad(r)) return;
+  if (r.cls <= 3 || r.cls > 5 || !isGroundRoad(r) || !r.edge) return;
+  const [hr, hl] = roadHalf(r);
+  const R = Math.max(1, Math.min(hr, hl));
   let n = 0;
   let on = 0;
-  for (let k = 0; k < r.p.length; k += 2) (n++, nearCen(r.p[k], r.p[k + 1]) && on++);
-  if (on * 2 <= n) return;
+  for (let k = 3; k < r.p.length; k += 3) {
+    const [ax, az, bx, bz] = [r.p[k - 3], r.p[k - 1], r.p[k], r.p[k + 2]];
+    const L = Math.hypot(bx - ax, bz - az);
+    for (let s = 0; s < L; s += 2) (n++, nearYellow(ax + ((bx - ax) * s) / L, az + ((bz - az) * s) / L, R) && on++);
+  }
+  if (!n || on < 0.3 * n) return;
   const s = carriageSections(r, 0, Infinity, joints.subarray(i * 4, i * 4 + 4));
   if (s.length >= 2) carOff.push([...s.flatMap((q) => [q.lx, q.lz]), ...s.reverse().flatMap((q) => [q.rx, q.rz])]);
 });
-console.log(`중앙선 칠한 작은 길 ${carOff.length}`);
+console.log(`노란 선 칠한 작은 길 ${carOff.length}`);
 walk.a = walkArea(walk, blocked, bounds, carOff);
 let cells = 0;
 let runs = 0;

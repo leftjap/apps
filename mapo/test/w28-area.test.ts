@@ -40,7 +40,8 @@ describe('W28 걷는 면', () => {
     expect(cells).toBeGreaterThan(100_000);
     expect(bad).toEqual([]);
   });
-  it('걷는 선(잇는 선 빼고) 노드의 98% 넘게 걷는 면 위', () => {
+  // 노란 선을 칠한 보도 있는 작은 길(#55) 찻길 위 골목 선 노드는 면 밖이다(사람은 옆 보도로 비켜 걷는다). 2026-11-17 잰 값 96.1%
+  it('걷는 선(잇는 선 빼고) 노드의 95% 넘게 걷는 면 위', () => {
     let n = 0;
     let on = 0;
     for (let a = 0; a < W.adj.length; a++) {
@@ -48,6 +49,6 @@ describe('W28 걷는 면', () => {
       n++;
       if (A!.at(W.nx[a * 2], W.nx[a * 2 + 1])) on++;
     }
-    expect(on / n).toBeGreaterThan(0.98);
+    expect(on / n).toBeGreaterThan(0.95);
   });
 });

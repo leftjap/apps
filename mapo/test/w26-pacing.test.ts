@@ -29,9 +29,9 @@ const lanes = decodeLanes((read('road.json') as RoadJson).lanes);
 const FOCUS = [330, -300] as const;
 const DT = 1 / 30;
 const SECS = 60;
-/** 오가기 상한(사람 약 3,000명 가운데). 목표는 0, 적어도 W21 수준(50 아래)이다. 2026-11-17 W26 끝에 잰 값(토 21시 263·259·290, 화 15시 244·311·283,
- *  W26 앞 586·533·498·424·442·465)에 여유를 둔 값으로 늘지 않는지만 본다. 남은 것은 설계 문서 54절 */
-const PACE_MAX = 340;
+/** 오가기 상한(사람 약 3,000명 가운데). 목표는 0, 적어도 W21 수준(50 아래)이다. W26 끝 263·259·290·244·311·283(W26 앞 586·533·498·424·442·465).
+ *  W28(걷는 면) 끝에 잰 값 토 21시 166·152·149, 화 15시 157·152·158 에 여유를 둔 값으로 늘지 않는지만 본다. 목표에 못 미쳤다(설계 문서 55절) */
+const PACE_MAX = 180;
 
 const win = [FOCUS[0] - 700, FOCUS[1] - 700, FOCUS[0] + 700, FOCUS[1] + 700] as [number, number, number, number];
 let G: ReturnType<typeof majorGround>;

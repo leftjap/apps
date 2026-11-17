@@ -2,8 +2,8 @@
 // 지오 지시를 규칙으로 둔다:
 //  - 사람은 역 출구·버스 승하차 자리·건물 문(과 망원한강공원 피크닉 자리·나들목)에서만 나타나고 사라진다. 화면을 채울 때도 그 자리에서만 낸다.
 //  - 사람은 몸(반지름 BODY_R)이 있어 다른 사람·차 몸통과 겹치지 않는다: 움직이기 전에 새 자리가 비었는지 보고, 비었을 때만 옮긴다.
-//  - 사람은 걷는 길 그물(walk.json)의 걷는 띠·노드 원·횡단보도 기다리는 자리·횡단보도 통로 안에만 있다. 그물은 굽기에서 큰길 찻길과
-//    몸 반지름 + 여유만큼 떨어지게 잘랐으므로(tools/lib/walkfix.ts), 이 안에 있으면 찻길 위에 서지 않는다.
+//  - 사람은 걷는 면(walk.json a, W28: 보도·골목·광장 가운데 큰길 찻길에서 몸 반지름 + 여유, 건물 벽에서 0.2m 떨어진 칸)과 그물의 노드 원·
+//    횡단보도 기다리는 자리·횡단보도 통로 안에만 있다. 그물은 길 찾기(어느 선을 따라갈지)에만 쓰고, 걸음은 면 안 어디로든 비켜 간다.
 //  - 큰길은 횡단보도로만, 보행 신호를 지켜 건넌다.
 //  - 한자리를 오가며 맴돌지 않는다(W26): 문·노드에 닿는 것은 점이 아니라 영역이고, 돌아다니는 사람은 막다른 가지에 들어가지 않으며,
 //    돌아서기(온 길로 되돌아가기·막혀 돌아서기)는 마지막으로 돌아선 자리에서 TURN_GAP 넘게 떨어졌을 때만 한다.
@@ -15,7 +15,8 @@ import type { DataProvider } from '../provider.ts';
 import { PLACES, placeMask } from '../places.ts';
 import { pick, rng } from '../rng.ts';
 import { LINK, type WalkGraph } from '../walknet.ts';
-import { agentLine, makeLines, solve, wallLine } from './orca.ts';
+import { decodeArea } from './area.ts';
+import { agentLine, makeLines, solve } from './orca.ts';
 import { outside, PLACE_Z, OUT_Z, placeNow, ZONE_IDS, zoneOf } from './zones.ts';
 
 export { doorWanted, OUT_BASE, outside, underpasses, walkerScale, walkerTarget, zoneTargets, ZONE_IDS, ZONES } from './zones.ts';
@@ -95,9 +96,8 @@ const NODE_W = 3;
 /** 이보다 붐비는 선에 붙은 문·출구에서는 사람을 내지 않는다(명/m²) */
 const DENSE_MAX = 0.35;
 /** 앞이 막혀(마주 오는 사람, 또는 서 있는 앞사람) 이만큼(초) 못 나아가면 돌아선다 */
-const REV_T = 3;
+const REV_T = 20;
 const TAU = 2;
-const TAU_W = 0.3;
 const TURN_RATE = 7;
 const PULL = 4;
 const GATHER = 3;
@@ -111,7 +111,17 @@ const TURN_GAP = 20;
 /** 막혀 돌아선 선을 다시 고르지 않는 시간(초) */
 const AVOID_T = 60;
 /** 돌아다니는 사람이 기억하는 최근 지난 노드 수(W26: 넷이면 노드 다섯 개짜리 작은 고리를 계속 돌았다) */
-const SEEN = 8;
+const SEEN = 16;
+/** 돌아다니는 사람이 향하는 먼 자리까지 거리(m, W28) */
+const WANDER = 200;
+/** 걷는 면 위 겨누는 거리(m): 선을 따라 이만큼 앞 자리를 겨눈다(W28) */
+const LOOK = 2.5;
+/** 선 끝에서 이 거리 안이면 모퉁이를 질러 다음 선 위 자리를 겨눈다(m) */
+const CUT = 6;
+/** 노드 둘레 이 거리 안이면 노드에 닿은 것으로 친다(m) */
+const SWITCH_R = 1.2;
+/** 횡단보도 앞 노드 이 거리 안이면 기다리기 시작한다(m) */
+const XW_R = 3;
 
 const WALK = 0;
 const WAITX = 1; // 횡단보도 앞 기다림
@@ -216,6 +226,8 @@ export function makePeople(
   let nextId = 1;
 
   // ── 그물 ──
+  /** 걷는 면(W28). 자료가 없으면(옛 walk.json) 선 띠만 쓴다 */
+  const area = decodeArea(g.area);
   const NX: number[] = Array.from(g.nx);
   const RAD: number[] = Array.from(g.rad);
   const out: number[][] = g.adj.map(() => []);
@@ -285,6 +297,8 @@ export function makePeople(
 
   // ── 출구·정류장·문 ──
   const docks: Dock[] = [];
+  /** 중앙 승강장 노드(W28: 돌아다니는 사람은 승강장으로 건너가지 않는다. 승강장 끝은 막다른 길이라 들어가면 승강장 위를 오갔다) */
+  const island = new Set<number>();
   const dockAtHe = new Map<number, number[]>();
   const pushDock = (d: Dock) => {
     docks.push(d);
@@ -332,6 +346,7 @@ export function makePeople(
       const iz = cz + uz * sI;
       const pw = ISLAND_W / 2 - BODY_R - 0.05;
       const I = addNode(ix, iz, pw);
+      island.add(I);
       const sQ = Math.max(-half, Math.min(half, Math.abs(sI) < 3 ? sI + (sI > 0 ? -4 : 4) : 0));
       const Q = addNode(cx + ux * sQ, cz + uz * sQ, pw);
       rects.push({ ox: cx, oz: cz, ux, uz, u0: -half, u1: half, v0: -pw, v1: pw });
@@ -374,7 +389,18 @@ export function makePeople(
   for (let n = 0; n < out.length; n++) (out[n] = out[n].slice()), (nodeRects[n] = nodeRects[n].slice());
   // ── (선을 다 더한 뒤: 중앙 승강장 선 포함) 좁은 길(두 사람이 엇갈려 지날 수 없는 띠: 가운데가 설 수 있는 폭이 2 × BODY_R 보다 좁다)의 차지: 방향 있는 선마다 지금 그 선을 걷는 사람 수 ──
   const narrow = new Uint8Array(hes.length);
-  for (let k = 0; k < hes.length; k++) narrow[k] = hes[k].x < 0 && hes[k].hi - hes[k].lo < 2 * BODY_R ? 1 : 0;
+  // 걷는 면이 있으면 선 가운데·네 귀퉁이 쪽 세 자리의 면 폭(양옆 남은 거리 합) 가운데 가장 좁은 것으로 본다(W28)
+  const areaWidth = (k: number) => {
+    const e = hes[k];
+    let m = Infinity;
+    for (const f of [0.25, 0.5, 0.75]) {
+      const x = NX[e.a * 2] + e.ux * e.L * f;
+      const z = NX[e.a * 2 + 1] + e.uz * e.L * f;
+      m = Math.min(m, area!.room(x, z, -e.uz, e.ux, 2) + area!.room(x, z, e.uz, -e.ux, 2));
+    }
+    return m;
+  };
+  for (let k = 0; k < hes.length; k++) narrow[k] = hes[k].x < 0 && hes[k].hi - hes[k].lo < 2 * BODY_R && (!area || areaWidth(k) < 2 * BODY_R) ? 1 : 0;
   /** 방향 있는 선마다 지금 그 선을 걷는 사람 수 */
   const occ = new Int32Array(hes.length);
   /** 걷는 띠 넓이(m², 몸 반지름만큼 양옆을 더한 실제 바닥, 짧은 선도 6m² 로 친다) */
@@ -516,6 +542,8 @@ export function makePeople(
   const tz = new Float32Array(max);
   const xLeg = new Uint8Array(max);
   const headW = new Float32Array(max); // 돌아다닐 때 갈 쪽(라디안)
+  const wgX = new Float32Array(max).fill(NaN); // 돌아다닐 때 향하는 먼 자리(W28, 없으면 NaN)
+  const wgZ = new Float32Array(max);
   const avoidHe = new Int32Array(max).fill(-1); // 막혀 돌아선 선(잠시 고르지 않는다)
   const avoidT = new Float32Array(max);
   const viaNode = new Uint8Array(max); // 모퉁이에서 노드를 거쳐 갈아탄다 // 건너기 길에서 다음 점 번호
@@ -530,7 +558,7 @@ export function makePeople(
   const turnZ = new Float32Array(max);
   // 성기게 움직이기(W19): 자세히 볼 필요 없는 사람(setDetail 이 거짓)은 밀린 시간이 SUB 에 닿을 때만 한 번에 움직인다
   const lag = new Float32Array(max);
-  const all = [lag, vX, vZ, headW, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, lastX, lastXT, turnX, turnZ];
+  const all = [lag, vX, vZ, headW, wgX, wgZ, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, lastX, lastXT, turnX, turnZ];
 
   const dead = new Uint8Array(max);
   /** 사라질 사람 표시(단계 안에서는 배열 자리를 바꾸지 않는다: 격자가 옛 자리 번호를 쥐고 있다) */
@@ -703,6 +731,7 @@ export function makePeople(
       const d = dockOf[i] >= 0 ? docks[dockOf[i]] : null;
       if (d && (inHe(d.he, x, z) || inHe(hes[d.he].rev, x, z))) return true;
     }
+    if (area && area.at(x, z)) return true;
     if (inHe(he[i], x, z)) return true;
     if (nk[i] >= 0 && inHe(nk[i], x, z)) return true;
     if (prv[i] >= 0 && inHe(prv[i], x, z)) return true;
@@ -742,6 +771,9 @@ export function makePeople(
   const markTurn = (i: number) => {
     turnX[i] = w.x[i];
     turnZ[i] = w.z[i];
+    // 돌아섰으면 향하던 먼 자리도 새로 정한다(돌아선 쪽으로)
+    wgX[i] = NaN;
+    headW[i] += Math.PI + (rand() - 0.5);
   };
   const tmpW: number[] = [];
   const tmpK: number[] = [];
@@ -751,7 +783,6 @@ export function makePeople(
     const back = hes[h].rev;
     const opts0 = out[b];
     const opts = avoidT[i] > now && opts0.length > 1 ? opts0.filter((k) => k !== avoidHe[i]) : opts0;
-    headW[i] += (rand() - 0.5) * 0.3;
     if (goal[i] >= 0) {
       const Dg = D[goal[i]];
       let best = -1;
@@ -775,11 +806,21 @@ export function makePeople(
     tmpW.length = 0;
     tmpK.length = 0;
     const e0 = hes[h];
-    // 고를 수 있는 가장 앞 등급에서만 고른다(W26): 0 앞으로 난 길(돌아설 수 있으면 온 길도 무게 0.02 로), 1 막혀 돌아섰던 선, 2 막다른 가지, 3 온 길.
+    // 돌아다니는 사람은 갈 쪽(headW)으로 WANDER m 떨어진 먼 자리를 향해 간다(W28: 선마다 갈 쪽 무게만 두면 촘촘한 선 그물·광장에서 제자리를 돌았다).
+    // 25m 안에 닿으면 갈 쪽을 조금 틀어 다음 먼 자리를 정한다
+    const bx = NX[b * 2];
+    const bz = NX[b * 2 + 1];
+    if (Number.isNaN(wgX[i]) || Math.hypot(wgX[i] - bx, wgZ[i] - bz) < 25) {
+      if (!Number.isNaN(wgX[i])) headW[i] += (rand() - 0.5) * 2;
+      wgX[i] = bx + Math.cos(headW[i]) * WANDER;
+      wgZ[i] = bz + Math.sin(headW[i]) * WANDER;
+    }
+    const dB = Math.hypot(wgX[i] - bx, wgZ[i] - bz);
+    // 고를 수 있는 가장 앞 등급에서만 고른다(W26): 0 앞으로 난 길(돌아설 수 있으면 온 길도 무게 0.02 로), 1 막혀 돌아섰던 선, 2 막다른 가지·중앙 승강장으로 건너는 길(W28), 3 온 길.
     // 막혀 돌아섰던 선을 목록에서 빼면 막다른 길과 그 선 사이에 갇혀 오갔다
     const free = canTurn(i);
     const avoid = avoidT[i] > now ? avoidHe[i] : -1;
-    const tierOf = (k: number) => (k === back ? (free ? 0 : 3) : k === avoid ? 1 : intoDead[k] ? 2 : 0);
+    const tierOf = (k: number) => (k === back ? (free ? 0 : 3) : k === avoid ? 1 : intoDead[k] || island.has(hes[k].b) ? 2 : 0);
     let tier = 3;
     for (const k of opts0) tier = Math.min(tier, tierOf(k));
     for (const k of opts0) {
@@ -789,9 +830,9 @@ export function makePeople(
       if (k === back) wt *= 0.02;
       if (wasAt(i, e.b)) wt *= 0.05;
       if (e.x >= 0 && crosses[e.x].xw === lastX[i] && now - lastXT[i] < 120) wt *= 0.01;
-      // 사람마다 정한 갈 쪽(천천히 바뀐다)으로 난 선을 좋아한다: 넓은 광장·촘촘한 선에서 제자리를 맴돌지 않게
-      const dot = Math.cos(headW[i]) * e.ux + Math.sin(headW[i]) * e.uz;
-      wt *= Math.exp(2.5 * dot) * (0.6 + 0.4 * Math.max(0, e0.ux * e.ux + e0.uz * e.uz));
+      // 먼 자리로 다가가는 선을 좋아한다(선 길이당 다가가는 거리 −1~1)
+      const pr = Math.max(-1, Math.min(1, (dB - Math.hypot(wgX[i] - NX[e.b * 2], wgZ[i] - NX[e.b * 2 + 1])) / Math.max(1, e.L)));
+      wt *= Math.exp(4 * pr) * (0.6 + 0.4 * Math.max(0, e0.ux * e.ux + e0.uz * e.uz));
       wt *= 1 + PULL * nodePull[e.b];
       // 붐비는 선은 덜 고른다
       if (e.x < 0) wt *= Math.exp(-CROWD_PICK * Math.max(dens(k), NODE_W * nodeDens(e.b)));
@@ -834,6 +875,7 @@ export function makePeople(
     prv[i] = -1;
     viaNode[i] = 0;
     headW[i] = rand() * Math.PI * 2;
+    wgX[i] = NaN;
     avoidHe[i] = -1;
     avoidT[i] = 0;
     lag[i] = 0;
@@ -946,45 +988,36 @@ export function makePeople(
     const e = hes[h];
     return [NX[e.a * 2] + e.ux * s - e.uz * u, NX[e.a * 2 + 1] + e.uz * s + e.ux * u];
   };
-  const laneU = (i: number, h: number) => {
+  /** 우측통행 옆자리(W28): 선 h 위 거리 s 에서 진행 방향 오른쪽으로 걷는 면(없으면 띠)이 남는 만큼 안에서, 사람마다 다른 자리(lane 0~1).
+   *  마주 오는 사람은 그 사람의 오른쪽을 걸으므로 면이 몸 두 개보다 넓으면 마주쳐 막히지 않는다. 오른쪽에 자리가 없으면 선 위(0) */
+  const sideU = (i: number, h: number, s: number) => {
     const e = hes[h];
-    // 우측통행: 띠 오른쪽 가장자리에서 몸 반지름 안쪽부터, 띠 오른쪽 절반 안에서 사람마다 다른 자리(lane 0~1).
-    // 마주 오는 사람은 그 사람의 오른쪽(이 띠의 왼쪽)을 걸으므로, 띠가 몸 두 개보다 넓으면 마주쳐 막히지 않는다
-    // 마주 오는 두 줄 사이가 몸 하나(0.85m) 넘게 비도록 띠 폭에 따라 안쪽으로 들어가는 한도를 둔다. 1.7m 보다 좁은 띠는 마주 오는 두 사람 가운데가
-    // 2 × BODY_R 떨어지도록 가장자리 쪽으로 붙는다
-    const W = e.hi - e.lo;
-    const fmax = W > 1.7 ? Math.max(0, 1 - 0.85 / (W - 0.84)) : 0;
-    const edge = Math.max(0, Math.min(0.42, (W - 2 * BODY_R) / 2));
-    const u = e.hi - edge - lane[i] * fmax * Math.max(0, W / 2 - 0.42);
-    return Math.max(e.lo, Math.min(e.hi, u));
+    const [cx, cz] = onHe(h, Math.max(0, Math.min(e.L, s)), 0);
+    const R = Math.max(Math.max(0, e.hi), area ? area.room(cx, cz, -e.uz, e.ux, 3) : 0);
+    return Math.max(0, Math.min(R - 0.25, 0.45 + lane[i] * 1.6));
+  };
+  /** 선 h 옆 자리 (x, z)가 걷는 면 밖이면(중앙선 칠한 작은 길 위 골목 선, #55) 옆으로 가장 가까운 면 자리(오른쪽 먼저, 4m 안). 없으면 그대로 */
+  const toArea = (h: number, x: number, z: number): [number, number] => {
+    if (!area || area.at(x, z)) return [x, z];
+    const e = hes[h];
+    for (let d = 0.5; d <= 4; d += 0.5)
+      for (const sg of [1, -1]) {
+        const px = x - e.uz * d * sg;
+        const pz = z + e.ux * d * sg;
+        if (area.at(px, pz)) return [px, pz];
+      }
+    return [x, z];
+  };
+  /** i 가 (ax, az)에서 (bx, bz)까지 곧게 걸을 수 있는가(0.4m 마다 걷는 길 안) */
+  const pathOk = (i: number, ax: number, az: number, bx: number, bz: number) => {
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 0.4));
+    for (let k = 1; k <= n; k++) if (!valid(i, ax + ((bx - ax) * k) / n, az + ((bz - az) * k) / n)) return false;
+    return true;
   };
   /** 오래 서 있는 사람(신호·줄·머묾·들어감): 이웃이 혼자 다 비켜야 한다 */
   const standing = (j: number) => vX[j] * vX[j] + vZ[j] * vZ[j] < 0.01 && (mode[j] === WAITX || mode[j] === QUEUE || mode[j] === LEAVE || holdT[j] > 0);
   const LN = makeLines(64);
   const VO = new Float64Array(2);
-  /** 걷는 띠 가장자리를 벽으로: 걷는 사람이 지금 선 띠 안(양 끝 노드 원 밖)에 있으면 옆으로 띠를 벗어나는 속도를 막는다.
-   *  문으로 드나드는 사람·줄 서는 사람·기다리는 사람은 띠 밖 자리로 가야 하므로 벽을 두지 않는다(걸음마다 걷는 길 안인지는 따로 본다) */
-  function walls(i: number) {
-    const h = he[i];
-    const e = hes[h];
-    if (e.x >= 0 || mode[i] !== WALK) return;
-    const x = w.x[i];
-    const z = w.z[i];
-    const dx = x - NX[e.a * 2];
-    const dz = z - NX[e.a * 2 + 1];
-    const s = dx * e.ux + dz * e.uz;
-    const u = -dx * e.uz + dz * e.ux;
-    if (s < 0 || s > e.L || u < e.lo - 0.02 || u > e.hi + 0.02 || inNode(e.a, x, z) || inNode(e.b, x, z)) return;
-    wallLine(LN, -e.uz, e.ux, Math.max(0, e.hi - u) / TAU_W);
-    // 우측통행 가운데 벽: 걷는 사람은 띠 가운데에서 몸 반지름(BODY_R)만큼 오른쪽까지만 들어온다(띠가 2 × BODY_R 보다 좁으면 오른쪽 끝). 마주 오는 두 줄 사이가 늘 2 × BODY_R 이므로
-    // 붐벼도 마주 오는 사람끼리 엉키지 않는다. 띠 왼쪽에 있으면(노드에서 막 들어섰을 때) 더 왼쪽으로만 못 가게 하고, 바라는 속도가 오른쪽으로 옮긴다
-    // (벽은 끝까지 지키는 선이라 지금 자리를 어기는 벽을 두면 이웃 피하기를 버린다)
-    const lim = Math.min(e.hi, (e.hi + e.lo) / 2 + BODY_R);
-    wallLine(LN, e.uz, -e.ux, Math.max(0, u - lim) / TAU_W);
-    wrongSide = Math.max(0, lim - u);
-  }
-  /** 지금 선 띠에서 우측통행 자리보다 왼쪽으로 들어온 거리(m, walls 가 정한다) */
-  let wrongSide = 0;
   /** 앞사람(측정·돌아서기용): 가려는 방향으로 몸 앞 3m 안 가장 가까운 사람 */
   let aheadJ = -1;
   // 회전 후보(라디안): 상호 회피로 고른 속도가 걷는 길 밖으로 나가거나 하한을 어기면 차례로 돌려 본다
@@ -1007,8 +1040,6 @@ export function makePeople(
     const vp = Math.min(v, dd / dt);
     LN.n = 0;
     LN.walls = 0;
-    wrongSide = 0;
-    walls(i);
     const cx = Math.floor(x0 / GC);
     const cz = Math.floor(z0 / GC);
     let best = 3;
@@ -1044,13 +1075,6 @@ export function makePeople(
       const l = Math.hypot(nx, nz);
       px = (nx / l) * vp;
       pz = (nz / l) * vp;
-    }
-    if (wrongSide > 0) {
-      // 우측통행 자리로: 오른쪽(지금 선의 오른쪽)으로 비켜 들어간다
-      const e = hes[he[i]];
-      const k = Math.min(1, wrongSide / 0.5) * 0.7 * vp;
-      px += -e.uz * k;
-      pz += e.ux * k;
     }
     solve(LN, v, px, pz, VO);
     const sx = VO[0];
@@ -1138,46 +1162,54 @@ export function makePeople(
         return;
       }
     }
-    const look = 1.6;
-    let gx: number;
-    let gz: number;
+    // ── 겨눌 자리(W28): 걷는 면 위에서 선을 따라 LOOK 앞, 우측통행 옆자리. 다음 선이 정해졌고 곧게 갈 수 있으면 모퉁이를 질러 다음 선 위 자리를 겨눈다 ──
     const nx = nk[i];
     const nxWalk = nx >= 0 && hes[nx].x < 0;
-    // 선 시작 앞(노드 원 안)에 있어도 선 위에 있는 것으로 친다(앞뒤를 오가며 목표가 바뀌지 않게)
     const toEnd = e.L - Math.max(0, s);
     const bx = NX[e.b * 2];
     const bz = NX[e.b * 2 + 1];
-    // 한 번 선 끝 쪽(다음 선)을 겨누기 시작하면 갈아탈 때까지 그대로 겨눈다(viaNode 1: 다음 선, 2: 노드)
-    if (toEnd > look && !viaNode[i]) [gx, gz] = onHe(h, Math.max(0, s) + look, laneU(i, h));
-    else if (nxWalk && narrow[nx] && !narrow[h] && toEnd < 1.2 && opposed(nx)) {
-      // 좁은 길 건너편에서 사람이 오고 있으면 노드 앞에서 비켜 기다린다(좁은 길에서 마주쳐 막히지 않게). 오래 기다리면 다른 길로
+    const x0 = w.x[i];
+    const z0 = w.z[i];
+    let gx: number;
+    let gz: number;
+    let onNext = false;
+    if (nxWalk && narrow[nx] && !narrow[h] && toEnd < 1.2 && opposed(nx)) {
+      // 좁은 길 건너편에서 사람이 오고 있으면 길 어귀에서 비켜 기다린다(좁은 길에서 마주쳐 막히지 않게). 오래 기다리면 다른 길로
       w.moving[i] = 0;
       waitT[i] += dt;
       if (waitT[i] > 12) (waitT[i] = 0), (avoidHe[i] = nx), (avoidT[i] = clockS + 30), (nk[i] = plan(i, h, clockS)), (viaNode[i] = 0);
       return;
-    } else if (nxWalk && nx !== e.rev) {
-      if (!viaNode[i]) viaNode[i] = 1;
-      // 다음 선 위 자리로 곧장 가되, 가는 길이 걷는 길 밖으로 나가면 노드로 먼저 간다(노드는 두 띠에 다 든다)
+    }
+    if (nxWalk && nx !== e.rev && toEnd < CUT) {
       const n2 = hes[nx];
-      [gx, gz] = onHe(nx, Math.min(n2.L, Math.max(0.3, look - toEnd)), laneU(i, nx));
-      const mx = (w.x[i] + gx) / 2;
-      const mz = (w.z[i] + gz) / 2;
-      // 한 번 노드로 가기로 했으면 노드에 닿거나 다음 띠에 들 때까지 노드로 간다(번갈아 바꾸며 비비지 않게)
-      if (viaNode[i] === 2 || !valid(i, mx, mz) || !valid(i, (w.x[i] + mx) / 2, (w.z[i] + mz) / 2)) {
+      const d2 = Math.min(n2.L, Math.max(0.5, LOOK - toEnd));
+      [gx, gz] = toArea(nx, ...onHe(nx, d2, sideU(i, nx, d2)));
+      // 한 번 노드로 가기로 했으면 노드에 닿을 때까지 노드로 간다(번갈아 바꾸며 비비지 않게)
+      if (viaNode[i] === 2 || !pathOk(i, x0, z0, gx, gz)) {
         viaNode[i] = 2;
         [gx, gz] = [bx, bz];
-      }
-    } else [gx, gz] = [bx, bz]; // 횡단보도 앞, 또는 되돌아설 때(막다른 길): 선 끝 노드까지 간다
-    // 막히면 선 가운데 쪽으로(띠는 늘 가운데선을 품는다)
-    const [fx, fz] = toEnd > 0.5 ? onHe(h, s + 0.5, 0) : [bx, bz];
-    const x0 = w.x[i];
-    const z0 = w.z[i];
+      } else onNext = true;
+    } else if (toEnd > LOOK) {
+      const s2 = Math.max(0, s) + LOOK;
+      [gx, gz] = toArea(h, ...onHe(h, s2, sideU(i, h, s2)));
+      if (!pathOk(i, x0, z0, gx, gz)) [gx, gz] = onHe(h, s2, 0);
+    } else [gx, gz] = [bx, bz]; // 횡단보도 앞, 되돌아설 때(막다른 길), 다음 선을 아직 안 정했을 때: 선 끝 노드까지
+    // 막히면 선 가운데 쪽으로(선은 늘 걷는 길 안이다)
+    const [fx, fz] = toEnd > 0.5 ? onHe(h, Math.max(0, s) + 0.5, 0) : [bx, bz];
     tx[i] = gx;
     tz[i] = gz;
     const moved = walkTo(i, gx, gz, spd[i], dt, fx, fz);
+    // 0.5초 넘게 막힌 사람은 앞으로 나아가지 못하는 걸음(옆·뒤로 비비기)을 하지 않고 선다(W28: 막힌 채 옆으로 비비며 제자리를 오갔다)
+    if (stuckT[i] > 0.5 && moved <= 0.1 * spd[i] * dt && (w.x[i] !== x0 || w.z[i] !== z0)) {
+      w.phase[i] -= Math.hypot(w.x[i] - x0, w.z[i] - z0) * 4.6;
+      w.x[i] = x0;
+      w.z[i] = z0;
+      vX[i] = 0;
+      vZ[i] = 0;
+    }
     if (moved > 0.1 * spd[i] * dt) stuckT[i] = Math.max(0, stuckT[i] - 2 * dt);
     else {
-      // 막힌 까닭이 같은 쪽으로 걸어가는 앞사람이면 줄을 선 것이다(돌아서지 않는다). 마주 오는 사람이나 서 버린 앞사람에게 막혔을 때 센다(W21b: 막힌 줄 뒤에서 기다리기만 하면 굳은 곳이 풀리지 않는다)
+      // 막힌 까닭이 같은 쪽으로 걸어가는 앞사람이면 줄을 선 것이다(돌아서지 않는다). 마주 오는 사람이나 서 버린 앞사람에게 막혔을 때 센다
       const j = aheadJ;
       const hx = Math.cos(head[i]);
       const hz = Math.sin(head[i]);
@@ -1188,17 +1220,16 @@ export function makePeople(
       else stuckT[i] = 0;
     }
     w.moving[i] = w.x[i] !== x0 || w.z[i] !== z0 ? 1 : 0;
-    // 다음 선으로 갈아타기(자리는 그대로): 다음 선 띠나 노드 원 안에 들었거나(노드 원은 두 선 모두의 걷는 길이다), 횡단보도면 노드 0.4m 안
+    // 다음 선으로 갈아타기(자리는 그대로): 그물은 길 찾기에만 쓰므로 노드 둘레(SWITCH_R 또는 노드 원)에 들거나 다음 선 위 자리를 겨누며 지금 선 끝 가까이 오면 갈아탄다.
+    // 되돌아가기·횡단보도는 노드 둘레에 들어야 한다
     if (nx >= 0) {
       const [s2] = proj(h, w.x[i], w.z[i]);
       const dB = Math.hypot(w.x[i] - bx, w.z[i] - bz);
-      // 되돌아가는 선(nx 가 지금 선의 반대)은 선 끝(노드 0.4m 안)에 닿아야 갈아탄다(그 전에 갈아타면 매 걸음 앞뒤로 뒤집힌다)
+      // 노드가 걷는 면 밖(칠한 작은 길 위)이면 옆 면에서 노드 옆을 지나면 닿은 것이다
+      const atB = dB < SWITCH_R || inNode(e.b, w.x[i], w.z[i]) || (!!area && !area.at(bx, bz) && e.L - s2 < 0.3 && dB < 5);
       const turn = nx === e.rev;
-      // 다음 선 위 겨눈 자리에 닿았으면(겨눈 자리는 다음 선 띠 안이다) 바로 갈아탄다: 안 그러면 지금 선 위 거리에 따라 겨눈 자리가 앞뒤로 바뀌며 제자리에서 떤다
-      const atAim = viaNode[i] === 1 && Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.05;
-      // 횡단보도 앞·막다른 길 끝은 노드 원(과 기다리는 자리 네모) 안에 들면 닿은 것이다(W26: 노드 가운데 한 점에 닿아야 하면 앞사람이 그 점을 막을 때 원 둘레를 맴돈다)
-      const atB = dB < 0.4 || inNode(e.b, w.x[i], w.z[i]);
-      if (turn ? atB || e.L - s2 < 0.3 : nxWalk ? (e.L - s2 < look + 0.5 && (atAim || inBand(nx, w.x[i], w.z[i]) || inNode(e.b, w.x[i], w.z[i]))) || dB < 0.05 : atB) {
+      // 횡단보도 앞은 노드 XW_R 안이면 기다리는 자리로 간다(W28: 기다리는 사람이 둘러싼 노드에 닿으려고 둘레를 돌았다. 자리가 없으면 그 자리에서 기다린다)
+      if (turn ? atB || e.L - s2 < 0.3 : nxWalk ? atB || (onNext && e.L - s2 < 1) || e.L - s2 < 0 : atB || dB < XW_R) {
         remember(i, e.b);
         if (turn) markTurn(i);
         if (!nxWalk) {
@@ -1217,12 +1248,12 @@ export function makePeople(
         he[i] = nx;
         nk[i] = -1;
         viaNode[i] = 0;
-        viaNode[i] = 0;
         waitT[i] = 0;
         h = nx;
       }
     }
-    // 오래 막혀 있으면 돌아선다. 마지막으로 돌아선 자리에서 TURN_GAP 안이면 돌아서지 않고 기다린다(W26: 붐비는 곳에서 3초마다 앞뒤로 돌아서며 오갔다)
+    // 아주 오래(REV_T) 막혀 있으면 돌아선다. 마지막으로 돌아선 자리에서 TURN_GAP 안이면 돌아서지 않고 기다린다(W26: 붐비는 곳에서 3초마다 앞뒤로 돌아서며 오갔다.
+    // W28: 걷는 면에서는 옆으로 비켜 지나갈 수 있어 3초 만에 돌아서던 것이 맴돌기의 큰 몫이었다. 막히면 서서 기다리고, 20초 넘게 막힐 때만 돌아선다)
     // 집(문·출구)이 10m 안인 사람도 돌아서지 않고 기다린다(문 앞에서 서로 비켜 주다 오가지 않게)
     if (stuckT[i] > REV_T && !canTurn(i)) stuckT[i] = 0;
     if (stuckT[i] > REV_T && !(goal[i] >= 0 && D[goal[i]][hes[he[i]].b] < 10)) {
@@ -1323,7 +1354,8 @@ export function makePeople(
     const v = left > 1 ? Math.min(HURRY, Math.max(xSpd[i], rest / (left - 0.5))) : left === 0 ? HURRY : xSpd[i];
     const m = walkTo(i, gx, gz, v, dt, bx, bz);
     w.moving[i] = m > 0 ? 1 : 0;
-    if (Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.3 || (L - ((w.x[i] - ax) * ux + (w.z[i] - az) * uz) < 0.3 && !last)) {
+    // 건너편 노드 원·기다리는 자리·승강장 네모 안에 들면 다 건넌 것이다(W28: 붐비는 승강장 끝 한 점에 닿으려다 횡단보도 위를 맴돌았다)
+    if (Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.3 || (L - ((w.x[i] - ax) * ux + (w.z[i] - az) * uz) < 0.3 && !last) || (last && inNode(hes[h].b, w.x[i], w.z[i]))) {
       if (last) {
         // 건너편 노드에서 다시 걷는다
         mode[i] = WALK;
@@ -1331,7 +1363,8 @@ export function makePeople(
         const n = hes[h].b;
         remember(i, n);
         const opts = out[n].filter((q) => hes[q].x < 0);
-        const pickH = opts.length ? (goal[i] >= 0 ? plan(i, h, clockS) : opts[Math.floor(rand() * opts.length)]) : hes[h].rev;
+        // 돌아다니는 사람도 향하는 먼 자리로 고른다(W28: 아무 선이나 고르면 건너온 쪽으로 돌아가 작은 고리를 돌았다)
+        const pickH = opts.length ? plan(i, h, clockS) : hes[h].rev;
         he[i] = pickH >= 0 && hes[pickH].x < 0 ? pickH : opts[0] ?? hes[h].rev;
         viaNode[i] = 0;
         nk[i] = -1;
@@ -1588,13 +1621,15 @@ export function makePeople(
     escapeCar(i, dt);
     if (m === OUTDOOR || m === INDOOR || m === BOARD || (m === QUEUE && Math.hypot(tx[i] - w.x[i], tz[i] - w.z[i]) > 0.05)) {
       // 문으로 들어갈 때는 걷는 선 위 문 자리(dockPos)까지 먼저 걷고 거기서 문턱으로 간다(문턱으로 곧게 가면 띠 밖이라 띠를 따라 미끄러지며 오간다)
+      // 걷는 면 위에서 문턱까지 곧게 갈 수 있으면 바로 문턱으로(W28)
+      if (m === INDOOR && docks[dockOf[i]].door && !xLeg[i] && pathOk(i, w.x[i], w.z[i], tx[i], tz[i])) xLeg[i] = 1;
       const viaDock = m === INDOOR && docks[dockOf[i]].door && !xLeg[i];
       const [px, pz] = m === OUTDOOR || viaDock ? dockPos(dockOf[i]) : [tx[i], tz[i]];
       const mv = walkTo(i, px, pz, Math.max(1.1, spd[i]), dt);
       w.moving[i] = mv > 0 ? 1 : 0;
       const left = Math.hypot(px - w.x[i], pz - w.z[i]);
       // 나오는 사람은 걷는 띠에 들면 걷기 시작한다(W26: 띠 가운데 문 자리 한 점까지 가려다 막히면 문 둘레를 맴돌았다)
-      if (m === OUTDOOR && (left < 0.15 || inHe(he[i], w.x[i], w.z[i]))) {
+      if (m === OUTDOOR && (left < 0.15 || inHe(he[i], w.x[i], w.z[i]) || area?.at(w.x[i], w.z[i]))) {
         mode[i] = WALK;
         const h = he[i];
         const d = docks[dockOf[i]];
@@ -1605,7 +1640,7 @@ export function makePeople(
       // 문턱·출구 자리 DOOR_R 안이면 들어간다(문은 폭이 있다)
       else if (m === INDOOR && !viaDock && left < DOOR_R) mode[i] = LEAVE;
       // 문턱 길에서 밀려 벗어났으면 문 자리부터 다시(띠 안에서 문턱으로 곧게 가면 띠 가장자리를 따라 미끄러지며 맴돈다)
-      else if (m === INDOOR && xLeg[i] && docks[dockOf[i]].door && segDist(w.x[i], w.z[i], tx[i], tz[i], ...dockPos(dockOf[i])) > 0.4) xLeg[i] = 0;
+      else if (m === INDOOR && xLeg[i] && docks[dockOf[i]].door && segDist(w.x[i], w.z[i], tx[i], tz[i], ...dockPos(dockOf[i])) > 0.4 && !pathOk(i, w.x[i], w.z[i], tx[i], tz[i])) xLeg[i] = 0;
       else if (m === BOARD && left < DOOR_R) mode[i] = LEAVE;
       else if (m === QUEUE && left < 0.05) w.moving[i] = 0;
       else if (mv === 0) {
