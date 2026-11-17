@@ -1,5 +1,5 @@
 // 로드뷰 기록으로 더 자세히 그리는 것: 층마다 내민 발코니와 난간·실외기, 원통 계단실, 처마 띠, 벽의 세로 띠, 주차장 입구(detailOf),
-// 담·철제 펜스·정문 기둥·포장·주차 칸 선·퍼걸러·가로등·계단식 좌석·옛 철길(siteOf). 사선 격자 외피는 기울인 상자로 그린다. 모두 상자 하나(원통 계단실은 원통 하나)를 인스턴스로 그린다.
+// 담·철제 펜스·정문 기둥·포장·주차 칸 선·퍼걸러·가로등·계단식 좌석·옛 철길·시장 아케이드(siteOf). 사선 격자 외피는 기울인 상자로 그린다. 모두 상자 하나(원통 계단실은 원통 하나)를 인스턴스로 그린다.
 // 기록이 있는 구역에만 생기므로 판 전체 정점은 거의 늘지 않는다. 멀면(900m 넘게) 그리지 않는다.
 import * as THREE from 'three';
 import type { Building } from '../data/board.ts';
@@ -233,6 +233,82 @@ export function siteOf(props: PropRec[]): number[] {
       const bh = p.base ? (p.baseH ?? 0.5) : 0;
       if (p.base) push(x, 0, z, yaw, p.w, bh, p.d, DK.slab, hexRGB(p.base));
       push(x, bh, z, yaw, p.w, p.h - bh, p.d, DK.slab, hexRGB(p.color));
+    } else if (p.kind === 'arcade') {
+      // 시장 아케이드. 상자는 가로(x)가 선을 가로지르고 깊이(z)가 선을 따른다. 둥근 지붕은 기둥 위(±w/2, h)와 가운데(0, h + rise)를 지나는 원호를 6 조각의 기운 판(DK.strut)으로
+      const fr = hexRGB(p.frame), pc = hexRGB(p.color);
+      const rise = Math.max(p.rise, 0.05);
+      const R = (p.w * p.w) / 4 / (2 * rise) + rise / 2;
+      const yc = p.h + rise - R;
+      const half = Math.asin(Math.min(1, p.w / 2 / R));
+      const arc: [number, number, number, number][] = [];
+      for (let k = 0; k < 6; k++) {
+        const a0 = -half + (half * k) / 3, a1 = a0 + half / 3;
+        const x0 = R * Math.sin(a0), y0 = yc + R * Math.cos(a0), x1 = R * Math.sin(a1), y1 = yc + R * Math.cos(a1);
+        arc.push([(x0 + x1) / 2, (y0 + y1) / 2, Math.hypot(x1 - x0, y1 - y0), Math.atan2(y1 - y0, x1 - x0)]);
+      }
+      const pts = p.line.map(xz);
+      /** 선 위 자리(점·방향)마다 단면 상자를 놓는다: 가로 자리 cx, 높이 y, 가로 길이 sx, 두께 sy, 깊이 sz */
+      const at = (x: number, z: number, ux: number, uz: number) => {
+        const nx = -uz, nz = ux;
+        const yaw = Math.atan2(nz, nx);
+        return (cx: number, y: number, sx: number, sy: number, sz: number, kind: number, c: [number, number, number], e = 0, along = 0) =>
+          push(x + nx * cx + ux * along, y, z + nz * cx + uz * along, yaw, sx, sy, sz, kind, c, e);
+      };
+      const segs: { ax: number; az: number; ux: number; uz: number; len: number; s0: number }[] = [];
+      let total = 0;
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const [ax, az] = pts[i];
+        const [bx, bz] = pts[i + 1];
+        const len = Math.hypot(bx - ax, bz - az);
+        if (len < 0.01) continue;
+        const ux = (bx - ax) / len, uz = (bz - az) / len;
+        segs.push({ ax, az, ux, uz, len, s0: total });
+        total += len;
+        const mid = at((ax + bx) / 2, (az + bz) / 2, ux, uz);
+        for (const [cx, cy, l, ang] of arc) mid(cx, cy, l, 0.06, len, DK.strut, pc, ang);
+        for (const s of [-1, 1]) mid((s * p.w) / 2, p.h - 0.3, 0.25, 0.3, len, DK.slab, fr);
+      }
+      // 기둥과 골조: 처음부터 span 마다, 마지막 기둥이 끝에서 0.5m 넘게 떨어지면 끝에도
+      const stations: number[] = [];
+      for (let s = 0; segs.length && s <= total + 1e-6; s += p.span) stations.push(Math.min(s, total));
+      if (stations.length && total - stations[stations.length - 1] > 0.5) stations.push(total);
+      for (const s of stations) {
+        const g = segs.find((q) => s <= q.s0 + q.len + 1e-6) ?? segs[segs.length - 1];
+        const t = s - g.s0;
+        const q = at(g.ax + g.ux * t, g.az + g.uz * t, g.ux, g.uz);
+        for (const k of [-1, 1]) q((k * p.w) / 2, 0, 0.22, p.h, 0.22, DK.pole, fr);
+        for (const [cx, cy, l, ang] of arc) q(cx, cy, l, 0.14, 0.2, DK.strut, fr, ang);
+      }
+      for (const g of p.gates ?? []) {
+        // 입구 문: 선 끝에서 선을 가로지르는 나무 문틀(양쪽 기둥과 통로 위 판), 맨 위 띠, 통로 위 바깥으로 낸 차양 띠
+        const k = g.end === 'start' ? 0 : pts.length - 1;
+        const [x, z] = pts[k];
+        const [ox, oz] = pts[g.end === 'start' ? 1 : k - 1];
+        const ol = Math.hypot(x - ox, z - oz) || 1;
+        const ux = (x - ox) / ol, uz = (z - oz) / ol; // 바깥쪽
+        const q = at(x, z, ux, uz);
+        const pw = Math.max(0.6, (g.w - p.w) / 2);
+        const topH = g.top ? 0.8 : 0;
+        for (const s of [-1, 1]) q(s * (g.w / 2 - pw / 2), 0, pw, g.h - topH, 0.8, DK.wood, hexRGB(g.color));
+        q(0, g.open, g.w - 2 * pw + 0.02, g.h - topH - g.open, 0.8, DK.wood, hexRGB(g.color));
+        if (g.top) q(0, g.h - topH, g.w + 0.2, topH, 1.0, DK.slab, hexRGB(g.top));
+        if (g.band) q(0, g.open - 0.5, g.w, 0.5, 2.4, DK.slab, hexRGB(g.band), 0, 0.8);
+      }
+      for (const d of p.domes ?? []) {
+        // 팔각 돔: 면마다 바깥(기둥 위 h)에서 꼭대기(h + rise)까지 세 단의 기운 판
+        const [x, z] = xz(d.ll);
+        const ap = d.r * Math.cos(Math.PI / 8);
+        for (let f = 0; f < 8; f++) {
+          const th = ((f + 0.5) * Math.PI) / 4;
+          const dx = Math.cos(th), dz = Math.sin(th);
+          for (let j = 0; j < 3; j++) {
+            const d0 = ap * (1 - j / 3), d1 = ap * (1 - (j + 1) / 3);
+            const y0 = p.h + (d.rise * j) / 3, y1 = p.h + (d.rise * (j + 1)) / 3;
+            const dm = (d0 + d1) / 2;
+            push(x + dx * dm, (y0 + y1) / 2, z + dz * dm, Math.atan2(dz, dx), Math.hypot(d0 - d1, y1 - y0), 0.08, 2 * d0 * Math.tan(Math.PI / 8), DK.strut, pc, Math.atan2(y0 - y1, d0 - d1));
+          }
+        }
+      }
     } else if (p.kind === 'steps') {
       // 단 k 는 앞에서 k·d/n 뒤부터 맨 뒤까지 덮는 상자 하나(층층이 쌓는다). 윗면이 밝은 slab 으로 디딤면과 챌면이 갈린다
       const [x, z] = xz(p.ll);

@@ -311,6 +311,51 @@ describe('단지 바닥 소품', () => {
     expect(rails.every((b) => Math.abs(b[2] + 5) < 0.01)).toBe(true);
     expect(ties.every((b) => b[6] > 2 && b[1] + b[5] < rails[0][1] + rails[0][5])).toBe(true);
   });
+  it('시장 아케이드는 선 양쪽에 span 마다 기둥을 세우고, 기둥 위 h 에서 가운데 h + rise 까지 둥근 지붕을 덮는다', () => {
+    // 북쪽(−z)으로 30m, 폭 6m, 기둥 높이 5m, 솟음 2m, 기둥 간격 6m
+    const s = siteOf([{ kind: 'arcade', line: [toLatLon(0, 0), toLatLon(0, -30)], w: 6, h: 5, rise: 2, span: 6, color: '#e8ecee', frame: '#9ea65a', conf: 'yes', seen: '' }]);
+    const boxes = Array.from({ length: s.length / 12 }, (_, i) => s.slice(i * 12, i * 12 + 12));
+    const posts = boxes.filter((b) => b[7] === DK.pole);
+    expect(posts.length).toBe(12); // 6m 마다 6곳 × 양쪽
+    expect(posts.every((b) => Math.abs(Math.abs(b[0]) - 3) < 0.2 && b[1] === 0 && Math.abs(b[5] - 5) < 0.01)).toBe(true);
+    const roof = boxes.filter((b) => b[7] === DK.strut);
+    expect(roof.length).toBeGreaterThan(0);
+    // 지붕 판의 위 끝: 기운 판 가운데 높이 ± 반 길이 × sin(기울기)
+    const tops = roof.map((b) => b[1] + (Math.abs(Math.sin(b[11])) * b[4]) / 2);
+    const lows = roof.map((b) => b[1] - (Math.abs(Math.sin(b[11])) * b[4]) / 2);
+    expect(Math.max(...tops)).toBeCloseTo(7, 0);
+    expect(Math.min(...lows)).toBeGreaterThan(4.8);
+    // 지붕은 선을 따라 끝까지 덮고(z 0 ~ −30), 폭 6m 를 넘지 않는다
+    expect(Math.min(...roof.map((b) => b[2]))).toBeLessThan(-25);
+    expect(Math.max(...roof.map((b) => b[2]))).toBeGreaterThan(-5);
+    expect(roof.every((b) => Math.abs(b[0]) < 3.2)).toBe(true);
+    // 판 색과 골조 색이 둘 다 쓰인다
+    const cols = new Set(roof.map((b) => b.slice(8, 11).map((v) => v.toFixed(2)).join()));
+    expect(cols.size).toBe(2);
+  });
+  it('아케이드 끝 입구 문은 선 끝에 폭 w·높이 h 의 나무 문틀을 세우고, 교차점 돔은 가운데가 가장 높다', () => {
+    const s = siteOf([
+      {
+        kind: 'arcade', line: [toLatLon(0, 0), toLatLon(0, -30)], w: 6, h: 5, rise: 2, span: 6, color: '#e8ecee', frame: '#9ea65a',
+        gates: [{ end: 'end', w: 9, h: 11, open: 4.5, color: '#8a5a3a', top: '#e8822e', band: '#3c3d40' }],
+        domes: [{ ll: toLatLon(0, -15), r: 6, rise: 3 }],
+        conf: 'yes', seen: '',
+      },
+    ]);
+    const boxes = Array.from({ length: s.length / 12 }, (_, i) => s.slice(i * 12, i * 12 + 12));
+    const gate = boxes.filter((b) => b[7] === DK.wood);
+    expect(gate.length).toBeGreaterThan(0);
+    expect(gate.every((b) => Math.abs(b[2] + 30) < 1.5)).toBe(true); // 선 끝(z −30)
+    expect(Math.max(...boxes.filter((b) => Math.abs(b[2] + 30) < 1.5).map((b) => b[1] + b[5]))).toBeCloseTo(11, 1);
+    const xs = gate.flatMap((b) => [b[0] - b[4] / 2, b[0] + b[4] / 2]);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(9, 0);
+    // 돔: z −15 둘레 r 6m 안 판의 위 끝이 h + rise(8m) 를 넘지 않고, 거의 닿는다
+    const dome = boxes.filter((b) => b[7] === DK.strut && Math.hypot(b[0], b[2] + 15) < 6 && Math.abs(b[11]) > 0.3 && b[1] > 6);
+    expect(dome.length).toBeGreaterThanOrEqual(8);
+    const top = Math.max(...dome.map((b) => b[1] + (Math.abs(Math.sin(b[11])) * b[4]) / 2));
+    expect(top).toBeGreaterThan(7.3);
+    expect(top).toBeLessThan(8.2);
+  });
 });
 
 describe('기록한 창 모양', () => {
@@ -418,7 +463,7 @@ describe('기록 파일', () => {
         expect(['shop', 'piloti', 'lobby', 'house', 'ramp', UNKNOWN]).toContain(r.ground);
         expect(['yes', 'part', 'sky']).toContain(r.conf);
       }
-      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp', 'steps', 'booth', 'track']).toContain(p.kind);
+      for (const p of a.props) expect(['tree', 'fence', 'gate', 'paving', 'parking', 'pergola', 'lamp', 'steps', 'booth', 'track', 'arcade']).toContain(p.kind);
     }
   });
 });

@@ -131,6 +131,21 @@ export type PropRec = PropBase &
     | { kind: 'track'; line: LL[]; gauge?: number }
     /** 부스·안내소·무대처럼 길에 놓인 상자: 가운데 ll, 길이 w 를 방위각 yaw 쪽으로 눕히고 폭 d, 높이 h. base 를 적으면 아래 baseH 를 그 색 띠로 */
     | { kind: 'booth'; ll: LL; w: number; d: number; h: number; yaw: number; color: string; base?: string; baseH?: number }
+    /** 시장 아케이드: 선을 따라 양쪽에 span 마다 기둥(높이 h), 그 위에 폭 w·솟음 rise 의 둥근 지붕(판 color, 골조 frame).
+     *  gates: 선 처음(start)·끝(end)에 세운 입구 문(폭 w, 높이 h, 통로 높이 open, 나무 문틀 color, 맨 위 띠 top, 통로 위 차양 띠 band).
+     *  domes: 교차점의 팔각 돔(가운데 ll, 반지름 r, 기둥 위로 솟음 rise) */
+    | {
+        kind: 'arcade';
+        line: LL[];
+        w: number;
+        h: number;
+        rise: number;
+        span: number;
+        color: string;
+        frame: string;
+        gates?: { end: 'start' | 'end'; w: number; h: number; open: number; color: string; top?: string; band?: string }[];
+        domes?: { ll: LL; r: number; rise: number }[];
+      }
   );
 
 export interface AreaRec {
