@@ -905,7 +905,12 @@ export function makeCars(
     const x = edges[P.edges[P.edges.length - 1]];
     const xl = P.lanes[P.lanes.length - 1];
     let need = size[i] + 2.5;
-    for (const h of held[P.j]) if (h !== i && jp[h] >= 0 && PS[jp[h]].edges[PS[jp[h]].edges.length - 1] === x.id && PS[jp[h]].lanes[PS[jp[h]].lanes.length - 1] === xl) need += size[h] + 2.5;
+    const mine: number[] = [];
+    for (const h of held[P.j])
+      if (h !== i && jp[h] >= 0 && PS[jp[h]].edges[PS[jp[h]].edges.length - 1] === x.id && PS[jp[h]].lanes[PS[jp[h]].lanes.length - 1] === xl) {
+        need += size[h] + 2.5;
+        mine.push(h);
+      }
     const clear = X.relEnd(x.id, xl);
     let cap = Infinity;
     if (isApproach(x.id) || S.midApproach.has(x.id)) {
@@ -916,8 +921,13 @@ export function makeCars(
     let d = -clear;
     let xp = xl === MED ? 0.5 : xl + 0.5;
     for (let e = x, k = 0; k < 4 && d < 40; k++) {
-      const t = tail[e.id * 8 + (xl === MED && e.med ? MED : Math.min(e.lanes - 1, Math.floor(xp)))];
-      if (t >= 0 && t !== i) return Math.min(cap, d + s[t] - size[t] / 2) >= need;
+      // 달리는 차는 짐으로 더하고 첫 장애물까지 잰다(재작업 W37)
+      for (let t = tail[e.id * 8 + (xl === MED && e.med ? MED : Math.min(e.lanes - 1, Math.floor(xp)))]; t >= 0; t = acc[t]) {
+        if (t === i || mine.includes(t)) continue;
+        const h = holdTail(t);
+        if (h < Infinity) return Math.min(cap, d + h) >= need;
+        need += size[t] + 2.5;
+      }
       d += e.len;
       if (e.next.length !== 1) break;
       xp = lanePos(e, edges[e.next[0]], xp);
@@ -969,7 +979,7 @@ export function makeCars(
       }
     }
     // 게이트 뒤 횡단보도 가운데 그 앞에 서면 몸이 상자에 남는 것들(재작업 W22): 그 너머에 내가 다 들어갈 자리가 있고, 보행 초록이 켜지기 전에 다 지난다
-    xwAhead(i, Math.max(60, dist + 60));
+    xwAhead(i, Math.max(60, dist + 60), true);
     let c0 = Infinity;
     let c1 = -Infinity;
     let a = -1;
@@ -982,8 +992,10 @@ export function makeCars(
         b = XG[g + 3];
         zones.push(...XZ[g / 4]);
       }
-    if (a >= 0 && !clearOk(i, c0, c1, a, b, tod, zones)) return 6;
-    return 0;
+    skipLoads = true;
+    const ok = a < 0 || clearOk(i, c0, c1, a, b, tod, zones);
+    skipLoads = false;
+    return ok ? 0 : 6;
   }
 
   /** 길 중간 보행 신호 진입로 a(게이트까지 dist)를 지금 지나가도 되는가: 초록이고, 노란불은 편히 못 설 때만. 횡단보도는 횡단보도 지키기가 따로 본다 */
@@ -1163,7 +1175,7 @@ export function makeCars(
         for (let gx = cellAt(SW[0] - 8); gx <= cellAt(SW[0] + 8); gx++)
           for (let gz = cellAt(SW[2] - 8); gz <= cellAt(SW[2] + 8); gz++)
             for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
-              if (j === i || j >= cars.n || Math.abs(cars.y[j] - SW[1]) > 2.5) continue;
+              if (j === i || j >= cars.n || Math.abs(cars.y[j] - SW[1]) > 2.5 || (skipLoads && loadMk[j] === loadStamp)) continue;
               if (Math.abs(cars.x[j] - SW[0]) > hl + size[j] / 2 + 2 || Math.abs(cars.z[j] - SW[2]) > hl + size[j] / 2 + 2) continue;
               const dn = depth(SW[0], SW[2], SW[3], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]);
               // 지금 이미 그만큼 가까이 나란히 있는 차는 빼고, 더 가까워지는 차만
@@ -1192,8 +1204,73 @@ export function makeCars(
   /** 앞 게이트 [앞 범퍼에서 거리, 진입로, 차로] */
   const XT: number[] = [];
   /** 길 따라 앞차 꽁무니, 고른 경로의 상자 끝, 지나온 경로의 상자 끝, 고른 경로 게이트(넘었으면 −∞): 앞 범퍼에서 거리 */
-  const XA = { lead: Infinity, boxEnd: -Infinity, ppEnd: -Infinity, gate: -Infinity, load: 0, v0: Infinity };
-  function xwAhead(i: number, reach: number) {
+  const XA = { lead: Infinity, boxEnd: -Infinity, ppEnd: -Infinity, gate: -Infinity, load: 0, v0: Infinity, first: -1, firstAt: Infinity };
+  // ── 줄 지어 들어가기(재작업 W37, 설계 문서 57절) ──
+  // 교차로 게이트에서 나갈 차로 자리·건너편 횡단보도 너머 자리를 잴 때, 같은 길을 앞서 달리는 차는 서 있는 장애물이 아니라 내 앞에 함께 설 짐(몸 길이 + 2.5m)으로 보고
+  // 그 앞 첫 장애물(서 있는 차, 앞 게이트 앞에 설 차, 초록이 남지 않을 게이트)까지 잰다(자리 보존: 짐이 모두 장애물 뒤에 붙어 서도 내 몫이 남을 때만 들어간다).
+  // 전에는 앞차 꽁무니를 서 있는 장애물로 재어, 뒤차가 앞차가 상자와 건너편 횡단보도를 다 지날 때까지 게이트에서 기다렸다(합정 교차로 9 약 12초에 한 대)
+  const V_MOVER = 2;
+  /** 차 j 가 달리며 제 앞길을 비워 가는 차인가: 2m/s 넘게 달리고, 지난 걸음에 제 정지선·횡단보도 앞에 서려던 차가 아니며, 따라가는 것이 없거나 같은 차로 앞차이고
+   *  그 앞차도 달리며(서 있는 앞차 뒤에는 곧 선다), 앞 게이트를 이미 들어가기로 정했거나 앞 게이트가 없다 */
+  function mover(j: number): boolean {
+    if (v[j] < V_MOVER || ahead[j] === j || aheadWhy[j] > 2) return false;
+    if (ahead[j] >= 0 && ahead[j] < cars.n && v[ahead[j]] < 1) return false;
+    return !(jp[j] >= 0 && !go[j] && !past[j]);
+  }
+  /** 짐이 아닌 차 j 의 꽁무니가 설 자리(구간 위 거리): 앞 게이트를 아직 정하지 않고 그 게이트 말고는 따라가는 것이 없는 달리는 차는 게이트 앞까지 간다 */
+  function stopTail(j: number): number {
+    const t = s[j] - size[j] / 2;
+    if (v[j] < V_MOVER || jp[j] < 0 || go[j] || past[j] || (ahead[j] >= 0 && ahead[j] !== j)) return t;
+    return Math.max(t, s[j] + size[j] / 2 + Math.max(0, Math.min(gateDist(j), gdist[j]) - 1.7) - size[j]);
+  }
+  /** 차 j 의 꽁무니가 가장 일찍 설 수 있는 자리(구간 위 거리). 짐이면(달리며 앞길을 비워 가고 그 앞에 아직 정하지 않은 게이트가 없다) ∞.
+   *  들어가기로 정한 경로의 나가는 길이 다음 교차로 진입로·길 중간 신호면 그 게이트에서 다시 정하므로 그 앞에 설 수 있다(합정 교차로 9 → e317: 앞차가 다음 교차로 게이트에서
+   *  경로 예약을 기다리며 서자 뒤따라 들어온 차가 건너편 횡단보도 위에 섰다, 재작업 W37) */
+  function holdTail(j: number): number {
+    if (!mover(j)) return stopTail(j);
+    if (jp[j] < 0) return Infinity;
+    const P = PS[jp[j]];
+    const x = edges[P.edges[P.edges.length - 1]];
+    if (!isApproach(x.id) && !S.midApproach.has(x.id)) return Infinity;
+    // 지금 구간 시작에서 나가는 길 시작까지
+    let d = jk[j] < 0 ? edges[edge[j]].len : 0;
+    for (let k = Math.max(0, jk[j]); k < P.edges.length - 1; k++) d += edges[P.edges[k]].len;
+    const xl = P.lanes[P.lanes.length - 1];
+    const line = d + x.len - X.gate(x.id, xl === MED ? 0 : xl);
+    // 그 게이트가 j 가 닿을 때까지 초록으로 남는 신호면 지나간다고 본다. 신호 없는 교차로는 지금 그 교차로를 잡은 차나 곧 들어설 차가 없을 때만
+    if (S.approach.has(x.id) || S.midApproach.has(x.id)) {
+      if (S.state(x.id, STRAIGHT, nowTod) === GREEN && S.greenLeft(x.id, STRAIGHT, nowTod) > (line - s[j]) / Math.max(4, v[j]) + 2) return Infinity;
+    } else {
+      const jn = X.jEnd[x.id];
+      // 같은 진입로·같은 차로로 앞서 들어간 차(j 와 같은 줄)는 뺀다
+      const other = (h: number) => {
+        const hp = jp[h] >= 0 && PS[jp[h]].j === jn ? jp[h] : pp[h];
+        return h !== j && !(hp >= 0 && PS[hp].a === x.id && PS[hp].lane === xl);
+      };
+      if (!held[jn].some(other) && !coming[jn].some((c) => other(c) && gateDist(c) < 20)) return Infinity;
+    }
+    return line - 1 - size[j];
+  }
+  /** 지금 걸음 시각(초, 하루 안) */
+  let nowTod = 0;
+  /** 짐으로 본 차 표시(xwAhead 줄 지어 보기 한 번마다 새 번호) */
+  const loadMk = new Uint32Array(max);
+  let loadStamp = 0;
+  /** 너머 자리 그려 보기(bodyAhead·sweepAhead)에서 짐으로 본 차를 뺄까 */
+  let skipLoads = false;
+  /** 차 t 부터 같은 구간·차로 앞쪽(acc)으로 짐인 차는 XA.load 에 더하고 표시한 뒤, 첫 장애물 꽁무니 자리(off 를 더한 앞 범퍼 기준)를 돌린다. 끝까지 짐이면 ∞ */
+  function chainLead(i: number, t: number, off: number): number {
+    for (; t >= 0; t = acc[t]) {
+      if (t === i || loadMk[t] === loadStamp) continue;
+      const h = holdTail(t);
+      if (h < Infinity) return off + h;
+      loadMk[t] = loadStamp;
+      if (XA.first < 0) (XA.first = t), (XA.firstAt = off + s[t] - size[t] / 2);
+      XA.load += size[t] + 2.5;
+    }
+    return Infinity;
+  }
+  function xwAhead(i: number, reach: number, platoon = false) {
     XG.length = 0;
     XW.length = 0;
     XZ.length = 0;
@@ -1208,7 +1285,15 @@ export function makeCars(
     XA.gate = jp[i] >= 0 && !past[i] ? gateDist(i) : -Infinity;
     XA.lead = Infinity;
     XA.v0 = Infinity;
-    if (acc[i] >= 0) XA.lead = s[acc[i]] - size[acc[i]] / 2 - head;
+    XA.load = 0;
+    XA.first = -1;
+    XA.firstAt = Infinity;
+    if (platoon) {
+      loadStamp++;
+      if (acc[i] >= 0) XA.lead = chainLead(i, acc[i], -head);
+      const lt = leaveTail[e0.id * 8 + lane[i]];
+      if (XA.lead === Infinity && lt >= 0 && lt !== i) XA.lead = chainLead(i, lt, e0.len - head);
+    } else if (acc[i] >= 0) XA.lead = s[acc[i]] - size[acc[i]] / 2 - head;
     else {
       const lt = leaveTail[e0.id * 8 + lane[i]];
       if (lt >= 0 && lt !== i) XA.lead = e0.len - head + s[lt] - size[lt] / 2;
@@ -1219,7 +1304,9 @@ export function makeCars(
     let ln = lane[i];
     let xp = pref[i] * e0.lanes;
     let pe = e0;
-    for (let id = e0.id, k = 0; id >= 0 && k < 8 && off < reach; k++) {
+    // 짐(모일 차·줄 지어 달리는 앞차)이 있으면 그만큼 더 멀리 장애물을 찾는다: 짐은 장애물 뒤에 붙어 서므로, reach 밖 장애물이라도 짐을 빼면 reach 안이 된다(재작업 W37).
+    // 전에는 reach(40m) 안에서만 찾아, 홍대입구 e94 → e371 → e95(차로가 줄어드는 이음매, 모일 차 짐 20.8m) 에서 reach 밖에 선 차를 못 보고 xw726 에 들어가 섰다
+    for (let id = e0.id, k = 0; id >= 0 && k < 8 && off < reach + load + XA.load; k++) {
       const e = edges[id];
       if (k > 0) {
         xp = lanePos(pe, e, xp);
@@ -1227,7 +1314,7 @@ export function makeCars(
         ln = pl >= 0 ? pl : laneAt(i, e, xp);
         if (pl >= 0) xp = ln === MED ? 0.5 : ln + 0.5;
         const t = tail[id * 8 + ln];
-        if (XA.lead === Infinity && t >= 0 && t !== i) XA.lead = off + s[t] - size[t] / 2;
+        if (XA.lead === Infinity && t >= 0 && t !== i) XA.lead = platoon ? chainLead(i, t, off) : off + s[t] - size[t] / 2;
       }
       // 차로 수가 줄어드는 이음매 앞 구간: 다른 차로에서 내 다음 차로로 모일 차도 앞차로 본다(모이는 차 뒤에 서서 횡단보도에 걸치지 않게)
       const nx = k === 0 ? nextE[i] : laterEdge(i, e);
@@ -1287,8 +1374,8 @@ export function makeCars(
       pe = e;
       id = nx;
     }
-    XA.lead = Math.min(XA.lead - load, pRear);
-    XA.load = load;
+    XA.lead = Math.min(XA.lead - load - XA.load, pRear);
+    XA.load += load;
     // 마주 오는 쪽이 잡은 포개진 자리는 그 1.6m 앞에 선 장애물로 본다(그 앞 횡단보도에 들어가 자리가 없어 면 위에 서지 않게, 재작업 W25)
     for (let g = 0; g < XG.length; g += 4)
       for (const zc of XZ[g / 4]) if (zclaim[i] !== zc && zoneOcc[zc >> 1] & (1 << (1 - (zc & 1)))) XA.lead = Math.min(XA.lead, XG[g] - 1.6);
@@ -1321,7 +1408,7 @@ export function makeCars(
     for (let gx = cellAt(cx - r); gx <= cellAt(cx + r); gx++)
       for (let gz = cellAt(cz - r); gz <= cellAt(cz + r); gz++)
         for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
-          if (j === i || j >= cars.n || Math.abs(cars.y[j] - cars.y[i]) > 2.5) continue;
+          if (j === i || j >= cars.n || Math.abs(cars.y[j] - cars.y[i]) > 2.5 || (skipLoads && loadMk[j] === loadStamp)) continue;
           // 옆으로 옮겨 가는 차는 옮겨 갈 자리(옆 거리 0)에서도 본다(월드컵로 xw578: 옆 차로에서 버스 앞으로 옮겨 오던 차, 재작업 W29)
           const drift = Math.abs(side[j]) > 0.3;
           if (drift) restPose(j, RP);
@@ -1356,24 +1443,38 @@ export function makeCars(
       if (S.walkState(XW[k], tod) !== RED) return false;
       soon = Math.min(soon, S.walkIn(XW[k], tod));
     }
-    obs = Math.min(obs, bodyAhead(i, need + 3));
+    // 짐으로 본 앞차를 뺀 그려 보기에서 찾은 장애물 뒤에도 그 짐이 함께 선다(재작업 W37)
+    const ld = skipLoads ? XA.load : 0;
+    obs = Math.min(obs, bodyAhead(i, need + 3 + ld) - ld);
     if (obs < need + 2.5) return false;
     // 옮겨 그려 보기는 지금 장애물(obs)보다 가까운 것만 찾으면 된다
-    obs = Math.min(obs, sweepAhead(i, Math.min(need + 3, obs + 1)));
+    obs = Math.min(obs, sweepAhead(i, Math.min(need + 3, obs + 1) + ld) - ld);
     if (obs < need + 2.5) return false;
     return soon > 40 || clearSim(i, need, obs) + 1 < soon;
   }
-  /** 따라가기 규칙(서 있는 장애물이 obs 에 있다고 보고, 바라는 속도는 앞 구간들 가운데 가장 느린 것)대로 달려 앞 범퍼가 need 를 지나는 데 걸리는 시간(초). 못 지나면 ∞ */
+  /** 따라가기 규칙(서 있는 장애물이 obs 에 있다고 보고, 바라는 속도는 앞 구간들 가운데 가장 느린 것)대로 달려 앞 범퍼가 need 를 지나는 데 걸리는 시간(초). 못 지나면 ∞.
+   *  짐으로 본 바로 앞차가 있으면(재작업 W37) 그 차도 같은 규칙으로 달린다고 보고(장애물은 obs 너머 내 몫), 그 꽁무니를 따라간다 */
   function clearSim(i: number, need: number, obs: number): number {
     const v0 = Math.min(XA.v0, Math.max(0.5, speed[edge[i]] * vf[i]));
+    const idm = (u: number, gap: number) => {
+      let a = A_MAX * (1 - (u / v0) ** 4);
+      if (gap < Infinity) a -= A_MAX * ((2 + u * 1.3 + (u * u) / (2 * Math.sqrt(A_MAX * B_COMF))) / Math.max(0.3, gap)) ** 2;
+      return Math.max(-8, Math.min(A_MAX, a));
+    };
+    const fl = skipLoads ? XA.first : -1;
+    let xl = fl >= 0 ? XA.firstAt : Infinity;
+    let ul = fl >= 0 ? v[fl] : 0;
+    const obsL = obs + size[i] + 2.5;
     const h = 0.2;
     let x = 0;
     let u = v[i];
     let t = 0;
     while (x < need) {
-      let a = A_MAX * (1 - (u / v0) ** 4);
-      if (obs < Infinity) a -= A_MAX * ((2 + u * 1.3 + (u * u) / (2 * Math.sqrt(A_MAX * B_COMF))) / Math.max(0.3, obs - x)) ** 2;
-      a = Math.max(-8, Math.min(A_MAX, a));
+      const a = idm(u, Math.min(obs - x, xl - x));
+      if (fl >= 0) {
+        ul = Math.max(0, ul + idm(ul, obsL - xl) * h);
+        xl += ul * h;
+      }
       u = Math.max(0, u + a * h);
       x += u * h;
       t += h;
@@ -1401,6 +1502,7 @@ export function makeCars(
   const dwells: [number, number, number][] = [];
 
   function step(dt: number, now: Now, spawn = true) {
+    nowTod = now.tod;
     dwells.length = 0;
     // 0 이하 단계(화면 프레임 시각이 거꾸로 간 첫 프레임)는 건너뛴다. 음수 단계로 차가 구간 시작 뒤로 물러나 교차로 한가운데 포개졌다
     if (!(dt > 0)) return;

@@ -376,6 +376,13 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
         for (let q = k + 1; q < steps.length; q++) steps[q].start += CYCLE - t;
       }
     }
+    // 현시가 하나뿐이고 보행 신호도 없는 교차로(재작업 W35): 서로 부딪는 움직임도 건널 사람도 없으니 노랑·전체 빨강 없이 늘 초록이다.
+    // 노랑·빨강 5초가 초록불 물결로 이웃 교차로 좌회전 현시와 겹치면, 그 좌회전 차는 나갈 길이 곧 빨강이라 주기마다 못 들어갔다(합정 교차로 9 → 2)
+    if (phases.length === 1 && phases[0].kind !== 'walk' && steps.length && !steps.some((st) => st.walk.size)) {
+      const one = steps[0];
+      site.steps = [{ start: 0, dur: CYCLE, green: one.green, amber: new Map(), yields: one.yields, walk: new Set() }];
+      return;
+    }
     site.steps = steps;
   });
   // 길 중간 보행 신호
@@ -509,12 +516,13 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     let left = 0;
     for (let n = 0; n < s.steps.length; n++) {
       const st = s.steps[k];
-      if (!((st.green.get(a) ?? 0) & m)) break;
+      if (!((st.green.get(a) ?? 0) & m)) return left;
       left += st.start + st.dur - u;
       k = (k + 1) % s.steps.length;
       u = s.steps[k].start;
     }
-    return left;
+    // 주기 내내 초록
+    return Infinity;
   }
   /** 진입로 a 의 움직임 m 이 지금 양보하며 가는 움직임인가 */
   const yields = (a: number, m: number, tod: number) => {
