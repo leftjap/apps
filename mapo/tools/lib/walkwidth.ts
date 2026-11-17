@@ -1,6 +1,7 @@
 // 걷는 선 면 폭과 갈래 영역(재작업 W31 S2, 설계 mapo-w31-people-design.md 4절). 사람 모듈의 차로(S3)·갈래 영역 입장(S4)이 쓴다.
 //  - 면 폭: 선마다 ¼·가운데·¾ 세 자리에서 선에 수직으로 잰 걷는 면(몸 가운데가 설 수 있는 칸) 폭 가운데 가장 작은 값.
-//    자리가 면 밖이면(칠한 작은 길 위 골목 선, #55) 수직으로 4m 안 가장 가까운 면 자리에서 잰다(사람은 그 면으로 비켜 걷는다). 없거나 길이 0 인 선은 0
+//    자리가 면 밖이면(칠한 작은 길 위 골목 선, #55) 수직으로 4m 안 가장 가까운 면 자리에서 잰다(사람은 그 면으로 비켜 걷는다).
+//    4m 안에 면이 없으면 선 띠 폭(사람은 선 띠를 걷는다, W34: 이 자리를 0 으로 재 2m 넘는 걷는 선 4.4% 가 폭 0 이었다). 길이 0 인 선은 0
 //  - 갈래 영역: 갈래 노드(이웃 셋 이상) 둘이 그물 위로 JUNC_R 안에 있으면 한 뭉치로 묶고(이어서 묶임), 그 사이 길의 노드도 넣는다.
 //    넓이는 영역 노드와 영역 안 선에서 JUNC_PAD 안 걷는 면, 정원은 넓이 / PER_HEAD
 import { decodeArea } from '../../src/sim/people/area.ts';
@@ -20,19 +21,20 @@ export function edgeWidths(json: WalkJson): number[] {
   const g = decodeWalk(json);
   const A = decodeArea(json.a);
   if (!A) throw new Error('walk.json 에 걷는 면(a)이 없다');
-  const across = (x: number, z: number, nx: number, nz: number) => {
+  const across = (x: number, z: number, nx: number, nz: number, band: number) => {
     for (let d = 0; d <= 4; d += 0.25)
       for (const sg of d ? [1, -1] : [1]) {
         const px = x + nx * d * sg;
         const pz = z + nz * d * sg;
         if (A.at(px, pz)) return A.room(px, pz, nx, nz, 10) + A.room(px, pz, -nx, -nz, 10);
       }
-    return 0;
+    return band;
   };
   const out: number[] = [];
   for (let k = 0; k < g.edgeAt.length / 2; k++) {
     const a = g.edgeAt[k * 2];
     const b = g.adj[a][g.edgeAt[k * 2 + 1]];
+    const [lo, hi] = g.band[a][g.edgeAt[k * 2 + 1]];
     const [ax, az, bx, bz] = [g.nx[a * 2], g.nx[a * 2 + 1], g.nx[b * 2], g.nx[b * 2 + 1]];
     const L = Math.hypot(bx - ax, bz - az);
     if (L < 1e-3) {
@@ -42,7 +44,7 @@ export function edgeWidths(json: WalkJson): number[] {
     const nx = -(bz - az) / L;
     const nz = (bx - ax) / L;
     let m = Infinity;
-    for (const t of [0.25, 0.5, 0.75]) m = Math.min(m, across(ax + (bx - ax) * t, az + (bz - az) * t, nx, nz));
+    for (const t of [0.25, 0.5, 0.75]) m = Math.min(m, across(ax + (bx - ax) * t, az + (bz - az) * t, nx, nz, hi - lo));
     out.push(Math.round(m / WIDTH_UNIT));
   }
   return out;
