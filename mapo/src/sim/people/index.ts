@@ -4,7 +4,9 @@
 //  - 사람은 몸(반지름 BODY_R)이 있어 다른 사람·차 몸통과 겹치지 않는다: 움직이기 전에 새 자리가 비었는지 보고, 비었을 때만 옮긴다.
 //  - 사람은 걷는 길 그물(walk.json)의 걷는 띠·노드 원·횡단보도 기다리는 자리·횡단보도 통로 안에만 있다. 그물은 굽기에서 큰길 찻길과
 //    몸 반지름 + 여유만큼 떨어지게 잘랐으므로(tools/lib/walkfix.ts), 이 안에 있으면 찻길 위에 서지 않는다.
-//  - 큰길은 횡단보도로만, 보행 신호를 지켜 건넌다. 같은 자리를 오가며 갇히면 가장 가까운 출구·문으로 돌아간다.
+//  - 큰길은 횡단보도로만, 보행 신호를 지켜 건넌다.
+//  - 한자리를 오가며 맴돌지 않는다(W26): 문·노드에 닿는 것은 점이 아니라 영역이고, 돌아다니는 사람은 막다른 가지에 들어가지 않으며,
+//    돌아서기(온 길로 되돌아가기·막혀 돌아서기)는 마지막으로 돌아선 자리에서 TURN_GAP 넘게 떨어졌을 때만 한다.
 //  - 자리는 매 단계 걸음만큼만 바뀐다(순간이동 없음). 선을 갈아탈 때도 자리는 그대로 두고 따라가는 선만 바꾼다.
 import type { Now } from '../clock.ts';
 import { BODY_HW, BODY_LEN, bodyType } from '../bodies.ts';
@@ -102,9 +104,14 @@ const GATHER = 3;
 const CROSS_COST = 12;
 const MAX_WAIT_BUS = 300;
 const HURRY = 2.2;
-/** 같은 자리 오가기 감지: 5초마다 자리를 적고 30초 창에서 본다 */
-const SAMPLE = 5;
-const RING = 7;
+/** 문·출구 폭(W26): 문턱(출구 자리) 이만큼(m) 안에 든 사람은 들어간다. 한 점에 닿아야 들어가면 앞사람이 그 점을 막을 때 뒷사람이 둘레를 맴돈다 */
+const DOOR_R = 0.8;
+/** 돌아서기 간격(m, W26): 마지막으로 돌아선 자리에서 이만큼 떨어지기 전에는 다시 돌아서지 않는다(30초에 10m 원 안을 오가려면 두 번 돌아서야 한다) */
+const TURN_GAP = 20;
+/** 막혀 돌아선 선을 다시 고르지 않는 시간(초) */
+const AVOID_T = 60;
+/** 돌아다니는 사람이 기억하는 최근 지난 노드 수(W26: 넷이면 노드 다섯 개짜리 작은 고리를 계속 돌았다) */
+const SEEN = 8;
 
 const WALK = 0;
 const WAITX = 1; // 횡단보도 앞 기다림
@@ -389,6 +396,28 @@ export function makePeople(
     return false;
   }
 
+  /** 막다른 가지(W26): 그물에서 끝 노드를 거듭 떼어 내면 사라지는 나무 가지. intoDead[k] 는 방향 있는 선 k 가 그 가지 안쪽(더 막다른 쪽)으로 들어가는가.
+   *  돌아다니는 사람은 다른 길이 있으면 이런 가지에 들어가지 않는다(들어가면 끝에서 되돌아 나와야 한다) */
+  const intoDead = new Uint8Array(hes.length);
+  {
+    const deg = new Int32Array(out.length);
+    for (let n = 0; n < out.length; n++) for (const k of out[n]) if (hes[k].b !== n) deg[n]++;
+    const ord = new Int32Array(out.length).fill(-1);
+    const q: number[] = [];
+    for (let n = 0; n < out.length; n++) if (deg[n] <= 1) q.push(n);
+    let t = 0;
+    for (let qi = 0; qi < q.length; qi++) {
+      const n = q[qi];
+      if (ord[n] >= 0) continue;
+      ord[n] = t++;
+      for (const k of out[n]) {
+        const b = hes[k].b;
+        if (b !== n && ord[b] < 0 && --deg[b] <= 1) q.push(b);
+      }
+    }
+    for (let k = 0; k < hes.length; k++) if (ord[hes[k].b] >= 0 && (ord[hes[k].a] < 0 || ord[hes[k].a] > ord[hes[k].b])) intoDead[k] = 1;
+  }
+
   const dockPos = (k: number): [number, number] => {
     const d = docks[k];
     const h = hes[d.he];
@@ -494,16 +523,14 @@ export function makePeople(
   const xSpd = new Float32Array(max);
   const waitT = new Float32Array(max);
   const stuckT = new Float32Array(max);
-  const walked = new Float32Array(max);
-  const sampT = new Float32Array(max);
-  const ring = new Float32Array(max * RING * 3); // 5초마다 [x, z, 걸은 거리]
-  const ringN = new Uint8Array(max);
-  const seenN = new Int32Array(max * 4).fill(-1); // 최근 지난 노드 넷
+  const seenN = new Int32Array(max * SEEN).fill(-1); // 최근 지난 노드 SEEN 개
   const lastX = new Int32Array(max).fill(-1); // 마지막으로 건넌 횡단보도
   const lastXT = new Float32Array(max);
+  const turnX = new Float32Array(max); // 마지막으로 돌아선 자리(W26, 아직 없으면 NaN)
+  const turnZ = new Float32Array(max);
   // 성기게 움직이기(W19): 자세히 볼 필요 없는 사람(setDetail 이 거짓)은 밀린 시간이 SUB 에 닿을 때만 한 번에 움직인다
   const lag = new Float32Array(max);
-  const all = [lag, vX, vZ, headW, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, walked, sampT, ringN, lastX, lastXT];
+  const all = [lag, vX, vZ, headW, avoidHe, avoidT, viaNode, w.x, w.z, w.yaw, w.phase, w.fade, w.tint, w.id, w.photo, w.moving, w.age, w.female, mode, he, nk, prv, lane, spd, head, life, goal, dockOf, home, holdT, snap, faceX, faceZ, tx, tz, xLeg, xLat, xSpd, waitT, stuckT, lastX, lastXT, turnX, turnZ];
 
   const dead = new Uint8Array(max);
   /** 사라질 사람 표시(단계 안에서는 배열 자리를 바꾸지 않는다: 격자가 옛 자리 번호를 쥐고 있다) */
@@ -519,8 +546,7 @@ export function makePeople(
       for (const a of all) a[i] = a[j];
       dead[i] = dead[j];
       dead[j] = 0;
-      ring.copyWithin(i * RING * 3, j * RING * 3, (j + 1) * RING * 3);
-      seenN.copyWithin(i * 4, j * 4, j * 4 + 4);
+      seenN.copyWithin(i * SEEN, j * SEEN, j * SEEN + SEEN);
     }
   }
 
@@ -696,22 +722,26 @@ export function makePeople(
     const d = Math.hypot(x - w.x[i], z - w.z[i]);
     w.x[i] = x;
     w.z[i] = z;
-    walked[i] += d;
     w.phase[i] += d * 4.6;
     return true;
   }
 
   // ── 고르기 ──
   const remember = (i: number, n: number) => {
-    const b = i * 4;
-    seenN[b + 3] = seenN[b + 2];
-    seenN[b + 2] = seenN[b + 1];
-    seenN[b + 1] = seenN[b];
+    const b = i * SEEN;
+    seenN.copyWithin(b + 1, b, b + SEEN - 1);
     seenN[b] = n;
   };
   const wasAt = (i: number, n: number) => {
-    const b = i * 4;
-    return seenN[b] === n || seenN[b + 1] === n || seenN[b + 2] === n || seenN[b + 3] === n;
+    const b = i * SEEN;
+    for (let k = 0; k < SEEN; k++) if (seenN[b + k] === n) return true;
+    return false;
+  };
+  /** 돌아서도 되는가(W26): 마지막으로 돌아선 자리에서 TURN_GAP 넘게 떨어졌을 때만(온 길로 되돌아가기·막혀 돌아서기 모두) */
+  const canTurn = (i: number) => Number.isNaN(turnX[i]) || Math.hypot(w.x[i] - turnX[i], w.z[i] - turnZ[i]) >= TURN_GAP;
+  const markTurn = (i: number) => {
+    turnX[i] = w.x[i];
+    turnZ[i] = w.z[i];
   };
   const tmpW: number[] = [];
   const tmpK: number[] = [];
@@ -745,7 +775,15 @@ export function makePeople(
     tmpW.length = 0;
     tmpK.length = 0;
     const e0 = hes[h];
-    for (const k of opts) {
+    // 고를 수 있는 가장 앞 등급에서만 고른다(W26): 0 앞으로 난 길(돌아설 수 있으면 온 길도 무게 0.02 로), 1 막혀 돌아섰던 선, 2 막다른 가지, 3 온 길.
+    // 막혀 돌아섰던 선을 목록에서 빼면 막다른 길과 그 선 사이에 갇혀 오갔다
+    const free = canTurn(i);
+    const avoid = avoidT[i] > now ? avoidHe[i] : -1;
+    const tierOf = (k: number) => (k === back ? (free ? 0 : 3) : k === avoid ? 1 : intoDead[k] ? 2 : 0);
+    let tier = 3;
+    for (const k of opts0) tier = Math.min(tier, tierOf(k));
+    for (const k of opts0) {
+      if (tierOf(k) !== tier) continue;
       const e = hes[k];
       let wt = e.x >= 0 ? 0.5 : Math.max(0.05, e.w);
       if (k === back) wt *= 0.02;
@@ -786,11 +824,10 @@ export function makePeople(
     holdT[i] = 0;
     waitT[i] = 0;
     stuckT[i] = 0;
-    walked[i] = 0;
-    sampT[i] = rand() * SAMPLE;
-    ringN[i] = 0;
     lastX[i] = -1;
-    seenN.fill(-1, i * 4, i * 4 + 4);
+    turnX[i] = NaN;
+    turnZ[i] = NaN;
+    seenN.fill(-1, i * SEEN, i * SEEN + SEEN);
     home[i] = zone;
     nk[i] = -1;
     viaNode[i] = 0;
@@ -808,8 +845,9 @@ export function makePeople(
     let [x, z] = d.door ?? dockPos(k);
     if (near) [x, z] = near;
     const i = w.n;
-    // 방향은 아무 쪽이나
-    const h = rand() < 0.5 ? d.he : hes[d.he].rev;
+    // 방향은 아무 쪽이나(막다른 가지 안이면 바깥쪽으로)
+    const r0 = hes[d.he].rev;
+    const h = intoDead[d.he] && !intoDead[r0] ? r0 : intoDead[r0] && !intoDead[d.he] ? d.he : rand() < 0.5 ? d.he : r0;
     he[i] = h;
     nk[i] = -1;
     viaNode[i] = 0;
@@ -1090,6 +1128,15 @@ export function makePeople(
     if (nk[i] < 0 && e.L - s < 8) {
       nk[i] = plan(i, h, clockS);
       if (nk[i] < 0) nk[i] = e.rev;
+      // 갈래 길 앞에서 온 길로 되돌아가기로 했으면 그 자리에서 바로 돌아선다(W26: 붐비는 갈래 길까지 들어가 머물다 돌아서면 같은 자리를 오간다). 막다른 길은 끝까지 간다
+      if (nk[i] === e.rev && out[e.b].length > 1) {
+        markTurn(i);
+        prv[i] = h;
+        he[i] = e.rev;
+        nk[i] = -1;
+        viaNode[i] = 0;
+        return;
+      }
     }
     const look = 1.6;
     let gx: number;
@@ -1149,8 +1196,11 @@ export function makePeople(
       const turn = nx === e.rev;
       // 다음 선 위 겨눈 자리에 닿았으면(겨눈 자리는 다음 선 띠 안이다) 바로 갈아탄다: 안 그러면 지금 선 위 거리에 따라 겨눈 자리가 앞뒤로 바뀌며 제자리에서 떤다
       const atAim = viaNode[i] === 1 && Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.05;
-      if (turn ? dB < 0.4 || e.L - s2 < 0.3 : nxWalk ? (e.L - s2 < look + 0.5 && (atAim || inBand(nx, w.x[i], w.z[i]) || inNode(e.b, w.x[i], w.z[i]))) || dB < 0.05 : dB < 0.4) {
+      // 횡단보도 앞·막다른 길 끝은 노드 원(과 기다리는 자리 네모) 안에 들면 닿은 것이다(W26: 노드 가운데 한 점에 닿아야 하면 앞사람이 그 점을 막을 때 원 둘레를 맴돈다)
+      const atB = dB < 0.4 || inNode(e.b, w.x[i], w.z[i]);
+      if (turn ? atB || e.L - s2 < 0.3 : nxWalk ? (e.L - s2 < look + 0.5 && (atAim || inBand(nx, w.x[i], w.z[i]) || inNode(e.b, w.x[i], w.z[i]))) || dB < 0.05 : atB) {
         remember(i, e.b);
+        if (turn) markTurn(i);
         if (!nxWalk) {
           // 횡단보도: 기다리는 자리로
           mode[i] = WAITX;
@@ -1172,13 +1222,15 @@ export function makePeople(
         h = nx;
       }
     }
-    // 오래 막혀 있으면 돌아선다
-    // 집(문·출구)이 10m 안인 사람은 돌아서지 않고 기다린다(문 앞에서 서로 비켜 주다 오가지 않게)
+    // 오래 막혀 있으면 돌아선다. 마지막으로 돌아선 자리에서 TURN_GAP 안이면 돌아서지 않고 기다린다(W26: 붐비는 곳에서 3초마다 앞뒤로 돌아서며 오갔다)
+    // 집(문·출구)이 10m 안인 사람도 돌아서지 않고 기다린다(문 앞에서 서로 비켜 주다 오가지 않게)
+    if (stuckT[i] > REV_T && !canTurn(i)) stuckT[i] = 0;
     if (stuckT[i] > REV_T && !(goal[i] >= 0 && D[goal[i]][hes[he[i]].b] < 10)) {
-      // 마주 오는 사람과 막혀 오래 서 있으면 돌아서고, 그 선은 30초 동안 다시 고르지 않는다
+      // 마주 오는 사람과 막혀 오래 서 있으면 돌아서고, 그 선은 AVOID_T 초 동안 되도록 고르지 않는다
       stuckT[i] = 0;
+      markTurn(i);
       avoidHe[i] = he[i];
-      avoidT[i] = clockS + 30;
+      avoidT[i] = clockS + AVOID_T;
       prv[i] = he[i];
       he[i] = hes[he[i]].rev;
       viaNode[i] = 0;
@@ -1291,31 +1343,6 @@ export function makePeople(
           waitT[i] = 0;
         }
       } else xLeg[i]++;
-    }
-  }
-
-  // ── 같은 자리 오가기 감지 ──
-  function watch(i: number, dt: number) {
-    sampT[i] += dt;
-    if (sampT[i] < SAMPLE) return;
-    sampT[i] = 0;
-    const b = i * RING * 3;
-    ring.copyWithin(b + 3, b, b + (RING - 1) * 3);
-    ring[b] = w.x[i];
-    ring[b + 1] = w.z[i];
-    ring[b + 2] = walked[i];
-    if (ringN[i] < RING) ringN[i]++;
-    if (ringN[i] < 6 || mode[i] !== WALK) return;
-    // 25초 창: 다섯 표본 사이가 모두 10m 원 안인데 12m 넘게 걸었으면 오가며 갇힌 것
-    let far = 0;
-    for (let q = 1; q < 6; q++) far = Math.max(far, Math.hypot(ring[b + q * 3] - ring[b], ring[b + q * 3 + 1] - ring[b + 1]));
-    if (far < 9 && walked[i] - ring[b + 5 * 3 + 2] > 12) {
-      // 가장 가까운 출구·문으로 돌아간다(거리 장은 내려가기만 하므로 다시 오가지 않는다)
-      goal[i] = 0;
-      life[i] = 0;
-      nk[i] = -1;
-      viaNode[i] = 0;
-      ringN[i] = 0;
     }
   }
 
@@ -1566,16 +1593,20 @@ export function makePeople(
       const mv = walkTo(i, px, pz, Math.max(1.1, spd[i]), dt);
       w.moving[i] = mv > 0 ? 1 : 0;
       const left = Math.hypot(px - w.x[i], pz - w.z[i]);
-      if (m === OUTDOOR && left < 0.15) {
+      // 나오는 사람은 걷는 띠에 들면 걷기 시작한다(W26: 띠 가운데 문 자리 한 점까지 가려다 막히면 문 둘레를 맴돌았다)
+      if (m === OUTDOOR && (left < 0.15 || inHe(he[i], w.x[i], w.z[i]))) {
         mode[i] = WALK;
         const h = he[i];
         const d = docks[dockOf[i]];
         // 선 위 문 자리에서 나온다(방향 있는 선이 반대면 그대로 둔다)
         void d;
         void h;
-      } else if (viaDock && left < 0.3) xLeg[i] = 1;
-      else if (m === INDOOR && left < 0.15) mode[i] = LEAVE;
-      else if (m === BOARD && left < 0.4) mode[i] = LEAVE;
+      } else if (viaDock && segDist(w.x[i], w.z[i], docks[dockOf[i]].door![0], docks[dockOf[i]].door![1], px, pz) < 0.3) xLeg[i] = 1;
+      // 문턱·출구 자리 DOOR_R 안이면 들어간다(문은 폭이 있다)
+      else if (m === INDOOR && !viaDock && left < DOOR_R) mode[i] = LEAVE;
+      // 문턱 길에서 밀려 벗어났으면 문 자리부터 다시(띠 안에서 문턱으로 곧게 가면 띠 가장자리를 따라 미끄러지며 맴돈다)
+      else if (m === INDOOR && xLeg[i] && docks[dockOf[i]].door && segDist(w.x[i], w.z[i], tx[i], tz[i], ...dockPos(dockOf[i])) > 0.4) xLeg[i] = 0;
+      else if (m === BOARD && left < DOOR_R) mode[i] = LEAVE;
       else if (m === QUEUE && left < 0.05) w.moving[i] = 0;
       else if (mv === 0) {
         waitT[i] += dt;
@@ -1624,7 +1655,6 @@ export function makePeople(
       }
     }
     walkStep(i, dt, now.tod);
-    if (!dead[i]) watch(i, dt);
   }
   /** 차 몸통이 다가와 몸에 닿으면(둘레 여유 안) 덜 닿는 쪽으로 비켜난다(1초에 2.5m 까지) */
   function escapeCar(i: number, dt: number) {
@@ -1644,7 +1674,6 @@ export function makePeople(
       if (d < bd - 1e-4) (bd = d), (bx = x), (bz = z);
     }
     if (bd < d0) {
-      walked[i] += 0;
       w.x[i] = bx;
       w.z[i] = bz;
     }
