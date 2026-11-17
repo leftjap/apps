@@ -25,6 +25,10 @@ export interface WalkJson {
   d?: number[];
   /** (W28) 걷는 면: [칸 크기(cm), x0, z0(m), 너비, 높이(칸), 줄마다 묶음 수, (띈 칸, 길이) …](tools/lib/walkarea.ts) */
   a?: number[];
+  /** (W31 S2) 선마다(e 순서) 면 폭(0.25m 단위): ¼·가운데·¾ 세 자리에서 선에 수직으로 잰 걷는 면 폭 가운데 가장 작은 값(tools/lib/walkwidth.ts) */
+  w?: number[];
+  /** (W31 S2) 갈래 영역마다 [노드 수, 넓이(m²), 첫 노드, 앞 노드와 차이 …]: 그물 위 4m 안 갈래 노드 뭉치. 정원 = 넓이 / 1.2m² */
+  j?: number[];
 }
 
 /** 횡단보도 하나: 축 E0(ax, az) → E1(bx, bz). 보도 쪽 기다리는 자리 pa(E0 쪽)·pb(E1 쪽)와, 거기서 그래프로 이어지는 노드 na·nb */

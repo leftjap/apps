@@ -1,4 +1,4 @@
-// 걷는 면만 다시 굽는다(재작업 W28): 지금 public/data/walk.json 그물은 그대로 두고 걷는 면(a)만 새로 넣는다. node tools/walk-area.ts
+// 걷는 면만 다시 굽는다(재작업 W28): 지금 public/data/walk.json 그물은 그대로 두고 걷는 면(a)만 새로 넣는다(끝에 선 면 폭·갈래 영역도, tools/walk-width.ts). node tools/walk-area.ts
 // pnpm bake·node tools/walk.ts 는 그물을 구운 뒤 이 도구로 걷는 면을 굽는다
 import { readFileSync, writeFileSync } from 'node:fs';
 import { decodeBoard, roadHalf } from '../src/data/board.ts';
@@ -85,3 +85,5 @@ for (let k = 5; k < walk.a.length; ) {
 const json = JSON.stringify(walk);
 writeFileSync(new URL('../public/data/walk.json', import.meta.url), json);
 console.log(`걷는 면 ${((cells * walk.a[0] * walk.a[0]) / 1e10).toFixed(2)}km², 묶음 ${runs}, walk.json ${(json.length / 1e6).toFixed(2)}MB, ${((Date.now() - t0) / 1000).toFixed(1)}초`);
+// 걷는 면이 바뀌었으니 선 면 폭·갈래 영역(W31 S2)도 다시 굽는다
+await import('./walk-width.ts');
