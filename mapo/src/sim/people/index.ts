@@ -79,6 +79,10 @@ const EDGE_EXT = 0.02;
 const CAR_PAD = 0.1;
 /** 한 번에 움직이는 가장 긴 시간(초): 이보다 긴 단계는 나눠 돈다(가장 빠른 걸음 2.2m/s 로 0.22m) */
 const SUB = 0.1;
+/** 미리 돌리기(W24): 길게 불러도 끝 WARM_SECS 초만 돌린다(0.1초 걸음 그대로 150초와 300초는 인원·분포가 같았다). 앞부분은 한 사람을 WARM_TICK 초에 한 번씩 움직이고, 끝 WARM_FINE 초는 모두 SUB 마다 움직인다 */
+const WARM_SECS = 150;
+const WARM_TICK = 2;
+const WARM_FINE = 10;
 /** 상호 회피: 이웃을 보는 거리(m), 내다보는 시간(초), 벽(걷는 띠 가장자리)에 다가가는 시간(초) */
 const NEAR = 2.6;
 /** 수명이 다한 사람이 가던 길 앞의 문·출구를 찾아 걷는 가장 긴 시간(초) */
@@ -1500,16 +1504,18 @@ export function makePeople(
   }
 
   // ── 한 단계 ──
-  function step(dt: number, now: Now, ambient = true) {
+  function step(dt: number, now: Now, ambient = true, coarse = SUB) {
     if (o.busy) {
       for (const k of marked) o.busy[k] = 0;
       marked.length = 0;
     }
     carGrid();
-    const n = Math.max(1, Math.ceil(dt / SUB - 1e-6));
+    // 미리 돌릴 때(coarse > SUB)는 dt 를 나누지 않고, 사람마다 coarse 초에 한 번 밀린 만큼 움직인다(차례는 고유 번호로 나눈다)
+    const warmC = coarse > SUB;
+    const n = warmC ? 1 : Math.max(1, Math.ceil(dt / SUB - 1e-6));
     const sd = dt / n;
     // 성기게 움직일 사람은 K 단계에 한 번(K × sd ≤ SUB), 고유 번호로 차례를 나눠 같은 프레임에 몰리지 않게 한다
-    const K = Math.max(1, Math.min(8, Math.floor(SUB / sd + 1e-6)));
+    const K = warmC ? Math.max(1, Math.round(coarse / sd)) : Math.max(1, Math.min(8, Math.floor(SUB / sd + 1e-6)));
     for (let q = 0; q < n; q++) {
       clockS += sd;
       stepNo++;
@@ -1517,10 +1523,10 @@ export function makePeople(
       for (let i = w.n - 1; i >= 0; i--) {
         if (dead[i]) continue;
         let td = sd;
-        if (detail) {
-          // 자세히 볼 사람은 매 단계, 나머지는 제 차례(K 단계에 한 번)나 밀린 시간이 SUB 에 닿을 때 밀린 만큼 한 번에
+        if (detail || warmC) {
+          // 자세히 볼 사람은 매 단계, 나머지는 제 차례(K 단계에 한 번)나 밀린 시간이 SUB(미리 돌릴 때는 coarse)에 닿을 때 밀린 만큼 한 번에
           lag[i] += sd;
-          if (lag[i] < SUB - 1e-6 && (stepNo + w.id[i]) % K !== 0 && !detail(w.x[i], w.z[i])) continue;
+          if (lag[i] < (warmC ? coarse : SUB) - 1e-6 && (stepNo + w.id[i]) % K !== 0 && (warmC || !detail!(w.x[i], w.z[i]))) continue;
           td = lag[i];
           lag[i] = 0;
         }
@@ -1748,11 +1754,15 @@ export function makePeople(
       }
     return real.reduce((a, v, c) => a + (totW[c] > 0 ? (v * part[c]) / totW[c] : 0), 0);
   };
-  /** 미리 돌리기: secs 초를 0.5초씩 돌린다(그동안 문·출구에서 빨리 낸다). 시각도 함께 흘린다 */
+  /** 미리 돌리기: secs 초(WARM_SECS 까지)를 0.5초씩 돌린다(그동안 문·출구에서 빨리 낸다). 시각도 함께 흘린다.
+   *  W24: 0.1초 걸음으로 300초를 다 돌면 첫 화면이 16초 늦었다. 끝 WARM_FINE 초 앞까지는 한 사람을 WARM_TICK 초에 한 번 움직인다(걸음이 길 뿐 같은 규칙: 걷는 길·몸 겹침·차 몸통은 걸음마다 본다) */
   function warm(secs: number, at: Now) {
+    secs = Math.min(secs, WARM_SECS);
     rush = 6;
     const N = Math.round(secs / 0.5);
-    for (let k = 0; k < N; k++) step(0.5, { ...at, tod: (at.tod - secs + k * 0.5 + 86400) % 86400 });
+    const fine = Math.round(Math.min(secs, WARM_FINE) / 0.5);
+    for (let k = 0; k < N; k++) step(0.5, { ...at, tod: (at.tod - secs + k * 0.5 + 86400) % 86400 }, true, k < N - fine ? WARM_TICK : SUB);
+    lag.fill(0);
     rush = 1;
   }
   /** 측정·시험용: 사람 i 의 상태 */
