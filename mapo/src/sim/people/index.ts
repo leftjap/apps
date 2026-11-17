@@ -1841,7 +1841,30 @@ export function makePeople(
   const popStats = () => ({ wantIn: Array.from(wantIn), haveIn: Array.from(haveIn), wantOut: Array.from(wantOut), haveOut: Array.from(haveOut), focus, kIn, kOut, n: w.n, pending: pending.length });
   /** 시험용: 사람이 지금 있어도 되는 자리인가 */
   const validAt = (i: number) => valid(i, w.x[i], w.z[i]);
-  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
+  /** 시험용(W31 Y 갈림 시험): (x, z)에 걷는 사람 한 명을 놓고 (gx, gz) 쪽으로 걷게 한다(돌아다니는 사람의 먼 자리를 그곳으로 고정, 수명 없음). 고유 번호, 못 놓으면 −1 */
+  function put(x: number, z: number, gx: number, gz: number): number {
+    const at = attach(x, z);
+    const i = w.n;
+    if (!at || i >= max || crowded(i, x, z, 2 * BODY_R)) return -1;
+    const h0 = hes[at[0]];
+    he[i] = h0.ux * (gx - x) + h0.uz * (gz - z) >= 0 ? at[0] : h0.rev;
+    mode[i] = WALK;
+    dockOf[i] = -1;
+    w.n++;
+    w.x[i] = x;
+    w.z[i] = z;
+    born(i, OUT_Z);
+    w.fade[i] = 1;
+    life[i] = Infinity;
+    wgX[i] = gx;
+    wgZ[i] = gz;
+    head[i] = w.yaw[i] = headW[i] = Math.atan2(gz - z, gx - x);
+    const key = cellKey(Math.floor(x / GC), Math.floor(z / GC));
+    gridNext[i] = gridHead[key];
+    gridHead[key] = i;
+    return w.id[i];
+  }
+  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, put, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
 }
 export type People = ReturnType<typeof makePeople>;
 
