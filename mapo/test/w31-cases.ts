@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { runW31, type W31Res } from './w31-run.ts';
 
-// 재작업 W31 한 차림 측정(w31-run.ts)의 판정. W41: 씨앗을 여섯으로 늘려 한 파일이 CI 에서 30분 가까이 걸리지 않게 시험 파일 둘(w31-people·w31-people2)이 차림을 나눠 부른다(파일마다 다른 일꾼에서 돈다).
+// 재작업 W31 한 차림 측정(w31-run.ts)의 판정. W41: 씨앗을 여섯으로 늘려 차림마다 시험 파일 하나(w31-people·w31-people2~5)가 부른다(파일마다 다른 일꾼에서 돈다.
+// 차림 셋을 한 파일에 두었더니 CI 에서 그 파일 하나가 25분 걸렸다).
 // ── 한 차림 측정 ──
 // 한 판 값은 씨앗마다 ±30% 흔들려(W33: 같은 변형 안에서 맴돌기 131~254) 작은 고침도 어느 씨앗에서든 상한을 넘긴다. 0 규칙은 판마다 보고,
 // 맴돌기·10초 흐름·20초 정체는 차림마다 씨앗 평균으로 본다(W34 씨앗 셋 11·12·13).
@@ -51,6 +52,13 @@ const BACK_MAX = 4;
 // 칸을 옮긴 사람을 둘째 격자에 넣어(W33 준비, W38 에 넣음) 15판 모두 0 이다
 
 /** 차림 names 를 씨앗마다(0 규칙)·씨앗 평균으로(맴돌기·흐름·정체·되돌아감) 판정한다 */
+/** 오가기 한 판 상한(사람 약 3,000명 가운데, W26 시험에서 옮김). 목표는 0, 적어도 W21 수준(50 아래)이다. W26 끝 263·259·290·244·311·283(W26 앞 586·533·498·424·442·465).
+ *  W28(걷는 면) 끝에 잰 값 토 21시 166·152·149, 화 15시 157·152·158, W27 차로 정본(58fe47f8)과 함께 191·148·162, 161·160·159 에 여유를 둔 값으로
+ *  늘지 않는지만 본다. 목표에 못 미쳤다(설계 문서 55절). W41: W26 시험(test/w26-pacing.test.ts)은 홍대 토 21시·화 15시 씨앗 11·12·13 을 이 차림과 똑같이
+ *  (같은 보는 곳·인원·차·미리 돌리기·60초) 따로 한 번 더 돌렸다. 같은 판을 두 번 돌리지 않게 그 판들에서 이 상한만 여기서 본다 */
+const PACE_MAX = 200;
+const PACE_RUNS = new Set(['홍대 토 21시/11', '홍대 토 21시/12', '홍대 토 21시/13', '홍대 화 15시/11', '홍대 화 15시/12', '홍대 화 15시/13']);
+
 export function describeW31(names: string[]) {
   describe.each(casesOf(names))('W31 한 차림: %s(씨앗 %i)', (name, seed) => {
     let R: W31Res;
@@ -58,6 +66,7 @@ export function describeW31(names: string[]) {
       R = res(name, seed);
     }, 400_000);
     it('사람이 있다', () => expect(R.people).toBeGreaterThan(1500));
+    if (PACE_RUNS.has(`${name}/${seed}`)) it(`10m 안에서 30초 넘게 오가기 ${PACE_MAX} 명 아래(W26)`, () => expect(R.pace.length, R.pace.slice(0, 10).join('\n')).toBeLessThanOrEqual(PACE_MAX));
     it('출구·정류장·문 밖에서 생기거나 사라짐 0', () => expect([...R.born, ...R.gone]).toEqual([]));
     it('몸통 겹침 0', () => expect(R.overlap).toEqual([]));
     it('찻길 면 안 자리 0', () => expect(R.road).toEqual([]));
