@@ -1,8 +1,9 @@
-// 렌더러·카메라·조작. 카메라는 판을 벗어나지 않고 땅 아래로 내려가지 않는다.
+// 렌더러·카메라·조작. 카메라는 판을 벗어나지 않고 땅 아래·건물 속으로 들어가지 않는다.
 import * as THREE from 'three';
 import { MapControls } from 'three/addons/controls/MapControls.js';
 import { BOARD_R } from '../geo.ts';
 import { env } from './env.ts';
+import { CAM, clipPlanes, keepOut, makeSolids, maxPolar, minPolar, type Solids } from './camfloor.ts';
 
 export interface Preset {
   target: [number, number];
@@ -33,7 +34,8 @@ export function makeView(canvas: HTMLCanvasElement) {
   controls.enableDamping = true;
   controls.dampingFactor = 0.12;
   controls.zoomToCursor = true;
-  controls.minDistance = 70;
+  // 가까이 당기면 사람 눈높이까지 내려간다(camfloor.ts, 재작업 W5-⑨)
+  controls.minDistance = CAM.minDist;
   controls.maxDistance = 16000;
   controls.maxPolarAngle = (80 * Math.PI) / 180;
   controls.rotateSpeed = 0.6;
@@ -62,6 +64,7 @@ export function makeView(canvas: HTMLCanvasElement) {
   const v1 = new THREE.Vector3();
   const v2 = new THREE.Vector3();
   const ease = (rate: number, dt: number) => 1 - Math.exp(-rate * dt);
+  let solids: Solids = makeSolids([]);
 
   function resize() {
     const w = canvas.clientWidth;
@@ -151,6 +154,10 @@ export function makeView(canvas: HTMLCanvasElement) {
         camera.position.lerpVectors(fly.from.pos, fly.to.pos, k);
         if (fly.t >= 1) fly = null;
       }
+      // 가까울수록 더 눕혀 눈높이로 볼 수 있고, 아주 가까이 당기면 저절로 눕는다(멀리서는 예전처럼 0~80도)
+      const camD = camera.position.distanceTo(controls.target);
+      controls.maxPolarAngle = maxPolar(camD);
+      controls.minPolarAngle = minPolar(camD);
       controls.update();
       // 보는 지점이 판 밖으로 나가지 않게 한다
       const r = Math.hypot(controls.target.x, controls.target.z);
@@ -164,9 +171,16 @@ export function makeView(canvas: HTMLCanvasElement) {
         camera.position.z += dz;
       }
       controls.target.y = 0;
-      if (camera.position.y < 25) camera.position.y = 25;
+      // 땅 밑·건물 속으로 들어가지 않는다
+      keepOut(solids, controls.target.x, controls.target.z, camera.position);
+      const clip = clipPlanes(camera.position.distanceTo(controls.target));
+      if (camera.near !== clip.near) (camera.near = clip.near), camera.updateProjectionMatrix();
       // 안개는 보는 거리에 맞춘다: 멀리서 전체를 볼 때도, 가까이서 볼 때도 먼 쪽만 살짝 흐려진다
       env.uFogK.value = 1 / (camera.position.distanceTo(controls.target) * 2.2 + 6000);
+    },
+    /** 카메라가 들어가지 않을 건물 덩어리(그리는 건물 목록) */
+    setSolids(list: Parameters<typeof makeSolids>[0]) {
+      solids = makeSolids(list);
     },
     /** 사용자가 직접 움직이면 날아가던 것을 멈춘다 */
     cancelFly() {
