@@ -631,14 +631,15 @@ function canonConstraints(edges: Edge[], prev: number[][], roads: Road[], painte
   clampAll();
   // 차로 띠는 찻길 안(연석 안)에 있다: 칠한 선으로 읽지 않은 구간(이어받거나 고르게 나눈 차로)에서 맨 오른쪽 차로 띠가 연석을 0.5m 넘게 넘은 단면은 넘은 만큼 모든 차로를 왼쪽으로 옮긴다(이어받기로 다른 조각의 자리를 잘못 받은 곳,
   // 월드컵로 −572,−35 역방향은 7.5m 를 받아 연석 밖을 달렸다). 왼쪽은 양방향 길이면 가운데선, 한 방향 길이면 왼쪽 연석을 넘지 않는다. 교차로 둘레도 고친다(잘못된 자리라)
-  // 양방향 길은 같은 조각 다른 방향을 칠한 선으로 읽었으면 그 가장 왼쪽 차로에서 OPP_GAP 안으로 옮기지 않는다: OSM 가운데선이 실제 길 가운데에서 3m 쯤 벗어난 곳(망원로 −1263,−643)은
-  // 다른 방향을 칠한 선으로 읽으면 그 차로가 가운데선 이쪽에 있고, 연석 자료(가운데선 기준 어림)대로 옮기면 이 방향 차로가 중앙선을 넘어 다른 방향에 포개졌다(재작업 W27)
+  // 양방향 길은 같은 조각 다른 방향의 가장 왼쪽 차로에서 OPP_GAP 안으로 옮기지 않는다: OSM 가운데선이 실제 길 가운데에서 3m 쯤 벗어난 곳(망원로 −1263,−643)은
+  // 다른 방향을 칠한 선으로 읽으면 그 차로가 가운데선 이쪽에 있고, 연석 자료(가운데선 기준 어림)대로 옮기면 이 방향 차로가 중앙선을 넘어 다른 방향에 포개졌다(재작업 W27).
+  // 다른 방향 차로가 칠한 선으로 읽은 것이 아니어도(이어받거나 고르게 나눈 차로) 같은 제한을 건다(재작업 W32, 0 시험 9판이 그대로 0)
   const byRoad = new Map<number, Edge[]>();
   for (const e of edges) (byRoad.get(e.road) ?? byRoad.set(e.road, []).get(e.road)!).push(e);
   const oppInner = (e: Edge, sv: number) => {
     const at = e.full - (e.s0 + sv);
     const o = byRoad.get(e.road)!.find((q) => q.rev !== e.rev && at >= q.s0 - 0.01 && at <= q.s0 + q.len + 0.01);
-    return o && painted[o.id] === 1 ? -laneOff(o, o.med ? MED : 0, Math.min(o.len, Math.max(0, at - o.s0))) : -Infinity;
+    return o ? -laneOff(o, o.med ? MED : 0, Math.min(o.len, Math.max(0, at - o.s0))) : -Infinity;
   };
   {
     let moved = 0;
