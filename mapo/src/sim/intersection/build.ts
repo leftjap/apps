@@ -241,7 +241,8 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
       }
   }
   // 이음매가 꺾이면 안쪽 차로 곡선이 뒤로 돌지 않게 늘린다
-  const laneW = (e: Edge, s: number) => Math.max(Math.abs(laneOff(e, 0, s)), Math.abs(laneOff(e, e.lanes - 1, s)));
+  // 중앙버스차로도 넣는다(재작업 W25: 넣지 않으면 꺾인 이음매에서 중앙버스차로 버스가 4.8m 곡선에 3.9m 옆으로 옮겨져 한 걸음에 0.6m 튀었다, 양화로 e184 → e185)
+  const laneW = (e: Edge, s: number) => Math.max(Math.abs(laneOff(e, 0, s)), Math.abs(laneOff(e, e.lanes - 1, s)), e.med ? Math.abs(laneOff(e, MED, s)) : 0);
   for (const a of edges)
     for (const k of a.next) {
       if (!pass(endN[a.id])) continue;

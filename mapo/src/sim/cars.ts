@@ -352,6 +352,7 @@ export function makeCars(
     side[i] = 0;
     blockBy[i] = -1;
     holdYaw[i] = 0;
+    zclaim[i] = -1;
     jp[i] = -1;
     pp[i] = -1;
     go[i] = 0;
@@ -385,7 +386,7 @@ export function makeCars(
     if (cars.route[i] >= 0) nBus--;
     const j = --cars.n;
     if (i === j) return;
-    for (const a of [rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, holdYaw, jp, jk, pp, pd, go, past, commit, gdist, offMed])
+    for (const a of [rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, holdYaw, zclaim, zLeft, jp, jk, pp, pd, go, past, commit, gdist, offMed])
       a[i] = a[j];
   }
 
@@ -969,13 +970,15 @@ export function makeCars(
     let c1 = -Infinity;
     let a = -1;
     let b = -1;
+    const zones: number[] = [];
     for (let g = 0; g < XG.length; g += 4)
       if (bound(i, XG[g], XG[g + 1])) {
         if (a < 0) (a = XG[g + 2]), (c0 = XG[g]);
         c1 = XG[g + 1];
         b = XG[g + 3];
+        zones.push(...XZ[g / 4]);
       }
-    if (a >= 0 && !clearOk(i, c0, c1, a, b, tod)) return 6;
+    if (a >= 0 && !clearOk(i, c0, c1, a, b, tod, zones)) return 6;
     return 0;
   }
 
@@ -995,6 +998,13 @@ export function makeCars(
   /** 반대 방향 차로와 포개진 구간: 차로 가운데선이 반대 방향 다른 구간 차로 가운데선과 2m 안(차로 자료 어긋남, 홍대입구역 앞 양화로 e29·e361 과 e95·e371 같은 곳).
    *  차로마다 [s0, s1, ...]. 횡단보도 면처럼 그 안에서 서지 않는다(서 있으면 마주 오는 차가 몸통 겹침 막기에 걸려 둘 다 굳는다) */
   const clash: Float32Array[] = [];
+  /** 포개진 구간마다 [자리 번호 × 2 + 쪽](clash 와 같은 차례) */
+  const clashZone: Int32Array[] = [];
+  /** 포개진 자리마다 지금 들어선 쪽(비트 1 쪽 0, 비트 2 쪽 1). 마주 오는 두 쪽은 함께 들어서지 않는다(재작업 W25) */
+  let zoneOcc = new Uint8Array(0);
+  /** 차가 잡은 포개진 자리(자리 × 2 + 쪽, 없으면 −1)와 그 자리를 다 지날 때까지 남은 거리(m) */
+  const zclaim = new Int32Array(max).fill(-1);
+  const zLeft = new Float32Array(max);
   {
     const C2 = 4;
     const px: number[] = [];
@@ -1023,20 +1033,24 @@ export function makeCars(
       (grid.get(c) ?? grid.set(c, []).get(c)!).push(k);
     }
     const hits = new Map<number, number[]>();
+    const pairs: number[] = [];
     for (let k = 0; k < px.length; k++) {
       const gx = Math.floor(px[k] / C2);
       const gz = Math.floor(pz[k] / C2);
-      let hit = false;
-      for (let dx = -1; dx <= 1 && !hit; dx++)
-        for (let dz = -1; dz <= 1 && !hit; dz++)
+      let hit = -1;
+      for (let dx = -1; dx <= 1 && hit < 0; dx++)
+        for (let dz = -1; dz <= 1 && hit < 0; dz++)
           for (const q of grid.get((gx + dx) * 100003 + gz + dz) ?? []) {
             if (key[q] >> 3 === key[k] >> 3 || Math.cos(ph[q] - ph[k]) > -0.8 || Math.abs(py[q] - py[k]) > 2.5) continue;
             if (Math.hypot(px[q] - px[k], pz[q] - pz[k]) < 2) {
-              hit = true;
+              hit = q;
               break;
             }
           }
-      if (hit) (hits.get(key[k]) ?? hits.set(key[k], []).get(key[k])!).push(ps[k]);
+      if (hit >= 0) {
+        (hits.get(key[k]) ?? hits.set(key[k], []).get(key[k])!).push(ps[k]);
+        pairs.push(k, hit);
+      }
     }
     for (const [kk, list] of hits) {
       const out: number[] = [];
@@ -1046,11 +1060,80 @@ export function makeCars(
       }
       clash[kk] = Float32Array.from(out);
     }
+    // 포개진 구간 묶기(재작업 W25): 서로 포개진 두 방향 구간을 한 '포개진 자리'로 묶고, 자리마다 방향(쪽 0·1)을 정한다
+    const nodeOf = (kk: number, sv: number) => {
+      const sp = clash[kk];
+      for (let m = 0; m < sp.length; m += 2) if (sv >= sp[m] - 1e-3 && sv <= sp[m + 1] + 1e-3) return `${kk},${m}`;
+      return '';
+    };
+    const parent = new Map<string, string>();
+    const find = (a: string): string => {
+      let r = a;
+      while (parent.get(r) !== r) r = parent.get(r)!;
+      parent.set(a, r);
+      return r;
+    };
+    for (const [kk, sp] of Object.entries(clash)) for (let m = 0; m < sp.length; m += 2) parent.set(`${kk},${m}`, `${kk},${m}`);
+    for (let n = 0; n < pairs.length; n += 2) {
+      const a = nodeOf(key[pairs[n]], ps[pairs[n]]);
+      const b = nodeOf(key[pairs[n + 1]], ps[pairs[n + 1]]);
+      if (a && b) parent.set(find(a), find(b));
+    }
+    const zid = new Map<string, number>();
+    const ref: number[] = [];
+    for (const [kk, sp] of Object.entries(clash)) {
+      const k = Number(kk);
+      const zs = new Int32Array(sp.length / 2);
+      for (let m = 0; m < sp.length; m += 2) {
+        const r = find(`${kk},${m}`);
+        let z = zid.get(r);
+        const h = headingNear(edges[k >> 3], (sp[m] + sp[m + 1]) / 2);
+        if (z === undefined) {
+          zid.set(r, (z = ref.length));
+          ref.push(h);
+        }
+        zs[m / 2] = z * 2 + (Math.cos(h - ref[z]) > 0 ? 0 : 1);
+      }
+      clashZone[k] = zs;
+    }
+    zoneOcc = new Uint8Array(ref.length);
   }
   /** 묶음 [c0, c1, XW 시작, XW 끝]: 앞 범퍼에서 길 따라 거리(m) */
   const XG: number[] = [];
   /** 묶음의 신호 횡단보도 번호 */
   const XW: number[] = [];
+  /** 묶음마다 든 포개진 자리(자리 × 2 + 쪽) */
+  const XZ: number[][] = [];
+  /** 앞길 구간 [구간, 차로, 앞 범퍼에서 그 구간 시작까지 거리] */
+  const XP: number[] = [];
+  const SW = [0, 0, 0, 0, 0];
+  /** 앞길을 따라 내 몸을 앞으로 옮겨 그려 보며(1m 간격) 다른 차 몸에 처음 닿는 앞 범퍼 거리(없으면 ∞, reach 까지).
+   *  곧은 띠(bodyAhead)가 못 보는 굽은 길·포개진 차로·옆으로 옮겨 가는 차를 너머 자리에서 뺀다(재작업 W25) */
+  function sweepAhead(i: number, reach: number): number {
+    const hl = size[i] / 2;
+    const sd = side[i];
+    for (let x = 1; x <= reach; x += 1) {
+      const c = x - hl;
+      let k = 0;
+      while (k + 3 < XP.length && XP[k + 5] <= c) k += 3;
+      const id = XP[k];
+      if (id === undefined) break;
+      const sv = Math.min(edges[id].len, Math.max(0, c - XP[k + 2]));
+      side[i] = id === edge[i] ? sd : 0;
+      pose(i, id, sv, XP[k + 1], SW);
+      side[i] = sd;
+      for (let gx = cellAt(SW[0] - 8); gx <= cellAt(SW[0] + 8); gx++)
+        for (let gz = cellAt(SW[2] - 8); gz <= cellAt(SW[2] + 8); gz++)
+          for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
+            if (j === i || j >= cars.n || Math.abs(cars.y[j] - SW[1]) > 2.5) continue;
+            if (Math.abs(cars.x[j] - SW[0]) > hl + size[j] / 2 + 2 || Math.abs(cars.z[j] - SW[2]) > hl + size[j] / 2 + 2) continue;
+            const dn = depth(SW[0], SW[2], SW[3], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]);
+            // 지금 이미 그만큼 가까이 나란히 있는 차는 빼고, 더 가까워지는 차만
+            if (dn > -0.1 && dn > depth(cars.x[i], cars.z[i], cars.yaw[i], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]) + 0.01) return x - 1;
+          }
+    }
+    return Infinity;
+  }
   /** 앞 게이트 [앞 범퍼에서 거리, 진입로, 차로] */
   const XT: number[] = [];
   /** 길 따라 앞차 꽁무니, 고른 경로의 상자 끝, 지나온 경로의 상자 끝, 고른 경로 게이트(넘었으면 −∞): 앞 범퍼에서 거리 */
@@ -1058,6 +1141,8 @@ export function makeCars(
   function xwAhead(i: number, reach: number) {
     XG.length = 0;
     XW.length = 0;
+    XZ.length = 0;
+    XP.length = 0;
     XT.length = 0;
     const e0 = edges[edge[i]];
     const head = s[i] + size[i] / 2;
@@ -1122,12 +1207,14 @@ export function makeCars(
         const c0 = off + (useX ? q[m] : cl![c]);
         const c1 = off + (useX ? q[m + 1] : cl![c + 1]);
         const x = useX ? q[m + 2] : -1;
+        const zc = useX ? -1 : clashZone[id * 8 + ln][c / 2];
         if (useX) m += 4;
         else c += 2;
         if (c1 < -size[i] - 1) continue;
         const n = XG.length;
         if (n && c0 <= XG[n - 3] + size[i] + 3) XG[n - 3] = Math.max(XG[n - 3], c1);
-        else XG.push(c0, c1, XW.length, XW.length);
+        else XG.push(c0, c1, XW.length, XW.length), XZ.push([]);
+        if (zc >= 0 && !XZ[XZ.length - 1].includes(zc)) XZ[XZ.length - 1].push(zc);
         if (x >= 0 && S.crossSite[x] >= 0 && XW.lastIndexOf(x) < XG[XG.length - 2]) XW.push(x), (XG[XG.length - 1] = XW.length);
       }
       // 따라가기 규칙의 바라는 속도: 이 앞 구간들 가운데 가장 느린 것
@@ -1140,12 +1227,16 @@ export function makeCars(
         const d = off + e.len - X.gate(id, ln === MED ? 0 : ln);
         if (d > -0.5) XT.push(d, id, ln);
       }
+      XP.push(id, ln, off);
       off += e.len;
       pe = e;
       id = nx;
     }
     XA.lead = Math.min(XA.lead - load, pRear);
     XA.load = load;
+    // 마주 오는 쪽이 잡은 포개진 자리는 그 1.6m 앞에 선 장애물로 본다(그 앞 횡단보도에 들어가 자리가 없어 면 위에 서지 않게, 재작업 W25)
+    for (let g = 0; g < XG.length; g += 4)
+      for (const zc of XZ[g / 4]) if (zclaim[i] !== zc && zoneOcc[zc >> 1] & (1 << (1 - (zc & 1)))) XA.lead = Math.min(XA.lead, XG[g] - 1.6);
   }
   /** 묶음 시작 c0 가 지금 경로 게이트에서 함께 정할 묶음인가: 게이트 뒤이고 그 앞에 서면 뒤꽁무니가 상자 끝을 넘지 못한다 */
   const bound = (i: number, c0: number, c1: number) => (c0 >= XA.gate - 0.5 && c0 - 1.6 - size[i] < XA.boxEnd + 0.5) || glued(i, c0, c1);
@@ -1184,14 +1275,18 @@ export function makeCars(
           const ra = Math.abs((size[j] / 2) * (jx * hx + jz * hz)) + Math.abs(wid[j] * (jx * hz - jz * hx));
           const rb = Math.abs((size[j] / 2) * (jx * hz - jz * hx)) + Math.abs(wid[j] * (jx * hx + jz * hz));
           const along = dx * hx + dz * hz - hl - ra;
-          if (along < -0.5 || along > reach || Math.abs(-dx * hz + dz * hx) > wid[i] + rb) continue;
+          // 옆 간격은 앞차 따라가기의 다른 구간 차 띠(두 반폭 + 비스듬한 몫 + 0.2m)만큼 넉넉히 본다: 따라가기가 앞차로 볼 차를 너머 자리에서 빼야
+          // 횡단보도에 들어선 뒤 그 차 뒤에 서지 않는다(월드컵로 xw430 e48, 재작업 W25)
+          if (along < -0.5 || along > reach || Math.abs(-dx * hz + dz * hx) > wid[i] + rb + 0.25) continue;
           best = Math.min(best, Math.max(0, along));
         }
     return best;
   }
   /** 앞 범퍼에서 c0~c1 묶음(신호 횡단보도 XW[a..b))에 지금 들어가도 되는가 */
-  function clearOk(i: number, c0: number, c1: number, a: number, b: number, tod: number): boolean {
-    let obs = Math.min(XA.lead, bodyAhead(i, c1 + 1 + size[i] + 3));
+  function clearOk(i: number, c0: number, c1: number, a: number, b: number, tod: number, zones: number[] = []): boolean {
+    // 포개진 자리: 마주 오는 쪽이 들어서 있으면(잡았으면) 들어가지 않는다(재작업 W25)
+    for (const zc of zones) if (zoneOcc[zc >> 1] & (1 << (1 - (zc & 1))) && zclaim[i] !== zc) return false;
+    let obs = Math.min(XA.lead, bodyAhead(i, c1 + 1 + size[i] + 3), sweepAhead(i, c1 + 1 + size[i] + 3));
     for (let k = 0; k < XT.length; k += 3) if (XT[k] > c0 && XT[k] - size[i] < c1 + 1 && !gateOpen(i, XT[k], XT[k + 1], tod)) obs = Math.min(obs, XT[k] + 1.7);
     const need = c1 + 1 + size[i];
     if (obs < need + 2.5) return false;
@@ -1288,6 +1383,8 @@ export function makeCars(
     // 교차로를 잡은 차(들어가기로 해 게이트 3초 앞 안이거나 넘은 차, 뒤꽁무니가 지나온 경로 끝을 지나기 전인 차)와 다가오는 차
     for (const l of held) l.length = 0;
     for (const l of coming) l.length = 0;
+    zoneOcc.fill(0);
+    for (let i = 0; i < cars.n; i++) if (zclaim[i] >= 0) zoneOcc[zclaim[i] >> 1] |= 1 << (zclaim[i] & 1);
     for (let i = 0; i < cars.n; i++) {
       if (pp[i] >= 0) {
         if (pd[i] - size[i] / 2 > holdEnd(PS[pp[i]]) + 0.3) pp[i] = -1;
@@ -1444,15 +1541,26 @@ export function makeCars(
           if (c0 - 1.6 - size[i] < (past[i] ? Math.max(XA.boxEnd, XA.ppEnd) : XA.ppEnd) + 0.5) continue;
           // 게이트에서 함께 정할 묶음
           if (jp[i] >= 0 && !past[i] && bound(i, c0, XG[g + 1])) break;
-          if (!clearOk(i, c0, XG[g + 1], XG[g + 2], XG[g + 3], now.tod)) {
+          const zs = XZ[g / 4];
+          let enter = true;
+          if (!clearOk(i, c0, XG[g + 1], XG[g + 2], XG[g + 3], now.tod, zs)) {
             let stopD = c0 - 1.6;
             for (let k = 0; k < XT.length; k += 3) if (XT[k] > 0 && XT[k] <= c0 && XT[k] > c0 - 6) stopD = Math.min(stopD, XT[k] - 0.3);
-            if (stopD > (v[i] * v[i]) / (2 * B_HARD) - 0.5 && stopD + 2 < gap) {
-              gap = stopD + 2;
-              dv = v[i];
-              front = i;
-              why = 11;
+            if (stopD > (v[i] * v[i]) / (2 * B_HARD) - 0.5) {
+              enter = false;
+              if (stopD + 2 < gap) {
+                gap = stopD + 2;
+                dv = v[i];
+                front = i;
+                why = 11;
+              }
             }
+          }
+          // 곧 들어설 포개진 자리를 잡는다(같은 걸음에 뒤에 정하는 마주 오는 차가 본다, 재작업 W25)
+          if (enter && zs.length && zclaim[i] < 0 && c0 < 3 * v[i] + 6) {
+            zclaim[i] = zs[0];
+            zLeft[i] = XG[g + 1] + size[i] + 0.5;
+            zoneOcc[zs[0] >> 1] |= 1 << (zs[0] & 1);
           }
           break;
         }
@@ -1600,7 +1708,9 @@ export function makeCars(
       if (side[i] < 0 && lane[i] !== MED && laneOff(ee, lane[i], s[i]) + side[i] - wid[i] < leftEdge(ee, s[i])) sideV = 3.5;
       // 교차로 상자 40m 앞부터는 상자에 들어서기 전에 차로 가운데로 돌아온다(교차로 안에서는 경로를 그대로 따른다)
       if (isApproach(ee.id) && ee.len - X.rIn[ee.id] - s[i] < 40) sideV = Math.max(sideV, 3.5);
-      side[i] -= Math.sign(side[i]) * Math.min(Math.abs(side[i]), sideV * dt);
+      const sideTo = side[i] - Math.sign(side[i]) * Math.min(Math.abs(side[i]), sideV * dt);
+      // 중앙선을 넘었거나 상자 앞이라 빨리 돌아오는 차는 틈을 보지 않는다
+      if (Math.abs(side[i]) < 0.5 || sideV > SIDE_V || driftOk(i, sideTo)) side[i] = sideTo;
       let ds = v[i] * dt;
       blockBy[i] = -1;
       // 걸음 없이도 그린 자리가 바뀔 수 있다(옆으로 옮겨 가기, 정류장 승강장 비켜 서기). 그 자리도 새로 겹치면 그대로 둔다
@@ -1631,6 +1741,7 @@ export function makeCars(
       }
       s[i] += ds;
       pd[i] += ds;
+      if (zclaim[i] >= 0 && (zLeft[i] -= ds) < 0) zclaim[i] = -1;
       let e = edges[edge[i]];
       while (s[i] >= e.len) {
         if (nextE[i] < 0) {
@@ -1730,6 +1841,28 @@ export function makeCars(
         fresh.push(cars.n - 1);
       }
     }
+  }
+  /** 옆으로 옮겨 가는(이음매에서 차로 자리가 어긋나 옆 거리를 줄여 가는) 차 i 가 옆 거리 to 로 가도 되는가: 다가가는 쪽 뒤에 오는 차와
+   *  옆 간격이 두 몸 폭 + 0.3m 안이 되면서 앞뒤 간격이 그 차의 따라가기 간격(2m + 1.3초)보다 짧으면 옮기지 않는다(차로 바꾸기처럼 틈을 본다, 재작업 W25).
+   *  전에는 이음매 어긋남(홍대입구 e95 → e358 중앙버스차로 4m)으로 옆 차로를 가로지르던 버스가 뒤에 오던 차 앞을 막고 그 차에 걸려 둘이 굳었다 */
+  function driftOk(i: number, to: number): boolean {
+    const sd = side[i];
+    side[i] = to;
+    pose(i, edge[i], s[i], lane[i], PC);
+    side[i] = sd;
+    for (let gx = cellAt(PC[0] - 25); gx <= cellAt(PC[0] + 25); gx++)
+      for (let gz = cellAt(PC[2] - 25); gz <= cellAt(PC[2] + 25); gz++)
+        for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
+          if (j === i || j >= cars.n || Math.abs(cars.y[j] - PC[1]) > 2.5 || !behind(i, j)) continue;
+          const hx = Math.cos(cars.yaw[j]);
+          const hz = Math.sin(cars.yaw[j]);
+          const latNew = Math.abs(-(PC[0] - cars.x[j]) * hz + (PC[2] - cars.z[j]) * hx);
+          const latOld = Math.abs(-(cars.x[i] - cars.x[j]) * hz + (cars.z[i] - cars.z[j]) * hx);
+          if (latNew >= latOld || latNew > wid[i] + wid[j] + 0.3) continue;
+          const gapAlong = (PC[0] - cars.x[j]) * hx + (PC[2] - cars.z[j]) * hz - (size[i] + size[j]) / 2;
+          if (gapAlong < 2 + 1.3 * v[j]) return false;
+        }
+    return true;
   }
   /** 차 i 가 ds 나아간 자리(구간이 바뀌면 다음 구간)가 막혔는가 */
   function blockedNext(i: number, ds: number): boolean {
