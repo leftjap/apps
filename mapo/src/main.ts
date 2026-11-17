@@ -60,6 +60,12 @@ const small = matchMedia('(max-width: 760px)').matches;
 const MAX_PEOPLE = small ? 2000 : 8000;
 const MAX_CARS = small ? 1500 : 5000;
 
+// 같은 탭에서 주소를 바꿔 다시 열면 앞 페이지가 뒤로 가기 캐시(bfcache)에 통째로 남아 열 때마다 힙이 약 300MB 씩 늘었다(W19, 설계 문서 48절).
+// 새로 연 마포 페이지가 알림을 보내면 그 알림을 받은 캐시 속 마포 페이지는 브라우저가 버린다(Chrome 의 bfcache 'broadcastchannel-message')
+const pages = new BroadcastChannel('mapo-page');
+pages.onmessage = () => {};
+pages.postMessage('open');
+
 const view = makeView(canvas);
 const clock = makeClock(location.search);
 // 실시간 도시데이터: 중계 함수 주소(VITE_CITYDATA_URL)가 빌드에 들어 있을 때만 5분마다 받아 시뮬레이션 위에 덧씌운다(지금 시각으로 볼 때만)
