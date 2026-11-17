@@ -23,6 +23,8 @@ export interface WalkJson {
   r?: number[];
   /** (v3) 건물 문마다 [건물 번호, 선 번호(e 순서), 선 a 에서 거리, 문턱 x, z](거리·좌표 dm) */
   d?: number[];
+  /** (W28) 걷는 면: [칸 크기(cm), x0, z0(m), 너비, 높이(칸), 줄마다 묶음 수, (띈 칸, 길이) …](tools/lib/walkarea.ts) */
+  a?: number[];
 }
 
 /** 횡단보도 하나: 축 E0(ax, az) → E1(bx, bz). 보도 쪽 기다리는 자리 pa(E0 쪽)·pb(E1 쪽)와, 거기서 그래프로 이어지는 노드 na·nb */
@@ -72,6 +74,8 @@ export interface WalkGraph {
   edgeAt: Int32Array;
   /** 건물 문(v3 자료): 건물 번호, 선(노드 a, 이웃 번호 k), a 에서 거리 t, 문턱 */
   doors: { b: number; a: number; k: number; t: number; x: number; z: number }[];
+  /** (W28) 걷는 면 자료(walk.json a). 사람 모듈이 풀어 쓴다(src/sim/people/area.ts) */
+  area?: number[];
   /** 가장 가까운 노드. alley 가 참이면 골목·보행로에 닿은 노드만 본다 */
   nearest(x: number, z: number, alley?: boolean): number;
   /** 가장 가까운 선(잇는 선 빼고, 200m 안): [노드 a, 이웃 번호 k, a 에서 선을 따라간 거리, 떨어진 거리]. 없으면 null.
@@ -201,6 +205,7 @@ export function decodeWalk(j: WalkJson): WalkGraph {
     rad,
     edgeAt,
     doors,
+    area: j.a,
     nearest(px, pz, alley = false) {
       const cx = Math.floor(px / CELL);
       const cz = Math.floor(pz / CELL);

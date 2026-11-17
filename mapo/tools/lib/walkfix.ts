@@ -163,8 +163,9 @@ interface E {
   hi: number;
 }
 
-export function fixWalkNet(inp: FixInput): WalkJson {
-  const log = inp.log ?? (() => {});
+/** 몸(가운데)이 설 수 없는 자리: 큰길 찻길에 몸 반지름 + 여유(CLEAR) 안, 건물 벽 WALL_CLEAR 안, 판 가장자리 1m 안.
+ *  fixWalkNet 과 걷는 면 굽기(walkarea.ts, W28)가 함께 쓴다 */
+export function blockMap(inp: Pick<FixInput, 'bounds' | 'roads' | 'faces' | 'draw' | 'car' | 'med' | 'buildings' | 'crosswalks' | 'underpasses'>) {
   const B = majorGround(inp.roads, inp.faces, inp.draw, inp.car, inp.med, inp.bounds);
   // 한강공원 나들목: 보행로가 자동차 전용도로 밑을 지난다(자료에는 같은 높이). 둘레 20m 는 찻길로 치지 않는다
   for (const [tx, tz] of inp.underpasses ?? []) {
@@ -190,6 +191,13 @@ export function fixWalkNet(inp: FixInput): WalkJson {
   };
   // 판 가장자리 1m 안도 막힌 곳으로 친다(판 밖 찻길은 칠하지 않았다)
   const blocked = (x: number, z: number) => x < bx0 + 1 || z < bz0 + 1 || x > bx1 - 1 || z > bz1 - 1 || (bitsAt(NEAR, x, z) & 4) !== 0 || roadNear(x, z);
+
+  return { B, blocked, roadNear };
+}
+
+export function fixWalkNet(inp: FixInput): WalkJson {
+  const log = inp.log ?? (() => {});
+  const { B, blocked, roadNear } = blockMap(inp);
 
   // ── 읽기 ──
   const nodes: number[] = [];

@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "fetch": "node tools/fetch.ts",
-    "bake": "node tools/bake.ts"
+    "bake": "node tools/bake.ts && node --max-old-space-size=8000 tools/walk-area.ts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

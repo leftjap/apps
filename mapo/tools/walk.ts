@@ -1,5 +1,5 @@
 // 걷는 길 그물만 다시 굽는다(재작업 W21): public/data 의 판·찻길 면으로 public/data/walk.json 을 새로 쓴다.
-// pnpm bake 도 같은 일을 하므로, 판을 굽지 않고 걷는 길만 바꿀 때 쓴다: node tools/walk.ts
+// pnpm bake 도 같은 일을 하므로, 판을 굽지 않고 걷는 길만 바꿀 때 쓴다: node tools/walk.ts (끝에 걷는 면도 굽는다, tools/walk-area.ts)
 import { readFileSync, writeFileSync } from 'node:fs';
 import { decodeBoard } from '../src/data/board.ts';
 import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
@@ -27,3 +27,5 @@ const walk = bakeWalk(board, raw, surface.faces, draw, polys, [-BOARD_R, -BOARD_
 const json = JSON.stringify(walk);
 writeFileSync(new URL('../public/data/walk.json', import.meta.url), json);
 console.log(`walk.json ${(json.length / 1e6).toFixed(2)}MB, ${((Date.now() - t0) / 1000).toFixed(1)}초`);
+// 걷는 면(W28)도 새 그물로 다시 굽는다
+await import('./walk-area.ts');
