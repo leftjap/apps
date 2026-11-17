@@ -1125,6 +1125,27 @@ export function makeCars(
   function sweepAhead(i: number, reach: number): number {
     const hl = size[i] / 2;
     const sd = side[i];
+    // 앞길 구간마다 내 옆 거리: 지금 구간은 지금 옆 거리, 꺾이지 않은 이음매 너머는 이음매에서 넘겨받을 옆 거리(그린 자리가 이어지게 걸음이 넘기는 값과 같은 식).
+    // 전에는 이음매 너머를 차로 가운데(0)로 그려 보아, 차로 나눔이 어긋난 이음매(월드컵로 e343 → e49, 2.8m)를 넘자마자 옆 차로 차에 막혀 횡단보도 위에 섰다(재작업 W29)
+    XS.length = 0;
+    for (let k = 0; k < XP.length; k += 3) {
+      if (k === 0) {
+        XS.push(XP[0] === edge[i] ? sd : 0);
+        continue;
+      }
+      const pe = edges[XP[k - 3]];
+      const e = edges[XP[k]];
+      let w = 0;
+      if (X.jEnd[pe.id] < 0 && !bent(pe, e)) {
+        side[i] = XS[XS.length - 1];
+        pose(i, pe.id, pe.len, XP[k - 2], PS0);
+        side[i] = 0;
+        pose(i, e.id, 0, XP[k + 1], PS1);
+        w = (PS0[0] - PS1[0]) * -Math.sin(PS1[3]) + (PS0[2] - PS1[2]) * Math.cos(PS1[3]);
+        if (!Number.isFinite(w)) w = 0;
+      }
+      XS.push(w);
+    }
     for (let x = 1; x <= reach; x += 1) {
       const c = x - hl;
       let k = 0;
@@ -1132,7 +1153,7 @@ export function makeCars(
       const id = XP[k];
       if (id === undefined) break;
       const sv = Math.min(edges[id].len, Math.max(0, c - XP[k + 2]));
-      side[i] = id === edge[i] ? sd : 0;
+      side[i] = XS[k / 3];
       pose(i, id, sv, XP[k + 1], SW);
       side[i] = sd;
       for (let gx = cellAt(SW[0] - 8); gx <= cellAt(SW[0] + 8); gx++)
@@ -1143,9 +1164,25 @@ export function makeCars(
             const dn = depth(SW[0], SW[2], SW[3], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]);
             // 지금 이미 그만큼 가까이 나란히 있는 차는 빼고, 더 가까워지는 차만
             if (dn > -0.1 && dn > depth(cars.x[i], cars.z[i], cars.yaw[i], hl, wid[i], cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]) + 0.01) return x - 1;
+            // 옆으로 옮겨 가는 차는 옮겨 갈 자리(옆 거리 0)에서도 본다(재작업 W29)
+            if (Math.abs(side[j]) > 0.3) {
+              restPose(j, RP);
+              const dr = depth(SW[0], SW[2], SW[3], hl, wid[i], RP[0], RP[2], RP[3], size[j] / 2, wid[j]);
+              if (dr > -0.1 && dr > depth(cars.x[i], cars.z[i], cars.yaw[i], hl, wid[i], RP[0], RP[2], RP[3], size[j] / 2, wid[j]) + 0.01) return x - 1;
+            }
           }
     }
     return Infinity;
+  }
+  /** 앞길 구간마다 그려 볼 내 옆 거리(XP 와 같은 차례) */
+  const XS: number[] = [];
+  const RP = [0, 0, 0, 0, 0];
+  /** 옆으로 옮겨 가는 차 j 가 옮겨 갈 자리(옆 거리 0) */
+  function restPose(j: number, out: number[]) {
+    const sd = side[j];
+    side[j] = 0;
+    pose(j, edge[j], s[j], lane[j], out);
+    side[j] = sd;
   }
   /** 앞 게이트 [앞 범퍼에서 거리, 진입로, 차로] */
   const XT: number[] = [];
@@ -1280,18 +1317,23 @@ export function makeCars(
       for (let gz = cellAt(cz - r); gz <= cellAt(cz + r); gz++)
         for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
           if (j === i || j >= cars.n || Math.abs(cars.y[j] - cars.y[i]) > 2.5) continue;
-          const dx = cars.x[j] - cars.x[i];
-          const dz = cars.z[j] - cars.z[i];
-          const jx = Math.cos(cars.yaw[j]);
-          const jz = Math.sin(cars.yaw[j]);
-          // 그 차 몸의 내 방향 앞뒤 반길이·옆 반폭
-          const ra = Math.abs((size[j] / 2) * (jx * hx + jz * hz)) + Math.abs(wid[j] * (jx * hz - jz * hx));
-          const rb = Math.abs((size[j] / 2) * (jx * hz - jz * hx)) + Math.abs(wid[j] * (jx * hx + jz * hz));
-          const along = dx * hx + dz * hz - hl - ra;
-          // 옆 간격은 앞차 따라가기의 다른 구간 차 띠(두 반폭 + 비스듬한 몫 + 0.2m)만큼 넉넉히 본다: 따라가기가 앞차로 볼 차를 너머 자리에서 빼야
-          // 횡단보도에 들어선 뒤 그 차 뒤에 서지 않는다(월드컵로 xw430 e48, 재작업 W25)
-          if (along < -0.5 || along > reach || Math.abs(-dx * hz + dz * hx) > wid[i] + rb + 0.25) continue;
-          best = Math.min(best, Math.max(0, along));
+          // 옆으로 옮겨 가는 차는 옮겨 갈 자리(옆 거리 0)에서도 본다(월드컵로 xw578: 옆 차로에서 버스 앞으로 옮겨 오던 차, 재작업 W29)
+          const drift = Math.abs(side[j]) > 0.3;
+          if (drift) restPose(j, RP);
+          for (let q = 0; q < (drift ? 2 : 1); q++) {
+            const dx = (q ? RP[0] : cars.x[j]) - cars.x[i];
+            const dz = (q ? RP[2] : cars.z[j]) - cars.z[i];
+            const jx = Math.cos(q ? RP[3] : cars.yaw[j]);
+            const jz = Math.sin(q ? RP[3] : cars.yaw[j]);
+            // 그 차 몸의 내 방향 앞뒤 반길이·옆 반폭
+            const ra = Math.abs((size[j] / 2) * (jx * hx + jz * hz)) + Math.abs(wid[j] * (jx * hz - jz * hx));
+            const rb = Math.abs((size[j] / 2) * (jx * hz - jz * hx)) + Math.abs(wid[j] * (jx * hx + jz * hz));
+            const along = dx * hx + dz * hz - hl - ra;
+            // 옆 간격은 앞차 따라가기의 다른 구간 차 띠(두 반폭 + 비스듬한 몫 + 0.2m)만큼 넉넉히 본다: 따라가기가 앞차로 볼 차를 너머 자리에서 빼야
+            // 횡단보도에 들어선 뒤 그 차 뒤에 서지 않는다(월드컵로 xw430 e48, 재작업 W25)
+            if (along < -0.5 || along > reach || Math.abs(-dx * hz + dz * hx) > wid[i] + rb + 0.25) continue;
+            best = Math.min(best, Math.max(0, along));
+          }
         }
     return best;
   }
