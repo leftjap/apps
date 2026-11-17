@@ -134,6 +134,8 @@ const focusR = () => Math.min(2200, Math.max(250, view.viewDist() * 1.2));
 let focusAt = { x: view.controls.target.x, z: view.controls.target.z, r: focusR(), age: 0 };
 view.camera.updateMatrixWorld();
 cars.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
+// 보는 곳 둘레 밖이고 화면에도 없는 차는 몇 걸음에 한 번 움직인다(재작업 W29, 차 계산 시간)
+cars.setDetail(onScreen);
 cars.fill(cars.target(start));
 cars.fillBuses(start);
 // 사람은 역 출구와 버스 정류장에서만 나타나고 사라진다

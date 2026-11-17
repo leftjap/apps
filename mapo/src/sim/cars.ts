@@ -44,6 +44,8 @@ export interface Cars {
 
 const VFREE = [22, 14, 12.5, 10, 7, 5.5]; // 등급별 자유 속도(m/s)
 const BUS_LEN = [11.5, 11.5, 12, 7.5]; // 종류별 버스 길이(m)
+/** 가장 긴 차의 반길이(m) */
+const HALF_MAX = Math.max(...BUS_LEN, ...BODY_LEN, 11.5) / 2;
 const A_MAX = 1.6;
 /** 차로를 바꿀 때 옆으로 옮겨 가는 빠르기(m/s) */
 const SIDE_V = 1.1;
@@ -386,7 +388,7 @@ export function makeCars(
     if (cars.route[i] >= 0) nBus--;
     const j = --cars.n;
     if (i === j) return;
-    for (const a of [rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, holdYaw, zclaim, zLeft, jp, jk, pp, pd, go, past, commit, gdist, offMed])
+    for (const a of [coarse, owe, rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, holdYaw, zclaim, zLeft, jp, jk, pp, pd, go, past, commit, gdist, offMed])
       a[i] = a[j];
   }
 
@@ -660,8 +662,10 @@ export function makeCars(
         return true;
       }
     }
-    for (let gx = cellAt(PC[0] - 16); gx <= cellAt(PC[0] + 16); gx++)
-      for (let gz = cellAt(PC[2] - 16); gz <= cellAt(PC[2] + 16); gz++)
+    // 둘러볼 칸: 아래 reach 의 가장 큰 값(가장 긴 차 반길이)까지만(차 계산 시간, 재작업 W29)
+    const R = hl + HALF_MAX + 1;
+    for (let gx = cellAt(PC[0] - R); gx <= cellAt(PC[0] + R); gx++)
+      for (let gz = cellAt(PC[2] - R); gz <= cellAt(PC[2] + R); gz++)
         for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) {
           if (j === i || j >= cars.n || Math.abs(cars.y[j] - PC[1]) > 2.5) continue;
           const reach = hl + size[j] / 2 + 1;
@@ -1005,6 +1009,15 @@ export function makeCars(
   /** 차가 잡은 포개진 자리(자리 × 2 + 쪽, 없으면 −1)와 그 자리를 다 지날 때까지 남은 거리(m) */
   const zclaim = new Int32Array(max).fill(-1);
   const zLeft = new Float32Array(max);
+  // 성기게 돌리기(재작업 W29): setDetail 로 켜면, 보는 곳 둘레 밖이고 화면에도 없는 차는 COARSE 걸음에 한 번(차례는 고유 번호로 나눈다) 밀린 시간만큼 한 번에 움직인다.
+  // 판 전체 차 3,000여 대 가운데 보는 곳 안은 100~300대라 차 계산 대부분이 화면 밖 차였다. 보는 곳 안·화면 안 차는 그대로 매 걸음 정한다
+  const COARSE = 3;
+  let detail: ((x: number, z: number) => boolean) | null = null;
+  const coarse = new Uint8Array(max);
+  const owe = new Float64Array(max);
+  const cdt = new Float64Array(max);
+  let tick = 0;
+  let coarseAge = Infinity;
   {
     const C2 = 4;
     const px: number[] = [];
@@ -1286,15 +1299,21 @@ export function makeCars(
   function clearOk(i: number, c0: number, c1: number, a: number, b: number, tod: number, zones: number[] = []): boolean {
     // 포개진 자리: 마주 오는 쪽이 들어서 있으면(잡았으면) 들어가지 않는다(재작업 W25)
     for (const zc of zones) if (zoneOcc[zc >> 1] & (1 << (1 - (zc & 1))) && zclaim[i] !== zc) return false;
-    let obs = Math.min(XA.lead, bodyAhead(i, c1 + 1 + size[i] + 3), sweepAhead(i, c1 + 1 + size[i] + 3));
-    for (let k = 0; k < XT.length; k += 3) if (XT[k] > c0 && XT[k] - size[i] < c1 + 1 && !gateOpen(i, XT[k], XT[k + 1], tod)) obs = Math.min(obs, XT[k] + 1.7);
+    // 값이 싼 것부터 본다(차 계산 시간, 재작업 W29): 앞차·게이트·보행 신호로 이미 못 들어가면 내 몸을 앞으로 옮겨 그려 보지 않는다
     const need = c1 + 1 + size[i];
+    let obs = XA.lead;
+    for (let k = 0; k < XT.length; k += 3) if (XT[k] > c0 && XT[k] - size[i] < c1 + 1 && !gateOpen(i, XT[k], XT[k + 1], tod)) obs = Math.min(obs, XT[k] + 1.7);
     if (obs < need + 2.5) return false;
     let soon = Infinity;
     for (let k = a; k < b; k++) {
       if (S.walkState(XW[k], tod) !== RED) return false;
       soon = Math.min(soon, S.walkIn(XW[k], tod));
     }
+    obs = Math.min(obs, bodyAhead(i, need + 3));
+    if (obs < need + 2.5) return false;
+    // 옮겨 그려 보기는 지금 장애물(obs)보다 가까운 것만 찾으면 된다
+    obs = Math.min(obs, sweepAhead(i, Math.min(need + 3, obs + 1)));
+    if (obs < need + 2.5) return false;
     return soon > 40 || clearSim(i, need, obs) + 1 < soon;
   }
   /** 따라가기 규칙(서 있는 장애물이 obs 에 있다고 보고, 바라는 속도는 앞 구간들 가운데 가장 느린 것)대로 달려 앞 범퍼가 need 를 지나는 데 걸리는 시간(초). 못 지나면 ∞ */
@@ -1340,6 +1359,22 @@ export function makeCars(
     if (!(dt > 0)) return;
     fresh.length = 0;
     speedAge += dt;
+    // 성기게 돌릴 차와 이번 걸음 시간(0 이면 이번에는 건너뛴다)
+    tick++;
+    coarseAge += dt;
+    if (coarseAge > 0.25) {
+      coarseAge = 0;
+      for (let i = 0; i < cars.n; i++) coarse[i] = detail && !nearFocus(cars.x[i], cars.z[i]) && !detail(cars.x[i], cars.z[i]) ? 1 : 0;
+    }
+    for (let i = 0; i < cars.n; i++) {
+      if (coarse[i] && (cars.uid[i] + tick) % COARSE) {
+        owe[i] += dt;
+        cdt[i] = 0;
+      } else {
+        cdt[i] = Math.min(0.25, owe[i] + dt);
+        owe[i] = 0;
+      }
+    }
     if (speedAge > 1) {
       speedAge = 0;
       for (const e of edges) speed[e.id] = VFREE[e.cls] * provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id], midH[e.id]);
@@ -1397,6 +1432,8 @@ export function makeCars(
       }
     }
     for (let i = 0; i < cars.n; i++) {
+      const dt = cdt[i];
+      if (!dt) continue;
       const e = edges[edge[i]];
       cars.fade[i] = Math.min(1, cars.fade[i] + dt * 2);
       const r = cars.route[i];
@@ -1700,7 +1737,8 @@ export function makeCars(
     // 걸음: 한 걸음(옆으로 옮겨 가는 것 포함) 간 자리가 다른 차 몸통과 새로 겹치면 반만, 그래도 겹치면 서고 옆 이동도 멈춘다
     const gone = new Uint8Array(cars.n);
     for (let i = 0; i < cars.n; i++) {
-      if (dwell[i] > 0 && cars.route[i] >= 0) continue;
+      const dt = cdt[i];
+      if (!dt || (dwell[i] > 0 && cars.route[i] >= 0)) continue;
       const side0 = side[i];
       // 옆 거리를 줄여 간다. 몸이 그 방향 찻길 왼쪽 가장자리(양방향 길의 칠한 중앙선)를 넘은 동안은 빨리(초당 3.5m) 돌아온다
       let sideV = SIDE_V;
@@ -1722,7 +1760,8 @@ export function makeCars(
         holdYaw[i] = 1;
         if (blockedNext(i, ds)) holdYaw[i] = 0;
       }
-      if (blockedNext(i, ds)) {
+      // 선 채로(걸음 0, 옆 거리 그대로) 있는 차는 새로 겹칠 일이 없어 보지 않는다(차 계산 시간, 재작업 W29)
+      if ((ds > 0 || side[i] !== side0) && blockedNext(i, ds)) {
         // 옆으로 옮겨 가다 걸렸으면 옆 거리를 그대로 두고 앞으로만 가 본다(나란히 걸친 두 차가 서로 막아 굳지 않게, 재작업 W22)
         const sideNew = side[i];
         side[i] = side0;
@@ -1956,6 +1995,11 @@ export function makeCars(
     },
     target: (now: Now) => allot(now),
     setFocus,
+    /** 성기게 돌리기: 보는 곳 둘레 밖에서 fine 이 거짓인 차는 몇 걸음에 한 번 움직인다(null 이면 모든 차를 매 걸음, 시험·측정 기본값) */
+    setDetail(fine: ((x: number, z: number) => boolean) | null) {
+      detail = fine;
+      coarseAge = Infinity;
+    },
     setIncidents(inc: { blocks: { edge: number; lane: number; at: number }[]; close: number[]; slow: { edge: number; at: number; v: number }[] }) {
       blockLane.fill(-1);
       closed.fill(0);
