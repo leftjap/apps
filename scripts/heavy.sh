@@ -27,6 +27,10 @@ trap 'rm -f "$LOCK/until" "$LOCK/cmd"; rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 load1() { uptime 2>/dev/null | sed -n 's/.*load averages*: *\([0-9]*\).*/\1/p'; }
 waited=0
 while (( ${$(load1):-0} >= 7 && waited < 300 )); do sleep 10; (( waited += 10 )); done
+# 남은 메모리가 25% 아래면 올라올 때까지 기다린다(최대 5분). 측정 node 여럿이 겹쳐 스왑이 6GB 중 5GB 찬 일이 있었다(2026-11-18)
+memfree() { memory_pressure 2>/dev/null | sed -n 's/.*free percentage: *\([0-9]*\)%.*/\1/p'; }
+waited=0
+while (( ${$(memfree):-100} < 25 && waited < 300 )); do sleep 10; (( waited += 10 )); done
 echo $(( $(now) + limit + 40 )) > "$LOCK/until"
 if nice -n 15 true 2>/dev/null; then
   nice -n 15 perl -e 'alarm shift; exec @ARGV' "$limit" "$@"
