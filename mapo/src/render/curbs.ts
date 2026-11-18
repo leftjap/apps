@@ -16,7 +16,7 @@ function dropArray(this: THREE.BufferAttribute) {
 const TILE = 500;
 const EMPTY = new Float32Array(0);
 
-export function makeCurbs(c: Curbs): THREE.Group {
+export function makeCurbs(c: Curbs, onLane: (x: number, z: number) => boolean = () => false): THREE.Group {
   // 칸마다 꼭짓점(위치·법선·색 구분)과 네모 하나에 삼각형 둘을 잇는 번호. 네모 넷 꼭짓점을 나눠 써서 꼭짓점이 6 → 4 로 준다.
   // 처음 한 번은 칸마다 네모 수만 세고, 두 번째에 그 크기의 배열에 바로 쓴다(수백만 꼭짓점을 숫자 목록에 쌓았다 옮기면 불러올 때 수백 MB 가 버려진다)
   type Tile = { nq: number; k: number; pos: Float32Array; nrm: Float32Array; tone: Float32Array };
@@ -45,6 +45,8 @@ export function makeCurbs(c: Curbs): THREE.Group {
         const [ax, az, bx, bz] = [P[i * 3], P[i * 3 + 2], P[i * 3 + 3], P[i * 3 + 5]];
         const L = Math.hypot(bx - ax, bz - az);
         if (L < 1e-3) continue;
+        // 차가 달리는 차로 안쪽(차로 가장자리에서 0.3m 안)에 남은 연석은 그리지 않는다(재작업 W44: 찻길 면이 차로를 덮지 못해 생긴 경계)
+        if (onLane((ax + bx) / 2, (az + bz) / 2)) continue;
         T = tileAt((ax + bx) / 2, (az + bz) / 2);
         // 옆 방향(왼쪽)으로 반폭
         const [lx, lz] = [(-(bz - az) / L) * (W / 2), ((bx - ax) / L) * (W / 2)];

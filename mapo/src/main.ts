@@ -15,6 +15,7 @@ import { LANDMARKS, LM_COLORS, makeLandmarks } from './render/landmarks.ts';
 import { makeRails, type TrainSpot } from './render/rails.ts';
 import { makeGroundLabels, makeMarker, makeRings, type GroundLabel } from './render/rings.ts';
 import { makeRoads } from './render/roads.ts';
+import { bandTest, laneBands } from './data/laneGround.ts';
 import { makeMarks } from './render/marks.ts';
 import { makeCurbs } from './render/curbs.ts';
 import { makeSignalMarks } from './render/signals.ts';
@@ -177,11 +178,12 @@ const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
 const reactor = makeCatReactor(cats);
 
 // ── 장면 ──
-const roads = makeRoads(board.roads, surface, LM_COLORS);
+// 길 정본 차로 띠: 찻길 면이 덮지 못한 차로 자리도 찻길로 칠하고 그 안 연석을 지운다(src/data/laneGround.ts, 재작업 W44)
+const roads = makeRoads(board.roads, surface, LM_COLORS, laneBands(carGraph));
 // 노면 표시: 서울시 차선 선·안전지대·노면 화살표 그대로(src/render/marks.ts)
 const roadMarks = makeMarks(marks);
 // 연석(화강석 띠)과 횡단보도 끝 점자블록(src/render/curbs.ts)
-const curbMesh = makeCurbs(curbs);
+const curbMesh = makeCurbs(curbs, bandTest(laneBands(carGraph, -0.3)));
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);

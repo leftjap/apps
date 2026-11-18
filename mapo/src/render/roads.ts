@@ -4,6 +4,7 @@
 // 바닥 색·물웅덩이·밤 가로등 빛은 판 좌표로 칠해 띠와 면의 이음매가 보이지 않는다. 한 방향씩 나뉜 큰길 사이에는 분리대·중앙버스차로를 그린다.
 import * as THREE from 'three';
 import { curbAt, roadHalf, type Road } from '../data/board.ts';
+import type { Band } from '../data/laneGround.ts';
 import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach, type Section, type Surface } from '../data/surface.ts';
 import { BOARD_R } from '../geo.ts';
 import { cumLen, pointAt } from '../poly.ts';
@@ -396,7 +397,7 @@ function coveredNear(roads: Road[], ri: number, surface: Surface, joints: Float3
 }
 
 /** surface: 굽기가 정한 띠 구간과 교차로 면(public/data/surface.json) */
-export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
+export function makeRoads(roads: Road[], surface: Surface, lmColors: string[], bands: Band[] = []) {
   const lm = { uLmCol: { value: lmColors.map((c) => new THREE.Color(c)) }, uLmGlow: { value: lmColors.map(() => 0) } };
   const uniforms = { uMajor: { value: pal.tarmac }, uMinor: { value: pal.tarmacMinor }, uWalk: { value: pal.paving }, uLamps: { value: lampMap(roads) }, ...lm };
   const joints = roadJoints(roads);
@@ -509,6 +510,18 @@ export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
   for (const f of surface.faces) addFace(flat, f);
   // 그리기 전용 찻길 면: 횡단보도가 OSM 길 밖에 걸친 자리(차는 다니지 않는다)
   for (const f of surface.draw) addFace(flat, f);
+  // 길 정본 차로 띠(src/data/laneGround.ts, 재작업 W44): 찻길 띠·교차로 면이 덮지 못한 차로 자리도 찻길로 칠한다. 차선은 긋지 않는다
+  for (const { cls, sec: b } of bands) {
+    const base = flat.pos.length / 3;
+    const n = b.length / 4;
+    for (let k = 0; k < n; k++) {
+      flat.pos.push(b[k * 4], 0, b[k * 4 + 1], b[k * 4 + 2], 0, b[k * 4 + 3]);
+      flat.uv.push(0, 0, 0, 0);
+      flat.info.push(cls, 10, 0, 0, cls, 10, 0, 0);
+      flat.ex.push(0, 0, 0, 3.3, 0, 0, 0, 0, 0, 0, 0, 3.3, 0, 0, 0, 0);
+      if (k > 0) flat.idx.push(base + k * 2 - 2, base + k * 2 - 1, base + k * 2, base + k * 2 - 1, base + k * 2 + 1, base + k * 2);
+    }
+  }
 
   const ground = new THREE.Mesh(
     ribbonGeometry(flat),

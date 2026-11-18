@@ -11,7 +11,16 @@
 //  6 side    한 단계(1/30초)에 옆으로 0.3m 넘게 움직임(지난 단계 방향 기준)
 //  7 overlap 몸통 겹친 쌍(배율 1, 높이 2.5m 안, 3단계마다)
 //  speed     평균 속도(m/s, 시험은 재기만 한다)
+// 아래 셋은 셀 둘레(count)가 아니라 길을 남긴 둘레(keep)에서 50m 안쪽까지 1초마다 센다(재작업 W44, 설계 문서 58절). 땅 위(높이 1.5m 안) 차만 본다
+//  stuck     10초 넘게 선 차 가운데 앞차 사슬 끝의 차에 까닭(신호·게이트·횡단보도·정류장·사람·돌발)이 없는 것(사슬 끝이 앞차 없이 서 있거나 사슬이 맞물림). 10초를 넘는 때 한 번 센다
+//  offRoad   차 몸 네 모서리 가운데 하나가 그린 찻길 면(찻길 띠·교차로 면·분리대·그리기 전용 면·길 정본 차로 띠 src/data/laneGround.ts)에서 0.3m 넘게 밖인 차·초
+//  onGore    차 몸 가운데나 모서리가 안전지대(빗금) 안인 차·초
 import { readFileSync } from 'node:fs';
+import { decodeSurface } from '../src/data/surface.ts';
+import { BOARD_R } from '../src/geo.ts';
+import { bitsAt, fillBits, makeBits, type Bits } from './lib/bits.ts';
+import { bandQuad, laneBands } from '../src/data/laneGround.ts';
+import type { Edge } from '../src/sim/graph.ts';
 import { decodeBoard, type Board, type Road } from '../src/data/board.ts';
 import { decodeMarks } from '../src/data/marks.ts';
 import { decodeLanes } from '../src/data/road.ts';
@@ -55,6 +64,9 @@ export interface AuditResult {
   center: number;
   side: number;
   overlap: number;
+  stuck: number;
+  offRoad: number;
+  onGore: number;
   speed: number;
   cars: number;
   passes: number;
@@ -99,6 +111,35 @@ function bodyInRing(x: number, z: number, yaw: number, hl: number, hw: number, r
   }
   return false;
 }
+
+/** 그린 찻길 면(비트 1: 찻길 띠·교차로 면·분리대·그리기 전용 면, 그리고 길 정본 차로 띠 src/data/laneGround.ts)과 안전지대(비트 2) 칸 격자(0.25m). 판 폴더마다 한 번 만든다 */
+const groundCache = new Map<string, Bits>();
+export function groundBits(DATA: string, g: Edge[], keep?: number, cell = 0.25): Bits {
+  const key = `${DATA}|${g.length}|${keep ?? 0}|${cell}`;
+  const hit = groundCache.get(key);
+  if (hit) return hit;
+  const data = (f: string) => JSON.parse(readFileSync(`${DATA}/${f}`, 'utf8'));
+  const sf = decodeSurface(data('surface.json'));
+  const sp = data('surface-polys.json') as { car: number[][]; med: number[][]; draw: number[][] };
+  const dm = (a: number[]) => Float32Array.from(a, (v) => v / 10);
+  // 길을 남긴 둘레만 덮는다(판 전체 0.25m 칸은 256MB)
+  const xs = CENTERS.map(([x]) => x), zs = CENTERS.map(([, z]) => z);
+  const B = keep ? makeBits(Math.min(...xs) - keep, Math.min(...zs) - keep, Math.max(...xs) + keep, Math.max(...zs) + keep, cell) : makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, cell);
+  for (const c of sp.car) fillBits(B, [dm(c.slice(1))], 1);
+  for (const f of sf.faces) fillBits(B, [f.outer, ...f.holes], 1);
+  for (const f of sf.draw) fillBits(B, [f.outer], 1);
+  for (const m of sp.med) fillBits(B, [dm(m)], 1);
+  for (const d of sp.draw) fillBits(B, [dm(d)], 1);
+  for (const { sec } of laneBands(g)) for (let k = 0; k + 1 < sec.length / 4; k++) fillBits(B, [bandQuad(sec, k)], 1);
+  for (const z of decodeMarks(data('marks.json')).zones) fillBits(B, [z.ring], 2);
+  groundCache.set(key, B);
+  return B;
+}
+export const onBit = (B: Bits, x: number, z: number, bit: number, tol: number) => {
+  if (bitsAt(B, x, z) & bit) return true;
+  for (let k = 0; k < 8; k++) if (bitsAt(B, x + Math.cos((k * Math.PI) / 4) * tol, z + Math.sin((k * Math.PI) / 4) * tol) & bit) return true;
+  return false;
+};
 
 /** 둘레 안 길만 남긴 판(번호는 그대로, 둘레 밖 조각은 빈 조각)과 노선(둘레 안 가장 긴 연속 부분) */
 function clip(board: Board, keep: number): Board {
@@ -160,7 +201,10 @@ export function audit(o: AuditOptions): AuditResult[] {
     const c = sim.cars;
     const D = sim.debug();
     const counted = (x: number, z: number) => !o.count || CENTERS.some(([px, pz]) => Math.hypot(x - px, z - pz) < o.count!);
-    const res: AuditResult = { case: name, red: 0, lane: 0, cross: 0, offPath: 0, walk: 0, stopXw: 0, center: 0, side: 0, overlap: 0, speed: 0, cars: 0, passes: 0, where: {} };
+    const res: AuditResult = { case: name, red: 0, lane: 0, cross: 0, offPath: 0, walk: 0, stopXw: 0, center: 0, side: 0, overlap: 0, stuck: 0, offRoad: 0, onGore: 0, speed: 0, cars: 0, passes: 0, where: {} };
+    const GB = groundBits(o.data ?? new URL('../public/data/', import.meta.url).pathname, g, o.keep);
+    const wide = (x: number, z: number) => !o.keep || CENTERS.some(([px, pz]) => Math.hypot(x - px, z - pz) < o.keep! - 50);
+    const stopT = new Map<number, number>();
     const note = (kind: keyof AuditResult, x: number, z: number, info = '') => {
       (res[kind] as number)++;
       const w = (res.where[kind] ??= []);
@@ -314,6 +358,41 @@ export function audit(o: AuditOptions): AuditResult[] {
                 if (j <= i || Math.abs(c.y[i] - c.y[j]) > 2.5) continue;
                 if (obb(c.x[i], c.z[i], c.yaw[i], D.size[i] / 2, D.wid[i], c.x[j], c.z[j], c.yaw[j], D.size[j] / 2, D.wid[j])) note('overlap', c.x[i], c.z[i], `e${D.edge[i]}/${D.edge[j]}`);
               }
+        }
+      }
+      // stuck·offRoad·onGore(재작업 W44)
+      if (st % 30 === 0) {
+        for (let i = 0; i < c.n; i++) {
+          const u = c.uid[i];
+          const t = D.v[i] < 0.3 ? (stopT.get(u) ?? 0) + 1 : 0;
+          stopT.set(u, t);
+          if (Math.abs(c.y[i]) > 1.5 || !wide(c.x[i], c.z[i])) continue;
+          if (t === 11) {
+            let r = i;
+            const seenR = new Set<number>([i]);
+            let cyc = false;
+            for (let h = 0; h < 60; h++) {
+              const q = D.ahead[r];
+              if (q < 0 || q === r) break;
+              if (seenR.has(q)) {
+                cyc = true;
+                break;
+              }
+              seenR.add(q);
+              r = q;
+            }
+            if (cyc || (D.ahead[r] < 0 && D.dwell[r] <= 0 && D.v[r] < 0.3)) note('stuck', c.x[r], c.z[r], `${cyc ? 'cycle' : 'none'} e${D.edge[r]} l${D.lane[r]} u${c.uid[r]}${D.blockBy[r] >= 0 ? ' by e' + D.edge[D.blockBy[r]] : ''}`);
+          }
+          const hx = Math.cos(c.yaw[i]), hz = Math.sin(c.yaw[i]);
+          const hl = D.size[i] / 2, hw = D.wid[i];
+          let out = false, gore = (bitsAt(GB, c.x[i], c.z[i]) & 2) !== 0;
+          for (const [a, b] of [[hl, hw], [hl, -hw], [-hl, hw], [-hl, -hw]]) {
+            const px = c.x[i] + hx * a - hz * b, pz = c.z[i] + hz * a + hx * b;
+            if (!onBit(GB, px, pz, 1, 0.3)) out = true;
+            if (bitsAt(GB, px, pz) & 2) gore = true;
+          }
+          if (out) note('offRoad', c.x[i], c.z[i], `e${D.edge[i]} l${D.lane[i]}`);
+          if (gore) note('onGore', c.x[i], c.z[i], `e${D.edge[i]} l${D.lane[i]}`);
         }
       }
       if (st % 30 === 0) {
