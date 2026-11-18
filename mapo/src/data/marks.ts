@@ -1,4 +1,4 @@
-// 노면 표시 자료(public/data/marks.json, tools/bake.ts 가 서울시 교통안전시설물 자료로 굽는다)
+// 노면 표시 자료(public/data/marks.json, tools/bake.ts 가 서울시 교통안전시설물 자료로 굽고, 차로를 가르는 선·정지선은 tools/road/marks.ts 가 길 정본에서 다시 만든다)
 export interface MarksJson {
   v: 1;
   /** 땅 위 선마다 [종류 × 10 + 중분류, 점 수, 첫 점 x, z, 뒤 점마다 앞 점과의 차이 x, z](dm) */
@@ -11,6 +11,8 @@ export interface MarksJson {
   a: number[];
   /** 화살표마다 놓인 차선 칸 폭(dm, 양옆 칠한 선 사이). 0 = 칸을 찾지 못함(재작업 W14) */
   aw?: number[];
+  /** 땅 위 선(l)마다 점선 위상(dm): 첫 점이 이어진 줄에서 놓인 자리. 정본에서 만든 선이 이음매·자른 자리를 넘어 같은 점선 무늬를 이어 간다(재작업 W49). 없으면 0 */
+  ld?: number[];
 }
 
 export interface MarkLine {
@@ -20,6 +22,8 @@ export interface MarkLine {
   k2: number;
   /** [x, y, z, ...](m) */
   p: Float32Array;
+  /** 점선 위상(m): 첫 점이 이어진 줄에서 놓인 자리(재작업 W49) */
+  d?: number;
 }
 
 export interface Marks {
@@ -40,13 +44,13 @@ function pts(a: number[], from: number, dim: number): number[] {
 
 export function decodeMarks(j: MarksJson): Marks {
   const lines: MarkLine[] = [];
-  for (const l of j.l) {
+  j.l.forEach((l, i) => {
     const xz = pts(l, 1, 2);
     const p = new Float32Array((xz.length / 2) * 3);
     for (let i = 0; i < xz.length / 2; i++) p.set([xz[i * 2], 0, xz[i * 2 + 1]], i * 3);
-    lines.push({ k: Math.floor(l[0] / 10), k2: l[0] % 10, p });
-  }
-  for (const l of j.h) lines.push({ k: Math.floor(l[0] / 10), k2: l[0] % 10, p: Float32Array.from(pts(l, 1, 3)) });
+    lines.push({ k: Math.floor(l[0] / 10), k2: l[0] % 10, p, d: (j.ld?.[i] ?? 0) / 10 });
+  });
+  for (const l of j.h) lines.push({ k: Math.floor(l[0] / 10), k2: l[0] % 10, p: Float32Array.from(pts(l, 1, 3)), d: 0 });
   const zones = j.z.map((z) => ({ yellow: z[0] === 1, ring: Float32Array.from(pts(z, 1, 2)) }));
   const arrows: Marks['arrows'] = [];
   for (let i = 0; i + 3 < j.a.length; i += 4) {
@@ -55,6 +59,16 @@ export function decodeMarks(j: MarksJson): Marks {
     arrows.push({ kind: j.a[i], x: j.a[i + 1] / 10, z: j.a[i + 2] / 10, fx: Math.cos(t), fz: -Math.sin(t), w: (j.aw?.[i / 4] ?? 0) / 10 });
   }
   return { lines, zones, arrows };
+}
+
+/** 노면 표시 정지선(4) 꺾은선을 선분 [x0, z0, x1, z1, ...]으로: 신호등 기둥 자리(render/signals.ts). 정지선은 차가 서는 자리에서 길 정본으로 굽는다(재작업 W49) */
+export function stopSegments(lines: MarkLine[]): Float32Array {
+  const out: number[] = [];
+  for (const l of lines) {
+    if (l.k !== 4) continue;
+    for (let k = 3; k < l.p.length; k += 3) out.push(l.p[k - 3], l.p[k - 1], l.p[k], l.p[k + 2]);
+  }
+  return Float32Array.from(out);
 }
 
 /** 선 모양: 색(0 백 1 황 2 청), 한 줄 폭(m), 겹선이면 두 줄 가운데 사이의 반(m), 왼쪽·오른쪽 줄 점선(0 실선, 1 3m 칠하고 5m 띄움, 2 1m 칠하고 1m 띄움, 3 0.5m 칠하고 0.5m 띄움) */

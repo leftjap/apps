@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
 import { decodeCurbs, decodeSurface, type CurbsJson, type SurfaceJson } from './data/surface.ts';
-import { decodeMarks, type MarksJson } from './data/marks.ts';
+import { decodeMarks, stopSegments, type MarksJson } from './data/marks.ts';
 import { toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
 import { makeBuildings } from './render/buildings.ts';
@@ -192,7 +192,8 @@ const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
-const signalMarks = makeSignalMarks(carGraph, inter.S, board.crosswalks, board.crosswalkMarks, board.stopLines);
+// 신호등 기둥은 그린 정지선(차가 서는 자리에서 길 정본으로 굽는다, 재작업 W49) 오른쪽 끝에 세운다. 차가 서는 자리는 위 inter 가 board.stopLines 로 정한다
+const signalMarks = makeSignalMarks(carGraph, inter.S, board.crosswalks, board.crosswalkMarks, stopSegments(marks.lines));
 const flow = makeFlow(carGraph, inter.X, surface.cut);
 flow.update(provider, start);
 // 로드뷰 기록 구역의 나무: 판 나무 뒤에 붙이고, 수종은 기록 값으로 정한다

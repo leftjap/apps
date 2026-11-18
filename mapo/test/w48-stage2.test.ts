@@ -22,18 +22,19 @@ describe('차로 정본 2단계: 찻길·표시·보도를 길 정본에서 굽�
     const f = lanesOnGore(load());
     expect(f.n, f.where.join(' ')).toBe(0);
   });
-  // B1: 상자 밖에서 칠한 차로 경계선 0.3m 안을 달리는 차로(HEAD 1.5km)
-  it.fails('④ 칠한 차선 위를 달리는 차로가 없다', () => {
+  // B1: 상자 밖에서 칠한 차로 경계선 0.3m 안을 달리는 차로(HEAD 1.5km → W49 0)
+  it('④ 칠한 차선 위를 달리는 차로가 없다', () => {
     const f = lanesOnPaint(load());
     expect(f.n, f.where.join(' ')).toBe(0);
   });
-  // B1·B2: 땅 위 노면 표시 선이 구운 찻길 면 밖(0.3m 넘게)인 길이(HEAD 0.27km / 348km)
+  // B1·B2: 땅 위 노면 표시 선이 구운 찻길 면 밖(0.3m 넘게)인 길이(HEAD 0.27km / 348km). W49(B1) 뒤 68m: 모두 정지선이고, 구운 찻길 면이 없고
+  // 실행 중 차로 띠(58절)만 찻길로 칠하는 진입로(−1653,−829 · −1219,−53 · 92,−288 · −241,−1899 · 1589,−425 둘레)에 차가 서는 자리다. 찻길 면을 정본에서 굽는 B2 에서 0
   it.fails('⑤ 노면 표시가 구운 찻길 면 안', () => {
     const f = marksOffBaked(load());
     expect(f.n, f.where.join(' ')).toBe(0);
   });
-  // B1: 신호 진입로 일반 차로마다 서는 자리에 칠한 정지선 하나(HEAD 489차로 중 180 누락, 1 겹침)
-  it.fails('⑥ 신호 진입로의 차로마다 정지선이 하나', () => {
+  // B1: 신호 진입로 일반 차로마다 서는 자리에 칠한 정지선 하나(HEAD 489차로 중 180 누락, 1 겹침 → W49 0, 0)
+  it('⑥ 신호 진입로의 차로마다 정지선이 하나', () => {
     const f = stopLineCover(load());
     expect(f.of).toBeGreaterThan(300);
     expect({ missing: f.n, dup: f.dup }, f.where.join(' ')).toEqual({ missing: 0, dup: 0 });
@@ -46,8 +47,8 @@ describe('차로 정본 2단계: 찻길·표시·보도를 길 정본에서 굽�
   it('⑦-2 철도 부지 위를 지나는 차로가 없다(지금도 0, 나빠지지 않게)', () => {
     expect(railOverlap(load()).lanes).toBe(0);
   });
-  // B1: 양방향 큰길 단면에 칠한 황색 중앙선이 둘 넘는 곳(HEAD 3,730단면 중 16)
-  it.fails('⑧ 양방향 큰길의 중앙선은 한 줄', () => {
+  // B1: 양방향 큰길 단면에 칠한 황색 중앙선이 둘 넘는 곳(HEAD 3,730단면 중 16 → W49 0)
+  it('⑧ 양방향 큰길의 중앙선은 한 줄', () => {
     const f = centreLines(load());
     expect(f.of).toBeGreaterThan(3000);
     expect(f.n, f.where.join(' ')).toBe(0);

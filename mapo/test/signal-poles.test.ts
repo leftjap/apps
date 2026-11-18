@@ -5,15 +5,20 @@ import { buildCarGraph } from '../src/sim/graph.ts';
 import { decodeLanes } from '../src/data/road.ts';
 import { GREEN, LEFT, makeIntersections, RED, STRAIGHT, YELLOW } from '../src/sim/intersection/index.ts';
 import { pedState, signalPoles } from '../src/render/signals.ts';
+import { decodeMarks, stopSegments } from '../src/data/marks.ts';
 
 const board = decodeBoard(JSON.parse(readFileSync(new URL('../public/data/board.json', import.meta.url), 'utf8')));
-const edges = buildCarGraph(board.roads, decodeLanes(JSON.parse(readFileSync(new URL('../public/data/road.json', import.meta.url), 'utf8')).lanes));
-const signals = makeIntersections(edges, { crosswalks: board.crosswalks, stopLines: board.stopLines }).S;
-const poles = signalPoles(edges, signals, board.crosswalks, board.stopLines);
+// 재작업 W49: 신호등 기둥은 그린 정지선(차가 서는 자리에서 길 정본으로 굽는다)에 세운다. 그 정지선이 신호 진입로를 고를 때 신호등 자료(signals.json)를 쓰므로 src/main.ts 와 같게 만든다
+const read = (f: string) => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), 'utf8'));
+const marks = decodeMarks(read('marks.json'));
+const edges = buildCarGraph(board.roads, decodeLanes(read('road.json').lanes), marks.arrows);
+const signals = makeIntersections(edges, { crosswalks: board.crosswalks, stopLines: board.stopLines, lamps: read('signals.json') }).S;
+const drawnStops = stopSegments(marks.lines);
+const poles = signalPoles(edges, signals, board.crosswalks, drawnStops);
 
 /** 점에서 가장 가까운 정지선(선분)까지 거리 */
 const toStop = (x: number, z: number) => {
-  const s = board.stopLines;
+  const s = drawnStops;
   let best = Infinity;
   for (let k = 0; k < s.length; k += 4) {
     const ax = s[k], az = s[k + 1], bx = s[k + 2], bz = s[k + 3];

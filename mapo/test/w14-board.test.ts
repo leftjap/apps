@@ -10,6 +10,8 @@ import { arrowShape } from '../src/data/marks.ts';
 import { decodeWalk, type WalkJson } from '../src/sim/walknet.ts';
 import { fillBits } from '../tools/lib/bits.ts';
 import { centerCrossings, seamBreaks } from '../tools/lib/lanecheck.ts';
+import { bandQuad, laneBands } from '../src/data/laneGround.ts';
+import { buildCarGraph } from '../src/sim/graph.ts';
 
 // 재작업 W14, 지금 판(public/data): 노면 표시는 그린 찻길 면 안에만, 화살표는 차로 가운데에, 나무는 찻길·데크 위에 없다
 const read = (f: string) => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), 'utf8'));
@@ -34,14 +36,16 @@ const deep = (B: Parameters<typeof onGround>[0], x: number, z: number) =>
   onGround(B, x, z, 0) && Array.from({ length: 8 }, (_, k) => (k * Math.PI) / 4).every((a) => onGround(B, x + Math.cos(a) * 0.3, z + Math.sin(a) * 0.3, 0));
 
 describe('W14 지금 판', () => {
+  // 재작업 W49: 정지선(k4)은 차가 서는 자리에 긋고, 그 자리가 구운 찻길 면 밖이면 실행 중 차로 띠(58절, 찻길로 칠한다) 위다(구운 면을 정본에서 굽는 B2 까지)
   it('땅 위 노면 표시 선의 점은 모두 그린 찻길 면 안(자르기 여유 0.3m + 판 자료 반올림)', () => {
+    const bands = drawnGround(laneBands(buildCarGraph(board.roads, decodeLanes((read('road.json') as RoadJson).lanes), marks.arrows), 0).flatMap(({ sec }) => Array.from({ length: sec.length / 4 - 1 }, (_, k) => [bandQuad(sec, k)])));
     let n = 0;
     let out = 0;
     for (const l of marks.lines) {
       if (l.p.some((_, i) => i % 3 === 1 && l.p[i] !== 0)) continue;
       for (let k = 0; k < l.p.length; k += 3) {
         n++;
-        if (!near(ground, l.p[k], l.p[k + 2], 0.6)) out++; // 자르기 여유 0.3m + 0.25m 칸 + dm 반올림
+        if (!near(ground, l.p[k], l.p[k + 2], 0.6) && !(l.k === 4 && near(bands, l.p[k], l.p[k + 2], 0.6))) out++; // 자르기 여유 0.3m + 0.25m 칸 + dm 반올림
       }
     }
     expect(n).toBeGreaterThan(10000);

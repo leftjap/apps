@@ -70,7 +70,7 @@ export function pedState(signals: Signals, i: number, xw: Crosswalk, tod: number
   return signals.walkState(i, tod) === GREEN ? GREEN : RED;
 }
 
-/** 신호등 자리. stopLines 는 서울시 정지선 [x0, z0, x1, z1, ...] */
+/** 신호등 자리. stopLines 는 그린 정지선 [x0, z0, x1, z1, ...](src/data/marks.ts stopSegments, 재작업 W49) */
 export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], stopLines: Float32Array) {
   const car: CarPole[] = [];
   const inner: number[] = [];

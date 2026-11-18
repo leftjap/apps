@@ -1,4 +1,4 @@
-// 노면 표시. 서울시 차선 선(OA-15537)을 자료 그대로 긋고(중앙선·차선·진로변경제한선·정지선·주행유도선·자전거횡단도 등, 색·실선·점선·겹선은 종류대로. 자전거횡단도는 0.5m 흰 네모 줄),
+// 노면 표시. 서울시 차선 선(OA-15537)을 긋고(차로를 가르는 선·정지선은 길 정본에서 만든 자리, 재작업 W49. 중앙선·차선·진로변경제한선·정지선·주행유도선·자전거횡단도 등, 색·실선·점선·겹선은 종류대로. 자전거횡단도는 0.5m 흰 네모 줄),
 // 안전지대(OA-15533)는 빗금 면, 노면 화살표(OA-15536)는 모양으로 칠한다(src/data/marks.ts).
 // 선은 화면에서 한 픽셀보다 가늘어져도 깜박이지 않게 그리는 폭을 화면 크기에 맞춰 넓히고, 칠은 픽셀 단위로 부드럽게 한다. 멀어지면 옅어진다.
 import * as THREE from 'three';
@@ -19,11 +19,12 @@ export function makeMarks(marks: Marks): THREE.Group {
   const sty: number[] = [];
   const hal: number[] = [];
   const idx: number[] = [];
-  const addLine = (P: ArrayLike<number>, s: ReturnType<typeof lineStyle>, closed = false) => {
+  const addLine = (P: ArrayLike<number>, s: ReturnType<typeof lineStyle>, closed = false, phase = 0) => {
     const n = P.length / 3;
     const at = (i: number) => (closed ? (i + n) % n : Math.max(0, Math.min(n - 1, i)));
     const base = pos.length / 3;
-    let along = 0;
+    // 점선 무늬는 이어진 줄의 위상에서 시작한다(재작업 W49: 이음매·자른 자리에서 무늬가 다시 시작하지 않게)
+    let along = phase;
     for (let j = 0; j <= (closed ? n : n - 1); j++) {
       const i = at(j);
       const a = at(j - 1);
@@ -54,7 +55,7 @@ export function makeMarks(marks: Marks): THREE.Group {
       }
     }
   };
-  for (const l of marks.lines) addLine(l.p, lineStyle(l.k, l.k2));
+  for (const l of marks.lines) addLine(l.p, lineStyle(l.k, l.k2), false, l.d ?? 0);
   // 안전지대 테두리: 실선(중앙선 옆은 황색)
   for (const z of marks.zones) {
     const P: number[] = [];

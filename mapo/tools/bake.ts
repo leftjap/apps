@@ -15,13 +15,17 @@ import { ringArea as loopArea } from './lib/contour.ts';
 import { boardWalkNet } from './lib/walknet.ts';
 import { bakeWalk } from './lib/walkfix.ts';
 import { doorWanted, underpasses, ZONES } from '../src/sim/people/zones.ts';
-import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../src/data/surface.ts';
+import { carriageSections, decodeSurface, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../src/data/surface.ts';
+import { decodeLanes } from '../src/data/road.ts';
+import { buildCarGraph } from '../src/sim/graph.ts';
+import { makeIntersections } from '../src/sim/intersection/index.ts';
 import { encodePng, fillPolygon, fillPolygonAA, strokeLineAA } from './lib/raster.ts';
 import { assembleRings, biotopeKind, encodeArea, groupRings, osmKind, ringArea, simplifyRing } from './lib/ground.ts';
 import { curbAt, decodeBoard, GK, roadHalf, type BoardJson } from '../src/data/board.ts';
 import { roadCorners } from '../src/data/corners.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { bakeRoad } from './road/index.ts';
+import { bakedGround, laneMarks, refitArrows } from './road/marks.ts';
 import { roadLevels } from './lib/levels.ts';
 import { carSurface, pushTreesOffRoad } from './lib/treeplace.ts';
 import { clipLine, drawnGround, dropOverlaps, onGround, smoothLine } from './lib/groundclip.ts';
@@ -2238,6 +2242,21 @@ writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), sur
   mj.a = a;
   mj.aw = aw;
   console.log(`노면 화살표 칸: 양옆 칠한 선을 찾은 것 ${aw.filter((v) => v > 0).length}개, 못 찾은 것 ${aw.filter((v) => v === 0).length}개`);
+  // 차로를 가르는 선(중앙선·차선 등)과 정지선은 길 정본에서 다시 긋는다(tools/road/marks.ts, 재작업 W49·설계 문서 59절 B1. node tools/marks.ts 와 같은 함수)
+  {
+    const g = buildCarGraph(bd.roads, decodeLanes(JSON.parse(baked.json).lanes), decodeMarks(mj).arrows);
+    const signalsFile = new URL('../public/data/signals.json', import.meta.url);
+    const inter = makeIntersections(g, { crosswalks: bd.crosswalks, stopLines: bd.stopLines, lamps: existsSync(signalsFile) ? JSON.parse(readFileSync(signalsFile, 'utf8')) : undefined });
+    const [sf2, sp2] = [decodeSurface(JSON.parse(surfaceJson)), JSON.parse(surfacePolysJson)];
+    const ground = bakedGround(bd, sf2, sp2);
+    const ground25 = bakedGround(bd, sf2, sp2, 0.25);
+    // 서울시 선만 든 표시는 tools/marks.ts 가 정본 선만 다시 그을 수 있게 tools/raw/ 에 남긴다
+    writeFileSync(new URL('./raw/seoul-marks.json', import.meta.url), JSON.stringify(mj));
+    const lm = laneMarks({ board: bd, g, inter, seoul: decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, marks: mj, ground, ground25 });
+    const ra = refitArrows(lm.json, (arrows) => buildCarGraph(bd.roads, decodeLanes(JSON.parse(baked.json).lanes), arrows));
+    Object.assign(mj, { l: ra.json.l, h: ra.json.h, ld: ra.json.ld, a: ra.json.a, aw: ra.json.aw });
+    console.log(`${lm.log}; 화살표 새 칸 가운데로 ${ra.moved}개(되돌린 것 ${ra.reverted})`);
+  }
   marksJson = JSON.stringify(mj);
   const d = sn.dist.sort((x, y) => x - y);
   console.log(`노면 화살표 ${ar.length}개 가운데 차로 가운데로 옮긴 것 ${sn.moved}개(옮긴 거리 중앙값 ${d[d.length >> 1]?.toFixed(2)}m, 90% ${d[Math.floor(d.length * 0.9)]?.toFixed(2)}m), 옮긴 뒤 찻길 면 밖이라 뺀 것 ${ar.length - a.length / 4}개`);

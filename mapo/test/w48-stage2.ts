@@ -208,12 +208,18 @@ const groundLine = (ln: Marks['lines'][number]) => {
   return true;
 };
 
-/** 칠한 선 조각 격자(종류 ks, 땅 위 선만): [ax, az, bx, bz] */
-function lineGrid(lines: Marks['lines'], ks: Set<number>, C = 10) {
+/** 높이 3m 안 선(둑길·터파기 경사 진입로의 정지선, 재작업 W49) */
+const lowLine = (ln: Marks['lines'][number]) => {
+  for (let k = 1; k < ln.p.length; k += 3) if (Math.abs(ln.p[k]) > 3) return false;
+  return true;
+};
+
+/** 칠한 선 조각 격자(종류 ks, 땅 위 선만. low 면 둑길·터파기 경사(높이 3m 안) 위 선도): [ax, az, bx, bz] */
+function lineGrid(lines: Marks['lines'], ks: Set<number>, C = 10, low = false) {
   const grid = new Map<number, number[][]>();
   const key = (x: number, z: number) => (Math.floor(x / C) + 1000) * 4000 + Math.floor(z / C) + 1000;
   for (const ln of lines) {
-    if (!ks.has(ln.k) || !groundLine(ln)) continue;
+    if (!ks.has(ln.k) || !(low ? lowLine(ln) : groundLine(ln))) continue;
     for (let k = 3; k < ln.p.length; k += 3) {
       const sg = [ln.p[k - 3], ln.p[k - 1], ln.p[k], ln.p[k + 2]];
       for (let cx = Math.floor(Math.min(sg[0], sg[2]) / C); cx <= Math.floor(Math.max(sg[0], sg[2]) / C); cx++)
@@ -280,7 +286,8 @@ export function marksOffBaked(d: Stage2Data, tol = 0.3): Found {
  */
 export function stopLineCover(d: Stage2Data): Found & { dup: number } {
   const { X, S } = d.inter;
-  const at = lineGrid(d.marks.lines, new Set([4]), 10);
+  // 정지선은 차로가 땅 위가 아닌 진입로(둑길·터파기 경사, 재작업 W49)에서는 그 찻길 높이로 칠한다: 높이 3m 안 선을 평면 거리로 본다
+  const at = lineGrid(d.marks.lines, new Set([4]), 10, true);
   const f = { n: 0, of: 0, where: [] as string[], dup: 0 };
   const prev: number[][] = d.g.map(() => []);
   for (const e of d.g) for (const k of e.next) prev[k].push(e.id);
