@@ -54,6 +54,34 @@ const B_COMF = 2.5;
 const B_AMBER = 3;
 const B_HARD = 6;
 
+/** 따라가기 규칙(서 있는 장애물이 obs 에 있다고 보고, 바라는 속도 v0)대로 속도 u 에서 달려 앞 범퍼가 need 를 지나는 데 걸리는 시간(초, 못 지나면 ∞)과 그때 짐 차 꽁무니 자리.
+ *  짐으로 본 바로 앞차(꽁무니 xl, 속도 ul, 없으면 xl = ∞)도 같은 규칙으로 달린다고 보고 그 꽁무니를 따라간다. 거리는 모두 내 앞 범퍼 기준 */
+export function clearRun(v0: number, u: number, need: number, obs: number, xl: number, ul: number): [number, number] {
+  const idm = (w: number, gap: number) => {
+    let a = A_MAX * (1 - (w / v0) ** 4);
+    if (gap < Infinity) a -= A_MAX * ((2 + w * 1.3 + (w * w) / (2 * Math.sqrt(A_MAX * B_COMF))) / Math.max(0.3, gap)) ** 2;
+    return Math.max(-8, Math.min(A_MAX, a));
+  };
+  const load = xl < Infinity;
+  // obs 는 짐이 장애물 뒤에 붙어 섰을 때 가장 가까운 짐의 꽁무니 자리라, 그 짐 앞 범퍼가 볼 장애물은 꽁무니 좌표로 obs + 2.5 다(재작업 W42: 전에는 내 몸 길이를 더해 짐을 그만큼 더 보냈다)
+  const obsL = obs + 2.5;
+  const h = 0.2;
+  let x = 0;
+  let t = 0;
+  while (x < need) {
+    const a = idm(u, Math.min(obs - x, xl - x));
+    if (load) {
+      ul = Math.max(0, ul + idm(ul, obsL - xl) * h);
+      xl += ul * h;
+    }
+    u = Math.max(0, u + a * h);
+    x += u * h;
+    t += h;
+    if (t > 40 || (u < 0.05 && a <= 0)) return [Infinity, xl];
+  }
+  return [t, xl];
+}
+
 export function makeCars(
   edges: Edge[],
   provider: DataProvider,
@@ -1452,35 +1480,10 @@ export function makeCars(
     if (obs < need + 2.5) return false;
     return soon > 40 || clearSim(i, need, obs) + 1 < soon;
   }
-  /** 따라가기 규칙(서 있는 장애물이 obs 에 있다고 보고, 바라는 속도는 앞 구간들 가운데 가장 느린 것)대로 달려 앞 범퍼가 need 를 지나는 데 걸리는 시간(초). 못 지나면 ∞.
-   *  짐으로 본 바로 앞차가 있으면(재작업 W37) 그 차도 같은 규칙으로 달린다고 보고(장애물은 obs 너머 내 몫), 그 꽁무니를 따라간다 */
+  /** clearRun 을 차 i 로: 바라는 속도는 앞 구간들 가운데 가장 느린 것, 짐으로 본 바로 앞차가 있으면(재작업 W37) 그 꽁무니를 따라간다 */
   function clearSim(i: number, need: number, obs: number): number {
-    const v0 = Math.min(XA.v0, Math.max(0.5, speed[edge[i]] * vf[i]));
-    const idm = (u: number, gap: number) => {
-      let a = A_MAX * (1 - (u / v0) ** 4);
-      if (gap < Infinity) a -= A_MAX * ((2 + u * 1.3 + (u * u) / (2 * Math.sqrt(A_MAX * B_COMF))) / Math.max(0.3, gap)) ** 2;
-      return Math.max(-8, Math.min(A_MAX, a));
-    };
     const fl = skipLoads ? XA.first : -1;
-    let xl = fl >= 0 ? XA.firstAt : Infinity;
-    let ul = fl >= 0 ? v[fl] : 0;
-    const obsL = obs + size[i] + 2.5;
-    const h = 0.2;
-    let x = 0;
-    let u = v[i];
-    let t = 0;
-    while (x < need) {
-      const a = idm(u, Math.min(obs - x, xl - x));
-      if (fl >= 0) {
-        ul = Math.max(0, ul + idm(ul, obsL - xl) * h);
-        xl += ul * h;
-      }
-      u = Math.max(0, u + a * h);
-      x += u * h;
-      t += h;
-      if (t > 40 || (u < 0.05 && a <= 0)) return Infinity;
-    }
-    return t;
+    return clearRun(Math.min(XA.v0, Math.max(0.5, speed[edge[i]] * vf[i])), v[i], need, obs, fl >= 0 ? XA.firstAt : Infinity, fl >= 0 ? v[fl] : 0)[0];
   }
 
   /** 정류장에 선 버스 몸(가운데가 정류장 자리 2.5m 앞까지, 그 노선 버스 길이)이 횡단보도 면에 걸치면 걸치지 않을 때까지 앞으로 옮기는 거리(m, 노선·정류장마다, 재작업 W22) */
