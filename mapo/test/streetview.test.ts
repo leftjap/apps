@@ -6,6 +6,7 @@ import { addedBuildings, applyRec, matchBuildings, recLook, treeKind, UNKNOWN, t
 import { toLatLon } from '../src/geo.ts';
 import { looks, prismGeometry, propsOf, refine, STYLE } from '../src/render/buildings.ts';
 import { detailOf, DK, siteOf } from '../src/render/detail.ts';
+import { pavingZones } from '../src/data/paving.ts';
 
 const box = (x0: number, z0: number, w: number, d: number) => new Float32Array([x0, z0, x0 + w, z0, x0 + w, z0 + d, x0, z0 + d]);
 const bld = (o: Partial<Building> & { pts: Float32Array; h: number }): Building => ({ lm: 0, minH: 0, roof: 0, ...o });
@@ -262,13 +263,18 @@ describe('단지 바닥 소품', () => {
     expect(pole('#ff8000')).toEqual([1, 128 / 255, 0]);
     expect(pole()).toEqual([0.36, 0.37, 0.39]);
   });
-  it('포장 면은 기록한 색(붉은 벽돌 등)으로, 색이 없으면 재질 색으로 깐다', () => {
-    const pave = (color?: string) => {
-      const s = siteOf([{ kind: 'paving', ll: toLatLon(0, 0), w: 10, d: 4, yaw: 0, surface: 'block', color, conf: 'part', seen: '' }]);
+  it('심은 곳은 기록한 색(없으면 녹지 색) 상자로, 그 밖 포장은 상자가 아니라 재질·색마다 포장 구역 다각형으로 깐다(재작업 W51)', () => {
+    const plant = (color?: string) => {
+      const s = siteOf([{ kind: 'paving', ll: toLatLon(0, 0), w: 10, d: 4, yaw: 0, surface: 'planting', color, conf: 'part', seen: '' }]);
       return [s[8], s[9], s[10]];
     };
-    expect(pave('#ff8000')).toEqual([1, 128 / 255, 0]);
-    expect(pave()).toEqual([0.66, 0.63, 0.59]);
+    expect(plant('#ff8000')).toEqual([1, 128 / 255, 0]);
+    expect(plant()).toEqual([0.36, 0.42, 0.27]);
+    const block = { kind: 'paving' as const, ll: toLatLon(0, 0), w: 10, d: 4, yaw: 0, surface: 'block' as const, color: '#ff8000', conf: 'part' as const, seen: '' };
+    expect(siteOf([block])).toEqual([]);
+    // 1m 안으로 떨어진 두 사각형은 구멍 없는 다각형 하나가 된다
+    const z = pavingZones([block, { ...block, ll: toLatLon(4.8, 0) }]);
+    expect(z.map((q) => [q.color, q.rings.length])).toEqual([['#ff8000', 1]]);
   });
   it('부스는 길이 w 를 방위 yaw 로 눕힌 상자이고, 아래 띠 색을 적으면 띠 위에 몸통을 얹는다', () => {
     const s = siteOf([{ kind: 'booth', ll: toLatLon(10, 20), w: 10, d: 3, h: 3.5, yaw: 90, color: '#ff8000', base: '#0000ff', baseH: 0.5, conf: 'part', seen: '' }]);

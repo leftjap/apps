@@ -3,6 +3,8 @@
 // 색은 env.ts 의 pal 값(낮·노을·밤을 따라 바뀐다)을 셰이더에서 섞어 만든다. 물(마스크 빨강) 위에서는 부두 말고는 그리지 않는다.
 import * as THREE from 'three';
 import { GK, type GroundArea } from '../data/board.ts';
+import { pavingShapes, type PavingZone } from '../data/paving.ts';
+import { groupLoops, tileRings, type Surface } from '../data/surface.ts';
 import { BOARD_R } from '../geo.ts';
 import { material, pal } from './env.ts';
 import { addRibbon, ribbon, ribbonGeometry } from './util.ts';
@@ -264,4 +266,79 @@ export function makeAreas(areas: GroundArea[], mask: THREE.Texture): THREE.Group
   const group = new THREE.Group();
   group.add(fill, curb);
   return group;
+}
+
+/**
+ * 보도 면(재작업 W51, 설계 문서 59절 G8): 도시생태현황도 도로 부지(ROADSIDE)·OSM 광장(PLAZA) 블록 대신 굽기가 길 정본 찻길 면과 함께 구운 보도 면(surface.json w,
+ * 찻길 밑까지 깐 한 면)을 보도 재질로, 분리대 녹지(m)를 녹지로 깐다. 비오톱 면 다음·OSM 면 앞에 둔다(OSM 공원·주차장 등이 그 위를 덮는다). v1 판이면 그대로
+ */
+export function sidewalkAreas(areas: GroundArea[], surface: Surface): GroundArea[] {
+  if (!surface.walk.length) return areas;
+  // 보도 면 가장자리는 건물 앞·땅 쓰임새 경계이고 찻길 쪽은 찻길 면이 덮으므로 깎지 않는다(삼각형 수, 깎으면 꼭짓점이 네 배)
+  const tiles = (layer: number[], kind: number, passes: number): GroundArea[] =>
+    tileRings(layer, passes).flatMap((t) => groupLoops(t.rings).map(({ outer, holes }) => ({ kind, param: 0, rect: null, outer, holes })));
+  return [
+    ...areas.filter((a) => a.kind < 20 && a.kind !== GK.ROADSIDE),
+    ...tiles(surface.walk, GK.ROADSIDE, 0),
+    ...tiles(surface.median, GK.GREEN, 2),
+    ...areas.filter((a) => a.kind >= 20 && a.kind !== GK.PLAZA),
+  ];
+}
+
+/** 포장 구역(src/data/paving.ts): 찻길 면 위(칠한 길)에도 그리므로 찻길 다음에, 노면 표시 앞에 그린다. 색은 기록 값, 비에 젖으면 어두워진다 */
+export function makePaving(zones: PavingZone[]): THREE.Mesh {
+  const pos: number[] = [];
+  const col: number[] = [];
+  const idx: number[] = [];
+  // 색은 render/detail.ts 포장 상자와 같게(기록 색을 그대로 0~1 로, 없으면 재질 색)
+  const base: Record<string, [number, number, number]> = { asphalt: [0.36, 0.37, 0.38], concrete: [0.68, 0.68, 0.66], block: [0.66, 0.63, 0.59] };
+  const hex = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16) / 255, parseInt(c.slice(3, 5), 16) / 255, parseInt(c.slice(5, 7), 16) / 255];
+  for (const z of zones) {
+    const [cr, cg, cb] = z.color ? hex(z.color) : (base[z.surface] ?? base.block);
+    const c = { r: cr, g: cg, b: cb };
+    for (const { outer, holes } of pavingShapes(z)) {
+      const v2 = (f: Float32Array) => {
+        const out: THREE.Vector2[] = [];
+        for (let i = 0; i < f.length; i += 2) out.push(new THREE.Vector2(f[i], f[i + 1]));
+        return out;
+      };
+      const ov = v2(outer);
+      const hv = holes.map(v2);
+      const b = pos.length / 3;
+      for (const p of [ov, ...hv].flat()) pos.push(p.x, 0, p.y), col.push(c.r, c.g, c.b, z.surface === 'block' ? 1 : 0);
+      for (const f of THREE.ShapeUtils.triangulateShape(ov, hv)) idx.push(b + f[0], b + f[1], b + f[2]);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('aCol', new THREE.Float32BufferAttribute(col, 4));
+  g.setIndex(idx);
+  const mesh = new THREE.Mesh(
+    g,
+    material({
+      depthWrite: false,
+      offset: 2,
+      doubleSide: true,
+      vertex: /* glsl */ `attribute vec4 aCol; varying vec4 vCol; varying vec3 vW; varying float vDist;
+        void main() { vCol = aCol; vW = position; vec4 mv = modelViewMatrix * vec4(position, 1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragment: /* glsl */ `varying vec4 vCol; varying vec3 vW; varying float vDist;
+        float joints(vec2 p, float w) {
+          vec2 aa = max(fwidth(p), vec2(1e-4));
+          vec2 d = abs(fract(p + 0.5) - 0.5);
+          vec2 l = (1.0 - smoothstep(w * 0.5 - aa, w * 0.5 + aa, d)) * min(vec2(1.0), w / aa);
+          return max(l.x, l.y) * (1.0 - smoothstep(0.12, 0.25, max(aa.x, aa.y)));
+        }
+        void main() {
+          // 블록 포장은 200×100mm 벽돌 줄눈
+          vec3 alb = vCol.rgb * (1.0 - 0.1 * vCol.a * joints(vW.xz / vec2(0.2, 0.1), 0.08));
+          alb *= 1.0 - 0.3 * uRain;
+          vec3 col = lit(alb, vec3(0.0, 1.0, 0.0));
+          col = mix(col, mix(vec3(0.40, 0.45, 0.52), col * 0.28 + vec3(0.012, 0.02, 0.035), uNight), focusIn(vW.xz) * 0.85);
+          gl_FragColor = vec4(fogged(col, vDist), 1.0);
+        }`,
+    }),
+  );
+  mesh.renderOrder = -4.5;
+  mesh.frustumCulled = false;
+  return mesh;
 }

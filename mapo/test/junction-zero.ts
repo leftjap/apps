@@ -10,7 +10,8 @@ import { audit, CASES, type AuditResult } from '../tools/measure-junction.ts';
 // 조건마다 세 씨앗 가운데 가장 큰 측정값을 상한으로 두고 낮추기만 한다. offRoad 는 길 정본 차로 띠를 찻길로 칠하기 전(HEAD 6dcdec5c 이후) 일 3,343~4,522·토 4,862~6,332·평일 6,647~7,547 이었다
 export const W44_LIMIT: Record<'stuck' | 'offRoad' | 'onGore', [number, number, number]> = {
   stuck: [11, 29, 119],
-  offRoad: [638, 844, 806],
+  // 재작업 W51(찻길 면 하나를 길 정본에서 굽기): 9판 일 101~126·토 118~138·평일 99~227 (고치기 전 345~638·478~844·609~806)
+  offRoad: [126, 138, 227],
   onGore: [2414, 2368, 5400],
 };
 

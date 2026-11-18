@@ -13,10 +13,10 @@
 //  speed     평균 속도(m/s, 시험은 재기만 한다)
 // 아래 셋은 셀 둘레(count)가 아니라 길을 남긴 둘레(keep)에서 50m 안쪽까지 1초마다 센다(재작업 W44, 설계 문서 58절). 땅 위(높이 1.5m 안) 차만 본다
 //  stuck     10초 넘게 선 차 가운데 앞차 사슬 끝의 차에 까닭(신호·게이트·횡단보도·정류장·사람·돌발)이 없는 것(사슬 끝이 앞차 없이 서 있거나 사슬이 맞물림). 10초를 넘는 때 한 번 센다
-//  offRoad   차 몸 네 모서리 가운데 하나가 그린 찻길 면(찻길 띠·교차로 면·분리대·그리기 전용 면·길 정본 차로 띠 src/data/laneGround.ts)에서 0.3m 넘게 밖인 차·초
+//  offRoad   차 몸 네 모서리 가운데 하나가 그린 찻길 면(v2: 길 정본에서 구운 면 surface.json g, 재작업 W51. v1: 찻길 띠·교차로 면·분리대·그리기 전용 면·길 정본 차로 띠)에서 0.3m 넘게 밖인 차·초
 //  onGore    차 몸 가운데나 모서리가 안전지대(빗금) 안인 차·초
 import { readFileSync } from 'node:fs';
-import { decodeSurface } from '../src/data/surface.ts';
+import { decodeSurface, tileRings } from '../src/data/surface.ts';
 import { BOARD_R } from '../src/geo.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from './lib/bits.ts';
 import { bandQuad, laneBands } from '../src/data/laneGround.ts';
@@ -112,7 +112,7 @@ function bodyInRing(x: number, z: number, yaw: number, hl: number, hw: number, r
   return false;
 }
 
-/** 그린 찻길 면(비트 1: 찻길 띠·교차로 면·분리대·그리기 전용 면, 그리고 길 정본 차로 띠 src/data/laneGround.ts)과 안전지대(비트 2) 칸 격자(0.25m). 판 폴더마다 한 번 만든다 */
+/** 그린 찻길 면(비트 1: v2 는 surface.json g, v1 은 찻길 띠·교차로 면·분리대·그리기 전용 면과 길 정본 차로 띠)과 안전지대(비트 2) 칸 격자(0.25m). 판 폴더마다 한 번 만든다 */
 const groundCache = new Map<string, Bits>();
 export function groundBits(DATA: string, g: Edge[], keep?: number, cell = 0.25): Bits {
   const key = `${DATA}|${g.length}|${keep ?? 0}|${cell}`;
@@ -125,12 +125,17 @@ export function groundBits(DATA: string, g: Edge[], keep?: number, cell = 0.25):
   // 길을 남긴 둘레만 덮는다(판 전체 0.25m 칸은 256MB)
   const xs = CENTERS.map(([x]) => x), zs = CENTERS.map(([, z]) => z);
   const B = keep ? makeBits(Math.min(...xs) - keep, Math.min(...zs) - keep, Math.max(...xs) + keep, Math.max(...zs) + keep, cell) : makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, cell);
-  for (const c of sp.car) fillBits(B, [dm(c.slice(1))], 1);
-  for (const f of sf.faces) fillBits(B, [f.outer, ...f.holes], 1);
-  for (const f of sf.draw) fillBits(B, [f.outer], 1);
-  for (const m of sp.med) fillBits(B, [dm(m)], 1);
-  for (const d of sp.draw) fillBits(B, [dm(d)], 1);
-  for (const { sec } of laneBands(g)) for (let k = 0; k + 1 < sec.length / 4; k++) fillBits(B, [bandQuad(sec, k)], 1);
+  if (sf.ground.length) {
+    // v2(재작업 W51): 앱이 그리는 찻길 면은 길 정본에서 구운 면 하나(surface.json g)다
+    for (const t of tileRings(sf.ground)) fillBits(B, t.rings, 1);
+  } else {
+    for (const c of sp.car) fillBits(B, [dm(c.slice(1))], 1);
+    for (const f of sf.faces) fillBits(B, [f.outer, ...f.holes], 1);
+    for (const f of sf.draw) fillBits(B, [f.outer], 1);
+    for (const m of sp.med) fillBits(B, [dm(m)], 1);
+    for (const d of sp.draw) fillBits(B, [dm(d)], 1);
+    for (const { sec } of laneBands(g)) for (let k = 0; k + 1 < sec.length / 4; k++) fillBits(B, [bandQuad(sec, k)], 1);
+  }
   for (const z of decodeMarks(data('marks.json')).zones) fillBits(B, [z.ring], 2);
   groundCache.set(key, B);
   return B;

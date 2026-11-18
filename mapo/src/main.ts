@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
-import { decodeCurbs, decodeSurface, type CurbsJson, type SurfaceJson } from './data/surface.ts';
+import { decodeCurbs, decodeSurface, tileRings, type CurbsJson, type SurfaceJson } from './data/surface.ts';
 import { decodeMarks, stopSegments, type MarksJson } from './data/marks.ts';
-import { toXZ } from './geo.ts';
+import { BOARD_R, toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
 import { makeBuildings } from './render/buildings.ts';
 import { makeDetail } from './render/detail.ts';
@@ -14,8 +14,9 @@ import { makeGround } from './render/ground.ts';
 import { LANDMARKS, LM_COLORS, makeLandmarks } from './render/landmarks.ts';
 import { makeRails, type TrainSpot } from './render/rails.ts';
 import { makeGroundLabels, makeMarker, makeRings, type GroundLabel } from './render/rings.ts';
-import { makeRoads } from './render/roads.ts';
-import { bandTest, laneBands } from './data/laneGround.ts';
+import { makeRoads, trenchTest } from './render/roads.ts';
+import { pavingZones } from './data/paving.ts';
+import { makePaving, sidewalkAreas } from './render/areas.ts';
 import { makeMarks } from './render/marks.ts';
 import { makeCurbs } from './render/curbs.ts';
 import { makeSignalMarks } from './render/signals.ts';
@@ -178,12 +179,16 @@ const cats = makeCats(CAT_SPOTS, walkGraph, board.buildings);
 const reactor = makeCatReactor(cats);
 
 // ── 장면 ──
-// 길 정본 차로 띠: 찻길 면이 덮지 못한 차로 자리도 찻길로 칠하고 그 안 연석을 지운다(src/data/laneGround.ts, 재작업 W44)
-const roads = makeRoads(board.roads, surface, LM_COLORS, laneBands(carGraph));
+// 찻길 면 하나(길 정본에서 구운 면, tools/road/surface.ts, 재작업 W51): 차로 띠·교차로 경로·모퉁이·가운데 틈을 한 외곽선으로
+const roads = makeRoads(board.roads, surface, LM_COLORS);
+const groundTiles = tileRings(surface.ground);
 // 노면 표시: 서울시 차선 선·안전지대·노면 화살표 그대로(src/render/marks.ts)
 const roadMarks = makeMarks(marks);
 // 연석(화강석 띠)과 횡단보도 끝 점자블록(src/render/curbs.ts)
-const curbMesh = makeCurbs(curbs, bandTest(laneBands(carGraph, -0.3)));
+// 연석 자리는 찻길 면 외곽선(타일 테두리를 따라가는 줄 빼고). 판 가장자리 3m 와 찻길 터널 입구 경사 위는 세우지 않는다
+const inTrench = trenchTest(board.roads);
+const curbLines = groundTiles.flatMap((t) => t.edges.map((e) => Float32Array.from({ length: (e.length / 2) * 3 }, (_, k) => (k % 3 === 1 ? 0 : e[Math.floor(k / 3) * 2 + (k % 3 ? 1 : 0)]))));
+const curbMesh = makeCurbs({ lines: curbLines, tactile: curbs.tactile }, (x, z) => Math.hypot(x, z) > BOARD_R - 3 || inTrench(x, z));
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
 const stations = makeStations(board);
@@ -250,8 +255,11 @@ const namesMesh = makeGroundLabels(nameLabels, true);
 const boats = makeBoats(board.river, board.riverCum);
 const picnic = makePicnic(board.picnic);
 view.scene.add(
-  makeGround(mask, board.groundAreas),
+  // 보도 면(길 정본에서 구운 면, 찻길 밑까지)과 분리대 녹지가 도시생태현황도 도로 부지·광장 블록을 대신한다
+  makeGround(mask, sidewalkAreas(board.groundAreas, surface)),
   roads.group,
+  // 포장 구역(로드뷰 포장 사각형을 재질·색마다 1m 틈을 메운 다각형으로, 블록은 찻길 면 밖만)
+  makePaving(streetview.flatMap((a) => pavingZones(a.props, groundTiles))),
   roadMarks,
   curbMesh,
   flow.mesh,

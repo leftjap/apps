@@ -32,8 +32,10 @@ const { blocked } = blockMap({
 });
 console.log(`막힘 칸 ${((Date.now() - t0) / 1000).toFixed(1)}초`);
 // 노란 선을 칠한 작은 길(#55): 연석선으로 찻길 가장자리를 읽은(보도가 있는) 땅 위 등급 4·5 길 가운데, 길을 2m 마다 따라가며 찻길 반폭(좁은 쪽, 1m 이상) 안에
-// 서울시 노란 선(대분류 1 중앙선·2 가변차선·9·10)이 있는 자리가 30% 넘는 길. 차가 다니는 길이라 사람은 보도로 걷는다
-const marks = decodeMarks(read('marks.json') as MarksJson);
+// 서울시 노란 선(대분류 1 중앙선·2 가변차선·9·10)이 있는 자리가 30% 넘는 길. 차가 다니는 길이라 사람은 보도로 걷는다.
+// 서울시 선은 굽기가 tools/raw/ 에 남긴 서울시 선만 든 표시(seoul-marks.json, 찻길 면으로 자른 서울시 선)에서 읽는다: marks.json 의 중앙선은 길 정본에서 다시 그은 것이다(재작업 W49·W51).
+// 자르기 전 선(seoul-lines-ground.json)으로 읽으면 판정이 40개 길에서 달라져(1,399 → 1,381) 걷는 면이 바뀐다
+const marks = decodeMarks(JSON.parse(readFileSync(new URL('./raw/seoul-marks.json', import.meta.url), 'utf8')) as MarksJson);
 const CG = 8;
 const yellow = new Map<number, number[]>();
 for (const l of marks.lines) {

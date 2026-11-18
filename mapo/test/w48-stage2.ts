@@ -6,7 +6,7 @@ import { decodeBoard, type Board } from '../src/data/board.ts';
 import { laneBands, bandQuad } from '../src/data/laneGround.ts';
 import { decodeMarks, type Marks } from '../src/data/marks.ts';
 import { decodeLanes } from '../src/data/road.ts';
-import { decodeSurface } from '../src/data/surface.ts';
+import { decodeSurface, tileRings } from '../src/data/surface.ts';
 import { BOARD_R } from '../src/geo.ts';
 import { pointAt } from '../src/poly.ts';
 import { buildCarGraph, headingNear, laneOff, MED, type Edge } from '../src/sim/graph.ts';
@@ -52,7 +52,7 @@ function laneAt(e: Edge, l: number, s: number): { x: number; z: number; h: numbe
   return { x: P[0] - Math.sin(h) * o, z: P[2] + Math.cos(h) * o, h, ground: Math.abs(P[1]) <= 0.3 };
 }
 
-/** 칸 비트: 1 구운 찻길 면(찻길 띠·교차로 면·그리기 전용 면·분리대. 실행 중에 덧칠하는 차로 띠 laneBands 는 넣지 않는다), 2 안전지대(빗금),
+/** 칸 비트: 1 구운 찻길 면(v2 는 surface.json g, v1 은 찻길 띠·교차로 면·그리기 전용 면·분리대. 실행 중에 덧칠하던 차로 띠 laneBands 는 넣지 않는다), 2 안전지대(빗금),
  *  4 땅 위 철도 부지(터널·5m 넘는 다리 빼고, 재작업 W45 railSite 와 같은 정의) 가운데 선로가 땅 높이 이상인 곳, 16 땅 밑으로 내려간 터파기(옹벽까지),
  *  8 실행 중 차로 띠(laneBands) */
 export const BIT = { CAR: 1, GORE: 2, RAIL: 4, BAND: 8, TROUGH: 16 } as const;
@@ -66,12 +66,17 @@ export function stage2Bits(d: Stage2Data, cell = 0.5): Bits {
   const sp = data('surface-polys.json') as { car: number[][]; med: number[][]; draw: number[][] };
   const dm = (a: number[]) => Float32Array.from(a, (v) => v / 10);
   const B = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, cell);
-  // 찻길 터널 조각의 띠는 렌더러가 입구 경사만 그리므로 넣지 않는다(render/roads.ts addTrench)
-  for (const c of sp.car) if (!d.board.roads[c[0]]?.tunnel) fillBits(B, [dm(c.slice(1))], BIT.CAR);
-  for (const f of sf.faces) fillBits(B, [f.outer, ...f.holes], BIT.CAR);
-  for (const f of sf.draw) fillBits(B, [f.outer], BIT.CAR);
-  for (const m of sp.med) fillBits(B, [dm(m)], BIT.CAR);
-  for (const q of sp.draw) fillBits(B, [dm(q)], BIT.CAR);
+  if (sf.ground.length) {
+    // v2(재작업 W51): 길 정본에서 구운 찻길 면 하나(surface.json g)가 구운 찻길 면이다
+    for (const t of tileRings(sf.ground)) fillBits(B, t.rings, BIT.CAR);
+  } else {
+    // 찻길 터널 조각의 띠는 렌더러가 입구 경사만 그리므로 넣지 않는다(render/roads.ts addTrench)
+    for (const c of sp.car) if (!d.board.roads[c[0]]?.tunnel) fillBits(B, [dm(c.slice(1))], BIT.CAR);
+    for (const f of sf.faces) fillBits(B, [f.outer, ...f.holes], BIT.CAR);
+    for (const f of sf.draw) fillBits(B, [f.outer], BIT.CAR);
+    for (const m of sp.med) fillBits(B, [dm(m)], BIT.CAR);
+    for (const q of sp.draw) fillBits(B, [dm(q)], BIT.CAR);
+  }
   for (const z of d.marks.zones) fillBits(B, [z.ring], BIT.GORE);
   for (const [ax, az, bx, bz, h] of railSegs(d.board)) {
     const L = Math.hypot(bx - ax, bz - az) || 1;

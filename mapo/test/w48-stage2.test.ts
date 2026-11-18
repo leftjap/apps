@@ -11,8 +11,8 @@ describe('차로 정본 2단계: 찻길·표시·보도를 길 정본에서 굽�
     expect(f.of).toBeGreaterThan(1000);
     expect(f.n, f.where.join(' ')).toBe(0);
   });
-  // B2: 차 몸 폭(차로 가운데 ± 0.9m)이 구운 찻길 면 밖인 길이(HEAD 6.9km / 221km). 실행 중 차로 띠(58절 1단계)는 세지 않는다
-  it.fails('② 차 몸 폭 띠가 구운 찻길 면 안', () => {
+  // B2: 차 몸 폭(차로 가운데 ± 0.9m)이 구운 찻길 면 밖인 길이(HEAD 6.9km / 221km → W51 0). 실행 중 차로 띠(58절 1단계)는 세지 않는다
+  it('② 차 몸 폭 띠가 구운 찻길 면 안', () => {
     const f = laneBodyOffBaked(load());
     expect(f.of).toBeGreaterThan(200_000);
     expect(f.n, f.where.join(' ')).toBe(0);
@@ -28,8 +28,8 @@ describe('차로 정본 2단계: 찻길·표시·보도를 길 정본에서 굽�
     expect(f.n, f.where.join(' ')).toBe(0);
   });
   // B1·B2: 땅 위 노면 표시 선이 구운 찻길 면 밖(0.3m 넘게)인 길이(HEAD 0.27km / 348km). W49(B1) 뒤 68m: 모두 정지선이고, 구운 찻길 면이 없고
-  // 실행 중 차로 띠(58절)만 찻길로 칠하는 진입로(−1653,−829 · −1219,−53 · 92,−288 · −241,−1899 · 1589,−425 둘레)에 차가 서는 자리다. 찻길 면을 정본에서 굽는 B2 에서 0
-  it.fails('⑤ 노면 표시가 구운 찻길 면 안', () => {
+  // 실행 중 차로 띠(58절)만 찻길로 칠하는 진입로(−1653,−829 · −1219,−53 · 92,−288 · −241,−1899 · 1589,−425 둘레)에 차가 서는 자리였다. 찻길 면을 정본에서 굽는 B2(W51) 에서 0
+  it('⑤ 노면 표시가 구운 찻길 면 안', () => {
     const f = marksOffBaked(load());
     expect(f.n, f.where.join(' ')).toBe(0);
   });
@@ -39,8 +39,8 @@ describe('차로 정본 2단계: 찻길·표시·보도를 길 정본에서 굽�
     expect(f.of).toBeGreaterThan(300);
     expect({ missing: f.n, dup: f.dup }, f.where.join(' ')).toEqual({ missing: 0, dup: 0 });
   });
-  // B2·B4: 땅 높이 선로 띠 위 찻길 면(HEAD 650m², 양화진길), 터파기 위 찻길 면(HEAD 572m², 양화로)
-  it.fails('⑦ 철도 부지 위에 찻길 면이 없다', () => {
+  // B2·B4: 땅 높이 선로 띠 위 찻길 면(HEAD 650m², 양화진길), 터파기 위 찻길 면(HEAD 572m², 양화로) → W51(B2) 0·0(찻길 면에서 철도 부지를 0.5m 넓혀 뺀다)
+  it('⑦ 철도 부지 위에 찻길 면이 없다', () => {
     const f = railOverlap(load());
     expect({ deck: Math.round(f.n), trough: Math.round(f.trough) }, f.where.join(' ')).toEqual({ deck: 0, trough: 0 });
   });

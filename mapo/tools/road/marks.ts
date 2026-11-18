@@ -14,6 +14,7 @@ import { pointAt } from '../../src/poly.ts';
 import { headingNear, laneOff, laneWidth, leftEdge, MED, type Edge } from '../../src/sim/graph.ts';
 import type { Inter } from '../../src/sim/intersection/index.ts';
 import { BOARD_R } from '../../src/geo.ts';
+import { tileRings } from '../../src/data/surface.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from '../lib/bits.ts';
 import { smoothLine } from '../lib/groundclip.ts';
 import { fitCells } from '../lib/arrows.ts';
@@ -81,9 +82,14 @@ function ringTest(rings: ArrayLike<number>[], C = 20) {
 }
 
 /** 구운 찻길 면(찻길 띠·교차로 면·그리기 전용 면·분리대, 찻길 터널 조각 빼고)을 0.5m 칸으로(test/w48-stage2.ts 검사 ⑤ 와 같은 칸). 표시는 이 면에서 0.3m 안으로 자른다 */
-export function bakedGround(board: Board, surface: { faces: { outer: ArrayLike<number>; holes: ArrayLike<number>[] }[]; draw: { outer: ArrayLike<number> }[] }, polys: { car: number[][]; med: number[][]; draw: number[][] }, cell = 0.5): Bits {
+export function bakedGround(board: Board, surface: { faces: { outer: ArrayLike<number>; holes: ArrayLike<number>[] }[]; draw: { outer: ArrayLike<number> }[]; ground?: number[] }, polys: { car: number[][]; med: number[][]; draw: number[][] }, cell = 0.5): Bits {
   const dm = (a: number[]) => Float32Array.from(a, (v) => v / 10);
   const B = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, cell);
+  // v2(재작업 W51): 길 정본에서 구운 찻길 면 하나(surface.json g)
+  if (surface.ground?.length) {
+    for (const t of tileRings(surface.ground)) fillBits(B, t.rings, 1);
+    return B;
+  }
   for (const c of polys.car) if (!board.roads[c[0]]?.tunnel) fillBits(B, [dm(c.slice(1))], 1);
   for (const f of surface.faces) fillBits(B, [f.outer, ...f.holes], 1);
   for (const f of surface.draw) fillBits(B, [f.outer], 1);

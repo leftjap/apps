@@ -1,4 +1,4 @@
-// 연석과 점자블록(재작업 W14). 연석은 그린 찻길 면 전체의 경계(public/data/curbs.json, tools/bake.ts)를 따라 폭 0.2m·높이 0.15m 의 화강석 띠로,
+// 연석과 점자블록(재작업 W14). 연석은 찻길 면 하나의 외곽선(surface.json g 의 tileRings edges, 재작업 W51)을 따라 폭 0.2m·높이 0.15m 의 화강석 띠로,
 // 점자블록은 횡단보도 양 끝 보도 쪽에 노란 점형 블록 띠(깊이 0.6m, 횡단보도 폭)로 세운다.
 // 기준: 서울시 「보도공사 설계·시공 매뉴얼」(2021 ver2.0)의 횡단보도 진입부 점자블록, 보도 블록 무늬는 areas.ts 의 보도 재질.
 import * as THREE from 'three';
@@ -16,7 +16,7 @@ function dropArray(this: THREE.BufferAttribute) {
 const TILE = 500;
 const EMPTY = new Float32Array(0);
 
-export function makeCurbs(c: Curbs, onLane: (x: number, z: number) => boolean = () => false): THREE.Group {
+export function makeCurbs(c: Curbs, skip: (x: number, z: number) => boolean = () => false): THREE.Group {
   // 칸마다 꼭짓점(위치·법선·색 구분)과 네모 하나에 삼각형 둘을 잇는 번호. 네모 넷 꼭짓점을 나눠 써서 꼭짓점이 6 → 4 로 준다.
   // 처음 한 번은 칸마다 네모 수만 세고, 두 번째에 그 크기의 배열에 바로 쓴다(수백만 꼭짓점을 숫자 목록에 쌓았다 옮기면 불러올 때 수백 MB 가 버려진다)
   type Tile = { nq: number; k: number; pos: Float32Array; nrm: Float32Array; tone: Float32Array };
@@ -45,8 +45,8 @@ export function makeCurbs(c: Curbs, onLane: (x: number, z: number) => boolean = 
         const [ax, az, bx, bz] = [P[i * 3], P[i * 3 + 2], P[i * 3 + 3], P[i * 3 + 5]];
         const L = Math.hypot(bx - ax, bz - az);
         if (L < 1e-3) continue;
-        // 차가 달리는 차로 안쪽(차로 가장자리에서 0.3m 안)에 남은 연석은 그리지 않는다(재작업 W44: 찻길 면이 차로를 덮지 못해 생긴 경계)
-        if (onLane((ax + bx) / 2, (az + bz) / 2)) continue;
+        // 판 가장자리(잘린 길 끝)와 찻길 터널 입구 경사 위 외곽선에는 세우지 않는다
+        if (skip((ax + bx) / 2, (az + bz) / 2)) continue;
         T = tileAt((ax + bx) / 2, (az + bz) / 2);
         // 옆 방향(왼쪽)으로 반폭
         const [lx, lz] = [(-(bz - az) / L) * (W / 2), ((bx - ax) / L) * (W / 2)];

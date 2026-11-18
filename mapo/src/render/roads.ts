@@ -1,11 +1,9 @@
-// 도로. 땅 위 찻길은 굽기가 정한 바닥(public/data/surface.json)대로 길 조각 띠와 교차로 면을 겹치지 않게 깔고, 교량은 띄운 띠와 교각으로 따로 그린다.
-// 띠는 교차로 면 앞(횡단보도 바깥 변·모퉁이 호 끝)에서 끝나고, 교차로 면은 모퉁이를 둥글게 깎은 한 장이다(src/data/surface.ts).
-// 큰길은 서울시 차선 자료로 읽은 실제 중앙선 자리·방향별 차로 수·차로 폭으로 띠와 차선을 그린다(차가 달리는 차로와 같은 값).
-// 바닥 색·물웅덩이·밤 가로등 빛은 판 좌표로 칠해 띠와 면의 이음매가 보이지 않는다. 한 방향씩 나뉜 큰길 사이에는 분리대·중앙버스차로를 그린다.
+// 도로. 땅 위 찻길은 굽기가 길 정본에서 구운 찻길 면 하나(public/data/surface.json g, tools/road/surface.ts, 재작업 W51)를 타일마다 삼각형으로 나눠 깔고,
+// 교량은 띄운 띠와 교각으로, 찻길 터널은 입구 경사만 따로 그린다. 분리대·중앙 승강장·교통섬은 찻길 면의 구멍이고 그 자리는 보도 면·녹지(render/areas.ts)가 보인다.
+// 바닥 색·물웅덩이·밤 가로등 빛은 판 좌표로 칠해 이음매가 보이지 않는다. 큰길·골목 칠은 판 좌표 등급 지도(classMap)로 고른다.
 import * as THREE from 'three';
 import { curbAt, roadHalf, type Road } from '../data/board.ts';
-import type { Band } from '../data/laneGround.ts';
-import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach, type Section, type Surface } from '../data/surface.ts';
+import { carriageSections, groupLoops, isGroundRoad, roadJoints, tileRings, tunnelDepth, tunnelReach, type Section, type Surface } from '../data/surface.ts';
 import { BOARD_R } from '../geo.ts';
 import { cumLen, pointAt } from '../poly.ts';
 import { material, pal } from './env.ts';
@@ -16,9 +14,6 @@ export function roadWidth(r: Road): number {
   const [hr, hl] = roadHalf(r);
   return hr + hl;
 }
-
-const MEDIAN = 8;
-const MED_BUS = 16;
 
 const VERT = /* glsl */ `
   attribute vec2 aUV; attribute vec4 aInfo; attribute vec4 aEx0; attribute vec4 aEx1;
@@ -32,29 +27,19 @@ const VERT = /* glsl */ `
 
 // vInfo = (등급, 띠 폭, 일방통행, 랜드마크 번호). 등급 9 = 교량 옆면
 // vEx0 = (띠 가운데가 중심선에서 오른쪽으로 떨어진 거리, 진행 방향 차로, 반대 방향 차로, 차로 폭)
-// vEx1 = (쓰지 않음, 표시: 8 분리대·16 중앙버스차로, 쓰지 않음, 쓰지 않음). 차선·중앙선·정지선은 노면 표시(src/render/marks.ts)가 서울시 선 그대로 긋는다
+// vEx1 = (쓰지 않음, 쓰지 않음, 1 이면 큰길·골목 칠을 등급 지도 uCls 에서, 쓰지 않음). 차선·중앙선·정지선은 노면 표시(src/render/marks.ts)가 긋는다
 const FRAG = /* glsl */ `
-  uniform vec3 uMajor, uMinor, uWalk; uniform float uDeck; uniform sampler2D uLamps;
+  uniform vec3 uMajor, uMinor, uWalk; uniform float uDeck; uniform sampler2D uLamps; uniform sampler2D uCls;
   uniform vec3 uLmCol[6]; uniform float uLmGlow[6];
   varying vec2 vUV; varying vec4 vInfo; varying vec4 vEx0; varying vec4 vEx1; varying float vDist; varying vec2 vXZ;
   void main() {
-    float cls = vInfo.x; float width = vInfo.y;
+    float cls = vInfo.x;
     float major = step(cls, 3.5);
     float walk = step(5.5, cls) * step(cls, 8.5);
     float side = step(8.5, cls);
     float parapet = step(9.5, cls);
-    float flags = vEx1.y;
-    float median = step(7.5, mod(flags, 16.0));
-    float medBus = step(15.5, mod(flags, 32.0));
-    vec3 alb = mix(mix(uMinor, uMajor, max(major, step(0.5, vEx0.y + vEx0.z) * step(cls, 4.5))), uWalk, walk);
-    if (median > 0.5 && medBus < 0.5 && width >= 0.8) {
-      // 솟은 분리대: 반대 방향 길과의 사이를 반씩 그린다. 띠 오른쪽(+1)이 이 길 쪽이다. 연석과 화단
-      float u = (vUV.x + 1.0) * 0.5;
-      float gw = width;
-      float curb = smoothstep(0.0, 0.05, u * gw - 0.05);
-      alb = mix(alb, vec3(0.72, 0.72, 0.7), curb);
-      alb = mix(alb, vec3(0.42, 0.55, 0.36), curb * step(1.3, gw) * step(0.35, u * gw) * step(0.35, (1.0 - u) * gw));
-    }
+    float big = mix(max(major, step(0.5, vEx0.y + vEx0.z) * step(cls, 4.5)), texture2D(uCls, (vXZ + ${BOARD_R.toFixed(1)}) / ${(2 * BOARD_R).toFixed(1)}).r, step(0.5, vEx1.z));
+    vec3 alb = mix(mix(uMinor, uMajor, big), uWalk, walk);
     alb = mix(alb, vec3(0.78, 0.77, 0.74), parapet);                                            // 다리·둑길 난간(콘크리트)
     vec3 col = lit(alb, vec3(0.0, 1.0, 0.0));
     col = mix(col, col * 0.62, side * (1.0 - parapet));
@@ -71,7 +56,7 @@ const FRAG = /* glsl */ `
 
     // 밤: 가로등 빛(큰길은 양쪽 가장자리, 골목은 가운데에 선 가로등. 판 좌표 빛 지도 lampMap). 젖은 길에서는 더 번진다.
     // 빛은 바닥 색에 곱해 더한다: 어두운 아스팔트는 가로등 밑에서도 밝은 보도 블록보다 어둡게 남는다(재작업 W14)
-    float lamp = texture2D(uLamps, (vXZ + ${BOARD_R.toFixed(1)}) / ${(2 * BOARD_R).toFixed(1)}).r * (1.0 - median) * (1.0 - side) * step(cls, 6.5);
+    float lamp = texture2D(uLamps, (vXZ + ${BOARD_R.toFixed(1)}) / ${(2 * BOARD_R).toFixed(1)}).r * (1.0 - side) * step(cls, 6.5);
     col += (alb * vec3(1.0, 0.78, 0.5) * 1.6 + vec3(1.0, 0.70, 0.36) * 0.06) * lamp * uNight * (1.0 + 0.5 * wet * (0.3 + puddle));
 
     // 랜드마크 다리: 고유 색을 입히고 밤에는 난간에 불을 켠다
@@ -105,56 +90,109 @@ function shift(p: Float32Array, o: number): Float32Array {
   return out;
 }
 
-/** 띠 단면들(carriageSections)로 찻길 띠를 덧붙인다. 띠 가운데(ex0.x)와 폭(info.y)을 단면마다 바꿔 차선 자리는 그대로 둔다 */
-function addSections(o: Ribbon, secs: ReturnType<typeof carriageSections>, info: [number, number, number, number], ex: number[]) {
-  const base = o.pos.length / 3;
-  secs.forEach((c, i) => {
-    o.pos.push(c.lx, c.y, c.lz, c.rx, c.y, c.rz);
-    o.uv.push(-1, c.s, 1, c.s);
-    const inf = [info[0], c.er + c.el, info[2], info[3]];
-    o.info.push(...inf, ...inf);
-    const e = [(c.er - c.el) / 2, ...ex.slice(1)];
-    o.ex.push(...e, ...e);
-    if (i > 0) {
-      const q = base + i * 2;
-      o.idx.push(q - 2, q - 1, q, q - 1, q + 1, q);
+/**
+ * 찻길 면 하나(surface.json v2 g, 재작업 W51): 타일마다 바깥 고리와 그 안 구멍(교통섬·분리대·승강장)을 묶어 삼각형으로 나눠 덧붙인다.
+ * 큰길·골목 칠은 등급 지도(classMap)에서 고른다(ex1.z = 1). 차선은 긋지 않는다
+ */
+function addGround(o: Ribbon, layer: ArrayLike<number>) {
+  for (const t of tileRings(layer))
+    for (const { outer, holes } of groupLoops(t.rings)) {
+      const toV = (r: Float32Array) => {
+        const v: THREE.Vector2[] = [];
+        for (let k = 0; k < r.length; k += 2) v.push(new THREE.Vector2(r[k], r[k + 1]));
+        return v;
+      };
+      const ov = toV(outer);
+      const hv = holes.map(toV);
+      const base = o.pos.length / 3;
+      for (const p of [ov, ...hv].flat()) {
+        o.pos.push(p.x, 0, p.y);
+        o.uv.push(0, 0);
+        o.info.push(5, 10, 0, 0);
+        o.ex.push(0, 0, 0, 3.3, 0, 0, 1, 0);
+      }
+      for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(ov, hv)) o.idx.push(base + a, base + b, base + c);
+    }
+}
+
+/**
+ * 큰길 칠 지도(판 좌표, 1024칸): 땅 위 큰길(등급 3 이하, 차로를 읽은 등급 4)과 큰길 교차로 면 자리를 1 로. 찻길 면 하나를 칠할 때 큰길과 골목 색을 고른다(선형 보간이라 경계 4m 안에서 섞인다)
+ */
+export function classMap(roads: Road[], faces: Surface['faces']): THREE.DataTexture {
+  const N = 1024;
+  const px = (2 * BOARD_R) / N;
+  const data = new Uint8Array(N * N);
+  for (const r of roads) {
+    if (!isGroundRoad(r) || !(r.cls <= 3 || (r.cls === 4 && r.measured && r.lf + r.lb > 0))) continue;
+    const half = Math.max(...roadHalf(r)) + 1;
+    for (let k = 0; k + 5 < r.p.length; k += 3) {
+      const [ax, az, bx, bz] = [r.p[k], r.p[k + 2], r.p[k + 3], r.p[k + 5]];
+      const [dx, dz] = [bx - ax, bz - az];
+      const l2 = dx * dx + dz * dz || 1;
+      for (let j = Math.max(0, Math.floor((Math.min(az, bz) - half + BOARD_R) / px)); j <= Math.min(N - 1, Math.floor((Math.max(az, bz) + half + BOARD_R) / px)); j++)
+        for (let i = Math.max(0, Math.floor((Math.min(ax, bx) - half + BOARD_R) / px)); i <= Math.min(N - 1, Math.floor((Math.max(ax, bx) + half + BOARD_R) / px)); i++) {
+          const x = (i + 0.5) * px - BOARD_R;
+          const z = (j + 0.5) * px - BOARD_R;
+          const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
+          if (Math.hypot(ax + dx * t - x, az + dz * t - z) < half) data[j * N + i] = 255;
+        }
+    }
+  }
+  for (const f of faces) {
+    if (f.cls > 3) continue;
+    const o = f.outer;
+    let z0 = Infinity;
+    let z1 = -Infinity;
+    for (let k = 1; k < o.length; k += 2) (z0 = Math.min(z0, o[k])), (z1 = Math.max(z1, o[k]));
+    for (let j = Math.max(0, Math.floor((z0 + BOARD_R) / px)); j <= Math.min(N - 1, Math.floor((z1 + BOARD_R) / px)); j++) {
+      const zc = (j + 0.5) * px - BOARD_R;
+      const xs: number[] = [];
+      for (let i = 0, m = o.length - 2; i < o.length; m = i, i += 2) if (o[m + 1] <= zc !== o[i + 1] <= zc) xs.push(o[m] + ((zc - o[m + 1]) / (o[i + 1] - o[m + 1])) * (o[i] - o[m]));
+      xs.sort((a, b) => a - b);
+      for (let q = 0; q + 1 < xs.length; q += 2)
+        for (let i = Math.max(0, Math.ceil((xs[q] + BOARD_R) / px - 0.5)); i <= Math.min(N - 1, Math.floor((xs[q + 1] + BOARD_R) / px - 0.5)); i++) data[j * N + i] = 255;
+    }
+  }
+  const tex = new THREE.DataTexture(data, N, N, THREE.RedFormat, THREE.UnsignedByteType);
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/**
+ * 찻길 터널 입구 경사(터파기가 열린 곳) 안인가: 터널 조각 가운데선에서 찻길 반폭 + 0.5m 안이고 그 자리 깊이가 0.1m 넘는 곳.
+ * 찻길 면이 경사 위에서 끝나 생긴 외곽에 연석을 세우지 않는다(연석은 땅 높이라 내려간 바닥 위에 뜬다)
+ */
+export function trenchTest(roads: Road[]): (x: number, z: number) => boolean {
+  const reach = tunnelReach(roads);
+  const segs: number[][] = [];
+  roads.forEach((r, i) => {
+    const rc = reach[i];
+    if (!rc) return;
+    const L = cumLen(r.p);
+    const len = L[L.length - 1];
+    for (let k = 0; k + 1 < L.length; k++) {
+      const n = Math.max(1, Math.ceil((L[k + 1] - L[k]) / 2));
+      for (let q = 0; q < n; q++) {
+        const s0 = L[k] + ((L[k + 1] - L[k]) * q) / n;
+        const s1 = L[k] + ((L[k + 1] - L[k]) * (q + 1)) / n;
+        if (tunnelDepth(rc, (s0 + s1) / 2, len) < 0.1) continue;
+        const t0 = (s0 - L[k]) / (L[k + 1] - L[k] || 1);
+        const t1 = (s1 - L[k]) / (L[k + 1] - L[k] || 1);
+        const [ax, az, bx, bz] = [r.p[k * 3], r.p[k * 3 + 2], r.p[k * 3 + 3], r.p[k * 3 + 5]];
+        segs.push([ax + (bx - ax) * t0, az + (bz - az) * t0, ax + (bx - ax) * t1, az + (bz - az) * t1, Math.max(curbAt(r, s0, 1), curbAt(r, s0, -1)) + 0.5]);
+      }
     }
   });
-}
-
-/** 교차로 면(구멍 = 교통섬)을 삼각형으로 나눠 덧붙인다. 차선은 긋지 않는다 */
-function addFace(o: Ribbon, f: Surface['faces'][number]) {
-  const toV = (r: Float32Array) => {
-    const v: THREE.Vector2[] = [];
-    for (let k = 0; k < r.length; k += 2) v.push(new THREE.Vector2(r[k], r[k + 1]));
-    return v;
-  };
-  const outer = toV(f.outer);
-  const holes = f.holes.map(toV);
-  const base = o.pos.length / 3;
-  for (const p of [outer, ...holes].flat()) {
-    o.pos.push(p.x, 0, p.y);
-    o.uv.push(0, 0);
-    o.info.push(f.cls, 10, 0, 0);
-    o.ex.push(0, 0, 0, 3.3, 0, 0, 0, 0);
-  }
-  for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(outer, holes)) o.idx.push(base + a, base + b, base + c);
-}
-
-/** 길 조각 중심선 p 의 s0~s1 부분 */
-function subLine(p: Float32Array, s0: number, s1: number): Float32Array {
-  const L = cumLen(p);
-  const n = L.length;
-  s1 = Math.min(s1, L[n - 1]);
-  if (s0 <= 0 && s1 >= L[n - 1]) return p;
-  const tmp = [0, 0, 0];
-  const out: number[] = [];
-  pointAt(p, L, s0, tmp);
-  out.push(...tmp);
-  for (let i = 1; i < n - 1; i++) if (L[i] > s0 && L[i] < s1) out.push(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
-  pointAt(p, L, s1, tmp);
-  out.push(...tmp);
-  return Float32Array.from(out);
+  return (x, z) =>
+    segs.some(([ax, az, bx, bz, h]) => {
+      if (Math.abs(x - ax) > h + 3 && Math.abs(x - bx) > h + 3) return false;
+      const dx = bx - ax;
+      const dz = bz - az;
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+      return Math.hypot(ax + dx * t - x, az + dz * t - z) < h;
+    });
 }
 
 /**
@@ -397,9 +435,9 @@ function coveredNear(roads: Road[], ri: number, surface: Surface, joints: Float3
 }
 
 /** surface: 굽기가 정한 띠 구간과 교차로 면(public/data/surface.json) */
-export function makeRoads(roads: Road[], surface: Surface, lmColors: string[], bands: Band[] = []) {
+export function makeRoads(roads: Road[], surface: Surface, lmColors: string[]) {
   const lm = { uLmCol: { value: lmColors.map((c) => new THREE.Color(c)) }, uLmGlow: { value: lmColors.map(() => 0) } };
-  const uniforms = { uMajor: { value: pal.tarmac }, uMinor: { value: pal.tarmacMinor }, uWalk: { value: pal.paving }, uLamps: { value: lampMap(roads) }, ...lm };
+  const uniforms = { uMajor: { value: pal.tarmac }, uMinor: { value: pal.tarmacMinor }, uWalk: { value: pal.paving }, uLamps: { value: lampMap(roads) }, uCls: { value: classMap(roads, surface.faces) }, ...lm };
   const joints = roadJoints(roads);
   const reach = tunnelReach(roads);
 
@@ -436,12 +474,7 @@ export function makeRoads(roads: Road[], surface: Surface, lmColors: string[], b
           addTrench(r, s0, s1, tun, coveredNear(roads, ri, surface, joints, reach), ramp, trench, hole, info, ex);
           continue;
         }
-        addSections(flat, carriageSections(r, s0, s1, joints.subarray(ri * 4, ri * 4 + 4)), info, ex);
-        // 분리대: 한 방향 큰길 왼쪽, 반대 방향 길까지의 절반. 10m 넘게 떨어진 길 사이는 분리대가 아니라 따로 난 길이다
-        if (r.oneway && r.gap > 0.15 && r.gap <= 10 && r.cls <= 3 && s1 - s0 > 0.5) {
-          const gw = r.gap / 2;
-          addRibbon(flat, shift(subLine(r.p, s0, s1), -hl - gw / 2), gw, [r.cls, gw, 1, 0], 0, 0, [0, 0, 0, r.lw, 0, MEDIAN | (r.medBus ? MED_BUS : 0), 0, len]);
-        }
+        // 땅 위 찻길 띠·분리대는 찻길 면 하나(addGround)가 그린다
       } else addRibbon(flat, shift(r.p, c0), w, info, 0, atRim ? 0 : w * 0.45, ex); // 보행로·광장 길
       continue;
     }
@@ -507,21 +540,8 @@ export function makeRoads(roads: Road[], surface: Surface, lmColors: string[], b
       }
     }
   }
-  for (const f of surface.faces) addFace(flat, f);
-  // 그리기 전용 찻길 면: 횡단보도가 OSM 길 밖에 걸친 자리(차는 다니지 않는다)
-  for (const f of surface.draw) addFace(flat, f);
-  // 길 정본 차로 띠(src/data/laneGround.ts, 재작업 W44): 찻길 띠·교차로 면이 덮지 못한 차로 자리도 찻길로 칠한다. 차선은 긋지 않는다
-  for (const { cls, sec: b } of bands) {
-    const base = flat.pos.length / 3;
-    const n = b.length / 4;
-    for (let k = 0; k < n; k++) {
-      flat.pos.push(b[k * 4], 0, b[k * 4 + 1], b[k * 4 + 2], 0, b[k * 4 + 3]);
-      flat.uv.push(0, 0, 0, 0);
-      flat.info.push(cls, 10, 0, 0, cls, 10, 0, 0);
-      flat.ex.push(0, 0, 0, 3.3, 0, 0, 0, 0, 0, 0, 0, 3.3, 0, 0, 0, 0);
-      if (k > 0) flat.idx.push(base + k * 2 - 2, base + k * 2 - 1, base + k * 2, base + k * 2 - 1, base + k * 2 + 1, base + k * 2);
-    }
-  }
+  // 찻길 면 하나(길 정본에서 구운 면, surface.json g): 찻길 띠·교차로 면·그리기 전용 면·차로 띠·가운데 틈을 한 번에. 분리대·승강장·교통섬은 구멍이다
+  addGround(flat, surface.ground);
 
   const ground = new THREE.Mesh(
     ribbonGeometry(flat),

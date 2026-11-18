@@ -15,7 +15,7 @@ import { ringArea as loopArea } from './lib/contour.ts';
 import { boardWalkNet } from './lib/walknet.ts';
 import { bakeWalk } from './lib/walkfix.ts';
 import { doorWanted, underpasses, ZONES } from '../src/sim/people/zones.ts';
-import { carriageSections, decodeSurface, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../src/data/surface.ts';
+import { carriageSections, decodeSurface, isGroundRoad, roadJoints, tunnelDepth, tunnelReach, type SurfaceJson } from '../src/data/surface.ts';
 import { decodeLanes } from '../src/data/road.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeIntersections } from '../src/sim/intersection/index.ts';
@@ -26,6 +26,7 @@ import { roadCorners } from '../src/data/corners.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { bakeRoad } from './road/index.ts';
 import { bakedGround, laneMarks, refitArrows } from './road/marks.ts';
+import { bakeSurface, clipMarksToGround } from './road/surface.ts';
 import { roadLevels } from './lib/levels.ts';
 import { carSurface, pushTreesOffRoad } from './lib/treeplace.ts';
 import { clipLine, drawnGround, dropOverlaps, onGround, smoothLine } from './lib/groundclip.ts';
@@ -2256,6 +2257,15 @@ writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), sur
     const ra = refitArrows(lm.json, (arrows) => buildCarGraph(bd.roads, decodeLanes(JSON.parse(baked.json).lanes), arrows));
     Object.assign(mj, { l: ra.json.l, h: ra.json.h, ld: ra.json.ld, a: ra.json.a, aw: ra.json.aw });
     console.log(`${lm.log}; 화살표 새 칸 가운데로 ${ra.moved}개(되돌린 것 ${ra.reverted})`);
+    // 찻길 면 하나·보도 면·분리대를 길 정본에서 굽고(tools/road/surface.ts, 재작업 W51·설계 문서 59절 B2. node tools/surface.ts 와 같은 함수), 노면 표시를 그 면 안으로 자른다
+    const sfx = bakeSurface({ board: bd, g, inter, sf: sf2, polys: sp2, seoul: decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, walk: JSON.parse(walkJson) });
+    const sj = JSON.parse(surfaceJson) as SurfaceJson;
+    surfaceJson = JSON.stringify({ ...sj, v: 2, g: sfx.g, w: sfx.w, m: sfx.m });
+    writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);
+    writeFileSync(new URL('../public/data/curbs.json', import.meta.url), JSON.stringify({ v: 2, c: [], t: sfx.tactile }));
+    const cm = clipMarksToGround({ l: mj.l, ld: mj.ld }, sfx.g);
+    Object.assign(mj, { l: cm.l, ld: cm.ld });
+    console.log(`${sfx.log}; 새 찻길 면 밖이라 자른 노면 표시 ${cm.cut.toFixed(0)}m`);
   }
   marksJson = JSON.stringify(mj);
   const d = sn.dist.sort((x, y) => x - y);

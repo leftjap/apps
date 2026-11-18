@@ -5,6 +5,7 @@ import { decodeBoard, type BoardJson } from '../src/data/board.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { bakeRoad } from './road/index.ts';
 import { bakeMarksFile } from './marks.ts';
+import { bakeSurfaceFile } from './surface.ts';
 
 const t0 = Date.now();
 const read = (u: string) => JSON.parse(readFileSync(new URL(u, import.meta.url), 'utf8'));
@@ -13,5 +14,6 @@ const lines = decodeMarks(read('./raw/seoul-lines-ground.json') as MarksJson).li
 const { json, log } = bakeRoad(board.roads, lines, board.crosswalks, board.stopLines);
 writeFileSync(new URL('../public/data/road.json', import.meta.url), json);
 console.log(`${log}, ${((Date.now() - t0) / 1000).toFixed(1)}초`);
-// 노면 표시의 차로 선·정지선도 새 정본으로(재작업 W49, tools/marks.ts)
+// 노면 표시의 차로 선·정지선도 새 정본으로(재작업 W49, tools/marks.ts), 찻길 면·보도 면·연석 자리도(재작업 W51, tools/surface.ts)
 console.log(bakeMarksFile());
+console.log(bakeSurfaceFile());
