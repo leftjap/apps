@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run --exclude test/w24-warm.test.ts && vitest run test/w24-warm.test.ts",
     "test:watch": "vitest",
     "fetch": "node tools/fetch.ts",
     "bake": "node tools/bake.ts && node --max-old-space-size=8000 tools/walk-area.ts"
