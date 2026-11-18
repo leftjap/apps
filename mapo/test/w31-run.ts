@@ -66,45 +66,6 @@ function ground(fx: number, fz: number) {
   return G;
 }
 
-/** 칸 열쇠(정수)마다 번호를 잇는 목록: 열린 주소 해시(열쇠를 그대로 비교한다). push 한 차례의 거꾸로 읽힌다 */
-function cellLists() {
-  let size = 0;
-  let key = new Int32Array(0);
-  let top = new Int32Array(0);
-  let mark = new Int32Array(0);
-  let stamp = 0;
-  const L = {
-    next: new Int32Array(0),
-    clear(n: number) {
-      if (size < n * 4) {
-        size = 1 << Math.ceil(Math.log2(Math.max(64, n * 4)));
-        key = new Int32Array(size);
-        top = new Int32Array(size);
-        mark = new Int32Array(size);
-        stamp = 0;
-      }
-      if (L.next.length < n) L.next = new Int32Array(n * 2);
-      stamp++;
-    },
-    slot(k: number) {
-      let h = (Math.imul(k, 0x9e3779b1) >>> 0) & (size - 1);
-      while (mark[h] === stamp && key[h] !== k) h = (h + 1) & (size - 1);
-      return h;
-    },
-    push(k: number, i: number) {
-      const h = L.slot(k);
-      if (mark[h] !== stamp) (mark[h] = stamp), (key[h] = k), (top[h] = -1);
-      L.next[i] = top[h];
-      top[h] = i;
-    },
-    head(k: number) {
-      const h = L.slot(k);
-      return mark[h] === stamp ? top[h] : -1;
-    },
-  };
-  return L;
-}
-
 export function runW31(seed: number, dow: number, hour: number, fx: number, fz: number): W31Res {
   const G = ground(fx, fz);
   const R: W31Res = { people: 0, pace: [], born: [], gone: [], overlap: [], road: [], jump: [], back: [], staleQ: [], flow10: [0, 0], still20: [0, 0], ms: 0 };
@@ -142,24 +103,12 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
     const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
     return Math.hypot(ax + dx * t - x, az + dz * t - z);
   };
-  // 건너기 길을 첫 점의 60m 칸으로 나눠 둔다(W43: 큰길 위 사람마다 프레임마다 건너기 길 수천 개를 모두 돌았다). 첫 점이 60m 안인 길만 보던 것과 같다(반올림 여유로 둘레 두 칸까지)
-  const crossCell = new Map<number, (typeof p.crosses)[number][]>();
-  const cellOf = (x: number, z: number) => Math.floor(x / 60) * 100003 + Math.floor(z / 60);
-  for (const c of p.crosses) {
-    const k = cellOf(c.pts[0], c.pts[1]);
-    (crossCell.get(k) ?? crossCell.set(k, []).get(k)!).push(c);
-  }
-  const inCrossing = (x: number, z: number) => {
-    const cx = Math.floor(x / 60);
-    const cz = Math.floor(z / 60);
-    for (let a = -2; a <= 2; a++)
-      for (let b = -2; b <= 2; b++)
-        for (const c of crossCell.get((cx + a) * 100003 + cz + b) ?? []) {
-          if (Math.abs(c.pts[0] - x) > 60 || Math.abs(c.pts[1] - z) > 60) continue;
-          for (let k = 2; k < c.pts.length; k += 2) if (segD(x, z, c.pts[k - 2], c.pts[k - 1], c.pts[k], c.pts[k + 1]) <= c.hw + 0.05) return true;
-        }
-    return false;
-  };
+  const inCrossing = (x: number, z: number) =>
+    p.crosses.some((c) => {
+      if (Math.abs(c.pts[0] - x) > 60 || Math.abs(c.pts[1] - z) > 60) return false;
+      for (let k = 2; k < c.pts.length; k += 2) if (segD(x, z, c.pts[k - 2], c.pts[k - 1], c.pts[k], c.pts[k + 1]) <= c.hw + 0.05) return true;
+      return false;
+    });
   /** 걷는 중(대기 상태가 아님): 신호 대기·정류장 줄·들어가는 사람·들어가려 문턱으로 가는 사람·머무는 사람·갈래 영역 게이트 앞에서 차례를 기다리는 사람 빼고.
    *  게이트 대기(W38)는 신호 대기와 같은 '서 있는 차례 기다림'이다: 차례가 오면 영역에 들어가 지나간다. 걷는 사람으로 세면 게이트가 순환 대기를 끊는 대신
    *  만든 짧은 기다림이 막힘으로 잡혀, 교착(Y 갈림 40명 중 13명 못 지남)을 그대로 두는 HEAD 보다 흐름이 낮게 나왔다(W36 t16 홍대 토21 씨앗 11: 10초 3m 못 간 표본의 17% 가 게이트 앞·영역 안) */
@@ -180,7 +129,6 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
   const now = { ...start };
   const N = Math.round(SECS / DT);
   let ms = 0;
-  const grid = cellLists();
   for (let f = 0; f < N; f++) {
     now.tod = start.tod + f * DT;
     cars.step(DT, now);
@@ -208,9 +156,11 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
         if (Math.hypot(w.x[i] - q[0], w.z[i] - q[1]) >= 3) R.flow10[0]++;
       }
     const seen = new Set<number>();
-    // 1m 칸마다 사람 번호를 작은 것부터 잇는 목록(W43: 프레임마다 칸 배열 수천 개를 새로 만들고 Map 으로 찾았다. 칸 열쇠·차례는 같다)
-    grid.clear(w.n);
-    for (let i = w.n - 1; i >= 0; i--) grid.push(Math.floor(w.x[i]) * 100003 + Math.floor(w.z[i]), i);
+    const grid = new Map<number, number[]>();
+    for (let i = 0; i < w.n; i++) {
+      const key = Math.floor(w.x[i]) * 100003 + Math.floor(w.z[i]);
+      (grid.get(key) ?? grid.set(key, []).get(key)!).push(i);
+    }
     for (let i = 0; i < w.n; i++) {
       const id = w.id[i];
       const x = w.x[i];
@@ -225,11 +175,10 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
         walked.set(id, (walked.get(id) ?? 0) + d);
         if (d > 0.6 * DT && R.staleQ.length < 10 && p.stateOf(i).queued) R.staleQ.push(`${id} f${f} @${x.toFixed(1)},${z.toFixed(1)}`);
       }
-      if (prev) (prev[0] = x), (prev[1] = z);
-      else last.set(id, [x, z]);
+      last.set(id, [x, z]);
       for (let ax = -1; ax <= 1; ax++)
         for (let az = -1; az <= 1; az++)
-          for (let j = grid.head((Math.floor(x) + ax) * 100003 + Math.floor(z) + az); j >= 0; j = grid.next[j])
+          for (const j of grid.get((Math.floor(x) + ax) * 100003 + Math.floor(z) + az) ?? [])
             if (j > i && Math.hypot(w.x[j] - x, w.z[j] - z) < PASS_D - 0.01 && R.overlap.length < 10) R.overlap.push(`${id}-${w.id[j]} @${x.toFixed(1)},${z.toFixed(1)} f${f}`);
       if (bitsAt(G, x, z) & 1 && !inCrossing(x, z) && !onIsland(x, z) && R.road.length < 10) R.road.push(`${id}@${x.toFixed(1)},${z.toFixed(1)} mode ${p.stateOf(i).mode}`);
       if (f % 30 !== 0) continue;
