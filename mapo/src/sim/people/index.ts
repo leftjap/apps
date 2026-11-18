@@ -13,7 +13,7 @@ import { BODY_HW, BODY_LEN, bodyType } from '../bodies.ts';
 import { ISLAND_BACK, ISLAND_L, ISLAND_W } from '../graph.ts';
 import type { DataProvider } from '../provider.ts';
 import { PLACES, placeMask } from '../places.ts';
-import { hash01, pick, rng } from '../rng.ts';
+import { hash01, mix3, pick, rng } from '../rng.ts';
 import { LINK, type WalkGraph } from '../walknet.ts';
 import { decodeArea } from './area.ts';
 import { ENTER_D, EXIT_S, gateOpen, makeJunctions } from './junction.ts';
@@ -209,7 +209,6 @@ export function makePeople(
     /** 처음에 문·출구에서 나오는 빠르기를 키울 시간(초): 미리 돌리기 */
   } = {},
 ) {
-  const rand = rng(seed);
   /** 사람 i 만의 난수(W41): 걷는 중 고르기(돌아다닐 길·갈 쪽·머물기)는 씨앗·사람 번호·그 사람 차례로 정한다. 공유 난수로 고르면 차 흐름이 바뀌어
    *  어느 사람이 난수를 먼저 쓰는지가 바뀔 때 차와 먼 사람까지 판 전체의 걸음이 통째로 바뀌었다(사람 시험 값이 차 고침만으로 씨앗 운만큼 흔들렸다) */
   const prand = (i: number) => hash01(Math.imul(seed | 0, 0x27d4eb2d) ^ Math.imul(w.id[i], 0x165667b1) ^ rc[i]++);
@@ -227,7 +226,17 @@ export function makePeople(
     age: new Uint8Array(max),
     female: new Uint8Array(max),
   };
-  let nextId = 1;
+  /** W46: 고유 번호 = 위 21비트 나온 단계(popNo) + 아래 10비트 나온 자리 열쇠(문 열쇠·그 문에서 나온 수)의 해시. 나온 차례(1, 2, 3…)로 매기면 판 어디서든 한 명이
+   *  더 나오면 뒤에 나온 사람 번호가 모두 밀려, 번호로 정하는 사람별 난수(prand)·정류장 뽑기·성긴 차례가 판 전체에서 바뀌었다. 위 비트를 나온 단계로 두어
+   *  먼저 나온 사람이 번호가 작다는 옛 뜻은 지킨다(마주 선 두 사람 가운데 번호가 작은 쪽이 돌아선다). 한 단계에 나오는 사람은 300명 아래다.
+   *  나온 단계는 2^21 단계(1/30초 걸음으로 약 19시간)마다 처음으로 돌아간다 */
+  const liveIds = new Set<number>();
+  const newId = (a: number, b: number, lo = mix3(seed | 0, a, b)) => {
+    const hi = (popNo & 0x1fffff) << 10;
+    lo &= 0x3ff;
+    while (liveIds.has(hi | lo || 1)) lo = (lo + 1) & 0x3ff;
+    return hi | lo || 1;
+  };
 
   // ── 그물 ──
   /** 걷는 면(W28). 자료가 없으면(옛 walk.json) 선 띠만 쓴다 */
@@ -581,17 +590,53 @@ export function makePeople(
   function remove(i: number) {
     dead[i] = 1;
   }
-  function compact() {
-    for (let i = w.n - 1; i >= 0; i--) if (dead[i]) dead[i] = 0, removeNow(i);
-  }
-  function removeNow(i: number) {
-    const j = --w.n;
-    if (i !== j) {
-      for (const a of all) a[i] = a[j];
-      dead[i] = dead[j];
-      dead[j] = 0;
-      seenN.copyWithin(i * SEEN, j * SEEN, j * SEEN + SEEN);
+  /** W46: 배열 차례(= 한 단계 안에서 움직이는 차례)는 고유 번호 순이다. 빈 자리를 끝 사람으로 채우면 판 어디서든 사람이 빠질 때 서로 붙어 걷는 사람끼리
+   *  계산 차례가 바뀌어, 먼저 움직인 사람 자리를 보고 비키는 걸음이 판 전체에서 달라졌다. 나온 차례대로 두면(빼기만 차례를 지키면) 갓 나온 사람이 늘 먼저
+   *  움직여 걸음이 한쪽으로 치우쳤다(홍대 토21 씨앗 열둘 10초 흐름 +2.0%p·20초 정체 −1.0%p, 사람 한 걸음 +15%). 고유 번호는 해시라 이 차례는 섞여 있다.
+   *  새로 나온 사람(끝에 붙는다)은 다음 단계 처음에 제자리로 옮긴다(단계 안·사이에는 자리 번호를 바꾸지 않는다: 격자가 자리 번호를 쥐고 있다) */
+  let sortedN = 0;
+  function settle() {
+    for (let k = sortedN; k < w.n; k++) {
+      const id = w.id[k];
+      let lo = 0;
+      let hi = k;
+      while (lo < hi) {
+        const m = (lo + hi) >> 1;
+        if (w.id[m] < id) lo = m + 1;
+        else hi = m;
+      }
+      if (lo === k) continue;
+      for (const a of all) {
+        const v = a[k];
+        a.copyWithin(lo + 1, lo, k);
+        a[lo] = v;
+      }
+      seenT.set(seenN.subarray(k * SEEN, k * SEEN + SEEN));
+      seenN.copyWithin((lo + 1) * SEEN, lo * SEEN, k * SEEN);
+      seenN.set(seenT, lo * SEEN);
     }
+    sortedN = w.n;
+  }
+  const seenT = new Int32Array(SEEN);
+  /** 사라진 사람을 뺀다(남은 사람의 차례는 그대로) */
+  function compact() {
+    const n = w.n;
+    let j = 0;
+    while (j < n && !dead[j]) j++;
+    let i = j;
+    while (i < n) {
+      while (i < n && dead[i]) (dead[i] = 0), liveIds.delete(w.id[i]), i++;
+      let e = i;
+      while (e < n && !dead[e]) e++;
+      if (e > i) {
+        for (const a of all) a.copyWithin(j, i, e);
+        seenN.copyWithin(j * SEEN, i * SEEN, e * SEEN);
+        j += e - i;
+      }
+      i = e;
+    }
+    w.n = j;
+    sortedN = j;
   }
 
   // ── 몸 겹침 ──
@@ -944,20 +989,23 @@ export function makePeople(
 
   // ── 내보내기 ──
   const looks = Array.from({ length: PLACE_Z + 1 }, () => ({ ages: [0.05, 0.4, 0.85, 1], female: 0.5 }));
-  function born(i: number, zone: number) {
-    w.tint[i] = rand();
-    w.id[i] = nextId++;
+  function born(i: number, zone: number, id: number, r: () => number = () => prand(i)) {
+    // W46: 옷·나이·성별·빠르기·띠 자리·수명·처음 방향은 그 사람만의 난수로(공유 난수로 뽑으면 판 어디서든 한 명이 더 나오면 뒤에 나온 사람의 옷차림·빠르기가 모두 바뀌었다)
+    w.id[i] = id;
+    liveIds.add(id);
+    rc[i] = 0;
+    w.tint[i] = r();
     w.photo[i] = 0;
     w.moving[i] = 1;
     w.fade[i] = 0;
-    w.phase[i] = rand() * 6.28;
-    const u = rand();
+    w.phase[i] = r() * 6.28;
+    const u = r();
     const lk = looks[zone] ?? looks[OUT_Z];
     w.age[i] = u < lk.ages[0] ? 0 : u < lk.ages[1] ? 1 : u < lk.ages[2] ? 2 : 3;
-    w.female[i] = rand() < lk.female ? 1 : 0;
-    spd[i] = (w.age[i] === 3 ? 1.0 : w.age[i] === 0 ? 1.05 : 1.25) + rand() * 0.3;
-    lane[i] = rand();
-    life[i] = 120 + rand() * 480;
+    w.female[i] = r() < lk.female ? 1 : 0;
+    spd[i] = (w.age[i] === 3 ? 1.0 : w.age[i] === 0 ? 1.05 : 1.25) + r() * 0.3;
+    lane[i] = r();
+    life[i] = 120 + r() * 480;
     goal[i] = -1;
     vX[i] = 0;
     vZ[i] = 0;
@@ -973,7 +1021,7 @@ export function makePeople(
     viaNode[i] = 0;
     prv[i] = -1;
     viaNode[i] = 0;
-    headW[i] = rand() * Math.PI * 2;
+    headW[i] = r() * Math.PI * 2;
     wgX[i] = NaN;
     avoidHe[i] = -1;
     avoidT[i] = 0;
@@ -985,7 +1033,6 @@ export function makePeople(
     jOutT[i] = -1e9;
     queued[i] = 0;
     fresh[i] = 0;
-    rc[i] = 0;
   }
   /** 문·출구·정류장 k 에서 한 명을 낸다(자리가 비어 있을 때만). 낸 사람 번호, 못 내면 −1 */
   function spawnAt(k: number, near?: [number, number]): number {
@@ -994,9 +1041,10 @@ export function makePeople(
     let [x, z] = d.door ?? dockPos(k);
     if (near) [x, z] = near;
     const i = w.n;
+    const id = newId(dockKey[k], dockSpawns[k]);
     // 방향은 아무 쪽이나(막다른 가지 안이면 바깥쪽으로)
     const r0 = hes[d.he].rev;
-    const h = intoDead[d.he] && !intoDead[r0] ? r0 : intoDead[r0] && !intoDead[d.he] ? d.he : rand() < 0.5 ? d.he : r0;
+    const h = intoDead[d.he] && !intoDead[r0] ? r0 : intoDead[r0] && !intoDead[d.he] ? d.he : hash01(id ^ 0x5bd1e995) < 0.5 ? d.he : r0;
     he[i] = h;
     nk[i] = -1;
     viaNode[i] = 0;
@@ -1007,7 +1055,8 @@ export function makePeople(
     w.n++;
     w.x[i] = x;
     w.z[i] = z;
-    born(i, d.zone);
+    dockSpawns[k]++;
+    born(i, d.zone, id);
     const [px, pz] = dockPos(k);
     head[i] = mode[i] === OUTDOOR ? Math.atan2(pz - z, px - x) : Math.atan2(hes[h].uz, hes[h].ux);
     w.yaw[i] = head[i];
@@ -1836,6 +1885,19 @@ export function makePeople(
       if (ePlace[q]) totW[PLACE_Z] += eW[q];
     }
   }
+  // W46: 문·출구·정류장마다 자리로 정한 열쇠(종류·자리 cm, 같은 자리가 겹치면 몇 번째인지). 문 번호(docks 차례)로 매기면 그물 한쪽에서 문이 빠질 때
+  // 뒤 문 번호가 모두 밀렸다. dockSpawns 는 그 자리에서 나온 사람 수(고유 번호를 정한다)
+  const dockKey = new Uint32Array(docks.length);
+  const dockSpawns = new Uint32Array(docks.length);
+  {
+    const seen = new Map<number, number>();
+    docks.forEach((d, k) => {
+      const base = mix3(d.kind === 'door' ? 1 : d.kind === 'exit' ? 2 : 3, Math.round(d.x * 100), Math.round(d.z * 100));
+      const dup = seen.get(base) ?? 0;
+      seen.set(base, dup + 1);
+      dockKey[k] = mix3(base, dup, 0x3c6ef372);
+    });
+  }
   // 칸마다 내보낼 문·출구(정류장은 버스에서 내린다)
   const docksIn: number[][] = Array.from({ length: PLACE_Z + 1 }, () => []);
   const dockW: number[][] = Array.from({ length: PLACE_Z + 1 }, () => []);
@@ -1941,6 +2003,10 @@ export function makePeople(
     }
   }
   function populate(dt: number, now: Now) {
+    popNo++;
+    let anyOver = false;
+    overI.fill(0);
+    overO.fill(0);
     rebuildGrid();
     refreshPlaces(now);
     const real = outside(provider, now, rain);
@@ -1978,24 +2044,45 @@ export function makePeople(
         const outside2 = haveOut[z] < wantOut[z];
         if (!inside && !outside2) break;
         // 붐비는 선(DENSE_MAX 명/m² 넘게)에 붙은 문·출구에서는 내지 않는다
-        const ws = docksIn[z].map((k, q) => (dockInF[k] === (inside ? 1 : 0) || !focus ? dockWNow[z][q] * Math.max(0, 1 - dens(docks[k].he) / DENSE_MAX) : 0));
-        if (!ws.some((v) => v > 0)) break;
-        const i = spawnAt(docksIn[z][pick(ws, rand())]);
+        // W46: 어느 문에서 낼지는 문마다 따로 뽑는다(문 열쇠·단계·시도 차례로 정한 지수 난수 / 몫 가운데 가장 작은 문, 몫에 비례해 뽑는 것과 같다).
+        // 한 줄 위 몫을 이어 붙여 공유 난수 하나로 뽑으면, 한 문의 몫이 바뀌거나(붐빔) 문 하나가 빠질 때 같은 구역 다른 문이 모두 다른 사람을 냈다
+        let best = -1;
+        let bs = Infinity;
+        for (let q = 0; q < docksIn[z].length; q++) {
+          const k = docksIn[z][q];
+          if (!(dockInF[k] === (inside ? 1 : 0) || !focus)) continue;
+          const wq = dockWNow[z][q] * Math.max(0, 1 - dens(docks[k].he) / DENSE_MAX);
+          if (!(wq > 0)) continue;
+          const sc = -Math.log(1 - hash01(mix3(dockKey[k], popNo, tries * 8 + z) ^ seedMix)) / wq;
+          if (sc < bs) (bs = sc), (best = k);
+        }
+        if (best < 0) break;
+        const i = spawnAt(best);
         if (i < 0) continue;
         (inside ? haveIn : haveOut)[z]++;
         budget[z]--;
       }
       // 넘치면 몇 명을 일찍 집으로 보낸다(가장 가까운 출구·문으로 걸어 들어간다)
-      const overIn = haveIn[z] - wantIn[z] * 1.1 - 3;
-      const overOut = haveOut[z] - wantOut[z] * 1.1 - 3;
-      if (overIn > 0 || overOut > 0)
-        for (let k = 0; k < 4; k++) {
-          const i = Math.floor(rand() * w.n);
-          if (i >= w.n || home[i] !== z || mode[i] !== WALK || goal[i] >= 0) continue;
-          if (inFocus(w.x[i], w.z[i]) ? overIn > 0 : overOut > 0) life[i] = 0;
-        }
+      overI[z] = haveIn[z] - wantIn[z] * 1.1 - 3 > 0 ? 1 : 0;
+      overO[z] = haveOut[z] - wantOut[z] * 1.1 - 3 > 0 ? 1 : 0;
+      anyOver ||= overI[z] + overO[z] > 0;
+    }
+    // W46: 넘치는 칸에서는 한 단계에 사람마다 4/n 의 몫으로(옛 방식: 배열 자리 4곳을 공유 난수로 뽑기와 같은 몫) 그 사람 번호·단계로 정한 난수가 몫 안이면 집으로 보낸다.
+    // 배열 자리로 뽑으면 판 어디서든 사람이 빠지고 들어올 때 자리 차례가 바뀌어 다른 사람이 뽑혔다
+    if (anyOver) {
+      const pk = 4 / w.n;
+      for (let i = 0; i < w.n; i++) {
+        const z = home[i];
+        if (mode[i] !== WALK || goal[i] >= 0 || !(inFocus(w.x[i], w.z[i]) ? overI[z] : overO[z])) continue;
+        if (hash01(mix3(w.id[i], popNo, 0x7f4a7c15) ^ seedMix) < pk) life[i] = 0;
+      }
     }
   }
+  const overI = new Uint8Array(PLACE_Z + 1);
+  const overO = new Uint8Array(PLACE_Z + 1);
+  const seedMix = Math.imul(seed | 0, 0x27d4eb2d);
+  /** 문·출구에서 내보낸 단계 수(W46: 문 고르기 난수의 열쇠) */
+  let popNo = 0;
 
   // ── 한 단계 ──
   function step(dt: number, now: Now, ambient = true, coarse = SUB) {
@@ -2004,6 +2091,7 @@ export function makePeople(
       marked.length = 0;
     }
     carGrid();
+    settle();
     // 미리 돌릴 때(coarse > SUB)는 dt 를 나누지 않고, 사람마다 coarse 초에 한 번 밀린 만큼 움직인다(차례는 고유 번호로 나눈다)
     const warmC = coarse > SUB;
     const n = warmC ? 1 : Math.max(1, Math.ceil(dt / SUB - 1e-6));
@@ -2154,11 +2242,16 @@ export function makePeople(
 
   // ── 바깥에서 부르는 것 ──
   const docksOf = (kind: Dock['kind'], key: string) => docks.map((d, k) => (d.kind === kind && d.key === key ? k : -1)).filter((k) => k >= 0);
+  const bursts = new Map<string, number>();
   /** 열차가 역에 섰다: 출구에서 count 명이 나온다(출구 자리가 빌 때마다) */
   function burst(station: string, count: number) {
     const ds = docksOf('exit', station);
     if (!ds.length) return;
-    for (let k = 0; k < count && pending.length < 200; k++) pending.push(ds[Math.floor(rand() * ds.length)]);
+    // W46: 출구는 역·그 역 열차 차례·사람 차례로 정한 난수로(공유 난수로 뽑으면 판 다른 곳 사람이 난수를 먼저 쓴 만큼 다른 출구로 나왔다)
+    const nb = bursts.get(station) ?? 0;
+    bursts.set(station, nb + 1);
+    const sk = mix3(dockKey[ds[0]], nb, 0x1b873593);
+    for (let k = 0; k < count && pending.length < 200; k++) pending.push(ds[Math.floor(hash01(mix3(sk, k, seedMix)) * ds.length)]);
   }
   /** 버스 문이 (doorX, doorZ)인 버스가 정류장에 섰다: count 명이 문 앞 보도 자리에 내린다 */
   function alight(key: string, count: number, doorX: number, doorZ: number) {
@@ -2177,7 +2270,7 @@ export function makePeople(
         const i = spawnAt(k, onHe(d.he, s, Math.max(h.lo, Math.min(h.hi, lat))));
         if (i >= 0) {
           done = true;
-          life[i] = 60 + rand() * 300;
+          life[i] = 60 + prand(i) * 300;
         }
       }
     }
@@ -2288,6 +2381,8 @@ export function makePeople(
   const popStats = () => ({ wantIn: Array.from(wantIn), haveIn: Array.from(haveIn), wantOut: Array.from(wantOut), haveOut: Array.from(haveOut), focus, kIn, kOut, n: w.n, pending: pending.length });
   /** 시험용: 사람이 지금 있어도 되는 자리인가 */
   const validAt = (i: number) => valid(i, w.x[i], w.z[i]);
+  let puts = 0;
+  const putRand = rng(seed);
   /** 시험용(W31 Y 갈림 시험): (x, z)에 걷는 사람 한 명을 놓고 (gx, gz) 쪽으로 걷게 한다(돌아다니는 사람의 먼 자리를 그곳으로 고정, 수명 없음). 고유 번호, 못 놓으면 −1 */
   function put(x: number, z: number, gx: number, gz: number): number {
     const at = attach(x, z);
@@ -2305,7 +2400,9 @@ export function makePeople(
     w.n++;
     w.x[i] = x;
     w.z[i] = z;
-    born(i, OUT_Z);
+    // 시험용으로 놓은 사람은 놓은 차례로 번호를 매기고(같은 단계 안에서 먼저 놓은 사람이 번호가 작다), 옷·빠르기 같은 속성은 놓은 차례대로 씨앗 난수에서 받는다
+    // (put 만 쓰는 시험 판은 W46 전과 같은 사람이 된다. 판 돌리기에서는 쓰지 않는다)
+    born(i, OUT_Z, newId(0, 0, puts++), putRand);
     w.fade[i] = 1;
     life[i] = Infinity;
     wgX[i] = gx;
