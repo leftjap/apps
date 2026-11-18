@@ -11,7 +11,8 @@ import { cumLen } from '../../src/poly.ts';
 
 /** 교차로 면(등급·바깥 고리·교통섬) */
 export type Face = { cls: number; outer: ArrayLike<number>; holes: ArrayLike<number>[] };
-import type { Road } from '../../src/data/board.ts';
+import type { Line, Road } from '../../src/data/board.ts';
+import { railSite } from '../../src/sim/railSite.ts';
 import { LINK, LINK_N, type WalkJson } from '../../src/sim/walknet.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from './bits.ts';
 
@@ -148,6 +149,8 @@ export interface FixInput {
   crosswalks: { x: number; z: number; ux: number; uz: number; half: number; wid: number; rings?: ArrayLike<number>[] }[];
   /** 한강공원 나들목(보행로가 자동차 전용도로 밑을 지나는 곳) */
   underpasses?: [number, number][];
+  /** 철도 노선(board.lines). 땅 위로 드러난 선로 띠(src/sim/railSite.ts)는 막힌 곳이다(W45: 양화진길 2호선 지상·터파기 구간 위를 골목 선이 지났다) */
+  rails?: Pick<Line, 'p' | 'kind'>[];
   /** 문을 둘 건물인가(건물 번호, 바닥 가운데) */
   doorOk?: (i: number, x: number, z: number) => boolean;
   log?: (s: string) => void;
@@ -165,7 +168,7 @@ interface E {
 
 /** 몸(가운데)이 설 수 없는 자리: 큰길 찻길에 몸 반지름 + 여유(CLEAR) 안, 건물 벽 WALL_CLEAR 안, 판 가장자리 1m 안.
  *  fixWalkNet 과 걷는 면 굽기(walkarea.ts, W28)가 함께 쓴다 */
-export function blockMap(inp: Pick<FixInput, 'bounds' | 'roads' | 'faces' | 'draw' | 'car' | 'med' | 'buildings' | 'crosswalks' | 'underpasses'>) {
+export function blockMap(inp: Pick<FixInput, 'bounds' | 'roads' | 'faces' | 'draw' | 'car' | 'med' | 'buildings' | 'crosswalks' | 'underpasses' | 'rails'>) {
   const B = majorGround(inp.roads, inp.faces, inp.draw, inp.car, inp.med, inp.bounds);
   // 한강공원 나들목: 보행로가 자동차 전용도로 밑을 지난다(자료에는 같은 높이). 둘레 20m 는 찻길로 치지 않는다
   for (const [tx, tz] of inp.underpasses ?? []) {
@@ -189,8 +192,11 @@ export function blockMap(inp: Pick<FixInput, 'bounds' | 'roads' | 'faces' | 'dra
     const f = bitsAt(NEAR, x, z);
     return (f & 1) !== 0 || ((f & 2) !== 0 && (hitDisc(B, x, z, BODY_R, ROAD) || hitDisc(B, x, z, CLEAR, ROAD)));
   };
+  // 철도 부지: 몸이 선로 띠에 닿지 않게 CLEAR 만큼 넓혀 막는다. 판 철도에는 건널목이 없다(railSite.ts)
+  const rail = inp.rails ? railSite(inp.rails) : null;
   // 판 가장자리 1m 안도 막힌 곳으로 친다(판 밖 찻길은 칠하지 않았다)
-  const blocked = (x: number, z: number) => x < bx0 + 1 || z < bz0 + 1 || x > bx1 - 1 || z > bz1 - 1 || (bitsAt(NEAR, x, z) & 4) !== 0 || roadNear(x, z);
+  const blocked = (x: number, z: number) =>
+    x < bx0 + 1 || z < bz0 + 1 || x > bx1 - 1 || z > bz1 - 1 || (bitsAt(NEAR, x, z) & 4) !== 0 || roadNear(x, z) || (rail !== null && rail.inside(x, z, CLEAR));
 
   return { B, blocked, roadNear };
 }
@@ -867,7 +873,7 @@ export function fixWalkNet(inp: FixInput): WalkJson {
 
 /** 판 자료로 걷는 길 그물을 굽고(walknet.ts) 바로잡는다. tools/bake.ts 와 tools/walk.ts 가 쓴다 */
 export function bakeWalk(
-  b: { roads: Road[]; buildings: { pts: ArrayLike<number> }[]; crosswalks: FixInput['crosswalks'] },
+  b: { roads: Road[]; buildings: { pts: ArrayLike<number> }[]; crosswalks: FixInput['crosswalks']; lines?: FixInput['rails'] },
   raw: WalkJson,
   faces: Face[],
   draw: ArrayLike<number>[],
@@ -877,5 +883,5 @@ export function bakeWalk(
   log?: (s: string) => void,
   underpasses?: [number, number][],
 ): WalkJson {
-  return fixWalkNet({ json: raw, bounds, roads: b.roads, faces, draw, car: polys.car, med: polys.med, buildings: b.buildings.map((q) => q.pts), crosswalks: b.crosswalks, doorOk, log, underpasses });
+  return fixWalkNet({ json: raw, bounds, roads: b.roads, faces, draw, car: polys.car, med: polys.med, buildings: b.buildings.map((q) => q.pts), crosswalks: b.crosswalks, doorOk, log, underpasses, rails: b.lines });
 }

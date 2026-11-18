@@ -28,6 +28,7 @@ const { blocked } = blockMap({
   buildings: board.buildings.map((q) => q.pts),
   crosswalks: board.crosswalks,
   underpasses: underpasses(board.roads, ...ZONES.mangwon),
+  rails: board.lines,
 });
 console.log(`막힘 칸 ${((Date.now() - t0) / 1000).toFixed(1)}초`);
 // 노란 선을 칠한 작은 길(#55): 연석선으로 찻길 가장자리를 읽은(보도가 있는) 땅 위 등급 4·5 길 가운데, 길을 2m 마다 따라가며 찻길 반폭(좁은 쪽, 1m 이상) 안에
