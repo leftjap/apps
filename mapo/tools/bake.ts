@@ -28,7 +28,7 @@ import { bakeRoad } from './road/index.ts';
 import { bakedGround, laneMarks, refitArrows } from './road/marks.ts';
 import { bakeSurface, clipMarksToGround } from './road/surface.ts';
 import { roadLevels } from './lib/levels.ts';
-import { carSurface, pushTreesOffRoad } from './lib/treeplace.ts';
+import { carSurface, groundBits as treeGround, placeTreesOffGround, pushTreesOffRoad } from './lib/treeplace.ts';
 import { clipLine, drawnGround, dropOverlaps, onGround, smoothLine } from './lib/groundclip.ts';
 import { widenEdges } from './lib/laneedges.ts';
 import { fitCells, snapArrows } from './lib/arrows.ts';
@@ -2266,6 +2266,10 @@ writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), sur
     const cm = clipMarksToGround({ l: mj.l, ld: mj.ld }, sfx.g);
     Object.assign(mj, { l: cm.l, ld: cm.ld });
     console.log(`${sfx.log}; 새 찻길 면 밖이라 자른 노면 표시 ${cm.cut.toFixed(0)}m`);
+    // 길 정본 찻길 면 안 나무를 보도로 옮기고 녹지에 뿌린 나무(trees 앞 streetTree0)는 지운다(tools/lib/treeplace.ts, 재작업 W53. node tools/treeplace.ts 와 같은 함수)
+    const tp = placeTreesOffGround(trees, Array.from({ length: trees.length / 2 }, (_, i) => (i * 2 < streetTree0 ? 6 : 0)), treeGround(sfx.g, bd), bd.roads);
+    writeFileSync(new URL('../public/data/board.json', import.meta.url), JSON.stringify(out));
+    console.log(`길 정본 찻길 면 위 나무: 옮김 ${tp.moved.length}, 녹지 나무 지움 ${tp.removed.length}, 그대로 둠 ${tp.kept.length}`);
   }
   marksJson = JSON.stringify(mj);
   const d = sn.dist.sort((x, y) => x - y);
