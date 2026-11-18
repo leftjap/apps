@@ -22,6 +22,9 @@ import { majorGround } from '../tools/lib/walkfix.ts';
 //  - 맴돌기: 1초마다 자리를 적어 30초 창 안 모든 자리가 첫 자리에서 10m 안인데 15m 넘게 걸은 사람(w26 과 같은 정의)
 //  - 10초 흐름: 10초마다 보는 곳 안 걷는 사람(신호 대기·정류장 줄·들어가는 사람·머무는 사람 빼고)을 적어 10초 뒤 3m 넘게 나아간 몫
 //  - 20초 정체: 1초마다 보는 곳 안 걷는 사람 가운데, 지난 20초 내내 대기 상태가 아니었는데 20초 동안 1m 안에 머문 몫
+//  - Y 갈림 칸 막힘(W50): 어울마당로 Y 갈림 칸(x 395~430, z −450~−415)에서 30초 내내 갈래 영역 게이트 앞에서 기다리거나 그 뒤 줄에 선 채 1m 안에 있는 사람(yGate).
+//    W46 뒤 main(0440a966) 홍대 토21 씨앗 11 은 영역 330 게이트 앞 11~17명과 그 뒤 줄 45~61명이 60초 내내 섰다.
+//    yStand 는 같은 칸에서 30초 넘게 1m 안에 선 걷는 사람 모두(게이트·줄 포함, 신호 대기·정류장 줄·들어가는 사람·머무는 사람 빼고. 판정 없이 기록만)
 const read = (f: string) => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), 'utf8'));
 const board = decodeBoard(read('board.json'));
 const surface = decodeSurface(read('surface.json') as SurfaceJson);
@@ -46,6 +49,10 @@ export interface W31Res {
   back: string[];
   /** 한 프레임에 0.6m/s 넘게 걸었는데 '줄 선 사람'(게이트 앞 줄 뒤에 서 있다)으로 표시된 사람 */
   staleQ: string[];
+  /** 어울마당로 Y 갈림 칸에서 30초 내내 게이트 앞 대기·그 뒤 줄로 1m 안에 선 사람(W50) */
+  yGate: string[];
+  /** 같은 칸에서 30초 넘게 1m 안에 선 걷는 사람(기록용) */
+  yStand: string[];
   /** 10초 흐름 [3m 넘게 나아간 수, 잰 수] */
   flow10: [number, number];
   /** 20초 정체 [선 사람 표본, 표본] */
@@ -68,7 +75,7 @@ function ground(fx: number, fz: number) {
 
 export function runW31(seed: number, dow: number, hour: number, fx: number, fz: number): W31Res {
   const G = ground(fx, fz);
-  const R: W31Res = { people: 0, pace: [], born: [], gone: [], overlap: [], road: [], jump: [], back: [], staleQ: [], flow10: [0, 0], still20: [0, 0], ms: 0 };
+  const R: W31Res = { people: 0, pace: [], born: [], gone: [], overlap: [], road: [], jump: [], back: [], staleQ: [], yGate: [], yStand: [], flow10: [0, 0], still20: [0, 0], ms: 0 };
   const provider = makeSimProvider();
   const start = { tod: hour * 3600, dow, doy: 320 };
   const carGraph = buildCarGraph(board.roads, lanes, marks.arrows);
@@ -122,6 +129,9 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
   const walked = new Map<number, number>();
   /** 되돌아감: 사람마다 [목적지, 시각, 남은 길, …] */
   const left = new Map<number, number[]>();
+  /** Y 갈림 칸: 사람마다 1초 표본 [x, z, 칸 안 걷는 중 1/0, 게이트 대기·줄 1/0, …] 마지막 31개 */
+  const yh = new Map<number, number[]>();
+  const inYc = (x: number, z: number) => x > 395 && x < 430 && z > -450 && z < -415;
   /** 20초 정체: 사람마다 1초 표본 [x, z, 걷는 중 1/0, …] 마지막 21개 */
   const still = new Map<number, number[]>();
   let snap10: Map<number, [number, number]> | null = null;
@@ -203,6 +213,19 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
         for (let q = 2; q < lt.length; q += 3) lo = Math.min(lo, lt[q]);
         if (rem - lo > 10 && !R.back.some((s) => s.startsWith(`${id}@`)) && R.back.length < 50) R.back.push(`${id}@${x.toFixed(1)},${z.toFixed(1)} +${(rem - lo).toFixed(1)}m`);
       } else lt.length = 0;
+      // Y 갈림 칸 막힘
+      const st0 = p.stateOf(i);
+      const yl = yh.get(id) ?? yh.set(id, []).get(id)!;
+      yl.push(x, z, inYc(x, z) && !(st0.mode === M.WAITX || st0.mode === M.QUEUE || st0.mode === M.LEAVE || st0.mode === M.INDOOR || st0.hold) ? 1 : 0, st0.gate || st0.queued ? 1 : 0);
+      if (yl.length > 31 * 4) yl.splice(0, 4);
+      if (yl.length === 31 * 4) {
+        let stand = true;
+        let gate = true;
+        for (let q = 0; q < yl.length && stand; q += 4) (stand = yl[q + 2] === 1 && Math.hypot(yl[q] - x, yl[q + 1] - z) < 1), (gate &&= yl[q + 3] === 1);
+        const tag = `${id}@${x.toFixed(1)},${z.toFixed(1)}${st0.gate ? ' gate' : ''}${st0.queued ? ' queued' : ''}`;
+        if (stand && R.yStand.length < 50 && !R.yStand.some((s) => s.startsWith(`${id}@`))) R.yStand.push(tag);
+        if (stand && gate && R.yGate.length < 20 && !R.yGate.some((s) => s.startsWith(`${id}@`))) R.yGate.push(tag);
+      }
       // 20초 정체
       const sl = still.get(id) ?? still.set(id, []).get(id)!;
       const wk = walking(i);
@@ -223,6 +246,7 @@ export function runW31(seed: number, dow: number, hour: number, fx: number, fz: 
         last.delete(id);
         still.delete(id);
         left.delete(id);
+        yh.delete(id);
       }
   }
   R.ms = ms / N;
