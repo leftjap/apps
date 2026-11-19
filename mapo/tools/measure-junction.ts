@@ -23,7 +23,7 @@ import { bandQuad, laneBands } from '../src/data/laneGround.ts';
 import type { Edge } from '../src/sim/graph.ts';
 import { decodeBoard, type Board, type Road } from '../src/data/board.ts';
 import { decodeMarks } from '../src/data/marks.ts';
-import { decodeLanes } from '../src/data/road.ts';
+import { decodeLanes, type CanonLanes } from '../src/data/road.ts';
 import { cumLen, pointAt } from '../src/poly.ts';
 import { buildCarGraph, headingNear, leftEdge, MED } from '../src/sim/graph.ts';
 import { GREEN, makeIntersections, RED, STRAIGHT } from '../src/sim/intersection/index.ts';
@@ -52,6 +52,8 @@ export interface AuditOptions {
   /** 길을 남길 둘레(m, 없으면 판 전체)와 셀 둘레(m) */
   keep?: number;
   count?: number;
+  /** 차로 정본을 바꿔 본다(국소성 시험, 재작업 W56) */
+  lanes?: (l: CanonLanes) => CanonLanes;
 }
 export interface AuditResult {
   case: string;
@@ -185,7 +187,8 @@ export function setup(o: AuditOptions, k: number) {
   const full = decodeBoard(data('board.json'));
   const board = o.keep ? clip(full, o.keep) : full;
   const [name, dow, tod] = CASES[k];
-  const g = buildCarGraph(board.roads, decodeLanes(data('road.json').lanes), decodeMarks(data('marks.json')).arrows);
+  const lanes = decodeLanes(data('road.json').lanes);
+  const g = buildCarGraph(board.roads, o.lanes ? o.lanes(lanes) : lanes, decodeMarks(data('marks.json')).arrows);
   const inter = makeIntersections(g, { crosswalks: board.crosswalks, stopLines: board.stopLines, lamps: data('signals.json') });
   const busy = new Uint32Array(board.crosswalks.length);
   const sim = makeCars(g, makeSimProvider(), o.seed ?? 11, 5000, makeBusRoutes(board.buses, g, undefined, board.crosswalks), inter, { list: board.crosswalks, busy });
