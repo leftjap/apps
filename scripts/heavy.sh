@@ -8,11 +8,25 @@
 # 샌드박스 안에서도 돌아야 한다: /tmp 바로 아래에는 쓸 수 없고, 다른 세션의 프로세스는 보이지 않으며,
 # sysctl 과 우선순위 낮추기가 막혀 있다. 그래서 잠금은 /tmp/claude 아래에 두고, 죽은 잠금은 프로세스가 아니라 시각으로 가린다.
 
-mkdir -p /tmp/claude 2>/dev/null
+mkdir -p /tmp/claude/heavy.q 2>/dev/null
 LOCK=/tmp/claude/heavy.lock
+Q=/tmp/claude/heavy.q
 limit=$1; shift
 now() { date +%s; }
-while ! mkdir "$LOCK" 2>/dev/null; do
+# 줄 서기: 기다리는 쪽마다 번호표를 두고, 가장 먼저 온 번호표만 잠금을 잡는다. 번호표가 없을 때는 잠금이
+# 풀리자마자 측정을 잇달아 거는 쪽이 다시 가져가, 5초마다 보는 쪽이 40분 넘게 못 잡은 일이 있었다(2026-11-19)
+TICKET="$Q/$(date +%s)$(printf %06d $((RANDOM*32768+RANDOM)) | cut -c1-6).$$"
+touch "$TICKET"
+trap 'rm -f "$TICKET"' EXIT INT TERM
+first() {
+  local t
+  # 30초 넘게 갱신되지 않은 번호표는 끝난 쪽이 남긴 것으로 보고 지운다(다른 세션의 프로세스는 보이지 않는다)
+  for t in "$Q"/*(N); do [[ $t != "$TICKET" ]] && (( $(now) - $(stat -f %m "$t" 2>/dev/null || echo 0) > 30 )) && rm -f "$t"; done
+  t=("$Q"/*(N))
+  [[ ${t[1]} == "$TICKET" ]]
+}
+while ! { first && mkdir "$LOCK" 2>/dev/null; }; do
+  touch "$TICKET"
   until=$(cat "$LOCK/until" 2>/dev/null)
   made=$(stat -f %m "$LOCK" 2>/dev/null)
   # 끝 시각이 지났거나, 끝 시각을 적지 못한 채 15초 넘게 남아 있는 잠금은 죽은 것으로 본다
@@ -21,6 +35,7 @@ while ! mkdir "$LOCK" 2>/dev/null; do
   fi
   sleep 5
 done
+rm -f "$TICKET"
 echo $(( $(now) + limit + 340 )) > "$LOCK/until"
 echo "$*" > "$LOCK/cmd"
 trap 'rm -f "$LOCK/until" "$LOCK/cmd"; rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
