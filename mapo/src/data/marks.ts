@@ -186,3 +186,216 @@ export function arrowShape(kind: number, w = 0): number[][] | null {
   const k = w > 0 && span > w - 0.6 ? Math.max(0.3, (w - 0.6) / span) : 1;
   return k === 1 ? s : s.map((q) => q.map((x, i) => (i % 2 ? x * k : x)));
 }
+
+/** 횡단보도 줄무늬 면(평면 [x, z, ...]) */
+export type Band = ArrayLike<number>;
+
+/**
+ * 앱이 그리는 횡단보도 줄무늬 면들(render/signals.ts makeSignalMarks 와 같은 선택): 판 횡단보도마다 늘인 면(marks.crossings)이 있으면 그것,
+ * 없으면 서울시 면(c.rings). 판에 없는 골목·진입로 입구 면(board.crosswalkMarks)도 더한다(재작업 W59)
+ */
+export function crossingBands(crosswalks: { rings: ArrayLike<number>[] }[], crossings: Map<number, Float32Array[]>, crosswalkMarks: ArrayLike<number>[] = []): Band[] {
+  const out: Band[] = [];
+  crosswalks.forEach((c, i) => out.push(...(crossings.get(i) ?? c.rings)));
+  out.push(...crosswalkMarks);
+  return out;
+}
+
+const BAND_CELL = 10;
+interface BandIndex {
+  boxes: Float64Array;
+  cells: Map<number, number[]>;
+}
+const bandIndexes = new WeakMap<Band[], BandIndex>();
+const cellKey = (gx: number, gz: number) => (gx + 50000) * 100000 + (gz + 50000);
+/** 면 감싸는 사각형을 10m 칸에 넣은 색인(같은 면 배열이면 다시 만들지 않는다) */
+function bandIndex(bands: Band[]): BandIndex {
+  const hit = bandIndexes.get(bands);
+  if (hit) return hit;
+  const boxes = new Float64Array(bands.length * 4);
+  const cells = new Map<number, number[]>();
+  bands.forEach((r, b) => {
+    let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
+    for (let k = 0; k + 1 < r.length; k += 2) (x0 = Math.min(x0, r[k])), (x1 = Math.max(x1, r[k])), (z0 = Math.min(z0, r[k + 1])), (z1 = Math.max(z1, r[k + 1]));
+    boxes.set([x0, z0, x1, z1], b * 4);
+    if (!(x0 <= x1)) return;
+    for (let gx = Math.floor(x0 / BAND_CELL); gx <= Math.floor(x1 / BAND_CELL); gx++)
+      for (let gz = Math.floor(z0 / BAND_CELL); gz <= Math.floor(z1 / BAND_CELL); gz++) {
+        const key = cellKey(gx, gz);
+        (cells.get(key) ?? cells.set(key, []).get(key)!).push(b);
+      }
+  });
+  const idx = { boxes, cells };
+  bandIndexes.set(bands, idx);
+  return idx;
+}
+/** 사각형 [x0, z0, x1, z1] 을 r m 늘인 것과 감싸는 사각형이 겹치는 면 번호들 */
+function bandsNear(idx: BandIndex, x0: number, z0: number, x1: number, z1: number, r: number): number[] {
+  const out = new Set<number>();
+  for (let gx = Math.floor((x0 - r) / BAND_CELL); gx <= Math.floor((x1 + r) / BAND_CELL); gx++)
+    for (let gz = Math.floor((z0 - r) / BAND_CELL); gz <= Math.floor((z1 + r) / BAND_CELL); gz++)
+      for (const b of idx.cells.get(cellKey(gx, gz)) ?? []) {
+        const o = b * 4;
+        if (idx.boxes[o] <= x1 + r && idx.boxes[o + 2] >= x0 - r && idx.boxes[o + 1] <= z1 + r && idx.boxes[o + 3] >= z0 - r) out.add(b);
+      }
+  return [...out];
+}
+function inBand(r: Band, x: number, z: number): boolean {
+  let c = false;
+  for (let i = 0, j = r.length - 2; i + 1 < r.length; j = i, i += 2) {
+    const [xi, zi, xj, zj] = [r[i], r[i + 1], r[j], r[j + 1]];
+    if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) c = !c;
+  }
+  return c;
+}
+function segPointDist(ax: number, az: number, bx: number, bz: number, x: number, z: number): number {
+  const [dx, dz] = [bx - ax, bz - az];
+  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+  return Math.hypot(ax + dx * t - x, az + dz * t - z);
+}
+/** 점에서 면까지 거리(면 안이면 0) */
+function bandDist(r: Band, x: number, z: number): number {
+  if (inBand(r, x, z)) return 0;
+  let best = Infinity;
+  for (let i = 0, j = r.length - 2; i + 1 < r.length; j = i, i += 2) best = Math.min(best, segPointDist(r[j], r[j + 1], r[i], r[i + 1], x, z));
+  return best;
+}
+/** 두 선분 사이 거리(만나면 0) */
+function segSegDist(ax: number, az: number, bx: number, bz: number, cx: number, cz: number, dx: number, dz: number): number {
+  const cr = (px: number, pz: number, qx: number, qz: number, rx: number, rz: number) => (qx - px) * (rz - pz) - (qz - pz) * (rx - px);
+  const [d1, d2, d3, d4] = [cr(ax, az, bx, bz, cx, cz), cr(ax, az, bx, bz, dx, dz), cr(cx, cz, dx, dz, ax, az), cr(cx, cz, dx, dz, bx, bz)];
+  if (d1 * d2 < 0 && d3 * d4 < 0) return 0;
+  return Math.min(segPointDist(ax, az, bx, bz, cx, cz), segPointDist(ax, az, bx, bz, dx, dz), segPointDist(cx, cz, dx, dz, ax, az), segPointDist(cx, cz, dx, dz, bx, bz));
+}
+
+
+/** clipLines 가 센 것: 잘린 선 수, 버린 짧은 조각 수(0.5m 아래), 통째로 사라진 선 수 */
+export interface ClipStats {
+  cut: number;
+  dropped: number;
+  removed: number;
+}
+
+/**
+ * 칠한 선을 횡단보도 줄무늬 면 앞에서 끊는다(재작업 W59, 그릴 때만. 실제 길의 차선·중앙선·정지선은 횡단보도 앞에서 끝난다).
+ * 선 가운데가 어느 면 안이거나 gap + 반폭(겹선 사이 + 한 줄 반폭, lineStyle) 안인 부분을 지우고 그 자리에서 나눈다.
+ * 정지선(4)은 gap 0(그리는 폭이 면과 겹치는 부분만), 자전거횡단도(13)는 횡단보도 옆을 따라 긋는 선이라 자르지 않는다.
+ * 새 조각의 점선 위상 d 는 옛 첫 점에서 잰 거리만큼 더해 무늬가 이어진다. 0.5m 보다 짧은 조각은 버린다. 고가 위 선은 그대로 둔다
+ */
+export function clipLines(lines: MarkLine[], bands: Band[], gap = 0.5, stats?: ClipStats): MarkLine[] {
+  const idx = bandIndex(bands);
+  const out: MarkLine[] = [];
+  for (const l of lines) {
+    // 자전거횡단도(13)는 횡단보도 옆을 따라 긋는 선이라 자르지 않는다
+    if (l.k === 13) {
+      out.push(l);
+      continue;
+    }
+    const n = l.p.length / 3;
+    const st = lineStyle(l.k, l.k2);
+    // 정지선(4)은 그리는 폭이 면과 겹치는 부분만 지운다(틈 0). 가깝다는 것만으로 지우지 않는다
+    const lim = (l.k === 4 ? 0 : gap) + st.sep + st.w / 2;
+    let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
+    for (let k = 0; k < l.p.length; k += 3) (x0 = Math.min(x0, l.p[k])), (x1 = Math.max(x1, l.p[k])), (z0 = Math.min(z0, l.p[k + 2])), (z1 = Math.max(z1, l.p[k + 2]));
+    // 고가 위 선(높이 0.3m 넘는 점이 있음)은 땅 위 횡단보도와 닿지 않는다
+    let elevated = false;
+    for (let k = 1; k < l.p.length; k += 3) if (Math.abs(l.p[k]) > 0.3) elevated = true;
+    const cand = n < 2 || elevated ? [] : bandsNear(idx, x0, z0, x1, z1, lim);
+    if (!cand.length) {
+      out.push(l);
+      continue;
+    }
+    // 첫 점에서 이어진 거리 s 의 점
+    const cum = new Float64Array(n);
+    for (let i = 1; i < n; i++) cum[i] = cum[i - 1] + Math.hypot(l.p[i * 3] - l.p[i * 3 - 3], l.p[i * 3 + 2] - l.p[i * 3 - 1]);
+    const total = cum[n - 1];
+    const at = (s: number): number[] => {
+      let i = 1;
+      while (i < n - 1 && cum[i] < s) i++;
+      const t = cum[i] > cum[i - 1] ? Math.max(0, Math.min(1, (s - cum[i - 1]) / (cum[i] - cum[i - 1]))) : 0;
+      const [a, b] = [(i - 1) * 3, i * 3];
+      return [l.p[a] + (l.p[b] - l.p[a]) * t, l.p[a + 1] + (l.p[b + 1] - l.p[a + 1]) * t, l.p[a + 2] + (l.p[b + 2] - l.p[a + 2]) * t];
+    };
+    const blocked = (s: number) => {
+      const [x, , z] = at(s);
+      for (const b of cand) {
+        const o = b * 4;
+        if (idx.boxes[o] > x + lim || idx.boxes[o + 2] < x - lim || idx.boxes[o + 1] > z + lim || idx.boxes[o + 3] < z - lim) continue;
+        if (bandDist(bands[b], x, z) < lim) return true;
+      }
+      return false;
+    };
+    // 0.1m 걸음으로 막힌 곳을 찾고, 바뀌는 자리는 막힌 쪽 바깥 0.005m 안으로 좁힌다
+    const edge = (a: number, b: number, aBlocked: boolean) => {
+      while (b - a > 0.005) {
+        const m = (a + b) / 2;
+        if (blocked(m) === aBlocked) a = m;
+        else b = m;
+      }
+      return aBlocked ? b : a;
+    };
+    const keep: [number, number][] = [];
+    const steps = Math.max(1, Math.ceil(total / 0.1));
+    let [prevS, prevB] = [0, blocked(0)];
+    let start = 0;
+    let any = prevB;
+    for (let q = 1; q <= steps; q++) {
+      const s = (total * q) / steps;
+      const b = blocked(s);
+      if (b !== prevB) {
+        any = true;
+        const e = edge(prevS, s, prevB);
+        if (b) keep.push([start, e]);
+        else start = e;
+      }
+      [prevS, prevB] = [s, b];
+    }
+    if (!prevB) keep.push([start, total]);
+    if (!any) {
+      out.push(l);
+      continue;
+    }
+    if (stats) stats.cut++;
+    let kept = 0;
+    for (const [s0, s1] of keep) {
+      if (s1 - s0 < 0.5) {
+        if (stats) stats.dropped++;
+        continue;
+      }
+      const p = at(s0);
+      for (let i = 0; i < n; i++) if (cum[i] > s0 + 1e-6 && cum[i] < s1 - 1e-6) p.push(l.p[i * 3], l.p[i * 3 + 1], l.p[i * 3 + 2]);
+      p.push(...at(s1));
+      out.push({ k: l.k, k2: l.k2, p: Float32Array.from(p), d: (l.d ?? 0) + s0 });
+      kept++;
+    }
+    if (!kept && stats) stats.removed++;
+  }
+  return out;
+}
+
+/**
+ * 그리는 화살표 모양(arrowShape, render/marks.ts 와 같이 앞 (fx, fz), 왼쪽 (fz, −fx))이 gap m 늘인 횡단보도 줄무늬 면과 겹치는가(재작업 W59).
+ * 참이면 그리지 않는다(자료는 그대로, 차 그래프는 그대로 읽는다)
+ */
+export function arrowOnCrossing(a: Marks['arrows'][number], bands: Band[], gap = 0.3): boolean {
+  const shape = arrowShape(a.kind, a.w);
+  if (!shape) return false;
+  const polys = shape.map((q) => {
+    const o: number[] = [];
+    for (let k = 0; k < q.length; k += 2) o.push(a.x + a.fx * q[k] + a.fz * q[k + 1], a.z + a.fz * q[k] - a.fx * q[k + 1]);
+    return o;
+  });
+  let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const q of polys) for (let k = 0; k < q.length; k += 2) (x0 = Math.min(x0, q[k])), (x1 = Math.max(x1, q[k])), (z0 = Math.min(z0, q[k + 1])), (z1 = Math.max(z1, q[k + 1]));
+  const idx = bandIndex(bands);
+  for (const b of bandsNear(idx, x0, z0, x1, z1, gap)) {
+    const r = bands[b];
+    for (const q of polys) {
+      if (inBand(r, q[0], q[1]) || inBand(q, r[0], r[1])) return true;
+      for (let i = 0, j = q.length - 2; i < q.length; j = i, i += 2)
+        for (let m = 0, h = r.length - 2; m + 1 < r.length; h = m, m += 2) if (segSegDist(q[j], q[j + 1], q[i], q[i + 1], r[h], r[h + 1], r[m], r[m + 1]) < gap) return true;
+    }
+  }
+  return false;
+}
+

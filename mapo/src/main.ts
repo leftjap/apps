@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
 import { decodeCurbs, decodeSurface, tileRings, type CurbsJson, type SurfaceJson } from './data/surface.ts';
-import { decodeMarks, stopSegments, type MarksJson } from './data/marks.ts';
+import { clipLines, crossingBands, decodeMarks, stopSegments, type MarksJson } from './data/marks.ts';
 import { groundQuery } from './data/offroad.ts';
 import { BOARD_R, toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
@@ -118,6 +118,10 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamp
 
 // 로드뷰로 찾은, 판 자료(OSM·Overture·GIS)에 없는 건물을 판 건물 목록 끝에 더한다(앞 번호는 그대로라 걷는 길의 문 번호가 바뀌지 않는다)
 board.buildings.push(...addedBuildings(streetview));
+// 그리는 횡단보도 줄무늬 면(늘인 면이 있으면 그것, 없으면 서울시 면, 골목 입구 면). 칠한 선은 그 앞 0.5m 에서 끊어 그리고(신호 기둥 자리 정지선도 같다),
+// 줄무늬에 걸리는 화살표는 그리지 않는다(재작업 W59). 자료(marks.arrows)는 차 그래프가 그대로 읽는다
+const crossBands = crossingBands(board.crosswalks, marks.crossings, board.crosswalkMarks);
+const drawnMarks = { ...marks, lines: clipLines(marks.lines, crossBands) };
 
 // ── 시뮬레이션 ──
 const start = clock.now();
@@ -192,7 +196,7 @@ const groundTiles = tileRings(surface.ground);
 // 그린 찻길 면 위 자리 묻기(시설물을 찻길 면 밖으로 옮길 때, src/data/offroad.ts)
 const ground = groundQuery(groundTiles);
 // 노면 표시: 서울시 차선 선·안전지대·노면 화살표 그대로(src/render/marks.ts)
-const roadMarks = makeMarks(marks);
+const roadMarks = makeMarks(drawnMarks, crossBands);
 // 연석(화강석 띠)과 횡단보도 끝 점자블록(src/render/curbs.ts)
 // 연석 자리는 찻길 면 외곽선(타일 테두리를 따라가는 줄 빼고). 판 가장자리 3m 와 찻길 터널 입구 경사 위는 세우지 않는다
 const inTrench = trenchTest(board.roads);
@@ -208,7 +212,7 @@ const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
 // 신호등 기둥은 그린 정지선(차가 서는 자리에서 길 정본으로 굽는다, 재작업 W49) 오른쪽 끝에 세운다. 차가 서는 자리는 위 inter 가 board.stopLines 로 정한다
 // 신호 기둥이 찻길 면 위(정지선이 차로 띠 안에서 끝나는 곳)면 찻길 면 밖 가장 가까운 보도·섬·분리대로 옮긴다. 횡단보도는 찻길 면 경계까지 늘인 면(marks.json x)으로 그린다(재작업 W57)
-const signalMarks = makeSignalMarks(carGraph, inter.S, board.crosswalks, board.crosswalkMarks, stopSegments(marks.lines), marks.crossings, ground);
+const signalMarks = makeSignalMarks(carGraph, inter.S, board.crosswalks, board.crosswalkMarks, stopSegments(drawnMarks.lines), marks.crossings, ground);
 const flow = makeFlow(carGraph, inter.X, surface.cut);
 flow.update(provider, start);
 // 로드뷰 기록 구역의 나무: 판 나무 뒤에 붙이고, 수종은 기록 값으로 정한다

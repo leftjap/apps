@@ -414,7 +414,7 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     for (let m = 0; m < q.length; m += 4) if (q[m] < rOut[a] + 20) c = Math.max(c, q[m + 1] + 1.5);
     return c;
   }
-  /** 정지선과 상자 가장자리 가운데 교차로에서 먼 쪽. 그 자리에 선 차의 앞부분(앞 범퍼에서 1m, 반폭 1.3m)이 횡단보도 면에 걸치면 걸치지 않을 때까지 물린다
+  /** 정지선과 상자 가장자리 가운데 교차로에서 먼 쪽. 그 자리에 선 차의 앞부분(앞 범퍼 앞뒤 1m, 반폭 1.3m)이 횡단보도 면에 걸치면 걸치지 않을 때까지 물린다(차 앞이 면에서 1m 넘게 떨어지게)
    *  (정지선 자료가 횡단보도에 붙었거나 횡단보도가 비스듬한 곳) */
   const g0Cache = new Map<number, number>();
   function gate0(a: number, l: number): number {
@@ -432,7 +432,8 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
       const hx = Math.cos(v[3]);
       const hz = Math.sin(v[3]);
       let touch = false;
-      for (const back of [0, 1]) for (const side of [-1.3, 0, 1.3]) if (!touch && xwAt(v[0] - hx * back - hz * side, v[2] - hz * back + hx * side) >= 0) touch = true;
+      // back −1: 앞 범퍼에서 1m 앞(차 앞이 횡단보도 면에서 1m 넘게 떨어지게), 0: 앞 범퍼, 1: 앞 범퍼에서 1m 뒤
+      for (const back of [-1, 0, 1]) for (const side of [-1.3, 0, 1.3]) if (!touch && xwAt(v[0] - hx * back - hz * side, v[2] - hz * back + hx * side) >= 0) touch = true;
       if (!touch) break;
     }
     g0Cache.set(key, g);

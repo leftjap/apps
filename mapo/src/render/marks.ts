@@ -2,7 +2,7 @@
 // 안전지대(OA-15533)는 빗금 면, 노면 화살표(OA-15536)는 모양으로 칠한다(src/data/marks.ts).
 // 선은 화면에서 한 픽셀보다 가늘어져도 깜박이지 않게 그리는 폭을 화면 크기에 맞춰 넓히고, 칠은 픽셀 단위로 부드럽게 한다. 멀어지면 옅어진다.
 import * as THREE from 'three';
-import { arrowShape, lineStyle, type Marks } from '../data/marks.ts';
+import { arrowOnCrossing, arrowShape, lineStyle, type Band, type Marks } from '../data/marks.ts';
 import { material } from './env.ts';
 
 const DIM = /* glsl */ `
@@ -10,7 +10,8 @@ const DIM = /* glsl */ `
   float far(float px, float d) { return clamp(1.0 - px / 1.2, 0.0, 1.0) * (1.0 - smoothstep(1200.0, 2200.0, d)); }
   vec3 paint(float c) { return c < 0.5 ? vec3(0.95, 0.95, 0.93) : c < 1.5 ? vec3(0.96, 0.76, 0.24) : vec3(0.27, 0.48, 0.95); }`;
 
-export function makeMarks(marks: Marks): THREE.Group {
+/** bands 는 그리는 횡단보도 줄무늬 면(crossingBands): 그 면에 걸리는 화살표는 그리지 않는다(재작업 W59) */
+export function makeMarks(marks: Marks, bands: Band[] = []): THREE.Group {
   const group = new THREE.Group();
   // ── 선 ──
   const pos: number[] = [];
@@ -133,7 +134,7 @@ export function makeMarks(marks: Marks): THREE.Group {
   for (const z of marks.zones) addPoly(Array.from(z.ring), z.yellow ? 2 : 1);
   for (const a of marks.arrows) {
     const shape = arrowShape(a.kind, a.w);
-    if (!shape) continue;
+    if (!shape || arrowOnCrossing(a, bands)) continue;
     // 앞 (fx, fz), 왼쪽 (fz, −fx)
     for (const poly of shape) {
       const out: number[] = [];

@@ -4,7 +4,7 @@
 // 사용: node tools/marks.ts [--keep-arrows]. tools/road.ts(길 정본 다시 굽기)도 끝에 이것을 부른다
 import { readFileSync, writeFileSync } from 'node:fs';
 import { decodeBoard, type BoardJson } from '../src/data/board.ts';
-import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
+import { crossingBands, decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { decodeLanes } from '../src/data/road.ts';
 import { decodeSurface } from '../src/data/surface.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
@@ -28,7 +28,9 @@ export function bakeMarksFile(keepArrows = false): string {
   const now = keepArrows ? (read('../public/data/marks.json') as MarksJson) : null;
   // 그리기용 횡단보도 면(x, 재작업 W57)은 찻길 면에서 굽는 것이라 선을 다시 그어도 그대로 둔다
   const x = (read('../public/data/marks.json') as MarksJson).x;
-  const lm = laneMarks({ board, g, inter, seoul, marks, ground, ground25, ...(now ? { arrows: decodeMarks(now).arrows } : {}) });
+  // 앱이 그리는 횡단보도 줄무늬 면(늘인 면 x 포함): 그린 폭이 이 면과 겹치는 정지선은 서울시 정지선으로 바꾸거나 긋지 않는다(재작업 W59)
+  const bands = crossingBands(board.crosswalks, decodeMarks({ ...marks, ...(x ? { x } : {}) }).crossings, board.crosswalkMarks);
+  const lm = laneMarks({ board, g, inter, seoul, marks, ground, ground25, bands, ...(now ? { arrows: decodeMarks(now).arrows } : {}) });
   // 화살표를 새 차선 칸 가운데로(차로마다 갈 수 있는 쪽이 바뀌지 않는 것만)
   if (now) {
     // 지금 화살표에서 시작해 새 선 칸에 다시 맞추고(refitArrows: 차로마다 갈 수 있는 쪽은 그대로), 칸 가운데·칸 폭이 0.1m 안으로 같은 화살표는 지금 값 그대로 둔다

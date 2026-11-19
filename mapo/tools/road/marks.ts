@@ -18,7 +18,7 @@ import { tileRings } from '../../src/data/surface.ts';
 import { bitsAt, fillBits, makeBits, type Bits } from '../lib/bits.ts';
 import { smoothLine } from '../lib/groundclip.ts';
 import { fitCells } from '../lib/arrows.ts';
-import { decodeMarks } from '../../src/data/marks.ts';
+import { clipLines, crossingBands, decodeMarks, type Band } from '../../src/data/marks.ts';
 
 /** 정본에서 만드는 선 종류(서울시 대분류) */
 export const LANE_KINDS = new Set([1, 4, 5, 6, 8, 17]);
@@ -221,6 +221,8 @@ export interface LaneMarksInput {
   ground25: Bits;
   /** 화살표 자리(없으면 marks 의 화살표). 정본 차로가 칠한 자리에서 비켜난 곳에 새로 긋는 선은 화살표를 지나지 않게 한다(재작업 W55) */
   arrows?: Marks['arrows'];
+  /** 그리는 횡단보도 줄무늬 면(crossingBands, 재작업 W59). 없으면 marks 의 늘인 면(x)·서울시 면·골목 입구 면. 그린 폭이 이 면과 겹치는 정지선은 서울시 정지선으로 바꾸거나 긋지 않는다 */
+  bands?: Band[];
 }
 
 /** 노면 표시 자료에서 차로를 가르는 선·정지선을 정본에서 다시 만든 marks.json 과 기록 */
@@ -488,17 +490,21 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
   }
 
   // ── 정지선: 진입로 차로마다, 이웃 차로와 0.5m 안이면 한 줄. 땅 위가 아닌 진입로(둑길·터파기 경사)는 그 높이로 ──
-  const stopLines: { owner: number; p: number[]; y: number }[] = [];
+  type StopCell = { e: Edge; l: number; s: number; y: number };
+  const stopLines: { owner: number; p: number[]; y: number; cells: StopCell[] }[] = [];
   for (const { owner, cells } of stopRows) {
     let cur: number[] = [];
     let ys: number[] = [];
+    let used: StopCell[] = [];
     let lastS = NaN;
     const flush = () => {
-      if (cur.length >= 4) stopLines.push({ owner, p: cur, y: ys.reduce((a, v) => a + v, 0) / ys.length });
+      if (cur.length >= 4) stopLines.push({ owner, p: cur, y: ys.reduce((a, v) => a + v, 0) / ys.length, cells: used });
       cur = [];
       ys = [];
+      used = [];
     };
-    for (const { e, l, s, y } of cells) {
+    for (const cell of cells) {
+      const { e, l, s, y } = cell;
       const a = at(e, s, leftOf(e, l, s));
       const b = at(e, s, rightOf(e, l, s));
       if (cur.length && Math.abs(s - lastS) <= 0.5 && Math.abs(y - ys[ys.length - 1]) < 0.3 && Math.hypot(cur[cur.length - 2] - a.x, cur[cur.length - 1] - a.z) < 0.5) {
@@ -510,9 +516,202 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
         cur = [a.x, a.z, b.x, b.z];
       }
       ys.push(y);
+      used.push(cell);
       lastS = s;
     }
     flush();
+  }
+  // 그린 폭(0.45m)이 그리는 횡단보도 줄무늬 면과 겹치는 정지선(앱의 clipLines 가 자를 것)은 그 진입로 차로를 따라 거슬러 60m 안에서 처음 만나는 서울시 정지선(board.stopLines)으로 바꾼다.
+  // 그 서울시 정지선도 면과 겹치거나 없으면 긋지 않고 기록에 남긴다(재작업 W59). 땅 위가 아닌 진입로(고가 선)는 땅 위 횡단보도와 닿지 않는다
+  const bands = inp.bands ?? crossingBands(board.crosswalks, decodeMarks(marks).crossings, board.crosswalkMarks);
+  const onBand = (p: number[]) => {
+    const p3: number[] = [];
+    for (let k = 0; k < p.length; k += 2) p3.push(p[k], 0, p[k + 1]);
+    const ml: MarkLine = { k: 4, k2: 1, p: Float32Array.from(p3) };
+    const c = clipLines([ml], bands);
+    return c.length !== 1 || c[0] !== ml;
+  };
+  const SG = 8;
+  const sgKey = (i: number, j: number) => (i + 2000) * 5000 + j + 2000;
+  const seoulStops = new Map<number, number[]>();
+  for (let k = 0; k + 3 < board.stopLines.length; k += 4) {
+    const s = board.stopLines;
+    for (let i = Math.floor(Math.min(s[k], s[k + 2]) / SG); i <= Math.floor(Math.max(s[k], s[k + 2]) / SG); i++)
+      for (let j = Math.floor(Math.min(s[k + 1], s[k + 3]) / SG); j <= Math.floor(Math.max(s[k + 1], s[k + 3]) / SG); j++) (seoulStops.get(sgKey(i, j)) ?? seoulStops.set(sgKey(i, j), []).get(sgKey(i, j))!).push(k);
+  }
+  const perpCos = Math.cos((25 * Math.PI) / 180);
+  /** 선분 a→b(차로 가운데선 한 걸음, 방향 hx, hz)를 가로지르는(차로 방향에 25° 안으로 수직인) 서울시 정지선 가운데 a 에서 가장 가까운 것의 번호(board.stopLines 의 k), 없으면 −1 */
+  const seoulCross = (ax: number, az: number, bx: number, bz: number, hx: number, hz: number) => {
+    let best = -1;
+    let bt = Infinity;
+    const s = board.stopLines;
+    const seen = new Set<number>();
+    for (let i = Math.floor(Math.min(ax, bx) / SG); i <= Math.floor(Math.max(ax, bx) / SG); i++)
+      for (let j = Math.floor(Math.min(az, bz) / SG); j <= Math.floor(Math.max(az, bz) / SG); j++)
+        for (const k of seoulStops.get(sgKey(i, j)) ?? []) {
+          if (seen.has(k)) continue;
+          seen.add(k);
+          const [cx, cz, dx, dz] = [s[k], s[k + 1], s[k + 2], s[k + 3]];
+          const [ux, uz] = [dx - cx, dz - cz];
+          const L = Math.hypot(ux, uz);
+          if (L < 1e-6 || Math.abs((ux * -hz + uz * hx) / L) < perpCos) continue;
+          const [rx, rz] = [bx - ax, bz - az];
+          const den = rx * uz - rz * ux;
+          if (Math.abs(den) < 1e-9) continue;
+          const t = ((cx - ax) * uz - (cz - az) * ux) / den;
+          const u = ((cx - ax) * rz - (cz - az) * rx) / den;
+          if (t >= 0 && t <= 1 && u >= 0 && u <= 1 && t < bt) (bt = t), (best = k);
+        }
+    return best;
+  };
+  /** 차로 칸에서 차로 가운데선을 따라 거슬러(앞 구간이 하나면 그 구간으로) 60m 안에서 처음 만나는 서울시 정지선 번호, 없으면 −1 */
+  const seoulUpstream = (c: StopCell) => {
+    let q = c.e;
+    let ql = c.l;
+    let s = c.s;
+    let left = 60;
+    let pt = at(q, s, laneOff(q, ql, s));
+    for (let hop = 0; hop < 4 && left > 0; hop++) {
+      while (s > 0 && left > 0) {
+        const s1 = Math.max(0, s - 0.5);
+        left -= s - s1;
+        const nx = at(q, s1, laneOff(q, ql, s1));
+        const k = seoulCross(pt.x, pt.z, nx.x, nx.z, pt.hx, pt.hz);
+        if (k >= 0) return k;
+        (pt = nx), (s = s1);
+      }
+      if (left <= 0 || prev[q.id].length !== 1) break;
+      const p = g[prev[q.id][0]];
+      if (ql === MED ? !hasMed(p) : false) break;
+      ql = ql === MED ? MED : Math.min(ql, p.lanes - 1);
+      q = p;
+      s = q.len;
+      pt = at(q, s, laneOff(q, ql, s));
+    }
+    return -1;
+  };
+  /** 구간 시작 앞(s < 0)은 시작 자리의 진행 방향으로 곧게 늘인다 */
+  const atX = (e: Edge, s: number, o: number) => {
+    const q = at(e, Math.max(0, s), o);
+    return s < 0 ? { ...q, x: q.x + q.hx * s, z: q.z + q.hz * s } : q;
+  };
+  /**
+   * 차로 칸 c 에서 거슬러 d m 간 자리(앞 구간이 하나면 그 구간으로). 앞 구간이 하나가 아니면 구간 시작에서 곧게 10m 까지 늘인 자리(s < 0,
+   * 횡단보도 안에서 시작하는 구간. src/sim/stops.ts 도 이때 구간 시작 앞에 선다). 그보다 멀면 null
+   */
+  const along = (c: StopCell, d: number): StopCell | null => {
+    let q = c.e;
+    let ql = c.l;
+    let s = c.s - d;
+    for (let hop = 0; s < 0 && hop < 4; hop++) {
+      if (prev[q.id].length !== 1) break;
+      const p = g[prev[q.id][0]];
+      if (ql === MED && !hasMed(p)) return null;
+      ql = ql === MED ? MED : Math.min(ql, p.lanes - 1);
+      q = p;
+      s += q.len;
+    }
+    if (s < -10 || s > q.len) return null;
+    return { e: q, l: ql, s, y: atX(q, s, laneOff(q, ql, Math.max(0, s))).y };
+  };
+  /** 차로 칸 c 를 가로지르는 정지선 한 칸(왼쪽·오른쪽 가장자리) */
+  const cellSeg = (c: StopCell) => {
+    const s0 = Math.max(0, c.s);
+    const a = atX(c.e, c.s, leftOf(c.e, c.l, s0));
+    const b = atX(c.e, c.s, rightOf(c.e, c.l, s0));
+    return [a.x, a.z, b.x, b.z];
+  };
+  /**
+   * 횡단보도 줄무늬 면과 겹치는 정지선 a 를 면 1m 앞으로: 차로 칸마다 차로 가운데선을 따라 거슬러 0.1m 씩 가며 그린 폭이 면에 처음 닿지 않는 자리(가까운 가장자리가 면에 닿는 자리)를 찾고,
+   * 모든 칸을 그 가운데 가장 많이 거스른 만큼에 1m 더 거슬러 한 줄로 긋는다(진입로 차로를 가로지르는 한 줄, 면에 가장 가까운 가장자리가 면 1m 앞). 이어 그은 선이 그래도 면에 닿으면 0.1m 씩 더 거스른다(3m 까지).
+   * 그 자리가 찻길 면 밖이면(횡단보도 바로 앞에서 찻길 면이 끝나는 곳) null
+   */
+  const beforeBand = (a: (typeof stopLines)[number]): (typeof stopLines)[number] | null => {
+    const back = a.cells.map((c) => {
+      if (!onBand(cellSeg(c))) return NaN;
+      for (let d = 0.1; d <= 40; d += 0.1) {
+        const q = along(c, d);
+        if (!q) return Infinity;
+        if (!onBand(cellSeg(q))) {
+          // 닿는 자리(0.1m 안)를 0.005m 안으로 좁힌다
+          let [lo, hi] = [d - 0.1, d];
+          while (hi - lo > 0.005) {
+            const m = (lo + hi) / 2;
+            const qm = along(c, m);
+            if (qm && !onBand(cellSeg(qm))) hi = m;
+            else lo = m;
+          }
+          return hi;
+        }
+      }
+      return Infinity;
+    });
+    const hit = back.filter((v) => !Number.isNaN(v));
+    if (!hit.length || hit.some((v) => !Number.isFinite(v))) return null;
+    const most = Math.max(...hit);
+    for (let extra = 0; extra <= 3 + 1e-9; extra += 0.1) {
+      const cells: StopCell[] = [];
+      for (let n = 0; n < a.cells.length; n++) {
+        const q = along(a.cells[n], most + 1 + extra);
+        if (!q) return null;
+        cells.push(q);
+      }
+      // 칸을 잇는 방법은 처음 정지선과 같다(이웃 칸 가장자리가 0.5m 안이면 가운데로 잇는다)
+      const p: number[] = [];
+      for (const c of cells) {
+        const [ax, az, bx, bz] = cellSeg(c);
+        if (p.length && Math.hypot(p[p.length - 2] - ax, p[p.length - 1] - az) < 0.5) {
+          p[p.length - 2] = (p[p.length - 2] + ax) / 2;
+          p[p.length - 1] = (p[p.length - 1] + az) / 2;
+          p.push(bx, bz);
+        } else p.push(ax, az, bx, bz);
+      }
+      if (onBand(p)) continue;
+      // 찻길 면 밖(뒤 clip 이 지울 자리)이면 긋지 않은 것으로 센다
+      for (let k = 2; k < p.length; k += 2)
+        for (let t = 0; t <= 1; t += 0.125) {
+          const [x, z] = [p[k - 2] + (p[k] - p[k - 2]) * t, p[k - 1] + (p[k + 1] - p[k - 1]) * t];
+          if (!(near(ground, x, z, 0.3) && near(ground25, x, z, 0.45))) return null;
+        }
+      return { owner: a.owner, p, y: cells.reduce((s, c) => s + c.y, 0) / cells.length, cells };
+    }
+    return null;
+  };
+  let stopsMoved = 0;
+  const stopsBefore: string[] = [];
+  const stopsNone: string[] = [];
+  /** 진입로마다 이미 쓴 서울시 정지선(한 진입로의 두 조각이 같은 서울시 정지선을 짚으면 한 번만 긋는다) */
+  const usedSeoul = new Set<string>();
+  for (let i = stopLines.length - 1; i >= 0; i--) {
+    const a = stopLines[i];
+    if (Math.abs(a.y) > 0.3 || !onBand(a.p)) continue;
+    const found = new Set<number>();
+    let ok = true;
+    for (const c of a.cells) {
+      const k = seoulUpstream(c);
+      if (k < 0) ok = false;
+      else found.add(k);
+    }
+    const segOf = (k: number) => [board.stopLines[k], board.stopLines[k + 1], board.stopLines[k + 2], board.stopLines[k + 3]];
+    if (ok && found.size && ![...found].some((k) => onBand(segOf(k)))) {
+      // 같은 진입로 줄이 여러 서울시 정지선에 걸치면 그 선마다 한 줄
+      const fresh = [...found].filter((k) => !usedSeoul.has(`${a.owner}:${k}`));
+      for (const k of fresh) usedSeoul.add(`${a.owner}:${k}`);
+      stopLines.splice(i, 1, ...fresh.map((k) => ({ owner: a.owner, p: segOf(k), y: a.y, cells: a.cells })));
+      stopsMoved++;
+    } else {
+      // 서울시 정지선도 쓸 수 없으면 횡단보도 줄무늬 면 1m 앞(src/sim/stops.ts 가 서울시 정지선이 없을 때 쓰는 자리)에 진입로 차로를 가로질러 긋는다
+      const fb = beforeBand(a);
+      const [mx, mz] = [(a.p[0] + a.p[a.p.length - 2]) / 2, (a.p[1] + a.p[a.p.length - 1]) / 2];
+      const where = `${mx.toFixed(1)},${mz.toFixed(1)} 구간 ${a.owner} 차로 ${a.cells.map((c) => `${c.e.id}:${c.l === MED ? 'MED' : c.l}`).join('/')}`;
+      if (fb) {
+        stopLines.splice(i, 1, fb);
+        stopsBefore.push(where);
+      } else {
+        stopLines.splice(i, 1);
+        stopsNone.push(where);
+      }
+    }
   }
   // 두 진입로 차로가 포개진 곳(정본 차로가 포개진 자리, B3)에서는 정지선도 포개진다: 다른 정지선에서 1m 안에 다 드는 정지선은 하나만 남긴다
   const distTo = (p: number[], x: number, z: number) => {
@@ -1005,7 +1204,7 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
   const ld = all.map((o) => Math.round(o.phase * 10));
   const json: MarksJson = { v: 1, l, h: [...h, ...high], z: marks.z, a: marks.a, ...(marks.aw ? { aw: marks.aw } : {}), ld };
   const km = (v: number) => (v / 1000).toFixed(1);
-  const log = `정본 노면 표시: 차선 ${km(divideLen)}km, 중앙선 ${km(centreLen)}km(마주 오는 방향과 짝 ${(paired * STEP / 1000).toFixed(1)}km, 한쪽 ${(single * STEP / 1000).toFixed(1)}km), 정지선 ${stopsDrawn}줄(신호 없는 진입로 서울시 근거 차로 ${seoulBacked}), 자른 뒤 ${out.length}줄; 버린 서울시 차로 선·정지선 ${dropped}줄, 남긴 서울시 선 ${kept}줄, 다른 진입로 차로를 비운 자리 ${gaps}, 포개져 버린 정지선 ${overlapped}; 정본에 자리가 없어 서울시 선 그대로 ${(fb.len / 1000).toFixed(2)}km ${fb.n}줄(${fb.top.join(', ')})`;
+  const log = `정본 노면 표시: 차선 ${km(divideLen)}km, 중앙선 ${km(centreLen)}km(마주 오는 방향과 짝 ${(paired * STEP / 1000).toFixed(1)}km, 한쪽 ${(single * STEP / 1000).toFixed(1)}km), 정지선 ${stopsDrawn}줄(신호 없는 진입로 서울시 근거 차로 ${seoulBacked}), 자른 뒤 ${out.length}줄; 버린 서울시 차로 선·정지선 ${dropped}줄, 남긴 서울시 선 ${kept}줄, 다른 진입로 차로를 비운 자리 ${gaps}, 포개져 버린 정지선 ${overlapped}, 횡단보도 줄무늬와 겹쳐 서울시 정지선으로 바꾼 것 ${stopsMoved}, 서울시 정지선도 겹쳐 면 1m 앞으로 그은 것 ${stopsBefore.length}${stopsBefore.length ? `(${stopsBefore.join('; ')})` : ''}, 긋지 않은 것 ${stopsNone.length}${stopsNone.length ? `(${stopsNone.join('; ')})` : ''}; 정본에 자리가 없어 서울시 선 그대로 ${(fb.len / 1000).toFixed(2)}km ${fb.n}줄(${fb.top.join(', ')})`;
   return { json, log, stops: stopsDrawn };
 }
 
