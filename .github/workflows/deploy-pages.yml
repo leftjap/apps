@@ -216,6 +216,8 @@ jobs:
 
       # 시험은 빌드와 따로 돌린다. 시험이 실패해도 빌드가 되면 배포해 /apps/mapo/ 가 404 가 되지 않게 하고(2026-11-17 두 번째 404),
       # 실패는 아래 deploy 잡 끝에서 실행 결과를 실패로 표시해 알린다
+      # 1·2단계(지도) 동안은 지도 시험만 실패로 표시하고, 차·사람 시뮬레이션 시험은 결과를 기록만 한다(2026-11-19 지오 결정, mapo/CLAUDE.md).
+      # 3단계에 들어가면 Test mapo sim 의 결과도 아래 Fail if 로 다시 묶는다
       - name: Test mapo
         id: mapo_test
         continue-on-error: true
@@ -223,7 +225,15 @@ jobs:
           TZ: Asia/Seoul
         run: |
           cd mapo
-          pnpm test
+          pnpm test:map
+
+      - name: Test mapo sim (record only)
+        continue-on-error: true
+        env:
+          TZ: Asia/Seoul
+        run: |
+          cd mapo
+          pnpm test:sim || echo "::warning::mapo 차·사람 시뮬레이션 시험 실패(1·2단계 동안 기록만)"
 
       - name: Combine into _site
         run: |
