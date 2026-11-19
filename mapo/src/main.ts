@@ -62,10 +62,10 @@ const stage = document.querySelector<HTMLElement>('#stage')!;
 const small = matchMedia('(max-width: 760px)').matches;
 const MAX_PEOPLE = small ? 2000 : 8000;
 const MAX_CARS = small ? 1500 : 5000;
-// 차·사람 끄기(재작업 W57): ?cars=0 이면 차(버스 포함)를, ?people=0 이면 사람을 판에 채우지도 움직이지도 않는다(차 그래프·신호·정류장 자리는 그대로 만든다).
-// 빈 도로 지도(찻길·노면 표시·시설물)를 눈으로 볼 때 쓴다. 그리지만 않으면 시뮬레이션이 계산을 그대로 쓰고 화면이 매번 달라져, 아예 돌리지 않는다
-const simCars = query.get('cars') !== '0';
-const simPeople = query.get('people') !== '0';
+// 차·사람 켜기: 1·2단계(지도, mapo/CLAUDE.md) 승인 전까지 기본 주소는 빈 지도다. ?cars=1 이면 차(버스 포함)를, ?people=1 이면 사람을 판에 채우고 움직인다.
+// 끈 쪽은 판에 채우지도 움직이지도 않는다(차 그래프·신호·정류장 자리는 그대로 만든다). 그리지만 않으면 계산을 그대로 쓰고 화면이 매번 달라져 아예 돌리지 않는다(W57)
+const simCars = query.get('cars') === '1';
+const simPeople = query.get('people') === '1';
 
 // 같은 탭에서 주소를 바꿔 다시 열면 앞 페이지가 뒤로 가기 캐시(bfcache)에 통째로 남아 열 때마다 힙이 약 300MB 씩 늘었다(W19, 설계 문서 48절).
 // 새로 연 마포 페이지가 알림을 보내면 그 알림을 받은 캐시 속 마포 페이지는 브라우저가 버린다(Chrome 의 bfcache 'broadcastchannel-message')
@@ -393,7 +393,7 @@ function setLayer(l: Layer, on: boolean) {
   flow.mesh.visible = layers.flow;
 }
 setWeather(({ rain: 'rain', fog: 'fog', clear: 'clear' } as Record<string, Weather>)[query.get('weather') ?? ''] ?? 'live');
-// ?cars=0·?people=0 이면 그 층 표시도 끈다(설정의 층 상자도 끈 상태로)
+// 차·사람을 켜지 않았으면 그 층 표시도 끈다(설정의 층 상자도 끈 상태로)
 for (const [l, on] of [['cars', simCars], ['people', simPeople]] as const) {
   if (on) continue;
   setLayer(l, false);
