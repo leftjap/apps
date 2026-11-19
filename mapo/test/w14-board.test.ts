@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { decodeBoard } from '../src/data/board.ts';
 import { decodeLanes, type RoadJson } from '../src/data/road.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
-import { carriageSections, decodeSurface, isGroundRoad, tunnelReach, type SurfaceJson } from '../src/data/surface.ts';
+import { carriageSections, decodeSurface, isGroundRoad, tileRings, tunnelReach, type SurfaceJson } from '../src/data/surface.ts';
 import { drawnGround, onGround } from '../tools/lib/groundclip.ts';
 import { fitCells } from '../tools/lib/arrows.ts';
 import { arrowShape } from '../src/data/marks.ts';
@@ -39,13 +39,15 @@ describe('W14 지금 판', () => {
   // 재작업 W49: 정지선(k4)은 차가 서는 자리에 긋고, 그 자리가 구운 찻길 면 밖이면 실행 중 차로 띠(58절, 찻길로 칠한다) 위다(구운 면을 정본에서 굽는 B2 까지)
   it('땅 위 노면 표시 선의 점은 모두 그린 찻길 면 안(자르기 여유 0.3m + 판 자료 반올림)', () => {
     const bands = drawnGround(laneBands(buildCarGraph(board.roads, decodeLanes((read('road.json') as RoadJson).lanes), marks.arrows), 0).flatMap(({ sec }) => Array.from({ length: sec.length / 4 - 1 }, (_, k) => [bandQuad(sec, k)])));
+    // 재작업 W55: 앱은 W51(B2) 부터 길 정본에서 구운 찻길 면 하나(surface.json g)를 그린다. 노면 표시는 그 면 안이어야 한다
+    const drawn = surface.ground.length ? drawnGround(tileRings(surface.ground).map((t) => t.rings)) : ground;
     let n = 0;
     let out = 0;
     for (const l of marks.lines) {
       if (l.p.some((_, i) => i % 3 === 1 && l.p[i] !== 0)) continue;
       for (let k = 0; k < l.p.length; k += 3) {
         n++;
-        if (!near(ground, l.p[k], l.p[k + 2], 0.6) && !(l.k === 4 && near(bands, l.p[k], l.p[k + 2], 0.6))) out++; // 자르기 여유 0.3m + 0.25m 칸 + dm 반올림
+        if (!near(drawn, l.p[k], l.p[k + 2], 0.6) && !(l.k === 4 && near(bands, l.p[k], l.p[k + 2], 0.6))) out++; // 자르기 여유 0.3m + 0.25m 칸 + dm 반올림
       }
     }
     expect(n).toBeGreaterThan(10000);

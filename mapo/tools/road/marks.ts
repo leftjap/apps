@@ -219,11 +219,28 @@ export interface LaneMarksInput {
   ground: Bits;
   /** 같은 면의 0.25m 칸(test/w14-board.test.ts 와 같은 칸): 선 꼭짓점이 이 면에서도 0.6m 안이게 한다 */
   ground25: Bits;
+  /** 화살표 자리(없으면 marks 의 화살표). 정본 차로가 칠한 자리에서 비켜난 곳에 새로 긋는 선은 화살표를 지나지 않게 한다(재작업 W55) */
+  arrows?: Marks['arrows'];
 }
 
 /** 노면 표시 자료에서 차로를 가르는 선·정지선을 정본에서 다시 만든 marks.json 과 기록 */
 export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; stops: number } {
   const { board, g, inter, seoul, marks, ground, ground25 } = inp;
+  // 화살표 자리: 정본 차로가 칠한 자리에서 비켜난 곳에 긋는 선(먼 근거 차선·서울시 선 그대로)은 화살표 옆 1m·앞뒤 3m 안을 지나지 않는다
+  const arrowGrid = new Map<number, Marks['arrows']>();
+  for (const a of inp.arrows ?? decodeMarks(marks).arrows) {
+    const k = (Math.floor(a.x / 8) + 1000) * 3000 + Math.floor(a.z / 8) + 1000;
+    (arrowGrid.get(k) ?? arrowGrid.set(k, []).get(k)!).push(a);
+  }
+  const onArrow = (x: number, z: number) => {
+    for (let i = Math.floor((x - 4) / 8); i <= Math.floor((x + 4) / 8); i++)
+      for (let j = Math.floor((z - 4) / 8); j <= Math.floor((z + 4) / 8); j++)
+        for (const a of arrowGrid.get((i + 1000) * 3000 + j + 1000) ?? []) {
+          const [dx, dz] = [x - a.x, z - a.z];
+          if (Math.abs(dx * a.fx + dz * a.fz) < 3 && Math.abs(dx * a.fz - dz * a.fx) < 1) return true;
+        }
+    return false;
+  };
   const { X, S } = inter;
   const P = [0, 0, 0];
   const inXw = ringTest(board.crosswalks.flatMap((c) => c.rings));
@@ -362,8 +379,23 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
         const o = (rightOf(e, l0, s) + leftOf(e, l1, s)) / 2;
         const q = at(e, s, o);
         const ok = okAt(e, s, q.x, q.z, q.y, cap) && !onLane(q.x, q.z);
-        const hit = ok ? divideAt(q.x, q.z, q.hx, q.hz, 0.75) : null;
-        return { x: q.x, z: q.z, hx: q.hx, hz: q.hz, ok, code: hit ? hit.k * 10 + hit.k2 : 0 };
+        const close = ok ? divideAt(q.x, q.z, q.hx, q.hz, 0.75) : null;
+        let hit = close;
+        // 정본 차로가 칠한 자리에서 비켜난 곳(58절 2.6%)은 0.75m 안에 근거 선이 없다: 이웃 차로 반폭 안 서울시 차선이 정본 차로 경계 가운데
+        // 이 경계에 가장 가까우면 이 경계가 그 선이다(모양은 정본, 종류는 서울시 선. 재작업 W55). 한 서울시 선은 경계 하나만 맡는다
+        if (ok && !close) {
+          const far = divideAt(q.x, q.z, q.hx, q.hz, Math.min(laneWidth(e, l0 === MED ? 0 : l0, s), laneWidth(e, l1, s)) / 2);
+          if (far) {
+            const [dx, dz] = [far.bx - far.ax, far.bz - far.az];
+            const t = Math.max(0, Math.min(1, ((q.x - far.ax) * dx + (q.z - far.az) * dz) / (dx * dx + dz * dz || 1)));
+            const of = o + (far.ax + dx * t - q.x) * -q.hz + (far.az + dz * t - q.z) * q.hx;
+            const others = [leftOf(e, its[0], s), rightOf(e, its[its.length - 1], s)];
+            for (let c = 0; c + 1 < its.length; c++) if (c !== b) others.push((rightOf(e, its[c], s) + leftOf(e, its[c + 1], s)) / 2);
+            if (others.every((v) => Math.abs(of - v) > Math.abs(of - o))) hit = far;
+          }
+        }
+        // 화살표 옆(1m)·앞뒤(3m)는 0.75m 안 근거가 있을 때만 긋는다(틈 메우기·먼 근거로 화살표를 지나지 않게)
+        return { x: q.x, z: q.z, hx: q.hx, hz: q.hz, ok: ok && (!!close || !onArrow(q.x, q.z)), code: hit ? hit.k * 10 + hit.k2 : 0 };
       });
       for (const r of runs(list, 12, 3)) {
         made.push(r);
@@ -425,7 +457,22 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
         if (best.e < e.id && best.ok) return { ...q, ok: false };
         const x = (q.x + best.x) / 2;
         const z = (q.z + best.z) / 2;
-        const hit = centreAt(x, z, q.hx, q.hz, 1.5);
+        // 마주 오는 두 가장자리가 1m 넘게 벌어진 곳(중앙 정류장 둘레·분리된 두 방향 등)은 그 사이 어디에 칠했는지 정본이 모른다:
+        // 서울시 중앙선이 그 사이(두 가장자리에서 0.2m 넘게 안쪽)를 지나면 그 선 모양 그대로 긋는다(차로와는 겹치지 않는다, 재작업 W55)
+        const half = Math.hypot(best.x - q.x, best.z - q.z) / 2;
+        const hit = centreAt(x, z, q.hx, q.hz, half >= 0.5 ? Math.max(1.5, half) : 1.5);
+        if (hit && half >= 0.5) {
+          const [dx, dz] = [hit.bx - hit.ax, hit.bz - hit.az];
+          const t0 = ((x - hit.ax) * dx + (z - hit.az) * dz) / (dx * dx + dz * dz || 1);
+          const t = Math.max(0, Math.min(1, t0));
+          const [fx, fz] = [hit.ax + dx * t, hit.az + dz * t];
+          const d = Math.hypot(fx - x, fz - z);
+          // 서울시 선이 이 단면 위(조각 안, 앞뒤 0.3m 안)에서 두 가장자리 사이를 지나면 정본은 긋지 않고 서울시 선 그대로 긋기(laneFallback)에 맡긴다
+          if (d <= half - 0.2 && t0 > 0 && t0 < 1 && Math.abs((fx - x) * q.hx + (fz - z) * q.hz) < 0.3) {
+            return { x, z, hx: q.hx, hz: q.hz, ok: false, code: 0 };
+          }
+          if (d > 1.5) return { x, z, hx: q.hx, hz: q.hz, ok: !onLane(x, z), code: 0 };
+        }
         if (hit) paired++;
         return { x, z, hx: q.hx, hz: q.hz, ok: !onLane(x, z), code: hit ? hit.k * 10 + hit.k2 : 0 };
       }
@@ -756,6 +803,136 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
     if (out.length > before) stopsDrawn++;
   }
 
+  // ── 정본에 자리가 없는 칠한 선(재작업 W55, 설계 문서 59.10): 서울시 차로 선 가운데 그은 같은 종류 선이 1m 안에 없는 곳은 서울시 선을 그대로 긋는다 ──
+  // 정본 차로가 칠한 자리와 어긋나거나(차로 폭·자리) 차로 수가 칠한 것과 다른 곳, 넓게 벌어진 마주 오는 두 방향 사이다(B3·B4 에서 차로를 고칠 자리, 기록에 남긴다).
+  // 다만 차 몸이 지나는 자리(차로 가운데선 1m 안), 고가 차로 옆, 횡단보도 위, 교차로 상자 안·정지선 너머, 화살표 둘레에는 긋지 않고, 옆에 같은 계열 선이 이미 있으면 긋지 않는다(중앙선은 한 줄).
+  function laneFallback() {
+    const R = 4;
+    const key = (i: number, j: number) => (i + 2000) * 5000 + j + 2000;
+    // 그은 선(종류마다) 격자
+    const drawn = new Map<number, number[]>();
+    const addDrawn = (k: number, p: number[]) => {
+      for (let q = 2; q < p.length; q += 2) {
+        const [ax, az, bx, bz] = [p[q - 2], p[q - 1], p[q], p[q + 1]];
+        for (let i = Math.floor(Math.min(ax, bx) / R); i <= Math.floor(Math.max(ax, bx) / R); i++)
+          for (let j = Math.floor(Math.min(az, bz) / R); j <= Math.floor(Math.max(az, bz) / R); j++) {
+            const kk = key(i, j) * 20 + k;
+            (drawn.get(kk) ?? drawn.set(kk, []).get(kk)!).push(ax, az, bx, bz);
+          }
+      }
+    };
+    for (const o of [...out, ...keptOut]) addDrawn(Math.floor(o.code / 10), o.p);
+    const cos30 = Math.cos(Math.PI / 6);
+    /** 종류 ks 의 그은 선이 (x, z)에서 r 안에 있는가. mode: 0 나란한 선 r 안, 1 나란한 선의 옆(선 조각 끝을 넘지 않는 자리) r 안, 2 비스듬한(30° 넘게) 선 r 안 */
+    const drawnNear = (ks: number[], x: number, z: number, hx: number, hz: number, r: number, mode = 0) => {
+      for (const k of ks)
+        for (let i = Math.floor((x - r) / R); i <= Math.floor((x + r) / R); i++)
+          for (let j = Math.floor((z - r) / R); j <= Math.floor((z + r) / R); j++) {
+            const c = drawn.get(key(i, j) * 20 + k);
+            if (c)
+              for (let q = 0; q < c.length; q += 4) {
+                const [ax, az, dx, dz] = [c[q], c[q + 1], c[q + 2] - c[q], c[q + 3] - c[q + 1]];
+                const L = Math.hypot(dx, dz);
+                if (L < 1e-6 || (Math.abs((dx * hx + dz * hz) / L) < cos30) !== (mode === 2)) continue;
+                const t0 = ((x - ax) * dx + (z - az) * dz) / (L * L);
+                if (mode === 1 && (t0 <= 0 || t0 >= 1)) continue;
+                const t = Math.max(0, Math.min(1, t0));
+                if (Math.hypot(ax + dx * t - x, az + dz * t - z) <= r) return true;
+              }
+          }
+      return false;
+    };
+    // 차로 가운데선 표본(땅 위, 구간 전체): 선을 그어도 되는 자리(상자 밖·정지선 앞)인가
+    const lanes = new Map<number, number[]>();
+    for (const e of g) {
+      const [a, b] = range(e);
+      for (const l of items(e)) {
+        const cap = capAt(e, l);
+        for (let s = 0; s <= e.len; s += STEP) {
+          const q = at(e, s, laneOff(e, l, s));
+          const kk = key(Math.floor(q.x / R), Math.floor(q.z / R));
+          // 땅 위가 아닌 차로(고가·다리)는 -2: 그 둘레 땅 위 서울시 선은 고가 찻길의 선이다(고가 위 선은 서울시 선 h 가 맡는다)
+          (lanes.get(kk) ?? lanes.set(kk, []).get(kk)!).push(q.x, q.z, q.hx, q.hz, Math.abs(q.y) > 0.3 ? -2 : s >= a - 1e-6 && s <= b + 1e-6 && s <= cap ? 1 : 0);
+        }
+      }
+    }
+    /** 차 몸이 지나는 자리면 -1, 고가 차로 옆(2.5m 안)이면 -2, 가장 가까운 나란한 땅 위 차로 표본(4m 안)이 상자 안·정지선 너머면 0, 아니면 1 */
+    const laneAt = (x: number, z: number, hx: number, hz: number) => {
+      let bd = 4;
+      let flag = 1;
+      let high = false;
+      for (let i = Math.floor((x - 4) / R); i <= Math.floor((x + 4) / R); i++)
+        for (let j = Math.floor((z - 4) / R); j <= Math.floor((z + 4) / R); j++)
+          for (let c = lanes.get(key(i, j)) ?? [], q = 0; q < c.length; q += 5) {
+            if (Math.abs(c[q + 2] * hx + c[q + 3] * hz) < cos30) continue;
+            const [dx, dz] = [x - c[q], z - c[q + 1]];
+            const side = Math.abs(dx * c[q + 3] - dz * c[q + 2]);
+            if (c[q + 4] === -2) {
+              if (Math.abs(dx * c[q + 2] + dz * c[q + 3]) <= 0.5 && side < 2.5) high = true;
+              continue;
+            }
+            if (Math.abs(dx * c[q + 2] + dz * c[q + 3]) <= 0.5 && side < 1) return -1;
+            const d = Math.hypot(dx, dz);
+            if (d < bd) (bd = d), (flag = c[q + 4]);
+          }
+      return high ? -2 : flag;
+    };
+    let len = 0;
+    const spots = new Map<string, number>();
+    const made: { code: number; p: number[]; phase: number }[] = [];
+    for (const l of seoul) {
+      if (!LANE_KINDS.has(l.k) || l.k === 4) continue;
+      // 0.5m 표본마다 그을지
+      const S: { x: number; z: number; along: number; ok: boolean }[] = [];
+      let along = 0;
+      for (let q = 3; q < l.p.length; q += 3) {
+        const [ax, az, bx, bz] = [l.p[q - 3], l.p[q - 1], l.p[q], l.p[q + 2]];
+        const L = Math.hypot(bx - ax, bz - az);
+        if (L < 1e-6) continue;
+        const [hx, hz] = [(bx - ax) / L, (bz - az) / L];
+        const n = Math.max(1, Math.round(L / STEP));
+        for (let i = q === 3 ? 0 : 1; i <= n; i++) {
+          const [x, z] = [ax + ((bx - ax) * i) / n, az + ((bz - az) * i) / n];
+          const ok =
+            !drawnNear([l.k], x, z, hx, hz, 1) &&
+            !inXw(x, z) &&
+            !onArrow(x, z) &&
+            // 중앙선은 비스듬한 다른 중앙선 4m 안에도 긋지 않는다(교차로 둘레에서 비스듬히 만나는 옆길 중앙선이 두 줄이 되지 않게)
+            !(l.k === 1 && drawnNear([1], x, z, hx, hz, 4, 2)) &&
+            laneAt(x, z, hx, hz) === 1 &&
+            // 정본 선이 1~1.6m 옆에 나란히 있으면 차로가 칠한 자리에서 비켜난 곳이다(그 선이 이 선을 맡는다). 중앙선은 6m 옆 다른 중앙선. 선 끝에서 이어지는 자리는 막지 않는다
+            !drawnNear(l.k === 1 ? [1] : [...DIVIDE], x, z, hx, hz, l.k === 1 ? 6 : 1.6, 1);
+          S.push({ x, z, along: along + (L * i) / n, ok });
+        }
+        along += L;
+      }
+      // 이어지는 토막: 앞뒤로 한 표본(0.5m)씩 늘여 정본 선 끝과 겹치게 한다(1m 아래 틈이 남지 않게)
+      for (let i = 0; i < S.length; ) {
+        if (!S[i].ok) {
+          i++;
+          continue;
+        }
+        let j = i;
+        while (j + 1 < S.length && S[j + 1].ok) j++;
+        const [a, b] = [Math.max(0, i - 1), Math.min(S.length - 1, j + 1)];
+        if (S[b].along - S[a].along >= 0.9) {
+          const p: number[] = [];
+          for (let k = a; k <= b; k++) p.push(S[k].x, S[k].z);
+          made.push({ code: l.k * 10 + l.k2, p: smooth(simplify(average(p), 0.05)), phase: S[a].along });
+          len += S[b].along - S[a].along;
+          const c = `k${l.k} ${Math.round(S[i].x)},${Math.round(S[i].z)}`;
+          spots.set(c, S[b].along - S[a].along);
+          // 중앙선은 한 줄: 그은 것을 다음 선의 판정에 넣는다
+          if (l.k === 1) addDrawn(1, p);
+        }
+        i = j + 1;
+      }
+    }
+    for (const m of made) clip(m.code, m.p, m.phase);
+    const top = [...spots].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([c, v]) => `${c} ${Math.round(v)}m`);
+    return { len, n: made.length, top };
+  }
+
   // ── 남기는 서울시 선: 차로를 가르는 종류·정지선은 차로 띠 밖(길이 80% 넘게)인 것만, 나머지 종류는 모두 ──
   const enc = (code: number, p: ArrayLike<number>, xz: boolean) => {
     const c: number[] = [];
@@ -799,6 +976,7 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
     clip(row[0], pts, (marks.ld?.[i] ?? 0) / 10, false, LANE_KINDS.has(k));
     keptOut.push(...out.splice(before));
   }
+  const fb = laneFallback();
   // 고가 위 선: 서울시 정지선 가운데 정본 정지선 3m 안(가운데끼리)이거나 끝·가운데가 정본 정지선 1.5m 안인 것은 버린다(정본 정지선이 그 자리를 맡는다. 다시 굽어도 같게)
   const mids = stopLines.map(({ p }) => [(p[0] + p[p.length - 2]) / 2, (p[1] + p[p.length - 1]) / 2]);
   const h = marks.h.filter((row) => {
@@ -809,12 +987,25 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
     const [mx, mz] = [(x0 + x1) / 2, (z0 + z1) / 2];
     return !mids.some(([x, z]) => Math.hypot(x - mx, z - mz) < 3) && !stopLines.some((b) => distTo(b.p, x0, z0) < 1.5 || distTo(b.p, x1, z1) < 1.5 || distTo(b.p, mx, mz) < 1.5);
   });
-  const all = [...keptOut, ...out];
+  // dm 로 반올림한 선의 0.5m 보다 짧은 마디(자른 끝·이음 자리)는 반올림 때문에 크게 꺾여 보인다: 그 마디 끝 꼭짓점이 앞뒤 꼭짓점을 잇는 선에서 0.08m 안이면 뺀다(재작업 W55)
+  const tidy = <T extends { code: number; p: number[] }>(o: T): T => {
+    if ([4, 13, 14].includes(Math.floor(o.code / 10))) return o;
+    const p = o.p.map((v) => Math.round(v * 10) / 10);
+    for (let i = 1; i + 1 < p.length / 2; ) {
+      const [ax, az, bx, bz, cx, cz] = [p[i * 2 - 2], p[i * 2 - 1], p[i * 2], p[i * 2 + 1], p[i * 2 + 2], p[i * 2 + 3]];
+      const L = Math.hypot(cx - ax, cz - az);
+      const short = Math.min(Math.hypot(bx - ax, bz - az), Math.hypot(cx - bx, cz - bz)) < 0.5;
+      if (short && L > 1e-6 && Math.abs((cx - ax) * (bz - az) - (cz - az) * (bx - ax)) / L < 0.08) p.splice(i * 2, 2);
+      else i++;
+    }
+    return { ...o, p };
+  };
+  const all = [...keptOut, ...out].map(tidy);
   const l = all.map((o) => enc(o.code, o.p, true));
   const ld = all.map((o) => Math.round(o.phase * 10));
   const json: MarksJson = { v: 1, l, h: [...h, ...high], z: marks.z, a: marks.a, ...(marks.aw ? { aw: marks.aw } : {}), ld };
   const km = (v: number) => (v / 1000).toFixed(1);
-  const log = `정본 노면 표시: 차선 ${km(divideLen)}km, 중앙선 ${km(centreLen)}km(마주 오는 방향과 짝 ${(paired * STEP / 1000).toFixed(1)}km, 한쪽 ${(single * STEP / 1000).toFixed(1)}km), 정지선 ${stopsDrawn}줄(신호 없는 진입로 서울시 근거 차로 ${seoulBacked}), 자른 뒤 ${out.length}줄; 버린 서울시 차로 선·정지선 ${dropped}줄, 남긴 서울시 선 ${kept}줄, 다른 진입로 차로를 비운 자리 ${gaps}, 포개져 버린 정지선 ${overlapped}`;
+  const log = `정본 노면 표시: 차선 ${km(divideLen)}km, 중앙선 ${km(centreLen)}km(마주 오는 방향과 짝 ${(paired * STEP / 1000).toFixed(1)}km, 한쪽 ${(single * STEP / 1000).toFixed(1)}km), 정지선 ${stopsDrawn}줄(신호 없는 진입로 서울시 근거 차로 ${seoulBacked}), 자른 뒤 ${out.length}줄; 버린 서울시 차로 선·정지선 ${dropped}줄, 남긴 서울시 선 ${kept}줄, 다른 진입로 차로를 비운 자리 ${gaps}, 포개져 버린 정지선 ${overlapped}; 정본에 자리가 없어 서울시 선 그대로 ${(fb.len / 1000).toFixed(2)}km ${fb.n}줄(${fb.top.join(', ')})`;
   return { json, log, stops: stopsDrawn };
 }
 
