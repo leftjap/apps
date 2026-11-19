@@ -3,14 +3,28 @@
 // 홍대입구·합정처럼 출구가 넓게 흩어진 역도 출구 하나하나가 구내로 이어져 역의 실제 범위가 드러난다.
 // 열차가 역에 서면(그 역 출구에서 사람이 나오는 때) 그 역 출구 지붕이 그 열차의 노선 색으로 잠깐 밝아진다(trainLight.ts exitFlash).
 import * as THREE from 'three';
-import type { Board } from '../data/board.ts';
+import type { Board, Exit } from '../data/board.ts';
 import { exitLook, type ExitKind } from '../data/exits.ts';
-import { exitBody } from '../data/exitFit.ts';
+import { exitBody, exitOutline } from '../data/exitFit.ts';
+import { placeOff, type GroundQuery } from '../data/offroad.ts';
 import { nearestS, pointAt } from '../poly.ts';
 import { material, UNDER_Y } from './env.ts';
 import { sizeGlsl } from './size.ts';
 import { exitFlash } from './trainLight.ts';
 import { addRibbon, instanced, merge, part, ribbon, ribbonGeometry } from './util.ts';
+
+/** 엘리베이터 지붕(2.8m 정사각형) 바닥을 0.7m 간격으로 찍은 점 [x, z, ...](방향은 보지 않는다) */
+export function liftFootprint(x: number, z: number): number[] {
+  const out: number[] = [];
+  for (let a = -1.4; a <= 1.41; a += 0.7) for (let b = -1.4; b <= 1.41; b += 0.7) out.push(x + a, z + b);
+  return out;
+}
+/** 그려질 출구 자리: 출구 모형 바닥(exitOutline)이 찻길 면 안이면 찻길 면 밖으로 옮긴 출구(방향·길이 그대로) */
+export function placedExit(e: Exit, station: string, ground: GroundQuery): Exit {
+  if (!Number.isFinite(e.yaw)) return e;
+  const r = placeOff(ground, e.x, e.z, exitOutline(e, exitLook(station, e.ref)).flat());
+  return r.moved ? { ...e, x: r.x, z: r.z } : e;
+}
 
 /** 역별 강조색. 홍대입구·합정은 랜드마크 색을 쓴다 */
 const ACCENT: Record<string, string> = { 홍대입구: '#7fe0a8', 합정: '#ffcf7a' };
@@ -111,7 +125,8 @@ export const EXIT_SHAPES: Record<ExitKind, () => THREE.BufferGeometry> = {
 };
 const KIND_NO: Record<ExitKind, number> = { open: 0, old: 1, vault: 2, box: 3, slim: 4, kiosk: 5, grand: 6, mural: 7 };
 
-export function makeStations(board: Board) {
+/** ground 가 있으면 출구 모형·엘리베이터 바닥이 그린 찻길 면 안(가장자리에서 0.3m 넘게)일 때 찻길 면 밖 가장 가까운 자리로 옮겨 그린다(재작업 W57. 사람이 드나드는 출구 자리는 그대로) */
+export function makeStations(board: Board, ground?: GroundQuery) {
   const group = new THREE.Group();
   const names = board.stations.map((s) => s.name);
   const color = (name: string) => new THREE.Color(ACCENT[name] ?? '#8fd3ff');
@@ -143,7 +158,8 @@ export function makeStations(board: Board) {
       addRibbon(mine, pts, 34, info, 0, 6);
       corridors.push({ l, a, b });
     }
-    for (const e of board.exits.filter((e) => e.st === name)) {
+    for (const e0 of board.exits.filter((e) => e.st === name)) {
+      const e = ground ? placedExit(e0, name, ground) : e0;
       // 가장 가까운 승강장 통로까지 곧게 잇는다
       let best = { d: Infinity, x: e.x, z: e.z };
       for (const { l, a, b } of corridors) {
@@ -479,8 +495,9 @@ export function makeStations(board: Board) {
   const lifts = instanced(lift, Math.max(1, board.elevators.length / 2), { aInst: 4, aSign: 1, aSize: 3 });
   lifts.arr.aSize.fill(1);
   for (let k = 0; k < board.elevators.length / 2; k++) {
-    const x = board.elevators[k * 2];
-    const z = board.elevators[k * 2 + 1];
+    let x = board.elevators[k * 2];
+    let z = board.elevators[k * 2 + 1];
+    if (ground) ({ x, z } = placeOff(ground, x, z, liftFootprint(x, z)));
     let best = 0;
     for (let i = 1; i < doors.length; i++) if (Math.hypot(doors[i][0] - x, doors[i][1] - z) < Math.hypot(doors[best][0] - x, doors[best][1] - z)) best = i;
     lifts.arr.aInst.set([x, z, doors[best]?.[2] ?? 0, doors[best]?.[3] ?? 0], k * 4);

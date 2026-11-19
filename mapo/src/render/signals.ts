@@ -1,12 +1,13 @@
-// 횡단보도·신호등. 횡단보도는 서울시 교통안전시설물 횡단보도 면(구운 모형판의 crosswalks)을 실제 자리·방향·폭으로 칠한다.
+// 횡단보도·신호등. 횡단보도는 서울시 교통안전시설물 횡단보도 면(구운 모형판의 crosswalks)을 실제 자리·방향·폭으로 칠하고, 건너는 길이는 그린 찻길 면 경계까지 늘인다(marks.json x, 재작업 W57).
 // 정지선은 노면 표시(src/render/marks.ts)가 서울시 차선 자료 그대로 긋는다.
-// 신호등: 차량 신호는 정지선(서울시 차선 자료) 오른쪽 끝 보도에 기둥을 세우고 찻길 위로 뻗은 팔 끝에 가로 3구 등을 단다.
+// 신호등: 차량 신호는 정지선(서울시 차선 자료) 오른쪽 끝 보도에 기둥을 세우고 찻길 위로 뻗은 팔 끝에 가로 3구 등을 단다. 기둥 자리가 그린 찻길 면 위면 찻길 면 밖 가장 가까운 보도·섬·분리대로 옮긴다(재작업 W57).
 // 좌회전 신호가 있는 진입로(서울시 신호등 자료의 4색등)는 4구 등(빨강·노랑·좌회전 화살표·초록)이다. 등 상태는 그 진입로 직진 현시(원)와 좌회전 현시(화살표)를 따른다.
 // 보행 신호는 보행 신호 횡단보도 양 끝에 2구(빨강 위, 초록 아래) 기둥으로 세운다. 불빛은 매 프레임 시뮬레이션 신호 상태로 바꾼다.
 import * as THREE from 'three';
 import type { Crosswalk } from '../data/board.ts';
 import { laneOff, leftEdge, rightEdge, type Edge } from '../sim/graph.ts';
 import { GREEN, LEFT, RED, STRAIGHT, YELLOW, type Approach, type SignalPlan as Signals } from '../sim/intersection/index.ts';
+import { shiftOffCar, type GroundQuery } from '../data/offroad.ts';
 import { pointAt } from '../poly.ts';
 import { material } from './env.ts';
 import { sizeGlsl } from './size.ts';
@@ -70,10 +71,30 @@ export function pedState(signals: Signals, i: number, xw: Crosswalk, tod: number
   return signals.walkState(i, tod) === GREEN ? GREEN : RED;
 }
 
-/** 신호등 자리. stopLines 는 그린 정지선 [x0, z0, x1, z1, ...](src/data/marks.ts stopSegments, 재작업 W49) */
-export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], stopLines: Float32Array) {
+/** 기둥을 세울 때 찻길 면 가장자리에서 띄우는 거리(m, 기둥 반지름 + 여유) */
+const POLE_CLEAR = 0.4;
+
+/**
+ * 신호등 자리. stopLines 는 그린 정지선 [x0, z0, x1, z1, ...](src/data/marks.ts stopSegments, 재작업 W49).
+ * ground 가 있으면 찻길 면 위(가장자리 POLE_CLEAR 안쪽)에 선 기둥을 찻길 면 밖 가장 가까운 자리(보도·섬·분리대)로 옮기고, 차량 신호 팔은 등 자리를 그대로 두고 새 기둥에서 다시 뻗는다(재작업 W57).
+ * 8m 안에 둘 곳이 없으면 그 자리에 두고 stuck 에 적는다
+ */
+export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], stopLines: Float32Array, ground?: GroundQuery) {
   const car: CarPole[] = [];
   const inner: number[] = [];
+  const stuck: { kind: 'car' | 'ped'; x: number; z: number; id: number }[] = [];
+  const moved = { car: 0, ped: 0 };
+  /** 찻길 면 밖으로 옮긴 자리(옮길 곳이 없으면 그대로) */
+  const off = (kind: 'car' | 'ped', id: number, x: number, z: number): [number, number] => {
+    if (!ground) return [x, z];
+    const s = shiftOffCar(ground, [x, z], POLE_CLEAR);
+    if (!s) {
+      stuck.push({ kind, x, z, id });
+      return [x, z];
+    }
+    if (s[0] || s[1]) moved[kind]++;
+    return [x + s[0], z + s[1]];
+  };
   const P = [0, 0, 0];
   for (const [id, ap] of signals.approach) {
     const e = edges[id];
@@ -120,9 +141,19 @@ export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswa
       inner.push(id);
       continue;
     }
-    const x = rx + ux * 0.8;
-    const z = rz + uz * 0.8;
-    const arm = Math.min(10, 0.8 + len * 0.5);
+    const x0 = rx + ux * 0.8;
+    const z0 = rz + uz * 0.8;
+    const arm0 = Math.min(10, 0.8 + len * 0.5);
+    const [lx, lz] = [x0 - ux * arm0, z0 - uz * arm0];
+    // 정지선이 찻길 면 안에서 끝나면 그 끝은 찻길 위다: 기둥은 찻길 면 밖 가장 가까운 자리로, 등은 그 자리에 둔 채 팔을 새 기둥에서 등까지 뻗는다
+    const [x, z] = off('car', id, x0, z0);
+    let arm = arm0;
+    if (x !== x0 || z !== z0) {
+      const d = Math.hypot(lx - x, lz - z) || 1;
+      arm = Math.min(10, Math.max(0.8, d));
+      ux = (x - lx) / d;
+      uz = (z - lz) / d;
+    }
     car.push({ edge: id, x, z, hx: x - ux * arm, hz: z - uz * arm, yaw: Math.atan2(-ux, uz), arm, state: (tod) => lampState(signals, ap, tod), fromData: best < 6, arrow: ap.left === 1 && signals.list[ap.c].turn[ap.group] >= 0 });
   }
   const ped: PedPole[] = [];
@@ -131,18 +162,25 @@ export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswa
     // 양 끝 보도, 횡단보도 한쪽 옆(폭의 반 + 0.4m)에 세운다
     for (const sgn of [1, -1]) {
       const vx = -c.uz, vz = c.ux;
-      const off = c.wid / 2 + 0.4;
-      ped.push({ xw: i, x: c.x + sgn * c.ux * (c.half + 0.3) + vx * off, z: c.z + sgn * c.uz * (c.half + 0.3) + vz * off, yaw: Math.atan2(sgn * c.uz, sgn * c.ux) });
+      const side = c.wid / 2 + 0.4;
+      const [x, z] = off('ped', i, c.x + sgn * c.ux * (c.half + 0.3) + vx * side, c.z + sgn * c.uz * (c.half + 0.3) + vz * side);
+      ped.push({ xw: i, x, z, yaw: Math.atan2(sgn * c.uz, sgn * c.ux) });
     }
   });
-  return { car, ped, inner };
+  return { car, ped, inner, stuck, moved };
 }
 
-export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], crossMarks: Float32Array[] = [], stopLines: Float32Array = new Float32Array()) {
+/**
+ * faces 는 그리기용 횡단보도 면(marks.json x, 서울시 면을 그린 찻길 면 경계까지 늘인 것, 재작업 W57): 든 횡단보도는 그 면을, 나머지는 서울시 면을 그린다.
+ * ground 가 있으면 찻길 면 위에 선 신호 기둥을 찻길 면 밖으로 옮긴다(signalPoles)
+ */
+export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Crosswalk[], crossMarks: Float32Array[] = [], stopLines: Float32Array = new Float32Array(), faces?: Map<number, Float32Array[]>, ground?: GroundQuery) {
   const group = new THREE.Group();
   const marks = ribbon();
-  // 횡단보도: 서울시 횡단보도 면 모양 그대로(사다리꼴·평행사변형, 두 단 횡단보도는 조각마다). 줄무늬는 건너는 축을 따라 한쪽 끝에서부터 잇는다
-  for (const c of crosswalks) for (const r of c.rings) addStripes(marks, r, c.x - c.ux * c.half, c.z - c.uz * c.half, c.ux, c.uz);
+  // 횡단보도: 서울시 횡단보도 면 자리·방향·폭(사다리꼴·평행사변형, 두 단 횡단보도는 조각마다), 건너는 길이는 찻길 면 경계까지. 줄무늬는 건너는 축을 따라 한쪽 끝에서부터 잇는다
+  crosswalks.forEach((c, i) => {
+    for (const r of faces?.get(i) ?? c.rings) addStripes(marks, r, c.x - c.ux * c.half, c.z - c.uz * c.half, c.ux, c.uz);
+  });
   // 판에 없는 골목·진입로 입구의 횡단보도: 가장 긴 변을 건너는 방향으로 본다
   for (const r of crossMarks) {
     let best = 0;
@@ -180,7 +218,7 @@ export function makeSignalMarks(edges: Edge[], signals: Signals, crosswalks: Cro
   markMesh.frustumCulled = false;
   group.add(markMesh);
 
-  const poles = signalPoles(edges, signals, crosswalks, stopLines);
+  const poles = signalPoles(edges, signals, crosswalks, stopLines, ground);
   // 차량 신호: 0 기둥·팔·등 상자, 1 빨강, 2 노랑, 3 초록. 기둥이 원점, 팔은 −z 로 길이 1(셰이더가 aInst.w 배), 등 상자는 팔 끝(z = 0 에 두고 셰이더가 −aInst.w 로 민다). 등은 −x(다가오는 차 쪽)를 본다
   const lamp = (z: number, id: number) => part(new THREE.CircleGeometry(0.15, 8).rotateY(-Math.PI / 2).translate(-0.24, 5.55, z), id);
   const carGeo = merge([

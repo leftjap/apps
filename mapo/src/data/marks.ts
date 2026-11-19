@@ -13,6 +13,8 @@ export interface MarksJson {
   aw?: number[];
   /** 땅 위 선(l)마다 점선 위상(dm): 첫 점이 이어진 줄에서 놓인 자리. 정본에서 만든 선이 이음매·자른 자리를 넘어 같은 점선 무늬를 이어 간다(재작업 W49). 없으면 0 */
   ld?: number[];
+  /** 그리기용 횡단보도 면: 면마다 [횡단보도 번호(board crosswalks), 점 수, 첫 점 x, z, 뒤 점마다 차이 x, z](dm). 서울시 면을 그린 찻길 면 경계까지 늘인 것(재작업 W57, tools/road/crossings.ts). 든 횡단보도는 서울시 면 대신 이 면을 그린다 */
+  x?: number[][];
 }
 
 export interface MarkLine {
@@ -31,6 +33,8 @@ export interface Marks {
   zones: { yellow: boolean; ring: Float32Array }[];
   /** 화살표: 종류(A055_KND_CDE 번호), 자리, 진행 방향(판 좌표 단위 벡터), 놓인 차선 칸 폭(m, 0 = 모름) */
   arrows: { kind: number; x: number; z: number; fx: number; fz: number; w: number }[];
+  /** 그리기용 횡단보도 면(횡단보도 번호 → 면들, 재작업 W57). 차·사람은 읽지 않는다 */
+  crossings: Map<number, Float32Array[]>;
 }
 
 /** [점 수, 첫 점, 차이...] 를 dim 차원 점들로 */
@@ -58,7 +62,9 @@ export function decodeMarks(j: MarksJson): Marks {
     // 평면 좌표(동 x, 북 y)의 각도를 판 좌표(동 x, 남 z)로
     arrows.push({ kind: j.a[i], x: j.a[i + 1] / 10, z: j.a[i + 2] / 10, fx: Math.cos(t), fz: -Math.sin(t), w: (j.aw?.[i / 4] ?? 0) / 10 });
   }
-  return { lines, zones, arrows };
+  const crossings = new Map<number, Float32Array[]>();
+  for (const f of j.x ?? []) (crossings.get(f[0]) ?? crossings.set(f[0], []).get(f[0])!).push(Float32Array.from(pts(f, 1, 2)));
+  return { lines, zones, arrows, crossings };
 }
 
 /** 노면 표시 정지선(4) 꺾은선을 선분 [x0, z0, x1, z1, ...]으로: 신호등 기둥 자리(render/signals.ts). 정지선은 차가 서는 자리에서 길 정본으로 굽는다(재작업 W49) */

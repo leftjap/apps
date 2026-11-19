@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import type { Building } from '../data/board.ts';
 import { faceOf, xz, type Face, type PropRec } from '../data/streetview.ts';
+import { placeOff, type GroundQuery } from '../data/offroad.ts';
 import type { Look } from './buildings.ts';
 import { material, pal } from './env.ts';
 
@@ -159,7 +160,14 @@ export function detailOf(b: Building, L: Look): { box: number[]; cyl: number[] }
 }
 
 /** 단지 바닥 소품(나무는 나무 모형이 따로 그린다) */
-export function siteOf(props: PropRec[]): number[] {
+export function siteOf(props: PropRec[], ground?: GroundQuery): number[] {
+  // 가로등·문 기둥·부스·퍼걸러(세우는 것)는 기록 자리가 그린 찻길 면 안(가장자리에서 0.3m 넘게)이면 찻길 면 밖 가장 가까운 자리로 옮긴다(재작업 W57)
+  const stand = (ll: [number, number]): [number, number] => {
+    const [x, z] = xz(ll);
+    if (!ground) return [x, z];
+    const r = placeOff(ground, x, z, [x, z], 0.3);
+    return [r.x, r.z];
+  };
   const out: number[] = [];
   const push = (x: number, y: number, z: number, yaw: number, sx: number, sy: number, sz: number, kind: number, c: [number, number, number], e = 0) =>
     out.push(x, y, z, yaw, sx, sy, sz, kind, c[0], c[1], c[2], e);
@@ -181,7 +189,7 @@ export function siteOf(props: PropRec[]): number[] {
         if (p.fence === 'iron') push(mx, p.baseH, mz, yaw, len, p.fenceH, 0.04, DK.ironFence, hexRGB(p.fenceColor));
       }
     } else if (p.kind === 'gate') {
-      const [x, z] = xz(p.ll);
+      const [x, z] = stand(p.ll);
       push(x, 0, z, 0, p.w, p.h, p.d, DK.pillar, hexRGB(p.color), p.top === 'arch' ? 1 : 0);
     } else if (p.kind === 'paving') {
       // 포장은 재질·색마다 구역 다각형으로 그린다(src/data/paving.ts, render/areas.ts makePaving). 심은 곳만 상자로
@@ -197,7 +205,7 @@ export function siteOf(props: PropRec[]): number[] {
         push(x + dx * s, 0.085, z + dz * s, yaw, 0.12, 0.02, p.d, DK.line, [0.93, 0.93, 0.9]);
       }
     } else if (p.kind === 'pergola') {
-      const [x, z] = xz(p.ll);
+      const [x, z] = stand(p.ll);
       const { dx, dz, yaw } = dir(p.yaw);
       const c = hexRGB(p.color);
       const nx = -dz, nz = dx;
@@ -209,7 +217,7 @@ export function siteOf(props: PropRec[]): number[] {
         push(x + dx * s, p.h, z + dz * s, yaw, 0.08, 0.1, p.d + 0.5, DK.wood, c);
       }
     } else if (p.kind === 'lamp') {
-      const [x, z] = xz(p.ll);
+      const [x, z] = stand(p.ll);
       const c: [number, number, number] = p.color ? hexRGB(p.color) : [0.36, 0.37, 0.39];
       push(x, 0, z, 0, 0.14, p.h, 0.14, DK.pole, c);
       if (p.type === 'pole') push(x + 0.55, p.h - 0.1, z, 0, 1.2, 0.14, 0.32, DK.lamp, [0.85, 0.85, 0.82]);
@@ -229,7 +237,7 @@ export function siteOf(props: PropRec[]): number[] {
         for (let t = 0; t <= len + 1e-6; t += 0.6) push(ax + ux * t, 0.02, az + uz * t, yaw, 0.22, 0.09, 2.4, DK.wood, [0.36, 0.29, 0.23]);
       }
     } else if (p.kind === 'booth') {
-      const [x, z] = xz(p.ll);
+      const [x, z] = stand(p.ll);
       const yaw = dir(p.yaw).yaw;
       const bh = p.base ? (p.baseH ?? 0.5) : 0;
       if (p.base) push(x, 0, z, yaw, p.w, bh, p.d, DK.slab, hexRGB(p.base));
@@ -482,7 +490,7 @@ function instancedMesh(base: THREE.BufferGeometry, data: number[], center: THREE
 }
 
 /** 기록한 건물들의 세부와 기록 구역 바닥 소품을 그린다. idx: 세부를 그릴 건물 번호 */
-export function makeDetail(list: Building[], lk: Look[], idx: number[], props: PropRec[]): { group: THREE.Group; boxes: number; cylinders: number } {
+export function makeDetail(list: Building[], lk: Look[], idx: number[], props: PropRec[], ground?: GroundQuery): { group: THREE.Group; boxes: number; cylinders: number } {
   const box: number[] = [];
   const cyl: number[] = [];
   for (const i of idx) {
@@ -490,7 +498,7 @@ export function makeDetail(list: Building[], lk: Look[], idx: number[], props: P
     box.push(...d.box);
     cyl.push(...d.cyl);
   }
-  box.push(...siteOf(props));
+  box.push(...siteOf(props, ground));
   const group = new THREE.Group();
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const a of [box, cyl]) for (let i = 0; i < a.length; i += 12) (minX = Math.min(minX, a[i])), (maxX = Math.max(maxX, a[i])), (minZ = Math.min(minZ, a[i + 2])), (maxZ = Math.max(maxZ, a[i + 2]));

@@ -26,6 +26,8 @@ export function bakeMarksFile(keepArrows = false): string {
   const seoul = decodeMarks(read('./raw/seoul-lines-ground.json') as MarksJson).lines;
   // 선만 고칠 때는 지금 화살표 자리를 넘겨 새로 긋는 선이 화살표를 지나지 않게 한다
   const now = keepArrows ? (read('../public/data/marks.json') as MarksJson) : null;
+  // 그리기용 횡단보도 면(x, 재작업 W57)은 찻길 면에서 굽는 것이라 선을 다시 그어도 그대로 둔다
+  const x = (read('../public/data/marks.json') as MarksJson).x;
   const lm = laneMarks({ board, g, inter, seoul, marks, ground, ground25, ...(now ? { arrows: decodeMarks(now).arrows } : {}) });
   // 화살표를 새 차선 칸 가운데로(차로마다 갈 수 있는 쪽이 바뀌지 않는 것만)
   if (now) {
@@ -42,11 +44,11 @@ export function bakeMarksFile(keepArrows = false): string {
     }
     const turns = (arr: MarksJson) => buildCarGraph(board.roads, lanes, decodeMarks(arr).arrows).map((e) => Array.from(e.turns).join(',')).join(';');
     const out = turns({ ...lm.json, a, aw }) === turns(now) ? { ...lm.json, a, aw } : ra.json;
-    writeFileSync(new URL('../public/data/marks.json', import.meta.url), JSON.stringify(out));
+    writeFileSync(new URL('../public/data/marks.json', import.meta.url), JSON.stringify({ ...out, ...(x ? { x } : {}) }));
     return `${lm.log}; 화살표는 지금 자리에서 새 선 칸이 달라진 ${out === ra.json ? ra.moved : changed}개만 다시 맞춤(차로 회전 그대로)`;
   }
   const ra = refitArrows(lm.json, (arrows) => buildCarGraph(board.roads, lanes, arrows));
-  writeFileSync(new URL('../public/data/marks.json', import.meta.url), JSON.stringify(ra.json));
+  writeFileSync(new URL('../public/data/marks.json', import.meta.url), JSON.stringify({ ...ra.json, ...(x ? { x } : {}) }));
   return `${lm.log}; 화살표 새 칸 가운데로 ${ra.moved}개(차로 회전이 바뀌어 되돌린 것 ${ra.reverted})`;
 }
 

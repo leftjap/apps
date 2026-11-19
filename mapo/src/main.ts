@@ -3,6 +3,7 @@ import { makeAmbience } from './audio.ts';
 import { loadBoard } from './data/board.ts';
 import { decodeCurbs, decodeSurface, tileRings, type CurbsJson, type SurfaceJson } from './data/surface.ts';
 import { decodeMarks, stopSegments, type MarksJson } from './data/marks.ts';
+import { groundQuery } from './data/offroad.ts';
 import { BOARD_R, toXZ } from './geo.ts';
 import { makeBoats, makePicnic } from './render/boats.ts';
 import { makeBuildings } from './render/buildings.ts';
@@ -21,7 +22,7 @@ import { makeMarks } from './render/marks.ts';
 import { makeCurbs } from './render/curbs.ts';
 import { makeSignalMarks } from './render/signals.ts';
 import { makeFlow } from './render/flow.ts';
-import { makeBusIslands, makeBusStops } from './render/busstops.ts';
+import { makeBusIslands, makeBusStops, placedShelters } from './render/busstops.ts';
 import { NEAR_VIEW, sizeAt } from './render/size.ts';
 import { makeView } from './render/scene.ts';
 import { makeSchools } from './render/schools.ts';
@@ -61,6 +62,10 @@ const stage = document.querySelector<HTMLElement>('#stage')!;
 const small = matchMedia('(max-width: 760px)').matches;
 const MAX_PEOPLE = small ? 2000 : 8000;
 const MAX_CARS = small ? 1500 : 5000;
+// 차·사람 끄기(재작업 W57): ?cars=0 이면 차(버스 포함)를, ?people=0 이면 사람을 판에 채우지도 움직이지도 않는다(차 그래프·신호·정류장 자리는 그대로 만든다).
+// 빈 도로 지도(찻길·노면 표시·시설물)를 눈으로 볼 때 쓴다. 그리지만 않으면 시뮬레이션이 계산을 그대로 쓰고 화면이 매번 달라져, 아예 돌리지 않는다
+const simCars = query.get('cars') !== '0';
+const simPeople = query.get('people') !== '0';
 
 // 같은 탭에서 주소를 바꿔 다시 열면 앞 페이지가 뒤로 가기 캐시(bfcache)에 통째로 남아 열 때마다 힙이 약 300MB 씩 늘었다(W19, 설계 문서 48절).
 // 새로 연 마포 페이지가 알림을 보내면 그 알림을 받은 캐시 속 마포 페이지는 브라우저가 버린다(Chrome 의 bfcache 'broadcastchannel-message')
@@ -138,8 +143,10 @@ view.camera.updateMatrixWorld();
 cars.setFocus(focusAt.x, focusAt.z, focusAt.r, onScreen);
 // 보는 곳 둘레 밖이고 화면에도 없는 차는 몇 걸음에 한 번 움직인다(재작업 W29, 차 계산 시간)
 cars.setDetail(onScreen);
-cars.fill(cars.target(start));
-cars.fillBuses(start);
+if (simCars) {
+  cars.fill(cars.target(start));
+  cars.fillBuses(start);
+}
 // 사람은 역 출구와 버스 정류장에서만 나타나고 사라진다
 const stops = busStopPortals(cars.routes, carGraph);
 const medStop = new Set(stops.portals.filter((p) => p.median).map((p) => p.key));
@@ -171,7 +178,7 @@ cars.setPeople(walkers.w);
 const peopleR = () => Math.min(2200, Math.max(150, view.viewDist() * 1.2));
 walkers.setFocus(focusAt.x, focusAt.z, peopleR());
 // 처음부터 길에 사람이 있도록 5분 미리 돌린다: 문·출구에서 나와 걸어간 사람들이다(화면 한가운데에 놓지 않는다)
-walkers.warm(300, start);
+if (simPeople) walkers.warm(300, start);
 // 화면 밖이거나 작게(단순한 모형으로) 보이는 사람은 0.1초에 한 번만 움직인다(W19, 설계 문서 48절). 판단은 지난 프레임 카메라로 그리기와 같은 기준(walkerLod)
 const camPV = new THREE.Matrix4();
 walkers.setDetail((x, z) => walkerLod(camPV.elements, env.uProjK.value, x, z) === 1);
@@ -182,6 +189,8 @@ const reactor = makeCatReactor(cats);
 // 찻길 면 하나(길 정본에서 구운 면, tools/road/surface.ts, 재작업 W51): 차로 띠·교차로 경로·모퉁이·가운데 틈을 한 외곽선으로
 const roads = makeRoads(board.roads, surface, LM_COLORS);
 const groundTiles = tileRings(surface.ground);
+// 그린 찻길 면 위 자리 묻기(시설물을 찻길 면 밖으로 옮길 때, src/data/offroad.ts)
+const ground = groundQuery(groundTiles);
 // 노면 표시: 서울시 차선 선·안전지대·노면 화살표 그대로(src/render/marks.ts)
 const roadMarks = makeMarks(marks);
 // 연석(화강석 띠)과 횡단보도 끝 점자블록(src/render/curbs.ts)
@@ -191,14 +200,15 @@ const curbLines = groundTiles.flatMap((t) => t.edges.map((e) => Float32Array.fro
 const curbMesh = makeCurbs({ lines: curbLines, tactile: curbs.tactile }, (x, z) => Math.hypot(x, z) > BOARD_R - 3 || inTrench(x, z));
 const landmarks = makeLandmarks(board, roads.glow);
 const rails = makeRails(board.lines);
-const stations = makeStations(board);
+const stations = makeStations(board, ground);
 const schools = makeSchools(board);
 const rings = makeRings(board.exits);
 const carMeshes = makeCarMeshes(MAX_CARS);
 const walkerMesh = makeWalkerMesh(MAX_PEOPLE);
 const catMeshes = makeCatMeshes(cats, feeders(cats));
 // 신호등 기둥은 그린 정지선(차가 서는 자리에서 길 정본으로 굽는다, 재작업 W49) 오른쪽 끝에 세운다. 차가 서는 자리는 위 inter 가 board.stopLines 로 정한다
-const signalMarks = makeSignalMarks(carGraph, inter.S, board.crosswalks, board.crosswalkMarks, stopSegments(marks.lines));
+// 신호 기둥이 찻길 면 위(정지선이 차로 띠 안에서 끝나는 곳)면 찻길 면 밖 가장 가까운 보도·섬·분리대로 옮긴다. 횡단보도는 찻길 면 경계까지 늘인 면(marks.json x)으로 그린다(재작업 W57)
+const signalMarks = makeSignalMarks(carGraph, inter.S, board.crosswalks, board.crosswalkMarks, stopSegments(marks.lines), marks.crossings, ground);
 const flow = makeFlow(carGraph, inter.X, surface.cut);
 flow.update(provider, start);
 // 로드뷰 기록 구역의 나무: 판 나무 뒤에 붙이고, 수종은 기록 값으로 정한다
@@ -212,7 +222,7 @@ fetch(`${BASE}data/trees.json`).then((r) => r.json() as Promise<{ k: string }>).
 const svMatch = matchBuildings(board.buildings, streetview);
 const buildings = makeBuildings(board.buildings, svMatch.byIndex);
 view.setSolids(buildings.list);
-const detail = makeDetail(buildings.list, buildings.looks, [...svMatch.byIndex.keys()], streetview.flatMap((a) => a.props));
+const detail = makeDetail(buildings.list, buildings.looks, [...svMatch.byIndex.keys()], streetview.flatMap((a) => a.props), ground);
 const rain = makeRain(small ? 3500 : 6000);
 // 실시간 돌발정보(사고·공사·통제): 차로를 막거나 구간을 통제하고, 도로 위 점멸등(공사면 라바콘)으로만 보인다
 const incidentMarks = makeIncidents();
@@ -264,8 +274,8 @@ view.scene.add(
   curbMesh,
   flow.mesh,
   signalMarks.group,
-  // 길가 정류장은 보도 위 쉼터, 중앙 정류장은 길 가운데 승강장
-  makeBusStops(walkers.docks.flatMap((d, k) => (d.kind === 'stop' && !medStop.has(d.key) ? [walkers.dockPoint(k)] : []))),
+  // 길가 정류장은 보도 위 쉼터(바닥이 찻길 면 위면 찻길 면 밖으로, 재작업 W57), 중앙 정류장은 길 가운데 승강장
+  makeBusStops(placedShelters(walkers.docks.flatMap((d, k) => (d.kind === 'stop' && !medStop.has(d.key) ? [walkers.dockPoint(k)] : [])), ground)),
   makeBusIslands(stops.portals.filter((p) => p.median)),
   stations.group,
   rails.group,
@@ -383,6 +393,13 @@ function setLayer(l: Layer, on: boolean) {
   flow.mesh.visible = layers.flow;
 }
 setWeather(({ rain: 'rain', fog: 'fog', clear: 'clear' } as Record<string, Weather>)[query.get('weather') ?? ''] ?? 'live');
+// ?cars=0·?people=0 이면 그 층 표시도 끈다(설정의 층 상자도 끈 상태로)
+for (const [l, on] of [['cars', simCars], ['people', simPeople]] as const) {
+  if (on) continue;
+  setLayer(l, false);
+  const box = document.querySelector<HTMLInputElement>(`[data-layer="${l}"]`);
+  if (box) box.checked = false;
+}
 hud.setSeason('live');
 
 function select(t: Target | null) {
@@ -802,7 +819,7 @@ function frame(t: number) {
   subway.step(dt);
   const arrived = liveRail ? subway.takeArrivals() : (subway.takeArrivals(), arrivals(board.lines, prevTod, now.tod));
   for (const a of arrived.slice(0, 12)) {
-    walkers.burst(a.name, Math.max(1, Math.min(14, Math.round(provider.alighting(now, a.name) / 150))));
+    if (simPeople) walkers.burst(a.name, Math.max(1, Math.min(14, Math.round(provider.alighting(now, a.name) / 150))));
     // 사람이 나오는 그 순간 그 역 출구 지붕이 열차의 노선 색으로 잠깐 밝아진다
     if (layers.subway) stations.flash(a.name, lineOf.get(a.line)?.color ?? '#ffffff');
     const st = board.stations.find((s) => s.name === a.name);
@@ -821,7 +838,7 @@ function frame(t: number) {
     }
   }
   const p1 = perf ? performance.now() : 0;
-  cars.step(dt, now);
+  if (simCars) cars.step(dt, now);
   const p2 = perf ? performance.now() : 0;
   // 버스가 정류장에 서면 기다리던 사람이 타고 몇 명이 내린다
   for (const [r, k, i] of cars.dwells) {
@@ -833,7 +850,7 @@ function frame(t: number) {
   // 눈이 와도 우산을 쓰고 밖에 나온 사람이 준다(비의 0.7배로 친다)
   walkers.setRain(Math.max(weather.rain, weather.snow * 0.7));
   camPV.multiplyMatrices(view.camera.projectionMatrix, view.camera.matrixWorldInverse);
-  walkers.step(dt, now);
+  if (simPeople) walkers.step(dt, now);
   const p3 = perf ? performance.now() : 0;
   // 고양이: 일정대로의 자리에 사람에 대한 반응을 덧씌운다(사람 층을 끄면 반응하지 않는다).
   // 고양이와 사람은 멀리서 볼수록 키워 그리므로, 발치에 앉는 거리도 그 배율만큼 띄운다(셰이더와 같은 크기 기준, render/size.ts)

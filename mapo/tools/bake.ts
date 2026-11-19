@@ -15,7 +15,7 @@ import { ringArea as loopArea } from './lib/contour.ts';
 import { boardWalkNet } from './lib/walknet.ts';
 import { bakeWalk } from './lib/walkfix.ts';
 import { doorWanted, underpasses, ZONES } from '../src/sim/people/zones.ts';
-import { carriageSections, decodeSurface, isGroundRoad, roadJoints, tunnelDepth, tunnelReach, type SurfaceJson } from '../src/data/surface.ts';
+import { carriageSections, decodeSurface, isGroundRoad, roadJoints, tileRings, tunnelDepth, tunnelReach, type SurfaceJson } from '../src/data/surface.ts';
 import { decodeLanes } from '../src/data/road.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeIntersections } from '../src/sim/intersection/index.ts';
@@ -26,6 +26,9 @@ import { roadCorners } from '../src/data/corners.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { bakeRoad } from './road/index.ts';
 import { bakedGround, laneMarks, refitArrows } from './road/marks.ts';
+import { groundQuery } from '../src/data/offroad.ts';
+import { centerArrows } from './road/arrows.ts';
+import { crossingFaces } from './road/crossings.ts';
 import { bakeSurface, clipMarksToGround } from './road/surface.ts';
 import { roadLevels } from './lib/levels.ts';
 import { carSurface, groundBits as treeGround, placeTreesOffGround, pushTreesOffRoad } from './lib/treeplace.ts';
@@ -2264,8 +2267,14 @@ writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), sur
     writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);
     writeFileSync(new URL('../public/data/curbs.json', import.meta.url), JSON.stringify({ v: 2, c: [], t: sfx.tactile }));
     const cm = clipMarksToGround({ l: mj.l, ld: mj.ld }, sfx.g);
-    Object.assign(mj, { l: cm.l, ld: cm.ld });
-    console.log(`${sfx.log}; 새 찻길 면 밖이라 자른 노면 표시 ${cm.cut.toFixed(0)}m`);
+    // 횡단보도 줄무늬는 새 찻길 면 경계까지(tools/road/crossings.ts, 재작업 W57. node tools/crossings.ts 와 같은 함수, 그리기 전용)
+    const cx = crossingFaces(bd, sfx.g);
+    Object.assign(mj, { l: cm.l, ld: cm.ld, x: cx.x });
+    // 칠한 선 칸이 없는 화살표는 정본 차로 가운데로(tools/road/arrows.ts, 재작업 W57. node tools/arrows.ts 와 같은 함수, 차로 회전이 바뀌지 않을 때만)
+    const gq = groundQuery(tileRings(sfx.g));
+    const ca = centerArrows(mj, (arrows) => buildCarGraph(bd.roads, decodeLanes(JSON.parse(baked.json).lanes), arrows), (x, z) => gq.deep(x, z, 0.5));
+    Object.assign(mj, { a: ca.json.a, aw: ca.json.aw });
+    console.log(`${sfx.log}; 새 찻길 면 밖이라 자른 노면 표시 ${cm.cut.toFixed(0)}m; ${cx.log}; 화살표 정본 차로 가운데로 ${ca.moved}개`);
     // 길 정본 찻길 면 안 나무를 보도로 옮기고 녹지에 뿌린 나무(trees 앞 streetTree0)는 지운다(tools/lib/treeplace.ts, 재작업 W53. node tools/treeplace.ts 와 같은 함수)
     const tp = placeTreesOffGround(trees, Array.from({ length: trees.length / 2 }, (_, i) => (i * 2 < streetTree0 ? 6 : 0)), treeGround(sfx.g, bd), bd.roads);
     writeFileSync(new URL('../public/data/board.json', import.meta.url), JSON.stringify(out));

@@ -6,9 +6,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { decodeBoard, type BoardJson } from '../src/data/board.ts';
 import { decodeMarks, type MarksJson } from '../src/data/marks.ts';
 import { decodeLanes } from '../src/data/road.ts';
-import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
+import { decodeSurface, tileRings, type SurfaceJson } from '../src/data/surface.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeIntersections } from '../src/sim/intersection/index.ts';
+import { groundQuery } from '../src/data/offroad.ts';
+import { centerArrows } from './road/arrows.ts';
+import { crossingFaces } from './road/crossings.ts';
 import { bakeSurface, clipMarksToGround } from './road/surface.ts';
 
 export function bakeSurfaceFile(): string {
@@ -28,8 +31,13 @@ export function bakeSurfaceFile(): string {
   // 노면 표시(땅 위 선)를 새 찻길 면 안으로 자른다. 화살표·안전지대·고가 선은 그대로(차 그래프·시험이 읽는다)
   const mj = read('../public/data/marks.json') as MarksJson;
   const cm = clipMarksToGround({ l: mj.l, ld: mj.ld }, r.g);
-  writeFileSync(new URL('../public/data/marks.json', import.meta.url), JSON.stringify({ ...mj, l: cm.l, ld: cm.ld }));
-  return `${r.log}; 새 찻길 면 밖이라 자른 노면 표시 ${cm.cut.toFixed(0)}m`;
+  // 횡단보도 줄무늬는 새 찻길 면 경계까지(재작업 W57, 그리기 전용)
+  const cx = crossingFaces(board, r.g);
+  // 칠한 선 칸이 없는 화살표는 정본 차로 가운데로(재작업 W57, 차로 회전이 바뀌지 않을 때만)
+  const q = groundQuery(tileRings(r.g));
+  const ca = centerArrows({ ...mj, l: cm.l, ld: cm.ld, x: cx.x }, (arrows) => buildCarGraph(board.roads, lanes, arrows), (x, z) => q.deep(x, z, 0.5));
+  writeFileSync(new URL('../public/data/marks.json', import.meta.url), JSON.stringify(ca.json));
+  return `${r.log}; 새 찻길 면 밖이라 자른 노면 표시 ${cm.cut.toFixed(0)}m; ${cx.log}; 화살표 정본 차로 가운데로 ${ca.moved}개`;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

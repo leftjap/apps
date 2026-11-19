@@ -6,6 +6,7 @@ import { material } from './env.ts';
 import { sizeGlsl } from './size.ts';
 import { ISLAND_BACK, ISLAND_L, ISLAND_W } from '../sim/graph.ts';
 import { instanced, merge, part } from './util.ts';
+import { placeOff, type GroundQuery } from '../data/offroad.ts';
 
 /** 부품: 0 지붕·기둥, 1 뒷벽 유리, 2 표지판. 앞(+x)은 버스가 가는 쪽, +z 는 찻길에서 먼 쪽 */
 function shelter(): THREE.BufferGeometry {
@@ -17,6 +18,23 @@ function shelter(): THREE.BufferGeometry {
     part(new THREE.CylinderGeometry(0.06, 0.06, 3.1, 5).translate(2.3, 1.55, 0.1), 0),
     part(new THREE.BoxGeometry(0.08, 0.7, 0.9).translate(2.3, 2.9, 0.1), 2),
   ]);
+}
+
+/** 쉼터 바닥(지붕 3.4×1.5m 를 +z 쪽으로, 표지 기둥 (2.3, 0.1))을 0.5m 간격으로 찍은 점 [x, z, ...] */
+export function shelterFootprint(s: { x: number; z: number; yaw: number }): number[] {
+  const [cs, sn] = [Math.cos(s.yaw), Math.sin(s.yaw)];
+  const out: number[] = [];
+  for (let a = -1.7; a <= 1.71; a += 0.425) for (let b = 0; b <= 1.51; b += 0.5) out.push(s.x + a * cs - b * sn, s.z + a * sn + b * cs);
+  out.push(s.x + 2.3 * cs - 0.1 * sn, s.z + 2.3 * sn + 0.1 * cs);
+  return out;
+}
+
+/** ground 가 있으면 바닥이 그린 찻길 면 안(가장자리에서 0.3m 넘게)인 쉼터를 찻길 면 밖 가장 가까운 자리로 옮긴다(재작업 W57. 사람이 줄 서는 정류장 자리는 그대로) */
+export function placedShelters(stops: { x: number; z: number; yaw: number }[], ground: GroundQuery) {
+  return stops.map((s) => {
+    const r = placeOff(ground, s.x, s.z, shelterFootprint(s), 0.1, 6);
+    return { x: r.x, z: r.z, yaw: s.yaw };
+  });
 }
 
 export function makeBusStops(stops: { x: number; z: number; yaw: number }[]) {
