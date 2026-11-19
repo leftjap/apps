@@ -18,7 +18,7 @@ import type { Crosswalk } from '../data/board.ts';
 import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, leftEdge, MED, medAt, type Edge } from './graph.ts';
 import { GREEN, LEFT, makeIntersections, RED, RIGHT, STEP, STRAIGHT, UTURN, YELLOW, type Inter, type LanePath } from './intersection/index.ts';
 import type { DataProvider } from './provider.ts';
-import { hash01, mix3, pick, rng } from './rng.ts';
+import { pick, rng } from './rng.ts';
 
 export interface Cars {
   n: number;
@@ -92,6 +92,7 @@ export function makeCars(
   /** 횡단보도와, 횡단보도마다 지금 사람이 건너고 있는 자리(축을 2m 칸으로 나눈 비트, 보행자가 쓴다) */
   xw?: { list: Crosswalk[]; busy: Uint32Array },
 ) {
+  const rand = rng(seed);
   const I = inter ?? makeIntersections(edges, xw ? { crosswalks: xw.list, stopLines: new Float32Array() } : undefined);
   const X = I.X;
   const S = I.S;
@@ -110,32 +111,7 @@ export function makeCars(
     uid: new Int32Array(max),
     room: new Float32Array(max).fill(99),
   };
-  // 재작업 W56(설계 문서 63절): 차 난수를 차·자리 열쇠로. 공유 난수 하나를 차례로 쓰면 한 곳 차가 한 번 더 고르기만 해도 판 전체 차가 다른 표본이 됐다
-  // (W46: 보는 곳 가운데 차 한 대를 세우면 10초 뒤 800m 밖 차 57대가 달라짐). 달리는 동안 고르는 것(길·차로 자리·빠르기·차종·기다리다 다시 고르기·정류장 머물기)은
-  // 차마다 따로(고유 번호·그 차 차례), 놓기·빼기·배차·처음 채우기는 단계·구간·노선으로 정한 난수로 고른다.
-  // 고유 번호는 놓인 차례가 아니라 놓인 구간과 그 구간에 놓인 수를 31비트 안에서 되돌릴 수 있게 섞은 값이라 겹치지 않는다
-  const seedC = Math.imul(seed | 0, 0x9e3779b1);
-  const crc = new Uint32Array(max);
-  const putsAt = new Uint32Array(edges.length);
-  const EB = Math.max(1, Math.ceil(Math.log2(edges.length + 1)));
-  const CM = (1 << (31 - EB)) - 1;
-  const uidOf = (eid: number, k: number) => {
-    let x = ((eid << (31 - EB)) | (k & CM)) >>> 0;
-    x = (x + seedC) & 0x7fffffff;
-    x = Math.imul(x, 0x2c1b3c6d) & 0x7fffffff;
-    x ^= x >>> 15;
-    x = Math.imul(x, 0x297a2d39) & 0x7fffffff;
-    x ^= x >>> 13;
-    return x || 0x7fffffff;
-  };
-  const crand = (i: number) => hash01(mix3(seedC, cars.uid[i], crc[i]++));
-  /** 이번 단계·열쇠 a·b 로 정한 난수 */
-  const trand = (a: number, b: number) => hash01(mix3(seedC ^ Math.imul(tick + 1, 0x2c1b3c6d), a, b));
-  /** 빠진 차는 표시만 하고 단계 끝에 차례를 지키며 한꺼번에 뺀다(끝 차로 빈자리를 채우면 먼 곳 차의 계산 차례가 바뀌었다) */
-  const dead = new Uint8Array(max);
-  let nDead = 0;
-  let testUid = 1;
-  const testRand = rng(seed);
+  let nextUid = 1;
   let nBus = 0;
   /** 버스 몫으로 남겨 두는 자리. 일반 차는 max - reserve 대까지만 둔다 */
   const reserve = routes.length ? Math.min(300, Math.floor(max * 0.2)) : 0;
@@ -190,9 +166,7 @@ export function makeCars(
   while (queue.length) for (const k of before[queue.pop()!]) if (!canLeave[k]) (canLeave[k] = 1), queue.push(k);
   const placeable = canLeave.some((c) => c) ? canLeave : new Uint8Array(edges.length).fill(1);
   const entries = edges.filter((e) => e.entry);
-  const entryIds = entries.filter((e) => e.vol * Math.max(0, 4 - e.cls) > 0).map((e) => e.id);
-  const entryW = new Float64Array(edges.length);
-  for (const e of entries) entryW[e.id] = e.vol * Math.max(0, 4 - e.cls);
+  const entryW = entries.map((e) => e.vol * Math.max(0, 4 - e.cls));
   const speed = new Float32Array(edges.length).fill(10);
   const midX = new Float32Array(edges.length);
   const midZ = new Float32Array(edges.length);
@@ -282,7 +256,7 @@ export function makeCars(
       w.push((first >= 0 ? e.nextW[first] : 0.1) * avoid(out) * (canLeave[out] ? 1 : 1e-3) * (closed[out] ? 1e-4 : 1));
     });
     if (!cand.length) return undefined;
-    return cand[pick(w, crand(i))];
+    return cand[pick(w, rand())];
   }
   /** 차 i 가 진입로 a 에 올라설 때 달릴 차로(지금 구간 e 에서 차로 위 자리로 옮겨) */
   const laneInto = (i: number, e: Edge, a: Edge) => laneAt(i, a, lanePos(e, a, pref[i] * e.lanes));
@@ -387,16 +361,14 @@ export function makeCars(
     edge[i] = e.id;
     s[i] = at;
     lane[i] = ln;
-    cars.uid[i] = uidOf(e.id, putsAt[e.id]++);
-    crc[i] = 0;
-    dead[i] = 0;
-    pref[i] = (ln === MED ? 0.5 : ln + Math.min(0.999, crand(i))) / e.lanes;
-    vf[i] = 0.86 + crand(i) * 0.26;
+    pref[i] = (ln === MED ? 0.5 : ln + Math.min(0.999, rand())) / e.lanes;
+    vf[i] = 0.86 + rand() * 0.26;
     v[i] = speed[e.id] * vf[i] * 0.8;
     if (slowAt[e.id] >= 0 && Math.abs(at - slowAt[e.id]) < 25) v[i] = Math.min(v[i], slowV[e.id]);
     cars.route[i] = route;
-    cars.kind[i] = route >= 0 ? 1 : crand(i) < 0.09 ? 2 : 0;
-    cars.tint[i] = route >= 0 ? routes[route].kind : crand(i);
+    cars.uid[i] = nextUid++;
+    cars.kind[i] = route >= 0 ? 1 : rand() < 0.09 ? 2 : 0;
+    cars.tint[i] = route >= 0 ? routes[route].kind : rand();
     size[i] = route >= 0 ? BUS_LEN[routes[route].kind] ?? 11.5 : BODY_LEN[cars.kind[i] === 2 ? 0 : bodyType(cars.tint[i])];
     wid[i] = route >= 0 ? BUS_HW[routes[route].kind] ?? 1.245 : BODY_HW[cars.kind[i] === 2 ? 0 : bodyType(cars.tint[i])];
     cars.brake[i] = 0;
@@ -441,57 +413,11 @@ export function makeCars(
     return true;
   }
   function remove(i: number) {
-    if (dead[i]) return;
     if (cars.route[i] >= 0) nBus--;
-    dead[i] = 1;
-    nDead++;
-  }
-  const remap = new Int32Array(max);
-  const order = new Int32Array(max);
-  /** 계산 차례가 고유 번호 차례로 맞춰진 앞쪽 차 수(그 뒤는 이번 단계에 놓인 차) */
-  let sortedN = 0;
-  type Num = { [k: number]: number };
-  const scratch = new Map<unknown, Num>();
-  /** 빠진 차를 빼고 계산 차례를 고유 번호 차례로 맞춘다. 고유 번호가 해시라 섞인 차례이고, 한 곳 차가 빠지거나 놓여도 다른 차끼리 차례는 그대로다
-   *  (끝 차로 빈자리를 채우면 먼 곳 차의 차례가 바뀌었고, 놓인 차례대로 두면 오래된 차가 늘 먼저 움직여 평일 흐름이 느려졌다, 재작업 W56 측정). 차 번호를 담은 값도 새 번호로 */
-  function compact() {
-    const n = cars.n;
-    // 시험이 cars.n 을 바로 줄여 차를 비우기도 한다
-    if (sortedN > n) sortedN = 0;
-    if (!nDead && sortedN === n) return;
-    let w = 0;
-    for (let r = 0; r < sortedN; r++) if (!dead[r]) order[w++] = r;
-    const fresh0 = w;
-    for (let r = sortedN; r < n; r++) if (!dead[r]) order[w++] = r;
-    // 새로 놓인 차를 번호 차례로 끼워 넣는다
-    const add = Array.from(order.subarray(fresh0, w)).sort((x, y) => cars.uid[x] - cars.uid[y]);
-    if (add.length) {
-      const old = Array.from(order.subarray(0, fresh0));
-      let a = 0;
-      let k = 0;
-      for (let q = 0; q < w; q++) order[q] = k >= add.length || (a < old.length && cars.uid[old[a]] < cars.uid[add[k]]) ? old[a++] : add[k++];
-    }
-    remap.fill(-1, 0, n);
-    for (let q = 0; q < w; q++) remap[order[q]] = q;
-    for (const arr of [crc, coarse, owe, rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, holdYaw, zclaim, zLeft, jp, jk, pp, pd, go, past, commit, gdist, offMed, ahead, aheadWhy]) {
-      let t = scratch.get(arr);
-      if (!t) scratch.set(arr, (t = new (arr.constructor as new (n: number) => Num)(max)));
-      for (let q = 0; q < w; q++) t[q] = arr[order[q]];
-      for (let q = 0; q < w; q++) arr[q] = t[q];
-    }
-    for (let i = 0; i < w; i++) {
-      if (blockBy[i] >= 0) blockBy[i] = blockBy[i] < n ? remap[blockBy[i]] : -1;
-      if (ahead[i] >= 0) ahead[i] = ahead[i] < n ? remap[ahead[i]] : -1;
-    }
-    for (let k = dwells.length - 1; k >= 0; k--) {
-      const j = remap[dwells[k][2]];
-      if (j < 0) dwells.splice(k, 1);
-      else dwells[k][2] = j;
-    }
-    dead.fill(0, 0, n);
-    nDead = 0;
-    cars.n = w;
-    sortedN = w;
+    const j = --cars.n;
+    if (i === j) return;
+    for (const a of [coarse, owe, rpos, stopK, dwell, cars.route, cars.uid, cars.room, cars.x, cars.y, cars.z, cars.yaw, edge, nextE, s, v, lane, pref, vf, size, wid, cars.kind, cars.tint, cars.brake, cars.fade, stopT, waitT, prevE, prevLane, side, blockBy, blockUid, holdYaw, zclaim, zLeft, jp, jk, pp, pd, go, past, commit, gdist, offMed])
+      a[i] = a[j];
   }
 
   // ── 자리 ──
@@ -785,7 +711,7 @@ export function makeCars(
   const fresh: number[] = [];
   function touches(i: number): boolean {
     const near = (j: number) =>
-      j !== i && j < cars.n && !dead[j] && Math.abs(cars.y[j] - cars.y[i]) < 2.5 && hit(cars.x[i], cars.z[i], cars.yaw[i], size[i] / 2 + 0.5, wid[i] + 0.2, cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]);
+      j !== i && j < cars.n && Math.abs(cars.y[j] - cars.y[i]) < 2.5 && hit(cars.x[i], cars.z[i], cars.yaw[i], size[i] / 2 + 0.5, wid[i] + 0.2, cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j]);
     for (let gx = cellAt(cars.x[i] - 14); gx <= cellAt(cars.x[i] + 14); gx++)
       for (let gz = cellAt(cars.z[i] - 14); gz <= cellAt(cars.z[i] + 14); gz++) for (let j = cellHead[gx * GW + gz]; j >= 0; j = cellNext[j]) if (near(j)) return true;
     return fresh.some(near);
@@ -805,11 +731,8 @@ export function makeCars(
   let nOut = 0;
   let ratioIn = 1;
   let ratioOut = 1;
-  // 보는 곳 안·밖에 새 차를 놓을 구간의 무게(모자란 차 수)와 무게가 있는 구간
-  const wIn = new Float64Array(edges.length);
-  const wOut = new Float64Array(edges.length);
-  let posIn: number[] = [];
-  let posOut: number[] = [];
+  const cumIn = new Float64Array(edges.length);
+  const cumOut = new Float64Array(edges.length);
   function allot(now: Now): number {
     const base = density(now);
     const busy = Math.min(1, Math.max(0, (base - 3) / 1.5));
@@ -828,6 +751,8 @@ export function makeCars(
     ratioIn = nIn > 0 ? F / nIn : 1;
     nOut = Math.min(O / ratioIn, B - nIn);
     ratioOut = nOut > 0 ? O / nOut : ratioIn;
+    let ci = 0;
+    let co = 0;
     for (const e of edges) {
       const l = lists[e.id];
       let vm = 0;
@@ -835,11 +760,11 @@ export function makeCars(
       meanV[e.id] = l.length ? vm / l.length : -1;
       const jammed = l.length > 0 && vm / l.length < 0.4 * speed[e.id];
       const w = !placeable[e.id] || jammed || closed[e.id] || inner(e.id) ? 0 : Math.max(0, real[e.id] * (inF[e.id] / ratioIn + (1 - inF[e.id]) / ratioOut) - l.length);
-      wIn[e.id] = w * inF[e.id];
-      wOut[e.id] = w * (1 - inF[e.id]);
+      ci += w * inF[e.id];
+      co += w * (1 - inF[e.id]);
+      cumIn[e.id] = ci;
+      cumOut[e.id] = co;
     }
-    posIn = edges.filter((e) => wIn[e.id] > 0).map((e) => e.id);
-    posOut = edges.filter((e) => wOut[e.id] > 0).map((e) => e.id);
     return Math.round(nIn + nOut);
   }
   function setFocus(x: number, z: number, r: number, visible: (x: number, z: number) => boolean) {
@@ -856,17 +781,18 @@ export function makeCars(
     }
   }
   const nearFocus = (x: number, z: number) => !!focus && Math.hypot(x - focus.x, z - focus.z) < focus.r;
-  /** 무게 w 에 비례해 구간 하나를 고른다: 구간마다 이번 단계·열쇠 tag 로 정한 지수 난수를 무게로 나눈 값이 가장 작은 구간(무게에 비례해 뽑기와 같은 분포).
-   *  누적 무게에 난수 하나를 대 고르면 한 구간 무게만 바뀌어도 판 전체에서 뽑히는 구간이 달라졌다 */
-  function race(ids: ArrayLike<number>, w: ArrayLike<number>, tag: number): number {
-    let best = -1;
-    let bv = Infinity;
-    for (let q = 0; q < ids.length; q++) {
-      const id = ids[q];
-      const x = -Math.log(1 - trand(id, tag)) / w[id];
-      if (x < bv) (bv = x), (best = id);
+  function pickEdge(cum: Float64Array): number {
+    const total = cum[cum.length - 1];
+    if (!(total > 0)) return -1;
+    const x = rand() * total;
+    let lo = 0;
+    let hi = cum.length - 1;
+    while (lo < hi) {
+      const m = (lo + hi) >> 1;
+      if (cum[m] < x) lo = m + 1;
+      else hi = m;
     }
-    return best;
+    return lo;
   }
   /** 새 차를 놓을 때 뒤 차 앞으로 비워 둘 거리(m) */
   const SPAWN_BACK = 40;
@@ -885,16 +811,15 @@ export function makeCars(
     for (let q = 0; q < sp.length; q += 2) if (at + len / 2 + 1 > sp[q] && at - len / 2 - 1 < sp[q + 1]) return true;
     return false;
   };
-  function spawnHidden(inside: boolean, k: number): boolean {
-    const tag = (inside ? 16 : 32) + k;
-    const id = race(inside ? posIn : posOut, inside ? wIn : wOut, tag);
+  function spawnHidden(inside: boolean): boolean {
+    const id = pickEdge(inside ? cumIn : cumOut);
     if (id < 0) return false;
     const e = edges[id];
     const [lo, hi] = spawnRange(e);
     if (hi <= lo) return false;
-    const at = lo + trand(id, tag + 1000) * (hi - lo);
+    const at = lo + rand() * (hi - lo);
     if (onCrosswalk(e, at, 5.5)) return false;
-    const ln = carLane(e, trand(id, tag + 2000) * carLanes(e));
+    const ln = carLane(e, rand() * carLanes(e));
     const seg = pointAt(e.p, e.cum, at, tmp);
     const yaw = headingAt(e.p, seg);
     const off = laneOff(e, ln, at);
@@ -903,13 +828,13 @@ export function makeCars(
     if (nearFocus(x, z) !== inside || seen(x, z)) return false;
     let ah = -1;
     for (const j of lists[id]) {
-      if (lane[j] !== ln || dead[j]) continue;
+      if (lane[j] !== ln) continue;
       if (Math.abs(s[j] - at) < (size[j] + 4.6) / 2 + 2 + 1.3 * v[j]) return false;
       // 뒤 차 앞 SPAWN_BACK 안에는 놓지 않는다: 뒤 차가 횡단보도·교차로에 들어가며 잡아 둔 너머 자리를 새 차가 빼앗지 않게(재작업 W25)
       if (s[j] < at && at - s[j] < SPAWN_BACK) return false;
       if (s[j] > at && (ah < 0 || s[j] < s[ah])) ah = j;
     }
-    if (at < SPAWN_BACK) for (const b of before[id]) for (const j of lists[b]) if (!dead[j] && edges[b].len - s[j] + at < SPAWN_BACK) return false;
+    if (at < SPAWN_BACK) for (const b of before[id]) for (const j of lists[b]) if (edges[b].len - s[j] + at < SPAWN_BACK) return false;
     const i = cars.n;
     put(i, e, at, ln);
     if (ah >= 0 && s[ah] - at < 60) v[i] = Math.min(v[i], v[ah]);
@@ -923,43 +848,27 @@ export function makeCars(
     fresh.push(i);
     return true;
   }
-  /** 보이지 않는 곳에서 뺄 수 있는 차인가(버스·교차로를 지나는 차가 아니다) */
-  const droppable = (i: number) => !dead[i] && cars.route[i] < 0 && !go[i] && pp[i] < 0 && !inner(edge[i]) && !seen(cars.x[i], cars.z[i]);
-  function dropHidden(inside: boolean, k: number): boolean {
-    // 고르는 차는 고유 번호와 이번 단계로 정한 난수가 가장 작은 차(배열 자리로 뽑으면 먼 곳 차가 빠질 때마다 자리 차례가 바뀌어 다른 차가 뽑혔다)
-    let i = -1;
-    let bu = 2;
-    const tag = (inside ? 48 : 64) + k;
-    for (let j = 0; j < cars.n; j++) {
-      if (dead[j]) continue;
-      const u = trand(cars.uid[j], tag);
-      if (u < bu) (bu = u), (i = j);
-    }
-    if (i < 0 || !droppable(i) || nearFocus(cars.x[i], cars.z[i]) !== inside) return false;
+  function dropHidden(inside?: boolean): boolean {
+    const i = Math.floor(rand() * cars.n);
+    if (cars.route[i] >= 0 || go[i] || pp[i] >= 0 || inner(edge[i]) || seen(cars.x[i], cars.z[i])) return false;
+    if (inside === undefined ? stopT[i] < 90 : nearFocus(cars.x[i], cars.z[i]) !== inside) return false;
     remove(i);
     return true;
-  }
-  /** 90초 넘게 선 차를 단계마다 4/n 확률로 뺀다(보이지 않는 곳에서. 전에는 단계마다 아무 차나 네 번 뽑아 선 차면 뺐다) */
-  function dropStill() {
-    const p = 4 / Math.max(1, cars.n - nDead);
-    for (let i = 0; i < cars.n; i++) if (stopT[i] >= 90 && trand(cars.uid[i], 80) < p && droppable(i)) remove(i);
   }
   function fillBuses(now: Now) {
     routes.forEach((R, r) => {
       const h = busHeadway(R, now.tod);
-      const u = (t: number) => hash01(mix3(seedC ^ 0x3c6ef372, r, t));
-      wait[r] = h ? u(0) * h : 60;
+      wait[r] = h ? rand() * h : 60;
       if (!h) return;
       const count = R.len / (h * 6.5);
-      const k = Math.floor(count) + (u(1) < count % 1 ? 1 : 0);
-      for (let j = 0; j < k; j++) if (addBus(r, ((j + u(2 + j) * 0.6) / Math.max(1, count)) * R.len * Math.min(1, count)) && overlapsAny(cars.n - 1)) remove(cars.n - 1);
+      const k = Math.floor(count) + (rand() < count % 1 ? 1 : 0);
+      for (let j = 0; j < k; j++) if (addBus(r, ((j + rand() * 0.6) / Math.max(1, count)) * R.len * Math.min(1, count)) && overlapsAny(cars.n - 1)) remove(cars.n - 1);
     });
-    compact();
   }
   /** 차 i 의 몸통(앞뒤 0.5m 여유)이 다른 어느 차와 겹치는가(자리 격자 없이, 처음 놓을 때) */
   function overlapsAny(i: number): boolean {
     for (let j = 0; j < cars.n; j++)
-      if (j !== i && !dead[j] && Math.abs(cars.x[j] - cars.x[i]) < 20 && Math.abs(cars.z[j] - cars.z[i]) < 20 && Math.abs(cars.y[j] - cars.y[i]) < 2.5 && hit(cars.x[i], cars.z[i], cars.yaw[i], size[i] / 2 + 0.5, wid[i] + 0.2, cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j])) return true;
+      if (j !== i && Math.abs(cars.x[j] - cars.x[i]) < 20 && Math.abs(cars.z[j] - cars.z[i]) < 20 && Math.abs(cars.y[j] - cars.y[i]) < 2.5 && hit(cars.x[i], cars.z[i], cars.yaw[i], size[i] / 2 + 0.5, wid[i] + 0.2, cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j])) return true;
     return false;
   }
   /** n대를 길에 놓는다(처음 화면이 비어 보이지 않게). 구간마다 실제 차 수에 초점 안·밖 비율을 나눈 밀도로, 같은 차로에서는 고른 간격으로 */
@@ -967,76 +876,46 @@ export function makeCars(
     n = Math.min(n, max - reserve - (cars.n - nBus));
     if (n <= 0) return;
     const has = real.some((r) => r > 0);
-    // 구간마다 그 구간 몫을 20m 조각에 나누고, 구간 열쇠로 정한 난수로 자리를 정한다(재작업 W56).
-    // 전에는 판 전체 누적 무게 위에 고른 간격으로 놓아, 한 구간 무게만 바뀌어도 그 뒤 모든 차 자리가 밀렸다
     const piece: number[] = [];
     let total = 0;
-    // 밀도는 구간 몫을 구간 길이로 나눈 값, 대수는 n 대(옛 것과 같은 기댓값). 구간 몫을 놓을 수 있는 범위에 나누면 교차로 앞 짧은 범위에 차가 몰려 첫 줄이 길어졌고,
-    // 대수를 판 전체 몫으로 맞추면 교차로 안·앞 몫만큼 덜 놓여 막힌 곳(새 차를 놓지 않는 곳)이 비어 평일 판이 다른 판이 됐다(재작업 W56 측정)
     for (const e of edges) {
       if (!placeable[e.id] || closed[e.id]) continue;
-      const [lo, hi] = spawnRange(e);
-      if (hi <= lo) continue;
       const perM = has ? real[e.id] / e.len : e.vol;
+      const [lo, hi] = spawnRange(e);
       for (let d = lo; d < hi; d += 20) {
         const L = Math.min(20, hi - d);
         pointAt(e.p, e.cum, d + L / 2, tmp);
-        const m = perM * L * (nearFocus(tmp[0], tmp[2]) ? 1 / ratioIn : 1 / ratioOut);
-        total += m;
-        piece.push(e.id, d, L, m);
+        total += perM * L * (nearFocus(tmp[0], tmp[2]) ? 1 / ratioIn : 1 / ratioOut);
+        piece.push(e.id, d, L, total);
       }
     }
     if (!(total > 0)) return;
-    // 대수 비율(n ÷ 놓을 수 있는 범위 몫 합)은 교차로 상자·게이트 자리, 곧 차로 모양에 달려 있어 한 길 차로만 고쳐도 조금 바뀐다. 0.5% 단위로 끊어
-    // 그 작은 바뀜에 모든 칸 자리가 함께 밀리지 않게 한다(옛 것처럼 상자 안 몫을 판 전체에 고루 얹는다. 칸마다 얹으면 교차로 둘레가 붐벼 일요일 흐름이 4% 느려졌다)
-    const scale = Math.round((n / total) * 200) / 200;
     const near = new Map<number, number[]>();
     const keyOf = (x: number, z: number) => Math.floor(x / 8) * 4096 + Math.floor(z / 8);
     for (let i = 0; i < cars.n; i++) (near.get(keyOf(cars.x[i], cars.z[i])) ?? near.set(keyOf(cars.x[i], cars.z[i]), []).get(keyOf(cars.x[i], cars.z[i]))!).push(i);
-    // 100m 칸마다 고른 간격으로: 칸 안 조각(구간 차례)의 누적 몫 위 (k + 칸 열쇠 난수) 자리마다 한 대. 옛 것처럼 판 전체에 고른 간격이면 한 구간 몫만 바뀌어도
-    // 모든 차 자리가 밀리고, 구간마다 따로 하면 몫이 1 대 아래인 짧은 구간들에서 차가 뭉쳐(이웃 두 구간에 0.5 대씩이면 0·1·2 대) 평일 첫 줄이 길어졌다(재작업 W56 측정)
-    const tiles = new Map<number, number[]>();
-    for (let p = 0; p < piece.length; p += 4) {
+    for (let k = 0, p = 0; k < n; k++) {
+      const x = ((k + rand() * 0.5) / n) * total;
+      while (p + 4 < piece.length && piece[p + 3] < x) p += 4;
       const e = edges[piece[p]];
-      pointAt(e.p, e.cum, piece[p + 1] + piece[p + 2] / 2, tmp);
-      // 실제 차 수가 없는 판(시험의 손수 만든 길)은 한 칸으로 놓아 n 대를 그대로 채운다
-      const key = has ? Math.floor(tmp[0] / 100) * 1009 + Math.floor(tmp[2] / 100) : 0;
-      (tiles.get(key) ?? tiles.set(key, []).get(key)!).push(p);
-    }
-    for (const [key, list] of tiles) {
-      // 자리마다 칸 간격의 절반 안에서 흔든다(옛 것과 같은 흔들기: 붐비는 조각에서 이웃 차와 닿아 빠지는 차가 옛 것만큼 생긴다. 흔들지 않으면 막힌 곳에 차가 더 남아 평일이 느려졌다)
-      const x0 = hash01(mix3(seedC ^ 0x6a09e667, key, 0));
-      let q = 0;
-      let x = x0 + 0.5 * hash01(mix3(seedC ^ 0x6a09e667, key, 1));
-      let c0 = 0;
-      for (const p of list) {
-        const e = edges[piece[p]];
-        const L = piece[p + 2];
-        const w = piece[p + 3] * scale;
-        const c1 = c0 + w;
-        for (; x < c1; q++, x = x0 + q + 0.5 * hash01(mix3(seedC ^ 0x6a09e667, key, q + 1))) {
-          const u = ((x - c0) / w) * L * carLanes(e);
-          const ln = carLane(e, u / L);
-          const i = cars.n;
-          if (i >= max) return;
-          const at = Math.min(e.len - 0.1, piece[p + 1] + u - ln * L);
-          if (onCrosswalk(e, at, 5.5)) continue;
-          put(i, e, at, ln);
-          locate(i);
-          const gx = Math.floor(cars.x[i] / 8);
-          const gz = Math.floor(cars.z[i] / 8);
-          let clash = false;
-          for (let dx = -1; dx <= 1 && !clash; dx++)
-            for (let dz = -1; dz <= 1 && !clash; dz++)
-              for (const j of near.get((gx + dx) * 4096 + gz + dz) ?? [])
-                if (Math.abs(cars.y[j] - cars.y[i]) < 2.5 && hit(cars.x[i], cars.z[i], cars.yaw[i], size[i] / 2 + 0.5, wid[i] + 0.2, cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j])) clash = true;
-          if (clash) continue;
-          (near.get(gx * 4096 + gz) ?? near.set(gx * 4096 + gz, []).get(gx * 4096 + gz)!).push(i);
-          cars.fade[i] = 1;
-          cars.n++;
-        }
-        c0 = c1;
-      }
+      const w = piece[p + 3] - (p ? piece[p - 1] : 0);
+      const u = ((x - (piece[p + 3] - w)) / w) * piece[p + 2] * carLanes(e);
+      const ln = carLane(e, u / piece[p + 2]);
+      const i = cars.n;
+      const at = Math.min(e.len - 0.1, piece[p + 1] + u - ln * piece[p + 2]);
+      if (onCrosswalk(e, at, 5.5)) continue;
+      put(i, e, at, ln);
+      locate(i);
+      const gx = Math.floor(cars.x[i] / 8);
+      const gz = Math.floor(cars.z[i] / 8);
+      let clash = false;
+      for (let dx = -1; dx <= 1 && !clash; dx++)
+        for (let dz = -1; dz <= 1 && !clash; dz++)
+          for (const j of near.get((gx + dx) * 4096 + gz + dz) ?? [])
+            if (Math.abs(cars.y[j] - cars.y[i]) < 2.5 && hit(cars.x[i], cars.z[i], cars.yaw[i], size[i] / 2 + 0.5, wid[i] + 0.2, cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j])) clash = true;
+      if (clash) continue;
+      (near.get(gx * 4096 + gz) ?? near.set(gx * 4096 + gz, []).get(gx * 4096 + gz)!).push(i);
+      cars.fade[i] = 1;
+      cars.n++;
     }
   }
 
@@ -1901,7 +1780,7 @@ export function makeCars(
               }
               // 20초 넘게 못 들어가면(빨간불이 아닌데 막혔다) 지금 차로가 허용하는 다른 길을 다시 고른다
               const P = PS[jp[i]];
-              if (waitT[i] > 20 && cars.route[i] < 0 && jk[i] === 0 && (!S.approach.has(P.a) || S.state(P.a, P.move, now.tod) === GREEN) && crand(i) < dt / 4) {
+              if (waitT[i] > 20 && cars.route[i] < 0 && jk[i] === 0 && (!S.approach.has(P.a) || S.state(P.a, P.move, now.tod) === GREEN) && rand() < dt / 4) {
                 dropPath(i);
                 onEdge(i, e);
                 waitT[i] = 0;
@@ -1954,7 +1833,7 @@ export function makeCars(
       if (r >= 0 && stopK[i] < routes[r].stops.length) {
         const toStop = routes[r].stops[stopK[i]] + stopAdj[r][stopK[i]] - (routes[r].start[rpos[i]] + s[i]);
         if (toStop < 2.5 && v[i] < 0.6) {
-          dwell[i] = 9 + crand(i) * 6;
+          dwell[i] = 9 + rand() * 6;
           v[i] = 0;
           dwells.push([r, stopK[i], i]);
           continue;
@@ -2111,10 +1990,9 @@ export function makeCars(
       }
       if (!gone[i] && !frozen) locate(i);
     }
-    for (let i = 0; i < gone.length; i++) if (gone[i]) remove(i);
+    for (let i = gone.length - 1; i >= 0; i--) if (gone[i]) remove(i);
     cellHead.fill(-1);
     for (let i = 0; i < cars.n; i++) {
-      if (dead[i]) continue;
       const k = cellAt(cars.x[i]) * GW + cellAt(cars.z[i]);
       cellNext[i] = cellHead[k];
       cellHead[k] = i;
@@ -2128,7 +2006,7 @@ export function makeCars(
         const t = tail[e.id * 8 + (e.med && R.usesMed ? MED : e.lanes - 1)];
         if (!h) wait[r] = 60;
         else if ((t < 0 || s[t] > 16) && addBus(r)) {
-          wait[r] = h * (0.85 + trand(r, 128) * 0.3);
+          wait[r] = h * (0.85 + rand() * 0.3);
           // 같은 단계에 같은 출발 구간에 놓인 다른 노선 버스와도 겹치지 않게(새로 놓은 차 목록에 넣는다)
           if (touches(cars.n - 1)) remove(cars.n - 1);
           else fresh.push(cars.n - 1);
@@ -2137,21 +2015,19 @@ export function makeCars(
     if (spawn && focus) {
       let cin = 0;
       let cout = 0;
-      for (let i = 0; i < cars.n; i++) if (cars.route[i] < 0 && !dead[i]) nearFocus(cars.x[i], cars.z[i]) ? cin++ : cout++;
-      for (let k = 0; k < 8 && cin < nIn && cars.n < max; k++) if (spawnHidden(true, k)) cin++;
-      for (let k = 0; k < 8 && cout < nOut && cars.n < max && cin + cout < max - reserve; k++) if (spawnHidden(false, k)) cout++;
-      for (let k = 0; k < 8 && cin > nIn * 1.05 + 2; k++) if (dropHidden(true, k)) cin--;
-      for (let k = 0; k < 8 && cout > nOut * 1.05 + 2; k++) if (dropHidden(false, k)) cout--;
-      dropStill();
+      for (let i = 0; i < cars.n; i++) if (cars.route[i] < 0) nearFocus(cars.x[i], cars.z[i]) ? cin++ : cout++;
+      for (let k = 0; k < 8 && cin < nIn && cars.n < max; k++) if (spawnHidden(true)) cin++;
+      for (let k = 0; k < 8 && cout < nOut && cars.n < max && cin + cout < max - reserve; k++) if (spawnHidden(false)) cout++;
+      for (let k = 0; k < 8 && cin > nIn * 1.05 + 2; k++) if (dropHidden(true)) cin--;
+      for (let k = 0; k < 8 && cout > nOut * 1.05 + 2; k++) if (dropHidden(false)) cout--;
+      for (let k = 0; k < 4; k++) dropHidden();
     }
     if (spawn && entries.length) {
       const want = Math.round(nIn + nOut);
-      for (let k = 0; k < 6 && cars.n - nDead - nBus < want && cars.n < max; k++) {
-        const id = race(entryIds, entryW, 96 + k);
-        if (id < 0) break;
-        const e = edges[id];
+      for (let k = 0; k < 6 && cars.n - nBus < want && cars.n < max; k++) {
+        const e = entries[pick(entryW, rand())];
         if (closed[e.id] || inner(e.id)) continue;
-        const ln = carLane(e, trand(id, 112 + k) * carLanes(e));
+        const ln = carLane(e, rand() * carLanes(e));
         const t = tail[e.id * 8 + ln];
         if (t >= 0 && s[t] < 16) continue;
         put(cars.n, e, 0.5, ln);
@@ -2164,7 +2040,6 @@ export function makeCars(
         fresh.push(cars.n - 1);
       }
     }
-    compact();
   }
   /** 옆으로 옮겨 가는(이음매에서 차로 자리가 어긋나 옆 거리를 줄여 가는) 차 i 가 옆 거리 to 로 가도 되는가: 다가가는 쪽 뒤에 오는 차와
    *  옆 간격이 두 몸 폭 + 0.3m 안이 되면서 앞뒤 간격이 그 차의 따라가기 간격(2m + 1.3초)보다 짧으면 옮기지 않는다(차로 바꾸기처럼 틈을 본다, 재작업 W25).
@@ -2315,15 +2190,7 @@ export function makeCars(
     /** 구간 edgeId 의 at(m) 지점, lane 차로에 승용차 한 대를 놓는다(시험용) */
     put(edgeId: number, at: number, ln: number) {
       if (cars.n >= max) return;
-      const e = edges[edgeId];
-      put(cars.n, e, at, ln);
-      // 시험용으로 손수 놓는 차는 옛것처럼 놓은 차례대로 번호(1, 2, 3…)를 받고 차로 자리·빠르기·차종을 씨앗 난수에서 차례로 받는다(장면 시험이 옛 차와 같은 차를 쓰게)
-      cars.uid[cars.n] = testUid++;
-      crc[cars.n] = 0;
-      if (ln !== MED) pref[cars.n] = (ln + Math.min(0.999, testRand())) / e.lanes;
-      vf[cars.n] = 0.86 + testRand() * 0.26;
-      testRand();
-      cars.tint[cars.n] = testRand();
+      put(cars.n, edges[edgeId], at, ln);
       cars.kind[cars.n] = 0;
       size[cars.n] = BODY_LEN[bodyType(cars.tint[cars.n])];
       wid[cars.n] = BODY_HW[bodyType(cars.tint[cars.n])];

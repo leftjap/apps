@@ -4,14 +4,13 @@ import { makeCars } from '../src/sim/cars.ts';
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { at, fixedProvider, road } from './helpers.ts';
 
-/** 차 i(번호 또는 번호를 주는 함수) 의 속도를 매 단계 보며 secs 초 돌린다. 가장 센 감속(m/s², 양수)을 돌려준다 */
-function drive(sim: ReturnType<typeof makeCars>, secs: number, i: number | (() => number) = 1) {
-  const ix = () => (typeof i === 'number' ? i : i());
+/** 차 i 의 속도를 매 단계 보며 secs 초 돌린다. 가장 센 감속(m/s², 양수)을 돌려준다 */
+function drive(sim: ReturnType<typeof makeCars>, secs: number, i = 1) {
   let hardest = 0;
-  let prev = sim.speedOf(ix());
+  let prev = sim.speedOf(i);
   for (let k = 0; k < secs * 60; k++) {
     sim.step(1 / 60, at(14), false);
-    const v = sim.speedOf(ix());
+    const v = sim.speedOf(i);
     hardest = Math.max(hardest, (prev - v) * 60);
     prev = v;
   }
@@ -27,11 +26,8 @@ describe('부드러운 감속', () => {
     for (let k = 0; k < 20 * 60 && !sim.dwells.length; k++) sim.step(1 / 60, at(14), false);
     expect(sim.dwells.length).toBe(1); // 버스가 정류장에 섰다(9초 넘게 선다)
     sim.put(0, sim.cars.x[0] - 5.75 - 30 - 2.3, 0); // 버스 꽁무니 30m 뒤, 제 속도 둘레로 달리는 승용차
-    // 계산 차례는 고유 번호 차례라(재작업 W56) 단계가 지나면 버스·승용차 자리 번호가 바뀔 수 있다
-    const bus = () => (sim.cars.route[0] >= 0 ? 0 : 1);
-    const car = () => 1 - bus();
-    const hardest = drive(sim, 8, car);
-    expect(sim.cars.x[bus()] - 5.75 - (sim.cars.x[car()] + 2.3)).toBeGreaterThan(1);
+    const hardest = drive(sim, 8);
+    expect(sim.cars.x[0] - 5.75 - (sim.cars.x[1] + 2.3)).toBeGreaterThan(1);
     expect(hardest).toBeLessThan(4);
   });
 
