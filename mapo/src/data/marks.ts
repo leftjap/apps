@@ -264,23 +264,32 @@ export function drawnMarks(m: Marks): Marks {
       }
       ts.sort((u, v) => u - v);
       const L = Math.hypot(bx - ax, bz - az);
-      // 테두리를 따라 비스듬히 들어가는 선도 자르게 0.25m 보다 긴 조각은 더 잘게 보고, 조각 양 끝·가운데 가운데 하나라도 빗금 안이면 뺀다
-      for (let j = ts.length - 1; j > 0; j--) {
-        const k = Math.ceil(((ts[j] - ts[j - 1]) * L) / 0.25);
-        for (let q = k - 1; q > 0; q--) ts.splice(j, 0, ts[j - 1] + ((ts[j] - ts[j - 1]) * q) / k);
-      }
+      // 테두리를 따라 비스듬히 들어가는 선도 자르게 0.25m 보다 긴 조각은 더 잘게 보고, 조각 양 끝·가운데 가운데 하나라도 빗금 안이면 뺀다.
+      // 잘게 본 자리는 점으로 남기지 않는다(남긴 조각이 끝나는 자리만 점으로 넣는다. 같은 점이 이어지면 그리는 선 폭이 0 이 된다)
+      const fine = [ts[0]];
       for (let j = 1; j < ts.length; j++) {
-        const [t0, t1] = [ts[j - 1], ts[j]];
+        const k = Math.ceil(((ts[j] - ts[j - 1]) * L) / 0.25);
+        for (let q = 1; q <= k; q++) fine.push(ts[j - 1] + ((ts[j] - ts[j - 1]) * q) / k);
+      }
+      const at = (t: number) => [ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t];
+      let end = -1;
+      for (let j = 1; j < fine.length; j++) {
+        const [t0, t1] = [fine[j - 1], fine[j]];
         if (t1 - t0 < 1e-9) continue;
         const keep = [t0, (t0 + t1) / 2, t1].every((t) => !deep(near, ax + (bx - ax) * t, az + (bz - az) * t));
         if (keep) {
           if (!cur.length) {
-            cur.push(ax + (bx - ax) * t0, ay + (by - ay) * t0, az + (bz - az) * t0);
+            cur.push(...at(t0));
             start = along + L * t0;
           }
-          cur.push(ax + (bx - ax) * t1, ay + (by - ay) * t1, az + (bz - az) * t1);
-        } else flush(true);
+          end = t1;
+        } else {
+          if (end >= 0) cur.push(...at(end));
+          end = -1;
+          flush(true);
+        }
       }
+      if (end >= 0) cur.push(...at(end));
       along += L;
     }
     flush(false);

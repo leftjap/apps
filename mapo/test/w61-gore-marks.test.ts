@@ -70,4 +70,18 @@ describe('빗금 위에 그리는 칠한 선·화살표(판 전체, 정적)', ()
     expect(cut).toBeLessThan(inside * 1.5 + 20);
     expect(drawnMarks(marks).arrows.length).toBe(marks.arrows.length - now.arrows.length);
   });
+  it('그리는 선에 길이 0 인 선분이 없다(같은 점이 셋 이어지면 가운데 점에서 방향이 0 이 돼 선 폭이 0 이 된다)', () => {
+    const zeros = (m: Marks) => m.lines.reduce((s, ln) => s + Array.from({ length: ln.p.length / 3 - 1 }, (_, i) => Math.hypot(ln.p[i * 3 + 3] - ln.p[i * 3], ln.p[i * 3 + 5] - ln.p[i * 3 + 2]) < 1e-3).filter(Boolean).length, 0);
+    expect(zeros(drawnMarks(marks))).toBeLessThanOrEqual(zeros(marks));
+  });
+  it('자른 선의 가운데 점은 원래 꼭짓점이다(잘게 본 자리는 끝점에만 남는다)', () => {
+    const key = (x: number, z: number) => `${Math.round(x * 100)},${Math.round(z * 100)}`;
+    const orig = new Set<string>();
+    for (const ln of marks.lines) for (let i = 0; i < ln.p.length; i += 3) orig.add(key(ln.p[i], ln.p[i + 2]));
+    const cut = drawnMarks(marks).lines.filter((ln) => !marks.lines.includes(ln));
+    let extra = 0;
+    for (const ln of cut) for (let i = 3; i < ln.p.length - 3; i += 3) if (!orig.has(key(ln.p[i], ln.p[i + 2]))) extra++;
+    expect(cut.length).toBeGreaterThan(0);
+    expect(extra).toBe(0);
+  });
 });
