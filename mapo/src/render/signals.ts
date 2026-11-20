@@ -75,7 +75,7 @@ export function pedState(signals: Signals, i: number, xw: Crosswalk, tod: number
 const POLE_CLEAR = 0.4;
 
 /**
- * 신호등 자리. stopLines 는 그린 정지선 [x0, z0, x1, z1, ...](src/data/marks.ts stopSegments, 재작업 W49). 빗금 안 조각을 지우기 전 정지선이다(지운 정지선으로 세우면 빗금 안 기둥이 3 → 5 로 는다, 재작업 W60 순서 3).
+ * 신호등 자리. stopLines 는 그린 정지선 [x0, z0, x1, z1, ...](src/data/marks.ts stopSegments, 재작업 W49). 빗금 안 조각을 지우기 전 정지선이다(지운 정지선으로 세우면 기둥 하나가 빗금 칠한 찻길 면 위로 옮겨 간다, 재작업 W60 순서 3).
  * ground 가 있으면 찻길 면 위(가장자리 POLE_CLEAR 안쪽)에 선 기둥을 찻길 면 밖 가장 가까운 자리(보도·섬·분리대)로 옮기고, 차량 신호 팔은 등 자리를 그대로 두고 새 기둥에서 다시 뻗는다(재작업 W57).
  * 8m 안에 둘 곳이 없으면 그 자리에 두고 stuck 에 적는다
  */
