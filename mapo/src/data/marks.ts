@@ -186,3 +186,105 @@ export function arrowShape(kind: number, w = 0): number[][] | null {
   const k = w > 0 && span > w - 0.6 ? Math.max(0.3, (w - 0.6) / span) : 1;
   return k === 1 ? s : s.map((q) => q.map((x, i) => (i % 2 ? x * k : x)));
 }
+
+/**
+ * 그릴 노면 표시(재작업 W60 순서 3): 땅 위 선은 빗금(안전지대) 테두리에서 잘라 빗금 안(테두리에서 GORE_IN 넘게 안쪽) 조각을 빼고, 빗금 안 화살표는 그리지 않는다.
+ * 차로 정본은 빗금 위를 지나는 자리가 있어(읽은 단면 없이 이은 차로 등) 정본에서 만든 차선·정지선·화살표가 빗금 안에 놓이기도 한다. 차로를 빼면 찻길 면·교차로·정지선이
+ * 함께 바뀌어 정본은 그대로 두고 그릴 때만 지운다(2026-11-20 지오 결정). 차·사람이 읽는 자료(화살표의 차로 회전 등)는 바꾸지 않는다
+ */
+const GORE_IN = 0.3;
+export function drawnMarks(m: Marks): Marks {
+  const zones = m.zones.map(({ ring: r }) => {
+    let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
+    for (let k = 0; k < r.length; k += 2) (x0 = Math.min(x0, r[k])), (x1 = Math.max(x1, r[k])), (z0 = Math.min(z0, r[k + 1])), (z1 = Math.max(z1, r[k + 1]));
+    return { r, x0, x1, z0, z1 };
+  });
+  type Z = (typeof zones)[number];
+  const inZ = (q: Z, x: number, z: number) => {
+    if (x < q.x0 || x > q.x1 || z < q.z0 || z > q.z1) return false;
+    const r = q.r;
+    let inside = false;
+    for (let a = 0, b = r.length - 2; a < r.length; b = a, a += 2) if (r[a + 1] > z !== r[b + 1] > z && x < r[a] + ((z - r[a + 1]) / (r[b + 1] - r[a + 1])) * (r[b] - r[a])) inside = !inside;
+    return inside;
+  };
+  const edgeDist = (q: Z, x: number, z: number) => {
+    const r = q.r;
+    let d = Infinity;
+    for (let a = 0, b = r.length - 2; a < r.length; b = a, a += 2) {
+      const dx = r[a] - r[b];
+      const dz = r[a + 1] - r[b + 1];
+      const t = Math.max(0, Math.min(1, ((x - r[b]) * dx + (z - r[b + 1]) * dz) / (dx * dx + dz * dz || 1)));
+      d = Math.min(d, Math.hypot(r[b] + dx * t - x, r[b + 1] + dz * t - z));
+    }
+    return d;
+  };
+  const deep = (near: Z[], x: number, z: number) => near.some((q) => inZ(q, x, z) && edgeDist(q, x, z) > GORE_IN);
+  const lines: MarkLine[] = [];
+  for (const ln of m.lines) {
+    const p = ln.p;
+    const n = p.length / 3;
+    let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
+    let ground = true;
+    for (let i = 0; i < n; i++) {
+      (x0 = Math.min(x0, p[i * 3])), (x1 = Math.max(x1, p[i * 3])), (z0 = Math.min(z0, p[i * 3 + 2])), (z1 = Math.max(z1, p[i * 3 + 2]));
+      if (Math.abs(p[i * 3 + 1]) > 0.5) ground = false;
+    }
+    const near = ground ? zones.filter((q) => q.x0 <= x1 && q.x1 >= x0 && q.z0 <= z1 && q.z1 >= z0) : [];
+    if (!near.length) {
+      lines.push(ln);
+      continue;
+    }
+    // 선분마다 빗금 테두리와 만나는 자리에서 나누고, 조각 가운데가 빗금 안이면 그 조각을 뺀다. 남은 조각은 이어 붙이고 점선 위상은 그 자리까지 간 거리만큼 옮긴다
+    // 양쪽이 빗금에서 잘린 1m 보다 짧은 토막(빗금 테두리를 스치는 자리)은 그리지 않는다
+    let cur: number[] = [];
+    let start = ln.d ?? 0;
+    let along = ln.d ?? 0;
+    let cutBefore = false;
+    const flush = (cutAfter: boolean) => {
+      let len = 0;
+      for (let k = 3; k < cur.length; k += 3) len += Math.hypot(cur[k] - cur[k - 3], cur[k + 2] - cur[k - 1]);
+      if (cur.length >= 6 && !(cutBefore && cutAfter && len < 1)) lines.push({ k: ln.k, k2: ln.k2, p: Float32Array.from(cur), d: start });
+      cur = [];
+      cutBefore = true;
+    };
+    for (let i = 1; i < n; i++) {
+      const [ax, ay, az, bx, by, bz] = [p[i * 3 - 3], p[i * 3 - 2], p[i * 3 - 1], p[i * 3], p[i * 3 + 1], p[i * 3 + 2]];
+      const ts = [0, 1];
+      for (const q of near) {
+        const r = q.r;
+        for (let a = 0, b = r.length - 2; a < r.length; b = a, a += 2) {
+          const ex = r[a] - r[b];
+          const ez = r[a + 1] - r[b + 1];
+          const den = (bx - ax) * ez - (bz - az) * ex;
+          if (Math.abs(den) < 1e-12) continue;
+          const t = ((r[b] - ax) * ez - (r[b + 1] - az) * ex) / den;
+          const u = ((r[b] - ax) * (bz - az) - (r[b + 1] - az) * (bx - ax)) / den;
+          if (t > 0 && t < 1 && u >= 0 && u <= 1) ts.push(t);
+        }
+      }
+      ts.sort((u, v) => u - v);
+      const L = Math.hypot(bx - ax, bz - az);
+      // 테두리를 따라 비스듬히 들어가는 선도 자르게 0.25m 보다 긴 조각은 더 잘게 보고, 조각 양 끝·가운데 가운데 하나라도 빗금 안이면 뺀다
+      for (let j = ts.length - 1; j > 0; j--) {
+        const k = Math.ceil(((ts[j] - ts[j - 1]) * L) / 0.25);
+        for (let q = k - 1; q > 0; q--) ts.splice(j, 0, ts[j - 1] + ((ts[j] - ts[j - 1]) * q) / k);
+      }
+      for (let j = 1; j < ts.length; j++) {
+        const [t0, t1] = [ts[j - 1], ts[j]];
+        if (t1 - t0 < 1e-9) continue;
+        const keep = [t0, (t0 + t1) / 2, t1].every((t) => !deep(near, ax + (bx - ax) * t, az + (bz - az) * t));
+        if (keep) {
+          if (!cur.length) {
+            cur.push(ax + (bx - ax) * t0, ay + (by - ay) * t0, az + (bz - az) * t0);
+            start = along + L * t0;
+          }
+          cur.push(ax + (bx - ax) * t1, ay + (by - ay) * t1, az + (bz - az) * t1);
+        } else flush(true);
+      }
+      along += L;
+    }
+    flush(false);
+  }
+  const arrows = m.arrows.filter((a) => !zones.some((q) => inZ(q, a.x, a.z)));
+  return { ...m, lines, arrows };
+}
