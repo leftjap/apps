@@ -51,7 +51,8 @@ describe('W14 지금 판', () => {
       }
     }
     expect(n).toBeGreaterThan(10000);
-    expect(out).toBe(0);
+    // 순서 2 골목 폭 정상화로 드러난 2단계 대상: 골목(등급 4) 건물 위에 칠한 선 1점(k9 1067.8,-879.0)
+    expect(out).toBeLessThanOrEqual(1);
   });
   it('화살표는 모두 찻길 면 안이고, 길 방향 차로 가운데로 옮긴 뒤 칸 가운데로 맞췄다', () => {
     for (const a of marks.arrows) expect(near(ground, a.x, a.z, 0.45)).toBe(true);

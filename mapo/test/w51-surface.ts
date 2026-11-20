@@ -103,7 +103,7 @@ export function morph(a: Uint8Array, n: number, r: number, grow: boolean): Uint8
 }
 
 /** a 에 있고 b 에 없는 칸을 4이웃 덩어리로 묶어 넓이(칸 수)가 min 넘는 덩어리들의 [가운데 x, z, 칸 수] */
-function blobs(a: Uint8Array, b: Uint8Array, n: number, min: number): number[][] {
+function blobs(a: Uint8Array, b: Uint8Array, n: number, min: number, skip?: Uint8Array): number[][] {
   const seen = new Uint8Array(a.length);
   const out: number[][] = [];
   const st: number[] = [];
@@ -112,17 +112,19 @@ function blobs(a: Uint8Array, b: Uint8Array, n: number, min: number): number[][]
     let c = 0;
     let sx = 0;
     let sz = 0;
+    let skipped = false;
     st.push(s);
     seen[s] = 1;
     while (st.length) {
       const q = st.pop()!;
       c++;
+      if (skip?.[q]) skipped = true;
       sx += q % n;
       sz += Math.floor(q / n);
       const i = q % n;
       for (const r of [i > 0 ? q - 1 : -1, i < n - 1 ? q + 1 : -1, q - n, q + n]) if (r >= 0 && r < a.length && a[r] && !b[r] && !seen[r]) (seen[r] = 1), st.push(r);
     }
-    if (c >= min) out.push([-BOARD_R + (sx / c + 0.5) * GCELL, -BOARD_R + (sz / c + 0.5) * GCELL, c]);
+    if (c >= min && !skipped) out.push([-BOARD_R + (sx / c + 0.5) * GCELL, -BOARD_R + (sz / c + 0.5) * GCELL, c]);
   }
   return out;
 }
@@ -143,10 +145,10 @@ export function thinOut(D: Drawn) {
 }
 
 /** 찻길 면 안쪽으로 0.5m 아래로 좁게 파고든 찻길 아닌 조각(빗금 둘레 보도색 조각 등): 닫기(0.75m) − 찻길 가운데 0.5m² 넘는 덩어리 수와 넓이 */
-export function thinIn(D: Drawn) {
+export function thinIn(D: Drawn, skip?: Uint8Array) {
   const R = roadPlane(D);
   const close = morph(morph(R, GN, 1, true), GN, 1, false);
-  const b = blobs(close, R, GN, 8);
+  const b = blobs(close, R, GN, 8, skip);
   return { n: b.length, area: b.reduce((a, q) => a + q[2], 0) * GCELL * GCELL, where: where(b) };
 }
 
@@ -216,7 +218,15 @@ export function greyGap(d: Stage2Data, D: Drawn) {
 }
 
 /** 연석과 찻길 외곽: 외곽 칸(찻길 칸 가운데 4이웃에 찻길 아닌 칸이 있는 것) 가운데 연석이 0.45m 안에 없는(연석 조각마다 양 끝까지 0.45m 늘인 띠 밖) 길이(m)와, 찻길 외곽에서 0.5m 넘게 안쪽에 그은 연석 길이(m). 판 가장자리 3m 안은 빼고 */
-export function curbGap(D: Drawn) {
+/** 건물 외곽선 둘레 m 안 칸(1). 골목 찻길 면은 건물에서 잘라 내므로(재작업 W60 순서 2) 건물 벽에 붙은 좁은 틈·그 둘레 연석은 결함이 아니다:
+ *  건물이 찻길(지킨 차로 띠 포함) 쪽으로 좁게 나온 실제 모양이고 그리면 건물이 덮는다 */
+export function nearBuildings(buildings: { pts: ArrayLike<number> }[], m = 0.5): Uint8Array {
+  const H = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, GCELL);
+  for (const b of buildings) fillBits(H, [Float32Array.from(b.pts)], 1);
+  return morph(H.v, GN, Math.round(m / GCELL), true);
+}
+
+export function curbGap(D: Drawn, skip?: Uint8Array) {
   const R = roadPlane(D);
   const C = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, GCELL);
   let inside = 0;
@@ -239,6 +249,7 @@ export function curbGap(D: Drawn) {
       const mx = (ax + bx) / 2;
       const mz = (az + bz) / 2;
       if (Math.hypot(mx, mz) > BOARD_R - 3) continue;
+      if (skip?.[Math.floor((mz + BOARD_R) / GCELL) * GN + Math.floor((mx + BOARD_R) / GCELL)]) continue;
       let all = true;
       for (let a = 0; a < 8 && all; a++) all = isR(mx + Math.cos((a * Math.PI) / 4) * 0.5, mz + Math.sin((a * Math.PI) / 4) * 0.5);
       if (all) {

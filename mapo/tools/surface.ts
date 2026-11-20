@@ -10,6 +10,7 @@ import { decodeSurface, tileRings, type SurfaceJson } from '../src/data/surface.
 import { buildCarGraph } from '../src/sim/graph.ts';
 import { makeIntersections } from '../src/sim/intersection/index.ts';
 import { groundQuery } from '../src/data/offroad.ts';
+import { toXZ } from '../src/geo.ts';
 import { centerArrows } from './road/arrows.ts';
 import { crossingFaces } from './road/crossings.ts';
 import { bakeSurface, clipMarksToGround } from './road/surface.ts';
@@ -24,7 +25,8 @@ export function bakeSurfaceFile(): string {
   const sj = read('../public/data/surface.json') as SurfaceJson;
   const sp = read('../public/data/surface-polys.json');
   const seoul = decodeMarks(read('./raw/seoul-lines-ground.json') as MarksJson).lines;
-  const r = bakeSurface({ board, g, inter, sf: decodeSurface(sj), polys: sp, seoul, walk: read('../public/data/walk.json') });
+  const roadArea = (read('./raw/gis-roads.json').roads as { r: [number, number][][] }[]).map((x) => x.r.map((ring) => Float32Array.from(ring.flatMap(([a, b]) => toXZ(a, b)))));
+  const r = bakeSurface({ board, g, inter, sf: decodeSurface(sj), polys: sp, seoul, walk: read('../public/data/walk.json'), roadArea });
   const json: SurfaceJson = { v: 2, cut: sj.cut, jn: sj.jn, dr: sj.dr, g: r.g, w: r.w, m: r.m };
   writeFileSync(new URL('../public/data/surface.json', import.meta.url), JSON.stringify(json));
   writeFileSync(new URL('../public/data/curbs.json', import.meta.url), JSON.stringify({ v: 2, c: [], t: r.tactile }));

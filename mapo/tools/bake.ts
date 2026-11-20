@@ -2261,7 +2261,10 @@ writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), sur
     Object.assign(mj, { l: ra.json.l, h: ra.json.h, ld: ra.json.ld, a: ra.json.a, aw: ra.json.aw });
     console.log(`${lm.log}; 화살표 새 칸 가운데로 ${ra.moved}개(되돌린 것 ${ra.reverted})`);
     // 찻길 면 하나·보도 면·분리대를 길 정본에서 굽고(tools/road/surface.ts, 재작업 W51·설계 문서 59절 B2. node tools/surface.ts 와 같은 함수), 노면 표시를 그 면 안으로 자른다
-    const sfx = bakeSurface({ board: bd, g, inter, sf: sf2, polys: sp2, seoul: decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, walk: JSON.parse(walkJson) });
+    // 골목 찻길 면은 실폭도로 면으로 자른다(재작업 W60 순서 2, node tools/surface.ts 와 같은 입력)
+    const raFile = new URL('./raw/gis-roads.json', import.meta.url);
+    const roadArea = existsSync(raFile) ? (JSON.parse(readFileSync(raFile, 'utf8')).roads as { r: [number, number][][] }[]).map((x) => x.r.map((ring) => Float32Array.from(ring.flatMap(([a, c]) => toXZ(a, c))))) : undefined;
+    const sfx = bakeSurface({ board: bd, g, inter, sf: sf2, polys: sp2, seoul: decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, walk: JSON.parse(walkJson), roadArea });
     const sj = JSON.parse(surfaceJson) as SurfaceJson;
     surfaceJson = JSON.stringify({ ...sj, v: 2, g: sfx.g, w: sfx.w, m: sfx.m });
     writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);

@@ -31,6 +31,8 @@ export interface SurfaceInput {
   seoul: MarkLine[];
   /** 걷는 그물(walk.json n·e): 사람이 걷는 보도·보행로 선이 지나는 섬·분리대는 찻길로 메우지 않는다 */
   walk?: { n: number[]; e: number[] };
+  /** 행정안전부 실폭도로 면(tools/raw/gis-roads.json, [바깥, ...구멍] xz): 골목 찻길을 이 면 안으로 자른다. 없으면 건물만 뺀다 */
+  roadArea?: Float32Array[][];
 }
 
 export interface SurfaceOut {
@@ -64,7 +66,7 @@ export function railSegs(board: Board): number[][] {
 const dmRing = (a: ArrayLike<number>, from = 0) => Float32Array.from(Array.prototype.slice.call(a, from) as number[], (v) => v / 10);
 
 /** 선(꺾은선 [x, z, ...])을 반폭 half 사각형들로 칠한다(끝을 늘이지 않는다) */
-function strokeFlat(B: Bits, line: ArrayLike<number>, half: number, bit: number) {
+export function strokeFlat(B: Bits, line: ArrayLike<number>, half: number, bit: number) {
   for (let k = 0; k + 3 < line.length; k += 2) {
     const [ax, az, bx, bz] = [line[k], line[k + 1], line[k + 2], line[k + 3]];
     const L = Math.hypot(bx - ax, bz - az);
@@ -111,7 +113,28 @@ function morph(a: Uint8Array, w: number, h: number, r: number, grow: boolean): U
 }
 
 /** 0/1 판을 타일마다 외곽선(고정점 둔 0.3m 줄이기)으로 → 칸 층 */
-export function encodeTiles(a: Uint8Array, minArea = 1): number[] {
+/** 고리(찻길 왼쪽)의 오목 꼭짓점 가운데 guard 칸 위의 것 양옆 변(1m 넘는 변만)에 0.5m 떨어진 점을 넣는다. 그리는 차이킨 깎기(변의 1/4)가 긴 두 변이 만나는 오목 모서리를
+ *  수 m 메우지 않고 0.5m 안에서만 둥글게 깎게 한다(건물을 뺀 골목 모서리, 재작업 W60 순서 2). 타일 테두리 위 점·변은 건드리지 않는다 */
+function guardCorners(q: number[], ti: number, tj: number, T: number, guard: Uint8Array): number[] {
+  const n = q.length / 2;
+  const d = 2;
+  const rim = (x: number, z: number) => x === 0 || x === T || z === 0 || z === T;
+  const out: number[] = [];
+  for (let k = 0; k < n; k++) {
+    const [ux, uz] = [q[((k + n - 1) % n) * 2], q[((k + n - 1) % n) * 2 + 1]];
+    const [vx, vz] = [q[k * 2], q[k * 2 + 1]];
+    const [wx, wz] = [q[((k + 1) % n) * 2], q[((k + 1) % n) * 2 + 1]];
+    const gx = Math.min(GN - 1, ti * T + vx), gz = Math.min(GN - 1, tj * T + vz);
+    const hit = !rim(vx, vz) && (vx - ux) * (wz - vz) - (vz - uz) * (wx - vx) < 0 && guard[gz * GN + gx];
+    const L0 = Math.hypot(vx - ux, vz - uz), L1 = Math.hypot(wx - vx, wz - vz);
+    if (hit && L0 > 2 * d && !(rim(ux, uz) && rim(vx, vz))) out.push(Math.round(vx + ((ux - vx) * d) / L0), Math.round(vz + ((uz - vz) * d) / L0));
+    out.push(vx, vz);
+    if (hit && L1 > 2 * d && !(rim(wx, wz) && rim(vx, vz))) out.push(Math.round(vx + ((wx - vx) * d) / L1), Math.round(vz + ((wz - vz) * d) / L1));
+  }
+  return out;
+}
+
+export function encodeTiles(a: Uint8Array, minArea = 1, guard?: Uint8Array): number[] {
   const T = GTILE;
   const sub = new Uint8Array(T * T);
   // 1차: 타일마다 외곽선을 따서 줄인다. 줄인 고리가 타일 테두리를 따라가는 칸 변(테두리 위 두 고정점 사이)을 '이 타일 면이 테두리에 닿는 변'으로 적는다
@@ -135,7 +158,8 @@ export function encodeTiles(a: Uint8Array, minArea = 1): number[] {
       if (!any) continue;
       const loops: number[][] = [];
       for (const loop of traceLoops(sub, T)) {
-        const q = simplifyPinned(loop, 0.3 / GCELL, T);
+        let q = simplifyPinned(loop, 0.3 / GCELL, T);
+        if (guard) q = guardCorners(q, ti, tj, T, guard);
         const pinned = q.some((v) => v === 0 || v === T);
         if (q.length < 6 || (!pinned && Math.abs(ringArea(q)) * GCELL * GCELL < minArea)) continue;
         loops.push(q);
@@ -248,6 +272,48 @@ function simplifyPinned(p: number[], tol: number, T: number): number[] {
   return out;
 }
 
+
+/** ③ 교차로 경로(모든 진입로·차로·나가는 길)와 15° 넘게 꺾인 이음매 곡선의 땅 위 토막(꺾은선 [x, z, ...])마다 cb 를 부른다(굽기와 시험이 같이 쓴다). 경로 수를 돌려준다 */
+export function carPaths(g: Edge[], X: Inter['X'], cb: (run: number[]) => void): number {
+  let np = 0;
+  const strokeGround = (pts: ArrayLike<number>, stride: number) => {
+    let run: number[] = [];
+    const flush = () => {
+      if (run.length >= 4) cb(run);
+      run = [];
+    };
+    for (let i = 0; i < pts.length; i += stride) {
+      if (Math.abs(pts[i + 1]) > 0.3) flush();
+      else run.push(pts[i], pts[i + 2]);
+    }
+    flush();
+  };
+  for (const [a, exs] of X.exits) {
+    const e = g[a];
+    const ls = e.mo.length || e.med ? [...Array(e.lanes).keys(), MED] : [...Array(e.lanes).keys()];
+    for (const l of ls)
+      for (let k = 0; k < exs.length; k++) {
+        const p = X.path(a, l, k);
+        if (p) (strokeGround(p.pts, 4), np++);
+      }
+  }
+  const o4 = [0, 0, 0, 0];
+  for (const a of g) {
+    if (X.jEnd[a.id] >= 0 || X.rIn[a.id] <= 0) continue;
+    a.next.forEach((bi, j) => {
+      const b = g[bi];
+      for (let l = 0; l < a.lanes; l++) {
+        const lb = a.lmap[j][l * 2];
+        if (lb >= b.lanes) continue;
+        const pts: number[] = [];
+        for (let d = 0; d <= X.rIn[a.id] + X.rOut[b.id] + 1e-3; d += 0.5) (X.curve(a, b, l, lb, d, o4), pts.push(o4[0], o4[1], o4[2]));
+        strokeGround(pts, 3);
+      }
+    });
+  }
+  return np;
+}
+
 /** 길 정본에서 찻길 면·보도 면·분리대를 굽는다 */
 export function bakeSurface(inp: SurfaceInput): SurfaceOut {
   const { board, g, inter, sf, polys, seoul } = inp;
@@ -291,42 +357,7 @@ export function bakeSurface(inp: SurfaceInput): SurfaceOut {
     }
   }
   // ③ 교차로 경로(모든 진입로·차로·나가는 길)와 15° 넘게 꺾인 이음매 곡선: 땅 위 점만, 차 몸 반폭 0.9m + 0.3m
-  let np = 0;
-  const strokeGround = (pts: ArrayLike<number>, stride: number) => {
-    let run: number[] = [];
-    const flush = () => {
-      if (run.length >= 4) (strokeFlat(B, run, 1.2, SB.ROAD), strokeFlat(core, run, 1.2, 1));
-      run = [];
-    };
-    for (let i = 0; i < pts.length; i += stride) {
-      if (Math.abs(pts[i + 1]) > 0.3) flush();
-      else run.push(pts[i], pts[i + 2]);
-    }
-    flush();
-  };
-  for (const [a, exs] of X.exits) {
-    const e = g[a];
-    const ls = e.mo.length || e.med ? [...Array(e.lanes).keys(), MED] : [...Array(e.lanes).keys()];
-    for (const l of ls)
-      for (let k = 0; k < exs.length; k++) {
-        const p = X.path(a, l, k);
-        if (p) (strokeGround(p.pts, 4), np++);
-      }
-  }
-  const o4 = [0, 0, 0, 0];
-  for (const a of g) {
-    if (X.jEnd[a.id] >= 0 || X.rIn[a.id] <= 0) continue;
-    a.next.forEach((bi, j) => {
-      const b = g[bi];
-      for (let l = 0; l < a.lanes; l++) {
-        const lb = a.lmap[j][l * 2];
-        if (lb >= b.lanes) continue;
-        const pts: number[] = [];
-        for (let d = 0; d <= X.rIn[a.id] + X.rOut[b.id] + 1e-3; d += 0.5) (X.curve(a, b, l, lb, d, o4), pts.push(o4[0], o4[1], o4[2]));
-        strokeGround(pts, 3);
-      }
-    });
-  }
+  const np = carPaths(g, X, (run) => (strokeFlat(B, run, 1.2, SB.ROAD), strokeFlat(core, run, 1.2, 1)));
   log.push(`차로 띠 ${nb}칸·교차로 경로 ${np}개 ${((Date.now() - t0) / 1000).toFixed(1)}초`);
   // 지금까지 칠한 찻길(① ∪ ② ∪ ③)을 다듬는다: 1m 안 틈은 메우고(닫기, 1.25m 정사각형), 1m 보다 좁게 튀어나온 조각은 깎는다(열기).
   // 외곽선을 0.3m 안에서 줄이고 깎아도 0.5m 아래 좁은 조각이 다시 생기지 않게 검사(test/w51-surface.ts, 0.75m)보다 넉넉히 한다
@@ -588,6 +619,67 @@ export function bakeSurface(inp: SurfaceInput): SurfaceOut {
       }
     }
   }
+  // ⑥ 건물 자리(0.25m 늘림)는 찻길에서 뺀다. 골목(등급 4·5)은 실폭도로가 가운데선을 덮는 구간에서 실폭도로 면 밖도 뺀다(덮지 않는 구간은 건물만).
+  // 차가 달리는 자리(core: 모든 차로 띠 + 교차로 경로, 버스가 다니는 골목 포함)는 건물과 겹쳐도 남긴다(차로를 지킨다, 2026-11-20 지오 결정).
+  // 실폭도로는 큰길에서 보도까지 품어 골목 가운데선 둘레에만 쓴다(재작업 W60 순서 2)
+  const ZR = 4, ZC = 8, ZH = 16;
+  const Z = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, GCELL);
+  const alley = (ri: number) => {
+    const r = board.roads[ri];
+    return !!r && (r.cls === 4 || r.cls === 5) && !r.tunnel && !r.bridge;
+  };
+  for (const a of inp.roadArea ?? []) fillBits(Z, a, ZR);
+  // 실폭도로가 덮는 골목 구간: 가운데선을 1m 로 찍어 실폭도로 면 안인 점이 이어지는 토막
+  let covered = 0, bare = 0;
+  board.roads.forEach((r, ri) => {
+    if (!alley(ri)) return;
+    const flat: number[] = [];
+    for (let i = 0; i < r.p.length; i += 3) flat.push(r.p[i], r.p[i + 2]);
+    const pts: number[] = [];
+    for (let k = 0; k + 3 < flat.length; k += 2) {
+      const L = Math.hypot(flat[k + 2] - flat[k], flat[k + 3] - flat[k + 1]);
+      const n = Math.max(1, Math.ceil(L));
+      for (let t = 0; t < n; t++) pts.push(flat[k] + ((flat[k + 2] - flat[k]) * t) / n, flat[k + 1] + ((flat[k + 3] - flat[k + 1]) * t) / n);
+    }
+    pts.push(flat[flat.length - 2], flat[flat.length - 1]);
+    if (!inp.roadArea) return;
+    let run: number[] = [];
+    const flush = () => {
+      if (run.length >= 4) strokeFlat(Z, run, 6, ZC);
+      run = [];
+    };
+    for (let k = 0; k < pts.length; k += 2) {
+      const i = Math.floor((pts[k] - Z.x0) / GCELL), j = Math.floor((pts[k + 1] - Z.z0) / GCELL);
+      const inRw = i >= 0 && j >= 0 && i < GN && j < GN && Z.v[j * GN + i] & ZR;
+      if (k) inRw ? (covered += 1) : (bare += 1);
+      if (inRw) run.push(pts[k], pts[k + 1]);
+      else flush();
+    }
+    flush();
+  });
+  for (const b of board.buildings) fillBits(Z, [b.pts], ZH);
+  const bldg = morph(plane(Z, ZH), GN, GN, 1, true);
+  let cutRw = 0, cutB = 0;
+  const uncut = road.slice();
+  for (let i = 0; i < road.length; i++) {
+    const z = Z.v[i];
+    if (!road[i] || core.v[i]) continue;
+    if (bldg[i]) (road[i] = 0), cutB++;
+    else if (z & ZC && !(z & ZR)) (road[i] = 0), cutRw++;
+  }
+  // 자른 경계를 처음 다듬기와 같게(1m 안 틈 메우고 1m 보다 좁은 조각 깎기, 검사 0.75m 보다 넉넉히) 다시 다듬는다.
+  // 자른 칸 둘레 1.5m 안만 바꾸고, 메우기는 자르기 전 찻길 면과 건물 밖으로 제한한다(보도·분리대·철도 쪽으로 넓히지 않는다). 차가 달리는 자리는 그대로 둔다
+  const cut = new Uint8Array(road.length);
+  for (let i = 0; i < road.length; i++) cut[i] = uncut[i] && !road[i] ? 1 : 0;
+  const zone = morph(cut, GN, GN, 6, true);
+  if (cutRw + cutB) {
+    const pre = road;
+    road = morph(morph(road, GN, GN, 2, true), GN, GN, 2, false);
+    for (let i = 0; i < road.length; i++) if (!uncut[i] || (bldg[i] && !core.v[i])) road[i] = 0;
+    road = morph(morph(road, GN, GN, 2, false), GN, GN, 2, true);
+    for (let i = 0; i < road.length; i++) if (!zone[i] || (core.v[i] && pre[i])) road[i] = pre[i];
+  }
+  log.push(`골목 찻길: 실폭도로가 덮는 가운데선 ${(covered / 1000).toFixed(1)}km·안 덮는 ${(bare / 1000).toFixed(1)}km, 실폭도로 밖이라 뺀 ${Math.round(cutRw * GCELL * GCELL)}m²·건물이라 뺀 ${Math.round(cutB * GCELL * GCELL)}m²`);
   log.push(`찻길 칸 ${((road.reduce((a, x) => a + x, 0) * GCELL * GCELL) / 1e6).toFixed(3)}km²(둘러싸인 틈 ${pockets}곳 메움) ${((Date.now() - t0) / 1000).toFixed(1)}초`);
   // 분리대: 찻길이 아닌 분리대 칸. 녹지는 연석 안쪽 0.25m 뒤(0.75m 보다 좁은 분리대는 녹지 없이 보도 블록)
   const med = new Uint8Array(v.length);
@@ -615,7 +707,7 @@ export function bakeSurface(inp: SurfaceInput): SurfaceOut {
       if (d >= c.half + 6) continue;
       tactile.push(dm(c.x + ux * (d + 0.4)), dm(c.z + uz * (d + 0.4)), Math.round(ux * 1000), Math.round(uz * 1000), dm(c.wid));
     }
-  const gL = encodeTiles(road);
+  const gL = encodeTiles(road, 1, zone);
   const wL = encodeTiles(walk, 2);
   const mL = encodeTiles(green, 1);
   log.push(`칸 층 찻길 ${gL.length}·보도 ${wL.length}·녹지 ${mL.length} 수, ${((Date.now() - t0) / 1000).toFixed(1)}초`);
