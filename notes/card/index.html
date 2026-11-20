@@ -4,38 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a2257">
 <title>마일리지 카드 바꾸기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
   :root {
-    --bg: #eef2f8;
+    --bg: #f1f4f9;
     --surface: #ffffff;
-    --text: #141a24;
-    --muted: #5b6575;
-    --line: #dfe5ee;
-    --navy: #0c2b6b;
-    --blue: #1767d8;
-    --blue-soft: #e6effc;
-    --good: #0f7d58;
-    --good-soft: #e1f3eb;
-    --bad: #c0392f;
-    --bad-soft: #fbe9e7;
-    --bar-old: #c3cad5;
+    --text: #121826;
+    --muted: #5d6676;
+    --line: #e2e7ef;
+    --accent: #1a66e0;
+    --accent-2: #7fb0ff;
+    --accent-soft: #e8f0fd;
+    --loss: #d93a3a;
+    --loss-soft: #fdecec;
+    --old: #c4cbd6;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0d1118;
-      --surface: #171c25;
-      --text: #e9edf3;
-      --muted: #9ea8b7;
-      --line: #2a313d;
-      --navy: #0a1f4d;
-      --blue: #5f9af0;
-      --blue-soft: #18263d;
-      --good: #4cc392;
-      --good-soft: #14302a;
-      --bad: #f08a80;
-      --bad-soft: #3a1d1b;
-      --bar-old: #465061;
+      --bg: #0b0f16;
+      --surface: #151b25;
+      --text: #ebeff5;
+      --muted: #9aa4b4;
+      --line: #273040;
+      --accent: #6aa5ff;
+      --accent-2: #2e5fae;
+      --accent-soft: #16243b;
+      --loss: #ff8d8d;
+      --loss-soft: #3a1c1e;
+      --old: #475265;
     }
   }
   * { box-sizing: border-box; }
@@ -44,124 +42,128 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+    font: 16px/1.6 "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
     word-break: keep-all;
     overflow-wrap: anywhere;
   }
   main { max-width: 560px; margin: 0 auto; padding: 0 16px 48px; }
-  section {
-    background: var(--surface);
-    border-radius: 18px;
-    padding: 22px 20px;
-    margin: 0 0 14px;
-  }
-  h1 { font-size: 27px; line-height: 1.35; margin: 6px 0 10px; letter-spacing: -0.02em; }
-  h2 { font-size: 20px; margin: 0 0 6px; letter-spacing: -0.01em; }
-  h3 { font-size: 16px; margin: 18px 0 8px; }
+  section { background: var(--surface); border-radius: 20px; padding: 24px 20px; margin: 0 0 14px; }
+  h2 { font-size: 21px; line-height: 1.4; margin: 0 0 6px; letter-spacing: -0.02em; }
   p { margin: 0 0 10px; }
-  b { font-weight: 700; }
   .muted { color: var(--muted); font-size: 14px; }
-  .lead { color: var(--muted); font-size: 15px; margin-bottom: 16px; }
-  .good { color: var(--good); }
-  .bad { color: var(--bad); }
+  .lead { color: var(--muted); font-size: 15px; margin: 0 0 16px; }
+  .tag { display: inline-block; font-size: 13px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
+  .tag.loss { color: var(--loss); background: var(--loss-soft); }
+  .big { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin: 2px 0 8px; }
+  .big.accent { color: var(--accent); }
+  .big.loss { color: var(--loss); }
+  .big small { font-size: 18px; font-weight: 700; }
+  .em { color: var(--accent); font-weight: 800; }
+  .em-loss { color: var(--loss); font-weight: 800; }
 
   /* 첫 화면 */
   .hero {
     margin: 0 -16px 14px;
-    padding: 28px 20px 26px;
-    background: linear-gradient(160deg, #0a2463 0%, #0c3a8f 55%, #1767d8 100%);
+    padding: 30px 20px 28px;
+    background: radial-gradient(120% 80% at 100% 0%, #2a7bf0 0%, rgba(42,123,240,0) 60%), linear-gradient(165deg, #071a46 0%, #0c3184 60%, #1557c8 100%);
     color: #fff;
-    border-radius: 0 0 26px 26px;
+    border-radius: 0 0 28px 28px;
   }
-  .hero .eyebrow { font-size: 14px; font-weight: 700; opacity: .8; }
-  .hero h1 { color: #fff; }
-  .hero .sub { opacity: .85; font-size: 15px; margin: 0; }
-  .hero-row { display: flex; gap: 18px; align-items: center; margin-top: 20px; }
-  .hero-card {
-    flex: 0 0 auto;
-    width: 118px;
-    aspect-ratio: 379 / 600;
-    border-radius: 10px;
-    background: #0c2b6b url("https://d1c5n4ri2guedi.cloudfront.net/card/2553/card_img/44235/2553card.png") center / cover no-repeat;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
-  }
-  .hero-name { font-size: 13px; opacity: .8; margin-bottom: 2px; }
-  .hero-title { font-size: 19px; font-weight: 800; line-height: 1.3; margin-bottom: 10px; }
-  .pill { display: inline-block; background: rgba(255, 255, 255, .16); border-radius: 999px; padding: 3px 11px; font-size: 13px; font-weight: 700; margin: 0 4px 6px 0; }
+  .hero .eyebrow { font-size: 14px; font-weight: 700; color: #a9c8ff; }
+  .hero h1 { font-size: 25px; line-height: 1.4; margin: 6px 0 18px; letter-spacing: -0.02em; }
+  .swap { display: flex; align-items: center; gap: 12px; }
+  .swap .old-card { width: 64px; opacity: .6; filter: grayscale(.5); border-radius: 5px; }
+  .swap .arrow { font-size: 22px; color: #a9c8ff; }
+  .swap .new-card { width: 92px; border-radius: 8px; box-shadow: 0 10px 26px rgba(0,0,0,.4); }
+  .swap .names { font-size: 13px; line-height: 1.45; color: #cfe0ff; }
+  .swap .names b { color: #fff; font-size: 16px; display: block; }
+  .hero-stat { margin-top: 22px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16); border-radius: 18px; padding: 16px 18px; }
+  .hero-stat .k { font-size: 14px; color: #cfe0ff; }
+  .hero-stat .v { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; }
+  .hero-stat .v small { font-size: 20px; }
+  .hero-stat .s { font-size: 14px; color: #cfe0ff; margin-top: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .chip { background: rgba(255,255,255,.14); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; }
+
+  /* 사용액별 이득 */
+  .gain { padding: 14px 0; border-top: 1px solid var(--line); }
+  .gain:first-of-type { border-top: 0; padding-top: 4px; }
+  .gain-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .gain-top .q { font-size: 16px; }
+  .gain-top .q b { font-size: 18px; }
+  .gain-top .a { font-size: 24px; font-weight: 800; color: var(--accent); white-space: nowrap; letter-spacing: -0.02em; }
+  .gain .bar { height: 14px; border-radius: 999px; background: var(--accent-soft); margin: 8px 0 6px; overflow: hidden; }
+  .gain .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+  .gain .how { font-size: 13px; color: var(--muted); }
+  .gain.mine { background: var(--accent-soft); margin: 0 -20px; padding: 14px 20px; border-top: 0; border-radius: 14px; }
+  .gain.mine .bar { background: var(--surface); }
+  .me { font-size: 12px; font-weight: 800; color: #fff; background: var(--accent); border-radius: 6px; padding: 1px 6px; margin-left: 4px; vertical-align: 2px; }
+
+  /* 표 */
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { padding: 11px 6px; border-bottom: 1px solid var(--line); text-align: right; vertical-align: top; }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; }
+  thead th { font-size: 13px; color: var(--muted); font-weight: 600; }
+  td.zero { color: var(--accent); font-weight: 800; }
+  td.minus { color: var(--loss); font-weight: 800; }
+
+  /* 수수료 */
+  .per { display: flex; align-items: center; gap: 12px; background: var(--loss-soft); border-radius: 14px; padding: 14px 16px; margin: 4px 0 16px; }
+  .per .rate { font-size: 28px; font-weight: 800; color: var(--loss); white-space: nowrap; }
+  .per .txt { font-size: 14px; }
+
+  /* 마일리지 막대 */
+  .mbar { margin: 6px 0 14px; }
+  .mbar .lab { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+  .mbar .lab b { font-size: 16px; }
+  .mbar .track { height: 26px; border-radius: 8px; background: var(--bg); overflow: hidden; margin-bottom: 10px; }
+  .mbar .track i { display: block; height: 100%; border-radius: 8px; }
+  .mbar .old i { background: var(--old); }
+  .mbar .new i { background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+  .rate-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rate-row div { background: var(--bg); border-radius: 14px; padding: 12px 14px; }
+  .rate-row .k { font-size: 13px; color: var(--muted); }
+  .rate-row .v { font-size: 15px; }
+  .rate-row .v b { font-size: 20px; color: var(--accent); }
 
   /* 지금 카드 vs 새 카드 */
-  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 16px; }
-  .vs figure { margin: 0; text-align: center; }
-  .vs .thumb { height: 92px; display: flex; align-items: center; justify-content: center; }
-  .vs img { max-height: 92px; max-width: 100%; border-radius: 7px; box-shadow: 0 4px 12px rgba(0, 0, 0, .18); }
-  .vs figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
-  .vs figcaption b { color: var(--text); display: block; font-size: 14px; }
-  .rows { border-top: 1px solid var(--line); }
-  .r { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .r .k { grid-column: 1 / -1; font-size: 13px; color: var(--muted); margin-bottom: -4px; }
-  .r .o { color: var(--muted); }
-  .r .n { font-weight: 800; }
-  .r.hl { background: var(--good-soft); margin: 0 -20px; padding: 12px 20px; }
-  .r.hl .n { color: var(--good); }
-
-  /* 수수료 강조 */
-  .fee-big { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 4px; }
-  .fee-big .now { font-size: 34px; font-weight: 800; color: var(--bad); letter-spacing: -0.02em; }
-  .fee-big .arr { color: var(--muted); font-size: 22px; }
-  .fee-big .new { font-size: 34px; font-weight: 800; color: var(--good); }
-  .fee-ladder { display: grid; gap: 8px; margin-top: 14px; }
-  .fee-ladder div { display: flex; justify-content: space-between; background: var(--bad-soft); border-radius: 12px; padding: 11px 14px; }
-  .fee-ladder b { color: var(--bad); }
-
-  /* 사용액별 */
-  .scen { border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-top: 12px; }
-  .scen-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-  .scen-head .amt { font-size: 18px; font-weight: 800; }
-  .scen-head .x { font-size: 14px; font-weight: 800; color: var(--good); background: var(--good-soft); border-radius: 999px; padding: 2px 10px; }
-  .bar-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
-  .track { height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; margin-bottom: 10px; }
-  .fill { height: 100%; border-radius: 999px; }
-  .fill.old { background: var(--bar-old); }
-  .fill.new { background: var(--blue); }
-  .scen-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
-  .scen-foot div { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
-  .scen-foot .k { font-size: 12px; color: var(--muted); }
-  .scen-foot .v { font-size: 17px; font-weight: 800; }
-  .scen-total { margin-top: 10px; text-align: right; font-size: 15px; }
-  .scen-total b { font-size: 20px; color: var(--good); }
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 4px; text-align: center; }
+  .vs .thumb { height: 96px; display: flex; align-items: center; justify-content: center; }
+  .vs img { max-height: 96px; max-width: 100%; border-radius: 7px; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+  .vs .cap { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+  .vs .cap b { display: block; color: var(--text); font-size: 14px; }
+  .cmp td:nth-child(2) { color: var(--muted); }
+  .cmp td:nth-child(3) { font-weight: 800; color: var(--accent); }
+  .cmp td:first-child { font-size: 14px; color: var(--muted); width: 32%; }
+  .cmp td.neutral { color: var(--muted); font-weight: 400; }
 
   /* 다른 카드 */
-  .alt { border: 1px solid var(--line); border-radius: 14px; padding: 13px 15px; margin-top: 10px; }
-  .alt.win { border: 2px solid var(--blue); background: var(--blue-soft); }
-  .alt-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-  .alt-name { font-weight: 800; }
-  .alt-fee { font-weight: 800; white-space: nowrap; }
-  .alt-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .alt { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 14px; margin-top: 8px; }
+  .alt .n { font-weight: 800; }
+  .alt .f { font-weight: 800; color: var(--loss); text-align: right; white-space: nowrap; }
+  .alt .m { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+  .alt.win { border: 2px solid var(--accent); background: var(--accent-soft); }
+  .alt.win .f { color: var(--accent); }
   .why { margin: 16px 0 0; padding: 0; list-style: none; }
-  .why li { position: relative; padding-left: 26px; margin-bottom: 9px; }
-  .why li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--blue); font-weight: 800; }
+  .why li { position: relative; padding-left: 26px; margin-bottom: 9px; font-size: 15px; }
+  .why li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 800; }
 
   /* 단계 */
   .steps { list-style: none; margin: 14px 0 0; padding: 0; counter-reset: s; }
   .steps li { position: relative; padding: 0 0 18px 44px; counter-increment: s; }
-  .steps li::before {
-    content: counter(s);
-    position: absolute; left: 0; top: 0;
-    width: 30px; height: 30px; border-radius: 50%;
-    background: var(--blue); color: #fff; font-weight: 800; font-size: 15px;
-    display: flex; align-items: center; justify-content: center;
-  }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; }
   .steps li::after { content: ""; position: absolute; left: 14px; top: 32px; bottom: 2px; width: 2px; background: var(--line); }
   .steps li:last-child { padding-bottom: 0; }
   .steps li:last-child::after { display: none; }
-  .steps .when { font-size: 13px; font-weight: 700; color: var(--blue); }
+  .steps .when { font-size: 13px; font-weight: 700; color: var(--accent); }
   .steps .t { font-weight: 700; }
   .steps .d { font-size: 14px; color: var(--muted); }
-  .steps li.end::before { background: var(--good); }
 
-  .note { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--blue-soft); font-size: 14px; }
+  .note { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); font-size: 14px; }
   ul.plain { margin: 0; padding-left: 20px; }
-  ul.plain li { margin-bottom: 7px; }
+  ul.plain li { margin-bottom: 8px; }
   footer { color: var(--muted); font-size: 13px; padding: 4px 6px; }
   footer p { margin-bottom: 6px; }
 </style>
@@ -171,147 +173,144 @@
 
   <header class="hero">
     <div class="eyebrow">마일리지 카드 바꾸기 제안</div>
-    <h1>해외 스테이 결제,<br>이제 수수료 0원에<br>마일리지는 3배</h1>
-    <p class="sub">지금 카드는 해외에서 쓸 때마다 수수료가 나가. 새 카드는 그게 없어.</p>
-    <div class="hero-row">
-      <div class="hero-card" role="img" aria-label="우리카드 카드의정석 EVERY MILE SKYPASS 카드 앞면"></div>
-      <div>
-        <div class="hero-name">우리카드</div>
-        <div class="hero-title">카드의정석<br>EVERY MILE SKYPASS</div>
-        <span class="pill">해외 수수료 0원</span>
-        <span class="pill">해외 2마일</span>
-        <span class="pill">실적 조건 없음</span>
-      </div>
+    <h1>해외 스테이 결제가 많은 너한테는<br>지금 나와 있는 대한항공 카드 중<br>이 카드가 제일 이득이야</h1>
+    <div class="swap">
+      <img class="old-card" src="https://d1c5n4ri2guedi.cloudfront.net/card/12/card_img/20094/12card.png" alt="지금 카드: 신한카드 Air Platinum#">
+      <span class="arrow">→</span>
+      <img class="new-card" src="https://d1c5n4ri2guedi.cloudfront.net/card/2553/card_img/44235/2553card.png" alt="새 카드: 우리카드 카드의정석 EVERY MILE SKYPASS">
+      <div class="names">지금: 신한 Air Platinum#<b>새 카드: 우리카드<br>EVERY MILE SKYPASS</b></div>
+    </div>
+    <div class="hero-stat">
+      <div class="k">카드만 바꿔도 1년에</div>
+      <div class="v">최대 30만 원 <small>이득</small></div>
+      <div class="s">한 달 100만 원 쓰면 약 14만 원<br>한 달 200만 원 쓰면 약 30만 원</div>
+    </div>
+    <div class="chips">
+      <span class="chip">해외 수수료 0원</span>
+      <span class="chip">해외 마일리지 3배</span>
+      <span class="chip">실적 조건 없음</span>
+      <span class="chip">연회비 1천 원 더 쌈</span>
     </div>
   </header>
 
   <section>
-    <h2>지금 카드랑 뭐가 달라?</h2>
+    <span class="tag">한눈에 보기</span>
+    <h2>한 달에 이만큼 쓰면, 1년에 이만큼 이득</h2>
+    <p class="lead">쓰는 돈 중 30%를 해외 스테이에서 쓴다고 보고 계산했어. 많이 쓸수록 이득도 커져.</p>
+
+    <div class="gain mine">
+      <div class="gain-top"><span class="q">한 달 <b>100만 원</b> 쓰면<span class="me">지금 너</span></span><span class="a">+14만 원</span></div>
+      <div class="bar"><i style="width:46%"></i></div>
+      <div class="how">마일리지 +7,600(11.4만 원) · 수수료 4.7만 원 절약</div>
+    </div>
+    <div class="gain">
+      <div class="gain-top"><span class="q">한 달 <b>150만 원</b> 쓰면</span><span class="a">+22만 원</span></div>
+      <div class="bar"><i style="width:73%"></i></div>
+      <div class="how">마일리지 +11,400(17.1만 원) · 수수료 7만 원 절약</div>
+    </div>
+    <div class="gain">
+      <div class="gain-top"><span class="q">한 달 <b>200만 원</b> 쓰면</span><span class="a">+30만 원</span></div>
+      <div class="bar"><i style="width:100%"></i></div>
+      <div class="how">마일리지 +15,200(22.8만 원) · 수수료 9.4만 원 절약</div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">1마일 = 15원으로 쳤어. 지금 카드가 해외 결제에 주는 포인트(월 최대 2천 원)를 매달 꽉 채워 받는다고 쳐서 그만큼 빼고 계산했어. 그래도 이 정도 차이야.</p>
+  </section>
+
+  <section>
+    <span class="tag loss">수수료</span>
+    <h2>지금 카드는 해외 수수료로만 1년에 최대 <span class="em-loss">9.4만 원</span>이 나가</h2>
+    <p class="lead">스테이에서 마트 가고, 밥 먹고, 쇼핑할 때마다 신한카드는 결제 금액에 수수료를 얹어서 청구해.</p>
+    <div class="per">
+      <div class="rate">1.3%</div>
+      <div class="txt">스테이에서 <b>10만 원</b> 쓸 때마다 <b class="em-loss">1,300원</b>이 더 나가.<br>(비자 1.1% + 신한카드 0.2%)</div>
+    </div>
+    <table>
+      <thead><tr><th>한 달 쓰는 돈</th><th>지금 카드<br>1년 수수료</th><th>새 카드</th></tr></thead>
+      <tbody>
+        <tr><td>100만 원</td><td class="minus">4.7만 원</td><td class="zero">0원</td></tr>
+        <tr><td>150만 원</td><td class="minus">7만 원</td><td class="zero">0원</td></tr>
+        <tr><td>200만 원</td><td class="minus">9.4만 원</td><td class="zero">0원</td></tr>
+      </tbody>
+    </table>
+    <div class="note">새 카드는 해외 수수료(마스터카드 1% + 우리카드 0.3%)를 <b>전부 면제</b>해 줘. 비행이 많을수록 아끼는 돈이 커져.</div>
+  </section>
+
+  <section>
+    <span class="tag">마일리지</span>
+    <h2>같은 돈 쓰고 마일리지는 <span class="em">약 2배</span></h2>
+    <p class="lead">한 달 100만 원 쓸 때 1년에 쌓이는 대한항공 마일리지야.</p>
+    <div class="mbar">
+      <div class="lab old"><span>지금 카드</span><span>8,000마일</span></div>
+      <div class="track old"><i style="width:51%"></i></div>
+      <div class="lab"><span>새 카드</span><b class="em">15,600마일</b></div>
+      <div class="track new"><i style="width:100%"></i></div>
+    </div>
+    <div class="rate-row">
+      <div><div class="k">해외 스테이 결제</div><div class="v">1,000원당 <b>2마일</b></div><div class="k">지금 카드의 3배</div></div>
+      <div><div class="k">국내 결제</div><div class="v">1,000원당 <b>1마일</b></div><div class="k">지금 카드의 1.5배</div></div>
+    </div>
+    <p class="muted" style="margin:12px 0 0">지금 카드는 국내든 해외든 1,500원당 1마일이야. 새 카드의 해외 2마일은 한 달 해외 결제 100만 원(가족카드 합산)까지이고, 그 위로는 1마일씩 쌓여.</p>
+  </section>
+
+  <section>
+    <span class="tag">비교</span>
+    <h2>지금 카드와 새 카드</h2>
     <div class="vs">
-      <figure>
+      <div>
         <div class="thumb"><img src="https://d1c5n4ri2guedi.cloudfront.net/card/12/card_img/20094/12card.png" alt="신한카드 Air Platinum# 앞면"></div>
-        <figcaption><b>지금 카드</b>신한카드 Air Platinum#<br>(대한항공형)</figcaption>
-      </figure>
-      <figure>
+        <div class="cap"><b>지금 카드</b>신한카드 Air Platinum#<br>(대한항공형)</div>
+      </div>
+      <div>
         <div class="thumb"><img src="https://d1c5n4ri2guedi.cloudfront.net/card/2553/card_img/44235/2553card.png" alt="우리카드 EVERY MILE SKYPASS 앞면"></div>
-        <figcaption><b>새 카드</b>우리카드 카드의정석<br>EVERY MILE SKYPASS</figcaption>
-      </figure>
-    </div>
-    <div class="rows">
-      <div class="r hl">
-        <div class="k">해외 결제 수수료</div>
-        <div class="o">약 1.3% 매번</div><div class="n">0원</div>
-      </div>
-      <div class="r hl">
-        <div class="k">해외 스테이 결제 적립</div>
-        <div class="o">1,500원당 1마일</div><div class="n">1,000원당 2마일 (3배)</div>
-      </div>
-      <div class="r">
-        <div class="k">국내 결제 적립</div>
-        <div class="o">1,500원당 1마일</div><div class="n">1,000원당 1마일 (1.5배)</div>
-      </div>
-      <div class="r">
-        <div class="k">연회비 (네 카드)</div>
-        <div class="o">40,000원</div><div class="n">39,000원</div>
+        <div class="cap"><b>새 카드</b>우리카드 카드의정석<br>EVERY MILE SKYPASS</div>
       </div>
     </div>
-    <p class="muted" style="margin:10px 0 0">해외 2마일은 한 달 해외 결제 100만 원(가족카드 합산)까지, 그 위로는 1마일. 내 가족카드 연회비는 19,000원 따로 나가.</p>
+    <table class="cmp">
+      <tbody>
+        <tr><td>해외 수수료</td><td>약 1.3%</td><td>0원</td></tr>
+        <tr><td>해외 적립</td><td>1,500원당 1마일</td><td>1,000원당 2마일</td></tr>
+        <tr><td>국내 적립</td><td>1,500원당 1마일</td><td>1,000원당 1마일</td></tr>
+        <tr><td>해외 포인트</td><td>1%, 월 최대 2천 원</td><td class="neutral">없음</td></tr>
+        <tr><td>연회비</td><td>40,000원</td><td>39,000원</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin:10px 0 0">내 가족카드 연회비 19,000원은 따로 나가. 이건 아래에 적은 것처럼 내 결제로 쌓이는 마일리지로 채워져.</p>
   </section>
 
   <section>
-    <h2>지금 카드는 해외에서 쓸수록 손해</h2>
-    <p class="lead">스테이션에서 마트 가고, 밥 먹고, 쇼핑할 때마다 신한카드는 결제 금액의 약 1.3%를 수수료로 더 받아. (비자 1.1% + 신한카드 0.2%)</p>
-    <div class="fee-big"><span class="now">1.3%</span><span class="arr">→</span><span class="new">0%</span></div>
-    <div class="fee-ladder">
-      <div><span>스테이에서 10만 원 쓰면</span><b>수수료 1,300원</b></div>
-      <div><span>한 달 50만 원 쓰면</span><b>수수료 6,500원</b></div>
-      <div><span>1년 600만 원 쓰면</span><b>수수료 78,000원</b></div>
-    </div>
-    <div class="note">새 카드는 이 수수료가 <b>전부 0원</b>이야. 비행이 많을수록 아끼는 돈이 커져.</div>
-  </section>
+    <span class="tag loss">다른 카드</span>
+    <h2>삼성·현대·롯데로 가도 해외 수수료는 계속 나가</h2>
+    <p class="lead">대한항공 마일리지 카드는 국내 1,000원당 1마일까지는 거의 같아. 차이는 해외 결제에서 나. 아래 금액은 해외 스테이에서 한 달 30만 원 쓸 때 1년 수수료야.</p>
 
-  <section>
-    <h2>한 달에 이만큼 쓰면, 1년에</h2>
-    <p class="lead">네 카드 한 달 사용액 중 30%를 해외 스테이에서 쓴다고 보고 계산했어.</p>
-
-    <div class="scen">
-      <div class="scen-head"><span class="amt">월 100만 원</span><span class="x">마일리지 약 2배</span></div>
-      <div class="bar-label"><span>지금 카드</span><span>8,000마일</span></div>
-      <div class="track"><div class="fill old" style="width:25.6%"></div></div>
-      <div class="bar-label"><span>새 카드</span><b>15,600마일</b></div>
-      <div class="track"><div class="fill new" style="width:50%"></div></div>
-      <div class="scen-foot">
-        <div><div class="k">더 쌓이는 마일리지</div><div class="v good">+7,600</div></div>
-        <div><div class="k">안 내도 되는 수수료</div><div class="v good">4.7만 원</div></div>
-      </div>
-      <div class="scen-total">1년 이득 <b>약 16만 원</b></div>
-    </div>
-
-    <div class="scen">
-      <div class="scen-head"><span class="amt">월 150만 원</span><span class="x">마일리지 약 2배</span></div>
-      <div class="bar-label"><span>지금 카드</span><span>12,000마일</span></div>
-      <div class="track"><div class="fill old" style="width:38.5%"></div></div>
-      <div class="bar-label"><span>새 카드</span><b>23,400마일</b></div>
-      <div class="track"><div class="fill new" style="width:75%"></div></div>
-      <div class="scen-foot">
-        <div><div class="k">더 쌓이는 마일리지</div><div class="v good">+11,400</div></div>
-        <div><div class="k">안 내도 되는 수수료</div><div class="v good">7만 원</div></div>
-      </div>
-      <div class="scen-total">1년 이득 <b>약 24만 원</b></div>
-    </div>
-
-    <div class="scen">
-      <div class="scen-head"><span class="amt">월 200만 원</span><span class="x">마일리지 약 2배</span></div>
-      <div class="bar-label"><span>지금 카드</span><span>16,000마일</span></div>
-      <div class="track"><div class="fill old" style="width:51.3%"></div></div>
-      <div class="bar-label"><span>새 카드</span><b>31,200마일</b></div>
-      <div class="track"><div class="fill new" style="width:100%"></div></div>
-      <div class="scen-foot">
-        <div><div class="k">더 쌓이는 마일리지</div><div class="v good">+15,200</div></div>
-        <div><div class="k">안 내도 되는 수수료</div><div class="v good">9.4만 원</div></div>
-      </div>
-      <div class="scen-total">1년 이득 <b>약 32만 원</b></div>
-    </div>
-
-    <p class="muted" style="margin:12px 0 0">1년 이득 = 더 쌓이는 마일리지 × 15원 + 안 내도 되는 수수료. 해외 스테이 결제 비중이 30%보다 크면 차이는 더 벌어져. 내가 가족카드로 쓰는 돈의 마일리지도 네 계정에 따로 더 쌓여.</p>
-  </section>
-
-  <section>
-    <h2>삼성·현대 같은 다른 카드보다 나은 점</h2>
-    <p class="lead">대한항공 마일리지 카드는 국내 1,000원당 1마일까지는 다 비슷해. 차이는 해외 결제에서 나.</p>
-
-    <div class="alt win">
-      <div class="alt-top"><span class="alt-name">우리 EVERY MILE</span><span class="alt-fee good">수수료 0%</span></div>
-      <div class="alt-meta">해외 2마일 · 실적 조건 없음 · 연회비 3.9만</div>
-    </div>
-    <div class="alt">
-      <div class="alt-top"><span class="alt-name">현대 대한항공카드 060</span><span class="alt-fee bad">수수료 1.1%+</span></div>
-      <div class="alt-meta">해외 2마일 · 전월 50만 원 써야 적립 · 연회비 6만</div>
-    </div>
-    <div class="alt">
-      <div class="alt-top"><span class="alt-name">삼성 &amp; MILEAGE PLATINUM</span><span class="alt-fee bad">수수료 1.6%</span></div>
-      <div class="alt-meta">2배 적립은 백화점·주유·커피 위주(해외형을 고르면 해외 2마일, 월 100만 원까지) · 연회비 4.9만</div>
-    </div>
-    <div class="alt">
-      <div class="alt-top"><span class="alt-name">롯데 DIGILOCA SKYPASS</span><span class="alt-fee bad">수수료 1.2~1.6%</span></div>
-      <div class="alt-meta">해외 2마일 · 실적 조건 없음 · 연회비 2만</div>
-    </div>
-    <div class="alt">
-      <div class="alt-top"><span class="alt-name">신한 Air One</span><span class="alt-fee bad">수수료 있음</span></div>
-      <div class="alt-meta">해외 2마일 · 전월 50만 원 써야 적립 · 연회비 4.9만</div>
-    </div>
+    <div class="alt win"><span class="n">우리 EVERY MILE</span><span class="f">0원</span><span class="m">수수료 0% · 해외 2마일 · 실적 조건 없음 · 연회비 3.9만</span></div>
+    <div class="alt"><span class="n">현대 대한항공카드 060</span><span class="f">3.6만 원 이상</span><span class="m">수수료 1% 넘음 · 해외 2마일 · 전월 50만 원 써야 적립 · 연회비 6만</span></div>
+    <div class="alt"><span class="n">롯데 DIGILOCA SKYPASS</span><span class="f">4.3~5.8만 원</span><span class="m">수수료 1.2~1.6% · 해외 2마일 · 실적 조건 없음 · 연회비 2만</span></div>
+    <div class="alt"><span class="n">삼성 &amp; MILEAGE PLATINUM</span><span class="f">5.8만 원</span><span class="m">수수료 1.6% · 해외 2마일은 해외형을 골라야 · 연회비 4.9만</span></div>
+    <div class="alt"><span class="n">신한 Air One</span><span class="f">3.6만 원 이상</span><span class="m">수수료 1% 넘음 · 해외 2마일 · 전월 50만 원 써야 적립 · 연회비 4.9만</span></div>
 
     <ul class="why">
-      <li><b>해외 수수료가 0원인 건 이 카드뿐.</b> 해외 스테이 결제가 많을수록 다른 카드와 차이가 커져.</li>
+      <li><b>비교한 카드 중 해외 수수료가 0원인 건 이 카드뿐이야.</b></li>
       <li><b>실적 조건이 없어.</b> 비행 스케줄 때문에 국내에서 적게 쓴 달에도 마일리지가 똑같이 쌓여.</li>
-      <li><b>롯데는 연회비가 더 싸지만</b> 해외에서 쓸 때마다 수수료가 나가서, 해외 결제가 1년 200만 원쯤 넘으면 이 카드가 이득이야.</li>
+      <li><b>롯데는 연회비가 본인·가족카드 합쳐 2.5만 원 싸지만</b> 해외 수수료가 매번 나가서, 해외에서 한 달 17만 원 넘게 쓰면 이 카드가 이득이야.</li>
       <li><b>현대는 대한항공 항공권 5만 원 쿠폰을 주지만</b> 항공권을 돈 주고 살 때만 쓸 수 있고, 연회비 6만 원에 매달 50만 원 이상 써야 적립돼.</li>
     </ul>
   </section>
 
   <section>
-    <h2>새 카드 먼저, 기존 카드는 천천히</h2>
-    <p class="lead">신한카드는 급하게 해지할 필요 없어. 새 카드가 오면 하나씩 옮기고, 다 옮긴 뒤에 정리하면 돼.</p>
+    <span class="tag">가족카드</span>
+    <h2>내가 쓰는 돈도 <span class="em">네 마일리지</span>로 쌓여</h2>
+    <p class="lead">가족카드로 결제한 마일리지는 전부 네 스카이패스 계정에 들어가.</p>
+    <ul class="plain">
+      <li>내 AI 구독(한 달 100달러)도 해외 결제라서 수수료 0원에 1,000원당 2마일이야. 이것만으로 1년에 <b class="em">3천 마일 넘게</b> 네 계정에 쌓여.</li>
+      <li>쿠팡·장보기·통신비처럼 내가 쓰는 돈도 1,000원당 1마일씩 더해져.</li>
+      <li>가족카드에는 내 이름이 찍혀서, 내 명의 보험료·통신비도 이 카드로 걸 수 있을 것 같아. 등록할 때 보험사에 확인해 볼게.</li>
+    </ul>
+  </section>
+
+  <section>
+    <span class="tag">바꾸는 순서</span>
+    <h2>새 카드 먼저, 기존 카드는 천천히. 손해 없어</h2>
+    <p class="lead">신한카드는 급하게 해지할 필요 없어. 연회비는 남은 날짜만큼 돌려받으니까 몇 달 같이 들고 있어도 돼.</p>
     <ol class="steps">
       <li>
         <div class="when">지금</div>
@@ -333,28 +332,26 @@
         <div class="t">신한카드 명세서 확인</div>
         <div class="d">새로 청구된 게 하나도 없으면 다 옮긴 거야. 마이신한포인트가 남았으면 마일리지로 바꿔 둬(25포인트 = 1마일).</div>
       </li>
-      <li class="end">
+      <li>
         <div class="when">해지하는 날</div>
         <div class="t">마지막 카드값이 빠져나가고, 대한항공 앱에 그 마일리지가 들어온 걸 본 날</div>
-        <div class="d">마일리지는 결제일 며칠 뒤에 들어와. 지금까지 쌓인 마일리지는 대한항공 계정에 그대로 남고, 연회비는 남은 날짜만큼 돌려받으니 몇 달 같이 들고 있어도 손해가 거의 없어.</div>
+        <div class="d">마일리지는 결제일 며칠 뒤에 들어와. 지금까지 쌓인 마일리지는 대한항공 계정에 그대로 남아.</div>
       </li>
     </ol>
     <div class="note">쏠트래블은 그대로 둬. 스테이에서 현금 뽑을 때 쓰면 돼.</div>
   </section>
 
   <section>
-    <h2>쓸 때 알아 둘 것</h2>
+    <span class="tag">쓸 때 알아 둘 것</span>
     <ul class="plain">
       <li>해외에서는 <b>현지 돈으로 결제</b>하기. '원화로 결제할래?'에 예를 누르면 수수료가 따로 붙어.</li>
       <li>마일리지가 안 쌓이는 것: 전기·가스·수도 요금, 세금, 4대보험, 아파트 관리비, 교통카드 충전, 상품권 구매, 무이자 할부</li>
-      <li>가족카드에는 내 이름이 찍혀서, 내 명의 보험료·통신비도 이 카드로 걸 수 있을 것 같아. 등록할 때 보험사에 확인해 볼게.</li>
     </ul>
   </section>
 
   <footer>
-    <p><b>계산 기준</b> 1마일 = 15원. 해외 수수료는 지금 신한카드 비자 기준(국제브랜드 1.1% + 해외서비스 0.2%). 환율은 두 카드 모두 같은 방식(송금 보낼 때 환율)으로 계산돼서 비교에서 뺐어. 마일리지가 안 쌓이는 결제는 계산에 넣지 않았어.</p>
-    <p>쏠트래블로 낸 돈은 수수료가 없지만 마일리지도 0이야.</p>
-    <p>카드 조건은 카드고릴라 상품 안내(2026년 11월 20일 확인) 기준이야. 신청 전에 우리카드 앱에서 한 번 더 확인해 줘.</p>
+    <p><b>계산 기준</b> 1마일 = 15원. 지금 카드의 해외 수수료는 비자 1.1% + 신한카드 0.2%. 지금 카드의 해외 포인트는 1회 10만 원까지 1%, 한 달 2번이라 최대 2천 원이고, 매달 최대로 받는다고 쳤어. 환율은 두 카드가 같은 방식(송금 보낼 때 환율)이라 비교에서 뺐어. 마일리지가 안 쌓이는 결제는 계산에 넣지 않았어.</p>
+    <p>비교한 카드: 현대 대한항공카드 060, 롯데 DIGILOCA SKYPASS, 삼성 &amp; MILEAGE PLATINUM, 신한 Air One. 카드 조건은 카드고릴라 상품 안내(2026년 11월 20일 확인) 기준이야. 신청 전에 우리카드 앱에서 한 번 더 확인해 줘.</p>
   </footer>
 
 </main>
