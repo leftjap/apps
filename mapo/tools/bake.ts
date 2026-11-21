@@ -30,6 +30,7 @@ import { groundQuery } from '../src/data/offroad.ts';
 import { centerArrows } from './road/arrows.ts';
 import { crossingFaces } from './road/crossings.ts';
 import { bakeSurface, clipMarksToGround } from './road/surface.ts';
+import { fitRoundabouts, fixSeoulLines, loadHdCurbs } from './road/hdcurbs.ts';
 import { roadLevels } from './lib/levels.ts';
 import { carSurface, groundBits as treeGround, placeTreesOffGround, pushTreesOffRoad } from './lib/treeplace.ts';
 import { clipLine, drawnGround, dropOverlaps, onGround, smoothLine } from './lib/groundclip.ts';
@@ -436,6 +437,11 @@ const hw = raw('highways').filter((e) => {
   if (t.tunnel && t.tunnel !== 'no' && CLS[t.highway] >= 6) return false; // 지하 보도
   return true;
 });
+// 회전교차로 고리를 측량 교통섬에 맞춘다(tools/road/hdcurbs.ts, 재작업 W65). 측량 자료가 없으면 OSM 그대로
+{
+  const hd = loadHdCurbs();
+  if (hd) console.log(fitRoundabouts(hw, hd));
+}
 
 // 교차점: 두 번 이상 쓰인 노드
 const use = new Map<number, number>();
@@ -582,9 +588,16 @@ for (const w of hw) if (/_link$/.test(w.tags!.highway)) for (const p of piecesOf
 const linkGuess = new Set<number>();
 let linkMoved = 0;
 const laneFile = new URL('./raw/seoul-lanes.json', import.meta.url);
-const tgis = existsSync(laneFile)
-  ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]).filter((l) => l.eve === '001')
-  : [];
+// 서울시 차선 원자료. 측량 자료(정밀도로지도, 커밋 안 함)가 있으면 그것과 1m 넘게 어긋난 연석 쪽 선을 먼저 고친다(tools/road/hdcurbs.ts, 재작업 W65)
+const seoulLanes = (() => {
+  const raw = existsSync(laneFile) ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]) : [];
+  const hd = loadHdCurbs();
+  if (!hd) return raw;
+  const f = fixSeoulLines(raw, hd);
+  console.log(f.log);
+  return f.lines;
+})();
+const tgis = seoulLanes.filter((l) => l.eve === '001');
 {
   const segs: LaneSeg[] = [];
   for (const l of tgis) {
@@ -2082,7 +2095,7 @@ let underTunnel: ((x: number, z: number, ux: number, uz: number) => boolean) | u
 let marksJson = '';
 let marksWholeJson = '';
 {
-  const raw = existsSync(laneFile) ? (JSON.parse(readFileSync(laneFile, 'utf8')).lanes as { k: string; k2: string; eve: string; p: [number, number][] }[]) : [];
+  const raw = seoulLanes;
   /** 점 수, 첫 점, 뒤 점마다 앞 점과의 차이(dm) */
   const encPts = (P: number[][]) => {
     const c = P.map((p) => p.map((v) => Math.round(v * 10)));
@@ -2252,19 +2265,20 @@ writeFileSync(new URL('../public/data/surface-polys.json', import.meta.url), sur
     const signalsFile = new URL('../public/data/signals.json', import.meta.url);
     const inter = makeIntersections(g, { crosswalks: bd.crosswalks, stopLines: bd.stopLines, lamps: existsSync(signalsFile) ? JSON.parse(readFileSync(signalsFile, 'utf8')) : undefined });
     const [sf2, sp2] = [decodeSurface(JSON.parse(surfaceJson)), JSON.parse(surfacePolysJson)];
-    const ground = bakedGround(bd, sf2, sp2);
-    const ground25 = bakedGround(bd, sf2, sp2, 0.25);
+    // 찻길 면 하나·보도 면·분리대를 길 정본에서 굽고(tools/road/surface.ts, 재작업 W51·설계 문서 59절 B2. node tools/surface.ts 와 같은 함수), 노면 표시를 그 면 안으로 자른다
+    // 골목 찻길 면은 실폭도로 면으로 자른다(재작업 W60 순서 2, node tools/surface.ts 와 같은 입력)
+    const raFile = new URL('./raw/gis-roads.json', import.meta.url);
+    const roadArea = existsSync(raFile) ? (JSON.parse(readFileSync(raFile, 'utf8')).roads as { r: [number, number][][] }[]).map((x) => x.r.map((ring) => Float32Array.from(ring.flatMap(([a, c]) => toXZ(a, c))))) : undefined;
+    const sfx = bakeSurface({ board: bd, g, inter, sf: sf2, polys: sp2, seoul: decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, walk: JSON.parse(walkJson), roadArea, hd: loadHdCurbs() });
+    // 노면 표시는 최종 찻길 면으로 자른다(재작업 W65): 이 자리에서는 아직 최종 면이 없어 측량 연석 맞춤 전 찻길 띠 면으로 잘랐고, 측량으로 넓힌 자리의 정본 선(중앙버스전용선 등)이 잘려 나갔다
+    const ground = bakedGround(bd, { ...sf2, ground: sfx.g }, sp2);
+    const ground25 = bakedGround(bd, { ...sf2, ground: sfx.g }, sp2, 0.25);
     // 서울시 선만 든 표시는 tools/marks.ts 가 정본 선만 다시 그을 수 있게 tools/raw/ 에 남긴다
     writeFileSync(new URL('./raw/seoul-marks.json', import.meta.url), JSON.stringify(mj));
     const lm = laneMarks({ board: bd, g, inter, seoul: decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, marks: mj, ground, ground25 });
     const ra = refitArrows(lm.json, (arrows) => buildCarGraph(bd.roads, decodeLanes(JSON.parse(baked.json).lanes), arrows));
     Object.assign(mj, { l: ra.json.l, h: ra.json.h, ld: ra.json.ld, a: ra.json.a, aw: ra.json.aw });
     console.log(`${lm.log}; 화살표 새 칸 가운데로 ${ra.moved}개(되돌린 것 ${ra.reverted})`);
-    // 찻길 면 하나·보도 면·분리대를 길 정본에서 굽고(tools/road/surface.ts, 재작업 W51·설계 문서 59절 B2. node tools/surface.ts 와 같은 함수), 노면 표시를 그 면 안으로 자른다
-    // 골목 찻길 면은 실폭도로 면으로 자른다(재작업 W60 순서 2, node tools/surface.ts 와 같은 입력)
-    const raFile = new URL('./raw/gis-roads.json', import.meta.url);
-    const roadArea = existsSync(raFile) ? (JSON.parse(readFileSync(raFile, 'utf8')).roads as { r: [number, number][][] }[]).map((x) => x.r.map((ring) => Float32Array.from(ring.flatMap(([a, c]) => toXZ(a, c))))) : undefined;
-    const sfx = bakeSurface({ board: bd, g, inter, sf: sf2, polys: sp2, seoul: decodeMarks(JSON.parse(marksWholeJson) as MarksJson).lines, walk: JSON.parse(walkJson), roadArea });
     const sj = JSON.parse(surfaceJson) as SurfaceJson;
     surfaceJson = JSON.stringify({ ...sj, v: 2, g: sfx.g, w: sfx.w, m: sfx.m });
     writeFileSync(new URL('../public/data/surface.json', import.meta.url), surfaceJson);

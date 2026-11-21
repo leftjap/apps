@@ -4,7 +4,7 @@ import { decodeBoard } from '../src/data/board.ts';
 import { decodeSurface, type SurfaceJson } from '../src/data/surface.ts';
 import { BOARD_R } from '../src/geo.ts';
 import { decodeWalk, type WalkJson } from '../src/sim/walknet.ts';
-import { BODY_R, EDGE_EXT, hitDisc, majorGround } from '../tools/lib/walkfix.ts';
+import { BODY_R, EDGE_EXT, hitDisc, finalGround, majorGround } from '../tools/lib/walkfix.ts';
 import { fillBits } from '../tools/lib/bits.ts';
 import { underpasses, ZONES } from '../src/sim/people/zones.ts';
 
@@ -23,6 +23,8 @@ const G = majorGround(
   P.car.map((c) => [c[0], dm(c.slice(1))] as [number, number[]]),
   P.med.map(dm),
   [-BOARD_R, -BOARD_R, BOARD_R, BOARD_R],
+  undefined,
+  finalGround(surface),
 );
 // 한강공원 나들목 둘레 20m 는 보행로가 자동차 전용도로 밑을 지난다(찻길로 치지 않는다)
 for (const [tx, tz] of underpasses(board.roads, ...ZONES.mangwon)) fillBits(G, [Array.from({ length: 48 }, (_, k) => (k % 2 ? tz + Math.sin((Math.floor(k / 2) * Math.PI) / 12) * 20 : tx + Math.cos((Math.floor(k / 2) * Math.PI) / 12) * 20))], 1, true);

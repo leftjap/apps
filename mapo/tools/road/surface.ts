@@ -15,6 +15,7 @@ import { headingNear, laneOff, laneWidth, leftEdge, MED, rightEdge, type Edge } 
 import type { Inter } from '../../src/sim/intersection/index.ts';
 import { makeBits, fillBits, type Bits } from '../lib/bits.ts';
 import { traceLoops, ringArea } from '../lib/contour.ts';
+import type { HdCurbs } from './hdcurbs.ts';
 
 /** 칸 비트 */
 export const SB = { ROAD: 1, MED: 2, RAIL: 4, RES: 8, GAP: 16, KEEP: 32, WIDE: 64, WALK: 128 } as const;
@@ -33,6 +34,8 @@ export interface SurfaceInput {
   walk?: { n: number[]; e: number[] };
   /** 행정안전부 실폭도로 면(tools/raw/gis-roads.json, [바깥, ...구멍] xz): 골목 찻길을 이 면 안으로 자른다. 없으면 건물만 뺀다 */
   roadArea?: Float32Array[][];
+  /** 측량 연석(정밀도로지도, tools/road/hdcurbs.ts): 있으면 연석 보도 쪽 찻길을 지우고 연석과 찻길 사이 빈 곳을 메운다. 없으면 그대로 */
+  hd?: HdCurbs;
 }
 
 export interface SurfaceOut {
@@ -357,7 +360,25 @@ export function bakeSurface(inp: SurfaceInput): SurfaceOut {
     }
   }
   // ③ 교차로 경로(모든 진입로·차로·나가는 길)와 15° 넘게 꺾인 이음매 곡선: 땅 위 점만, 차 몸 반폭 0.9m + 0.3m
-  const np = carPaths(g, X, (run) => (strokeFlat(B, run, 1.2, SB.ROAD), strokeFlat(core, run, 1.2, 1)));
+  /** 차 몸 자리(차로 가운데 ± 차 몸 반폭 0.9m + 0.3m, 교차로 경로 포함): 측량 연석 맞춤이 이 자리는 지우지 않는다 */
+  const body = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, GCELL);
+  const np = carPaths(g, X, (run) => (strokeFlat(B, run, 1.2, SB.ROAD), strokeFlat(core, run, 1.2, 1), strokeFlat(body, run, 1.2, 1)));
+  for (const e of g)
+    for (const l of e.mo.length || e.med ? [...Array(e.lanes).keys(), MED] : [...Array(e.lanes).keys()]) {
+      let run: number[] = [];
+      const flush = () => (run.length >= 4 && strokeFlat(body, run, 1.2, 1), (run = []));
+      for (let s = 0; s <= e.len + 1e-6; s += 0.5) {
+        pointAt(e.p, e.cum, Math.min(s, e.len), Q);
+        if (Math.abs(Q[1]) > 0.3) {
+          flush();
+          continue;
+        }
+        const o = laneOff(e, l, s);
+        const h = headingNear(e, s, o);
+        run.push(Q[0] - Math.sin(h) * o, Q[2] + Math.cos(h) * o);
+      }
+      flush();
+    }
   log.push(`차로 띠 ${nb}칸·교차로 경로 ${np}개 ${((Date.now() - t0) / 1000).toFixed(1)}초`);
   // 지금까지 칠한 찻길(① ∪ ② ∪ ③)을 다듬는다: 1m 안 틈은 메우고(닫기, 1.25m 정사각형), 1m 보다 좁게 튀어나온 조각은 깎는다(열기).
   // 외곽선을 0.3m 안에서 줄이고 깎아도 0.5m 아래 좁은 조각이 다시 생기지 않게 검사(test/w51-surface.ts, 0.75m)보다 넉넉히 한다
@@ -679,6 +700,83 @@ export function bakeSurface(inp: SurfaceInput): SurfaceOut {
     road = morph(morph(road, GN, GN, 2, false), GN, GN, 2, true);
     for (let i = 0; i < road.length; i++) if (!zone[i] || (core.v[i] && pre[i])) road[i] = pre[i];
   }
+  if (inp.hd) {
+    // 측량 연석 쪽으로 메울 때 건물·철도 자리는 메우지 않는다
+    const block = new Uint8Array(road.length);
+    for (let i = 0; i < road.length; i++) block[i] = bldg[i] || v[i] & SB.RAIL ? 1 : 0;
+    const before = road.slice();
+    log.push(hdCurbFit(road, core, body, inp.hd, block));
+    // 연석 맞춤이 바꾼 칸 둘레 1.5m 안을 건물 자르기 뒤와 같게(1m 안 틈 메우고 1m 보다 좁은 조각 깎기) 다시 다듬는다.
+    // 연석 표본마다 따로 지우고 메워 경계가 들쭉날쭉해, 모퉁이 삼각형·좁게 파고든 틈이 남았다. 건물·철도 자리는 메우지 않고, 차 몸 자리는 그대로 둔다
+    const moved = new Uint8Array(road.length);
+    for (let i = 0; i < road.length; i++) moved[i] = before[i] !== road[i] ? 1 : 0;
+    const fz = morph(moved, GN, GN, 6, true);
+    let sm = morph(morph(road, GN, GN, 2, true), GN, GN, 2, false);
+    // 연석 맞춤이 측량 연석에 따라 지운 칸은 다시 메우지 않는다(폭 1m 아래 교통섬·분리대가 찻길로 메워졌다)
+    for (let i = 0; i < road.length; i++) if (block[i] || (before[i] && !road[i])) sm[i] = 0;
+    sm = morph(morph(sm, GN, GN, 2, false), GN, GN, 2, true);
+    for (let i = 0; i < road.length; i++)
+      if (fz[i]) {
+        if (!(body.v[i] && road[i])) road[i] = sm[i];
+        zone[i] = 1;
+      }
+    // 그래도 남은 0.75m 보다 좁은 틈(연석 끝·두 연석 사이에서 한쪽만 지운 자리, 옮긴 서울시 연석 쪽 선으로 찻길 띠 사이에 생긴 틈)은 판 전체에서 메우고,
+    // 차 몸 자리가 아닌 0.75m 보다 좁게 튀어나온 찻길 조각은 깎는다. 분리대·보도·찻길이 될 수 없는 폭이라 앱이 그 둘레에 연석을 그렸다.
+    // 측량 전 판(main)에는 이런 틈·조각이 없어(test/w51 0) 그 자리는 바뀌지 않는다
+    const fine = morph(morph(road, GN, GN, 1, true), GN, GN, 1, false);
+    for (let i = 0; i < road.length; i++) if (fine[i] && !road[i] && !block[i]) road[i] = 1;
+    // 길이 내내 1.25m 보다 좁은 찻길 아닌 조각(측량 연석 한 줄 옆을 차선까지 지운 띠 등)도 메운다: 0.75m 보다 넓은 토막이 남으면 외곽선을 0.3m 안에서 줄일 때
+    // 끝이 0.5m 아래로 좁아졌다(1062,606, 재작업 W65). 처음 다듬기와 같은 1.25m 이고, 그보다 넓은 토막이 있는 교통섬·분리대는 그대로 둔다
+    {
+      const off = new Uint8Array(road.length);
+      for (let i = 0; i < road.length; i++) off[i] = road[i] ? 0 : 1;
+      const wide = morph(morph(off, GN, GN, 2, false), GN, GN, 2, true);
+      // 좁은 칸(열기로 사라지는 찻길 아닌 칸)끼리만 이어 보고, 넓은 찻길 아닌 칸이나 건물·철도에 닿는 덩어리는 남긴다(교통섬 끝 등)
+      const seen = new Uint8Array(road.length);
+      for (let i0 = 0; i0 < road.length; i0++) {
+        if (!off[i0] || wide[i0] || seen[i0]) continue;
+        const comp = [i0];
+        seen[i0] = 1;
+        let keep = false;
+        for (let q = 0; q < comp.length; q++) {
+          const i = comp[q];
+          if (block[i]) keep = true;
+          const x = i % GN;
+          for (const n of [x > 0 ? i - 1 : -1, x + 1 < GN ? i + 1 : -1, i - GN, i + GN]) {
+            if (n < 0 || n >= road.length || !off[n]) continue;
+            if (wide[n]) keep = true;
+            else if (!seen[n]) (seen[n] = 1), comp.push(n);
+          }
+        }
+        if (!keep) for (const i of comp) road[i] = 1;
+      }
+    }
+    const trim = morph(morph(road, GN, GN, 1, false), GN, GN, 1, true);
+    for (let i = 0; i < road.length; i++) if (road[i] && !trim[i] && !body.v[i]) road[i] = 0;
+    // 연석 맞춤이 지운 자리 가운데 보도와 이어지지 않고 사방이 찻길인 덩어리는 측량 교통섬·분리대다: 분리대로 둔다
+    // (그냥 찻길 아닌 칸으로 두면 마주 오는 찻길 사이 뜻 없는 회색 면이 된다, 재작업 W65)
+    const seen = new Uint8Array(road.length);
+    let islands = 0;
+    for (let i0 = 0; i0 < road.length; i0++) {
+      if (seen[i0] || !before[i0] || road[i0]) continue;
+      const comp = [i0];
+      seen[i0] = 1;
+      let open = false;
+      for (let q = 0; q < comp.length; q++) {
+        const i = comp[q];
+        const x = i % GN;
+        for (const n of [x > 0 ? i - 1 : -1, x + 1 < GN ? i + 1 : -1, i - GN, i + GN]) {
+          if (n < 0 || n >= road.length || road[n]) continue;
+          if (!before[n]) open = true;
+          else if (!seen[n]) (seen[n] = 1), comp.push(n);
+        }
+      }
+      if (open) continue;
+      islands++;
+      for (const i of comp) v[i] |= SB.MED;
+    }
+    log.push(`연석 맞춤이 지운 자리 가운데 교통섬·분리대로 둔 덩어리 ${islands}개`);
+  }
   log.push(`골목 찻길: 실폭도로가 덮는 가운데선 ${(covered / 1000).toFixed(1)}km·안 덮는 ${(bare / 1000).toFixed(1)}km, 실폭도로 밖이라 뺀 ${Math.round(cutRw * GCELL * GCELL)}m²·건물이라 뺀 ${Math.round(cutB * GCELL * GCELL)}m²`);
   log.push(`찻길 칸 ${((road.reduce((a, x) => a + x, 0) * GCELL * GCELL) / 1e6).toFixed(3)}km²(둘러싸인 틈 ${pockets}곳 메움) ${((Date.now() - t0) / 1000).toFixed(1)}초`);
   // 분리대: 찻길이 아닌 분리대 칸. 녹지는 연석 안쪽 0.25m 뒤(0.75m 보다 좁은 분리대는 녹지 없이 보도 블록)
@@ -721,18 +819,24 @@ export function bakeSurface(inp: SurfaceInput): SurfaceOut {
  * 끝까지 밖인 조각은 버리고, 나뉜 선의 점선 위상(ld)은 앞 조각 길이만큼 더한다. 지금 표시가 모두 면 안이면 그대로 돌려준다
  */
 export function clipMarksToGround(marks: { l: number[][]; ld?: number[] }, ground: ArrayLike<number>): { l: number[][]; ld: number[]; cut: number } {
-  const B = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, 0.5);
-  for (const t of tileRings(ground)) fillBits(B, t.rings, 1);
-  const at = (x: number, z: number) => {
+  // 0.5m 칸(검사 test/w48 ⑤ 와 같은 칸)과 찻길 면과 같은 0.25m 칸 둘 다에서 면 안(0.3m 여유)이어야 안으로 본다.
+  // 0.5m 칸만 보면 자른 끝이 면 밖 0.6~0.8m 까지 나가 검사 test/w14 허용치 0.6m 를 넘었다(재작업 W65)
+  const grids = [0.5, GCELL].map((c) => {
+    const B = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, c);
+    for (const t of tileRings(ground)) fillBits(B, t.rings, 1);
+    return B;
+  });
+  const at = (B: Bits, x: number, z: number) => {
     const i = Math.floor((x - B.x0) / B.cell);
     const j = Math.floor((z - B.z0) / B.cell);
     return i >= 0 && j >= 0 && i < B.w && j < B.h ? B.v[j * B.w + i] & 1 : 0;
   };
-  const on = (x: number, z: number) => {
-    if (at(x, z)) return true;
-    for (let k = 0; k < 8; k++) if (at(x + Math.cos((k * Math.PI) / 4) * 0.3, z + Math.sin((k * Math.PI) / 4) * 0.3)) return true;
+  const onB = (B: Bits, x: number, z: number) => {
+    if (at(B, x, z)) return true;
+    for (let k = 0; k < 8; k++) if (at(B, x + Math.cos((k * Math.PI) / 4) * 0.3, z + Math.sin((k * Math.PI) / 4) * 0.3)) return true;
     return false;
   };
+  const on = (x: number, z: number) => grids.every((B) => onB(B, x, z));
   /** 조각 a→b(dm 정수)의 0.5m 가운데 점들이 면 안인가 */
   const samples = (ax: number, az: number, bx: number, bz: number) => {
     // 앱·시험은 dm 를 10 으로 나눠 32비트로 푼다(src/data/marks.ts): 같은 자리에서 본다
@@ -761,7 +865,16 @@ export function clipMarksToGround(marks: { l: number[][]; ld?: number[] }, groun
         const m = s.length;
         for (let q = 1; q < m; q++)
           if (s[q] !== s[q - 1]) {
-            const p = [Math.round(a[0] + ((b[0] - a[0]) * q) / m), Math.round(a[1] + ((b[1] - a[1]) * q) / m)];
+            // 안·밖이 바뀌는 두 표본 사이에서 경계를 반으로 나눠 찾아 안쪽 끝에서 끊는다
+            let [lo, hi] = [(q - 0.5) / m, (q + 0.5) / m];
+            const inAt = (t: number) => on((a[0] + (b[0] - a[0]) * t) / 10, (a[1] + (b[1] - a[1]) * t) / 10);
+            for (let it = 0; it < 8; it++) {
+              const mid = (lo + hi) / 2;
+              if (inAt(mid) === s[q - 1]) lo = mid;
+              else hi = mid;
+            }
+            const t = s[q - 1] ? lo : hi;
+            const p = [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t)];
             const last = next[next.length - 1];
             if ((p[0] !== last[0] || p[1] !== last[1]) && (p[0] !== b[0] || p[1] !== b[1])) (next.push(p), (split = true));
           }
@@ -775,7 +888,29 @@ export function clipMarksToGround(marks: { l: number[][]; ld?: number[] }, groun
     let run: number[][] = [];
     let runAt = 0;
     let along = 0;
+    // 끝 꼭짓점이 면 밖이면(가운데 표본만 보아 끝이 면 밖 0.5~0.6m 에 남았다) 이웃 꼭짓점 쪽으로 면 안 경계까지 당긴다
+    const pull = (out: number[], inP: number[]): number[] => {
+      const onP = (q: number[]) => on(q[0] / 10, q[1] / 10);
+      if (onP(out) || !onP(inP)) return out;
+      let [lo, hi] = [0, 1]; // 0 이 inP, 1 이 out
+      for (let it = 0; it < 10; it++) {
+        const mid = (lo + hi) / 2;
+        if (onP([inP[0] + (out[0] - inP[0]) * mid, inP[1] + (out[1] - inP[1]) * mid])) lo = mid;
+        else hi = mid;
+      }
+      const q = [Math.round(inP[0] + (out[0] - inP[0]) * lo), Math.round(inP[1] + (out[1] - inP[1]) * lo)];
+      // 당긴 선분도 가운데 표본이 모두 면 안이어야 한다(아니면 그 끝 선분을 뺀다: 이웃 꼭짓점에서 끝낸다)
+      return samples(inP[0], inP[1], q[0], q[1]).every(Boolean) ? q : inP;
+    };
     const flush = () => {
+      if (run.length >= 2) {
+        const r0 = run[0];
+        run[0] = pull(run[0], run[1]);
+        runAt += Math.hypot(run[0][0] - r0[0], run[0][1] - r0[1]);
+        run[run.length - 1] = pull(run[run.length - 1], run[run.length - 2]);
+        // 끝 선분을 뺀 자리는 이웃 꼭짓점과 같은 점이 되므로 이어진 같은 점은 하나로 둔다
+        run = run.filter((p, k) => !k || p[0] !== run[k - 1][0] || p[1] !== run[k - 1][1]);
+      }
       if (run.length >= 2) {
         outL.push([code, run.length, ...run[0], ...run.slice(1).flatMap((p, k) => [p[0] - run[k][0], p[1] - run[k][1]])]);
         outD.push(Math.round(d0 + runAt));
@@ -797,4 +932,127 @@ export function clipMarksToGround(marks: { l: number[][]; ld?: number[] }, groun
     flush();
   });
   return { l: outL, ld: outD, cut };
+}
+
+/**
+ * ⑦ 측량 연석(재작업 W65): 연석을 0.25m 로 짚어 양쪽 수직으로 8m 안에서 먼저 만나는 측량 노면선(차선·중앙선·길가장자리 등) 쪽을 찻길 쪽으로 본다
+ * (노면선이 양쪽 모두 없으면 같은 연석 줄 다수 쪽, 줄 전체에 없으면 차로 띠 core 로 정한다). 반대쪽(보도·분리대)은 연석에서 6m 까지, 다른 측량 연석·길가장자리선·차 몸 자리(body)를 만나거나
+ * 1m 넘는 보도를 만나면 멈추며 연석에 붙은 찻길 칸을 지운다. 측량 중앙선·차선을 먼저 만나면 그쪽도 찻길이라 그 표본은 지우지 않는다.
+ * 차 몸 자리에서 멈추는 까닭: 정밀도로지도는 큰길만 측량해, 연석 너머 나란한 길·옆길(측량 안 함)의 차로를 지우지 않는다(차로를 지킨다, 2026-11-20 지오 결정).
+ * 차로 띠 전체(차로 가장자리 + 0.3m)가 아니라 차 몸 자리에서 멈추는 것은, 차로 가운데가 연석에서 1.2~3m 인 바깥 차로의 띠 가장자리만 연석을 넘은 자리(연석 너머 표본의 57%)를 지우기 위해서다.
+ * 서울시 연석 쪽 선이 연석에서 어긋나 차로가 연석 너머까지 잡히던 자리는 차로 읽기 전에 그 선을 고친다(tools/road/hdcurbs.ts fixSeoulLines).
+ * 그다음 찻길 쪽은 연석에서 5m 안에서 0.75m 넘게 이어진 찻길까지 빈 칸을 메운다(건물·철도 자리에서 멈춤). 지우기를 모두 마친 뒤 메운다. 교량·고가 면 안 연석은 건너뛴다
+ */
+function hdCurbFit(road: Uint8Array, core: Bits, body: Bits, hd: HdCurbs, block: Uint8Array): string {
+  const D = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, GCELL);
+  for (const r of hd.decks) fillBits(D, [r], 1);
+  // 측량 노면선(1)·연석(2) 칸
+  const M = makeBits(-BOARD_R, -BOARD_R, BOARD_R, BOARD_R, GCELL);
+  for (const l of hd.lanes) strokeFlat(M, l, 0.15, 1);
+  for (const c of hd.curbs) strokeFlat(M, c, 0.15, 2);
+  // 중앙선·차선(길가장자리선·주정차금지선 빼고): 연석 바깥에서 이 선을 만나면 그쪽도 찻길이다
+  for (const l of [...hd.centers, ...hd.dividers, ...hd.buses]) strokeFlat(M, l, 0.15, 4);
+  const at = (x: number, z: number) => {
+    const i = Math.floor((x + BOARD_R) / GCELL);
+    const j = Math.floor((z + BOARD_R) / GCELL);
+    return i >= 0 && j >= 0 && i < GN && j < GN ? j * GN + i : -1;
+  };
+  const S = 0.25, SIDE = 8, CLR = 6, FILL = 5;
+  const pts: number[] = []; // x, z, 찻길 쪽 법선 nx, nz
+  let skip = 0;
+  for (const c of hd.curbs) {
+    // 연석 한 줄은 찻길 쪽이 하나다: 양쪽 SIDE 안에 측량 노면선이 없어 쪽을 못 정한 표본은 같은 줄에서 노면선으로 정한 표본의 다수 쪽을 따르고,
+    // 줄 전체에 정한 표본이 없을 때만 차로 띠로 정한다(차로 띠가 연석 너머까지 나간 자리에서 보도 쪽을 찻길로 메웠다: 합정 사거리 남서 모퉁이)
+    const sides: number[] = []; // x, z, ux, uz, 쪽(노면선으로 정하면 ±1, 차로 띠로 정하면 ±2, 못 정하면 0)
+    for (let k = 2; k + 1 < c.length; k += 2) {
+      const [x0, z0, x1, z1] = [c[k - 2], c[k - 1], c[k], c[k + 1]];
+      const L = Math.hypot(x1 - x0, z1 - z0);
+      if (L < 1e-6) continue;
+      const [ux, uz] = [(x1 - x0) / L, (z1 - z0) / L];
+      for (let s = 0; s < L; s += S) {
+        const x = x0 + ux * s, z = z0 + uz * s;
+        const i0 = at(x, z);
+        if (i0 < 0) continue;
+        if (D.v[i0]) {
+          skip++;
+          continue;
+        }
+        const first = (sg: number, bits: Uint8Array, m: number) => {
+          for (let t = S; t <= SIDE; t += S) {
+            const i = at(x - uz * sg * t, z + ux * sg * t);
+            if (i >= 0 && bits[i] & m) return t;
+          }
+          return Infinity;
+        };
+        const [a, b] = [first(1, M.v, 1), first(-1, M.v, 1)];
+        if (a !== b) sides.push(x, z, ux, uz, a < b ? 1 : -1);
+        else {
+          const [ca, cb] = [first(1, core.v, 255), first(-1, core.v, 255)];
+          sides.push(x, z, ux, uz, ca === cb ? 0 : (ca < cb ? 1 : -1) * 2);
+        }
+      }
+    }
+    let vote = 0;
+    for (let k = 4; k < sides.length; k += 5) if (Math.abs(sides[k]) === 1) vote += sides[k];
+    for (let k = 0; k < sides.length; k += 5) {
+      const [x, z, ux, uz, m] = sides.slice(k, k + 5);
+      const sg = Math.abs(m) === 1 ? m : vote ? Math.sign(vote) : m / 2;
+      if (!sg) continue;
+      pts.push(x, z, -uz * sg, ux * sg);
+    }
+  }
+  let cleared = 0, filled = 0;
+  // 연석 바로 바깥에 붙은 찻길 띠만 지운다: 연석에서 0.5m 넘게 간 뒤 찻길 아닌 칸이 1m 넘게 이어지면(보도) 멈춘다(1m 안 틈은 띠에 든다).
+  // 보도를 지나 다른 찻길까지 짚어 지우면 찻길 안을 가로지르는 0.25m 폭 지우기 줄이 남아, 그 바깥 찻길이 좁은 띠로 떨어졌다
+  const roadAt = (k: number, t: number) => {
+    const i = at(pts[k] - pts[k + 2] * t, pts[k + 1] - pts[k + 3] * t);
+    return i >= 0 && road[i] === 1;
+  };
+  // 보도에 닿기 전에 측량 중앙선·차선을 먼저 만나면 그쪽도 찻길이다(땅 위 찻길과 다리로 오르는 찻길 사이 연석 등): 그 표본은 지우지 않는다.
+  // 길가장자리선·주정차금지선에서는 예전처럼 거기까지 지운다
+  const run: number[] = [];
+  for (let k = 0; k < pts.length; k += 4) {
+    run.length = 0;
+    let lane = false;
+    for (let t = S / 2; t <= CLR; t += S / 2) {
+      const i = at(pts[k] - pts[k + 2] * t, pts[k + 1] - pts[k + 3] * t);
+      if (i < 0 || (t > 0.5 && M.v[i] & 2) || body.v[i]) break;
+      if (M.v[i] & 4) {
+        lane = true;
+        break;
+      }
+      if (M.v[i] & 1) break;
+      if (!road[i]) {
+        if (t <= 0.5) continue;
+        let near = false;
+        for (let u = S / 2; u <= 1 && !near; u += S / 2) near = roadAt(k, t + u);
+        if (!near) break;
+        continue;
+      }
+      run.push(i);
+    }
+    if (!lane) for (const i of run) if (road[i]) (road[i] = 0), cleared++;
+  }
+  for (let k = 0; k < pts.length; k += 4) {
+    let hit = -1;
+    // 0.75m 넘게 이어진 찻길에서 멈춘다(연석 옆 0.25m 짜리 가는 찻길 줄에서 멈추면 그 안쪽 빈 곳이 남는다)
+    const solid = (t: number) => {
+      for (let u = 0; u <= 0.75; u += S / 2) {
+        const i = at(pts[k] + pts[k + 2] * (t + u), pts[k + 1] + pts[k + 3] * (t + u));
+        if (i < 0 || !road[i]) return false;
+      }
+      return true;
+    };
+    for (let t = S / 2; t <= FILL; t += S / 2)
+      if (solid(t)) {
+        hit = t;
+        break;
+      }
+    for (let t = S / 2; t < hit; t += S / 2) {
+      const i = at(pts[k] + pts[k + 2] * t, pts[k + 1] + pts[k + 3] * t);
+      if (i >= 0 && block[i]) break;
+      if (i >= 0 && !road[i]) (road[i] = 1), filled++;
+    }
+  }
+  return `측량 연석: 표본 ${pts.length / 4}(교량·고가 ${skip} 건너뜀), 보도 쪽 찻길 지움 ${Math.round(cleared * GCELL * GCELL)}m², 찻길 쪽 메움 ${Math.round(filled * GCELL * GCELL)}m²`;
 }

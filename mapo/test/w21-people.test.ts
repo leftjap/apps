@@ -13,7 +13,7 @@ import { BODY_R, makePeople, PASS_D, underpasses, ZONES, type Portal } from '../
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { decodeWalk, type WalkJson } from '../src/sim/walknet.ts';
 import { bitsAt, fillBits } from '../tools/lib/bits.ts';
-import { majorGround } from '../tools/lib/walkfix.ts';
+import { finalGround, majorGround } from '../tools/lib/walkfix.ts';
 
 // 재작업 W21: 사람 규칙을 실제 판(public/data)·실제 차·신호로 돌려 잰다(토 21시, 클럽거리·홍대입구역 둘레를 보는 곳으로).
 // 모두 0 이어야 한다: 출구·정류장·문 밖에서 생기거나 사라짐, 사람끼리 몸통 겹침(가운데 사이 PASS_D 0.6m 안. 막혀 비집고 지날 때 머리(0.8m)는 스칠 수 있다), 사람과 차 몸통 겹침, 찻길 면 안(횡단보도 통로·중앙 승강장 밖) 자리,
@@ -45,7 +45,7 @@ const R = {
 
 beforeAll(() => {
   const win = [FOCUS[0] - 700, FOCUS[1] - 700, FOCUS[0] + 700, FOCUS[1] + 700] as [number, number, number, number];
-  const G = majorGround(board.roads, surface.faces, surface.draw.map((f) => f.outer), P.car.map((c) => [c[0], dm(c.slice(1))] as [number, number[]]), P.med.map(dm), win);
+  const G = majorGround(board.roads, surface.faces, surface.draw.map((f) => f.outer), P.car.map((c) => [c[0], dm(c.slice(1))] as [number, number[]]), P.med.map(dm), win, undefined, finalGround(surface));
   for (const [tx, tz] of underpasses(board.roads, ...ZONES.mangwon)) fillBits(G, [Array.from({ length: 48 }, (_, k) => (k % 2 ? tz + Math.sin((Math.floor(k / 2) * Math.PI) / 12) * 20 : tx + Math.cos((Math.floor(k / 2) * Math.PI) / 12) * 20))], 1, true);
   const W = decodeWalk(read('walk.json') as WalkJson);
   const marks = decodeMarks(read('marks.json') as MarksJson);

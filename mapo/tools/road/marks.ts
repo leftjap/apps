@@ -823,7 +823,7 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
     };
     for (const o of [...out, ...keptOut]) addDrawn(Math.floor(o.code / 10), o.p);
     const cos30 = Math.cos(Math.PI / 6);
-    /** 종류 ks 의 그은 선이 (x, z)에서 r 안에 있는가. mode: 0 나란한 선 r 안, 1 나란한 선의 옆(선 조각 끝을 넘지 않는 자리) r 안, 2 비스듬한(30° 넘게) 선 r 안 */
+    /** 종류 ks 의 그은 선이 (x, z)에서 r 안에 있는가. mode: 0 나란한 선 r 안, 1 나란한 선의 옆(선 조각 끝을 넘지 않는 자리) r 안, 2 비스듬한(30° 넘게) 선 r 안, 3 은 1 에 더해 선 조각 끝 너머 r 안에서 옆으로 1m 넘게 비켜난 자리 */
     const drawnNear = (ks: number[], x: number, z: number, hx: number, hz: number, r: number, mode = 0) => {
       for (const k of ks)
         for (let i = Math.floor((x - r) / R); i <= Math.floor((x + r) / R); i++)
@@ -835,6 +835,13 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
                 const L = Math.hypot(dx, dz);
                 if (L < 1e-6 || (Math.abs((dx * hx + dz * hz) / L) < cos30) !== (mode === 2)) continue;
                 const t0 = ((x - ax) * dx + (z - az) * dz) / (L * L);
+                // mode 3(중앙선): 선 조각 끝 너머(끝에서 r 안)라도 옆으로 1m 넘게 비켜나 있으면 이어지는 선이 아니라 나란한 다른 중앙선이다
+                if (mode === 3 && (t0 <= 0 || t0 >= 1)) {
+                  const side = Math.abs((x - ax) * dz - (z - az) * dx) / L;
+                  const past = t0 <= 0 ? -t0 * L : (t0 - 1) * L;
+                  if (side > 1 && side <= r && past <= r) return true;
+                  continue;
+                }
                 if (mode === 1 && (t0 <= 0 || t0 >= 1)) continue;
                 const t = Math.max(0, Math.min(1, t0));
                 if (Math.hypot(ax + dx * t - x, az + dz * t - z) <= r) return true;
@@ -900,8 +907,8 @@ export function laneMarks(inp: LaneMarksInput): { json: MarksJson; log: string; 
             // 중앙선은 비스듬한 다른 중앙선 4m 안에도 긋지 않는다(교차로 둘레에서 비스듬히 만나는 옆길 중앙선이 두 줄이 되지 않게)
             !(l.k === 1 && drawnNear([1], x, z, hx, hz, 4, 2)) &&
             laneAt(x, z, hx, hz) === 1 &&
-            // 정본 선이 1~1.6m 옆에 나란히 있으면 차로가 칠한 자리에서 비켜난 곳이다(그 선이 이 선을 맡는다). 중앙선은 6m 옆 다른 중앙선. 선 끝에서 이어지는 자리는 막지 않는다
-            !drawnNear(l.k === 1 ? [1] : [...DIVIDE], x, z, hx, hz, l.k === 1 ? 6 : 1.6, 1);
+            // 정본 선이 1~1.6m 옆에 나란히 있으면 차로가 칠한 자리에서 비켜난 곳이다(그 선이 이 선을 맡는다). 중앙선은 6m 옆 다른 중앙선(끝 너머라도 옆으로 1m 넘게 비켜나면 막는다). 선 끝에서 이어지는 자리는 막지 않는다
+            !drawnNear(l.k === 1 ? [1] : [...DIVIDE], x, z, hx, hz, l.k === 1 ? 6 : 1.6, l.k === 1 ? 3 : 1);
           S.push({ x, z, along: along + (L * i) / n, ok });
         }
         along += L;

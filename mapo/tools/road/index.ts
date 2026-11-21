@@ -4,11 +4,14 @@ import type { Crosswalk, Road } from '../../src/data/board.ts';
 import type { MarkLine } from '../../src/data/marks.ts';
 import { encodeLanes, type CanonLanes, type DirLanes, type RoadJson, type RoadLanes } from '../../src/data/road.ts';
 import { resolveLanes } from '../../src/sim/lanes.ts';
+import { hdLaneLines, loadHdCurbs } from './hdcurbs.ts';
 import { readLanes } from './read.ts';
 
 /** json: road.json 문자열, canon: 정본 차로, reads: 서울시 선으로 읽은 그대로의 차로(화살표 옮기기가 쓴다) */
 export function bakeRoad(roads: Road[], lines: MarkLine[], crosswalks: Crosswalk[], stopLines: ArrayLike<number>): { json: string; canon: CanonLanes; reads: RoadLanes; log: string } {
-  const r = readLanes(roads, lines);
+  // 측량한 길에서는 측량 선도 함께 읽는다(tools/road/hdcurbs.ts hdLaneLines, 재작업 W65). 정밀도로지도가 없으면 서울시 선만
+  const hd = loadHdCurbs();
+  const r = readLanes(roads, hd ? [...lines, ...(hdLaneLines(hd) as MarkLine[])] : lines);
   // W14~W22 는 읽은 차로를 파일(lanes.json, 거리 dm·옆 거리 cm)로 적은 뒤 실행 중에 채웠다. 차 움직임이 그때와 같게 같은 정밀도로 둔 읽기에서 정한다
   const dm = (v: number) => Math.round(v * 10) / 10;
   const cm = (v: number) => Math.round(v * 100) / 100;

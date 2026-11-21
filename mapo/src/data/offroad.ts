@@ -65,12 +65,12 @@ export function shiftOffCar(q: GroundQuery, pts: ArrayLike<number>, r = 0.4, max
 }
 
 /**
- * 바닥 점(pts)을 가진 시설물: 한 점이라도 찻길 면 안(가장자리에서 0.3m 넘게)이면 모든 점이 찻길 면 밖(둘레 r m)이 되게 옮긴 가운데(x, z).
+ * 바닥 점(pts)을 가진 시설물: 한 점이라도 찻길 면 안(가장자리에서 inside m 넘게)이면 모든 점이 찻길 면 밖(둘레 r m)이 되게 옮긴 가운데(x, z).
  * 찻길 면 가장자리에 걸치기만 한 것은 그대로(연석 위에 붙어 선 출구 등), 둘 곳이 없으면 그대로 두고 stuck
  */
-export function placeOff(q: GroundQuery, x: number, z: number, pts: ArrayLike<number>, r = 0.1, max = 6): { x: number; z: number; moved: boolean; stuck: boolean } {
+export function placeOff(q: GroundQuery, x: number, z: number, pts: ArrayLike<number>, r = 0.1, max = 6, inside = 0.3): { x: number; z: number; moved: boolean; stuck: boolean } {
   let deep = false;
-  for (let k = 0; k < pts.length && !deep; k += 2) deep = q.deep(pts[k], pts[k + 1]);
+  for (let k = 0; k < pts.length && !deep; k += 2) deep = q.deep(pts[k], pts[k + 1], inside);
   if (!deep) return { x, z, moved: false, stuck: false };
   const s = shiftOffCar(q, pts, r, max);
   if (!s) return { x, z, moved: false, stuck: true };

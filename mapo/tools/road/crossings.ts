@@ -131,10 +131,12 @@ export function crossingFaces(board: Board, ground: ArrayLike<number>): Crossing
         lo.push([reach(s[0], v, -1), v]);
         hi.push([reach(s[1], v, 1), v]);
       }
-      // 한쪽 끝에서 늘인 줄이 폭의 반이 안 되면 그 끝은 늘이지 않는다(폭 일부만 늘이면 가는 띠가 된다)
+      // 한쪽 끝에서 늘인 줄의 폭 합이 1m 가 안 되면 그 끝은 늘이지 않는다(폭 일부만 늘이면 가는 띠가 된다).
+      // 폭의 반으로 정했을 때는 측량 연석에 맞춰 비스듬해진 찻길 가장자리에서 줄무늬 끝 옆 찻길이 0.5~1.5m 비었다(재작업 W65)
+      const row = (v1 - v0) / Math.max(1, n - 1);
       for (const [end, side] of [[lo, 0], [hi, 1]] as const) {
         const grew = end.filter((q, k) => Math.abs(q[0] - span[k][side]) > 0.05).length;
-        if (grew && grew < end.length / 2) end.forEach((q, k) => (q[0] = span[k][side]));
+        if (grew && grew * row < 1) end.forEach((q, k) => (q[0] = span[k][side]));
       }
       let longer = 0;
       for (let k = 0; k < span.length; k++) longer += span[k][0] - lo[k][0] + (hi[k][0] - span[k][1]);

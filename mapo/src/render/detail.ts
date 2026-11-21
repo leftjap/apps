@@ -161,11 +161,12 @@ export function detailOf(b: Building, L: Look): { box: number[]; cyl: number[] }
 
 /** 단지 바닥 소품(나무는 나무 모형이 따로 그린다) */
 export function siteOf(props: PropRec[], ground?: GroundQuery): number[] {
-  // 가로등·문 기둥·부스·퍼걸러(세우는 것)는 기록 자리가 그린 찻길 면 안(가장자리에서 0.3m 넘게)이면 찻길 면 밖 가장 가까운 자리로 옮긴다(재작업 W57)
+  // 가로등·문 기둥·부스·퍼걸러(세우는 것)는 기록 자리가 그린 찻길 면 위면 찻길 면 밖 가장 가까운 자리로 옮긴다(재작업 W57).
+  // 가장자리에서 0.3m 안쪽까지는 두던 때는 외곽선이 조금만 바뀌어도 0.25m 칸으로 잰 시험에서 0.3m 넘게 안쪽으로 잡혔다(망원시장 부스, 재작업 W65)
   const stand = (ll: [number, number]): [number, number] => {
     const [x, z] = xz(ll);
     if (!ground) return [x, z];
-    const r = placeOff(ground, x, z, [x, z], 0.3);
+    const r = placeOff(ground, x, z, [x, z], 0.3, 6, 0);
     return [r.x, r.z];
   };
   const out: number[] = [];

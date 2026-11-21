@@ -169,7 +169,7 @@ export function seamBreaks(d: Stage2Data, tol = 0.3): Found & { changed: number 
 }
 
 /** 차로마다 1m 간격으로 땅 위 차로 가운데선을 짚어 cb(가운데 자리, 진행 방향, 구간, 차로, s)를 부른다. skipBox 면 교차로·이음매 상자 안은 건너뛴다 */
-function eachLanePoint(d: Stage2Data, skipBox: boolean, cb: (x: number, z: number, h: number, e: Edge, l: number, s: number) => void) {
+export function eachLanePoint(d: Stage2Data, skipBox: boolean, cb: (x: number, z: number, h: number, e: Edge, l: number, s: number) => void) {
   const { X } = d.inter;
   for (const e of d.g)
     for (const l of lanesOf(e))

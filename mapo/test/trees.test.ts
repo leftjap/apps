@@ -23,6 +23,11 @@ describe('수종 분류', () => {
     const board = [Math.round(x * 10), Math.round(z * 10), 123, 456];
     expect([...treeKinds(board, [[37.55, 126.92, '은행나무']])]).toEqual([0, 6]);
   });
+  it('찻길 면 위 원래 점은 굽기가 옮기는 거리(pushTreesOffRoad 12.8m)까지 떨어진 판 나무와도 짝짓는다', () => {
+    const [x, z] = toXZ(37.55, 126.92);
+    const board = [Math.round(x * 10) + 110, Math.round(z * 10)];
+    expect([...treeKinds(board, [[37.55, 126.92, '소나무']], () => true)]).toEqual([4]);
+  });
 });
 
 describe('구운 수종 파일(public/data/trees.json)', () => {

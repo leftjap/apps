@@ -10,6 +10,8 @@ import { bitsAt, fillBits, makeBits, strokeBits, type Bits } from './bits.ts';
 // W14: 넓힌 찻길·교차로 면 한가운데 찍힌 나무도 옮기도록 12m 까지 본다
 const MAX = 12;
 const BEYOND = 0.8;
+/** 찻길 위 나무를 옮기는 가장 먼 거리(m). 수종 짝짓기(tools/lib/trees.ts)가 같은 거리까지 원래 점을 찾는다 */
+export const PUSH_REACH = MAX + BEYOND;
 
 /** trees: [x, z, ...](dm 정수). 그 자리에서 고친다. 옮긴 나무와 찻길 밖 자리를 찾지 못해 남긴 나무 수를 돌려준다 */
 export function pushTreesOffRoad(trees: number[], onCar: (x: number, z: number) => boolean): { moved: number; left: number } {

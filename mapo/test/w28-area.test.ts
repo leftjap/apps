@@ -6,7 +6,7 @@ import { decodeArea, type WalkArea } from '../src/sim/people/area.ts';
 import { underpasses, ZONES } from '../src/sim/people/zones.ts';
 import { decodeWalk, LINK, type WalkJson } from '../src/sim/walknet.ts';
 import { bitsAt, fillBits } from '../tools/lib/bits.ts';
-import { majorGround } from '../tools/lib/walkfix.ts';
+import { finalGround, majorGround } from '../tools/lib/walkfix.ts';
 
 // 재작업 W28: 걷는 면(walk.json a). 사람은 이 면 안에서 움직이고 그물은 길 찾기에만 쓴다(설계 문서 55절).
 const read = (f: string) => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), 'utf8'));
@@ -22,7 +22,7 @@ let G: ReturnType<typeof majorGround>;
 
 beforeAll(() => {
   A = decodeArea(W.area);
-  G = majorGround(board.roads, surface.faces, surface.draw.map((f) => f.outer), P.car.map((c) => [c[0], dm(c.slice(1))] as [number, number[]]), P.med.map(dm), win);
+  G = majorGround(board.roads, surface.faces, surface.draw.map((f) => f.outer), P.car.map((c) => [c[0], dm(c.slice(1))] as [number, number[]]), P.med.map(dm), win, undefined, finalGround(surface));
   for (const [tx, tz] of underpasses(board.roads, ...ZONES.mangwon)) fillBits(G, [Array.from({ length: 48 }, (_, k) => (k % 2 ? tz + Math.sin((Math.floor(k / 2) * Math.PI) / 12) * 20 : tx + Math.cos((Math.floor(k / 2) * Math.PI) / 12) * 20))], 1, true);
 }, 120_000);
 

@@ -77,11 +77,47 @@ export function resolveLanes(roads: Road[], read?: RoadLanes, junction?: { cross
       e.med = Math.max(e.med, need);
     }
   }
+  // 중앙버스차로를 이은 뒤에 한다(중앙버스차로 조각은 빼므로)
+  trimShortBumps(edges, prev);
   if (junction) {
     setLaneMaps(edges, prev);
     canonConstraints(edges, prev, roads, painted, buildIntersections(edges, junction.crosswalks, junction.stopLines));
   }
   return exportCanon(roads, edges, dirs);
+}
+
+/** 혹 차로를 빼는 조각 길이 한도(m): 차로 수 읽기가 이보다 짧은 차로 수 구간을 이웃에 합치는 길이(tools/road/read.ts minRun)와 같다 */
+const BUMP_LEN = 24;
+/**
+ * 앞뒤로 갈림 없이 이어지는 BUMP_LEN 미만 조각이 앞·뒤 구간보다 차로가 많으면, 그 조각에만 있는 차로를 뺀다(재작업 W65).
+ * 길 조각(OSM)이 짧게 끊긴 자리에서는 차로 수 구간을 이웃에 합치지 못해, 옆길 입구 폭까지 차로로 채워 읽었다(합정 월드컵로 3→5→4차로, 13.9m).
+ * 그 차로는 차가 쓸 수 없고, 다음 구간 차로로 합치는 이음매 곡선이 안쪽으로 꺾여 들어오는 연석을 가로질렀다.
+ * 뺄 차로는 맨 왼쪽과 맨 오른쪽 가운데 조각 양 끝에서 앞·뒤 구간의 가장 가까운 차로와 더 멀리 떨어진 쪽이다
+ */
+function trimShortBumps(edges: Edge[], prev: number[][]) {
+  for (const e of edges) {
+    // 중앙버스차로가 있는 조각은 뺀다: 중앙버스정류장 승강장 둘레는 짧은 구간에서 차로 수가 실제로 바뀐다(신촌로 e1727 4차로가 3차로가 되어 중앙버스차로 자리가 0.7m 옮겨졌다)
+    if (e.len >= BUMP_LEN || prev[e.id].length !== 1 || e.next.length !== 1 || e.med || e.mo.length) continue;
+    const [p, q] = [edges[prev[e.id][0]], edges[e.next[0]]];
+    const want = Math.max(p.lanes, q.lanes);
+    while (e.lanes > want) {
+      const miss = (l: number) => {
+        let a = Infinity, b = Infinity;
+        for (let k = 0; k < p.lanes; k++) a = Math.min(a, Math.abs(laneOff(e, l, 0) - laneOff(p, k, p.len)));
+        for (let k = 0; k < q.lanes; k++) b = Math.min(b, Math.abs(laneOff(e, l, e.len) - laneOff(q, k, 0)));
+        return a + b;
+      };
+      const n = e.lanes;
+      const drop = miss(0) > miss(n - 1) ? 0 : n - 1;
+      if (e.bus === drop) break;
+      const lo = new Float32Array(e.st.length * (n - 1));
+      for (let k = 0; k < e.st.length; k++) for (let l = 0, m = 0; l < n; l++) if (l !== drop) lo[k * (n - 1) + m++] = e.lo[k * n + l];
+      e.lo = lo;
+      if (e.turns.length === n) e.turns = Uint8Array.from(Array.from(e.turns).filter((_, l) => l !== drop));
+      if (e.bus > drop) e.bus--;
+      e.lanes = n - 1;
+    }
+  }
 }
 
 /** 구간들의 최종 차로 표를 방향별 차로로 옮겨 적는다. 실행 중 차 그래프가 같은 수로 다시 만들게 구간 경계·차로 시작/끝 자리는 처음 값(src)을 그대로 쓴다 */

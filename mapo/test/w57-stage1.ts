@@ -121,7 +121,7 @@ export function placedFacilities(d: Stage2Data, tiles: TileRings[]): Footprint[]
     for (const p of a.props) {
       if (p.kind !== 'lamp' && p.kind !== 'gate' && p.kind !== 'booth' && p.kind !== 'pergola') continue;
       const [x0, z0] = llToXZ(p.ll);
-      const r = placeOff(q, x0, z0, [x0, z0], 0.3);
+      const r = placeOff(q, x0, z0, [x0, z0], 0.3, 6, 0);
       out.push({ kind: p.kind, x: r.x, z: r.z, pts: [[r.x, r.z]], note: a.area });
     }
   return out;

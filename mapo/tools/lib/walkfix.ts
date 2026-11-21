@@ -6,7 +6,7 @@
 //     거기서 곧게(안 되면 칸을 따라 돌아서) 그물에 닿는 잇는 선을 낸다. 건너는 길은 기다리는 자리 → 축 끝 → 축 → 건너편 축 끝 → 기다리는 자리다.
 //  ④ 그물은 한 덩어리만 남긴다. 떨어진 조각은 30m 안이면 칸을 따라 잇고, 그래도 떨어진 조각은 버린다.
 //  ⑤ 건물 문: 문턱(벽에서 0.5m)에서 걷는 띠까지 곧게 가는 길이 큰길 찻길을 지나지 않는 자리만 문으로 둔다.
-import { carriageSections, isGroundRoad, roadJoints, tunnelDepth, tunnelReach } from '../../src/data/surface.ts';
+import { carriageSections, isGroundRoad, roadJoints, tileRings, tunnelDepth, tunnelReach } from '../../src/data/surface.ts';
 import { cumLen } from '../../src/poly.ts';
 
 /** 교차로 면(등급·바깥 고리·교통섬) */
@@ -32,6 +32,8 @@ const XW = 4;
 const CELL = 0.25;
 
 /** 큰길 찻길 면 고리들: 등급 3 이하 땅 위 띠(터널 길 빼고)·등급 3 이하 교차로 면(골목 띠 자리 빼고)·분리대·그리기 전용 면.
+ *  ground(최종 찻길 면 surface.json g 의 고리들)를 주면 띠·교차로 면 가운데 최종 찻길 면 밖인 칸은 뺀다: 큰길 띠는 서울시 선으로 그은 것이라
+ *  측량 연석 맞춤(재작업 W65)이 지운 연석 너머 자리가 남아, 그 자리 보도에 선 사람을 찻길에 닿았다고 셌다.
  *  같은 정의를 시험(test/w21-walknet.test.ts)과 사람 측정이 쓴다 */
 export function majorGround(
   roads: Road[],
@@ -41,6 +43,7 @@ export function majorGround(
   med: ArrayLike<number>[],
   bounds: [number, number, number, number],
   cell = CELL,
+  ground?: ArrayLike<number>[],
 ): Bits {
   const B = makeBits(bounds[0], bounds[1], bounds[2], bounds[3], cell);
   const reach = tunnelReach(roads);
@@ -58,6 +61,11 @@ export function majorGround(
     fillBits(B, [[...s.flatMap((q) => [q.lx, q.lz]), ...s.reverse().flatMap((q) => [q.rx, q.rz])]], ROAD);
   });
   for (const [i, ring] of car) if (roads[i].cls <= 3 && !reach[i]) fillBits(B, [ring], ROAD);
+  if (ground) {
+    const F = makeBits(bounds[0], bounds[1], bounds[2], bounds[3], cell);
+    fillBits(F, ground, 1);
+    for (let i = 0; i < B.v.length; i++) if (B.v[i] & ROAD && !F.v[i]) B.v[i] &= ~ROAD;
+  }
   // 터널 길(등급 5 이하)은 입구에서 몸이 들어설 높이(깊이 5.2m, 입구 벽)까지는 땅 위 찻길로 친다(입구 경사 위로 걷지 않게)
   roads.forEach((r, i) => {
     const rc = reach[i];
@@ -79,6 +87,9 @@ export function majorGround(
   for (const d of draw) fillBits(B, [d], ROAD);
   return B;
 }
+
+/** 최종 찻길 면(surface.json g, decodeSurface 의 ground)의 고리들: majorGround 의 ground 로 넘긴다 */
+export const finalGround = (sf: { ground: ArrayLike<number> }): ArrayLike<number>[] => tileRings(sf.ground).flatMap((t) => t.rings);
 
 /** bits 칸 a(→ 1)·b(→ 2)를 r 칸만큼 네모로 넓힌 칸 격자 */
 function dilate(B: Bits, a: number, b: number, r: number): Bits {

@@ -125,6 +125,8 @@ export interface TileRings {
   edges: Float32Array[];
 }
 
+/** 차이킨이 변 양 끝에서 깎는 비율: 변 길이의 1/4, 다만 4칸(1m)까지. 외곽선을 줄여 변이 긴 날카로운 모퉁이를 몇 m 씩 잘라 내지 않게(골목 9,-1199 목, 재작업 W65) */
+const cutFrac = (ax: number, az: number, bx: number, bz: number) => Math.min(0.25, 4 / (Math.hypot(bx - ax, bz - az) || 1));
 /** 열린 꺾은선(끝점 고정) 차이킨 깎기 한 번 */
 function chaikinOpen(p: number[]): number[] {
   const n = p.length / 2;
@@ -132,8 +134,9 @@ function chaikinOpen(p: number[]): number[] {
   const o = [p[0], p[1]];
   for (let k = 0; k + 1 < n; k++) {
     const [ax, az, bx, bz] = [p[k * 2], p[k * 2 + 1], p[k * 2 + 2], p[k * 2 + 3]];
-    if (k > 0) o.push(ax * 0.75 + bx * 0.25, az * 0.75 + bz * 0.25);
-    if (k + 2 < n) o.push(ax * 0.25 + bx * 0.75, az * 0.25 + bz * 0.75);
+    const f = cutFrac(ax, az, bx, bz);
+    if (k > 0) o.push(ax + (bx - ax) * f, az + (bz - az) * f);
+    if (k + 2 < n) o.push(bx + (ax - bx) * f, bz + (az - bz) * f);
   }
   o.push(p[n * 2 - 2], p[n * 2 - 1]);
   return o;
@@ -144,7 +147,8 @@ function chaikinClosed(p: number[]): number[] {
   const o: number[] = [];
   for (let k = 0; k < n; k++) {
     const [ax, az, bx, bz] = [p[k * 2], p[k * 2 + 1], p[((k + 1) % n) * 2], p[((k + 1) % n) * 2 + 1]];
-    o.push(ax * 0.75 + bx * 0.25, az * 0.75 + bz * 0.25, ax * 0.25 + bx * 0.75, az * 0.25 + bz * 0.75);
+    const f = cutFrac(ax, az, bx, bz);
+    o.push(ax + (bx - ax) * f, az + (bz - az) * f, bx + (ax - bx) * f, bz + (az - bz) * f);
   }
   return o;
 }

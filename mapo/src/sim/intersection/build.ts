@@ -25,6 +25,8 @@ const JOIN = 35;
 export const STEP = 0.5;
 /** 두 경로가 이만큼(m) 안으로 다가오면 부딪는다(버스 반폭 1.245 + 승용차 반폭 0.93 + 여유) */
 const NEAR = 2.6;
+/** 우회전 경로가 따라 도는 모퉁이 연석 반지름(m): 서울시 가장자리선으로 잰 판 전체 모퉁이 반지름 중앙값 5.9m(굽기 로그 '길 모퉁이') */
+const CORNER_R = 6;
 
 export const nodeKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
 const wrap = (a: number) => {
@@ -542,9 +544,10 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     const h = headingNear(e, s, off);
     return [P[0] - Math.sin(h) * off, P[1], P[2] + Math.cos(h) * off, h];
   };
-  function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[]) {
+  function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[], right = false) {
     const p = lp(a, a.len - rIn[a.id], la);
     const q = lp(b, rOut[b.id], lb);
+    if (right && fillet(a, b, la, lb, p, q, d, out)) return;
     const span = Math.hypot(q[0] - p[0], q[2] - p[2]) / 3;
     const k1x = p[0] + Math.cos(p[3]) * span;
     const k1z = p[2] + Math.sin(p[3]) * span;
@@ -558,6 +561,49 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     const dx = 3 * m * m * (k1x - p[0]) + 6 * m * u * (k2x - k1x) + 3 * u * u * (q[0] - k2x);
     const dz = 3 * m * m * (k1z - p[2]) + 6 * m * u * (k2z - k1z) + 3 * u * u * (q[2] - k2z);
     out[3] = dx * dx + dz * dz > 1e-6 ? Math.atan2(dz, dx) : p[3];
+  }
+
+  /** 우회전(재작업 W65): 두 차로 가운데선을 곧게 따라가다 모퉁이 연석과 같은 가운데를 쓰는 원호로 돈다(반지름 = CORNER_R + 차로 가운데에서 오른쪽 가장자리까지).
+   *  3차 곡선은 진입로·나가는 길 차로를 멀리서부터 이어 모퉁이를 가로질러, 측량 연석 안쪽 보도까지 차 몸이 들어갔다(우회전 경로 278개 가운데 측량 연석에 닿는 점 1,143개).
+   *  두 가운데선이 앞쪽에서 만나지 않거나 30° 아래로 꺾이면 false(3차 곡선을 쓴다) */
+  function fillet(a: Edge, b: Edge, la: number, lb: number, p: number[], q: number[], d: number, out: number[]): boolean {
+    const [ax, az, bx, bz] = [Math.cos(p[3]), Math.sin(p[3]), Math.cos(q[3]), Math.sin(q[3])];
+    const [rx, rz] = [q[0] - p[0], q[2] - p[2]];
+    const den = ax * bz - az * bx;
+    if (den < 1e-3) return false;
+    const t0 = (rx * bz - rz * bx) / den;
+    const t3 = (ax * rz - az * rx) / den;
+    const th = Math.acos(Math.max(-1, Math.min(1, ax * bx + az * bz)));
+    if (t0 <= 0 || t3 <= 0 || th < Math.PI / 6) return false;
+    const o = (rightEdge(a, a.len - rIn[a.id]) - laneOff(a, la, a.len - rIn[a.id]) + rightEdge(b, rOut[b.id]) - laneOff(b, lb, rOut[b.id])) / 2;
+    const tn = Math.tan(th / 2);
+    const r = Math.min(CORNER_R + Math.max(0, o), Math.min(t0, t3) / tn);
+    if (r < 1) return false;
+    const T = r * tn;
+    const [L1, La, L2] = [t0 - T, r * th, t3 - T];
+    const u = Math.max(0, Math.min(1, d / Math.max(0.1, rIn[a.id] + rOut[b.id])));
+    const s = u * (L1 + La + L2);
+    out[1] = p[1] + (q[1] - p[1]) * u;
+    if (s <= L1) {
+      out[0] = p[0] + ax * s;
+      out[2] = p[2] + az * s;
+      out[3] = p[3];
+    } else if (s <= L1 + La) {
+      // 원 가운데는 원호 시작 자리에서 왼쪽 법선으로 r(오른쪽으로 꺾을 때 den > 0)
+      const [sx, sz] = [p[0] + ax * L1, p[2] + az * L1];
+      const [cx, cz] = [sx - az * r, sz + ax * r];
+      const f = Math.atan2(sz - cz, sx - cx) + (s - L1) / r;
+      out[0] = cx + Math.cos(f) * r;
+      out[2] = cz + Math.sin(f) * r;
+      const hh = p[3] + (s - L1) / r;
+      out[3] = hh > Math.PI ? hh - 2 * Math.PI : hh;
+    } else {
+      const w = s - L1 - La - L2;
+      out[0] = q[0] + bx * w;
+      out[2] = q[2] + bz * w;
+      out[3] = q[3];
+    }
+    return true;
   }
 
   // ── 횡단보도 면 격자 ──
@@ -627,8 +673,8 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
       while (q + 1 < n && base[q + 1] <= d) q++;
       const eq = edges[list[q]];
       const s = d - base[q];
-      if (q + 1 < n && s >= eq.len - rIn[eq.id]) curve(eq, edges[list[q + 1]], lanes[q], lanes[q + 1], s - (eq.len - rIn[eq.id]), o4);
-      else if (q > 0 && s <= rOut[eq.id]) curve(edges[list[q - 1]], eq, lanes[q - 1], lanes[q], rIn[list[q - 1]] + s, o4);
+      if (q + 1 < n && s >= eq.len - rIn[eq.id]) curve(eq, edges[list[q + 1]], lanes[q], lanes[q + 1], s - (eq.len - rIn[eq.id]), o4, ex.move === RIGHT);
+      else if (q > 0 && s <= rOut[eq.id]) curve(edges[list[q - 1]], eq, lanes[q - 1], lanes[q], rIn[list[q - 1]] + s, o4, ex.move === RIGHT);
       else {
         const v = lp(eq, s, lanes[q]);
         o4[0] = v[0];

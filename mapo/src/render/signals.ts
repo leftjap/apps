@@ -123,6 +123,29 @@ export function signalPoles(edges: Edge[], signals: Signals, crosswalks: Crosswa
       // 오른쪽 끝(R)에서 왼쪽 끝으로: u 는 왼쪽 끝 → 오른쪽 끝
       const flip = (bx - ax) * -hz + (bz - az) * hx < 0;
       if (flip) [ax, az, bx, bz] = [bx, bz, ax, az];
+      // 정지선은 꼭짓점마다 끊은 조각으로 온다: 같은 선으로 이어지는 조각을 따라 오른쪽 끝까지 간다
+      // (고른 조각의 끝이 정지선 중간이면 기둥이 찻길 한가운데에서 출발해 8m 안에 둘 곳을 못 찾았다, 재작업 W65)
+      // 이 방향 오른쪽 차로 가장자리 + 2m 를 넘어서는 따라가지 않는다(다른 방향 정지선과 한 줄로 이어진 자리)
+      const reach = rightEdge(e, at) - mid + 2;
+      const [bx0, bz0] = [bx, bz];
+      for (let guard = 0; guard < 16; guard++) {
+        let nx = NaN, nz = NaN;
+        for (let k = 0; k < stopLines.length; k += 4) {
+          const [x0, z0, x1, z1] = [stopLines[k], stopLines[k + 1], stopLines[k + 2], stopLines[k + 3]];
+          if (Math.hypot(x0 - bx, z0 - bz) < 1e-3 && (x1 - bx) * (bx - ax) + (z1 - bz) * (bz - az) > 0) [nx, nz] = [x1, z1];
+          else if (Math.hypot(x1 - bx, z1 - bz) < 1e-3 && (x0 - bx) * (bx - ax) + (z0 - bz) * (bz - az) > 0) [nx, nz] = [x0, z0];
+        }
+        if (Number.isNaN(nx) || (nx - cx) * -hz + (nz - cz) * hx > reach) break;
+        [bx, bz] = [nx, nz];
+      }
+      // 따라간 끝 둘레(8m 안)에 기둥을 옮길 자리가 없고 따라가기 전 끝에는 있으면 따라가기 전 끝을 쓴다(e1739 1581.6,-919.6)
+      if (ground && (bx !== bx0 || bz !== bz0)) {
+        const startAt = (px: number, pz: number): [number, number] => {
+          const l = Math.hypot(px - ax, pz - az) || 1;
+          return [px + ((px - ax) / l) * 0.8, pz + ((pz - az) / l) * 0.8];
+        };
+        if (!shiftOffCar(ground, startAt(bx, bz), POLE_CLEAR) && shiftOffCar(ground, startAt(bx0, bz0), POLE_CLEAR)) [bx, bz] = [bx0, bz0];
+      }
       len = Math.hypot(bx - ax, bz - az) || 1;
       ux = (bx - ax) / len;
       uz = (bz - az) / len;

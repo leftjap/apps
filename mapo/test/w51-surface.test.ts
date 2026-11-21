@@ -47,3 +47,40 @@ describe('찻길 면·보도 면 화면 결함(판 전체, 정적)', () => {
     expect(before.overlap + before.gap).toBeGreaterThan(10);
   });
 });
+
+describe('찻길 면 외곽선 다듬기(판 전체, 정적)', () => {
+  it('앱이 그리는 다듬은 외곽선(차이킨 2번)이 칸 외곽선 꼭짓점에서 1m 넘게 떨어지지 않는다', () => {
+    // 차이킨은 꼭짓점마다 이웃 변 길이의 1/4 을 깎아, 외곽선을 줄여 변이 긴 날카로운 모퉁이(골목이 꺾이는 자리 9,-1199)는 몇 m 가 잘려 목만 남았다(재작업 W65, 고치기 전 954곳).
+    // 깎는 길이를 1m 로 묶어 직각 모퉁이에서 0.7m, 뾰족한 모퉁이에서도 1m 안
+    const g = (JSON.parse(readFileSync(`${load().dir}/surface.json`, 'utf8')) as SurfaceJson).g!;
+    const [raw, smooth] = [tileRings(g, 0), tileRings(g, 2)];
+    const far: string[] = [];
+    raw.forEach((t, ti) =>
+      t.rings.forEach((p, ri) => {
+        const q = smooth[ti].rings[ri];
+        const C = 2;
+        const grid = new Map<string, number[]>();
+        for (let k = 0; k < q.length; k += 2) {
+          const k2 = (k + 2) % q.length;
+          for (const [x, z] of [[q[k], q[k + 1]], [q[k2], q[k2 + 1]], [(q[k] + q[k2]) / 2, (q[k + 1] + q[k2 + 1]) / 2]]) {
+            const key = `${Math.floor(x / C)},${Math.floor(z / C)}`;
+            (grid.get(key) ?? grid.set(key, []).get(key)!).push(k);
+          }
+        }
+        for (let k = 0; k < p.length; k += 2) {
+          let best = Infinity;
+          for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++)
+              for (const s of grid.get(`${Math.floor(p[k] / C) + dx},${Math.floor(p[k + 1] / C) + dz}`) ?? []) {
+                const s2 = (s + 2) % q.length;
+                const [ax, az, bx, bz] = [q[s], q[s + 1], q[s2], q[s2 + 1]];
+                const t2 = Math.max(0, Math.min(1, ((p[k] - ax) * (bx - ax) + (p[k + 1] - az) * (bz - az)) / ((bx - ax) ** 2 + (bz - az) ** 2 || 1)));
+                best = Math.min(best, Math.hypot(ax + t2 * (bx - ax) - p[k], az + t2 * (bz - az) - p[k + 1]));
+              }
+          if (best > 1) far.push(`${p[k].toFixed(0)},${p[k + 1].toFixed(0)} ${best === Infinity ? '>2' : best.toFixed(1)}m`);
+        }
+      }),
+    );
+    expect(far.length, far.slice(0, 12).join(' | ')).toBe(0);
+  });
+});

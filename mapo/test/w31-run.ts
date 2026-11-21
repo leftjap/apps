@@ -11,7 +11,7 @@ import { makePeople, PASS_D, underpasses, ZONES, type Portal } from '../src/sim/
 import { makeSimProvider } from '../src/sim/provider.ts';
 import { decodeWalk, type WalkJson } from '../src/sim/walknet.ts';
 import { bitsAt, fillBits } from '../tools/lib/bits.ts';
-import { majorGround } from '../tools/lib/walkfix.ts';
+import { finalGround, majorGround } from '../tools/lib/walkfix.ts';
 
 // 재작업 W31(설계 mapo-w31-people-design.md 2-4절 6번): 사람 이동을 한 차림으로 잰다. 차 700대·사람 3,000명, 보는 곳 반지름 200m(차는 400m),
 // 2분 미리 돌린 뒤 60초를 1/30초로 돌린다. w31-people.test.ts 가 쓰고, 측정 도구(mapo/tmp/…)도 이 함수를 그대로 부른다.
@@ -67,7 +67,7 @@ function ground(fx: number, fz: number) {
   let G = grounds.get(key);
   if (G) return G;
   const win = [fx - 700, fz - 700, fx + 700, fz + 700] as [number, number, number, number];
-  G = majorGround(board.roads, surface.faces, surface.draw.map((f) => f.outer), P.car.map((c) => [c[0], dm(c.slice(1))] as [number, number[]]), P.med.map(dm), win);
+  G = majorGround(board.roads, surface.faces, surface.draw.map((f) => f.outer), P.car.map((c) => [c[0], dm(c.slice(1))] as [number, number[]]), P.med.map(dm), win, undefined, finalGround(surface));
   for (const [tx, tz] of underpasses(board.roads, ...ZONES.mangwon)) fillBits(G, [Array.from({ length: 48 }, (_, k) => (k % 2 ? tz + Math.sin((Math.floor(k / 2) * Math.PI) / 12) * 20 : tx + Math.cos((Math.floor(k / 2) * Math.PI) / 12) * 20))], 1, true);
   grounds.set(key, G);
   return G;

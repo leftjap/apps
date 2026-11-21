@@ -3,7 +3,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const SIM = /makeCars|makePeople|measure-junction|junction-zero|w31-run/;
+// w31-cases 는 차·사람 한 차림 측정(w31-run)을 부르는 공용 파일이라 그것을 쓰는 시험(w31-people·w31-people2 등)도 시뮬레이션 시험이다
+const SIM = /makeCars|makePeople|measure-junction|junction-zero|w31-run|w31-cases/;
 const files = readdirSync('test').filter((f) => f.endsWith('.test.ts'));
 const sim = files.filter((f) => SIM.test(readFileSync(`test/${f}`, 'utf8'))).map((f) => `test/${f}`);
 const which = process.argv[2];

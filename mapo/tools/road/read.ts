@@ -13,10 +13,12 @@ import { cumLen } from '../../src/poly.ts';
 import type { Road } from '../../src/data/board.ts';
 import type { DirLanes, RoadLanes, Run } from '../../src/data/road.ts';
 import { carRoad } from '../../src/sim/graph.ts';
+import { SURVEY_CURB } from './hdcurbs.ts';
 
 /** 차로를 가르는 선(측정과 같은 종류): 1 중앙선, 5 버스전용차선(가로), 6 차선, 7 가장자리구역선, 8 진로변경제한선, 9 주차금지, 10 주정차금지, 17 중앙버스전용차선 */
-const USE = new Set([1, 5, 6, 7, 8, 9, 10, 17]);
-const CURB = new Set([7, 9, 10]);
+const USE = new Set([1, 5, 6, 7, 8, 9, 10, 17, SURVEY_CURB]);
+/** 측량 연석(SURVEY_CURB)은 차로가 멈추는 자리로만 쓰고 왼쪽 경계·중앙선 찾기에는 쓰지 않는다(분리대 양쪽 연석이 중앙선 자리를 가린다) */
+const CURB = new Set([7, 9, 10, SURVEY_CURB]);
 const BOUND = new Set([1, 17, 7, 9, 10]);
 const PAR = Math.sin((25 * Math.PI) / 180);
 const REACH = 16;
@@ -89,12 +91,21 @@ export function transect(idx: LineIndex, x: number, y: number, z: number, ux: nu
  *  왼쪽 경계나 차로를 못 찾으면 null */
 export function readSection(hits: [number, number][], twoWay: boolean, medBus: boolean, hint = 0): { lanes: number[]; med: number; closed: boolean; filled: boolean } | null {
   let b = -1;
+  /** 중앙선 없이 빈 사이로 왼쪽 경계를 정했는가 */
+  let viaGap = false;
   if (twoWay) {
     for (let i = 0; i < hits.length; i++) if (hits[i][1] === 1 && Math.abs(hits[i][0]) <= 3.5 && (b < 0 || Math.abs(hits[i][0]) < Math.abs(hits[b][0]))) b = i;
     // 중앙선이 자료에 없는 곳: 가운데선 양쪽 가장 가까운 두 선(6m 안) 사이가 4.8m 넘게 비어 있으면 그 오른쪽 선부터 이 방향 차로를 센다
     if (b < 0) {
-      const r = hits.findIndex(([t]) => t >= 0);
-      if (r > 0 && hits[r][0] <= 6 && hits[r - 1][0] >= -6 && hits[r][0] - hits[r - 1][0] > 4.8) b = r;
+      const r = hits.findIndex(([t, k]) => t >= 0 && k !== SURVEY_CURB);
+      let l = r - 1;
+      while (l >= 0 && hits[l][1] === SURVEY_CURB) l--;
+      if (r >= 0 && l >= 0 && hits[r][0] <= 6 && hits[l][0] >= -6 && hits[r][0] - hits[l][0] > 4.8) (b = r), (viaGap = true);
+      // 측량한 길에서 가운데선 왼쪽에 선이 하나도 없으면(마주 오는 쪽을 칠하지 않은 짧은 조각) 가운데선을 중앙선으로 삼는다.
+      // 아니면 차로 수 × 차로 폭으로 펼쳐 바깥 차로가 측량 연석 밖에 놓였다(e1924 1808,685, 재작업 W65)
+      // 오른쪽에서 처음 만나는 선이 길가장자리선·측량 연석이고 차로 수 × 4.6m 안일 때만(가운데선과 그 사이에 다른 선이 없는 단면)
+      if (b < 0 && r >= 0 && l < 0 && hits[r][0] > 0 && (hits[r][1] === 10 || hits[r][1] === SURVEY_CURB) && hits[r][0] <= Math.max(1, hint) * 4.6 && hits.some(([t, k]) => k === SURVEY_CURB && t > 0 && t <= REACH))
+        return readSection([[0, 1], ...hits.filter(([t]) => t > 0)], twoWay, medBus, hint);
     }
   } else for (let i = 0; i < hits.length; i++) if (BOUND.has(hits[i][1]) && hits[i][0] < -0.5 && hits[i][0] > -REACH) b = i;
   if (b < 0) return null;
@@ -118,7 +129,7 @@ export function readSection(hits: [number, number][], twoWay: boolean, medBus: b
       continue;
     }
     if (gap <= 4.8) lanes.push((prev + t) / 2);
-    else if (!lanes.length && BOUND.has(k)) {
+    else if (!lanes.length && (BOUND.has(k) || k === SURVEY_CURB)) {
       // 왼쪽 경계에서 연석 쪽 경계까지 차선이 하나도 칠해지지 않은 찻길: 차로 수(자료 어림값이 한 차로 2.6~4.6m(한 차로면 7m)에 맞으면 그 수, 아니면 3.3m 마다)로 고르게 나눈다
       const n = hint > 0 && gap / hint >= 2.6 && gap / hint <= (hint === 1 ? 7 : 4.6) ? hint : Math.max(1, Math.round(gap / 3.3));
       for (let l = 0; l < n; l++) lanes.push(prev + ((l + 0.5) * gap) / n);
@@ -144,6 +155,9 @@ export function readSection(hits: [number, number][], twoWay: boolean, medBus: b
       if (gap <= 4.8) med = (hits[b][0] + hits[i][0]) / 2;
       break;
     }
+  // 빈 사이로 정한 왼쪽 경계는 그 사이가 차로 둘(중앙선이 지워진 횡단보도·교차로 앞)일 수도 있어, 연석 쪽 경계까지 닿은 단면만 쓴다.
+  // (닿지 못한 단면을 왼쪽 차로만 읽은 것으로 쓰면 둘째 차로를 첫 차로로 읽어, 기울기 누르기가 뒤 단면의 바른 첫 차로까지 1.6m 끌고 갔다: 독막로 1762,478 화살표 테두리, 재작업 W65)
+  if (viaGap && !closed) return null;
   return lanes.length ? { lanes, med, closed, filled } : null;
 }
 
