@@ -42,15 +42,23 @@ function curbOffsets() {
 }
 
 describe.skipIf(!existsSync(HD))('찻길 면 가장자리가 측량 연석에 놓인다(판 전체, 정적)', () => {
-  const r = curbOffsets();
-  const far = r.filter((s) => s.d > 1);
-  const med = [...r.map((s) => s.d)].sort((a, b) => a - b)[r.length >> 1];
-  console.log(`측량 연석 표본 ${r.length}(0.5m): 찻길 면 경계까지 중앙값 ${med.toFixed(2)}m, 1m 넘음 ${far.length}(${((100 * far.length) / r.length).toFixed(1)}%: 찻길이 연석 너머 ${far.filter((s) => s.on).length}, 덜 그림 ${far.filter((s) => !s.on).length})`);
+  // 건너뛰는 묶음도 본문은 모으는 동안 돈다: 측량 자료가 없는 CI 에서 읽지 않게 처음 쓸 때 잰다
+  let cached: { r: ReturnType<typeof curbOffsets>; far: ReturnType<typeof curbOffsets> } | undefined;
+  const offsets = () => {
+    if (cached) return cached;
+    const r = curbOffsets();
+    const far = r.filter((s) => s.d > 1);
+    const med = [...r.map((s) => s.d)].sort((a, b) => a - b)[r.length >> 1];
+    console.log(`측량 연석 표본 ${r.length}(0.5m): 찻길 면 경계까지 중앙값 ${med.toFixed(2)}m, 1m 넘음 ${far.length}(${((100 * far.length) / r.length).toFixed(1)}%: 찻길이 연석 너머 ${far.filter((s) => s.on).length}, 덜 그림 ${far.filter((s) => !s.on).length})`);
+    return (cached = { r, far });
+  };
   it('합정 사거리 북쪽 월드컵로(-530,170 둘레 45m)에서 측량 연석이 찻길 면 경계에서 1m 넘게 떨어지지 않는다', () => {
+    const { far } = offsets();
     const here = far.filter((s) => Math.hypot(s.x + 530, s.z - 170) < 45);
     expect(here.length * 0.5, here.slice(0, 10).map((s) => `${s.x.toFixed(0)},${s.z.toFixed(0)} ${s.d.toFixed(1)}m`).join(' ')).toBe(0);
   });
   it('판 전체에서 측량 연석이 찻길 면 경계에서 1m 넘게 떨어진 표본이 2% 아래다(측정값 1.88%, 고치기 전 20.8%)', () => {
+    const { r, far } = offsets();
     expect(far.length / r.length).toBeLessThan(0.02);
   });
 });
