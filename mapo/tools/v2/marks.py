@@ -1,4 +1,4 @@
-# 지시서 3b(docs/redraw-orders/3b-marks.md): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
+# 지시서 3b(docs/redraw-orders/3b-marks.md, 2판): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
 # 읽는 것: public/data/v2/lanes.json(v 2, runs), public/data/board.json 의 xw(가운데 점·건너는 방향·신호 유무만).
 # 결과는 public/data/v2/marks.json. 실행: tools/.venv/bin/python tools/v2/marks.py
 import json, math, os, time
@@ -12,12 +12,12 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 # docs/redraw.md 6절, 지시서 3b 「쓰는 값」
 XW_GAP = 2.0  # 정지선에서 횡단보도까지
 XW_W = 6.0  # 횡단보도 폭
-XW_SIDE = 3.0  # 횡단보도 자료를 갈래에 붙이는 옆 범위: W/2 + 3(한 방향은 W + 3)
+XW_SIDE = 3.0  # 구간 중간 횡단보도를 붙이는 옆 범위: W/2 + 3(한 방향은 W + 3)
+XW_NEAR = 25.0  # 교차로 입구 횡단보도: 놓을 사각형 가운데에서 이 안에 서울시 횡단보도가 있을 때만
+MOUTH = ('n', 'j')  # 교차로 입구인 묶음 끝 종류
+MID_FROM_MOUTH = 30.0  # 구간 중간 횡단보도: 교차로 입구에서 이만큼 넘게 떨어진 곳
 XW_DOT = 0.5  # 건너는 방향과 구간 선 방향의 내적 절댓값이 이보다 작아야 한다(60° 넘게 엇갈림)
-END_TOL = 4.1  # 묶음 끝이 교차로 쪽인지 보는 거리
-XW_BACK = 4.0  # 교차로 갈래 횡단보도: 차로 끝에서 교차로 쪽으로 −4m ~ 물린 거리 + 2m
-XW_FWD = 2.0
-MID_MARGIN = 12.0  # 구간 중간 횡단보도: 묶음 s0 + 12 ~ s1 − 12, 같은 묶음 12m 안 건너뜀
+MID_MARGIN = 12.0  # 구간 중간 횡단보도: 입구가 아닌 묶음 끝에서 12m 넘게, 같은 묶음 12m 안 건너뜀
 MID_HALF = 3.0  # 구간 중간 횡단보도의 반 폭
 MID_STOP = 5.0  # 구간 중간 정지선 자리(s ∓ 5)
 PERP = 60.0  # 구간 선에 수직인 선의 반 길이(경계선과 만나는 점을 찾는 데만 쓴다)
@@ -73,7 +73,7 @@ def build():
     xws = load_xw(area)
     center, lane, solid, stop, cross = [], [], [], [], []
     used = set()
-    ends = []  # 묶음 끝이 교차로 쪽인 곳: (구간, 묶음, 'a'|'b', 횡단보도를 놓았는가)
+    ends = []  # 교차로 입구마다 {sec, g, end, kind, cls, at, placed, why}
     mid_try = {}  # xw 번호 → 구간 중간에서 어떻게 됐는가
     runs_info = []  # (한 방향, lk, rk)
     nears = {}
@@ -111,34 +111,42 @@ def build():
                 solid.append(B[0])
             if q['rk'] == 'same':
                 solid.append(B[n])
-            # 3·4. 교차로 쪽 묶음 끝: 정지선과 갈래 횡단보도
+            # 3·4. 교차로 입구(묶음 끝 종류 n·j): 정지선과 입구 횡단보도
             for end in ('a', 'b'):
-                if end == 'a' and not (ta > 0 and abs(s0 - ta) <= END_TOL):
-                    continue
-                if end == 'b' and not (tb > 0 and abs(s1 - (L - tb)) <= END_TOL):
+                kind = q['ea'] if end == 'a' else q['eb']
+                if kind not in MOUTH:
                     continue
                 if end == 'b':
                     i0, i1 = (0, n) if oneway else (half, n)
                     stop.append(LineString([B[i0].coords[-1], B[i1].coords[-1]]))
                 elif not oneway:
                     stop.append(LineString([B[0].coords[0], B[half].coords[0]]))
-                # 갈래 횡단보도
-                hits = []
-                for x, sx in near:
-                    toward = (sx - s1) if end == 'b' else (s0 - sx)
-                    if -XW_BACK <= toward <= (tb if end == 'b' else ta) + XW_FWD:
-                        hits.append(x)
-                if hits:
-                    if end == 'b':
-                        E0, EN = np.array(B[0].coords[-1]), np.array(B[n].coords[-1])
-                        v = axis_dir(axis, s1)
+                if end == 'b':
+                    E0, EN = np.array(B[0].coords[-1]), np.array(B[n].coords[-1])
+                    v = axis_dir(axis, s1)
+                else:
+                    E0, EN = np.array(B[0].coords[0]), np.array(B[n].coords[0])
+                    v = -axis_dir(axis, s0)
+                poly = Polygon([E0 + XW_GAP * v, EN + XW_GAP * v, EN + (XW_GAP + XW_W) * v, E0 + (XW_GAP + XW_W) * v])
+                mouth = {'sec': si, 'g': q['g'], 'end': end, 'kind': kind, 'cls': s['cls'], 'at': poly.centroid, 'placed': False, 'why': None}
+                if s['cls'] == 0:
+                    mouth['why'] = '등급 0'
+                else:
+                    c = poly.centroid
+                    hits = []
+                    for x in xws:
+                        dd = x['p'].distance(c)
+                        if dd <= XW_NEAR:
+                            u = axis_dir(axis, axis.project(x['p']))
+                            if u is not None and abs(float(np.dot(u, x['u']))) < XW_DOT:
+                                hits.append((dd, x))
+                    if hits:
+                        cross.append({'poly': poly, 'sig': min(hits, key=lambda t: t[0])[1]['sig'], 'mid': 0, 'sec': si, 'end': end})
+                        used.update(x['i'] for _, x in hits)
+                        mouth['placed'] = True
                     else:
-                        E0, EN = np.array(B[0].coords[0]), np.array(B[n].coords[0])
-                        v = -axis_dir(axis, s0)
-                    poly = [E0 + XW_GAP * v, EN + XW_GAP * v, EN + (XW_GAP + XW_W) * v, E0 + (XW_GAP + XW_W) * v]
-                    cross.append({'poly': Polygon(poly), 'sig': int(any(x['sig'] for x in hits)), 'mid': 0, 'sec': si, 'end': end})
-                    used.update(x['i'] for x in hits)
-                ends.append((si, q['g'], end, bool(hits)))
+                        mouth['why'] = '25m 안에 자료 없음'
+                ends.append(mouth)
     # 5. 구간 중간 횡단보도(모든 갈래의 4에서 쓰이지 않은 xw, 묶음마다)
     for si, s in enumerate(lanes['sec']):
         if not s['runs']:
@@ -149,9 +157,11 @@ def build():
         for q in s['runs']:
             B = [LineString(dm(b['p'])) for b in q['borders']]
             s0, s1 = q['s0'] / 10, q['s1'] / 10
+            lo_s = s0 + (MID_FROM_MOUTH if q['ea'] in MOUTH else MID_MARGIN)
+            hi_s = s1 - (MID_FROM_MOUTH if q['eb'] in MOUTH else MID_MARGIN)
             placed = []
             for x, sx in near:
-                if x['i'] in used or not (s0 + MID_MARGIN <= sx <= s1 - MID_MARGIN):
+                if x['i'] in used or not (lo_s < sx < hi_s):
                     continue
                 if any(abs(sx - o) < MID_MARGIN for o in placed):
                     mid_try.setdefault(x['i'], 'skip12')

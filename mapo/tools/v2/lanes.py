@@ -1,4 +1,4 @@
-# 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판) + 지시서 3b(docs/redraw-orders/3b-marks.md) 「먼저 할 일」: 2단계 찻길 면 위에 큰길 차로의 가운데선을 만든다.
+# 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판) + 지시서 3b(docs/redraw-orders/3b-marks.md, 2판) 「먼저 할 일」 1~6: 2단계 찻길 면 위에 큰길 차로의 가운데선을 만든다.
 # 읽는 것: public/data/v2/split.json 의 car, tmp/v2/roads.json(등급 0~3, 땅 위 선분).
 # 결과는 public/data/v2/lanes.json 과 그림용 tmp/v2/lane-borders.json. 실행: tools/.venv/bin/python tools/v2/lanes.py
 import json, math, os, time
@@ -23,6 +23,7 @@ EDGE_Q = {'lo': 0.75, 'hi': 0.25}
 EDGE_AVG = 8.0  # 그다음 앞뒤 8m 평균
 JUNCTION_DEG = 30.0  # 단면을 지나는 다른 구간 선의 방향이 이보다 더 다르면 「교차로 안」
 NARROW = 1.5  # 단면 폭 ÷ 차로 수가 이보다 작은 단면에는 차로를 놓지 않는다
+END_TOL = 4.1  # 묶음 끝이 물린 자리(ta, len − tb)에서 이만큼 안이면 노드에서 물린 끝
 OPP_DEG = 150.0  # 가장자리를 정한 다른 구간 선이 이 각 이상으로 마주 보면 opp, 아니면 same
 DIR_HALF = 1.0  # 다른 구간 선의 방향을 재는 길이(만나는 점 앞뒤)
 STOP = 12.0  # 물리는 거리 = Wmax/2 + 12m(지시서 3b: 처음 8m 에서 서울시 횡단보도 자리에 맞춰 4m 더함)
@@ -30,6 +31,9 @@ MIN_LANE_LEN = 10.0  # 차로를 두는 가장 짧은 길이(물린 뒤), 1.5 ×
 MIN_LANE_LEN_W = 1.5
 MIN_TRUST_LEN = 40.0  # 폭을 믿는 가장 짧은 구간
 STRAIGHT_DEG = 150.0  # 두 구간의 나가는 방향 사이 각이 이 이상이면 곧게 이어진다
+PAIR_DEG = 30.0  # 이 이하이면 나란히 같이 나가는 짝(갈라지기만 하는 노드)
+JX_TRIM = 12.0  # 「교차로 안」 단면 때문에 끊긴 묶음 끝을 줄이는 거리
+MIN_FALLBACK = 3  # 25%~75% 로 폭을 못 잰 구간: 구간 전체에서 쓸 수 있는 단면이 이만큼 있으면 그 중앙값으로 차로를 놓는다
 OUT_LEN = 5.0  # 나가는 방향을 재는 길이
 AHEAD = 0.5  # 단면의 진행 방향을 재는 길이
 
@@ -234,7 +238,7 @@ def trims(sections, degree):
                 s['t' + end] = 0.0
                 continue
             me = out_dir(s, end)
-            widths = []
+            widths, crossing = [], 0
             for j, oend in at[node]:
                 if j == i:
                     continue
@@ -242,10 +246,14 @@ def trims(sections, degree):
                 od = out_dir(o, oend)
                 if me is not None and od is not None:
                     ang = math.degrees(math.acos(max(-1.0, min(1.0, float(np.dot(me, od))))))
-                    if ang >= STRAIGHT_DEG:
-                        continue  # 곧게 이어지는 같은 길
-                if o['line'].length >= MIN_TRUST_LEN and o['W'] > 0:
-                    widths.append(o['W'])
+                    if ang >= STRAIGHT_DEG or ang <= PAIR_DEG:
+                        continue  # 곧게 이어지는 같은 길, 나란히 같이 나가는 짝
+                crossing += 1
+                if o['line'].length >= MIN_TRUST_LEN and o['W_trust'] > 0:
+                    widths.append(o['W_trust'])
+            if not crossing:
+                s['t' + end] = 0.0  # 갈라지기만 하는 노드
+                continue
             wmax = max(widths) if widths else s['W']
             s['t' + end] = wmax / 2 + STOP
 
@@ -270,8 +278,16 @@ def build(split_path=None, roads_path=None):
         s['jx_span'] = sum(1 for c in cuts if c == JUNCTION)
         Ws = [c[3] - c[2] for c in cuts if c is not None and c != JUNCTION]
         s['Ws'] = Ws
-        # 쓸 수 있는 단면이 짚은 점의 절반을 넘을 때만 폭을 잰 것으로 본다(아니면 못 잼, 이웃을 물리는 데도 안 씀)
-        s['W'] = float(np.median(Ws)) if len(Ws) > len(ds) / 2 else 0.0
+        # 쓸 수 있는 단면이 짚은 점의 절반을 넘을 때만 폭을 잰 것으로 본다(아니면 이웃을 물리는 데 안 씀)
+        s['W_trust'] = float(np.median(Ws)) if len(Ws) > len(ds) / 2 else 0.0
+        s['W'] = s['W_trust']
+        s['fallback'] = False
+        if s['W'] <= 0:
+            # 구간 전체를 4m 간격으로 짚어 쓸 수 있는 단면이 셋 이상이면 그 중앙값으로 차로를 놓는다(이웃을 물리는 데는 안 씀)
+            allc = [cutter.cut(si, k * STEP) for k in range(int(L // STEP) + 1)]
+            Wa = [c[3] - c[2] for c in allc if c is not None and c != JUNCTION]
+            if len(Wa) >= MIN_FALLBACK:
+                s['W'], s['fallback'] = float(np.median(Wa)), True
         s['n'] = lane_count(s['W'], s['oneway'])
     trims(sections, degree)
     for si, s in enumerate(sections):
@@ -295,23 +311,46 @@ def build(split_path=None, roads_path=None):
             ds.append(d)
             d += STEP
         ds.append(end)
-        # 「없음」·「교차로 안」·좁은 단면(W_k / N 이 1.5m 아래)에서 끊기는 묶음
-        runs, cur = [], []
-        for d in ds:
+        # 「없음」·「교차로 안」·좁은 단면(W_k / N 이 1.5m 아래)에서 끊기는 묶음. 묶음마다 앞뒤가 무엇으로 끊겼는지 적는다
+        def point(d):
             c = cutter.cut(si, d)
             why = '없음' if c is None else '교차로 안' if c == JUNCTION else '좁음' if (c[3] - c[2]) / n < NARROW else None
             if why:
+                return why, None
+            p, r, lo, hi, lk, rk = c
+            return None, {'d': d, 'p': p, 'r': r, 'lo': lo, 'hi': hi, 'lk': lk, 'rk': rk}
+
+        runs, cur, before = [], [], None
+        for d in ds:
+            why, k = point(d)
+            if why:
                 s['skip'][why] += 1
                 if cur:
-                    runs.append(cur)
-                cur = []
+                    runs.append({'ks': cur, 'before': before, 'after': why})
+                cur, before = [], why
                 continue
-            p, r, lo, hi, lk, rk = c
-            cur.append({'d': d, 'p': p, 'r': r, 'lo': lo, 'hi': hi, 'lk': lk, 'rk': rk})
+            if not cur and before is None:
+                before = 'start'
+            cur.append(k)
         if cur:
-            runs.append(cur)
+            runs.append({'ks': cur, 'before': before, 'after': 'end'})
+        # 「교차로 안」 단면 때문에 끊긴 끝은 12m 줄인다(끝에서 12m 안의 점을 버리고 12m 자리에 점 하나)
+        for q in runs:
+            ks = q['ks']
+            q['ja'] = q['before'] == '교차로 안'
+            q['jb'] = q['after'] == '교차로 안'
+            if q['ja']:
+                d0 = ks[0]['d'] + JX_TRIM
+                _, k = point(d0)
+                ks = ([k] if k else []) + [o for o in ks if o['d'] > d0]
+            if q['jb'] and ks:
+                d1 = ks[-1]['d'] - JX_TRIM
+                _, k = point(d1)
+                ks = [o for o in ks if o['d'] < d1] + ([k] if k else [])
+            q['ks'] = ks
         need = max(MIN_LANE_LEN, MIN_LANE_LEN_W * s['W'])
-        groups = [q for q in runs if q[-1]['d'] - q[0]['d'] >= need]
+        kept = [q for q in runs if len(q['ks']) >= 2 and q['ks'][-1]['d'] - q['ks'][0]['d'] >= need]
+        groups = [q['ks'] for q in kept]
         if not groups:
             s['why'] = '묶음 짧음'
             s['n'] = 0
@@ -342,7 +381,11 @@ def build(split_path=None, roads_path=None):
                 run_b.append({'k': kind, 'g': g})
             # 가장자리 종류: 묶음 단면들 가운데 가장 많은 것(같은 수면 curb, opp, same 순)
             mode = lambda vals: max(('curb', 'opp', 'same'), key=lambda v: vals.count(v))
-            s['runs'].append({'g': gi, 's0': ks[0]['d'], 's1': ks[-1]['d'],
+            # 두 끝의 종류: n(가로지르는 구간이 있는 노드에서 물린 끝), j(교차로 안 때문에 끊겨 12m 줄인 끝), x(그 밖)
+            q = kept[gi]
+            ea = 'j' if q['ja'] else 'n' if (s['ta'] > 0 and abs(ks[0]['d'] - s['ta']) <= END_TOL) else 'x'
+            eb = 'j' if q['jb'] else 'n' if (s['tb'] > 0 and abs(ks[-1]['d'] - (L - s['tb'])) <= END_TOL) else 'x'
+            s['runs'].append({'g': gi, 's0': ks[0]['d'], 's1': ks[-1]['d'], 'ea': ea, 'eb': eb,
                               'lk': mode([k['lk'] for k in ks]), 'rk': mode([k['rk'] for k in ks]), 'borders': run_b})
         s['groups'] = groups
         s['ks'] = [k for q in groups for k in q]
@@ -369,7 +412,7 @@ def main():
         'W': round(s['W'] * 100), 'n': s['n'], 'ta': round(s['ta'] * 10), 'tb': round(s['tb'] * 10),
         'axis': flat_dm(s['line']),
         'lanes': [{'g': l['gi'], 'd': l['d'], 'p': flat_dm(l['g'])} for l in s['lanes']],
-        'runs': [{'g': q['g'], 's0': round(q['s0'] * 10), 's1': round(q['s1'] * 10), 'lk': q['lk'], 'rk': q['rk'],
+        'runs': [{'g': q['g'], 's0': round(q['s0'] * 10), 's1': round(q['s1'] * 10), 'ea': q['ea'], 'eb': q['eb'], 'lk': q['lk'], 'rk': q['rk'],
                   'borders': [{'k': b['k'], 'p': flat_dm(b['g'])} for b in q['borders']]} for q in s['runs']]} for s in secs]}
     path = os.path.join(ROOT, 'public', 'data', 'v2', 'lanes.json')
     json.dump(out, open(path, 'w'), separators=(',', ':'))

@@ -1,4 +1,4 @@
-# 지시서 3b(docs/redraw-orders/3b-marks.md): marks.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와 찍는 수치(판정 없음).
+# 지시서 3b(docs/redraw-orders/3b-marks.md, 2판): marks.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와 찍는 수치(판정 없음).
 # 갈래 끝·xw 쓰임 같은 marks.json 에 넣지 않는 값은 marks.py 의 build() 로 다시 만들어 쓴다.
 # 실행: tools/.venv/bin/python tools/v2/check_marks.py
 import json, os, sys
@@ -31,8 +31,7 @@ def main():
     badp = sum(1 for p in polys if not p.is_valid or p.area < 6)
     results.append((bad == 0 and badp == 0, f'점 둘 아래이거나 길이 0 인 선 {bad}개, 유효하지 않거나 6㎡ 아래인 횡단보도 {badp}개'))
     stops = [LineString(p) for p in lines['stop']]
-    # 아래 한계: 지시서는 2.5m 로 적었지만, 3a 규칙은 단면 폭 ÷ 차로 수가 1.5m 이상이면 차로를 놓으므로(lanes.py NARROW)
-    # 한 차로만 가로지르는 구간 중간 정지선은 1.5m 까지 짧을 수 있다. 규칙에 맞춰 1.5m 로 본다(2.5m 아래인 것은 따로 찍는다)
+    # 정지선 길이 1.5~45m(2판). 2.5m 아래인 것은 참고로 따로 찍는다
     out_len = [g.length for g in stops if not 1.5 <= g.length <= 45]
     under = [g for g in stops if 1.5 <= g.length < 2.5]
     results.append((not out_len, f'길이가 1.5~45m 밖인 정지선 {len(out_len)}개' + (f' ({", ".join(f"{v:.1f}m" for v in out_len[:10])})' if out_len else '')
@@ -66,7 +65,13 @@ def main():
           f'구간 중간 {sum(1 for c in cr if c["mid"])}(신호 {sum(1 for c in cr if c["mid"] and c["sig"])})')
     # 2
     ends = r['ends']
-    print(f'2. 묶음 끝이 교차로 쪽인 곳 {len(ends)}곳, 그 가운데 횡단보도를 놓은 곳 {sum(1 for e in ends if e[3])}곳')
+    kc = Counter(e['kind'] for e in ends)
+    print(f'2. 교차로 입구 {len(ends)}곳(n {kc["n"]}, j {kc["j"]}), 그 가운데 횡단보도를 놓은 곳 {sum(1 for e in ends if e["placed"])}곳'
+          f'(n {sum(1 for e in ends if e["placed"] and e["kind"] == "n")}, j {sum(1 for e in ends if e["placed"] and e["kind"] == "j")})')
+    miss = [e for e in ends if not e['placed']]
+    print(f'   횡단보도를 놓지 않은 입구 {len(miss)}곳: ' + ', '.join(f'{k} {v}' for k, v in Counter(e["why"] for e in miss).items()))
+    for e in miss:
+        print(f'     ({e["at"].x:.0f}, {e["at"].y:.0f}) 등급 {e["cls"]} {e["kind"]} {e["why"]}')
     kinds = Counter()
     for oneway, lk, rk in r['runs']:
         kinds[('한 방향' if oneway else '양방향', 'lk', lk)] += 1
