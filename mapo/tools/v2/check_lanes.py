@@ -1,4 +1,4 @@
-# 지시서 3a(docs/redraw-orders/3a-lanes.md, 2판): lanes.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
+# 지시서 3a(docs/redraw-orders/3a-lanes.md, 4판): lanes.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
 # 찍는 수치(판정 없음). 단면 폭·차로 단면·차로 경계는 lanes.py 의 build() 로 다시 만들어 쓴다(lanes.json 에 넣지 않는 값이다).
 # 측량 좌표는 대조에만 쓰고 아무 데도 쓰지 않는다. 실행: tools/.venv/bin/python tools/v2/check_lanes.py
 import glob, json, math, os, sys
@@ -44,10 +44,13 @@ def main():
     # 구조 검사
     results = []
     lines = [(si, l['d'], LineString(dm(l['p'])) if len(l['p']) >= 4 else None) for si, s in enumerate(S) for l in s['lanes']]
-    # 구간 선의 차로 부분 길이(len − ta − tb)의 절반보다도 길어야 한다
-    part = [(S[si]['len'] - S[si]['ta'] - S[si]['tb']) / 10 for si, _, _ in lines]
-    short = sum(1 for (_, _, g), q in zip(lines, part) if g is None or g.length < 10 or g.length <= q / 2)
-    results.append((short == 0, f'차로 가운데선 {len(lines)}개 가운데 점 둘 아래이거나 10m 아래이거나 차로 부분 길이의 절반 아래인 것 {short}개'))
+    # 같은 구간의 차로 가운데 가장 긴 것의 절반보다 길어야 한다
+    longest = {}
+    for si, _, g in lines:
+        if g is not None:
+            longest[si] = max(longest.get(si, 0.0), g.length)
+    short = sum(1 for si, _, g in lines if g is None or g.length < 10 or g.length <= longest[si] / 2)
+    results.append((short == 0, f'차로 가운데선 {len(lines)}개 가운데 점 둘 아래이거나 10m 아래이거나 같은 구간 가장 긴 차로의 절반 아래인 것 {short}개'))
     good = [(si, d, g) for si, d, g in lines if g is not None]
     tot = sum(g.length for _, _, g in good)
     inside = sum(g.intersection(car_grow).length for _, _, g in good)
@@ -120,15 +123,19 @@ def main():
                 x = g.intersection(good[j][2])
                 pts.extend(shapely.get_coordinates(x).tolist())
     print(f'3. 서로 다른 구간의 차로 가운데선이 만나는 곳 {len(pts)}곳' + (': ' + ', '.join(f'({x:.0f}, {z:.0f})' for x, z in pts[:10]) if pts else ''))
-    # 4. 차로 경계선 edge 가 찻길 면 밖인 길이, 차로 가운데선이 꺾이는 곳
+    # 4. 차로 경계선 edge 가 찻길 면에서 0.5m 넘게 밖인 길이(참고로 조금이라도 밖인 길이), 차로 가운데선이 꺾이는 곳
     borders = json.load(open(os.path.join(ROOT, 'tmp', 'v2', 'lane-borders.json')))
     edges = [LineString(dm(b['p'])) for b in borders if b['k'] == 'edge']
     e_tot = sum(g.length for g in edges)
-    outs = [g.difference(car_grow) for g in edges]
+    car_half = car.buffer(0.5)
+    shapely.prepare(car_half)
+    outs = [g.difference(car_half) for g in edges]
     e_out = sum(o.length for o in outs)
+    e_any = sum(g.difference(car).length for g in edges)
     long_out = [p for o in outs for p in shapely.get_parts(o) if p.length > 10]
-    print(f'4. 차로 경계선 edge {e_tot:.0f}m 가운데 찻길 면 밖 {e_out:.0f}m ({100 * e_out / e_tot:.2f}%), 10m 넘게 이어지는 곳 {len(long_out)}곳'
-          + (': ' + ', '.join(f'{xz(p)} {p.length:.0f}m' for p in long_out) if long_out else ''))
+    print(f'4. 차로 경계선 edge {e_tot:.0f}m 가운데 찻길 면에서 0.5m 넘게 밖 {e_out:.0f}m ({100 * e_out / e_tot:.2f}%), 10m 넘게 이어지는 곳 {len(long_out)}곳'
+          + (': ' + ', '.join(f'{xz(p)} {p.length:.0f}m' for p in long_out) if long_out else '')
+          + f'. 참고: 조금이라도 밖 {e_any:.0f}m ({100 * e_any / e_tot:.2f}%)')
     kinks = []
     for _, _, g in good:
         c = np.array(g.coords)
