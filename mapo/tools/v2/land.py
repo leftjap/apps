@@ -15,7 +15,7 @@ from tm import ll_to_xz  # noqa: E402
 AREA = (-790, -940, 970, 720)
 RECT = box(*AREA)
 STEP = 2.0  # 길 중심선을 짚는 간격(m)
-WIDTH = {0: 28, 1: 28, 2: 20, 3: 14, 4: 4, 5: 4}  # 도로 부지가 없는 길의 띠 폭(전체, m), docs/redraw.md 6절
+WIDTH = {0: 28, 1: 28, 2: 20, 3: 14, 4: 4}  # 도로 부지가 없는 길의 띠 폭(전체, m), docs/redraw.md 6절. 등급 5·6 은 채우지 않는다
 MIN_AREA = 1.0  # 이보다 작은 조각·구멍은 지운다(㎡)
 
 
@@ -69,6 +69,8 @@ def fill_bands(roads, covered):
     """길 중심선을 2m 간격으로 짚어 도로 부지 밖인 점이 이어지는 토막을 등급 폭의 띠로"""
     bands = []
     for road in roads:
+        if road['cls'] not in WIDTH:
+            continue
         half = WIDTH[road['cls']] / 2
         for chain in ground_chains(road):
             line = LineString(chain)

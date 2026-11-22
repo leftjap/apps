@@ -61,11 +61,14 @@ def main():
     outside = road.difference(rect).area
     results.append((outside == 0, f'구역 밖으로 나간 넓이 {outside:.2f}㎡'))
 
-    # 구역 안 땅 위 길 중심선(등급 0~5)을 5m 간격으로 짚은 점이 도로 부지 또는 건물 안인 비율
+    # 구역 안 땅 위 길 중심선(등급 0~4)을 5m 간격으로 짚은 점이 도로 부지 또는 건물 안인 비율. 등급 5 는 채우지 않으므로 뺀다
     covered = unary_union([road, bld])
     shapely.prepare(covered)
+    roads = json.load(open(os.path.join(ROOT, 'tmp', 'v2', 'roads.json')))
     xs, zs = [], []
-    for r in json.load(open(os.path.join(ROOT, 'tmp', 'v2', 'roads.json'))):
+    for r in roads:
+        if r['cls'] > 4:
+            continue
         p = r['p']
         pts = [(p[i], p[i + 1], p[i + 2]) for i in range(0, len(p) - 2, 3)]
         chain = []
@@ -113,9 +116,20 @@ def main():
         c = shapely.get_coordinates(b)
         edges.extend(shapely.linestrings(np.stack([c[:-1], c[1:]], axis=1)))
     _, d = STRtree(edges).query_nearest(pts, return_distance=True, all_matches=False)
-    d = np.sort(d)
-    print(f'측량 도로 부지 경계까지 거리(우리 경계 점 {len(d)}개): 중앙값 {np.median(d):.2f}m, 90% {np.quantile(d, 0.9):.2f}m, '
-          f'1m 넘음 {100 * (d > 1).mean():.1f}%, 2m 넘음 {100 * (d > 2).mean():.1f}%')
+    # 우리 경계 점마다 가장 가까운 길 중심선(tmp/v2/roads.json 전체)이 큰길(등급 0~3)인지
+    lines = [(r['cls'], LineString([(r['p'][i], r['p'][i + 2]) for i in range(0, len(r['p']) - 2, 3)])) for r in roads]
+    lines = [(c, g) for c, g in lines if g.length > 0]
+    (pi, li) = STRtree([g for _, g in lines]).query_nearest(pts, all_matches=False)
+    big = np.zeros(len(pts), dtype=bool)
+    big[pi] = np.array([lines[i][0] for i in li]) <= 3
+
+    def report(name, v):
+        print(f'측량 도로 부지 경계까지 거리({name} {len(v)}개): 중앙값 {np.median(v):.2f}m, 90% {np.quantile(v, 0.9):.2f}m, '
+              f'1m 넘음 {100 * (v > 1).mean():.1f}%, 2m 넘음 {100 * (v > 2).mean():.1f}%')
+
+    report('우리 경계 점', d)
+    report('가장 가까운 중심선이 큰길(등급 0~3)인 점', d[big])
+    report('그 밖의 점', d[~big])
     sys.exit(0 if all(ok for ok, _ in results) else 1)
 
 
