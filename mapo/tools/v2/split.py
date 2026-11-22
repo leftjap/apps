@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 W = {'g1': 3.75, 'g2': 3.25, 'g3': 2.75}  # 인도 폭(등급 0 은 인도 없음)
 H = {'g0': 12.0, 'g1': 28.0, 'g2': 14.0, 'g3': 10.0}  # 찻길을 찾는 범위(중심선에서). g0 은 이 안의 도로 부지 전체가 찻길
 GROUP = {0: 'g0', 1: 'g1', 2: 'g2', 3: 'g3'}
-DENT_HALF = 1.5  # 인도 경계를 정할 때 무시하는 홈 폭의 반
+DENT_HALF = 0.5  # 인도 경계를 정할 때 무시하는 홈 폭의 반
 CAR_HALF = 3.0  # 찻길로 보는 가장 좁은 폭의 반, 좁은 큰길에서 언제나 찻길인 중심선 양쪽 폭
 KEEP_WALK = 1.5  # 좁은 큰길에서 남기는 인도
 ALLEY_HALF = 2.0  # 골목 입구 폭의 반
@@ -93,7 +93,7 @@ def main():
     R = unary_union([make_valid(Polygon(dm(p[0]), [dm(h) for h in p[1:]])) for p in land['road']])
     L = load_lines(area)
 
-    # 2. 찻길: 묶음마다 C_g, 그 옆 인도가 놓일 띠 Band_g. Rc(폭 3m 아래 홈과 가는 조각을 메운 면)는 인도 경계를 정하는 데만 쓴다
+    # 2. 찻길: 묶음마다 C_g, 그 옆 인도가 놓일 띠 Band_g. Rc(폭 1m 아래 홈을 메운 면)는 인도 경계를 정하는 데만 쓴다
     Rc = R.buffer(DENT_HALF).buffer(-DENT_HALF)
     Cs, Bands = [L['g0'].buffer(H['g0']).intersection(R)], []  # g0 은 인도가 없다
     R_in = R.buffer(-KEEP_WALK)
