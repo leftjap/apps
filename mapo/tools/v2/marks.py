@@ -1,4 +1,4 @@
-# 지시서 3b(docs/redraw-orders/3b-marks.md, 4판): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
+# 지시서 3b(docs/redraw-orders/3b-marks.md, 5판): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
 # 읽는 것: public/data/v2/lanes.json(v 2, runs), public/data/board.json 의 xw(가운데 점·건너는 방향·신호 유무만).
 # 결과는 public/data/v2/marks.json. 실행: tools/.venv/bin/python tools/v2/marks.py
 import json, math, os, time
@@ -16,7 +16,9 @@ XW_SIDE = 3.0  # 구간 중간 횡단보도를 붙이는 옆 범위: W/2 + 3(한
 XW_NEAR = 35.0  # 교차로 입구 횡단보도 가운데에서 이 안의 서울시 횡단보도는 「쓰인 것」(구간 중간으로 다시 놓지 않음)
 XW_SIG = 60.0  # 교차로 입구 횡단보도의 신호 유무: 가운데에서 이 안에 신호 있는 서울시 횡단보도가 있으면 1
 MOUTH = ('n', 'j')  # 교차로 입구인 묶음 끝 종류
-MID_FROM_MOUTH = 30.0  # 구간 중간 횡단보도: 교차로 입구에서 이만큼 넘게 떨어진 곳
+MID_FROM_MOUTH = 60.0  # 구간 중간 횡단보도: 교차로 입구에서 이만큼 넘게 떨어진 곳(5판 60m)
+PAIR_DEG = 30.0  # 한 방향 쌍 맞추기: 두 입구 횡단보도가 향하는 방향이 이 안으로 같다
+PAIR_GAP = 12.0  # 두 가운데 점 사이 거리가 두 구간 W 평균 + 12m 안
 XW_DOT = 0.5  # 건너는 방향과 구간 선 방향의 내적 절댓값이 이보다 작아야 한다(60° 넘게 엇갈림)
 MID_MARGIN = 12.0  # 구간 중간 횡단보도: 입구가 아닌 묶음 끝에서 12m 넘게, 같은 묶음 12m 안 건너뜀
 MID_HALF = 3.0  # 구간 중간 횡단보도의 반 폭
@@ -68,8 +70,16 @@ def load_xw(area):
     return out
 
 
-def build():
+def build(mid_from_mouth=MID_FROM_MOUTH):
     lanes = json.load(open(os.path.join(ROOT, 'public', 'data', 'v2', 'lanes.json')))
+    # 「먼저 할 일」 7 로 j 가 된 끝(노드에서 끝난 것)은 lanes.json 에 따로 적혀 있지 않아 lanes.py 의 build() 로 다시 구한다
+    import lanes as lanes_py
+    node_j = {(i, end) for i, end, _ in lanes_py.build()['stats7']['at']}
+    at_node = {}
+    for i, s in enumerate(lanes['sec']):
+        for end in ('a', 'b'):
+            if s[end] >= 0:
+                at_node.setdefault(s[end], []).append(i)
     area = lanes['area']
     xws = load_xw(area)
     center, lane, solid, stop, cross = [], [], [], [], []
@@ -130,8 +140,12 @@ def build():
                     v = -axis_dir(axis, s0)
                 poly = Polygon([E0 + XW_GAP * v, EN + XW_GAP * v, EN + (XW_GAP + XW_W) * v, E0 + (XW_GAP + XW_W) * v])
                 mouth = {'sec': si, 'g': q['g'], 'end': end, 'kind': kind, 'cls': s['cls'], 'at': poly.centroid, 'placed': False, 'why': None}
+                node = s[end] if (kind == 'n' or (si, end) in node_j) else -1
+                others = [lanes['sec'][j]['cls'] for j in at_node.get(node, []) if j != si] if node >= 0 else []
                 if s['cls'] == 0:
                     mouth['why'] = '등급 0'
+                elif others and all(c == 0 for c in others):
+                    mouth['why'] = '노드에 닿는 다른 구간이 모두 등급 0'
                 else:
                     # 4판: 등급 0 이 아니면 언제나 놓는다. 서울시 자료는 신호 유무와 「쓰인 것」에만 쓴다
                     c = poly.centroid
@@ -145,11 +159,38 @@ def build():
                                     sig = 1
                                 if dd <= XW_NEAR:
                                     near35.append(x)
-                    cross.append({'poly': poly, 'sig': sig, 'mid': 0, 'sec': si, 'end': end})
+                    cross.append({'poly': poly, 'sig': sig, 'mid': 0, 'sec': si, 'end': end, 'v': v, 'oneway': oneway, 'W': W, 'shift': 0.0})
                     used.update(x['i'] for x in near35)
                     mouth['placed'] = True
                     mouth['near35'] = bool(near35)
                 ends.append(mouth)
+    # 4-1. 한 방향 쌍 맞추기: 가까운 쌍부터 짝짓고, 교차로에 더 가까운 쪽에 맞춘다(정지선은 옮기지 않는다)
+    from shapely import affinity
+    mouths = [c for c in cross if not c['mid'] and c['oneway']]
+    cand = []
+    for ia in range(len(mouths)):
+        for ib in range(ia + 1, len(mouths)):
+            A, B = mouths[ia], mouths[ib]
+            if A['sec'] == B['sec'] or float(np.dot(A['v'], B['v'])) < math.cos(math.radians(PAIR_DEG)):
+                continue
+            dist = A['poly'].centroid.distance(B['poly'].centroid)
+            if dist <= (A['W'] + B['W']) / 2 + PAIR_GAP:
+                cand.append((dist, ia, ib))
+    paired, xw_pairs = set(), []
+    for dist, ia, ib in sorted(cand):
+        if ia in paired or ib in paired:
+            continue
+        paired.update((ia, ib))
+        A, B = mouths[ia], mouths[ib]
+        cA, cB = np.array(A['poly'].centroid.coords[0]), np.array(B['poly'].centroid.coords[0])
+        d = float(np.dot(cB - cA, A['v']))
+        if d > 0:
+            A['poly'] = affinity.translate(A['poly'], *(A['v'] * d))
+            A['shift'] = d
+        elif d < 0:
+            B['poly'] = affinity.translate(B['poly'], *(B['v'] * -d))
+            B['shift'] = -d
+        xw_pairs.append((A, B, abs(d)))
     # 5. 구간 중간 횡단보도(모든 갈래의 4에서 쓰이지 않은 xw, 묶음마다)
     for si, s in enumerate(lanes['sec']):
         if not s['runs']:
@@ -160,8 +201,8 @@ def build():
         for q in s['runs']:
             B = [LineString(dm(b['p'])) for b in q['borders']]
             s0, s1 = q['s0'] / 10, q['s1'] / 10
-            lo_s = s0 + (MID_FROM_MOUTH if q['ea'] in MOUTH else MID_MARGIN)
-            hi_s = s1 - (MID_FROM_MOUTH if q['eb'] in MOUTH else MID_MARGIN)
+            lo_s = s0 + (mid_from_mouth if q['ea'] in MOUTH else MID_MARGIN)
+            hi_s = s1 - (mid_from_mouth if q['eb'] in MOUTH else MID_MARGIN)
             placed = []
             for x, sx in near:
                 if x['i'] in used or not (lo_s < sx < hi_s):
@@ -210,7 +251,7 @@ def build():
             if u is not None and abs(float(np.dot(u, x['u']))) < XW_DOT:
                 crossing = True
         use[x['i']] = '큰길 가까이, 차로가 없는 자리' if crossing else '큰길 가까이, 건너는 방향이 나란함'
-    return {'area': area, 'center': center, 'lane': lane, 'solid': solid, 'stop': stop, 'cross': cross,
+    return {'area': area, 'center': center, 'lane': lane, 'solid': solid, 'stop': stop, 'cross': cross, 'pairs': xw_pairs,
             'ends': ends, 'runs': runs_info, 'xw': xws, 'use': use, 'lanes': lanes}
 
 
