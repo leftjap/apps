@@ -11,12 +11,13 @@ from shp import shapes  # noqa: E402
 from plot_land import Canvas, dm, fill_polygons, fill_even_odd  # noqa: E402
 
 OUT = os.path.join(ROOT, 'tmp', 'v2')
-COLOR = {'car': (62, 66, 80), 'walk': (214, 208, 196), 'mix': (128, 131, 142), 'ped': (224, 190, 140)}
+COLOR = {'car': (62, 66, 80), 'walk': (214, 208, 196), 'mix': (128, 131, 142), 'ped': (224, 190, 140), 'plaza': (240, 214, 150)}
 BLD, GROUND, REST = (150, 130, 110), (192, 193, 196), (226, 228, 222)
 BOTH_CAR, OURS, THEIRS, BOTH_WALK = (62, 66, 80), (220, 40, 40), (40, 90, 220), (60, 150, 90)
 SC_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면(여기서 인도 면을 빼면 측량 찻길)
 SW_LAYERS = ('N1A_A0033320',)  # 인도 면
-ZOOM = {'hapjeong': (-490, 245), 'yanghwa': (-70, -130), 'hongdae': (670, -830), 'eoulmadang': (265, -180)}
+ZOOM = {'hapjeong': (-490, 245), 'yanghwa': (-70, -130), 'hongdae': (670, -830), 'eoulmadang': (265, -180),
+        'eoul-south': (160, 200), 'gyeongui': (640, -560)}
 
 
 def paint(size, bg, layers):

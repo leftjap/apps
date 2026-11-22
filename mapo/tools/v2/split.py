@@ -1,5 +1,6 @@
 # 지시서 2(docs/redraw-orders/2-split.md): 1단계 도로 부지를 찻길 / 인도 / 함께 쓰는 면 / 보행 전용 띠로 나눈다.
-# 읽는 것: public/data/v2/land.json, tmp/v2/roads.json. 결과는 public/data/v2/split.json.
+# 4판: 다섯째 면 광장(OSM 광장 면, board.json 의 ga 종류 23)을 더한다.
+# 읽는 것: public/data/v2/land.json, tmp/v2/roads.json, public/data/board.json(ga·b). 결과는 public/data/v2/split.json.
 # 실행: tools/.venv/bin/python tools/v2/split.py
 import json, os, time
 import shapely
@@ -20,6 +21,8 @@ KEEP_WALK = 1.5  # 좁은 큰길에서 남기는 인도
 ALLEY_HALF = 2.0  # 골목 입구 폭의 반
 PED_HALF = 2.0  # 보행 전용 띠 폭의 반
 MIN_AREA = 1.0  # 이보다 작은 조각·구멍은 지운다(㎡)
+PLAZA_GAP_HALF = 1.5  # 광장과 도로 부지 사이에서 메우는 틈 폭의 반
+PLAZA_KIND = 23  # board.json ga 의 OSM 광장·보행 면
 
 
 def dm(a):
@@ -67,6 +70,32 @@ def load_lines(area):
             if line.intersects(near):
                 out[key].append(line)
     return {k: MultiLineString(v) for k, v in out.items()}
+
+
+def load_plazas(rect):
+    """종류 23 인 ga 면(바깥 고리와 구멍)을 합쳐 구역으로 자른 것과, 구역과 겹치는 면의 개수"""
+    gs = []
+    for g in json.load(open(os.path.join(ROOT, 'public', 'data', 'board.json')))['ga']:
+        if g[0] != PLAZA_KIND:
+            continue
+        rings = [dm(r) for r in g[3:] if len(r) >= 6]
+        if rings:
+            p = make_valid(Polygon(rings[0], rings[1:]))
+            if p.intersects(rect):
+                gs.append(p)
+    return unary_union(gs).intersection(rect), len(gs)
+
+
+def load_buildings(rect):
+    """모든 건물을 합친 것(land.py 와 같은 읽는 법)"""
+    out = []
+    for b in json.load(open(os.path.join(ROOT, 'public', 'data', 'board.json')))['b']:
+        pts = [(b[i] / 10, b[i + 1] / 10) for i in range(2, len(b) - 1, 2)]
+        if len(pts) >= 3:
+            g = make_valid(Polygon(pts))
+            if g.intersects(rect):
+                out.append(g)
+    return unary_union(out)
 
 
 def clean(g):
@@ -125,9 +154,25 @@ def main():
     mix = unary_union(mix_parts + [M])
     walk = unary_union([band.difference(M)] + walk_parts)
 
+    # 8-1. 광장
+    rect = box(*area)
+    U, n_plaza = load_plazas(rect)
+    Bld = load_buildings(rect)
+    print(f'광장 면(종류 23) {n_plaza}개 {U.area:.0f}㎡, 도로 부지와 겹침 {U.intersection(R).area:.0f}㎡, 건물과 겹침 {U.intersection(Bld).area:.0f}㎡')
+    P_in = U.intersection(unary_union([mix, walk, ped])).difference(alley_flat)
+    out_only = U.difference(R).difference(Bld)
+    shapely.prepare(out_only)
+    G = U.union(R).buffer(PLAZA_GAP_HALF).buffer(-PLAZA_GAP_HALF).difference(R).difference(Bld)
+    P_out = unary_union([p for p in polygons(G) if out_only.intersects(p)])
+    plaza = P_in.union(P_out)
+    before = {'mix': mix.area, 'walk': walk.area, 'ped': ped.area}
+    mix, walk, ped = mix.difference(plaza), walk.difference(plaza), ped.difference(plaza)
+    print(f'광장: 도로 부지 안 {P_in.area:.0f}㎡, 밖 {P_out.area:.0f}㎡. 줄어든 넓이: 함께 쓰는 면 {before["mix"] - mix.area:.0f}㎡, '
+          f'인도 {before["walk"] - walk.area:.0f}㎡, 보행 전용 띠 {before["ped"] - ped.area:.0f}㎡')
+
     # 9·10.
-    out = {'v': 1, 'area': area}
-    for name, g in (('car', car), ('walk', walk), ('mix', mix), ('ped', ped)):
+    out = {'v': 2, 'area': area}
+    for name, g in (('car', car), ('walk', walk), ('mix', mix), ('ped', ped), ('plaza', plaza)):
         keep = clean(g)
         out[name] = [[ring_dm(p.exterior)] + [ring_dm(h) for h in p.interiors] for p in keep]
         print(f'{name}: 다각형 {len(keep)}개, 넓이 {sum(p.area for p in keep):.0f}㎡')
