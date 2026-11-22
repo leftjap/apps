@@ -1,5 +1,5 @@
 # 지시서 3b(docs/redraw-orders/3b-marks.md, 5판): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
-# 읽는 것: public/data/v2/lanes.json(v 2, runs), public/data/board.json 의 xw(가운데 점·건너는 방향·신호 유무만).
+# 읽는 것: public/data/v2/lanes.json(v 3, runs, 구간 선 높이 ay), public/data/board.json 의 xw(가운데 점·건너는 방향·신호 유무만).
 # 결과는 public/data/v2/marks.json. 실행: tools/.venv/bin/python tools/v2/marks.py
 import json, math, os, time
 import numpy as np
@@ -24,6 +24,7 @@ MID_MARGIN = 12.0  # 구간 중간 횡단보도: 입구가 아닌 묶음 끝에�
 MID_HALF = 3.0  # 구간 중간 횡단보도의 반 폭
 MID_STOP = 5.0  # 구간 중간 정지선 자리(s ∓ 5)
 PERP = 60.0  # 구간 선에 수직인 선의 반 길이(경계선과 만나는 점을 찾는 데만 쓴다)
+HIGH = 3.0  # 구간 선의 높이가 이 이상인 자리에는 정지선·횡단보도를 놓지 않는다(docs/redraw.md 4절 4, 지시서 4b)
 
 
 def dm(a):
@@ -37,6 +38,14 @@ def flat(pts):
 def unit(v):
     n = math.hypot(v[0], v[1])
     return None if n == 0 else np.array([v[0] / n, v[1] / n])
+
+
+def axis_y(s):
+    """lanes.json 구간 → 구간 선 위 거리 d 의 높이를 주는 함수(앞뒤 꼭짓점 높이를 거리로 곧게 잇는다, lanes.py 의 y_at 과 같다)"""
+    c = np.array(dm(s['axis']))
+    cum = np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(c, axis=0).T))])
+    ys = [v / 10 for v in s['ay']]
+    return lambda d: float(np.interp(d, cum, ys))
 
 
 def axis_dir(axis, s):
@@ -88,10 +97,12 @@ def build(mid_from_mouth=MID_FROM_MOUTH):
     mid_try = {}  # xw 번호 → 구간 중간에서 어떻게 됐는가
     runs_info = []  # (한 방향, lk, rk)
     nears = {}
+    drop = {'stop': 0, 'cross': 0, 'mid': {}}  # 높이 3m 이상이라 놓지 않은 것(구간 중간은 xw 번호 → 정지선 수)
     for si, s in enumerate(lanes['sec']):
         if not s['runs']:
             continue
         axis = LineString(dm(s['axis']))
+        yof = axis_y(s)
         L, ta, tb, W, n, oneway = s['len'] / 10, s['ta'] / 10, s['tb'] / 10, s['W'] / 100, s['n'], s['oneway']
         side = (W if oneway else W / 2) + XW_SIDE
         half = n // 2
@@ -127,11 +138,19 @@ def build(mid_from_mouth=MID_FROM_MOUTH):
                 kind = q['ea'] if end == 'a' else q['eb']
                 if kind not in MOUTH:
                     continue
+                high = yof(s1 if end == 'b' else s0) >= HIGH  # 차로 끝 자리의 구간 선 높이
                 if end == 'b':
                     i0, i1 = (0, n) if oneway else (half, n)
-                    stop.append(LineString([B[i0].coords[-1], B[i1].coords[-1]]))
+                    sl = LineString([B[i0].coords[-1], B[i1].coords[-1]])
                 elif not oneway:
-                    stop.append(LineString([B[0].coords[0], B[half].coords[0]]))
+                    sl = LineString([B[0].coords[0], B[half].coords[0]])
+                else:
+                    sl = None
+                if sl is not None:
+                    if high:
+                        drop['stop'] += 1
+                    else:
+                        stop.append(sl)
                 if end == 'b':
                     E0, EN = np.array(B[0].coords[-1]), np.array(B[n].coords[-1])
                     v = axis_dir(axis, s1)
@@ -146,6 +165,9 @@ def build(mid_from_mouth=MID_FROM_MOUTH):
                     mouth['why'] = '등급 0'
                 elif others and all(c == 0 for c in others):
                     mouth['why'] = '노드에 닿는 다른 구간이 모두 등급 0'
+                elif high:
+                    mouth['why'] = '높이 3m 이상'
+                    drop['cross'] += 1
                 else:
                     # 4판: 등급 0 이 아니면 언제나 놓는다. 서울시 자료는 신호 유무와 「쓰인 것」에만 쓴다
                     c = poly.centroid
@@ -196,6 +218,7 @@ def build(mid_from_mouth=MID_FROM_MOUTH):
         if not s['runs']:
             continue
         axis = LineString(dm(s['axis']))
+        yof = axis_y(s)
         n, oneway, near = s['n'], s['oneway'], nears[si]
         half = n // 2
         for q in s['runs']:
@@ -215,11 +238,15 @@ def build(mid_from_mouth=MID_FROM_MOUTH):
                 if any(v is None for v in c):
                     mid_try.setdefault(x['i'], 'noshape')
                     continue
+                pairs = [(sx - MID_STOP, 0, n)] if oneway else [(sx - MID_STOP, half, n), (sx + MID_STOP, 0, half)]
+                if yof(sx) >= HIGH:  # 놓을 자리의 구간 선이 높이 3m 이상: 놓지 않고 그 xw 는 쓰이지 않은 것으로 둔다
+                    ok = sum(1 for ss, j0, j1 in pairs if perp_hit(axis, ss, B[j0]) is not None and perp_hit(axis, ss, B[j1]) is not None)
+                    drop['mid'][x['i']] = max(drop['mid'].get(x['i'], 0), ok)
+                    continue
                 cross.append({'poly': Polygon(c), 'sig': x['sig'], 'mid': 1, 'sec': si, 'end': None})
                 placed.append(sx)
                 mid_try[x['i']] = 'mid'
                 # 정지선 둘(한 방향은 하나): d=1 쪽은 s − 5, d=−1 쪽은 s + 5
-                pairs = [(sx - MID_STOP, 0, n)] if oneway else [(sx - MID_STOP, half, n), (sx + MID_STOP, 0, half)]
                 for ss, j0, j1 in pairs:
                     e0, e1 = perp_hit(axis, ss, B[j0]), perp_hit(axis, ss, B[j1])
                     if e0 is not None and e1 is not None:
@@ -252,7 +279,9 @@ def build(mid_from_mouth=MID_FROM_MOUTH):
                 crossing = True
         use[x['i']] = '큰길 가까이, 차로가 없는 자리' if crossing else '큰길 가까이, 건너는 방향이 나란함'
     return {'area': area, 'center': center, 'lane': lane, 'solid': solid, 'stop': stop, 'cross': cross, 'pairs': xw_pairs,
-            'ends': ends, 'runs': runs_info, 'xw': xws, 'use': use, 'lanes': lanes}
+            'ends': ends, 'runs': runs_info, 'xw': xws, 'use': use, 'lanes': lanes,
+            'drop': {'stop': drop['stop'] + sum(v for i, v in drop['mid'].items() if mid_try.get(i) != 'mid'), 'cross': drop['cross'],
+                     'mid': sum(1 for i in drop['mid'] if mid_try.get(i) != 'mid')}}
 
 
 def main():
@@ -266,6 +295,8 @@ def main():
     json.dump(out, open(path, 'w'), separators=(',', ':'))
     print(f'중앙선 {len(out["center"])}, 차선 {len(out["lane"])}, 흰 실선 {len(out["solid"])}, 정지선 {len(out["stop"])}, '
           f'횡단보도 {len(out["cross"])}(구간 중간 {sum(c["mid"] for c in out["cross"])})')
+    d = r['drop']
+    print(f'구간 선 높이 {HIGH:.0f}m 이상이라 놓지 않은 것: 정지선 {d["stop"]}개, 횡단보도 {d["cross"] + d["mid"]}개(교차로 입구 {d["cross"]}, 구간 중간 {d["mid"]})')
     print(f'→ {path} ({os.path.getsize(path) / 1e6:.2f}MB, {time.time() - t0:.1f}초)')
 
 

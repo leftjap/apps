@@ -20,7 +20,8 @@ SHEETS = (-794, -943, 971, 721)  # 수치지형도 12도엽이 덮는 판 좌표
 ZOOM = {'hapjeong': (-490, 245), 'yanghwa': (-70, -130), 'hongdae': (670, -830), 'eoulmadang': (265, -180),
         'eoul-south': (160, 200), 'gyeongui': (640, -560),
         'mangwon': (-783, -502), 'sangsu': (343, 415), 'sinchon': (1580, -405), 'sogang': (1428, -95),
-        'mapogu': (-1380, -1338), 'seongsan': (-460, -1600), 'edge': (1880, 540)}  # 지시서 4a 에서 더함
+        'mapogu': (-1380, -1338), 'seongsan': (-460, -1600), 'edge': (1880, 540),  # 지시서 4a 에서 더함
+        'seogangbr': (800, 950), 'yanghwabr': (-850, 550), 'naebu': (-1250, -1330), 'morae': (-100, -1800)}  # 지시서 4b 에서 더함
 
 
 def paint(size, bg, layers):

@@ -15,7 +15,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 from tm import tm_to_xz  # noqa: E402
 from shp import shapes  # noqa: E402
-from split import dm, ground_chains, load_buildings, GROUP  # noqa: E402
+from split import dm, road_chains, load_buildings, GROUP  # noqa: E402
 
 NAMES = ('car', 'walk', 'mix', 'ped')
 ROAD_FACES = ('car', 'walk', 'mix')  # 도로 부지 안에만 있는 면(사람만 쓰는 면은 광장 때문에 밖에도 있다)
@@ -61,7 +61,7 @@ def centerline_points(roads, classes):
     pts = []
     for r in roads:
         if r['cls'] in classes:
-            for ch in ground_chains(r):
+            for ch in road_chains(r):
                 pts.extend(shapely.get_parts(samples(LineString(ch), 5.0)))
     return np.array(pts)
 
@@ -148,7 +148,7 @@ def main():
     big = {}
     for r in roads:
         if r['cls'] in GROUP:
-            big.setdefault(GROUP[r['cls']], []).extend(LineString(ch) for ch in ground_chains(r))
+            big.setdefault(GROUP[r['cls']], []).extend(LineString(ch) for ch in road_chains(r))
     K = unary_union([ln.buffer(30) for v in big.values() for ln in v])
     car, walk, mix = (face[n].intersection(sheets) for n in ROAD_FACES)
     print('측량 자료와 재는 수치(판정 없음)')

@@ -1,5 +1,5 @@
 # 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판) + 지시서 3b(docs/redraw-orders/3b-marks.md, 3판) 「먼저 할 일」 1~7: 2단계 찻길 면 위에 큰길 차로의 가운데선을 만든다.
-# 읽는 것: public/data/v2/split.json 의 car, tmp/v2/roads.json(등급 0~3, 땅 위 선분).
+# 읽는 것: public/data/v2/split.json 의 car, tmp/v2/roads.json(등급 0~3, 높이와 상관없이 모든 선분, 지시서 4b).
 # 결과는 public/data/v2/lanes.json 과 그림용 tmp/v2/lane-borders.json. 실행: tools/.venv/bin/python tools/v2/lanes.py
 import json, math, os, time
 from itertools import combinations
@@ -40,6 +40,7 @@ OUT_LEN = 5.0  # 나가는 방향을 재는 길이
 AHEAD = 0.5  # 단면의 진행 방향을 재는 길이
 BOARD_R = 2000.0  # 판은 원점 둘레 반지름 2,000m 원(지시서 4a)
 EDGE_KEEP = 30.0  # 판 가장자리에서 이 안의 단면에는 차로를 두지 않는다(docs/redraw.md 4절 3, 6절)
+LEVEL_GAP = 3.0  # 엇갈리는 두 선의 높이 차가 이 이상이면 서로 없는 것으로 본다(docs/redraw.md 6절 「다른 층으로 보는 높이」, 지시서 4b)
 
 
 def dm(a):
@@ -64,19 +65,29 @@ def unit(v):
     return None if n == 0 else np.array([v[0] / n, v[1] / n])
 
 
+def cum_len(line):
+    """선의 꼭짓점마다 첫 점부터 선을 따라 잰 거리"""
+    c = np.array(line.coords)
+    return np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(c, axis=0).T))])
+
+
+def y_at(s, d):
+    """구간 선 위 거리 d 의 높이(앞뒤 꼭짓점 높이를 거리로 곧게 잇는다)"""
+    return float(np.interp(d, s['cum'], s['ys']))
+
+
 # 1·2. 선분·노드·구간
 def build_sections(roads, rect):
-    segs = []  # (노드 a, 노드 b, 등급, 한 방향, 길이) — 목록 순서가 roads.json 에 나오는 순서, a→b 가 그 점 순서
+    segs = []  # (노드 a, 노드 b, 등급, 한 방향, 길이, a 높이, b 높이) — 목록 순서가 roads.json 에 나오는 순서, a→b 가 그 점 순서
     for r in roads:
         if r['cls'] > 3:
             continue
         p = r['p']
         pts = [(p[i], p[i + 1], p[i + 2]) for i in range(0, len(p) - 2, 3)]
-        for s, e in zip(pts, pts[1:]):
-            if s[1] < 0.3 and e[1] < 0.3:
-                a, b = key(s[0], s[2]), key(e[0], e[2])
-                if a != b:
-                    segs.append((a, b, r['cls'], r['oneway'], math.dist(a, b)))
+        for s, e in zip(pts, pts[1:]):  # 큰길은 높이와 상관없이 모든 선분을 쓴다(지시서 4b)
+            a, b = key(s[0], s[2]), key(e[0], e[2])
+            if a != b:
+                segs.append((a, b, r['cls'], r['oneway'], math.dist(a, b), s[1], e[1]))  # 끝에 a·b 의 높이
     touch = {}
     for i, (a, b, *_) in enumerate(segs):
         touch.setdefault(a, []).append(i)
@@ -127,8 +138,10 @@ def build_sections(roads, rect):
         if not ref[1]:
             chain = [(k, not f) for k, f in reversed(chain)]
         pts = [segs[chain[0][0]][0] if chain[0][1] else segs[chain[0][0]][1]]
+        ys = [segs[chain[0][0]][5] if chain[0][1] else segs[chain[0][0]][6]]
         for k, f in chain:
             pts.append(segs[k][1] if f else segs[k][0])
+            ys.append(segs[k][6] if f else segs[k][5])
         full = LineString(pts)
         # 구역 직사각형으로 자른다(여러 조각이면 가장 긴 조각)
         parts = [g for g in shapely.get_parts(full.intersection(rect)) if g.geom_type == 'LineString' and g.length > 0]
@@ -144,7 +157,10 @@ def build_sections(roads, rect):
         # 구역 테두리에서 잘려 생긴 끝은 노드가 아니다(None)
         a = pts[0] if Point(line.coords[0]).distance(Point(pts[0])) < 1e-6 else None
         b = pts[-1] if Point(line.coords[-1]).distance(Point(pts[-1])) < 1e-6 else None
-        sections.append({'a': a, 'b': b, 'cls': cls, 'oneway': segs[chain[0][0]][3], 'line': line})
+        # 잘린 선의 꼭짓점 높이: 사슬 선 위 거리로 앞뒤 꼭짓점 높이를 곧게 잇는다(잘린 끝도 같은 방법)
+        full_cum = cum_len(full)
+        line_ys = [float(np.interp(full.project(Point(c)), full_cum, ys)) for c in line.coords]
+        sections.append({'a': a, 'b': b, 'cls': cls, 'oneway': segs[chain[0][0]][3], 'line': line, 'ys': line_ys, 'cum': cum_len(line)})
     return sections, degree
 
 
@@ -156,8 +172,10 @@ class Cutter:
     def __init__(self, sections, car):
         shapely.prepare(car)
         self.car = car
+        self.sections = sections
         self.lines = [s['line'] for s in sections]
         self.tree = STRtree(self.lines)
+        self.skipped = set()  # 높이 차 때문에 건너뛴 점 (구간, d, x, z)
 
     def cut(self, si, d):
         """구간 si 의 선 위 거리 d 자리 단면: (p, r, lo, hi, lk, rk), None(「없음」) 또는 JUNCTION(「교차로 안」).
@@ -186,6 +204,7 @@ class Cutter:
         lo, hi = min(ts), max(ts)
         lk = rk = 'curb'
         ang = math.degrees(math.atan2(u[1], u[0])) % 180
+        y_here = y_at(self.sections[si], d)
         for oi in self.tree.query(piece):
             if oi == si:
                 continue
@@ -200,6 +219,10 @@ class Cutter:
                     oa = math.degrees(math.atan2(a1.y - a0.y, a1.x - a0.x)) % 180
                     da = abs(oa - ang) % 180
                     if min(da, 180 - da) > JUNCTION_DEG:
+                        # 높이가 3m 이상 다르면 그 점은 없는 것으로 본다(교차로 안도 아니고 폭도 나누지 않는다, 지시서 4b)
+                        if abs(y_here - y_at(self.sections[oi], t0)) >= LEVEL_GAP:
+                            self.skipped.add((si, round(d, 2), round(float(c[0]), 1), round(float(c[1]), 1)))
+                            continue
                         return JUNCTION
                     ov = unit((a1.x - a0.x, a1.y - a0.y))
                     if math.degrees(math.acos(max(-1.0, min(1.0, float(np.dot(ov, u)))))) >= OPP_DEG:
@@ -467,7 +490,7 @@ def build(split_path=None, roads_path=None):
                               'lk': mode([k['lk'] for k in ks]), 'rk': mode([k['rk'] for k in ks]), 'borders': run_b})
         s['groups'] = groups
         s['ks'] = [k for q in groups for k in q]
-    return {'area': split['area'], 'car': car, 'sections': sections, 'degree': degree, 'stats7': stats7}
+    return {'area': split['area'], 'car': car, 'sections': sections, 'degree': degree, 'stats7': stats7, 'skipped': cutter.skipped}
 
 
 def flat_dm(g):
@@ -485,10 +508,10 @@ def main():
                 idx[s[end]] = len(nodes)
                 nodes.append([round(s[end][0] * 10), round(s[end][1] * 10)])
     nid = lambda n: -1 if n is None else idx[n]
-    out = {'v': 2, 'area': res['area'], 'nodes': nodes, 'sec': [{
+    out = {'v': 3, 'area': res['area'], 'nodes': nodes, 'sec': [{
         'a': nid(s['a']), 'b': nid(s['b']), 'cls': s['cls'], 'oneway': s['oneway'], 'len': round(s['line'].length * 10),
         'W': round(s['W'] * 100), 'n': s['n'], 'ta': round(s['ta'] * 10), 'tb': round(s['tb'] * 10),
-        'axis': flat_dm(s['line']),
+        'axis': flat_dm(s['line']), 'ay': [round(y * 10) for y in s['ys']],
         'lanes': [{'g': l['gi'], 'd': l['d'], 'p': flat_dm(l['g'])} for l in s['lanes']],
         'runs': [{'g': q['g'], 's0': round(q['s0'] * 10), 's1': round(q['s1'] * 10), 'ea': q['ea'], 'eb': q['eb'], 'lk': q['lk'], 'rk': q['rk'],
                   'borders': [{'k': b['k'], 'p': flat_dm(b['g'])} for b in q['borders']]} for q in s['runs']]} for s in secs]}
@@ -504,6 +527,7 @@ def main():
           + f'. 이어지는 차로가 있어 입구가 아닌 끝 {st["cont"]}곳')
     print(f'가운데선끼리 만나 뺀 묶음 {len(st["dropped"])}개: ' + ', '.join(f'구간 {i} ({x:.0f}, {z:.0f})' for i, (x, z) in st['dropped'])
           + f'. 그 때문에 x 에서 j 로 바뀐 이웃 끝 {len(st["by_drop"])}곳' + (': ' + ', '.join(f'구간 {i} {e} ({x:.0f}, {z:.0f})' for i, e, (x, z) in st['by_drop']) if st['by_drop'] else ''))
+    print(f'높이가 {LEVEL_GAP:.0f}m 이상 달라 건너뛴 점 {len(res["skipped"])}개(단면 {len({(i, d) for i, d, _, _ in res["skipped"]})}개, 구간 {len({i for i, *_ in res["skipped"]})}개)')
     sk = {k: sum(s.get('skip', {}).get(k, 0) for s in secs) for k in ('없음', '교차로 안', '좁음')}
     print(f'건너뛴 단면: 폭 재기(25~75%)에서 교차로 안 {sum(s["jx_span"] for s in secs)}개, 차로 단면에서 ' + ', '.join(f'{k} {v}개' for k, v in sk.items()))
     print(f'→ {path} ({os.path.getsize(path) / 1e6:.2f}MB), {bpath}, {time.time() - t0:.1f}초')

@@ -6,13 +6,14 @@ from collections import Counter
 import numpy as np
 import shapely
 from shapely.geometry import LineString, Polygon
+from shapely.strtree import STRtree
 from shapely.ops import unary_union
 from shapely import make_valid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
-from marks import build, dm  # noqa: E402
+from marks import build, dm, axis_y, HIGH  # noqa: E402
 
 
 def main():
@@ -39,6 +40,16 @@ def main():
     tot = sum(g.length for g in stops)
     ins = sum(g.intersection(car5).length for g in stops)
     results.append((ins / tot > 0.98, f'정지선 {tot:.0f}m 가운데 찻길 면 0.5m 안 {100 * ins / tot:.2f}% (98% 넘게)'))
+    # 가운데 점에서 가장 가까운 구간 선의 높이가 3m 이상인 정지선·횡단보도(지시서 4b)
+    axes = [LineString(dm(s['axis'])) for s in lanes['sec']]
+    yofs = [axis_y(s) for s in lanes['sec']]
+    cents = [g.centroid for g in stops] + [p.centroid for p in polys]
+    _, near = STRtree(axes).query_nearest(cents, all_matches=False)
+    hi_k = [k for k, (c, i) in enumerate(zip(cents, near)) if yofs[i](axes[i].project(c)) >= HIGH]
+    hi = [cents[k] for k in hi_k]
+    n_stop = sum(1 for k in hi_k if k < len(stops))
+    results.append((not hi, f'가운데 점에서 가장 가까운 구간 선의 높이가 {HIGH:.0f}m 이상인 정지선 {n_stop}개, 횡단보도 {len(hi) - n_stop}개'
+                    + (': ' + ', '.join(f'({c.x:.0f}, {c.y:.0f})' for c in hi) if hi else '')))
     # 중앙선·차선·흰 실선이 lanes.json 경계선과 같은 선인가, 그리고 개수
     border_set = {}
     for s in lanes['sec']:

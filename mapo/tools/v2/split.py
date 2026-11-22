@@ -38,13 +38,14 @@ def polygons(g):
     return [p for part in getattr(g, 'geoms', []) for p in polygons(part)]
 
 
-def ground_chains(road):
-    """땅 위(양 끝 y < 0.3) 선분이 이어진 토막마다 [(x,z), ...]"""
+def road_chains(road):
+    """쓰는 선분이 이어진 토막마다 [(x,z), ...]. 큰길(등급 0~3)은 높이와 상관없이 모든 선분, 골목·보행 전용(등급 4~6)은 땅 위(양 끝 y < 0.3) 선분만(지시서 4b)"""
     p = road['p']
     pts = [(p[i], p[i + 1], p[i + 2]) for i in range(0, len(p) - 2, 3)]
+    big = road['cls'] <= 3
     chains, cur = [], []
     for a, b in zip(pts, pts[1:]):
-        if a[1] < 0.3 and b[1] < 0.3:
+        if big or (a[1] < 0.3 and b[1] < 0.3):
             if not cur:
                 cur = [(a[0], a[2])]
             cur.append((b[0], b[2]))
@@ -57,7 +58,7 @@ def ground_chains(road):
 
 
 def load_lines(area):
-    """땅 위 중심선을 묶음별 MultiLineString 으로: g0·g1·g2·g3, alley(등급 4·5), ped(등급 6).
+    """쓰는 중심선(road_chains)을 묶음별 MultiLineString 으로: g0·g1·g2·g3, alley(등급 4·5), ped(등급 6).
     구역에서 50m(가장 넓은 띠 28m 보다 넓게) 넘게 떨어진 선은 결과에 영향이 없어 읽지 않는다"""
     near = box(area[0] - 50, area[1] - 50, area[2] + 50, area[3] + 50)
     out = {k: [] for k in ('g0', 'g1', 'g2', 'g3', 'alley', 'ped')}
@@ -66,7 +67,7 @@ def load_lines(area):
         key = GROUP.get(c) or ('alley' if c in (4, 5) else 'ped' if c == 6 else None)
         if key is None:
             continue
-        for ch in ground_chains(r):
+        for ch in road_chains(r):
             line = LineString(ch)
             if line.intersects(near):
                 out[key].append(line)
