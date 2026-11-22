@@ -1,4 +1,4 @@
-# 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판): 2단계 찻길 면 위에 큰길 차로의 가운데선을 만든다.
+# 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판) + 지시서 3b(docs/redraw-orders/3b-marks.md) 「먼저 할 일」: 2단계 찻길 면 위에 큰길 차로의 가운데선을 만든다.
 # 읽는 것: public/data/v2/split.json 의 car, tmp/v2/roads.json(등급 0~3, 땅 위 선분).
 # 결과는 public/data/v2/lanes.json 과 그림용 tmp/v2/lane-borders.json. 실행: tools/.venv/bin/python tools/v2/lanes.py
 import json, math, os, time
@@ -23,8 +23,9 @@ EDGE_Q = {'lo': 0.75, 'hi': 0.25}
 EDGE_AVG = 8.0  # 그다음 앞뒤 8m 평균
 JUNCTION_DEG = 30.0  # 단면을 지나는 다른 구간 선의 방향이 이보다 더 다르면 「교차로 안」
 NARROW = 1.5  # 단면 폭 ÷ 차로 수가 이보다 작은 단면에는 차로를 놓지 않는다
+OPP_DEG = 150.0  # 가장자리를 정한 다른 구간 선이 이 각 이상으로 마주 보면 opp, 아니면 same
 DIR_HALF = 1.0  # 다른 구간 선의 방향을 재는 길이(만나는 점 앞뒤)
-STOP = 8.0  # 횡단보도 6m + 정지선 2m
+STOP = 12.0  # 물리는 거리 = Wmax/2 + 12m(지시서 3b: 처음 8m 에서 서울시 횡단보도 자리에 맞춰 4m 더함)
 MIN_LANE_LEN = 10.0  # 차로를 두는 가장 짧은 길이(물린 뒤), 1.5 × W_sec 와 큰 값
 MIN_LANE_LEN_W = 1.5
 MIN_TRUST_LEN = 40.0  # 폭을 믿는 가장 짧은 구간
@@ -151,7 +152,8 @@ class Cutter:
         self.tree = STRtree(self.lines)
 
     def cut(self, si, d):
-        """구간 si 의 선 위 거리 d 자리 단면: (p, r, lo, hi), None(「없음」) 또는 JUNCTION(「교차로 안」)"""
+        """구간 si 의 선 위 거리 d 자리 단면: (p, r, lo, hi, lk, rk), None(「없음」) 또는 JUNCTION(「교차로 안」).
+        lk·rk 는 왼쪽(lo)·오른쪽(hi) 끝을 정한 것: curb(찻길 면 끝), opp(마주 오는 다른 구간 선과의 가운데), same(같은 쪽으로 가는 선과의 가운데)"""
         line = self.lines[si]
         L = line.length
         if d + AHEAD <= L:
@@ -174,27 +176,32 @@ class Cutter:
             return None
         ts = [float(np.dot(np.array(c) - p, r)) for c in piece.coords]
         lo, hi = min(ts), max(ts)
+        lk = rk = 'curb'
         ang = math.degrees(math.atan2(u[1], u[0])) % 180
         for oi in self.tree.query(piece):
             if oi == si:
                 continue
             other = self.lines[oi]
             for c in shapely.get_coordinates(piece.intersection(other)):
-                # 교차로 안 판정: 만나는 자리에서 다른 구간 선의 방향(앞뒤 1m)이 진행 방향과 10° 넘게 다르면(180° 나머지 기준)
+                # 교차로 안 판정: 만나는 자리에서 다른 구간 선의 방향(앞뒤 1m)이 진행 방향과 30° 넘게 다르면(180° 나머지 기준)
                 t0 = other.project(Point(c))
                 a0 = other.interpolate(max(0.0, t0 - DIR_HALF))
                 a1 = other.interpolate(min(other.length, t0 + DIR_HALF))
+                kind = 'same'
                 if (a1.x, a1.y) != (a0.x, a0.y):
                     oa = math.degrees(math.atan2(a1.y - a0.y, a1.x - a0.x)) % 180
                     da = abs(oa - ang) % 180
                     if min(da, 180 - da) > JUNCTION_DEG:
                         return JUNCTION
+                    ov = unit((a1.x - a0.x, a1.y - a0.y))
+                    if math.degrees(math.acos(max(-1.0, min(1.0, float(np.dot(ov, u)))))) >= OPP_DEG:
+                        kind = 'opp'
                 tt = float(np.dot(c - p, r))
-                if tt > 0.01:
-                    hi = min(hi, tt / 2)
-                elif tt < -0.01:
-                    lo = max(lo, tt / 2)
-        return p, r, lo, hi
+                if tt > 0.01 and tt / 2 < hi:
+                    hi, rk = tt / 2, kind
+                elif tt < -0.01 and tt / 2 > lo:
+                    lo, lk = tt / 2, kind
+        return p, r, lo, hi, lk, rk
 
 
 # 4. 구간의 폭·차로 수·물리기
@@ -268,7 +275,7 @@ def build(split_path=None, roads_path=None):
         s['n'] = lane_count(s['W'], s['oneway'])
     trims(sections, degree)
     for si, s in enumerate(sections):
-        s['lanes'], s['borders'], s['groups'], s['ks'], s['why'] = [], [], [], [], None
+        s['lanes'], s['borders'], s['groups'], s['ks'], s['why'], s['runs'] = [], [], [], [], None, []
         s['skip'] = {'없음': 0, '교차로 안': 0, '좁음': 0}
         L = s['line'].length
         n = s['n']
@@ -299,8 +306,8 @@ def build(split_path=None, roads_path=None):
                     runs.append(cur)
                 cur = []
                 continue
-            p, r, lo, hi = c
-            cur.append({'d': d, 'p': p, 'r': r, 'lo': lo, 'hi': hi})
+            p, r, lo, hi, lk, rk = c
+            cur.append({'d': d, 'p': p, 'r': r, 'lo': lo, 'hi': hi, 'lk': lk, 'rk': rk})
         if cur:
             runs.append(cur)
         need = max(MIN_LANE_LEN, MIN_LANE_LEN_W * s['W'])
@@ -326,11 +333,17 @@ def build(split_path=None, roads_path=None):
                 g = LineString([k['p'] + (k['cu'] + (i - (n - 1) / 2) * k['w']) * k['r'] for k in ks])
                 dd = 1 if s['oneway'] or i >= n / 2 else -1
                 s['lanes'].append({'gi': gi, 'd': dd, 'g': g if dd == 1 else LineString(list(g.coords)[::-1])})
-            # 7. 차로 경계선
+            # 7. 차로 경계선(왼쪽부터 j = 0 … N). 묶음마다 runs 에도 넣는다
+            run_b = []
             for j in range(n + 1):
                 g = LineString([k['p'] + (k['cu'] + (j - n / 2) * k['w']) * k['r'] for k in ks])
                 kind = 'edge' if j in (0, n) else 'center' if (not s['oneway'] and j * 2 == n) else 'lane'
                 s['borders'].append({'k': kind, 'g': g})
+                run_b.append({'k': kind, 'g': g})
+            # 가장자리 종류: 묶음 단면들 가운데 가장 많은 것(같은 수면 curb, opp, same 순)
+            mode = lambda vals: max(('curb', 'opp', 'same'), key=lambda v: vals.count(v))
+            s['runs'].append({'g': gi, 's0': ks[0]['d'], 's1': ks[-1]['d'],
+                              'lk': mode([k['lk'] for k in ks]), 'rk': mode([k['rk'] for k in ks]), 'borders': run_b})
         s['groups'] = groups
         s['ks'] = [k for q in groups for k in q]
     return {'area': split['area'], 'car': car, 'sections': sections, 'degree': degree}
@@ -351,11 +364,13 @@ def main():
                 idx[s[end]] = len(nodes)
                 nodes.append([round(s[end][0] * 10), round(s[end][1] * 10)])
     nid = lambda n: -1 if n is None else idx[n]
-    out = {'v': 1, 'area': res['area'], 'nodes': nodes, 'sec': [{
+    out = {'v': 2, 'area': res['area'], 'nodes': nodes, 'sec': [{
         'a': nid(s['a']), 'b': nid(s['b']), 'cls': s['cls'], 'oneway': s['oneway'], 'len': round(s['line'].length * 10),
         'W': round(s['W'] * 100), 'n': s['n'], 'ta': round(s['ta'] * 10), 'tb': round(s['tb'] * 10),
         'axis': flat_dm(s['line']),
-        'lanes': [{'g': l['gi'], 'd': l['d'], 'p': flat_dm(l['g'])} for l in s['lanes']]} for s in secs]}
+        'lanes': [{'g': l['gi'], 'd': l['d'], 'p': flat_dm(l['g'])} for l in s['lanes']],
+        'runs': [{'g': q['g'], 's0': round(q['s0'] * 10), 's1': round(q['s1'] * 10), 'lk': q['lk'], 'rk': q['rk'],
+                  'borders': [{'k': b['k'], 'p': flat_dm(b['g'])} for b in q['borders']]} for q in s['runs']]} for s in secs]}
     path = os.path.join(ROOT, 'public', 'data', 'v2', 'lanes.json')
     json.dump(out, open(path, 'w'), separators=(',', ':'))
     borders = [{'k': b['k'], 'p': flat_dm(b['g'])} for s in secs for b in s['borders']]
