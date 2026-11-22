@@ -121,7 +121,7 @@ def main():
     # 3. 서로 다른 구간의 차로 가운데선이 만나는 곳
     tree = STRtree([g for _, _, g in good])
     # 만나는 점마다 두 구간 선의 높이(점을 구간 선에 내린 자리)를 견줘 3m 아래·이상으로 나눈다(지시서 4b)
-    low, high = [], []
+    low, high, both_hi = [], [], []  # both_hi: 높이 차 3m 아래이고 두 선이 모두 3m 이상(지시서 4b-2)
     for i, (si, _, g) in enumerate(good):
         for j in tree.query(g):
             if j > i and good[j][0] != si:
@@ -129,9 +129,10 @@ def main():
                 for c in shapely.get_coordinates(x).tolist():
                     ya = y_at(secs[si], secs[si]['line'].project(Point(c)))
                     yb = y_at(secs[good[j][0]], secs[good[j][0]]['line'].project(Point(c)))
-                    (high if abs(ya - yb) >= LEVEL_GAP else low).append(c)
+                    (high if abs(ya - yb) >= LEVEL_GAP else both_hi if (ya >= LEVEL_GAP and yb >= LEVEL_GAP) else low).append(c)
     print(f'3. 서로 다른 구간의 차로 가운데선이 만나는 곳: 두 구간 선의 높이 차 {LEVEL_GAP:.0f}m 이상 {len(high)}곳, '
-          f'{LEVEL_GAP:.0f}m 아래 {len(low)}곳' + (': ' + ', '.join(f'({x:.0f}, {z:.0f})' for x, z in low) if low else ''))
+          f'{LEVEL_GAP:.0f}m 아래이고 두 선이 모두 {LEVEL_GAP:.0f}m 이상 {len(both_hi)}곳, '
+          f'그 밖 {len(low)}곳' + (': ' + ', '.join(f'({x:.0f}, {z:.0f})' for x, z in low) if low else ''))
     # 4. 차로 경계선 edge 가 찻길 면에서 0.5m 넘게 밖인 길이(참고로 조금이라도 밖인 길이), 차로 가운데선이 꺾이는 곳
     borders = json.load(open(os.path.join(ROOT, 'tmp', 'v2', 'lane-borders.json')))
     edges = [LineString(dm(b['p'])) for b in borders if b['k'] == 'edge']

@@ -40,6 +40,7 @@ OUT_LEN = 5.0  # 나가는 방향을 재는 길이
 AHEAD = 0.5  # 단면의 진행 방향을 재는 길이
 BOARD_R = 2000.0  # 판은 원점 둘레 반지름 2,000m 원(지시서 4a)
 EDGE_KEEP = 30.0  # 판 가장자리에서 이 안의 단면에는 차로를 두지 않는다(docs/redraw.md 4절 3, 6절)
+GROUND_Y = 0.3  # 양 끝 높이가 이보다 낮은 선분이 땅 위 선분(지시서 4b-2)
 LEVEL_GAP = 3.0  # 엇갈리는 두 선의 높이 차가 이 이상이면 서로 없는 것으로 본다(docs/redraw.md 6절 「다른 층으로 보는 높이」, 지시서 4b)
 
 
@@ -100,6 +101,9 @@ def build_sections(roads, rect):
             return False
         i, j = touch[n]
         if segs[i][3] != segs[j][3]:
+            return False
+        ground = lambda k: segs[k][5] < GROUND_Y and segs[k][6] < GROUND_Y
+        if ground(i) != ground(j):  # 땅 위 선분과 그렇지 않은 선분이 만나는 노드에서 끊는다(지시서 4b-2 규칙 A)
             return False
         if segs[i][3]:  # 둘 다 한 방향: 한 선분의 끝과 다른 선분의 시작이 만나야 한다
             return (segs[i][1] == n and segs[j][0] == n) or (segs[j][1] == n and segs[i][0] == n)
@@ -176,6 +180,7 @@ class Cutter:
         self.lines = [s['line'] for s in sections]
         self.tree = STRtree(self.lines)
         self.skipped = set()  # 높이 차 때문에 건너뛴 점 (구간, d, x, z)
+        self.skipped_hi = set()  # 높이 차는 3m 아래지만 두 선이 모두 3m 이상이라 건너뛴 점(지시서 4b-2 규칙 B)
 
     def cut(self, si, d):
         """구간 si 의 선 위 거리 d 자리 단면: (p, r, lo, hi, lk, rk), None(「없음」) 또는 JUNCTION(「교차로 안」).
@@ -220,8 +225,13 @@ class Cutter:
                     da = abs(oa - ang) % 180
                     if min(da, 180 - da) > JUNCTION_DEG:
                         # 높이가 3m 이상 다르면 그 점은 없는 것으로 본다(교차로 안도 아니고 폭도 나누지 않는다, 지시서 4b)
-                        if abs(y_here - y_at(self.sections[oi], t0)) >= LEVEL_GAP:
+                        # 두 선이 모두 3m 이상(고가 위에는 평면 교차로가 없다)이어도 없는 것으로 본다(지시서 4b-2 규칙 B)
+                        y_o = y_at(self.sections[oi], t0)
+                        if abs(y_here - y_o) >= LEVEL_GAP:
                             self.skipped.add((si, round(d, 2), round(float(c[0]), 1), round(float(c[1]), 1)))
+                            continue
+                        if y_here >= LEVEL_GAP and y_o >= LEVEL_GAP:
+                            self.skipped_hi.add((si, round(d, 2), round(float(c[0]), 1), round(float(c[1]), 1)))
                             continue
                         return JUNCTION
                     ov = unit((a1.x - a0.x, a1.y - a0.y))
@@ -490,7 +500,7 @@ def build(split_path=None, roads_path=None):
                               'lk': mode([k['lk'] for k in ks]), 'rk': mode([k['rk'] for k in ks]), 'borders': run_b})
         s['groups'] = groups
         s['ks'] = [k for q in groups for k in q]
-    return {'area': split['area'], 'car': car, 'sections': sections, 'degree': degree, 'stats7': stats7, 'skipped': cutter.skipped}
+    return {'area': split['area'], 'car': car, 'sections': sections, 'degree': degree, 'stats7': stats7, 'skipped': cutter.skipped, 'skipped_hi': cutter.skipped_hi}
 
 
 def flat_dm(g):
@@ -527,7 +537,8 @@ def main():
           + f'. 이어지는 차로가 있어 입구가 아닌 끝 {st["cont"]}곳')
     print(f'가운데선끼리 만나 뺀 묶음 {len(st["dropped"])}개: ' + ', '.join(f'구간 {i} ({x:.0f}, {z:.0f})' for i, (x, z) in st['dropped'])
           + f'. 그 때문에 x 에서 j 로 바뀐 이웃 끝 {len(st["by_drop"])}곳' + (': ' + ', '.join(f'구간 {i} {e} ({x:.0f}, {z:.0f})' for i, e, (x, z) in st['by_drop']) if st['by_drop'] else ''))
-    print(f'높이가 {LEVEL_GAP:.0f}m 이상 달라 건너뛴 점 {len(res["skipped"])}개(단면 {len({(i, d) for i, d, _, _ in res["skipped"]})}개, 구간 {len({i for i, *_ in res["skipped"]})}개)')
+    for name, sk_ in ((f'높이가 {LEVEL_GAP:.0f}m 이상 달라', res['skipped']), (f'두 선이 모두 높이 {LEVEL_GAP:.0f}m 이상이라', res['skipped_hi'])):
+        print(f'{name} 건너뛴 점 {len(sk_)}개(단면 {len({(i, d) for i, d, _, _ in sk_})}개, 구간 {len({i for i, *_ in sk_})}개)')
     sk = {k: sum(s.get('skip', {}).get(k, 0) for s in secs) for k in ('없음', '교차로 안', '좁음')}
     print(f'건너뛴 단면: 폭 재기(25~75%)에서 교차로 안 {sum(s["jx_span"] for s in secs)}개, 차로 단면에서 ' + ', '.join(f'{k} {v}개' for k, v in sk.items()))
     print(f'→ {path} ({os.path.getsize(path) / 1e6:.2f}MB), {bpath}, {time.time() - t0:.1f}초')
