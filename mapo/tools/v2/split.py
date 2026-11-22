@@ -11,9 +11,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 
 # docs/redraw.md 6절
-W = {'g01': 5.0, 'g2': 4.0, 'g3': 3.5}  # 인도 폭
-H = {'g01': 28.0, 'g2': 14.0, 'g3': 10.0}  # 찻길을 찾는 범위(중심선에서)
-GROUP = {0: 'g01', 1: 'g01', 2: 'g2', 3: 'g3'}
+W = {'g1': 3.75, 'g2': 3.25, 'g3': 2.75}  # 인도 폭(등급 0 은 인도 없음)
+H = {'g0': 12.0, 'g1': 28.0, 'g2': 14.0, 'g3': 10.0}  # 찻길을 찾는 범위(중심선에서). g0 은 이 안의 도로 부지 전체가 찻길
+GROUP = {0: 'g0', 1: 'g1', 2: 'g2', 3: 'g3'}
+DENT_HALF = 1.5  # 인도 경계를 정할 때 무시하는 홈 폭의 반
 CAR_HALF = 3.0  # 찻길로 보는 가장 좁은 폭의 반, 좁은 큰길에서 언제나 찻길인 중심선 양쪽 폭
 KEEP_WALK = 1.5  # 좁은 큰길에서 남기는 인도
 ALLEY_HALF = 2.0  # 골목 입구 폭의 반
@@ -52,10 +53,10 @@ def ground_chains(road):
 
 
 def load_lines(area):
-    """땅 위 중심선을 묶음별 MultiLineString 으로: g01·g2·g3, alley(등급 4·5), ped(등급 6).
+    """땅 위 중심선을 묶음별 MultiLineString 으로: g0·g1·g2·g3, alley(등급 4·5), ped(등급 6).
     구역에서 50m(가장 넓은 띠 28m 보다 넓게) 넘게 떨어진 선은 결과에 영향이 없어 읽지 않는다"""
     near = box(area[0] - 50, area[1] - 50, area[2] + 50, area[3] + 50)
-    out = {k: [] for k in ('g01', 'g2', 'g3', 'alley', 'ped')}
+    out = {k: [] for k in ('g0', 'g1', 'g2', 'g3', 'alley', 'ped')}
     for r in json.load(open(os.path.join(ROOT, 'tmp', 'v2', 'roads.json'))):
         c = r['cls']
         key = GROUP.get(c) or ('alley' if c in (4, 5) else 'ped' if c == 6 else None)
@@ -92,14 +93,15 @@ def main():
     R = unary_union([make_valid(Polygon(dm(p[0]), [dm(h) for h in p[1:]])) for p in land['road']])
     L = load_lines(area)
 
-    # 2. 찻길: 묶음마다 C_g, 그 옆 인도가 놓일 띠 Band_g
-    Cs, Bands = [], []
+    # 2. 찻길: 묶음마다 C_g, 그 옆 인도가 놓일 띠 Band_g. Rc(폭 3m 아래 홈과 가는 조각을 메운 면)는 인도 경계를 정하는 데만 쓴다
+    Rc = R.buffer(DENT_HALF).buffer(-DENT_HALF)
+    Cs, Bands = [L['g0'].buffer(H['g0']).intersection(R)], []  # g0 은 인도가 없다
     R_in = R.buffer(-KEEP_WALK)
-    for g in ('g01', 'g2', 'g3'):
-        E = R.buffer(-W[g])
+    for g in ('g1', 'g2', 'g3'):
+        E = Rc.buffer(-W[g])
         T = E.buffer(-CAR_HALF).buffer(CAR_HALF)
         Z = L[g].buffer(H[g])
-        A = T.intersection(Z)
+        A = T.intersection(Z).intersection(R)
         B = L[g].buffer(CAR_HALF).intersection(R_in)
         C = A.union(B)
         Cs.append(C)
@@ -113,7 +115,7 @@ def main():
     # 5. 나머지
     Q = R.difference(car).difference(band)
     # 6. 보행 전용 띠
-    ped = L['ped'].buffer(PED_HALF, cap_style='flat').intersection(Q).difference(L['alley'].buffer(ALLEY_HALF))
+    ped = L['ped'].buffer(PED_HALF, cap_style='flat').intersection(Q)  # 골목 띠는 빼지 않는다
     # 7. 나머지 조각마다 골목 중심선과 만나면 함께 쓰는 면, 아니면 인도
     shapely.prepare(L['alley'])
     mix_parts, walk_parts = [], []

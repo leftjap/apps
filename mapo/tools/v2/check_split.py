@@ -19,7 +19,7 @@ from split import dm, ground_chains, GROUP  # noqa: E402
 
 NAMES = ('car', 'walk', 'mix', 'ped')
 KR = {'car': '찻길', 'walk': '인도', 'mix': '함께 쓰는 면', 'ped': '보행 전용 띠'}
-SR_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면
+SC_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면(여기서 인도 면을 빼면 측량 찻길)
 SW_LAYERS = ('N1A_A0033320',)  # 인도 면
 
 
@@ -80,12 +80,15 @@ def nearest(tree, pts):
     return idx, d
 
 
-def stat(name, v):
+def stat(name, v, inside):
+    """inside: 점(우리 찻길 가장자리)이 측량 찻길 안인지. 2m 넘는 점 가운데 그 비율(우리 인도가 넓은 쪽)도 찍는다"""
     if len(v) == 0:
         print(f'  {name}: 점 0개')
         return
+    far = v > 2
+    wide = f'{100 * inside[far].mean():.1f}%' if far.any() else '-'
     print(f'  {name}: 점 {len(v)}개, 중앙값 {np.median(v):.2f}m, 90% {np.quantile(v, 0.9):.2f}m, '
-          f'1m 넘음 {100 * (v > 1).mean():.1f}%, 2m 넘음 {100 * (v > 2).mean():.1f}%')
+          f'1m 넘음 {100 * (v > 1).mean():.1f}%, 2m 넘음 {100 * far.mean():.1f}% (그 가운데 우리 찻길 가장자리가 측량 찻길 안 {wide})')
 
 
 def main():
@@ -133,7 +136,9 @@ def main():
         print(('PASS ' if ok else 'FAIL ') + msg)
 
     # 측량 자료와 재는 수치
-    Sr, Sw = survey(SR_LAYERS, rect), survey(SW_LAYERS, rect)
+    # 측량 찻길 SC = (도로 ∪ 교차로 ∪ 횡단보도) − 인도. 수치지형도 도로 면은 인도를 품은 도로 구역이다
+    Sw = survey(SW_LAYERS, rect)
+    SC = survey(SC_LAYERS, rect).difference(Sw)
     big = {}
     for r in roads:
         if r['cls'] in GROUP:
@@ -141,30 +146,33 @@ def main():
     K = unary_union([ln.buffer(30) for v in big.values() for ln in v])
     car, walk, mix = face['car'], face['walk'], face['mix']
     print('측량 자료와 재는 수치(판정 없음)')
-    print(f'  찻길 {car.area:.0f}㎡, 찻길∩측량 도로 {car.intersection(Sr).area:.0f}㎡, 찻길−측량 도로 {car.difference(Sr).area:.0f}㎡, '
-          f'(측량 도로∩큰길 근처)−(찻길∪함께 쓰는 면) {Sr.intersection(K).difference(car.union(mix)).area:.0f}㎡')
+    print(f'  찻길 {car.area:.0f}㎡, 찻길∩측량 찻길 {car.intersection(SC).area:.0f}㎡, 찻길−측량 찻길 {car.difference(SC).area:.0f}㎡, '
+          f'(측량 찻길∩큰길 근처)−(찻길∪함께 쓰는 면) {SC.intersection(K).difference(car.union(mix)).area:.0f}㎡')
     SwK = Sw.intersection(K)
     print(f'  인도 {walk.area:.0f}㎡, 인도∩측량 인도 {walk.intersection(Sw).area:.0f}㎡, 인도−측량 인도 {walk.difference(Sw).area:.0f}㎡, '
           f'측량 인도∩큰길 근처 {SwK.area:.0f}㎡, (측량 인도∩큰길 근처)−인도 {SwK.difference(walk).area:.0f}㎡')
 
-    # 연석 거리: 찻길 경계를 2m 간격으로 짚은 점 가운데 인도에서 0.2m 안인 점
+    # 연석 거리: 찻길 경계를 2m 간격으로 짚은 점 가운데 인도에서 0.2m 안이고 구역 테두리에서 1m 넘게 떨어진 점
     pts = []
     for g in polys['car']:
         for ring in [g.exterior, *g.interiors]:
             pts.extend(shapely.get_parts(samples(LineString(ring.coords), 2.0)))
     pts = np.array(pts)
     pts = pts[shapely.dwithin(walk, pts, 0.2)]
-    _, dw = nearest(edges_of(Sw), pts)
-    _, dr = nearest(edges_of(Sr), pts)
-    d = np.minimum(dw, dr)
+    x, z = shapely.get_x(pts), shapely.get_y(pts)
+    a = split['area']
+    pts = pts[(x > a[0] + 1) & (x < a[2] - 1) & (z > a[1] + 1) & (z < a[3] - 1)]
+    _, d = nearest(edges_of(SC), pts)
+    shapely.prepare(SC)
+    in_sc = shapely.contains_xy(SC, shapely.get_x(pts), shapely.get_y(pts))
     names = list(big)
     lines = [(g, ln) for g in names for ln in big[g]]
     li, _ = nearest(STRtree([ln for _, ln in lines]), pts)
     grp = np.array([lines[i][0] for i in li])
-    print('  연석 거리(측량 인도·도로 경계 가운데 가까운 쪽까지)')
-    stat('전체', d)
-    for g in ('g01', 'g2', 'g3'):
-        stat(g, d[grp == g])
+    print('  연석 거리(측량 찻길 경계까지)')
+    stat('전체', d, in_sc)
+    for g in ('g0', 'g1', 'g2', 'g3'):
+        stat(g, d[grp == g], in_sc[grp == g])
     sys.exit(0 if all(ok for ok, _ in results) else 1)
 
 

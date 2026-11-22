@@ -12,9 +12,9 @@ from plot_land import Canvas, dm, fill_polygons, fill_even_odd  # noqa: E402
 
 OUT = os.path.join(ROOT, 'tmp', 'v2')
 COLOR = {'car': (62, 66, 80), 'walk': (214, 208, 196), 'mix': (128, 131, 142), 'ped': (224, 190, 140)}
-BLD, GROUND, REST = (150, 130, 110), (158, 160, 164), (226, 228, 222)
+BLD, GROUND, REST = (150, 130, 110), (192, 193, 196), (226, 228, 222)
 BOTH_CAR, OURS, THEIRS, BOTH_WALK = (62, 66, 80), (220, 40, 40), (40, 90, 220), (60, 150, 90)
-SR_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면
+SC_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면(여기서 인도 면을 빼면 측량 찻길)
 SW_LAYERS = ('N1A_A0033320',)  # 인도 면
 ZOOM = {'hapjeong': (-490, 245), 'yanghwa': (-70, -130), 'hongdae': (670, -830), 'eoulmadang': (265, -180)}
 
@@ -73,9 +73,10 @@ def main():
 
     # 4·5. 수치지형도와 대조(대조에만 쓰고 결과 자료에 넣지 않는다)
     car_m, walk_m, bld_m = fill_polygons(cv, faces['car']), fill_polygons(cv, faces['walk']), fill_polygons(cv, bld)
-    sr_m, sw_m = fill_even_odd(cv, survey(SR_LAYERS)), fill_even_odd(cv, survey(SW_LAYERS))
-    paint(cv.out, REST, [(bld_m, BLD), (ImageChops.logical_and(car_m, sr_m), BOTH_CAR), (minus(car_m, sr_m), OURS),
-                         (ImageChops.logical_and(walk_m, sr_m), THEIRS)]).save(os.path.join(OUT, 'split-vs-suchi-car.png'))
+    sw_m = fill_even_odd(cv, survey(SW_LAYERS))
+    sc_m = minus(fill_even_odd(cv, survey(SC_LAYERS)), sw_m)  # 측량 찻길 = (도로 ∪ 교차로 ∪ 횡단보도) − 인도
+    paint(cv.out, REST, [(bld_m, BLD), (ImageChops.logical_and(car_m, sc_m), BOTH_CAR), (minus(car_m, sc_m), OURS),
+                         (ImageChops.logical_and(walk_m, sc_m), THEIRS)]).save(os.path.join(OUT, 'split-vs-suchi-car.png'))
     paint(cv.out, REST, [(bld_m, BLD), (ImageChops.logical_and(walk_m, sw_m), BOTH_WALK), (minus(walk_m, sw_m), OURS),
                          (minus(sw_m, walk_m), THEIRS)]).save(os.path.join(OUT, 'split-vs-suchi-walk.png'))
     print(f'그림 → {OUT}/split.png, split-tile-00~22.png, split-zoom-{{{",".join(ZOOM)}}}.png, split-vs-suchi-car.png, split-vs-suchi-walk.png')
