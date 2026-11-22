@@ -1,4 +1,4 @@
-# 지시서 3b(docs/redraw-orders/3b-marks.md, 3판): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
+# 지시서 3b(docs/redraw-orders/3b-marks.md, 4판): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
 # 읽는 것: public/data/v2/lanes.json(v 2, runs), public/data/board.json 의 xw(가운데 점·건너는 방향·신호 유무만).
 # 결과는 public/data/v2/marks.json. 실행: tools/.venv/bin/python tools/v2/marks.py
 import json, math, os, time
@@ -13,7 +13,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 XW_GAP = 2.0  # 정지선에서 횡단보도까지
 XW_W = 6.0  # 횡단보도 폭
 XW_SIDE = 3.0  # 구간 중간 횡단보도를 붙이는 옆 범위: W/2 + 3(한 방향은 W + 3)
-XW_NEAR = 35.0  # 교차로 입구 횡단보도(3판 35m): 놓을 사각형 가운데에서 이 안에 서울시 횡단보도가 있을 때만
+XW_NEAR = 35.0  # 교차로 입구 횡단보도 가운데에서 이 안의 서울시 횡단보도는 「쓰인 것」(구간 중간으로 다시 놓지 않음)
+XW_SIG = 60.0  # 교차로 입구 횡단보도의 신호 유무: 가운데에서 이 안에 신호 있는 서울시 횡단보도가 있으면 1
 MOUTH = ('n', 'j')  # 교차로 입구인 묶음 끝 종류
 MID_FROM_MOUTH = 30.0  # 구간 중간 횡단보도: 교차로 입구에서 이만큼 넘게 떨어진 곳
 XW_DOT = 0.5  # 건너는 방향과 구간 선 방향의 내적 절댓값이 이보다 작아야 한다(60° 넘게 엇갈림)
@@ -132,20 +133,22 @@ def build():
                 if s['cls'] == 0:
                     mouth['why'] = '등급 0'
                 else:
+                    # 4판: 등급 0 이 아니면 언제나 놓는다. 서울시 자료는 신호 유무와 「쓰인 것」에만 쓴다
                     c = poly.centroid
-                    hits = []
+                    sig, near35 = 0, []
                     for x in xws:
                         dd = x['p'].distance(c)
-                        if dd <= XW_NEAR:
+                        if dd <= XW_SIG:
                             u = axis_dir(axis, axis.project(x['p']))
                             if u is not None and abs(float(np.dot(u, x['u']))) < XW_DOT:
-                                hits.append((dd, x))
-                    if hits:
-                        cross.append({'poly': poly, 'sig': min(hits, key=lambda t: t[0])[1]['sig'], 'mid': 0, 'sec': si, 'end': end})
-                        used.update(x['i'] for _, x in hits)
-                        mouth['placed'] = True
-                    else:
-                        mouth['why'] = '35m 안에 자료 없음'
+                                if x['sig']:
+                                    sig = 1
+                                if dd <= XW_NEAR:
+                                    near35.append(x)
+                    cross.append({'poly': poly, 'sig': sig, 'mid': 0, 'sec': si, 'end': end})
+                    used.update(x['i'] for x in near35)
+                    mouth['placed'] = True
+                    mouth['near35'] = bool(near35)
                 ends.append(mouth)
     # 5. 구간 중간 횡단보도(모든 갈래의 4에서 쓰이지 않은 xw, 묶음마다)
     for si, s in enumerate(lanes['sec']):

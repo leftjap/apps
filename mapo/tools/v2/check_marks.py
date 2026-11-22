@@ -1,4 +1,4 @@
-# 지시서 3b(docs/redraw-orders/3b-marks.md, 2판): marks.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와 찍는 수치(판정 없음).
+# 지시서 3b(docs/redraw-orders/3b-marks.md, 4판): marks.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와 찍는 수치(판정 없음).
 # 갈래 끝·xw 쓰임 같은 marks.json 에 넣지 않는 값은 marks.py 의 build() 로 다시 만들어 쓴다.
 # 실행: tools/.venv/bin/python tools/v2/check_marks.py
 import json, os, sys
@@ -70,8 +70,8 @@ def main():
           f'(n {sum(1 for e in ends if e["placed"] and e["kind"] == "n")}, j {sum(1 for e in ends if e["placed"] and e["kind"] == "j")})')
     miss = [e for e in ends if not e['placed']]
     print(f'   횡단보도를 놓지 않은 입구 {len(miss)}곳: ' + ', '.join(f'{k} {v}' for k, v in Counter(e["why"] for e in miss).items()))
-    for e in miss:
-        print(f'     ({e["at"].x:.0f}, {e["at"].y:.0f}) 등급 {e["cls"]} {e["kind"]} {e["why"]}')
+    far = [e for e in ends if e['placed'] and not e.get('near35')]
+    print(f'   놓은 입구 횡단보도 가운데 35m 안에 서울시 횡단보도가 없는 것 {len(far)}곳' + (': ' + ', '.join(f'({e["at"].x:.0f}, {e["at"].y:.0f}) 등급 {e["cls"]}' for e in far) if far else ''))
     kinds = Counter()
     for oneway, lk, rk in r['runs']:
         kinds[('한 방향' if oneway else '양방향', 'lk', lk)] += 1
