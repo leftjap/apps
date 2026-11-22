@@ -1,4 +1,4 @@
-# 지시서 3a(docs/redraw-orders/3a-lanes.md, 4판): lanes.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
+# 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판): lanes.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
 # 찍는 수치(판정 없음). 단면 폭·차로 단면·차로 경계는 lanes.py 의 build() 로 다시 만들어 쓴다(lanes.json 에 넣지 않는 값이다).
 # 측량 좌표는 대조에만 쓰고 아무 데도 쓰지 않는다. 실행: tools/.venv/bin/python tools/v2/check_lanes.py
 import glob, json, math, os, sys
@@ -44,13 +44,14 @@ def main():
     # 구조 검사
     results = []
     lines = [(si, l['d'], LineString(dm(l['p'])) if len(l['p']) >= 4 else None) for si, s in enumerate(S) for l in s['lanes']]
-    # 같은 구간의 차로 가운데 가장 긴 것의 절반보다 길어야 한다
+    group = [(si, l['g']) for si, s in enumerate(S) for l in s['lanes']]  # 차로마다 (구간, 묶음)
+    # 같은 묶음의 차로 가운데 가장 긴 것의 절반보다 길어야 한다
     longest = {}
-    for si, _, g in lines:
+    for (_, _, g), gk in zip(lines, group):
         if g is not None:
-            longest[si] = max(longest.get(si, 0.0), g.length)
-    short = sum(1 for si, _, g in lines if g is None or g.length < 10 or g.length <= longest[si] / 2)
-    results.append((short == 0, f'차로 가운데선 {len(lines)}개 가운데 점 둘 아래이거나 10m 아래이거나 같은 구간 가장 긴 차로의 절반 아래인 것 {short}개'))
+            longest[gk] = max(longest.get(gk, 0.0), g.length)
+    short = sum(1 for (_, _, g), gk in zip(lines, group) if g is None or g.length < 10 or g.length <= longest[gk] / 2)
+    results.append((short == 0, f'차로 가운데선 {len(lines)}개 가운데 점 둘 아래이거나 10m 아래이거나 같은 묶음 가장 긴 차로의 절반 아래인 것 {short}개'))
     good = [(si, d, g) for si, d, g in lines if g is not None]
     tot = sum(g.length for _, _, g in good)
     inside = sum(g.intersection(car_grow).length for _, _, g in good)
@@ -60,17 +61,17 @@ def main():
         gs = [g for sj, _, g in good if sj == si]
         cross += sum(1 for a, b in combinations(gs, 2) if a.intersects(b))
     results.append((cross == 0, f'같은 구간 안 차로 가운데선끼리 만나는 쌍 {cross}개'))
-    unbal = sum(1 for s in S if not s['oneway'] and s['lanes'] and sum(l['d'] == 1 for l in s['lanes']) != sum(l['d'] == -1 for l in s['lanes']))
-    results.append((unbal == 0, f'양방향 구간 가운데 두 방향 차로 수가 다른 구간 {unbal}개'))
+    unbal = sum(1 for s in S if not s['oneway'] for gi in {l['g'] for l in s['lanes']}
+                if sum(l['d'] == 1 for l in s['lanes'] if l['g'] == gi) != sum(l['d'] == -1 for l in s['lanes'] if l['g'] == gi))
+    results.append((unbal == 0, f'양방향 구간의 묶음 가운데 두 방향 차로 수가 다른 묶음 {unbal}개'))
     wrong = 0
     for si, d, g in good:
-        ax = dm(S[si]['axis'])  # 구간 선의 시작(a 쪽)과 끝(b 쪽). 구역 테두리에서 잘린 끝도 같다
-        a, b = Point(ax[0]), Point(ax[-1])
-        p0 = Point(g.coords[0])
-        near_a = p0.distance(a) < p0.distance(b)
-        if (d == 1) != near_a:
+        # 첫 점과 끝 점을 구간 선(axis)에 내려 구간 선을 따라 잰 거리를 견준다
+        ax = LineString(dm(S[si]['axis']))
+        forward = ax.project(Point(g.coords[0])) < ax.project(Point(g.coords[-1]))
+        if (d == 1) != forward:
             wrong += 1
-    results.append((wrong == 0, f'진행 방향이 틀린 차로 {wrong}개(d=1 은 첫 점이 a 쪽, d=-1 은 b 쪽)'))
+    results.append((wrong == 0, f'진행 방향이 틀린 차로 {wrong}개(구간 선을 따라 d=1 은 첫 점이 끝 점보다 앞, d=-1 은 반대)'))
     for ok, msg in results:
         print(('PASS ' if ok else 'FAIL ') + msg)
 
@@ -100,18 +101,19 @@ def main():
     ws = defaultdict(int)
     narrow = []
     for s in secs:
-        run = []
-        for k in s['ks'] + [None]:
-            if k is not None:
-                w = k['w']
-                ws['2.5 아래' if w < 2.5 else '2.5~3.0' if w < 3.0 else '3.0~3.25' if w < 3.25 else '3.25~3.5' if w < 3.5 - 1e-9 else '3.5'] += 1
-            if k is not None and k['w'] < 2.5:
-                run.append(k)
-                continue
-            if run and run[-1]['d'] - run[0]['d'] > 10:
-                c = s['line'].interpolate((run[0]['d'] + run[-1]['d']) / 2)
-                narrow.append(f'({c.x:.0f}, {c.y:.0f}) {run[-1]["d"] - run[0]["d"]:.0f}m 가장 좁은 {min(o["w"] for o in run):.2f}m')
+        for ks_ in s['groups']:
             run = []
+            for k in ks_ + [None]:
+                if k is not None:
+                    w = k['w']
+                    ws['2.5 아래' if w < 2.5 else '2.5~3.0' if w < 3.0 else '3.0~3.25' if w < 3.25 else '3.25~3.5' if w < 3.5 - 1e-9 else '3.5'] += 1
+                if k is not None and k['w'] < 2.5:
+                    run.append(k)
+                    continue
+                if run and run[-1]['d'] - run[0]['d'] > 10:
+                    c = s['line'].interpolate((run[0]['d'] + run[-1]['d']) / 2)
+                    narrow.append(f'({c.x:.0f}, {c.y:.0f}) {run[-1]["d"] - run[0]["d"]:.0f}m 가장 좁은 {min(o["w"] for o in run):.2f}m')
+                run = []
     print('   차로 단면의 차로 폭 w_k 분포(단면 수): ' + ', '.join(f'{b} {ws[b]}' for b in bins))
     print(f'   w_k 2.5 아래가 10m 넘게 이어지는 곳 {len(narrow)}곳' + (': ' + '; '.join(narrow) if narrow else ''))
     # 3. 서로 다른 구간의 차로 가운데선이 만나는 곳
