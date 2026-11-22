@@ -11,7 +11,7 @@ from shp import shapes  # noqa: E402
 from plot_land import Canvas, dm, fill_polygons, fill_even_odd  # noqa: E402
 
 OUT = os.path.join(ROOT, 'tmp', 'v2')
-COLOR = {'car': (62, 66, 80), 'walk': (214, 208, 196), 'mix': (128, 131, 142), 'ped': (224, 190, 140), 'plaza': (240, 214, 150)}
+COLOR = {'car': (62, 66, 80), 'walk': (214, 208, 196), 'mix': (128, 131, 142), 'ped': (240, 214, 150)}  # ped: 사람만 쓰는 면(보행 전용 띠와 광장)
 BLD, GROUND, REST = (150, 130, 110), (192, 193, 196), (226, 228, 222)
 BOTH_CAR, OURS, THEIRS, BOTH_WALK = (62, 66, 80), (220, 40, 40), (40, 90, 220), (60, 150, 90)
 SC_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면(여기서 인도 면을 빼면 측량 찻길)

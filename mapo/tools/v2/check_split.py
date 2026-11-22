@@ -17,9 +17,9 @@ from tm import tm_to_xz  # noqa: E402
 from shp import shapes  # noqa: E402
 from split import dm, ground_chains, load_buildings, GROUP  # noqa: E402
 
-NAMES = ('car', 'walk', 'mix', 'ped', 'plaza')
-ROAD_FACES = ('car', 'walk', 'mix', 'ped')  # 도로 부지 안에만 있는 면(광장은 밖에도 있다)
-KR = {'car': '찻길', 'walk': '인도', 'mix': '함께 쓰는 면', 'ped': '보행 전용 띠', 'plaza': '광장'}
+NAMES = ('car', 'walk', 'mix', 'ped')
+ROAD_FACES = ('car', 'walk', 'mix')  # 도로 부지 안에만 있는 면(사람만 쓰는 면은 광장 때문에 밖에도 있다)
+KR = {'car': '찻길', 'walk': '인도', 'mix': '함께 쓰는 면', 'ped': '사람만 쓰는 면'}
 SC_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면(여기서 인도 면을 빼면 측량 찻길)
 SW_LAYERS = ('N1A_A0033320',)  # 인도 면
 
@@ -109,19 +109,19 @@ def main():
     results = []
     total = sum(len(v) for v in polys.values())
     bad = sum(1 for v in polys.values() for p in v if not p.is_valid)
-    results.append((bad == 0, f'다섯 면 다각형 유효: {total - bad}/{total}'))
+    results.append((bad == 0, f'네 면 다각형 유효: {total - bad}/{total}'))
     worst = []
     for a, b in combinations(NAMES, 2):
         worst.append((face[a].intersection(face[b]).buffer(-0.05).area, a, b))
     ov = max(worst)
-    results.append((ov[0] < 1, '다섯 면 겹침(0.05m 줄인 넓이, 1㎡ 아래): ' + ', '.join(f'{KR[a]}·{KR[b]} {v:.2f}' for v, a, b in worst)))
+    results.append((ov[0] < 1, '네 면 겹침(0.05m 줄인 넓이, 1㎡ 아래): ' + ', '.join(f'{KR[a]}·{KR[b]} {v:.2f}' for v, a, b in worst)))
     out = unary_union([face[n] for n in ROAD_FACES]).difference(R_grow).area
-    results.append((out < 1, f'찻길·인도·함께 쓰는 면·보행 전용 띠가 도로 부지 밖으로 나간 넓이 {out:.2f}㎡ (1㎡ 아래, 광장 제외)'))
+    results.append((out < 1, f'찻길·인도·함께 쓰는 면이 도로 부지 밖으로 나간 넓이 {out:.2f}㎡ (1㎡ 아래, 사람만 쓰는 면 제외)'))
     gap = R.difference(allf).buffer(-0.05).area
-    results.append((gap < R.area * 0.001, f'도로 부지에서 다섯 면 밖 {gap:.2f}㎡ = 도로 부지의 {100 * gap / R.area:.4f}% (0.1% 아래, 0.05m 줄인 넓이)'))
-    pb_g = face['plaza'].difference(R).intersection(load_buildings(rect))
+    results.append((gap < R.area * 0.001, f'도로 부지에서 네 면 밖 {gap:.2f}㎡ = 도로 부지의 {100 * gap / R.area:.4f}% (0.1% 아래, 0.05m 줄인 넓이)'))
+    pb_g = face['ped'].difference(R).intersection(load_buildings(rect))
     pb = pb_g.buffer(-0.05).area
-    results.append((pb < 1, f'도로 부지 밖 광장과 건물 겹침 {pb:.2f}㎡ (0.05m 줄인 넓이, 1㎡ 아래. 줄이기 전 {pb_g.area:.2f}㎡)'))
+    results.append((pb < 1, f'도로 부지 밖 사람만 쓰는 면과 건물 겹침 {pb:.2f}㎡ (0.05m 줄인 넓이, 1㎡ 아래. 줄이기 전 {pb_g.area:.2f}㎡)'))
 
     roads = json.load(open(os.path.join(ROOT, 'tmp', 'v2', 'roads.json')))
     p = centerline_points(roads, {0, 1, 2, 3})

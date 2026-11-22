@@ -1,5 +1,5 @@
 # 지시서 2(docs/redraw-orders/2-split.md): 1단계 도로 부지를 찻길 / 인도 / 함께 쓰는 면 / 보행 전용 띠로 나눈다.
-# 4판: 다섯째 면 광장(OSM 광장 면, board.json 의 ga 종류 23)을 더한다.
+# 광장(OSM 광장 면, board.json 의 ga 종류 23)은 보행 전용 띠와 합쳐 사람만 쓰는 면 ped 로 쓴다(5판).
 # 읽는 것: public/data/v2/land.json, tmp/v2/roads.json, public/data/board.json(ga·b). 결과는 public/data/v2/split.json.
 # 실행: tools/.venv/bin/python tools/v2/split.py
 import json, os, time
@@ -22,6 +22,7 @@ ALLEY_HALF = 2.0  # 골목 입구 폭의 반
 PED_HALF = 2.0  # 보행 전용 띠 폭의 반
 MIN_AREA = 1.0  # 이보다 작은 조각·구멍은 지운다(㎡)
 PLAZA_GAP_HALF = 1.5  # 광장과 도로 부지 사이에서 메우는 틈 폭의 반
+PLAZA_ALLEY_HALF = 3.0  # 광장 안에 남기는 골목 띠 폭의 반
 PLAZA_KIND = 23  # board.json ga 의 OSM 광장·보행 면
 
 
@@ -159,20 +160,21 @@ def main():
     U, n_plaza = load_plazas(rect)
     Bld = load_buildings(rect)
     print(f'광장 면(종류 23) {n_plaza}개 {U.area:.0f}㎡, 도로 부지와 겹침 {U.intersection(R).area:.0f}㎡, 건물과 겹침 {U.intersection(Bld).area:.0f}㎡')
-    P_in = U.intersection(unary_union([mix, walk, ped])).difference(alley_flat)
+    P_in = U.intersection(unary_union([mix, walk, ped])).difference(L['alley'].buffer(PLAZA_ALLEY_HALF, cap_style='flat'))
     out_only = U.difference(R).difference(Bld)
     shapely.prepare(out_only)
     G = U.union(R).buffer(PLAZA_GAP_HALF).buffer(-PLAZA_GAP_HALF).difference(R).difference(Bld)
     P_out = unary_union([p for p in polygons(G) if out_only.intersects(p)])
     plaza = P_in.union(P_out)
-    before = {'mix': mix.area, 'walk': walk.area, 'ped': ped.area}
-    mix, walk, ped = mix.difference(plaza), walk.difference(plaza), ped.difference(plaza)
+    before = {'mix': mix.area, 'walk': walk.area}
+    mix, walk = mix.difference(plaza), walk.difference(plaza)
+    ped = ped.union(plaza)  # 보행 전용 띠와 광장은 같은 「사람만 쓰는 면」이다
     print(f'광장: 도로 부지 안 {P_in.area:.0f}㎡, 밖 {P_out.area:.0f}㎡. 줄어든 넓이: 함께 쓰는 면 {before["mix"] - mix.area:.0f}㎡, '
-          f'인도 {before["walk"] - walk.area:.0f}㎡, 보행 전용 띠 {before["ped"] - ped.area:.0f}㎡')
+          f'인도 {before["walk"] - walk.area:.0f}㎡. 사람만 쓰는 면: 도로 부지 안 {ped.intersection(R).area:.0f}㎡, 밖 {ped.difference(R).area:.0f}㎡')
 
     # 9·10.
-    out = {'v': 2, 'area': area}
-    for name, g in (('car', car), ('walk', walk), ('mix', mix), ('ped', ped), ('plaza', plaza)):
+    out = {'v': 3, 'area': area}
+    for name, g in (('car', car), ('walk', walk), ('mix', mix), ('ped', ped)):
         keep = clean(g)
         out[name] = [[ring_dm(p.exterior)] + [ring_dm(h) for h in p.interiors] for p in keep]
         print(f'{name}: 다각형 {len(keep)}개, 넓이 {sum(p.area for p in keep):.0f}㎡')
