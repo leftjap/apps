@@ -28,6 +28,8 @@ import { makeView } from './render/scene.ts';
 import { makeSchools } from './render/schools.ts';
 import { makeStations } from './render/stations.ts';
 import { makeTrees } from './render/trees.ts';
+import { GK } from './data/board.ts';
+import { checkMarksV2, checkSplitV2, makeGroundV2 } from './render/v2.ts';
 import { makeWalkerMesh, walkerLod } from './render/walkers.ts';
 import { makeRain } from './render/weather.ts';
 import { makeIncidents } from './render/incidents.ts';
@@ -56,6 +58,8 @@ import './ui/hud.css';
 
 const BASE = import.meta.env.BASE_URL;
 const query = new URLSearchParams(location.search);
+// 다시 그리기 바닥·노면 표시(docs/redraw-orders/3c-view.md): ?v=2 일 때만 새 자료(public/data/v2/)로 그리고 예전 도로 층은 장면에 더하지 않는다. 차·사람은 켜지 않는다
+const V2 = query.get('v') === '2';
 const canvas = document.querySelector<HTMLCanvasElement>('#view')!;
 const sky = document.querySelector<HTMLElement>('#sky')!;
 const stage = document.querySelector<HTMLElement>('#stage')!;
@@ -64,8 +68,8 @@ const MAX_PEOPLE = small ? 2000 : 8000;
 const MAX_CARS = small ? 1500 : 5000;
 // 차·사람 켜기: 1·2단계(지도, mapo/CLAUDE.md) 승인 전까지 기본 주소는 빈 지도다. ?cars=1 이면 차(버스 포함)를, ?people=1 이면 사람을 판에 채우고 움직인다.
 // 끈 쪽은 판에 채우지도 움직이지도 않는다(차 그래프·신호·정류장 자리는 그대로 만든다). 그리지만 않으면 계산을 그대로 쓰고 화면이 매번 달라져 아예 돌리지 않는다(W57)
-const simCars = query.get('cars') === '1';
-const simPeople = query.get('people') === '1';
+const simCars = !V2 && query.get('cars') === '1';
+const simPeople = !V2 && query.get('people') === '1';
 
 // 같은 탭에서 주소를 바꿔 다시 열면 앞 페이지가 뒤로 가기 캐시(bfcache)에 통째로 남아 열 때마다 힙이 약 300MB 씩 늘었다(W19, 설계 문서 48절).
 // 새로 연 마포 페이지가 알림을 보내면 그 알림을 받은 캐시 속 마포 페이지는 브라우저가 버린다(Chrome 의 bfcache 'broadcastchannel-message')
@@ -115,6 +119,15 @@ const [board, mask, named, streetview, surface, marks, walkJson, roadLanes, lamp
   loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
   throw e;
 });
+const v2Data = V2
+  ? await Promise.all([
+      fetch(`${BASE}data/v2/split.json`).then((r) => r.json()).then(checkSplitV2),
+      fetch(`${BASE}data/v2/marks.json`).then((r) => r.json()).then(checkMarksV2),
+    ]).catch((e) => {
+      loading.textContent = '자료를 불러오지 못했습니다. 새로고침해 주세요.';
+      throw e;
+    })
+  : null;
 
 // 로드뷰로 찾은, 판 자료(OSM·Overture·GIS)에 없는 건물을 판 건물 목록 끝에 더한다(앞 번호는 그대로라 걷는 길의 문 번호가 바뀌지 않는다)
 board.buildings.push(...addedBuildings(streetview));
@@ -266,17 +279,18 @@ const boats = makeBoats(board.river, board.riverCum);
 const picnic = makePicnic(board.picnic);
 view.scene.add(
   // 보도 면(길 정본에서 구운 면, 찻길 밑까지)과 분리대 녹지가 도시생태현황도 도로 부지·광장 블록을 대신한다
-  makeGround(mask, sidewalkAreas(board.groundAreas, surface)),
-  roads.group,
+  V2 ? makeGround(mask, board.groundAreas.filter((a) => a.kind !== GK.ROADSIDE)) : makeGround(mask, sidewalkAreas(board.groundAreas, surface)),
+  ...(V2 ? [makeGroundV2(v2Data![0], v2Data![1])] : []),
+  ...(V2 ? [] : [roads.group]),
   // 포장 구역(로드뷰 포장 사각형을 재질·색마다 1m 틈을 메운 다각형으로, 블록은 찻길 면 밖만)
-  makePaving(streetview.flatMap((a) => pavingZones(a.props, groundTiles))),
-  roadMarks,
-  curbMesh,
-  flow.mesh,
-  signalMarks.group,
+  ...(V2 ? [] : [makePaving(streetview.flatMap((a) => pavingZones(a.props, groundTiles)))]),
+  ...(V2 ? [] : [roadMarks]),
+  ...(V2 ? [] : [curbMesh]),
+  ...(V2 ? [] : [flow.mesh]),
+  ...(V2 ? [] : [signalMarks.group]),
   // 길가 정류장은 보도 위 쉼터(바닥이 찻길 면 위면 찻길 면 밖으로, 재작업 W57), 중앙 정류장은 길 가운데 승강장
-  makeBusStops(placedShelters(walkers.docks.flatMap((d, k) => (d.kind === 'stop' && !medStop.has(d.key) ? [walkers.dockPoint(k)] : [])), ground)),
-  makeBusIslands(stops.portals.filter((p) => p.median)),
+  ...(V2 ? [] : [makeBusStops(placedShelters(walkers.docks.flatMap((d, k) => (d.kind === 'stop' && !medStop.has(d.key) ? [walkers.dockPoint(k)] : [])), ground))]),
+  ...(V2 ? [] : [makeBusIslands(stops.portals.filter((p) => p.median))]),
   stations.group,
   rails.group,
   rings.mesh,
@@ -288,7 +302,7 @@ view.scene.add(
   detail.group,
   landmarks.group,
   schools.group,
-  trees.mesh,
+  ...(V2 ? [] : [trees.mesh]),
   carMeshes.group,
   walkerMesh.mesh,
   walkerMesh.flash,
