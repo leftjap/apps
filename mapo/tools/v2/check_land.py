@@ -14,6 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 from tm import tm_to_xz  # noqa: E402
 from shp import shapes  # noqa: E402
+from land import load_gis_roads, load_buildings  # noqa: E402  처리 순서 3 과 같은 「빼는 건물」을 쓴다
 
 SURVEY = ('N1A_A0010000', 'N1A_A0033320', 'N1A_A0043325', 'N1A_A0080000')  # 도로·인도·횡단보도·교차로 면
 
@@ -42,30 +43,26 @@ def main():
     rect = box(*land['area'])
     polys = [Polygon(dm(p[0]), [dm(h) for h in p[1:]]) for p in land['road']]
     road = unary_union(polys)
-    bld = []
-    for b in json.load(open(os.path.join(ROOT, 'public', 'data', 'board.json')))['b']:
-        pts = dm(b[2:])
-        if len(pts) >= 3:
-            g = make_valid(Polygon(pts))
-            if g.intersects(rect):
-                bld.append(g)
-    bld = unary_union(bld)
+    gis = load_gis_roads()
+    shapely.prepare(gis)
+    street, cut = load_buildings(gis)  # 길 위 시설, 빼는 건물
+    bld = unary_union(street + [cut])
 
     results = []
     bad = sum(1 for p in polys if not p.is_valid)
     results.append((bad == 0, f'도로 부지 다각형 유효: {len(polys) - bad}/{len(polys)}'))
     # land.json 은 dm 정수라 경계가 건물 변과 만나는 점이 격자로 옮겨지며 폭 0.1m 아래 틈이 생긴다. 그 틈은 세지 않는다
-    ov_g = road.intersection(bld)
+    ov_g = road.intersection(cut)
     ov = ov_g.buffer(-0.05).area
-    results.append((ov < 1, f'도로 부지와 건물 겹침 {ov:.2f}㎡ (0.05m 줄인 넓이, 1㎡ 아래. 줄이기 전 {ov_g.area:.2f}㎡)'))
+    results.append((ov < 1, f'도로 부지와 빼는 건물 겹침 {ov:.2f}㎡ (길 위 시설 제외, 0.05m 줄인 넓이, 1㎡ 아래. 줄이기 전 {ov_g.area:.2f}㎡)'))
     outside = road.difference(rect).area
     results.append((outside == 0, f'구역 밖으로 나간 넓이 {outside:.2f}㎡'))
 
-    # 구역 안 땅 위 길 중심선(등급 0~4)을 5m 간격으로 짚은 점이 도로 부지 또는 건물 안인 비율. 등급 5 는 채우지 않으므로 뺀다
+    # 구역 안 땅 위 길 중심선을 5m 간격으로 짚은 점이 도로 부지 또는 건물 안인 비율. 큰길(등급 0~3)은 판정, 등급 4 는 찍기만
     covered = unary_union([road, bld])
     shapely.prepare(covered)
     roads = json.load(open(os.path.join(ROOT, 'tmp', 'v2', 'roads.json')))
-    xs, zs = [], []
+    xs, zs, cs = [], [], []
     for r in roads:
         if r['cls'] > 4:
             continue
@@ -82,16 +79,19 @@ def main():
                 s = samples(LineString(chain), 5.0)
                 xs.extend(shapely.get_x(s))
                 zs.extend(shapely.get_y(s))
+                cs.extend([r['cls']] * len(s))
             chain = []
-    xs, zs = np.array(xs), np.array(zs)
+    xs, zs, cs = np.array(xs), np.array(zs), np.array(cs)
     inside = shapely.contains_xy(rect, xs, zs)
-    xs, zs = xs[inside], zs[inside]
+    xs, zs, cs = xs[inside], zs[inside], cs[inside]
     hit = shapely.intersects_xy(covered, xs, zs)
-    share = hit.mean() * 100
-    results.append((share > 98, f'길 중심선 점 {len(xs)}개 가운데 도로 부지·건물 안 {share:.2f}% (98% 넘게)'))
+    big = cs <= 3
+    share = hit[big].mean() * 100
+    results.append((share > 98, f'큰길(등급 0~3) 중심선 점 {big.sum()}개 가운데 도로 부지·건물 안 {share:.2f}% (98% 넘게)'))
 
     for ok, msg in results:
         print(('PASS ' if ok else 'FAIL ') + msg)
+    print(f'(판정 없음) 등급 4 중심선 점 {(~big).sum()}개 가운데 도로 부지·건물 안 {hit[~big].mean() * 100:.2f}%')
 
     # 측량 도로 부지 = 수치지형도 도로·인도·횡단보도·교차로 면의 합
     sv = []
