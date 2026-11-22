@@ -2,6 +2,7 @@
 # 읽는 것: public/data/v2/split.json 의 car, tmp/v2/roads.json(등급 0~3, 땅 위 선분).
 # 결과는 public/data/v2/lanes.json 과 그림용 tmp/v2/lane-borders.json. 실행: tools/.venv/bin/python tools/v2/lanes.py
 import json, math, os, time
+from itertools import combinations
 import numpy as np
 import shapely
 from shapely.geometry import LineString, Point, Polygon, box
@@ -37,6 +38,8 @@ NO_LANE_NEAR = 30.0  # 노드에 닿는 다른 구간의 묶음이 이 안에 �
 MIN_FALLBACK = 3  # 25%~75% 로 폭을 못 잰 구간: 구간 전체에서 쓸 수 있는 단면이 이만큼 있으면 그 중앙값으로 차로를 놓는다
 OUT_LEN = 5.0  # 나가는 방향을 재는 길이
 AHEAD = 0.5  # 단면의 진행 방향을 재는 길이
+BOARD_R = 2000.0  # 판은 원점 둘레 반지름 2,000m 원(지시서 4a)
+EDGE_KEEP = 30.0  # 판 가장자리에서 이 안의 단면에는 차로를 두지 않는다(docs/redraw.md 4절 3, 6절)
 
 
 def dm(a):
@@ -259,6 +262,27 @@ def trims(sections, degree):
             s['t' + end] = wmax / 2 + STOP
 
 
+def lane_lines(ks, n, oneway):
+    """묶음의 단면들 → 차로 가운데선 [(d, 선)] N 개. 단면마다 lo1·hi1·lo2·hi2·cu·w 를 적는다(경계선도 cu·w 로 만든다)"""
+    # 가장자리를 따로 고르게(묶음 안에서): 앞뒤 30m 안쪽 사분위 값(lo 는 75%, hi 는 25%, 찻길 안쪽에 가까운 값) → 앞뒤 8m 평균. 찻길 안으로 당기지 않는다
+    for side in ('lo', 'hi'):
+        for k in ks:
+            k[side + '1'] = float(np.quantile([o[side] for o in ks if abs(o['d'] - k['d']) <= EDGE_MED], EDGE_Q[side]))
+        for k in ks:
+            near = [o[side + '1'] for o in ks if abs(o['d'] - k['d']) <= EDGE_AVG]
+            k[side + '2'] = sum(near) / len(near)
+    for k in ks:
+        Wu = k['hi2'] - k['lo2']
+        k['cu'] = (k['hi2'] + k['lo2']) / 2
+        k['w'] = min(LANE_W_MAX, Wu / n)
+    out = []
+    for i in range(n):
+        g = LineString([k['p'] + (k['cu'] + (i - (n - 1) / 2) * k['w']) * k['r'] for k in ks])
+        dd = 1 if oneway or i >= n / 2 else -1
+        out.append((dd, g if dd == 1 else LineString(list(g.coords)[::-1])))
+    return out
+
+
 def build(split_path=None, roads_path=None):
     split = json.load(open(split_path or os.path.join(ROOT, 'public', 'data', 'v2', 'split.json')))
     roads = json.load(open(roads_path or os.path.join(ROOT, 'tmp', 'v2', 'roads.json')))
@@ -291,6 +315,7 @@ def build(split_path=None, roads_path=None):
                 s['W'], s['fallback'] = float(np.median(Wa)), True
         s['n'] = lane_count(s['W'], s['oneway'])
     trims(sections, degree)
+    dropped = []  # 가운데선끼리 만나 뺀 묶음 (구간 번호, 가운데 단면 자리)
     for si, s in enumerate(sections):
         s['lanes'], s['borders'], s['groups'], s['ks'], s['why'], s['runs'] = [], [], [], [], None, []
         s['skip'] = {'없음': 0, '교차로 안': 0, '좁음': 0}
@@ -314,6 +339,9 @@ def build(split_path=None, roads_path=None):
         ds.append(end)
         # 「없음」·「교차로 안」·좁은 단면(W_k / N 이 1.5m 아래)에서 끊기는 묶음. 묶음마다 앞뒤가 무엇으로 끊겼는지 적는다
         def point(d, si=si, n=n):
+            at = sections[si]['line'].interpolate(d)
+            if math.hypot(at.x, at.y) > BOARD_R - EDGE_KEEP:
+                return '없음', None
             c = cutter.cut(si, d)
             why = '없음' if c is None else '교차로 안' if c == JUNCTION else '좁음' if (c[3] - c[2]) / n < NARROW else None
             if why:
@@ -351,6 +379,15 @@ def build(split_path=None, roads_path=None):
             q['ks'] = ks
         need = max(MIN_LANE_LEN, MIN_LANE_LEN_W * s['W'])
         kept = [q for q in runs if len(q['ks']) >= 2 and q['ks'][-1]['d'] - q['ks'][0]['d'] >= need]
+        # 한 묶음 안의 차로 가운데선 둘이 만나면 그 묶음에는 차로를 두지 않는다(docs/redraw.md 4절 3, 지시서 4a 바꿀 것 3).
+        # 끝 종류를 정하기 전에, 7 의 12m 줄이기 전 길이의 임시 가운데선으로 본다. 뺀 묶음은 7 에서 이어지는 차로로 세지 않는다
+        s['_dropped'] = []
+        for q in kept:
+            ls = [g for _, g in lane_lines(q['ks'], n, s['oneway'])]
+            if any(a.intersects(b) for a, b in combinations(ls, 2)):
+                s['_dropped'].append(q)
+                dropped.append((si, tuple(q['ks'][len(q['ks']) // 2]['p'])))
+        kept = [q for q in kept if all(q is not o for o in s['_dropped'])]
         # 두 끝의 종류: n(가로지르는 구간이 있는 노드에서 물린 끝), j(교차로 안 때문에 끊겨 12m 줄인 끝), x(그 밖)
         for q in kept:
             ks = q['ks']
@@ -364,11 +401,11 @@ def build(split_path=None, roads_path=None):
         for end in ('a', 'b'):
             if s[end] is not None:
                 at.setdefault(s[end], []).append((i, end))
-    def has_run_near(i, node):
+    def has_run_near(i, node, which='_kept'):
         o = sections[i]
         P = Point(node)
-        return any(substring(o['line'], q['ks'][0]['d'], q['ks'][-1]['d']).distance(P) <= NO_LANE_NEAR for q in o.get('_kept', []))
-    to_j, cont = [], 0
+        return any(substring(o['line'], q['ks'][0]['d'], q['ks'][-1]['d']).distance(P) <= NO_LANE_NEAR for q in o.get(which, []))
+    to_j, cont, by_drop = [], 0, []
     for i, s in enumerate(sections):
         L = s['line'].length
         for qi, q in enumerate(s.get('_kept', [])):
@@ -381,6 +418,8 @@ def build(split_path=None, roads_path=None):
                 if any(has_run_near(j, s[end]) for j, _ in at[s[end]] if j != i):
                     cont += 1
                     continue
+                if any(has_run_near(j, s[end], '_dropped') for j, _ in at[s[end]] if j != i):
+                    by_drop.append((i, end, s['line'].coords[0 if end == 'a' else -1]))  # 뺀 묶음이 있었으면 이어지는 차로로 셌을 끝
                 to_j.append((i, qi, end))
     for i, qi, end in to_j:
         s = sections[i]
@@ -396,36 +435,24 @@ def build(split_path=None, roads_path=None):
             q['ks'] = [o for o in ks if o['d'] < d1] + ([k] if k else [])
         q['e' + end] = 'j'
     stats7 = {'j': len(to_j), 'cont': cont,
-              'at': [(i, end, sections[i]['line'].coords[0 if end == 'a' else -1]) for i, _, end in to_j]}
+              'at': [(i, end, sections[i]['line'].coords[0 if end == 'a' else -1]) for i, _, end in to_j],
+              'dropped': dropped, 'by_drop': by_drop}
 
     for si, s in enumerate(sections):
         if '_kept' not in s:
             continue
         n, L = s['n'], s['line'].length
         kept = [q for q in s.pop('_kept') if len(q['ks']) >= 2 and q['ks'][-1]['d'] - q['ks'][0]['d'] >= s['_need']]
-        s.pop('_point'), s.pop('_need')
+        s.pop('_point'), s.pop('_need'), s.pop('_dropped')
         groups = [q['ks'] for q in kept]
         if not groups:
             s['why'] = '묶음 짧음'
             s['n'] = 0
             continue
         for gi, ks in enumerate(groups):
-            # 가장자리를 따로 고르게(묶음 안에서): 앞뒤 30m 안쪽 사분위 값(lo 는 75%, hi 는 25%, 찻길 안쪽에 가까운 값) → 앞뒤 8m 평균. 찻길 안으로 당기지 않는다
-            for side in ('lo', 'hi'):
-                for k in ks:
-                    k[side + '1'] = float(np.quantile([o[side] for o in ks if abs(o['d'] - k['d']) <= EDGE_MED], EDGE_Q[side]))
-                for k in ks:
-                    near = [o[side + '1'] for o in ks if abs(o['d'] - k['d']) <= EDGE_AVG]
-                    k[side + '2'] = sum(near) / len(near)
-            for k in ks:
-                Wu = k['hi2'] - k['lo2']
-                k['cu'] = (k['hi2'] + k['lo2']) / 2
-                k['w'] = min(LANE_W_MAX, Wu / n)
             # 6. 차로 가운데선(묶음마다 N 개)
-            for i in range(n):
-                g = LineString([k['p'] + (k['cu'] + (i - (n - 1) / 2) * k['w']) * k['r'] for k in ks])
-                dd = 1 if s['oneway'] or i >= n / 2 else -1
-                s['lanes'].append({'gi': gi, 'd': dd, 'g': g if dd == 1 else LineString(list(g.coords)[::-1])})
+            for dd, g in lane_lines(ks, n, s['oneway']):
+                s['lanes'].append({'gi': gi, 'd': dd, 'g': g})
             # 7. 차로 경계선(왼쪽부터 j = 0 … N). 묶음마다 runs 에도 넣는다
             run_b = []
             for j in range(n + 1):
@@ -475,6 +502,8 @@ def main():
     st = res['stats7']
     print(f'노드에서 끝나고 뒤로 이어지는 차로가 없어 j 로 바꾼 끝 {st["j"]}곳: ' + ', '.join(f'구간 {i} {e} ({x:.0f}, {z:.0f})' for i, e, (x, z) in st['at'])
           + f'. 이어지는 차로가 있어 입구가 아닌 끝 {st["cont"]}곳')
+    print(f'가운데선끼리 만나 뺀 묶음 {len(st["dropped"])}개: ' + ', '.join(f'구간 {i} ({x:.0f}, {z:.0f})' for i, (x, z) in st['dropped'])
+          + f'. 그 때문에 x 에서 j 로 바뀐 이웃 끝 {len(st["by_drop"])}곳' + (': ' + ', '.join(f'구간 {i} {e} ({x:.0f}, {z:.0f})' for i, e, (x, z) in st['by_drop']) if st['by_drop'] else ''))
     sk = {k: sum(s.get('skip', {}).get(k, 0) for s in secs) for k in ('없음', '교차로 안', '좁음')}
     print(f'건너뛴 단면: 폭 재기(25~75%)에서 교차로 안 {sum(s["jx_span"] for s in secs)}개, 차로 단면에서 ' + ', '.join(f'{k} {v}개' for k, v in sk.items()))
     print(f'→ {path} ({os.path.getsize(path) / 1e6:.2f}MB), {bpath}, {time.time() - t0:.1f}초')

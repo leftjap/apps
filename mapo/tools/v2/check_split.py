@@ -22,6 +22,7 @@ ROAD_FACES = ('car', 'walk', 'mix')  # 도로 부지 안에만 있는 면(사람
 KR = {'car': '찻길', 'walk': '인도', 'mix': '함께 쓰는 면', 'ped': '사람만 쓰는 면'}
 SC_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면(여기서 인도 면을 빼면 측량 찻길)
 SW_LAYERS = ('N1A_A0033320',)  # 인도 면
+SHEETS = (-794, -943, 971, 721)  # 수치지형도 12도엽이 덮는 판 좌표(지시서 4a). 측량과 재는 수치는 이 안의 점·면만으로 낸다
 
 
 def to_polys(lst):
@@ -141,14 +142,15 @@ def main():
 
     # 측량 자료와 재는 수치
     # 측량 찻길 SC = (도로 ∪ 교차로 ∪ 횡단보도) − 인도. 수치지형도 도로 면은 인도를 품은 도로 구역이다
-    Sw = survey(SW_LAYERS, rect)
-    SC = survey(SC_LAYERS, rect).difference(Sw)
+    sheets = box(*SHEETS)
+    Sw = survey(SW_LAYERS, sheets)
+    SC = survey(SC_LAYERS, sheets).difference(Sw)
     big = {}
     for r in roads:
         if r['cls'] in GROUP:
             big.setdefault(GROUP[r['cls']], []).extend(LineString(ch) for ch in ground_chains(r))
     K = unary_union([ln.buffer(30) for v in big.values() for ln in v])
-    car, walk, mix = face['car'], face['walk'], face['mix']
+    car, walk, mix = (face[n].intersection(sheets) for n in ROAD_FACES)
     print('측량 자료와 재는 수치(판정 없음)')
     print(f'  찻길 {car.area:.0f}㎡, 찻길∩측량 찻길 {car.intersection(SC).area:.0f}㎡, 찻길−측량 찻길 {car.difference(SC).area:.0f}㎡, '
           f'(측량 찻길∩큰길 근처)−(찻길∪함께 쓰는 면) {SC.intersection(K).difference(car.union(mix)).area:.0f}㎡')
@@ -156,7 +158,7 @@ def main():
     print(f'  인도 {walk.area:.0f}㎡, 인도∩측량 인도 {walk.intersection(Sw).area:.0f}㎡, 인도−측량 인도 {walk.difference(Sw).area:.0f}㎡, '
           f'측량 인도∩큰길 근처 {SwK.area:.0f}㎡, (측량 인도∩큰길 근처)−인도 {SwK.difference(walk).area:.0f}㎡')
 
-    # 연석 거리: 찻길 경계를 2m 간격으로 짚은 점 가운데 인도에서 0.2m 안이고 구역 테두리에서 1m 넘게 떨어진 점
+    # 연석 거리: 찻길 경계를 2m 간격으로 짚은 점 가운데 인도에서 0.2m 안이고 도엽 범위(SHEETS) 테두리 안쪽으로 1m 넘게 들어온 점
     pts = []
     for g in polys['car']:
         for ring in [g.exterior, *g.interiors]:
@@ -164,7 +166,7 @@ def main():
     pts = np.array(pts)
     pts = pts[shapely.dwithin(walk, pts, 0.2)]
     x, z = shapely.get_x(pts), shapely.get_y(pts)
-    a = split['area']
+    a = SHEETS
     pts = pts[(x > a[0] + 1) & (x < a[2] - 1) & (z > a[1] + 1) & (z < a[3] - 1)]
     _, d = nearest(edges_of(SC), pts)
     shapely.prepare(SC)

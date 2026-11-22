@@ -16,7 +16,9 @@ CENTER, SOLID, LANE, STOP = (245, 200, 60), (240, 240, 240), (240, 240, 240), (2
 DASH, GAP = 3.0, 5.0  # 차선: 3m 칠하고 5m 띄움
 SIG_R = 1.5
 ZOOM = {'hapjeong': (-490, 245), 'yanghwa': (-70, -130), 'hongdae': (670, -830), 'dongmak': (347, 403),
-        'ramp': (-700, 560), 'worldcup': (-590, -150)}
+        'ramp': (-700, 560), 'worldcup': (-590, -150),
+        'mangwon': (-783, -502), 'sangsu': (343, 415), 'sinchon': (1580, -405), 'sogang': (1428, -95),
+        'mapogu': (-1380, -1338), 'seongsan': (-460, -1600), 'edge': (1880, 540)}  # 지시서 4a 에서 더함
 
 
 def dashes(pts):

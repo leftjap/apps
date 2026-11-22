@@ -3,7 +3,7 @@
 # 실행: node tools/v2/roads_json.ts && tools/.venv/bin/python tools/v2/land.py
 import json, os, sys, time
 import shapely
-from shapely.geometry import Polygon, box
+from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 from shapely import make_valid
 
@@ -12,8 +12,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 from tm import ll_to_xz  # noqa: E402
 
-AREA = (-790, -940, 970, 720)
-RECT = box(*AREA)
+AREA = (-2000, -2000, 2000, 2000)
+RECT = Point(0, 0).buffer(2000.0, quad_segs=64)  # 판 전체(원점 둘레 반지름 2,000m 원), 지시서 4a
 THIN = 0.25  # 폭 0.5m 아래인 부분을 지우는 안쪽·바깥쪽 버퍼(m), docs/redraw.md 6절
 MIN_AREA = 1.0  # 이보다 작은 조각·구멍은 지운다(㎡)
 

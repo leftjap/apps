@@ -16,6 +16,8 @@ from tm import tm_to_xz  # noqa: E402
 from shp import shapes, dbf  # noqa: E402
 from lanes import build, dm  # noqa: E402
 
+SHEETS = (-794, -943, 971, 721)  # 수치지형도 12도엽이 덮는 판 좌표(지시서 4a). 측량과 재는 수치는 이 안의 점만으로 낸다
+
 
 def angle(a, b):
     return math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180
@@ -183,6 +185,8 @@ def main():
                     break
                 acc += d
             mid = line.interpolate(half)
+            if not (SHEETS[0] <= mid.x <= SHEETS[2] and SHEETS[1] <= mid.y <= SHEETS[3]):
+                continue
             best = None
             for k in stree.query(mid, predicate='dwithin', distance=15):
                 si, sa, g = segs[k]

@@ -13,6 +13,7 @@ OUT = os.path.join(ROOT, 'tmp', 'v2')
 SURVEY = ('N1A_A0010000', 'N1A_A0033320', 'N1A_A0043325', 'N1A_A0080000')  # 도로·인도·횡단보도·교차로 면
 BLD, ROAD, REST = (150, 130, 110), (74, 78, 94), (226, 228, 222)
 OURS, THEIRS = (220, 40, 40), (40, 90, 220)
+SHEETS = (-794, -943, 971, 721)  # 수치지형도 12도엽이 덮는 판 좌표(지시서 4a). 측량과 견주는 그림은 이 범위만
 
 
 def dm(a):
@@ -112,7 +113,9 @@ def main():
             t = Canvas((xe[c], ze[r], xe[c + 1], ze[r + 1]), 2)
             paint(t.out, [(fill_polygons(t, road), ROAD), (fill_polygons(t, bld), BLD)]).save(os.path.join(OUT, f'land-tile-{r}{c}.png'))
 
-    # 3. 수치지형도 도로 부지와 대조(대조에만 쓰고 결과 자료에 넣지 않는다)
+    # 3. 수치지형도 도로 부지와 대조(대조에만 쓰고 결과 자료에 넣지 않는다). 도엽 범위만 1m = 1px
+    cv = Canvas(SHEETS, 1)
+    road_m, bld_m = fill_polygons(cv, road), fill_polygons(cv, bld)
     feats = []
     for sheet in sorted(glob.glob(os.path.join(ROOT, 'tools', 'raw', 'ngii', 'suchi', 'sheets', '*'))):
         for layer in SURVEY:
@@ -126,7 +129,7 @@ def main():
     # 측량만 도로 부지인 곳은 우리 건물 위에도 파랑으로 칠한다(건물이 도로 부지로 들어온 띠가 보이게)
     paint(cv.out, [(bld_m, BLD), (both, ROAD), (ours, OURS), (theirs, THEIRS)]).save(os.path.join(OUT, 'land-vs-suchi.png'))
 
-    # 4. 넓이(1m 칸으로 센 값, ㎡)
+    # 4. 넓이(1m 칸으로 센 값, ㎡, 도엽 범위 안)
     print(f'우리 도로 부지 {count(road_m)}㎡, 측량 도로 부지 {count(sv_m)}㎡, 겹침 {count(both)}㎡, 우리만 {count(ours)}㎡, 측량만 {count(theirs)}㎡')
     print(f'채운 띠 {land["fill"]}㎡(land.json 의 fill), 건물 때문에 빠진 넓이는 land.py 가 찍는다')
     print(f'그림 → {OUT}/land.png, land-tile-00~22.png, land-vs-suchi.png')

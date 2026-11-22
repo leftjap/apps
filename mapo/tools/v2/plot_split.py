@@ -16,8 +16,11 @@ BLD, GROUND, REST = (150, 130, 110), (192, 193, 196), (226, 228, 222)
 BOTH_CAR, OURS, THEIRS, BOTH_WALK = (62, 66, 80), (220, 40, 40), (40, 90, 220), (60, 150, 90)
 SC_LAYERS = ('N1A_A0010000', 'N1A_A0080000', 'N1A_A0043325')  # 도로·교차로·횡단보도 면(여기서 인도 면을 빼면 측량 찻길)
 SW_LAYERS = ('N1A_A0033320',)  # 인도 면
+SHEETS = (-794, -943, 971, 721)  # 수치지형도 12도엽이 덮는 판 좌표(지시서 4a). 측량과 견주는 그림은 이 범위만
 ZOOM = {'hapjeong': (-490, 245), 'yanghwa': (-70, -130), 'hongdae': (670, -830), 'eoulmadang': (265, -180),
-        'eoul-south': (160, 200), 'gyeongui': (640, -560)}
+        'eoul-south': (160, 200), 'gyeongui': (640, -560),
+        'mangwon': (-783, -502), 'sangsu': (343, 415), 'sinchon': (1580, -405), 'sogang': (1428, -95),
+        'mapogu': (-1380, -1338), 'seongsan': (-460, -1600), 'edge': (1880, 540)}  # 지시서 4a 에서 더함
 
 
 def paint(size, bg, layers):
@@ -72,7 +75,8 @@ def main():
         win = (max(area[0], x - 150), max(area[1], z - 150), min(area[2], x + 150), min(area[3], z + 150))
         draw(Canvas(win, 4), f'split-zoom-{name}.png')
 
-    # 4·5. 수치지형도와 대조(대조에만 쓰고 결과 자료에 넣지 않는다)
+    # 4·5. 수치지형도와 대조(대조에만 쓰고 결과 자료에 넣지 않는다). 도엽 범위만 1m = 1px
+    cv = Canvas(SHEETS, 1)
     car_m, walk_m, bld_m = fill_polygons(cv, faces['car']), fill_polygons(cv, faces['walk']), fill_polygons(cv, bld)
     sw_m = fill_even_odd(cv, survey(SW_LAYERS))
     sc_m = minus(fill_even_odd(cv, survey(SC_LAYERS)), sw_m)  # 측량 찻길 = (도로 ∪ 교차로 ∪ 횡단보도) − 인도
