@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>마포 항공사진 시범</title>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>마포 항공사진 시범</h1>
+      <form id="imagery-form">
+        <label for="imagery-key">브이월드 인증키</label>
+        <div class="key-controls">
+          <input id="imagery-key" type="password" autocomplete="off" required>
+          <button type="submit">사진 연결</button>
+        </div>
+      </form>
+    </header>
+    <div class="toolbar">
+      <fieldset class="locations">
+        <legend class="visually-hidden">위치</legend>
+        <label><input type="radio" name="site" value="seogyo" checked>서교동사거리</label>
+        <label><input type="radio" name="site" value="hapjeong">합정역</label>
+      </fieldset>
+      <div class="layers">
+        <label for="width">화면 폭</label>
+        <select id="width">
+          <option value="60">60 m</option>
+          <option value="80" selected>80 m</option>
+          <option value="100">100 m</option>
+        </select>
+        <label class="building-toggle"><input type="checkbox" id="buildings">3D 건물</label>
+      </div>
+    </div>
+    <div class="viewport">
+      <canvas id="map" aria-label="선택한 교차로의 비스듬한 항공사진 지도"></canvas>
+      <p id="graphics-status" role="status" hidden></p>
+    </div>
+    <footer>
+      <div>
+        <p id="imagery-status" role="status">항공사진을 보려면 인증키를 입력하세요.</p>
+        <p id="building-status" role="status">건물 자료를 불러오는 중입니다.</p>
+      </div>
+      <div class="credits" aria-label="자료 출처">
+        <span>항공사진 <a href="https://www.vworld.kr/">브이월드</a></span>
+        <span>건물 <a href="https://www.data.go.kr/data/15083092/fileData.do">국토교통부 GIS건물통합정보</a></span>
+      </div>
+    </footer>
+  </main>
+  <script type="module" src="/src/aerial/main.ts"></script>
+</body>
+</html>
