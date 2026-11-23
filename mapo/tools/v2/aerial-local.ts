@@ -33,25 +33,31 @@ export function localAerial(): Plugin {
       }
       server.middlewares.use(prefix, async (req, res) => {
         res.setHeader('Cache-Control', 'no-store');
+        const path = req.url ?? '';
+        const baseTile = /^\/base\/\d{6}\/\d{6}\.png$/.test(path);
         const tile = allowedTile({
           host: req.headers.host, remote: req.socket.remoteAddress,
-          site: String(req.headers['sec-fetch-site']), path: req.url ?? '',
+          site: String(req.headers['sec-fetch-site']),
+          path: baseTile ? path.slice('/base'.length).replace(/\.png$/, '.jpeg') : path,
         });
         if (!key || !tile || req.method !== 'GET') {
           res.writeHead(403).end();
           return;
         }
         try {
-          const upstream = await fetch(vworldTileUrl(key, tile), {
+          const satellite = vworldTileUrl(key, tile);
+          const url = baseTile ? satellite.replace('/Satellite/', '/Base/').replace(/\.jpeg$/, '.png') : satellite;
+          const contentType = baseTile ? 'image/png' : 'image/jpeg';
+          const upstream = await fetch(url, {
             headers: { Referer: `${AERIAL_DEV_ORIGIN}/apps/mapo/aerial.html` },
             redirect: 'error', signal: AbortSignal.timeout(10_000),
           });
-          if (!upstream.ok || !upstream.headers.get('content-type')?.startsWith('image/jpeg')) {
+          if (!upstream.ok || !upstream.headers.get('content-type')?.startsWith(contentType)) {
             res.writeHead(502).end();
             return;
           }
           const bytes = Buffer.from(await upstream.arrayBuffer());
-          res.writeHead(200, { 'Content-Type': 'image/jpeg' }).end(bytes);
+          res.writeHead(200, { 'Content-Type': contentType }).end(bytes);
         } catch {
           res.writeHead(502).end();
         }

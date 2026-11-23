@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>합정 사거리 정밀도로지도</title>
+  <link rel="stylesheet" href="./src/aerial/hapjeong-hd.css">
+  <script type="module" src="./src/aerial/hapjeong-hd.ts"></script>
+</head>
+<body>
+<main>
+  <header>
+    <h1>합정 사거리 정밀도로지도</h1>
+    <a id="capture-gallery" href="./tmp/hapjeong-hd/gallery.html">비교 이미지 8장</a>
+  </header>
+  <label>비교 지점 <select id="view"></select></label>
+  <section id="trial-controls" hidden aria-label="차량 시험 재생">
+    <div class="trial-toolbar">
+      <button id="trial-play" type="button">재생</button>
+      <button id="trial-replay" type="button">처음부터</button>
+      <label>시간 <input id="trial-time" type="range" min="0" value="0" step="any"></label>
+      <output id="trial-status" aria-live="off"></output>
+    </div>
+    <p>승용차 5대와 버스 1대 · 진입 링크 끝에서 모의 정차</p>
+  </section>
+  <p id="status" role="status">원본 자료를 불러오는 중입니다.</p>
+  <div id="pair">
+    <figure><figcaption id="left-caption">브이월드 항공사진</figcaption><div class="map"><canvas id="left" aria-label="왼쪽 비교 화면"></canvas></div></figure>
+    <figure><figcaption id="right-caption">수치지형도 바닥 · 정밀도로지도 노면</figcaption><div class="map"><canvas id="right" aria-label="오른쪽 비교 화면"></canvas></div></figure>
+  </div>
+  <footer>
+    <ul id="legend" aria-label="범례">
+      <li class="road">찻길</li><li class="walk">인도·교통섬</li><li class="crossing">횡단보도</li><li class="unresolved" id="missing">방향 미확인</li><li class="bike" id="bicycle">자전거횡단도</li><li class="land">대지</li>
+      <li class="lane" data-route hidden>차로 링크</li><li class="inside" data-route hidden>교차로 안 링크</li>
+    </ul>
+    <p>국토지리정보원 수치지형도·정밀도로지도 · 브이월드 항공사진·WFS · 국토교통부 GIS건물통합정보</p>
+  </footer>
+</main>
+</body>
+</html>

@@ -4,7 +4,7 @@ import type { LonLat } from './map';
 
 type Building = { rings: LonLat[][]; height: number | null; floors: number | null };
 
-export async function loadBuildings(group: THREE.Group) {
+export async function loadBuildings(group: THREE.Group, hiddenOutlines?: ReadonlySet<number>) {
   const response = await fetch(`${import.meta.env.BASE_URL}data/aerial-pilot.json`);
   if (!response.ok) throw new Error('Cannot load building data');
   const { buildings } = await response.json() as { buildings: Building[] };
@@ -13,10 +13,11 @@ export async function loadBuildings(group: THREE.Group) {
   const outlineMaterial = new THREE.LineBasicMaterial({ color: '#f6cf83' });
   const totals = { recorded: 0, estimated: 0, outlines: 0 };
 
-  for (const { rings, height, floors } of buildings) {
+  for (const [index, { rings, height, floors }] of buildings.entries()) {
     const size = buildingHeight(height, floors);
     if (!rings[0] || rings[0].length < 3) continue;
     if (!size) {
+      if (hiddenOutlines?.has(index)) continue;
       for (const ring of rings) {
         const points = ring.map(point => {
           const [x, z] = groundPoint(point);
@@ -35,8 +36,8 @@ export async function loadBuildings(group: THREE.Group) {
     for (const hole of holes) footprint.holes.push(new THREE.Path(hole));
     const geometry = new THREE.ExtrudeGeometry(footprint, { depth: size.metres, bevelEnabled: false });
     geometry.rotateX(-Math.PI / 2);
-    const index = size.estimated ? 1 : 0;
-    group.add(new THREE.Mesh(geometry, [roofs[index], walls[index]]));
+    const materialIndex = size.estimated ? 1 : 0;
+    group.add(new THREE.Mesh(geometry, [roofs[materialIndex], walls[materialIndex]]));
     totals[size.estimated ? 'estimated' : 'recorded']++;
   }
 
