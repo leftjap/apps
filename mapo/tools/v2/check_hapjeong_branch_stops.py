@@ -18,8 +18,11 @@ def audit(stream, data):
     history = {}
     results = {}
     stoppages = defaultdict(lambda: defaultdict(float))
+    dwelling = set()
     for line in stream:
-        t,cars,*_ = json.loads(line)
+        t,cars,*extra = json.loads(line)
+        if len(extra) > 2:
+            dwelling.update(e['vehicle'] for e in (extra[2] or []))
         lane = defaultdict(list)
         for c in cars:
             lane[c[7]].append(c)
@@ -28,6 +31,9 @@ def audit(stream, data):
             uid, length, e, s, v, why = c[0], c[5], c[7], c[8], c[9], c[10]
             nxt = c[21]
             if v >= .12:
+                dwelling.discard(uid)
+                continue
+            if uid in dwelling:
                 continue
             body_front = s + length / 2
             clearance = length + 2
