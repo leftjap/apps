@@ -24,6 +24,12 @@
         <label><input type="radio" name="site" value="seogyo" checked>서교동사거리</label>
         <label><input type="radio" name="site" value="hapjeong">합정역</label>
       </fieldset>
+      <fieldset class="surface-options">
+        <legend class="visually-hidden">서교동 도로 비교</legend>
+        <label><input type="radio" name="surface" value="photo" checked>항공사진</label>
+        <label><input type="radio" name="surface" value="road">도로 그림</label>
+        <label><input type="radio" name="surface" value="overlay">겹쳐 보기</label>
+      </fieldset>
       <div class="layers">
         <label for="width">화면 폭</label>
         <select id="width">
@@ -40,11 +46,13 @@
     </div>
     <footer>
       <div>
+        <p id="surface-status" role="status">항공사진 원본</p>
         <p id="imagery-status" role="status">항공사진을 보려면 인증키를 입력하세요.</p>
         <p id="building-status" role="status">건물 자료를 불러오는 중입니다.</p>
       </div>
       <div class="credits" aria-label="자료 출처">
         <span>항공사진 <a href="https://www.vworld.kr/">브이월드</a></span>
+        <span>중앙선 유형 <a href="https://data.seoul.go.kr/dataList/OA-15537/S/1/datasetView.do">서울시 차선 자료</a></span>
         <span>건물 <a href="https://www.data.go.kr/data/15083092/fileData.do">국토교통부 GIS건물통합정보</a></span>
       </div>
     </footer>

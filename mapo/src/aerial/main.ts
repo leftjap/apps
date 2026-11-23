@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { loadBuildings } from './buildings';
 import { groundPoint, PILOT_SITES, TILE_METRES, tileAtGround, tileBounds, vworldTileUrl } from './map';
 import type { Tile } from './map';
+import { AERIAL_BEARING, createRoadOverlay } from './road-overlay';
+import type { SurfaceMode } from './road-overlay';
 import './style.css';
 
 type TileSource = (tile: Tile) => string;
@@ -16,14 +18,19 @@ function initMap(canvas: HTMLCanvasElement) {
   scene.background = new THREE.Color('#46555a');
   const camera = new THREE.PerspectiveCamera(34, 1, 0.5, 1_000);
   const buildings = new THREE.Group();
+  const photos = new THREE.Group();
+  const roads = createRoadOverlay(updateSurfaceStatus, Math.min(8, renderer.capabilities.getMaxAnisotropy()));
   const tileGeometry = new THREE.PlaneGeometry(TILE_METRES, TILE_METRES).rotateX(-Math.PI / 2);
   const tiles = new Map<string, TileMesh>();
   const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   const ray = new THREE.Raycaster();
   const sun = new THREE.DirectionalLight('#fff0d8', 1.35);
   sun.position.set(-200, 300, 100);
-  scene.add(buildings, sun, new THREE.HemisphereLight('#dceafa', '#5c5751', 2));
+  scene.add(photos, roads.group, buildings, sun, new THREE.HemisphereLight('#dceafa', '#5c5751', 2));
 
+  const surfaceStatus = document.querySelector<HTMLParagraphElement>('#surface-status')!;
+  const surfaceOptions = document.querySelector<HTMLFieldSetElement>('.surface-options')!;
+  const surfaceInputs = surfaceOptions.querySelectorAll<HTMLInputElement>('input[name="surface"]');
   const imageryStatus = document.querySelector<HTMLParagraphElement>('#imagery-status')!;
   const buildingStatus = document.querySelector<HTMLParagraphElement>('#building-status')!;
   const buildingControl = document.querySelector<HTMLInputElement>('#buildings')!;
@@ -32,6 +39,8 @@ function initMap(canvas: HTMLCanvasElement) {
   const keyControl = document.querySelector<HTMLInputElement>('#imagery-key')!;
   buildings.visible = buildingControl.checked;
   let site: keyof typeof PILOT_SITES = 'seogyo';
+  let preferredSurface: SurfaceMode = new URLSearchParams(location.search).get('surface') === 'road' ? 'road' : 'photo';
+  let surfaceMode: SurfaceMode = 'photo';
   let source: TileSource | undefined;
   let requests = new AbortController();
   let visibleTiles: TileMesh[] = [];
@@ -43,6 +52,38 @@ function initMap(canvas: HTMLCanvasElement) {
       frame = undefined;
       renderer.render(scene, camera);
     });
+  }
+
+  function updateSurfaceStatus() {
+    const state = roads.state();
+    surfaceStatus.dataset.mode = surfaceMode;
+    surfaceStatus.dataset.state = state;
+    if (surfaceMode === 'photo') {
+      surfaceStatus.textContent = '항공사진 원본';
+    } else {
+      const label = surfaceMode === 'road' ? '도로 그림' : '겹쳐 보기';
+      if (state === 'error') {
+        surfaceStatus.textContent = `${label}용 도면을 불러오지 못했습니다.`;
+      } else if (state === 'loading') {
+        surfaceStatus.textContent = `${label}용 도면을 불러오는 중입니다.`;
+      } else {
+        surfaceStatus.textContent = surfaceMode === 'road'
+          ? '서교동사거리 도로 그림 · 베이지색은 인도, 화면 가장자리의 진회색은 도면 범위 밖입니다.'
+          : '민트색은 연석, 하늘색은 노면 표시입니다. 주황 점선은 차량이나 나무에 가려 위치를 추정한 부분입니다.';
+      }
+    }
+    render();
+  }
+
+  function showSurface() {
+    surfaceMode = site === 'seogyo' ? preferredSurface : 'photo';
+    surfaceOptions.hidden = site !== 'seogyo';
+    surfaceStatus.hidden = site !== 'seogyo';
+    imageryStatus.hidden = surfaceMode === 'road';
+    for (const input of surfaceInputs) input.checked = input.value === preferredSurface;
+    photos.visible = surfaceMode !== 'road';
+    roads.setMode(surfaceMode);
+    updateSurfaceStatus();
   }
 
   function updateImageryStatus() {
@@ -119,7 +160,7 @@ function initMap(canvas: HTMLCanvasElement) {
           const mesh = new THREE.Mesh(tileGeometry, new THREE.MeshBasicMaterial({ color: '#566467' }));
           mesh.position.set((west + east) / 2, 0, (north + south) / 2);
           tile = { mesh, state: 'loading' };
-          scene.add(mesh);
+          photos.add(mesh);
           tiles.set(id, tile);
           if (source) void loadTile(tile, source({ x, y }), requests.signal);
         }
@@ -139,7 +180,7 @@ function initMap(canvas: HTMLCanvasElement) {
     const [x, z] = groundPoint(PILOT_SITES[site]);
     const radians = Math.PI / 180;
     const tilt = 34 * radians;
-    const turn = -42 * radians;
+    const turn = AERIAL_BEARING;
     // The chosen width is measured left to right through the point the camera looks at.
     const distance = Number(widthControl.value) / (2 * camera.aspect * Math.tan(camera.fov * radians / 2));
     camera.position.set(
@@ -161,7 +202,7 @@ function initMap(canvas: HTMLCanvasElement) {
     for (const { mesh } of tiles.values()) {
       mesh.material.map?.dispose();
       mesh.material.dispose();
-      scene.remove(mesh);
+      photos.remove(mesh);
     }
     visibleTiles = [];
     tiles.clear();
@@ -171,9 +212,17 @@ function initMap(canvas: HTMLCanvasElement) {
   for (const input of document.querySelectorAll<HTMLInputElement>('input[name="site"]')) {
     input.addEventListener('change', () => {
       site = input.value as typeof site;
+      showSurface();
       fitCamera();
     });
   }
+  for (const input of surfaceInputs) {
+    input.addEventListener('change', () => {
+      preferredSurface = input.value as SurfaceMode;
+      showSurface();
+    });
+  }
+  showSurface();
   widthControl.addEventListener('change', fitCamera);
   buildingControl.addEventListener('change', () => {
     buildings.visible = buildingControl.checked;
