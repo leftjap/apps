@@ -1,0 +1,132 @@
+"""Check the exported Hapjeong graph against the finished A floor."""
+from collections import defaultdict
+from itertools import accumulate
+import json
+from pathlib import Path
+
+from shapely import get_parts
+from shapely.geometry import LineString, Point, Polygon, box
+from shapely.ops import unary_union
+from shapely.prepared import prep
+
+DATA = Path(__file__).resolve().parents[2] / 'public/data/v2'
+BODY = .4
+
+
+def faces(rows):
+    return unary_union([Polygon(outer, holes) for outer, *holes in rows])
+
+
+def read(name):
+    return json.loads((DATA / f'hapjeong-hd-{name}.json').read_text())
+
+
+def verify():
+    floor = read('a')
+    assert (DATA / 'hapjeong-hd-walk.json').exists(), 'Hapjeong walk graph has not been baked'
+    graph = read('walk')
+    walk = faces(floor['floor']['walk']).buffer(1e-7)
+    safe = prep(walk.buffer(-BODY))
+    road = prep(faces(floor['floor']['road']).difference(walk))
+    assert graph['v'] == 3 and graph['n'] and graph['e'] and graph['a']
+    nodes = list(zip((x / 10 for x in accumulate(graph['n'][::2])),
+                     (z / 10 for z in accumulate(graph['n'][1::2])), strict=True))
+    assert len(nodes) == len(graph['r'])
+    assert len(graph['e']) % 5 == len(graph['x']) % 17 == 0
+    for pos, radius in zip(nodes, graph['r'], strict=True):
+        shape = Point(pos)
+        if radius:
+            shape = shape.buffer(radius / 10)
+        assert safe.covers(shape), ('node clearance', pos, radius)
+
+    neighbours = defaultdict(set)
+    a = 0
+    for da, db, _kind, lo, hi in zip(*(iter(graph['e']),) * 5, strict=True):
+        a += da
+        b = a + db
+        assert a != b and 0 <= a < len(nodes) and 0 <= b < len(nodes)
+        ax, az = nodes[a]
+        bx, bz = nodes[b]
+        line = LineString([nodes[a], nodes[b]])
+        assert line.length > 0 and lo <= 0 <= hi
+        clearance = line.buffer(max(-lo, hi) / 10 + .02)
+        assert safe.covers(clearance), ('edge clearance', nodes[a], nodes[b], lo, hi)
+        assert not road.intersects(line), ('ordinary edge crosses traffic', nodes[a], nodes[b])
+        neighbours[a].add(b)
+        neighbours[b].add(a)
+
+    cross_ids = graph['crossings']
+    by_id = {row['id']: row for row in floor['crossingAudit']}
+    excluded = {row['id'] for row in graph['excluded']}
+    assert len(by_id) == 23 and len(cross_ids) == len(set(cross_ids)) == len(graph['x']) // 17
+    assert set(cross_ids).isdisjoint(excluded) and set(cross_ids) | excluded == set(by_id)
+    # The source audit checks each end in isolation. Check whether one
+    # continuous usable component actually reaches both ends on the A floor.
+    for key in excluded:
+        row = by_id[key]
+        ends = row['approaches']
+        if any(end['status'] != 'joined' for end in ends):
+            continue
+        a, b = [Point(end['end']) for end in ends]
+        axis = LineString([a, b])
+        route = walk.union(faces(row['faces'])).buffer(-.22).intersection(axis.buffer(5))
+        for part in get_parts(route):
+            land = part.intersection(walk.buffer(-BODY))
+            assert land.is_empty or max(land.distance(a), land.distance(b)) > min(3.5, axis.length / 2), key
+    for i, (xw, a, b, ax, az, bx, bz, pax, paz, pbx, pbz, width, major, *wait) in enumerate(
+            zip(*(iter(graph['x']),) * 17, strict=True)):
+        assert xw == i and a != b and neighbours[a] and neighbours[b]
+        assert nodes[a] == (pax / 10, paz / 10) and nodes[b] == (pbx / 10, pbz / 10)
+        assert width > 0 and major == 1 and wait[0] <= 0 <= wait[1] and wait[2] <= 0 <= wait[3]
+        crossing = by_id[cross_ids[xw]]
+        allowed = walk.union(faces(crossing['faces'])).buffer(1e-7)
+        axis = LineString([nodes[a], (ax / 10, az / 10), (bx / 10, bz / 10), nodes[b]])
+        half_width = max(.2, width / 20 - .3)
+        assert allowed.covers(axis.buffer(half_width + .019)), ('crossing clearance', cross_ids[xw], list(axis.coords))
+        dx, dz = (bx - ax) / 10, (bz - az) / 10
+        length = (dx * dx + dz * dz) ** .5
+        vx, vz = dx / length, dz / length
+        for (px, pz), direction, (lo, hi) in zip((nodes[a], nodes[b]), (-1, 1), (wait[:2], wait[2:]), strict=True):
+            u = (px - ax / 10) * vx + (pz - az / 10) * vz
+            area = Polygon([(ax/10 + (u+t)*vx - off*vz, az/10 + (u+t)*vz + off*vx)
+                            for t, off in [(direction*.75, lo/10), (direction*.75, hi/10),
+                                           (-direction*.05, hi/10), (-direction*.05, lo/10)]])
+            assert (safe.covers(area) if hi > lo else safe.covers(area.boundary)), ('waiting area', cross_ids[xw])
+        neighbours[a].add(b)
+        neighbours[b].add(a)
+
+    size, x0, z0, cols, rows, *runs = graph['a']
+    step = size / 100
+    it = iter(runs)
+    for row in range(rows):
+        col = 0
+        for _ in range(next(it)):
+            col += next(it)
+            end = col + next(it)
+            assert end <= cols
+            assert safe.covers(box(x0 + col * step, z0 + row * step,
+                                   x0 + end * step, z0 + (row + 1) * step)), ('area clearance', col, row)
+            col = end
+    assert next(it, None) is None
+
+    unseen = set(range(len(nodes)))
+    sizes = []
+    while unseen:
+        pending = [unseen.pop()]
+        count = 0
+        while pending:
+            node = pending.pop()
+            count += 1
+            for nxt in neighbours[node] & unseen:
+                unseen.remove(nxt)
+                pending.append(nxt)
+        sizes.append(count)
+    assert min(sizes) > 1, sizes
+    print(f'nodes={len(nodes)}, edges={len(graph["e"]) // 5}, crossings={len(cross_ids)}, '
+          f'components={len(sizes)} sizes={sorted(sizes, reverse=True)}')
+    for row in graph['excluded']:
+        print(f'excluded {row["id"][-4:]}: {row["reason"]}')
+
+
+if __name__ == '__main__':
+    verify()
