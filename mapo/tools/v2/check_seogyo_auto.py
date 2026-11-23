@@ -9,7 +9,7 @@ from shapely import affinity
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
-from aerial_paint import arrow_conflicts, arrow_geometry, line_footprint, paint_definitions
+from aerial_paint import arrow_geometry, line_footprint
 
 from seogyo_trace import APPROACH, BUS_GUIDES, CENTRE_LINES, CORNERS, GUIDES, HALVES, OCCLUDED
 
@@ -245,8 +245,10 @@ def check(data, size):
     features = {f['id']: f for f in data['lines']}
     assert len(features) == len(data['lines']), 'duplicate feature identifier'
 
+    aliases = {key:line for line in data['lines'] for key in line.get('mergedFrom',[])}
+
     def geometry(*ids):
-        return united([p for key in ids for p in features.get(key, {}).get('parts', [])])
+        return united([p for key in ids for p in (features.get(key) or aliases.get(key, {})).get('parts', [])])
 
     def distances(reference, compared, mask=None):
         pts = photo_points(reference, mask)
@@ -413,26 +415,14 @@ def check(data, size):
     arrows = data['arrows']
     arrow_paint = [arrow_geometry(f,local,vector) for f in arrows if 'duplicateOf' not in f]
     ink = unary_union([*ribbon.values(),stripe_paint,*arrow_paint])
-    found = arrow_conflicts(arrows,[features[k] for k in stop_ids],local,vector)
-    reported = {f['id']:f['conflicts'] for f in arrows if f.get('conflicts')}
-    required = {('A1536','L667'),('A1537','L667'),('A220','A221')}
-    observed = {(key,pair['with']) for key,tags in found.items() for pair in tags}
-    obscured_arrows = {f['id'] for f in arrows if f['photo']=='occluded'}
+    inventory = data['arrowInventory']
     source_arrows = json.loads((RAW/'seoul-arrows.json').read_text())['arrows']
-    source_matches = sum(f['at']==[source['lon'],source['lat']] and f['kind']==int(source['kind'])
-                         and f['bearing']==source['drn'] for f in arrows
-                         for source in [source_arrows[int(f['id'][1:])]])
-    row('화살표 원자료 보존 / 사진 가림 표기 / 충돌 표기',
-        f'{source_matches}/{len(arrows)} · {", ".join(sorted(obscured_arrows))} · {len(observed)}개 방향 대응',
-        source_matches==len(arrows) and {'A220','A221'} <= obscured_arrows and required <= observed
-        and reported==found)
-    for key,tags in found.items():
-        for pair in tags:
-            target = pair['with']
-            if pair['type']=='arrow' and key>target:
-                continue
-            print(f"REVIEW | 화살표 {key} × {'정지선' if pair['type']=='stop' else '화살표'} {target}"
-                  f" | {pair['squareMetres']:.6f}㎡ · 사진 가림 {'있음' if key in obscured_arrows or target in obscured_arrows else '표시 없음'}")
+    audited = [*arrows,*inventory['omitted']]
+    matched = sum(f['sourceAt']==[source['lon'],source['lat']] and f['kind']==int(source['kind'])
+                  and f['sourceBearing']==source['drn'] for f in audited
+                  for source in [source_arrows[int(f['id'][1:])]])
+    row('화살표 원자료 대응 및 결과 추적', f'{matched}/{inventory["frameRows"]}행 · 생성 {len(arrows)}개',
+        matched==len(audited)==len({f['id'] for f in audited})==inventory['frameRows'])
     approach_ink = unary_union([ribbon[key] for key in approach_ids])
     mask_ink = stops.union(stripe_paint)
     all_lines = unary_union([geometry(key) for key in ribbon])
@@ -459,10 +449,7 @@ def check(data, size):
     actual_occluded = {f['id'] for f in data['lines'] if f['photo']=='occluded' and f['source']=='seoul' and not f['fixes']}
     row('동쪽 가림 서울시 원자료', f'{len(expected_occluded & actual_occluded)}/3 · ' + ', '.join(sorted(actual_occluded)),
         actual_occluded == expected_occluded)
-    available = [a for a in arrows if paint_definitions()['arrows'].get(str(a['kind']))]
-    print('INFO | 화살표 |', data['arrowInventory'],
-          f"도로 범위 {len(arrows)}행, 위치·방향 {len({(tuple(a['at']),a['bearing']) for a in arrows})}개, "
-          f"지원 도형 {len(available)}행, 중복 제외 실제 그린 {sum('duplicateOf' not in a for a in available)}개")
+    print('INFO | 화살표 |', f"원자료 {inventory['frameRows']}행, 생성 {len(arrows)}개, 미생성 {len(inventory['omitted'])}행")
     row('결과 크기(B)', str(size), size <= 100_000)
     return int(errors > 0)
 

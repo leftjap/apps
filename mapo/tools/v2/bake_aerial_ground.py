@@ -15,8 +15,9 @@ from shapely.geometry import GeometryCollection, LineString, Point, Polygon, box
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 
-from aerial_paint import arrow_conflicts, arrow_footprint, line_footprint, style
-from aerial_rules import is_guide, merge_guides, move_stop, road_extent, zebra
+from aerial_paint import line_footprint, style
+from aerial_placement import deduplicate_marks, duplicate_face, place_arrows, stop_shadows as dependent_stop_shadows
+from aerial_rules import is_guide, move_stop, road_extent, zebra
 
 MAPO = Path(__file__).resolve().parents[2]
 RAW = MAPO / 'tools/raw'
@@ -568,10 +569,23 @@ def build(centre, size, config, end=None):
             result['estimatedStripes'] = [i for i,(_,estimated) in enumerate(shapes) if estimated]
             guide_zebras.extend(halves)
         crosses.append(result)
-    # Apply the original source boundaries first to preserve existing cuts.
+    facility_duplicates = []
+    kept_crosses = []
+    geometries = {c['id']:Polygon([frame.project(p) for p in c['face']]) for c in crosses}
+    for cross in sorted(crosses,key=lambda c:not bool(c['fixes'])):
+        other = next((c for c in kept_crosses if c['kind']==cross['kind']
+                      and duplicate_face(geometries[cross['id']],geometries[c['id']])),None)
+        if other:
+            facility_duplicates.append({'type':'crossing','id':cross['id'],'of':other['id']})
+        else:
+            kept_crosses.append(cross)
+    kept_ids = {c['id'] for c in kept_crosses}
+    crosses = [c for c in crosses if c['id'] in kept_ids]
+    final_faces = [geometries[c['id']] for c in crosses]
+    final_crossing_mask = unary_union(final_faces)
+    # Include the original masks and recalculate ends against the final paint.
     crossing_mask = unary_union([crossings[c['id']][1] for c in crosses])
     faces = [crossings[c['id']][1] for c in crosses]
-    merged = {}
     if rules_only:
         junction = GeometryCollection()
         stop_shadows = GeometryCollection()
@@ -579,9 +593,6 @@ def build(centre, size, config, end=None):
                     move_stop(part,faces,style(m.kind,m.subtype)['w']) for part in line_parts(m.geom)]))
                  for m in lines.values() if m.kind==4]
         guide_ids = {m.id for m in lines.values() if is_guide(m,faces)}
-        _,merged = merge_guides([lines[key] for key in sorted(guide_ids)])
-        for key in (key for group in merged.values() for key in group):
-            del lines[key]
     else:
         # Four arms are only used by the archived calibrated intersection.
         inner = {}
@@ -592,12 +603,18 @@ def build(centre, size, config, end=None):
         stops = [s for m in lines.values() if m.kind==4
                  for s in ([m] if m.photo=='occluded' else make_stops(m,corrections.get(m.id,[]),lines))]
         stop_shadows = approach_stop_shadows(stops,crossings,arms)
+    # Use final stop locations for the upstream boundary on both render paths.
+    if rules_only:
+        stop_shadows = dependent_stop_shadows(stops,final_faces)
     stop_mask = unary_union([s.geom.buffer(style(s.kind,s.subtype)['w']/2,cap_style='flat') for s in stops])
+    marks,merged = deduplicate_marks([*(m for m in lines.values() if m.kind!=4),*stops])
     paint = []
-    for mark in [*(m for m in lines.values() if m.kind!=4),*stops]:
+    for mark in marks:
         if mark.kind in EDGE:
             continue
         geom = mark.geom
+        if geom.length<=.025:
+            continue
         in_junction = geom.intersection(junction).length / geom.length
         guide = mark.id in guide_ids if rules_only else mark.kind==12 or (mark.kind==17 and in_junction>.65)
         ink = style(mark.kind,mark.subtype)
@@ -613,10 +630,10 @@ def build(centre, size, config, end=None):
             dx,dy = -math.sin(a)*half,math.cos(a)*half
             allowed = paintable.intersection(affinity.translate(paintable,dx,dy)).intersection(
                 affinity.translate(paintable,-dx,-dy))
-        if mark.kind in APPROACH and not guide:
+        if mark.kind in (1,2,3,5,6,8,17,18) and not guide:
             # Extend the end of each stop across just the local adjacent
             # boundary; the other staggered stop remains independent.
-            gaps = junction.union(crossing_mask).union(stop_mask)
+            gaps = junction.union(crossing_mask).union(final_crossing_mask).union(stop_mask)
             if mark.kind != 1:
                 gaps = gaps.union(stop_shadows)
             geom = geom.difference(gaps.buffer(margin))
@@ -628,10 +645,10 @@ def build(centre, size, config, end=None):
             continue
         out = {'id':mark.id,'kind':mark.kind,'subtype':mark.subtype,'source':'photo' if mark.id==next(iter(mark.fixes),None) else 'seoul',
                'fixes':mark.fixes,'photo':mark.photo,'parts':draw}
+        if mark.id in merged:
+            out['mergedFrom'] = merged[mark.id]
         if guide:
             out['guide'] = True
-            if mark.id in merged:
-                out['mergedFrom'] = merged[mark.id]
             cut_guide_at_zebras(out,guide_zebras,frame,margin)
             if not out['parts']:
                 continue
@@ -647,58 +664,49 @@ def build(centre, size, config, end=None):
                     rails[i].append(coords(line.offset_curve(offset,join_style='mitre').coords))
             out['stripes'] = rails
         paint.append(out)
-    arrows = []
-    arrow_rows = []
-    unique_arrows = {}
-    unverified_arrows = {entry['source']:entry for entry in config.get('arrowUnverified',[])}
-    for i,row in enumerate(read('arrows','arrows')):
-        p = Point(frame.project((row['lon'],row['lat'])))
-        kind = int(row['kind'])
-        if window.covers(p):
-            arrow_rows.append((row['lon'],row['lat'],kind,row['drn']))
-        if road.covers(p):
-            arrow = {'id':f'A{i}','kind':kind,'bearing':row['drn'],
-                     'at':[row['lon'],row['lat']],'source':'seoul','photo':'unassessed'}
-            row_key = (*arrow['at'],kind,arrow['bearing'])
-            primary = unique_arrows.setdefault(row_key,arrow['id'])
-            if primary != arrow['id']:
-                arrow['duplicateOf'] = primary
-            tag = unverified_arrows.pop(arrow['id'],None)
-            if tag:
-                if arrow['at'] != tag['at']:
-                    raise ValueError(f"arrow observation has wrong source position: {tag}")
-                arrow['photo'] = 'occluded'
-            shapes = list(arrow_footprint(kind,row['drn'],p.coords[0],frame.vector))
-            if shapes and any(not paintable.covers(shape) for shape in shapes):
-                arrow['paint'] = [ring for shape in shapes for ring in rings(shape.intersection(paintable))]
-            arrows.append(arrow)
-    if unverified_arrows:
-        raise ValueError(f'missing arrow observations: {list(unverified_arrows)}')
-    issues = arrow_conflicts(arrows,[f for f in paint if f['kind']==4],frame.project,frame.vector)
-    for arrow in arrows:
-        if arrow['id'] in issues:
-            arrow['conflicts'] = issues[arrow['id']]
+    observations = {item['source']:item for item in config.get('arrowUnverified',[])}
+    raw_stops = []
+    near_window = window.buffer(100)
+    for i,row in enumerate(lanes):
+        if int(row['k'])!=4 or len(row['p'])<2:
+            continue
+        path = [p[::-1] for p in row['p']]
+        if near_window.intersects(LineString([frame.project(p) for p in path])):
+            raw_stops.append({'id':f'L{i}','parts':[path]})
+    arrows,omitted,source_count,without_source,lane_count = place_arrows(read('arrows','arrows'),window,road,frame,
+                                               [m for m in lines.values() if m.kind!=4],
+                                               paint,crosses,observations,raw_stops)
     ground = {'version':1,'centre':centre,'size':size,'frame':rings(window)[0],
             'road':road_faces,'curbOffsetMetres':config.get('curbOffsetMetres',0),
             'curbs':[{'corner':name,'parts':line_coords(g),'radius':round(r,3),'sources':sources,
                       'source':source,'fixes':[fix] if fix else []} for name,g,r,sources,source,fix in curbs],
             'lines':paint,'crossings':crosses,'arrows':arrows,
-            'arrowInventory':{'frameRows':len(arrow_rows),'uniquePositionTypeBearing':len(set(arrow_rows))},'fixes':[f['id'] for f in fixes],'hidden':suppressed}
+            'arrowInventory':{'frameRows':source_count,'placed':len(arrows),'omitted':omitted,
+                              'mappedStopLanes':lane_count,'noMatchedSource':without_source},
+            'duplicates': [*facility_duplicates,*({'type':'line','id':key,'of':primary}
+                         for primary,keys in merged.items() for key in keys)],
+            'fixes':[f['id'] for f in fixes],'hidden':suppressed}
 
     if rules_only:
+        safety = []
+        for row in read('safety','zones'):
+            face = make_valid(Polygon([frame.project(p[::-1]) for p in row['ring']])).intersection(window)
+            if face.area<=.01:
+                continue
+            other = next((item for item in safety if item[1]==row['kind'] and duplicate_face(item[2],face)),None)
+            if other:
+                ground['duplicates'].append({'type':'safety','id':row['id'],'of':other[0]})
+            else:
+                safety.append((row['id'],row['kind'],face))
         ground.update({
             'rulesOnly':True, 'end':end,
             'roadSource':'seoul-edge-fit' if fit_crossing else 'TL_SPRD_RW',
             'roadHoles':[[coords(ring.coords) for ring in p.interiors] for p in polygon_parts(road)],
-            'safety':[
-                {'id':r['id'],'parts':rings(Polygon([frame.project(p[::-1]) for p in r['ring']]).intersection(window))}
-                for r in read('safety','zones')
-                if window.intersects(Polygon([frame.project(p[::-1]) for p in r['ring']]))
-            ],
+            'safety':[{'id':key,'parts':rings(face)} for key,_,face in safety],
         })
         if not fit_crossing:
             ground['curbs'] = [{'source':'seoul-edge-paint','id':m.id,'parts':line_coords(m.geom),'fixes':[]}
-                               for m in lines.values() if m.kind in EDGE]
+                               for m in marks if m.kind in EDGE]
     return ground
 
 

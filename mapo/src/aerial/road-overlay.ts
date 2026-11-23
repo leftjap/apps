@@ -22,6 +22,7 @@ interface Ground {
   arrows: {
     kind: number;
     bearing: number;
+    laneWidth?: number;
     at: LonLat;
     paint?: Path[];
     photo: string;
@@ -140,7 +141,7 @@ function drawGround(ground: Ground, mode: 'road' | 'overlay') {
     const angle = arrow.bearing * Math.PI / 180;
     const [fx, fz] = [Math.cos(angle), -Math.sin(angle)];
     const [x, z] = groundPoint(arrow.at);
-    for (const poly of arrowShape(arrow.kind) ?? []) {
+    for (const poly of arrowShape(arrow.kind, arrow.laneWidth) ?? []) {
       const points: XZ[] = [];
       for (let i = 0; i < poly.length; i += 2) {
         const [u, v] = [poly[i], poly[i + 1]];

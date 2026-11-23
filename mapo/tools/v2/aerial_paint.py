@@ -71,15 +71,18 @@ def line_footprint(mark, project):
     ])
 
 
-def arrow_footprint(kind, bearing, at, vector):
+def arrow_footprint(kind, bearing, at, vector, lane_width=0):
     """Match arrowShape and the renderer's east/negative-south bearing."""
     x,y = at
     angle = math.radians(bearing)
     fx, fy = math.cos(angle), -math.sin(angle)
-    for part in paint_definitions()['arrows'].get(str(kind)) or []:
+    polygons = paint_definitions()['arrows'].get(str(kind)) or []
+    span = 2*max((abs(v) for part in polygons for v in part[1::2]),default=0)
+    scale = max(.3,(lane_width-.6)/span) if lane_width and span>lane_width-.6 else 1
+    for part in polygons:
         path = []
         for u,v in zip(part[::2],part[1::2]):
-            east, south = fx*u+fy*v,fy*u-fx*v
+            east, south = fx*u+fy*v*scale,fy*u-fx*v*scale
             dx,dy = vector(east,south)
             path.append((x+dx,y+dy))
         yield Polygon(path)
@@ -89,7 +92,7 @@ def arrow_geometry(arrow, project, vector):
     if 'paint' in arrow:
         shapes = [Polygon([project(p) for p in ring]) for ring in arrow['paint']]
     else:
-        shapes = list(arrow_footprint(arrow['kind'],arrow['bearing'],project(arrow['at']),vector))
+        shapes = list(arrow_footprint(arrow['kind'],arrow['bearing'],project(arrow['at']),vector,arrow.get('laneWidth',0)))
     return unary_union(shapes)
 
 

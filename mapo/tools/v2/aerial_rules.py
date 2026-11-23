@@ -84,13 +84,13 @@ def merge_guides(marks):
     return kept,merged
 
 
-def parallel_duplicate(a,b):
+def parallel_duplicate(a,b,distance=DUPLICATE_DISTANCE):
     if a.geom_type!='LineString' or b.geom_type!='LineString' or a.crosses(b):
         return False
     delta = [(p.coords[-1][0]-p.coords[0][0],p.coords[-1][1]-p.coords[0][1]) for p in (a,b)]
     (ax,ay),(bx,by) = delta
     aligned = abs(ax*bx+ay*by)>=.985*math.hypot(ax,ay)*math.hypot(bx,by)
-    return aligned and a.hausdorff_distance(b)<=DUPLICATE_DISTANCE
+    return aligned and a.hausdorff_distance(b)<=distance
 
 
 def road_extent(raw,frame,window):
