@@ -768,7 +768,7 @@ export function makeCars(
       for (const j of l) vm += v[j];
       meanV[e.id] = l.length ? vm / l.length : -1;
       const jammed = l.length > 0 && vm / l.length < 0.4 * speed[e.id];
-      const w = !placeable[e.id] || jammed || closed[e.id] || inner(e.id) ? 0 : Math.max(0, real[e.id] * (inF[e.id] / ratioIn + (1 - inF[e.id]) / ratioOut) - l.length);
+      const w = !placeable[e.id] || jammed || closed[e.id] || inner(e.id) || (X.surveyed && carLanes(e) === 0) ? 0 : Math.max(0, real[e.id] * (inF[e.id] / ratioIn + (1 - inF[e.id]) / ratioOut) - l.length);
       ci += w * inF[e.id];
       co += w * (1 - inF[e.id]);
       cumIn[e.id] = ci;
@@ -1950,7 +1950,7 @@ export function makeCars(
         }
         const o = edges[nextE[i]];
         // 교차로가 아닌 이음매: 지난 구간 끝의 그린 자리와 새 구간 차로 자리의 옆 차이를 옆 거리(side)로 넘겨 이어 그린다(곡선으로 꺾지 않고 초당 SIDE_V 로 옮겨 간다)
-        const seam = X.jEnd[e.id] < 0 && !bent(e, o);
+        const seam = !X.surveyed && X.jEnd[e.id] < 0 && !bent(e, o);
         if (seam) {
           const s0 = s[i];
           s[i] = e.len;

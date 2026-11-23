@@ -1,5 +1,5 @@
 import type { Crosswalk } from '../data/board.ts';
-import { cumLen } from '../poly.ts';
+import { cumLen, pointAt } from '../poly.ts';
 import type { BusRoute } from '../sim/buses.ts';
 import type { Edge } from '../sim/graph.ts';
 import { makeIntersections } from '../sim/intersection/index.ts';
@@ -26,15 +26,33 @@ export type HapjeongCars = {
   crosswalks: { id: string; ends: [XZ, XZ]; width: number; faces: XZ[][][]; sig: boolean; lamps: string[] }[];
 };
 
-export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<number>, entries = new Set<number>()) {
+export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<number>, entries = new Set<number>(), margin = 0) {
   const volume = new Map(data.bundles.flatMap(bundle => bundle.lanes.map(i => [i, bundle.lanes.length] as const)));
   const central = new Set(data.central);
   const ids = data.links.map((_, i) => i).filter(i => !selected || selected.has(i));
   const index = new Map(ids.map((id, i) => [id, i]));
-  const links = ids.map(i => data.links[i]);
+  const [x0, z0, x1, z1] = data.window;
+  const boundary = ([x, z]: XZ) => Math.min(x - x0, x1 - x, z - z0, z1 - z) < .001;
+  const links = ids.map(i => {
+    const row = data.links[i];
+    const head = boundary(row.points[0]) ? Math.min(margin, Math.max(0, row.len - 1)) : 0;
+    const tail = boundary(row.points.at(-1)!) ? Math.min(margin, Math.max(0, row.len - head - 1)) : 0;
+    if (!head && !tail) return row;
+    const original = row.points.flatMap(([x, z]) => [x, 0, z]);
+    const cum = cumLen(original), end = cum[cum.length - 1] - tail;
+    const point = (at: number): XZ => {
+      const xyz = [0, 0, 0];
+      pointAt(original, cum, at, xyz);
+      return [xyz[0], xyz[2]];
+    };
+    return {
+      ...row, stop: row.stop && { ...row.stop, at: row.stop.at - head },
+      points: [point(head), ...row.points.filter((_, k) => cum[k] > head && cum[k] < end), point(end)],
+    };
+  });
   const busSet = new Set(data.bus);
   const edges: Edge[] = ids.map((source, id) => {
-    const link = data.links[source];
+    const link = links[id];
     const p = Float32Array.from(link.points.flatMap(([x, z]) => [x, 0, z]));
     const cum = cumLen(p);
     const len = cum[cum.length - 1];
@@ -42,7 +60,8 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
     // The lane bundle supplies demand. A2 lane nodes supply routing, so one
     // directed A2 line is one Edge with zero offset in the legacy engine.
     const vol = volume.get(source) ?? 1;
-    const major = link.next.some(n => central.has(n));
+    const major = central.has(source) || link.next.some(n => central.has(n)) ||
+      data.central.some(n => data.links[n].next.includes(source)) || vol >= 2;
     return {
       id, p, cum, len, cls: major ? Math.min(link.rank, 3) : Math.min(link.rank, 4),
       lanes: 1, vol, lw: 3, st: Float32Array.of(0), lo: Float32Array.of(0), mo: new Float32Array(),

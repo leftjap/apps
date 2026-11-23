@@ -124,10 +124,11 @@ function addInk(parent: THREE.Object3D, vertices: number[], color: string, groun
 async function init() {
   const query = new URLSearchParams(location.search);
   const peopleMode = query.get('people') === '1' || query.get('pedestrians') === '1';
+  const carsMode = !peopleMode && query.get('cars') === '1';
   const signalMode = peopleMode ? 'straight' : query.get('signalTrial');
   const signalTrial = signalMode === 'straight' || signalMode === 'left';
   const vehicleTrial = query.get('vehicles') === '1';
-  const variantA = signalTrial || vehicleTrial || query.get('variant') === 'a';
+  const variantA = carsMode || signalTrial || vehicleTrial || query.get('variant') === 'a';
   const suffix = variantA ? '-a' : '';
   const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd${suffix}.json`);
   if (!response.ok) throw Error(`가공 자료 응답 ${response.status}`);
@@ -152,6 +153,14 @@ async function init() {
       const title = signalMode==='straight' ? '직진 차량 시험' : '좌회전 차량 시험';
       data.views=[{id:'overview',title,...scenario.view,mode:'photo'}];
     }
+  }
+  let cars: import('./hapjeong-car-graph.ts').HapjeongCars | undefined;
+  if (carsMode && !scenario) {
+    const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-cars.json`);
+    if (!response.ok) throw Error(`차량 자료 응답 ${response.status}`);
+    cars = await response.json();
+    const { carViews } = await import('./hapjeong-car-playback.ts');
+    data.views = [...carViews];
   }
   const photo = new THREE.Scene();
   const model = new THREE.Scene();
@@ -190,27 +199,30 @@ async function init() {
   }
   addInk(route,lane,'#69e7ff',5);
   addInk(route,inside,'#f6a3eb',5);
-  const [imagery] = await Promise.all([photoPlane(vehicleTrial || signalTrial),loadBuildings(buildings, new Set(data.hiddenBuildingOutlines))]);
+  const [imagery] = await Promise.all([photoPlane(carsMode || vehicleTrial || signalTrial),loadBuildings(buildings, new Set(data.hiddenBuildingOutlines))]);
   photo.add(imagery);
 
   const camera = new THREE.PerspectiveCamera(34,1);
   const canvas = (id: string) => document.querySelector<HTMLCanvasElement>(`#${id}`)!;
   const left = new THREE.WebGLRenderer({ canvas:canvas('left'), antialias:true });
-  const right = new THREE.WebGLRenderer({ canvas:canvas('right'), antialias:true, preserveDrawingBuffer:vehicleTrial || signalTrial });
+  const right = new THREE.WebGLRenderer({ canvas:canvas('right'), antialias:true, preserveDrawingBuffer:carsMode || vehicleTrial || signalTrial });
   const form = document.querySelector<HTMLSelectElement>('#view')!;
   const pair = document.querySelector<HTMLDivElement>('#pair')!;
   const leftCaption = document.querySelector<HTMLDivElement>('#left-caption')!;
   const rightCaption = document.querySelector<HTMLDivElement>('#right-caption')!;
   const routeLegend = document.querySelectorAll<HTMLElement>('[data-route]');
   for (const view of data.views) form.add(new Option(view.title,view.id));
-  form.value = data.views.find(view => view.id===query.get('view'))?.id ?? (peopleMode ? 'west' : 'overview');
+  form.value = data.views.find(view => view.id===query.get('view'))?.id ?? (peopleMode || cars ? 'west' : 'overview');
   document.getElementById('bicycle')!.hidden = !data.bicycles.length;
   document.getElementById('missing')!.hidden = data.crossings.every(row => row.stripes.length);
   if (variantA) {
     const gallery = document.querySelector<HTMLAnchorElement>('#capture-gallery')!;
     gallery.href = './tmp/hapjeong-hd/a/gallery.html';
     gallery.textContent = 'A 비교 이미지 5장';
-    if (peopleMode) {
+    if (cars) {
+      gallery.href = './tmp/hapjeong-hd/cars-1/';
+      gallery.textContent = '차량·보행 영상과 검수';
+    } else if (peopleMode) {
       gallery.href = './tmp/hapjeong-hd/people/README.md';
       gallery.textContent = '보행 시험 기록';
     } else if (signalTrial) {
@@ -222,7 +234,7 @@ async function init() {
     }
   }
 
-  let refreshPeople: (() => void) | undefined;
+  let refreshSimulation: (() => void) | undefined;
   function draw() {
     const view = data.views.find(row=>row.id===form.value)!;
     const w = left.domElement.clientWidth, h = left.domElement.clientHeight;
@@ -254,7 +266,7 @@ async function init() {
     render(left,comparison ? model : photo);
     survey.visible = !comparison;
     hd.visible = comparison;
-    refreshPeople?.();
+    refreshSimulation?.();
     render(right,model);
     leftCaption.textContent = comparison ? '수치지형도 인도·교통섬' : '브이월드 항공사진';
     rightCaption.textContent = variantA ? 'A · 합친 인도·교통섬과 정밀도로지도 노면'
@@ -267,9 +279,10 @@ async function init() {
     if (variantA) params.set('variant', 'a');
     if (peopleMode) params.set('people', '1');
     else if (signalTrial) params.set('signalTrial', signalMode!);
+    else if (carsMode) params.set('cars', '1');
     else if (vehicleTrial) params.set('vehicles', '1');
     params.set('view', view.id);
-    for (const key of ['paused', 'at']) if (query.has(key)) params.set(key, query.get(key)!);
+    for (const key of ['paused', 'at', 'seeded']) if (query.has(key)) params.set(key, query.get(key)!);
     history.replaceState(null, '', `?${params}`);
   }
   form.addEventListener('change',draw);
@@ -284,7 +297,7 @@ async function init() {
       attachSignalTrial(model, traffic, render, !query.has('paused'), frames => {
         const show = attachHapjeongPeople(model, camera, right.domElement, walk, rehearsal, traffic, frames);
         let index = 0;
-        refreshPeople = () => show(index);
+        refreshSimulation = () => show(index);
         return frame => {
           index = frame;
           show(index);
@@ -294,6 +307,9 @@ async function init() {
     } else {
       attachSignalTrial(model,scenario,render,!query.has('paused'));
     }
+  } else if (cars) {
+    const { attachHapjeongCars } = await import('./hapjeong-cars.ts');
+    refreshSimulation = attachHapjeongCars(model, camera, right.domElement, cars, () => right.render(model,camera), query);
   } else if (vehicleTrial) {
     const { attachTrial } = await import('./hapjeong-vehicles.ts');
     const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-vehicles.json`);
