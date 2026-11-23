@@ -40,7 +40,10 @@ async function fetchLayer(layer: keyof typeof types, bbox: number[], suffix = ''
 }
 
 const audit = [126.9075, 37.5460, 126.9190, 37.5540];
-const requests = process.argv.includes('--vehicle-audit') ? [
+const seams = [126.9050, 37.5445, 126.9215, 37.5555];
+const requests = process.argv.includes('--vehicle-seams') ? [
+  ['a1', seams, '-vehicle-seams'] as const,
+] : process.argv.includes('--vehicle-audit') ? [
   ['a1', audit, '-vehicle-audit'] as const, ['a2', audit, '-vehicle-audit'] as const,
 ] : process.argv.includes('--crossing-audit') ? [
   ['b3', expanded, '-expanded'] as const, ['a4', expanded, '-expanded'] as const,
