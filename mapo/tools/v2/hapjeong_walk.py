@@ -6,7 +6,7 @@ import json
 
 import numpy as np
 from shapely import constrained_delaunay_triangles, contains_xy, get_parts
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, Point, Polygon, box
 from shapely.prepared import prep
 
 from hapjeong_hd import ASSET, MAPO, ORIGIN, project
@@ -54,10 +54,12 @@ class Network:
                             self.edge(p, middle)
                             self.edge(middle, q)
 
-    def attach(self, p):
+    def attach(self, p, reach=math.inf):
         if p in self.nodes:
             return True
         for q in sorted(self.nodes, key=lambda q: math.dist(p, q))[:48]:
+            if math.dist(p, q) > reach:
+                break
             if self.edge(p, q):
                 return True
         return False
@@ -175,7 +177,8 @@ def crossing_route(row, network, landings):
     def score(pts):
         _, p, q, _ = pts
         line = LineString(pts)
-        return (-min(max(.2, width / 20 - .3) + .021, line.distance(allowed.boundary)),
+        room = min(Point(pts[i]).distance(network.safe.boundary) for i in (0, 3))
+        return (-min(max(.2, width / 20 - .3) + .021, line.distance(allowed.boundary), (room-.375)/.27+.021),
                 Point(p).distance(survey_axis) + Point(q).distance(survey_axis), line.length, pts)
 
     for points in sorted(candidates, key=score):
@@ -205,48 +208,69 @@ def crossing_route(row, network, landings):
                 hi += 1
             return [lo, hi]
 
+        # The legacy crossing can hand a walker to the ordinary graph
+        # within .3m of the lateral final target. The whole arrival zone
+        # has to be on the raster pavement, even if the crossing band
+        # temporarily allows more ground around it.
+        arrival_room = min(Point(p).distance(network.safe.boundary) for p in (start, end))
+        if arrival_room < .43:
+            continue
+        arrival_width = math.floor(20 * ((arrival_room - .375)/.27 + .3))
+        usable = min(width, max(6, math.floor(20 * (clearance(points) + .279))), arrival_width)
+        if usable < 6:
+            continue
         wait_a, wait_b = wait(start, -1), wait(end, 1)
         if wait_a is not None and wait_b is not None and network.attach(start) and network.attach(end):
-            # Preserve the full paved extension. Where the real far kerb or
-            # an angled stripe cannot hold the circular engine band at the
-            # landing, pack the widest continuous verified band.
-            usable = min(width, max(6, math.floor(20 * (clearance(points) + .279))))
             return (*points, usable, wait_a, wait_b)
     return None
 
 
-def spawn_points(network, floor, views):
+def spawn_points(network, floor, window):
     road = prep(surface(floor['floor']['road']).difference(network.walk))
     board = json.loads((MAPO / 'public/data/board.json').read_text())
     lat0, lon0 = ORIGIN
     longitude_metres = 111320 * math.cos(math.radians(lat0))
-    portals = []
+    portals, rejected = [], []
     for exit in board['exits']:
         if exit['st'] != '합정':
             continue
         origin = project((lon0 + exit['x'] / 10 / longitude_metres, lat0 - exit['z'] / 10 / 110950))
+        if not window.covers(Point(origin)):
+            continue
         for node in sorted(network.nodes, key=lambda p: math.dist(p, origin)):
-            if math.dist(node, origin) > 7:
+            if math.dist(node, origin) > 8:
                 break
             if not road.intersects(LineString([origin, node])):
-                portals.append(dict(kind='exit', key=exit['st'], ref=exit['ref'], x=node[0], z=node[1]))
+                portals.append(dict(kind='exit', key=f'역 {exit["ref"]}번', x=node[0], z=node[1], origin=origin))
                 break
+        if not portals or portals[-1]['key'] != f'역 {exit["ref"]}번':
+            rejected.append(dict(key=f'역 {exit["ref"]}번', reason='no safe path to the walk graph', origin=origin))
 
-    spacious = [p for p in sorted(network.nodes)
-                if len(network.nodes[p]) > 1 and Point(p).distance(network.safe.boundary) >= .5]
-    for view in views:
-        centre = view['at']
-        nearby = sorted((p for p in spacious if math.dist(p, centre) <= 29),
-                        key=lambda p: math.dist(p, centre))
-        count = 0
-        for x, z in nearby:
-            if any(math.dist((portal['x'], portal['z']), (x, z)) < 9 for portal in portals):
-                continue
-            portals.append(dict(kind='exit', key='인도', x=x, z=z))
-            count += 1
-            if count == 4:
-                break
-    return portals
+    xmin, zmin, xmax, zmax = window.bounds
+    for name, u, v, nx, nz in [
+        ('서', (xmin, zmin), (xmin, zmax), 1, 0),
+        ('북', (xmin, zmin), (xmax, zmin), 0, 1),
+        ('동', (xmax, zmin), (xmax, zmax), -1, 0),
+        ('남', (xmin, zmax), (xmax, zmax), 0, -1),
+    ]:
+        boundary = LineString([u, v])
+        ends = sorted((g for g in get_parts(boundary.intersection(network.walk)) if g.length >= .8),
+                      key=lambda g: boundary.project(g.interpolate(.5, normalized=True)))
+        for i, span in enumerate(ends, 1):
+            key = f'{name}쪽 인도 {i}'
+            origin = span.interpolate(.5, normalized=True).coords[0]
+            for depth in [.7, 1., 1.5, 2., 3., 4.]:
+                node = dm((origin[0]+depth*nx, origin[1]+depth*nz))
+                if not network.safe.covers(Point(node)):
+                    continue
+                if not network.walk.buffer(1e-6).covers(LineString([origin, node])):
+                    continue
+                if network.attach(node, reach=8):
+                    portals.append(dict(kind='exit', key=key, x=node[0], z=node[1], origin=origin))
+                    break
+            else:
+                rejected.append(dict(key=key, reason='no safe path to the boundary footway', origin=origin))
+    return portals, rejected
 
 
 def bake(floor, cars):
@@ -264,9 +288,8 @@ def bake(floor, cars):
         else:
             reason = 'pavement missing at one or both ends' if not all(e['connected'] for e in ends) else 'full-width engine corridor does not fit'
             excluded.append(dict(id=row['id'], reason=reason))
-    rehearsal = json.loads(ASSET.with_name('hapjeong-hd-pedestrians.json').read_text())
-    portals = spawn_points(network, floor, [person['view'] for person in rehearsal['people']])
-    return dict(**network.encode(crossings), crossings=ids, landings=landings, excluded=excluded, portals=portals)
+    portals, rejected = spawn_points(network, floor, box(*cars['window']))
+    return dict(**network.encode(crossings), crossings=ids, landings=landings, excluded=excluded, portals=portals, rejectedPortals=rejected)
 
 
 if __name__ == '__main__':

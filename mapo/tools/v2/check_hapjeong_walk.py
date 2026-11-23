@@ -70,6 +70,8 @@ def verify():
         axis = LineString([nodes[a], (ax / 10, az / 10), (bx / 10, bz / 10), nodes[b]])
         half_width = max(.2, width / 20 - .3)
         assert allowed.covers(axis.buffer(half_width + .019)), ('crossing clearance', cross_ids[xw], list(axis.coords))
+        for node in (nodes[a], nodes[b]):
+            assert safe.covers(Point(node).buffer(.375 + half_width*.27 - .001)), ('crossing handoff', cross_ids[xw])
         dx, dz = (bx - ax) / 10, (bz - az) / 10
         length = (dx * dx + dz * dz) ** .5
         vx, vz = dx / length, dz / length

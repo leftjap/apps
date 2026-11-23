@@ -1,18 +1,17 @@
 import type { makeCars } from '../sim/cars.ts';
 import type { SignalPlan } from '../sim/intersection/signal.ts';
 import { makePeople, type Portal } from '../sim/people/index.ts';
+import type { Now } from '../sim/clock.ts';
+import { pick, rng } from '../sim/rng.ts';
 import { makeSimProvider } from '../sim/provider.ts';
 import { decodeWalk, LINK_N, type WalkGraph, type WalkJson } from '../sim/walknet.ts';
 import type { HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 
-export type PeopleRehearsal = {
-  people: { id: string; view: { at: XZ }; legs: { path: XZ[] }[] }[];
-};
+export type HapjeongPortal = Portal & { origin: XZ };
+export type HapjeongWalk = WalkJson & { crossings: string[]; portals: HapjeongPortal[] };
+export type HapjeongPeopleInput = { walk: HapjeongWalk };
 
-export type HapjeongWalk = WalkJson & { crossings: string[]; portals: Portal[] };
-export type HapjeongPeopleInput = { walk: HapjeongWalk; rehearsal: PeopleRehearsal };
-
-export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['crosswalks'], signals: SignalPlan) {
+export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['crosswalks'], signals: SignalPlan, groups: readonly string[][] = []) {
   const byId = new Map(crossings.map((c, i) => [c.id, i]));
   const omitted: string[] = [];
   const x: number[] = [];
@@ -31,42 +30,92 @@ export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['
   }
   return {
     graph: decodeWalk({ ...asset, x }), omitted,
+    signalPairs: groups.map(group => group.map(id => byId.get(id)!)),
     walkLeft: (xw: number, tod: number) => crossings[xw].sig ? signals.walkLeft(xw, tod) : -1,
   };
 }
 
-function pavementPoint(graph: WalkGraph, [x, z]: XZ): XZ {
-  const hit = graph.nearestEdge(x, z);
-  if (!hit || hit[3] > 8) throw Error('보행 시험 출발점 또는 목적지가 보행망에 닿지 않습니다.');
-  const [a, k, distance] = hit;
-  const b = graph.adj[a][k];
-  const ax = graph.nx[a * 2], az = graph.nx[a * 2 + 1];
-  const dx = graph.nx[b * 2] - ax, dz = graph.nx[b * 2 + 1] - az;
-  const t = distance / Math.hypot(dx, dz);
-  return [ax + dx * t, az + dz * t];
+function portalRoutes(graph: WalkGraph, portals: HapjeongPortal[]) {
+  const nodes = portals.map(portal => graph.nearest(portal.x, portal.z));
+  const edges = graph.adj.map((row, a) => row.map(b => ({
+    b, crossing: -1, cost: Math.hypot(graph.nx[a*2]-graph.nx[b*2], graph.nx[a*2+1]-graph.nx[b*2+1]),
+  })));
+  for (const link of graph.links) {
+    const cost = 12 + Math.hypot(link.ax-link.pax, link.az-link.paz) +
+      Math.hypot(link.bx-link.ax, link.bz-link.az) + Math.hypot(link.pbx-link.bx, link.pbz-link.bz);
+    edges[link.na].push({ b:link.nb, cost, crossing:link.xw });
+    edges[link.nb].push({ b:link.na, cost, crossing:link.xw });
+  }
+  return nodes.map((source, from) => {
+    const distances = new Float64Array(edges.length).fill(Infinity);
+    const visited = new Uint8Array(edges.length);
+    const previous = new Int32Array(edges.length).fill(-1);
+    const stripe = new Int32Array(edges.length).fill(-1);
+    distances[source] = 0;
+    // The local graph is small. Positive lengths keep each trip on an acyclic
+    // route and let us identify destinations omitted by the live signal plan.
+    for (;;) {
+      let a = -1, best = Infinity;
+      for (let k = 0; k < distances.length; k++) {
+        if (!visited[k] && distances[k] < best) { a = k; best = distances[k]; }
+      }
+      if (a < 0) break;
+      visited[a] = 1;
+      for (const { b, cost, crossing } of edges[a]) {
+        if (best + cost >= distances[b]) continue;
+        distances[b] = best + cost;
+        previous[b] = a;
+        stripe[b] = crossing;
+      }
+    }
+    return nodes.flatMap((n, to) => {
+      if (to === from || !Number.isFinite(distances[n]) || distances[n] <= 1) return [];
+      const stripes = new Set<number>();
+      for (let node = n; node !== source && node >= 0; node = previous[node])
+        if (stripe[node] >= 0) stripes.add(stripe[node]);
+      return [{ from, to, cost:distances[n], stripes }];
+    }).sort((a,b) => a.cost-b.cost);
+  });
 }
 
 export const HAPJEONG_PEOPLE_MAX = 64;
 
 export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: ReturnType<typeof hapjeongCrossings>,
-                                   cars: ReturnType<typeof makeCars>, busy: Uint32Array, focus: XZ) {
-  const { walk, rehearsal } = input;
-  const { graph, walkLeft } = crossings;
-  const origins = rehearsal.people.map(row => pavementPoint(graph, row.legs[0].path[0]));
-  const destinations = rehearsal.people.map(row => pavementPoint(graph, row.legs.at(-1)!.path.at(-1)!));
-  const stops: Portal[] = destinations.map(([x, z], i) => ({ kind: 'stop', key: rehearsal.people[i].id, x, z }));
-  const portals = walk.portals.filter(portal =>
-    rehearsal.people.some(({ view }) => Math.hypot(portal.x - view.at[0], portal.z - view.at[1]) <= 48));
-  const people = makePeople(graph, [...portals, ...stops], makeSimProvider(), 5, HAPJEONG_PEOPLE_MAX, {
-    cars: cars.cars, busy, walkLeft,
-    traffic: cars.approaching,
+                                   cars: ReturnType<typeof makeCars>, busy: Uint32Array) {
+  const { portals } = input.walk;
+  const { graph, walkLeft, signalPairs } = crossings;
+  const people = makePeople(graph, portals, makeSimProvider(), 5, HAPJEONG_PEOPLE_MAX, {
+    cars: cars.cars, busy, walkLeft, traffic: cars.approaching,
   });
-  for (const [i, from] of origins.entries()) {
-    const id = people.put(...from, ...destinations[i]);
-    if (id < 0) throw Error(`보행 시험 출발점에 사람을 놓지 못했습니다. ${rehearsal.people[i].id}`);
-    people.goHome(id, 1);
+  const routes = portalRoutes(graph, portals);
+  const portalAudit = portals.map((p,i) => ({ ...p, destinations: routes[i].map(row => portals[row.to].key) }));
+  const froms = routes.flatMap((row,i) => row.length ? [i] : []);
+  // Start the replay with a real, shortest trip across each divided
+  // crossing in both directions. Subsequent trips rotate through all exits.
+  const trips = routes.flat();
+  const firstTrips = signalPairs.flatMap(pair => {
+    const candidates = trips.filter(route => pair.every(x => route.stripes.has(x)));
+    candidates.sort((a,b) => a.cost-b.cost);
+    const first = candidates[0];
+    return first ? candidates.filter(route => (route.from === first.from && route.to === first.to) ||
+      (route.from === first.to && route.to === first.from)) : [];
+  });
+  const journeys = new Map<number, { from: string; to: string; tod: number }>();
+  const rand = rng(5);
+  let untilNext = 0;
+  let cursor = 0;
+  const dockIndices = new Map(people.docks.map((dock, i) => [dock.key, i]));
+  function advance(dt: number, now: Now) {
+    people.step(dt, now, false);
+    untilNext -= dt;
+    if (untilNext > 0 || !froms.length) return;
+    const earlier = firstTrips.shift();
+    const nearby = earlier ? [earlier] : routes[froms[cursor++ % froms.length]].slice(0, 5);
+    const { from, to } = nearby[pick(nearby.map(row => 1 / (30 + row.cost)), rand())];
+    const id = people.trip(dockIndices.get(portals[from].key) ?? -1, dockIndices.get(portals[to].key) ?? -1);
+    if (id >= 0) journeys.set(id, { from:portals[from].key, to:portals[to].key, tod:now.tod });
+    untilNext = 1.5 + 1.1 * rand();
   }
-  people.setFocus(...focus, 90);
   cars.setPeople(people.w);
-  return people;
+  return { ...people, advance, portalAudit, journeys };
 }

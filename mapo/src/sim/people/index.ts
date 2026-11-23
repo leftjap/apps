@@ -546,7 +546,8 @@ export function makePeople(
   const spd = new Float32Array(max);
   const head = new Float32Array(max);
   const life = new Float32Array(max);
-  const goal = new Int8Array(max).fill(-1); // −1 돌아다님, 0 출구·문으로, 1 정류장으로
+  const goal = new Int32Array(max).fill(-1); // −1 돌아다님, 0 출구·문, 1 정류장, 2+ 출입점 번호
+  const wantsDock = (i: number, k: number) => goal[i] >= 2 ? goal[i] - 2 === k : (goal[i] === 1) === (docks[k].kind === 'stop');
   const dockOf = new Int32Array(max).fill(-1);
   const home = new Uint8Array(max);
   const holdT = new Float32Array(max);
@@ -933,7 +934,7 @@ export function makePeople(
         let v = e.L + (e.x >= 0 ? CROSS_COST : 0) + Dg[e.b] + (e.a !== b ? Math.hypot(NX[e.a * 2] - NX[b * 2], NX[e.a * 2 + 1] - NX[b * 2 + 1]) : 0);
         for (const dk of dockAtHe.get(k) ?? []) {
           const d = docks[dk];
-          if ((goal[i] === 1) !== (d.kind === 'stop')) continue;
+          if (!wantsDock(i, dk)) continue;
           const t = d.he === k ? d.t : e.L - d.t;
           if (t < v) v = t;
         }
@@ -1324,7 +1325,7 @@ export function makePeople(
       let bd = Infinity;
       for (const k of J.inner[r])
         for (const dk of dockAtHe.get(k) ?? []) {
-          if ((goal[i] === 1) !== (docks[dk].kind === 'stop')) continue;
+          if (!wantsDock(i, dk)) continue;
           const [px, pz] = dockPos(dk);
           const d = Math.hypot(px - w.x[i], pz - w.z[i]);
           if (d < bd) (bd = d), (jd[i] = dk);
@@ -1539,7 +1540,7 @@ export function makePeople(
     if (goal[i] >= 0 || life[i] <= 0) {
       for (const dk of dockAtHe.get(h) ?? []) {
         const d = docks[dk];
-        if ((goal[i] === 1) !== (d.kind === 'stop')) continue;
+        if (!wantsDock(i, dk)) continue;
         const t = d.he === h ? d.t : e.L - d.t;
         if (Math.abs(t - s) < 0.6) return arrive(i, dk);
         // 이 선 위 앞쪽에 갈 곳이 있으면 거기로 곧장 간다(모퉁이에서 먼저 갈아타 지나치지 않게)
@@ -2409,7 +2410,7 @@ export function makePeople(
     if (goal[i] >= 0)
       for (const dk of dockAtHe.get(he[i]) ?? []) {
         const d = docks[dk];
-        if ((goal[i] === 1) !== (d.kind === 'stop')) continue;
+        if (!wantsDock(i, dk)) continue;
         const t = d.he === he[i] ? d.t : e.L - d.t;
         if (t > s - 0.6) left = Math.min(left, Math.max(0, t - s));
       }
@@ -2456,7 +2457,22 @@ export function makePeople(
   function goHome(id: number, g: number) {
     for (let i = 0; i < w.n; i++) if (w.id[i] === id) return seek(i, g);
   }
-  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, put, goHome, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
+  /** Explicit exit-to-exit trip. The default population and destinations do not use it. */
+  function trip(from: number, to: number) {
+    const source = docks[from], destination = docks[to];
+    if (!source || destination?.kind !== 'exit' || source.kind !== 'exit' || from === to) return -1;
+    const g = to + 2;
+    D[g] ??= dField(d => d === destination);
+    if (!Number.isFinite(D[g][hes[source.he].a])) return -1;
+    // This can be called after step compacts the walkers. Refresh the
+    // grid before testing whether the origin is occupied.
+    rebuildGrid();
+    const i = spawnAt(from);
+    if (i < 0) return -1;
+    seek(i, g);
+    return w.id[i];
+  }
+  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, put, goHome, trip, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
 }
 export type People = ReturnType<typeof makePeople>;
 

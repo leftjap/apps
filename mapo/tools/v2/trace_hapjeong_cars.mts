@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { carPlayback, carVisibility } from '../../src/aerial/hapjeong-car-playback.ts';
+import { carPlayback, carVisibility, carViews } from '../../src/aerial/hapjeong-car-playback.ts';
 import type { HapjeongCars } from '../../src/aerial/hapjeong-car-graph.ts';
 import { headingNear } from '../../src/sim/graph.ts';
 import { CYCLE, STRAIGHT } from '../../src/sim/intersection/index.ts';
@@ -8,7 +8,7 @@ import type { HapjeongPeopleInput } from '../../src/aerial/hapjeong-people.ts';
 
 const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url), 'utf8'));
 const data: HapjeongCars = read('cars');
-const people: HapjeongPeopleInput | undefined = process.argv.includes('--people') ? { walk: read('walk'), rehearsal: read('pedestrians') } : undefined;
+const people: HapjeongPeopleInput | undefined = process.argv.includes('--people') ? { walk: read('walk') } : undefined;
 const run = carPlayback(data, !process.argv.includes('--seeded'), people);
 const { inter: { X, S }, edges, links } = run.graph;
 const site = S.list.find(row => row.j >= 0)!;
@@ -25,6 +25,8 @@ console.log(JSON.stringify({
   approach, cycle: CYCLE, duration: run.duration, offset: site.offset, axis: wraps(site.axis),
   ingressAudit: run.ingressAudit, overlappingTerminals: [...run.overlappingTerminals],
   busRoutes: run.graph.buses.map(route => route.edges.map(id => links[id].id)),
+  views: carViews,
+  portalAudit: run.people()?.portalAudit,
   removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
     green: site.steps.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
@@ -55,13 +57,13 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
     const { mode, cross } = walk.stateOf(i);
     const xw = cross?.xw ?? -1;
     const sig = xw >= 0 && data.crosswalks[xw].sig;
-    const state = mode === MODES.WAITX ? 'wait' : mode === MODES.CROSS ? 'cross' : mode === MODES.WALK ? 'walk' : 'other';
+    const state = mode === MODES.WAITX ? 'wait' : mode === MODES.CROSS ? 'cross' : mode === MODES.WALK ? 'walk' : mode === MODES.LEAVE ? 'leave' : 'other';
     let byCar = false;
     if (state === 'wait' && !sig && xw >= 0 && !w.moving[i] && sim.approaching(xw)) {
       const { tx, tz } = walk.debugOf(i);
       byCar = Math.hypot(w.x[i] - tx, w.z[i] - tz) <= .05;
     }
-    return [w.id[i], w.x[i], w.z[i], state, xw, sig ? S.walkState(xw, tod) : -1, walk.validAt(i), byCar, w.moving[i]];
+    return [w.id[i], w.x[i], w.z[i], state, xw, sig ? S.walkState(xw, tod) : -1, walk.validAt(i), byCar, w.moving[i], walk.journeys.get(w.id[i])];
   }) : undefined;
   console.log(JSON.stringify([t, rows, pedestrians, people ? Array.from(run.busy()) : undefined]));
 }

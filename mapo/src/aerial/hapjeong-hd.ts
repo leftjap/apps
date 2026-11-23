@@ -135,8 +135,7 @@ async function init() {
     return response.json();
   };
   if (peopleMode) {
-    const [rehearsal, walk] = await Promise.all(['pedestrians', 'walk'].map(load));
-    people = { rehearsal, walk };
+    people = { walk: await load('walk') };
   }
   const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
   if (simulation) {

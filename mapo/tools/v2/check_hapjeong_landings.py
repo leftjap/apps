@@ -12,8 +12,8 @@ def verify():
     assert 'landings' in graph, 'the walk asset has no full-width crossing approaches'
     pavement = faces(floor['floor']['walk'])
     cross = {r['id']: faces(r['faces']) for r in floor['crossingAudit']}
-    lanes = [(LineString(r['points']), 1.245 if r['kind'] == '4' else 1.02)
-             for r in cars['links'] if not r['duplicateOf']]
+    lanes = [(LineString(r['points']), 1.245 if r['kind'] == '4' else 1.0)
+             for r in cars['links']]
     assert set(graph['landings']) == set(cross)
     assert 'crossAreas' not in graph
     for key, ends in graph['landings'].items():

@@ -1,11 +1,12 @@
 """Measure the shared Hapjeong replay on the actual survey polygons at 30 Hz."""
-from collections import Counter
+from collections import Counter, defaultdict
 import json
 import math
 import sys
+from statistics import median
 
 import numpy as np
-from shapely import intersects_xy, prepare
+from shapely import intersects_xy, prepare, union_all
 from shapely.geometry import LineString
 from shapely.prepared import prep
 
@@ -19,16 +20,37 @@ def audit(captured):
     data, floor = read('cars'), read('a')['floor']
     pavement = faces(floor['walk']).buffer(1e-7)
     shapes = [faces(r['faces']).buffer(1e-7) for r in data['crosswalks']]
-    allowed = [pavement.union(face) for face in shapes]
+    walk = read('walk')
+    pads = [faces([part for end in walk['landings'][row['id']] for part in end['faces']]).buffer(1e-7)
+            for row in data['crosswalks']]
+    allowed = union_all([pavement, *shapes, *pads])
+    prepare(allowed)
+    physical_pads = [prep(pad) for pad in pads]
+    # Same framing as the 80m production review cameras.
+    views = meta['views']
+    tilt, bearing = map(math.radians, (28, -42))
+    sin, cos = math.sin, math.cos
+    distance = 80 / (2 * (4/3) * math.tan(math.radians(17)))
+    def in_view(p, view):
+        x, z = p[1] - view['at'][0], p[2] - view['at'][1]
+        right = x*cos(bearing)-z*sin(bearing)
+        depth = -x*sin(bearing)-z*cos(bearing)
+        half = (distance+depth*sin(tilt))*math.tan(math.radians(17))
+        return abs(right) <= half*(4/3) and abs(depth*cos(tilt)) <= half
+    views_count = {v['id']: [] for v in views}
+    completed = Counter()
+    completed_by_person = Counter()
+    trip_positions, arrived, departures = {}, {}, {}
+    touches_pad = defaultdict(list)
+    pad_active = set()
+    pad_samples = 0
     physical = [prep(face) for face in shapes]
-    prepare(pavement)
-    for area in allowed:
-        prepare(area)
     ids = [row['id'][-4:] for row in data['crosswalks']]
     signed = [row['sig'] for row in data['crosswalks']]
     nearest = {ids[i]: min(face.distance(LineString(row['points'])) for row in data['links'])
                for i, face in enumerate(shapes)}
-    stats, entries, completions, active_in = Counter(), Counter(), Counter(), Counter()
+    stats = Counter(engine_invalid_samples=0)
+    entries, completions, active_in = Counter(), Counter(), Counter()
     occupied_approaches = set()
     contacts, green_wait, stuck, red_start = [], {}, {}, []
     stop_for_car, stop_for_person = {}, {}
@@ -48,17 +70,30 @@ def audit(captured):
 
     for line in frames:
         t, cars, people, busy = json.loads(line)
-        if not people:
+        if people is None:
             continue
         c_by_id = {r[0]: r for r in cars}
         min_pop, max_pop = min(min_pop, len(people)), max(max_pop, len(people))
         stats['samples'] += 1
-        p_now, actual, overlap = {}, set(), set()
+        p_now, actual, overlap, at_pad = {}, set(), set(), set()
+        for v in views:
+            views_count[v['id']].append(sum(in_view(p, v) for p in people))
         p_x = np.array([p[1] for p in people])
         p_z = np.array([p[2] for p in people])
-        on_walk = intersects_xy(pavement, p_x, p_z)
+        on_walk = intersects_xy(allowed, p_x, p_z)
         frame_off = 0
-        for i, (uid, x, z, state, idx, light, valid, waiting_car, moves) in enumerate(people):
+        for i, (uid, x, z, state, idx, light, valid, waiting_car, moves, trip) in enumerate(people):
+            if trip:
+                oldloc = trip_positions.get(uid)
+                if not oldloc:
+                    departures[uid] = [round(trip['tod']-50400, 3), trip['from'], trip['to'], x, z]
+                length = oldloc[2]+math.hypot(x-oldloc[0], z-oldloc[1]) if oldloc else 0
+                trip_positions[uid] = x, z, length
+                if state == 'leave' and uid not in arrived:
+                    arrived[uid] = [round(t,3), trip['from'], trip['to'], round(length,2), x, z]
+            for j, pad in enumerate(pads):
+                if intersects_xy(pad, x, z):
+                    at_pad.add(j)
             p_now[uid] = (state, idx)
             old, old_idx = previous.get(uid, ('', -1))
             label = ids[idx] if idx >= 0 else None
@@ -66,7 +101,7 @@ def audit(captured):
                 red_wait.add((uid, idx))
             if not valid:
                 stats['engine_invalid_samples'] += 1
-            if not on_walk[i] and (state != 'cross' or idx < 0 or not intersects_xy(allowed[idx], x, z)):
+            if not on_walk[i]:
                 frame_off += 1
             if state == 'cross':
                 if idx >= 0 and intersects_xy(shapes[idx], x, z):
@@ -81,6 +116,8 @@ def audit(captured):
                         signal_examples.setdefault(label, []).append([round(t, 2), uid, x, z])
                     red_wait.discard((uid, idx))
             if old == 'cross' and (state != 'cross' or idx != old_idx) and (uid, old_idx) in entered_face:
+                completed[ids[old_idx]] += 1
+                completed_by_person[uid, ids[old_idx]] += 1
                 if t < meta['cycle']:
                     completions[ids[old_idx]] += 1
                 entered_face.remove((uid, old_idx))
@@ -108,6 +145,7 @@ def audit(captured):
         stats['off_floor_frames'] += bool(frame_off)
         stats['off_floor_samples'] += frame_off
         active = [i for i in actual if not signed[i]]
+        this_pad = set()
         for row in cars:
             uid, x, z, yaw, kind, length, half_width, edge, at, speed, why = row[:11]
             if edge in approach:
@@ -127,9 +165,16 @@ def audit(captured):
                 last = car_previous[uid]
                 if last[7] in approach and last[7] != edge and t < meta['cycle']:
                     active_in[approach[last[7]]] += 1
-            if not active:
+            if not active and not at_pad:
                 continue
             shape = body(x, z, yaw, length, half_width)
+            for idx in at_pad:
+                if physical_pads[idx].intersects(shape):
+                    key = (uid, ids[idx])
+                    this_pad.add(key)
+                    if key not in pad_active:
+                        touches_pad[ids[idx]].append([round(t, 3), uid, why, speed])
+
             for idx in active:
                 if physical[idx].intersects(shape) and speed >= .1:
                     pass_during_crossing.add((uid, ids[idx]))
@@ -148,8 +193,23 @@ def audit(captured):
                 del green_since[key]
         previous, car_previous = p_now, c_by_id
         old_contacts = overlap
+        pad_active = this_pad
+        pad_samples += len(this_pad)
 
-    return {**stats, 'people': [min_pop, max_pop], 'contact': contacts, 'red_entries': red_start,
+    assert stats['samples'] == round(meta['duration'] * 30) + 1, 'incomplete replay'
+    full_trips = [entry[3] for uid, entry in arrived.items() if departures[uid][0] >= 0]
+    return {**stats, 'trip_departures':departures, 'trip_arrivals':arrived,
+            'trips_started_in_run':sum(entry[0] >= 0 for entry in departures.values()),
+            'trips_completed_in_run':len(arrived),
+            'trips_disappeared_in_run':len(arrived.keys() - p_now.keys()),
+            'trip_distance_median':median(full_trips) if full_trips else None,
+            'n_complete_distance_samples':len(full_trips),
+            'per_view':{key:[min(n),max(n)] for key,n in views_count.items()},
+            'landings_passage_episodes':touches_pad, 'landings_passage_samples':pad_samples,
+            'crossings_completed_in_run':completed,
+            'repeat_over_three':sorted({uid for (uid,_), n in completed_by_person.items() if n>3}),
+            'repeat': [[uid,c,n] for (uid,c),n in completed_by_person.items() if n>1],
+            'people': [min_pop, max_pop], 'contact': contacts, 'red_entries': red_start,
             'stuck': stuck, 'green_wait': green_wait, 'longest_wait_for_car': stop_for_car,
             'longest_wait_for_person': stop_for_person, 'passing_with_person': sorted(pass_during_crossing),
             'crossing_starts': entries, 'crossing_completions': completions, 'nearest_a2': nearest,
@@ -158,9 +218,14 @@ def audit(captured):
 
 
 if __name__ == '__main__':
-    captured = trace(with_people=True)
+    captured = open(sys.argv[sys.argv.index('--trace')+1]).read().splitlines() if '--trace' in sys.argv else trace(with_people=True)
     result = {'people': audit(captured), 'cars': audit_cars(False, True, captured)}
     print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
     if '--verify' in sys.argv:
         assert not result['people']['contact'] and not result['people']['red_entries']
-        assert not result['people']['off_floor_frames'], 'pedestrian outside paved face'
+        assert not result['people'].get('off_floor_frames'), 'pedestrian outside paved face'
+        assert not result['people']['landings_passage_episodes'], 'vehicle on a landing while occupied'
+        assert not result['people']['repeat'], 'person crossed the same stripe twice'
+        assert not result['people']['engine_invalid_samples'], 'engine rejected current walker position'
+        assert not result['people']['stuck'] and not result['people']['green_wait'], 'pedestrian stalled'
+        assert not result['people']['passing_with_person'] and not result['cars']['red']

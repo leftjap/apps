@@ -128,12 +128,14 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   // Keep the entire body inside the drawn map at source and sink boundaries.
   const graph = hapjeongCarGraph(data, selected, entries, 8, buses);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
-  const duration = CYCLE + 22;
+  // Keep the second walk phase available for trips that reach a refuge
+  // too late to finish both faces during their first green.
+  const duration = CYCLE + (pedestrians ? 60 : 22);
   const dt = 1 / 30;
   const start = { tod: 14 * 3600, dow: 6, doy: 175 };
   const seed = 11, max = 256;
   const clock = (seconds: number) => ({ ...start, tod: start.tod + seconds });
-  const crossings = pedestrians && hapjeongCrossings(pedestrians.walk, data.crosswalks, graph.inter.S);
+  const crossings = pedestrians && hapjeongCrossings(pedestrians.walk, data.crosswalks, graph.inter.S, data.walkSignalGroups);
   function reset() {
     const busy = new Uint32Array(graph.crosswalks.length);
     const sim = makeCars(graph.edges, makeSimProvider(), seed, max, graph.buses, graph.inter,
@@ -151,7 +153,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       sim.put(e.id, at, 0);
       if (move === STRAIGHT && at >= 14) sim.put(e.id, at - 12, 0);
     }
-    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, [site.x, site.z]);
+    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy);
     if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
     }
@@ -160,7 +162,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       for (let i = -12 / dt; i < 0; i++) {
         const now = clock(i * dt);
         if (carsEnabled) sim.step(dt, now, ambient);
-        people.step(dt, now, true);
+        people.advance(dt, now);
       }
     }
     return { sim, people, busy };
@@ -174,7 +176,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       frame++;
       const now = clock(frame * dt);
       if (carsEnabled) state.sim.step(dt, now, ambient);
-      state.people?.step(dt, now, true);
+      state.people?.advance(dt, now);
     }
     return state.sim;
   }

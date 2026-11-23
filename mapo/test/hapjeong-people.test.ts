@@ -4,7 +4,7 @@ import { carPlayback } from '../src/aerial/hapjeong-car-playback.ts';
 import { hapjeongCrossings } from '../src/aerial/hapjeong-people.ts';
 
 const read = (name: string) => JSON.parse(readFileSync(new URL(`../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url), 'utf8'));
-const asset = read('cars'), walk = read('walk'), rehearsal = read('pedestrians');
+const asset = read('cars'), walk = read('walk');
 
 it('uses the same signal indices for the walk graph and the running cars', () => {
   const run = carPlayback(asset);
@@ -21,7 +21,7 @@ it('uses the same signal indices for the walk graph and the running cars', () =>
 });
 
 it('replays the same car and pedestrian state after seeking back with shared crossing occupancy', () => {
-  const run = carPlayback(asset, true, { walk, rehearsal });
+  const run = carPlayback(asset, true, { walk });
   const snapshot = (t: number) => {
     const cars = run.at(t).cars, people = run.people()!.w;
     return [cars.n, ...cars.x.slice(0, cars.n), people.n, ...people.x.slice(0, people.n), ...run.busy()];
@@ -51,4 +51,23 @@ it('defines a single surveyed phase for each divided crossing, including both fa
     expect(site.steps.some(step => step.walk.has(a))).toBe(true);
     for (const step of site.steps) expect(step.walk.has(a)).toBe(step.walk.has(b));
   }
+});
+
+it('walks from one exit to the requested farther exit past a nearer one', async () => {
+  const { makePeople } = await import('../src/sim/people/index.ts');
+  const { decodeWalk } = await import('../src/sim/walknet.ts');
+  const { makeSimProvider } = await import('../src/sim/provider.ts');
+  const graph = decodeWalk({ v: 3, n: [0,0,100,0,100,0,100,0], r: [15,15,15,15],
+    e: [0,1,4,-15,15,1,1,4,-15,15,1,1,4,-15,15], x: [] });
+  const portals = [1,6,28].map((x,i) => ({ kind:'exit' as const, key:String(i), x, z:0 }));
+  const people = makePeople(graph, portals, makeSimProvider(), 5, 10);
+  expect(people.trip(0, 0)).toBe(-1);
+  expect(people.trip(0, 2)).toBeGreaterThanOrEqual(0);
+  let last = 0;
+  for (let i = 0; i < 400 && people.w.n; i++) {
+    last = people.w.x[0];
+    people.step(.1, { tod:50400+i/10, dow:6, doy:175 }, false);
+  }
+  expect(people.w.n).toBe(0);
+  expect(last).toBeGreaterThan(27);
 });
