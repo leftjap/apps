@@ -751,6 +751,26 @@ export function makeCars(
     return best;
   }
   /** 차 i 를 (구간 eid, 거리 sv, 차로 ln) 자리에 두면 다른 차 몸통이나 사람 몸과 새로 겹치는가(이미 겹친 차·사람과는 더 다가가지 않으면 괜찮다) */
+  function surveyedLeadGap(i: number, j: number, reach: number): number {
+    let e = edges[edge[i]];
+    let at = s[i];
+    const ahead = [0, 0, 0, 0, 0];
+    let next = nextE[i];
+    for (let d = 0; d <= reach; d += .5, at += .5) {
+      if (at > e.len) {
+        if (next < 0) break;
+        at -= e.len;
+        e = edges[next];
+        next = laterEdge(i, e);
+      }
+      pose(i, e.id, at, 0, ahead);
+      if (hit(ahead[0], ahead[2], ahead[3], size[i] / 2, wid[i] + .12,
+              cars.x[j], cars.z[j], cars.yaw[j], size[j] / 2, wid[j])) return d;
+    }
+    return Infinity;
+  }
+
+  /** 차 i 를 (구간 eid, 거리 sv, 차로 ln) 자리에 두면 다른 차 몸통이나 사람 몸과 새로 겹치는가 */
   function blockedAt(i: number, eid: number, sv: number, ln: number): boolean {
     pose(i, eid, sv, ln, PC);
     if (holdYaw[i]) PC[3] = cars.yaw[i];
@@ -1760,7 +1780,7 @@ export function makeCars(
       else if (nextE[i] >= 0) {
         // 같은 차로에서 막 빠져나간 앞차: 꽁무니가 상자를 벗어날 때까지 따라간다
         const lt = leaveTail[e.id * 8 + lane[i]];
-        if (lt >= 0) {
+        if (lt >= 0 && (!X.surveyed || edge[lt] === nextE[i] || surveyedLeadGap(i, lt, size[i] + 4) < Infinity)) {
           front = lt;
           why = 2;
           gap = e.len - s[i] + s[lt];
@@ -1841,7 +1861,7 @@ export function makeCars(
               const sind = Math.abs(hx * jz - hz * jx);
               if (Math.abs(dz * hx - dx * hz) > wid[i] + wid[j] + sind * (size[j] / 2) + 0.2) continue;
               if (-(dx * jx + dz * jz) > 0 && Math.abs(dx * jz - dz * jx) < wid[i] + wid[j] + sind * (size[i] / 2) + 0.2 && (rankOf(e) < rankOf(edges[edge[j]]) || (rankOf(e) === rankOf(edges[edge[j]]) && cars.uid[i] < cars.uid[j]))) continue;
-              const g2 = along - (size[i] + size[j]) / 2;
+              const g2 = X.surveyed ? surveyedLeadGap(i, j, reach) : along - (size[i] + size[j]) / 2;
               if (g2 < gap) {
                 gap = g2;
                 dv = v[i] - v[j] * cosd;
