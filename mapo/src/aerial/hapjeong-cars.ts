@@ -6,7 +6,7 @@ import { pointAt } from '../poly.ts';
 import { GREEN, LEFT, RED, RIGHT, STRAIGHT, YELLOW } from '../sim/intersection/index.ts';
 import type { HapjeongCars } from './hapjeong-car-graph.ts';
 import { carPlayback, type HapjeongDemand } from './hapjeong-car-playback.ts';
-import { HAPJEONG_PEOPLE_MAX, type HapjeongPeopleInput } from './hapjeong-people.ts';
+import type { HapjeongPeopleInput } from './hapjeong-people.ts';
 
 const colors = [0x56eb8b, 0xffcb56, 0xff5656];
 const names = ['초록', '노랑', '빨강'];
@@ -18,7 +18,8 @@ export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.Persp
   const run = carPlayback(data, !seeded, people, carsEnabled, demand);
   const { edges, inter: { X, S } } = run.graph;
   const mesh = carsEnabled ? makeCarMeshes(run.max) : undefined;
-  const walkers = people ? makeWalkerMesh(HAPJEONG_PEOPLE_MAX) : undefined;
+  const capacity = run.people()?.w.x.length;
+  const walkers = capacity ? makeWalkerMesh(capacity) : undefined;
   const shade = document.createElement('div');
   const bulb = new THREE.SphereGeometry(.75, 12, 8);
   const lamps = [...S.approach].filter(([id, a]) => X.exits.get(id)?.length && a.moves).map(([id, a]) => {
@@ -33,13 +34,16 @@ export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.Persp
   });
   if (mesh) model.add(mesh.group);
   if (walkers) model.add(walkers.mesh, walkers.flash);
-  const walkBulb = new THREE.SphereGeometry(.24, 8, 6);
+  const walkBulb = new THREE.OctahedronGeometry(.47);
+  const walkOutline = new THREE.EdgesGeometry(walkBulb);
+  const white = new THREE.LineBasicMaterial({color:0xf3f9ff});
   const walkLamps = (run.crossings?.graph.links ?? []).flatMap(link => {
     if (!data.crosswalks[link.xw].sig) return [];
     const material = new THREE.MeshBasicMaterial();
     for (const [x, z] of [[link.pax, link.paz], [link.pbx, link.pbz]]) {
       const lamp = new THREE.Mesh(walkBulb, material);
       lamp.position.set(x, 1.6, z);
+      lamp.add(new THREE.LineSegments(walkOutline,white));
       model.add(lamp);
     }
     return [{ xw: link.xw, material }];
@@ -56,7 +60,8 @@ export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.Persp
   controls.hidden = false;
   seek.step = 'any';
   seek.max = String(run.duration);
-  explanation.textContent = people && carsEnabled ? '차와 사람 · 같은 시간과 모의 신호'
+  explanation.textContent = people?.signalTest ? '복합 신호 시험 · 차량 원형, 보행 흰 테두리 마름모'
+    : people && carsEnabled ? '차와 사람 · 같은 시간과 모의 신호'
     : carsEnabled ? '승용차와 버스 · 합정 중앙 모의 신호' : '보행 · 합정 중앙 모의 신호';
 
   let t = Math.max(0, Math.min(run.duration, Number(query.get('at')) || 0));
@@ -82,14 +87,19 @@ export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.Persp
     }
     for (const lamp of walkLamps) lamp.material.color.setHex(colors[S.walkState(lamp.xw, now.tod)]);
     const byGroup = [RED, RED] as number[];
+    const green = new Set<string>();
     for (const { a, light, movement } of lamps) {
       const state = S.moveState(a, movement, now.tod);
       light.material.color.setHex(colors[state]);
       byGroup[a.group] = Math.min(byGroup[a.group], state);
+      if (state===GREEN) green.add(`${a.group ? '교차축' : '양화로'} ${movement===LEFT?'좌회전':movement===RIGHT?'우회전':'직진'}`);
     }
     seek.value = String(t);
     status.value = `${t.toFixed(1)}초 · 차량 ${state.cars.n}대 · 신호 0 ${names[byGroup[0]]} / 신호 1 ${names[byGroup[1]]}`;
     status.dataset.cars = String(state.cars.n);
+    status.dataset.vehicleGreen = [...green].sort().join(' · ') || '없음';
+    status.dataset.walkGreen = [...new Set(walkLamps.filter(l=>S.walkState(l.xw,now.tod)===GREEN)
+      .map(l=>data.crosswalks[l.xw].id.slice(-4)))].sort().join(' · ') || '없음';
     render();
   }
   function pause() {

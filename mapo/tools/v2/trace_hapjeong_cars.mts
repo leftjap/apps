@@ -8,7 +8,8 @@ import type { HapjeongPeopleInput } from '../../src/aerial/hapjeong-people.ts';
 
 const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url), 'utf8'));
 const data: HapjeongCars = read('cars');
-const people: HapjeongPeopleInput | undefined = process.argv.includes('--people') ? { walk: read('walk') } : undefined;
+const signalTest = process.argv.includes('--signal-test');
+const people: HapjeongPeopleInput | undefined = signalTest || process.argv.includes('--people') ? { walk: read('walk'), signalTest } : undefined;
 const run = carPlayback(data, !process.argv.includes('--seeded'), people, true,
   process.argv.includes('--unscaled') ? undefined : read('demand'));
 const { inter: { X, S }, edges, links } = run.graph;
@@ -29,6 +30,7 @@ console.log(JSON.stringify({
   views: carViews,
   gates:Object.fromEntries(approach.map(a=>[a.edge,edges[a.edge].len-X.gate(a.edge,0)])),
   portalAudit: run.people()?.portalAudit,
+  crossingTrial: run.people()?.crossingTrial?.courses,
   removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
     green: site.steps.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
@@ -65,7 +67,8 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
       const { tx, tz } = walk.debugOf(i);
       byCar = Math.hypot(w.x[i] - tx, w.z[i] - tz) <= .05;
     }
-    return [w.id[i], w.x[i], w.z[i], state, xw, sig ? S.walkState(xw, tod) : -1, walk.validAt(i), byCar, w.moving[i], walk.journeys.get(w.id[i])];
+    return [w.id[i], w.x[i], w.z[i], state, xw, sig ? S.walkState(xw, tod) : -1, walk.validAt(i), byCar, w.moving[i], walk.journeys.get(w.id[i]),
+      walk.crossingTrial?.active.get(w.id[i])];
   }) : undefined;
   console.log(JSON.stringify([t, rows, pedestrians, people ? Array.from(run.busy()) : undefined]));
 }

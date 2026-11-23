@@ -82,7 +82,8 @@ def audit(captured):
         p_z = np.array([p[2] for p in people])
         on_walk = intersects_xy(allowed, p_x, p_z)
         frame_off = 0
-        for i, (uid, x, z, state, idx, light, valid, waiting_car, moves, trip) in enumerate(people):
+        for i, row in enumerate(people):
+            uid, x, z, state, idx, light, valid, waiting_car, moves, trip = row[:10]
             if trip:
                 oldloc = trip_positions.get(uid)
                 if not oldloc:

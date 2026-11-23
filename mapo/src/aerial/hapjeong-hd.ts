@@ -135,7 +135,7 @@ async function init() {
     return response.json();
   };
   if (peopleMode) {
-    people = { walk: await load('walk') };
+    people = { walk: await load('walk'), signalTest: query.get('signaltest') === '1' };
   }
   const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
   const demand = simulation ? await load('demand') as import('./hapjeong-car-playback.ts').HapjeongDemand : undefined;

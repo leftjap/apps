@@ -157,7 +157,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       sim.put(e.id, at, 0);
       if (move === STRAIGHT && at >= 14) sim.put(e.id, at - 12, 0);
     }
-    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy);
+    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod);
     if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
     }

@@ -71,3 +71,20 @@ it('walks from one exit to the requested farther exit past a nearer one', async 
   expect(people.w.n).toBe(0);
   expect(last).toBeGreaterThan(27);
 });
+
+it('runs an opt-in crossing trial with identified trips from both sides of every linked crossing', () => {
+  const run = carPlayback(asset, true, { walk, signalTest:true }, true, read('demand'));
+  const first = run.people()!;
+  const descriptions = first.crossingTrial!;
+  expect(descriptions.courses.flatMap(course=>course.crossings).sort((a,b)=>a-b)).toEqual(
+    run.crossings!.graph.links.map(link=>link.xw).sort((a,b)=>a-b));
+  run.at(120);
+  for (const [course] of descriptions.courses.entries()) {
+    const cohort = [...descriptions.walkers.values()].filter(w=>w.course===course&&w.wave===0);
+    expect(new Set(cohort.map(w=>w.side))).toEqual(new Set([0,1]));
+  }
+  const initial = (run.at(1), [...run.people()!.crossingTrial!.walkers]);
+  run.at(120);
+  expect((run.at(1), [...run.people()!.crossingTrial!.walkers])).toEqual(initial);
+  expect(carPlayback(asset,true,{walk}).people()!.crossingTrial).toBeUndefined();
+});
