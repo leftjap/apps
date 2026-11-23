@@ -43,7 +43,24 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const visible = carVisibility();
   const full = hapjeongCarGraph(data);
   const central = new Set(data.central);
-  const bus = new Set(data.bus);
+  const terminalKey = (i: number) => data.links[i].points.at(-1)!.join(',');
+  const buses = [data.bus];
+  function busOutlet(chain: number[]): number[] | undefined {
+    const last = chain.at(-1)!;
+    const next = full.edges[last].next;
+    if (!next.length) return chain.some(i => central.has(i)) && !visible(...data.links[last].points.at(-1)!) ? chain : undefined;
+    for (const id of next) {
+      if (chain.includes(id)) continue;
+      const route = busOutlet([...chain, id]);
+      if (route) return route;
+    }
+  }
+  for (const [i, row] of data.links.entries()) {
+    if (row.kind !== '4' || i === data.bus[0] || !row.next.some(id => central.has(id)) || visible(...row.points[0])) continue;
+    const route = busOutlet([i]);
+    if (route) buses.push(route);
+  }
+  const bus = new Set(buses.flat());
   const sideTurn = new Set(full.edges.filter(e =>
     data.links[e.id].kind === '6' && delta(headingNear(e, 0), headingNear(e, e.len)) > Math.PI / 3,
   ).map(e => e.id));
@@ -76,14 +93,25 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
 
   // Keep every complete route unless it would duplicate a physical lane
   // already present in the best available survey route.
-  candidates.sort((a, b) => a.duplicates - b.duplicates ||
+  candidates.sort((a, b) => Number(a.ingress < 0) - Number(b.ingress < 0) || a.duplicates - b.duplicates ||
     full.edges[b.chain[0]].len - full.edges[a.chain[0]].len);
   const chosen: typeof candidates = [];
-  const selected = new Set(data.bus);
+  const selected = new Set(bus);
+  const terminals = new Map(buses.map(chain => [terminalKey(chain.at(-1)!), chain.at(-1)!]));
+  const overlappingTerminals = new Set<string>();
   for (const route of candidates) {
     if (route.chain.some(i => [...selected].some(j =>
       data.links[i].duplicateOf === data.links[j].id || data.links[j].duplicateOf === data.links[i].id))) continue;
+    const end = route.chain.at(-1)!;
+    const old = terminals.get(terminalKey(end));
+    // Two polylines meeting at a sink need a verified common outlet to yield
+    // through a merge. Keep the through route if the peripheral route ends at the same sink.
+    if (route.ingress < 0 && old !== undefined && old !== end) {
+      overlappingTerminals.add(data.links[end].id);
+      continue;
+    }
     chosen.push(route);
+    terminals.set(terminalKey(end), end);
     for (const i of route.chain) selected.add(i);
   }
   const destinations = new Set([...selected].flatMap(i => full.edges[i].next.filter(j => selected.has(j))));
@@ -98,7 +126,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     return { id: link.id, reason };
   });
   // Keep the entire body inside the drawn map at source and sink boundaries.
-  const graph = hapjeongCarGraph(data, selected, entries, 8);
+  const graph = hapjeongCarGraph(data, selected, entries, 8, buses);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   const duration = CYCLE + 22;
   const dt = 1 / 30;
@@ -108,7 +136,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const crossings = pedestrians && hapjeongCrossings(pedestrians.walk, data.crosswalks, graph.inter.S);
   function reset() {
     const busy = new Uint32Array(graph.crosswalks.length);
-    const sim = makeCars(graph.edges, makeSimProvider(), seed, max, [graph.bus], graph.inter,
+    const sim = makeCars(graph.edges, makeSimProvider(), seed, max, graph.buses, graph.inter,
       { list: graph.crosswalks, busy });
     const site = graph.inter.S.list.find(site => site.j >= 0);
     if (!site) throw Error('합정 차량 신호를 연결하지 못했습니다.');
@@ -124,7 +152,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       if (move === STRAIGHT && at >= 14) sim.put(e.id, at - 12, 0);
     }
     const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, [site.x, site.z]);
-    if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.bus.edges[0]].len - 18, 34))) {
+    if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
     }
     if (people) {
@@ -150,6 +178,6 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     }
     return state.sim;
   }
-  return { at, clock, duration, graph, max, chosen, ingressAudit, crossings,
+  return { at, clock, duration, graph, max, chosen, ingressAudit, overlappingTerminals, crossings,
     people: () => state.people, busy: () => state.busy };
 }

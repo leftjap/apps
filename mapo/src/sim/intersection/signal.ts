@@ -266,7 +266,13 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
       if (ap.moves & STRAIGHT) hasS[ap.group] = true;
       if (ap.left === 1 || ap.uturn === 1) {
         hasL[ap.group] = true;
-        leftLanes[ap.group] = Math.max(leftLanes[ap.group], edges[a].turns.filter((m) => (m & LEFT) !== 0).length || 1);
+        const peers = X.surveyed?.parallel?.get(a);
+        const parallelLeft = peers?.filter(id => {
+          const other = approach.get(id);
+          return other?.c === ap.c && other.group === ap.group && (other.left === 1 || other.uturn === 1);
+        }).length;
+        const lanes = parallelLeft ?? edges[a].turns.filter((m) => (m & LEFT) !== 0).length;
+        leftLanes[ap.group] = Math.max(leftLanes[ap.group], lanes || 1);
       }
     }
     for (const g of [0, 1]) {

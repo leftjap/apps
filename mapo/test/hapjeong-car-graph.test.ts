@@ -11,6 +11,10 @@ it('uses the same surveyed line for each junction path and its conflict samples'
   const { edges, inter: { X, S }, links } = hapjeongCarGraph(data);
   expect(S.list.filter(s => s.j >= 0)).toHaveLength(1);
   expect(S.list[0].steps.reduce((s, step) => s + step.dur, 0)).toBe(CYCLE);
+  // A2 stores parallel left lanes as separate Edges. They still have to
+  // receive the legacy two-lane left phase rather than the one-lane phase.
+  expect(S.list[0].steps.some(step => step.dur >= 13 &&
+    [...step.green.values()].length > 1 && [...step.green.values()].every(m => m === LEFT))).toBe(true);
   const moves = new Set<number>();
   for (const [entry, exits] of X.exits) {
     for (const [k, exit] of exits.entries()) {

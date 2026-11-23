@@ -26,7 +26,8 @@ export type HapjeongCars = {
   crosswalks: { id: string; ends: [XZ, XZ]; width: number; faces: XZ[][][]; sig: boolean; lamps: string[] }[];
 };
 
-export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<number>, entries = new Set<number>(), margin = 0) {
+export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<number>, entries = new Set<number>(), margin = 0,
+                                busChains = [data.bus]) {
   const volume = new Map(data.bundles.flatMap(bundle => bundle.lanes.map(i => [i, bundle.lanes.length] as const)));
   const central = new Set(data.central);
   const ids = data.links.map((_, i) => i).filter(i => !selected || selected.has(i));
@@ -50,7 +51,7 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
       points: [point(head), ...row.points.filter((_, k) => cum[k] > head && cum[k] < end), point(end)],
     };
   });
-  const busSet = new Set(data.bus);
+  const busSet = new Set(busChains.flat());
   const edges: Edge[] = ids.map((source, id) => {
     const link = links[id];
     const p = Float32Array.from(link.points.flatMap(([x, z]) => [x, 0, z]));
@@ -82,18 +83,25 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
   });
   const stopAt = new Map(links.flatMap((link, i) => link.stop ? [[i, link.stop.at] as const] : []));
   const stopLines = Float32Array.from(data.stopLines);
+  const parallel = new Map<number, number[]>();
+  for (const bundle of data.bundles) {
+    const members = bundle.lanes.flatMap(id => index.has(id) ? [index.get(id)!] : []);
+    for (const id of members) parallel.set(id, members);
+  }
   const inter = makeIntersections(edges, { crosswalks, stopLines }, {
     links: new Set(ids.filter(i => central.has(i)).map(i => index.get(i)!)),
-    stopAt,
+    stopAt, parallel,
   });
-  const busEdges = data.bus.map(i => index.get(i)!);
-  let len = 0;
-  const start = busEdges.map(id => {
-    const at = len;
-    len += edges[id].len;
-    return at;
+  const buses: BusRoute[] = busChains.map(chain => {
+    const busEdges = chain.map(i => index.get(i)!);
+    let len = 0;
+    const start = busEdges.map(id => {
+      const at = len;
+      len += edges[id].len;
+      return at;
+    });
+    return { ref: '합정', to: '', kind: 0, edges: busEdges, start, len,
+      stops: [], stopNames: [], shift: [], med: [], usesMed: false };
   });
-  const bus: BusRoute = { ref: '합정', to: '', kind: 0, edges: busEdges, start, len,
-    stops: [], stopNames: [], shift: [], med: [], usesMed: false };
-  return { edges, inter, bus, links, crosswalks, stopLines };
+  return { edges, inter, buses, links, crosswalks, stopLines };
 }

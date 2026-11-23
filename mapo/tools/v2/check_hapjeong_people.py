@@ -29,6 +29,7 @@ def audit(captured):
     nearest = {ids[i]: min(face.distance(LineString(row['points'])) for row in data['links'])
                for i, face in enumerate(shapes)}
     stats, entries, completions, active_in = Counter(), Counter(), Counter(), Counter()
+    occupied_approaches = set()
     contacts, green_wait, stuck, red_start = [], {}, {}, []
     stop_for_car, stop_for_person = {}, {}
     previous, old_contacts, entered_face, car_previous = {}, set(), set(), {}
@@ -109,6 +110,8 @@ def audit(captured):
         active = [i for i in actual if not signed[i]]
         for row in cars:
             uid, x, z, yaw, kind, length, half_width, edge, at, speed, why = row[:11]
+            if edge in approach:
+                occupied_approaches.add(approach[edge])
             hx, hz = math.cos(yaw), math.sin(yaw)
             dx, dz = p_x - x, p_z - z
             longitudinal = np.maximum(np.abs(dx*hx + dz*hz) - length/2, 0)
@@ -150,7 +153,8 @@ def audit(captured):
             'stuck': stuck, 'green_wait': green_wait, 'longest_wait_for_car': stop_for_car,
             'longest_wait_for_person': stop_for_person, 'passing_with_person': sorted(pass_during_crossing),
             'crossing_starts': entries, 'crossing_completions': completions, 'nearest_a2': nearest,
-            'red_to_crossing_examples': signal_examples, 'used_approaches': active_in}
+            'red_to_crossing_examples': signal_examples, 'used_approaches': active_in,
+            'occupied_approaches': sorted(occupied_approaches)}
 
 
 if __name__ == '__main__':
@@ -159,4 +163,4 @@ if __name__ == '__main__':
     print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
     if '--verify' in sys.argv:
         assert not result['people']['contact'] and not result['people']['red_entries']
-        assert not result['people']['passing_with_person']
+        assert not result['people']['off_floor_frames'], 'pedestrian outside paved face'

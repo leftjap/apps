@@ -125,6 +125,8 @@ export interface SurveyedIntersection {
   links: ReadonlySet<number>;
   /** Distance along each approach to the surveyed stop line. */
   stopAt: ReadonlyMap<number, number>;
+  /** Parallel lanes from one bundle, represented here as separate A2 Edges. */
+  parallel?: ReadonlyMap<number, readonly number[]>;
 }
 
 export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], stopLines: ArrayLike<number> = [], surveyed?: SurveyedIntersection): Intersections {

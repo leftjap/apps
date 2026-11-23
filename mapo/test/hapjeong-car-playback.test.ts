@@ -41,4 +41,20 @@ it('includes parallel central approaches with a complete offscreen route', () =>
   const { graph } = carPlayback(asset);
   const approaches = [...graph.inter.X.exits.values()].filter(exits => exits.length > 0);
   expect(approaches.length).toBeGreaterThan(8);
+  expect(graph.buses).toHaveLength(2);
+  expect(graph.buses.every(bus => bus.edges.every((id, i) => !i || graph.edges[bus.edges[i-1]].next.includes(id)))).toBe(true);
+});
+
+it('feeds the surveyed slip lane at the southeast crossing as well as the through lanes', () => {
+  const run = carPlayback(asset);
+  const i = asset.crosswalks.findIndex((c: { id: string }) => c.id.endsWith('0040'));
+  const lanes = new Set(run.graph.edges.filter(e =>
+    run.graph.inter.X.stops.xwOf(e.id, 0).some((value, k) => k % 4 === 2 && value === i),
+  ).map(e => e.id));
+  let used = false;
+  for (let t = 0; t <= run.duration; t += .5) {
+    const cars = run.at(t);
+    used ||= cars.debug().edge.subarray(0, cars.cars.n).some(id => lanes.has(id));
+  }
+  expect(used).toBe(true);
 });

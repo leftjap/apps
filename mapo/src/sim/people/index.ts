@@ -809,9 +809,18 @@ export function makePeople(
       if (d && (inHe(d.he, x, z) || inHe(hes[d.he].rev, x, z))) return true;
     }
     if (area && area.at(x, z)) return true;
-    if (inHe(he[i], x, z)) return true;
-    if (nk[i] >= 0 && inHe(nk[i], x, z)) return true;
-    if (prv[i] >= 0 && inHe(prv[i], x, z)) return true;
+    const canUse = (h: number) => {
+      const e = hes[h];
+      // The clipped band is road surface too. Only a crossing walker may
+      // use it, even if a walking or waiting route still references the edge.
+      if (o.crossingContains && e.x >= 0 && (m !== CROSS || h !== he[i])) {
+        return inNode(e.a, x, z) || inNode(e.b, x, z);
+      }
+      return inHe(h, x, z);
+    };
+    if (canUse(he[i])) return true;
+    if (nk[i] >= 0 && canUse(nk[i])) return true;
+    if (prv[i] >= 0 && canUse(prv[i])) return true;
     // 갈래 영역 안 선 띠(영역 안이거나, 지금 선이 영역에서 나오거나 영역으로 든다: 영역을 가로질러 선 자리가 그 띠 안일 수 있다)
     const r0 = jr[i];
     const r1 = J.of[hes[he[i]].a];
@@ -1848,12 +1857,25 @@ export function makePeople(
     // CROSS
     const k = xLeg[i];
     if (k === 0) {
-      // From a setback wait box, enter through the connected landing
-      // before aiming across. A direct diagonal can hit a concave corner.
-      const [x, z] = c.pts;
-      const moving = walkTo(i, x, z, xSpd[i], dt, x, z);
+      const [x, z, bx, bz] = c.pts;
+      const px = w.x[i], pz = w.z[i];
+      // A lateral wait spot can already have a clear line to the mouth.
+      // Avoid walking backwards to a single point in the waiting crowd.
+      if (Math.hypot(x - px, z - pz) < .44 || pathOk(i, px, pz, bx, bz)) {
+        xLeg[i] = 1;
+        return;
+      }
+      let gx = x, gz = z;
+      for (const progress of [.75, .5, .25]) {
+        const a = x + (bx - x) * progress, b = z + (bz - z) * progress;
+        if (pathOk(i, px, pz, a, b)) {
+          gx = a;
+          gz = b;
+          break;
+        }
+      }
+      const moving = walkTo(i, gx, gz, xSpd[i], dt, gx, gz);
       w.moving[i] = moving > 0 ? 1 : 0;
-      if (Math.hypot(x - w.x[i], z - w.z[i]) < .44) xLeg[i] = 1;
       return;
     }
     const ax = c.pts[k * 2 - 2];

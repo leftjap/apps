@@ -338,6 +338,10 @@ export function makeCars(
     }
     if (jp[i] >= 0 && jk[i] >= 0) nextE[i] = PS[jp[i]].edges[jk[i] + 1];
     else if (r >= 0) nextE[i] = rpos[i] + 1 < routes[r].edges.length ? routes[r].edges[rpos[i] + 1] : -1;
+    else if (X.surveyed && e.next.length > 1) {
+      const weights = e.next.map((id, k) => e.nextW[k] * avoid(id));
+      nextE[i] = e.next[pick(weights, rand())];
+    }
     else nextE[i] = e.next.length ? e.next[0] : -1;
     if (nextE[i] >= 0 && jp[i] < 0 && (inner(nextE[i]) || (X.jStart[nextE[i]] >= 0 && X.jStart[nextE[i]] === X.jEnd[e.id]))) {
       // 경로 없이 교차로로 들어가게 된 차(진입로에서 고를 경로가 없었다): 거기서 끝낸다

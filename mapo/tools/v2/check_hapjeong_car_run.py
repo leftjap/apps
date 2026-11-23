@@ -83,7 +83,7 @@ def audit(seeded, with_people=False, captured=None):
             stop = driven[edge]['stop']
             if stop and prev and prev[7] == edge and (uid, edge) not in stopped_at_red:
                 front, last = at + length / 2, prev[8] + length / 2
-                if light == 2 and not prev[13] and last <= stop['at'] < front:
+                if light == 2 and last <= stop['at'] < front:
                     red.append(describe(t, r))
                     stopped_at_red.add((uid, edge))
             # Red/amber and a queue behind one are expected stops. Walk the

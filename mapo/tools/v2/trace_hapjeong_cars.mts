@@ -23,7 +23,9 @@ const approach = [...S.approach].map(([i, row]) => {
 console.log(JSON.stringify({
   links: links.map(r => r.id), entries: edges.filter(e => e.entry).map(e => links[e.id].id),
   approach, cycle: CYCLE, duration: run.duration, offset: site.offset, axis: wraps(site.axis),
-  ingressAudit: run.ingressAudit, removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
+  ingressAudit: run.ingressAudit, overlappingTerminals: [...run.overlappingTerminals],
+  busRoutes: run.graph.buses.map(route => route.edges.map(id => links[id].id)),
+  removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
     green: site.steps.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
     associated: S.crossSite[i] >= 0,
