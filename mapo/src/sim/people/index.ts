@@ -200,8 +200,6 @@ export function makePeople(
     buildings?: { pts: ArrayLike<number>; h: number }[];
     /** 횡단보도 xw 의 보행 신호: 초록불 남은 초(초록불이 아니면 0), 신호가 없으면 −1 */
     walkLeft?: (xw: number, tod: number) => number;
-    /** 횡단 띠를 실제 면과 접속부의 경계에 맞춰 자른다(없는 판은 원래 띠를 쓴다). */
-    crossingContains?: (xw: number, x: number, z: number) => boolean;
     /** 횡단보도마다 지금 사람이 건너는 자리(축 2m 칸 비트): 차가 보고 선다 */
     busy?: Uint32Array;
     /** 신호 없는 횡단보도로 차가 다가오는가 */
@@ -785,7 +783,7 @@ export function makePeople(
     const e = hes[h];
     if (e.x >= 0) {
       const c = crosses[e.x];
-      return polyDist(c.pts, x, z) <= c.hw + 0.02 && (!o.crossingContains || o.crossingContains(c.xw, x, z));
+      return polyDist(c.pts, x, z) <= c.hw + 0.02;
     }
     // 길이 0 인 선(같은 자리 두 노드를 잇는 잇는 선)은 방향이 없어 아래 식이 어디서나 참이 된다: 띠가 없다(노드 원만 쓴다)
     if (e.L < 1e-3) return false;
@@ -809,18 +807,9 @@ export function makePeople(
       if (d && (inHe(d.he, x, z) || inHe(hes[d.he].rev, x, z))) return true;
     }
     if (area && area.at(x, z)) return true;
-    const canUse = (h: number) => {
-      const e = hes[h];
-      // The clipped band is road surface too. Only a crossing walker may
-      // use it, even if a walking or waiting route still references the edge.
-      if (o.crossingContains && e.x >= 0 && (m !== CROSS || h !== he[i])) {
-        return inNode(e.a, x, z) || inNode(e.b, x, z);
-      }
-      return inHe(h, x, z);
-    };
-    if (canUse(he[i])) return true;
-    if (nk[i] >= 0 && canUse(nk[i])) return true;
-    if (prv[i] >= 0 && canUse(prv[i])) return true;
+    if (inHe(he[i], x, z)) return true;
+    if (nk[i] >= 0 && inHe(nk[i], x, z)) return true;
+    if (prv[i] >= 0 && inHe(prv[i], x, z)) return true;
     // 갈래 영역 안 선 띠(영역 안이거나, 지금 선이 영역에서 나오거나 영역으로 든다: 영역을 가로질러 선 자리가 그 띠 안일 수 있다)
     const r0 = jr[i];
     const r1 = J.of[hes[he[i]].a];
@@ -1839,7 +1828,7 @@ export function makePeople(
       if (v > 0 && !carAhead(c, 0)) {
         mode[i] = CROSS;
         xSpd[i] = v;
-        xLeg[i] = o.crossingContains ? 0 : 1;
+        xLeg[i] = 1;
         // 건너는 방향 오른쪽으로 통로 폭 안에서 사람마다 다르게 비켜 건넌다
         xLat[i] = Math.abs(lane[i]) * c.hw * 0.9;
         lastX[i] = c.xw;
@@ -1856,28 +1845,6 @@ export function makePeople(
     }
     // CROSS
     const k = xLeg[i];
-    if (k === 0) {
-      const [x, z, bx, bz] = c.pts;
-      const px = w.x[i], pz = w.z[i];
-      // A lateral wait spot can already have a clear line to the mouth.
-      // Avoid walking backwards to a single point in the waiting crowd.
-      if (Math.hypot(x - px, z - pz) < .44 || pathOk(i, px, pz, bx, bz)) {
-        xLeg[i] = 1;
-        return;
-      }
-      let gx = x, gz = z;
-      for (const progress of [.75, .5, .25]) {
-        const a = x + (bx - x) * progress, b = z + (bz - z) * progress;
-        if (pathOk(i, px, pz, a, b)) {
-          gx = a;
-          gz = b;
-          break;
-        }
-      }
-      const moving = walkTo(i, gx, gz, xSpd[i], dt, gx, gz);
-      w.moving[i] = moving > 0 ? 1 : 0;
-      return;
-    }
     const ax = c.pts[k * 2 - 2];
     const az = c.pts[k * 2 - 1];
     const bx = c.pts[k * 2];
@@ -1887,11 +1854,7 @@ export function makePeople(
     const uz = (bz - az) / L;
     const last = k * 2 + 2 >= c.pts.length;
     // 옆자리는 이 구간 방향 오른쪽. 끝 구간은 건너편 기다리는 자리 쪽으로 좁힌다
-    let lat = last ? xLat[i] * 0.3 : xLat[i];
-    if (o.crossingContains) {
-      // At a narrow approach the far target can be outside the clipped band.
-      while (lat > .02 && !o.crossingContains(c.xw, bx - uz * lat, bz + ux * lat)) lat *= .5;
-    }
+    const lat = last ? xLat[i] * 0.3 : xLat[i];
     const gx = bx - uz * lat;
     const gz = bz + ux * lat;
     markBusy(c, w.x[i], w.z[i]);
@@ -1907,8 +1870,7 @@ export function makePeople(
     const m = walkTo(i, gx, gz, v, dt, bx, bz);
     w.moving[i] = m > 0 ? 1 : 0;
     // 건너편 노드 원·기다리는 자리·승강장 네모 안에 들면 다 건넌 것이다(W28: 붐비는 승강장 끝 한 점에 닿으려다 횡단보도 위를 맴돌았다)
-    const reached = Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.3 || (L - ((w.x[i] - ax) * ux + (w.z[i] - az) * uz) < 0.3 && !last) || (last && inNode(hes[h].b, w.x[i], w.z[i]));
-    if (reached && (!last || !o.crossingContains || area?.at(w.x[i], w.z[i]))) {
+    if (Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.3 || (L - ((w.x[i] - ax) * ux + (w.z[i] - az) * uz) < 0.3 && !last) || (last && inNode(hes[h].b, w.x[i], w.z[i]))) {
       if (last) {
         // 건너편 노드에서 다시 걷는다
         mode[i] = WALK;

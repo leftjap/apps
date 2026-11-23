@@ -9,7 +9,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from hapjeong_hd import ASSET, MAPO, features, parts, paths, project, offset_zebra, rings
-from hapjeong_crossings import expanded_walk, supplement_crossings
+from hapjeong_crossings import expanded_walk, supplement_crossings, walking_landings
 
 OUTPUT = ASSET.with_name('hapjeong-hd-a.json')
 LINE_KINDS = {'501','503','506','504','525','530','505','515'}
@@ -186,6 +186,15 @@ def bake_a(old):
         'crossings':crossings+recovered, 'crossingAudit':crossing_audit, 'bicycles':[], 'links':[],
         'hiddenBuildingOutlines':outline_exclusions(source_buildings, common_road),
     }
+
+
+def pedestrian_landings(floor, cars):
+    # Keep the rendered floor intact. The separate walking asset owns these
+    # extensions and uses the very same measured crossing IDs as the car graph.
+    pavement = surface(floor['floor']['walk'])
+    lanes = [(LineString(row['points']), 1.245 if row['kind'] == '4' else 1.0)
+             for row in cars['links'] if not row['duplicateOf']]
+    return {row['id']: walking_landings(row, pavement, lanes) for row in floor['crossingAudit']}
 
 
 if __name__=='__main__':

@@ -10,13 +10,11 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.prepared import prep
 
 from hapjeong_hd import ASSET, MAPO, ORIGIN, project
-from hapjeong_hd_a import surface
+from hapjeong_hd_a import pedestrian_landings, surface
 
 BODY = .4
 EDGE_PAD = .025
 CELL = .10
-# The original engine uses a minimum .20 m half-width for walking across a crossing.
-CROSS_CLEAR = .23
 
 
 def dm(point):
@@ -111,7 +109,7 @@ def samples(origin, vector, along, lateral):
     return {dm((x + u * ux - v * uz, z + u * uz + v * ux)) for u in along for v in lateral}
 
 
-def crossing_route(row, network):
+def crossing_route(row, network, landings):
     left, right = row['approaches']
     a, b = left['end'], right['end']
     distance = math.dist(a, b)
@@ -125,13 +123,14 @@ def crossing_route(row, network):
     if math.dist(a, caps[0]) > math.dist(a, caps[1]):
         caps.reverse()
     survey_axis = LineString(caps)
-    allowed = network.walk.union(cross)
-    route_area = allowed.buffer(-CROSS_CLEAR)
+    approaches = surface([face for end in landings for face in end['faces']])
+    allowed = network.walk.union(cross).union(approaches).buffer(1e-6)
+    route_area = allowed.buffer(-.221)
     route = prep(route_area)
     # Search outward from the audited caps. Both wait nodes must be on the
     # pavement and have room to wait behind the entrance.
     def waits(approach, direction):
-        base = approach['distance']
+        base = approach['distance'] or 0
         origin = approach['end']
         target = (origin[0] + direction * (base + 1.2) * ux,
                   origin[1] + direction * (base + 1.2) * uz)
@@ -154,8 +153,6 @@ def crossing_route(row, network):
             inner = [dm((p[0]+t*(q[0]-p[0]), p[1]+t*(q[1]-p[1]))) for t in (.25, .75)]
             if route.covers(LineString([p, *inner, q])):
                 candidates.append((p, *inner, q))
-                if len(candidates) == 24:
-                    break
     if not candidates:
         def elbows(origin, direction, starts):
             pts = samples(origin, vector, [direction * d * .35 for d in range(-2, 7)],
@@ -172,11 +169,14 @@ def crossing_route(row, network):
     candidates.extend((p, *inner, q) for _, p, q in direct
                       if route.covers(LineString([p, *inner, q])))
 
+    def clearance(pts):
+        return LineString(pts).distance(allowed.boundary)
+
     def score(pts):
         _, p, q, _ = pts
         line = LineString(pts)
-        return (Point(p).distance(survey_axis) + Point(q).distance(survey_axis)
-                - min(1.2, line.distance(allowed.boundary)), line.length, pts)
+        return (-min(max(.2, width / 20 - .3) + .021, line.distance(allowed.boundary)),
+                Point(p).distance(survey_axis) + Point(q).distance(survey_axis), line.length, pts)
 
     for points in sorted(candidates, key=score):
         start, p, q, end = points
@@ -207,7 +207,11 @@ def crossing_route(row, network):
 
         wait_a, wait_b = wait(start, -1), wait(end, 1)
         if wait_a is not None and wait_b is not None and network.attach(start) and network.attach(end):
-            return (*points, width, wait_a, wait_b)
+            # Preserve the full paved extension. Where the real far kerb or
+            # an angled stripe cannot hold the circular engine band at the
+            # landing, pack the widest continuous verified band.
+            usable = min(width, max(6, math.floor(20 * (clearance(points) + .279))))
+            return (*points, usable, wait_a, wait_b)
     return None
 
 
@@ -245,37 +249,30 @@ def spawn_points(network, floor, views):
     return portals
 
 
-def bake(floor):
+def bake(floor, cars):
     walk = surface(floor['floor']['walk']).buffer(1e-7)
     network = Network(walk)
     network.pavement()
     crossings, ids, excluded = [], [], []
-    cross_areas = []
+    landings = pedestrian_landings(floor, cars)
     for row in floor['crossingAudit']:
-        bad = [end['status'] for end in row['approaches'] if end['status'] != 'joined']
-        result = None if bad else crossing_route(row, network)
+        ends = landings[row['id']]
+        result = crossing_route(row, network, ends) if all(end['connected'] for end in ends) else None
         if result:
             crossings.append(result)
             ids.append(row['id'])
-            # The engine keeps one width for the surveyed stripe. At each
-            # approach and irregular boundary, clip that band to real surface.
-            cross_areas.append([
-                [[round(v, 5) for pt in ring.coords for v in pt]
-                 for ring in [poly.exterior, *poly.interiors]]
-                for poly in get_parts(walk.union(surface(row['faces'])).buffer(-.02)
-                                      .intersection(LineString(result[:4]).buffer(result[4]/20 + .1)))
-                if poly.geom_type == 'Polygon'
-            ])
         else:
-            excluded.append(dict(id=row['id'], reason=', '.join(bad) if bad else 'no continuous corridor with two safe wait areas'))
+            reason = 'pavement missing at one or both ends' if not all(e['connected'] for e in ends) else 'full-width engine corridor does not fit'
+            excluded.append(dict(id=row['id'], reason=reason))
     rehearsal = json.loads(ASSET.with_name('hapjeong-hd-pedestrians.json').read_text())
     portals = spawn_points(network, floor, [person['view'] for person in rehearsal['people']])
-    return dict(**network.encode(crossings), crossings=ids, crossAreas=cross_areas, excluded=excluded, portals=portals)
+    return dict(**network.encode(crossings), crossings=ids, landings=landings, excluded=excluded, portals=portals)
 
 
 if __name__ == '__main__':
     floor = json.loads(ASSET.with_name('hapjeong-hd-a.json').read_text())
-    out = bake(floor)
+    cars = json.loads(ASSET.with_name('hapjeong-hd-cars.json').read_text())
+    out = bake(floor, cars)
     ASSET.with_name('hapjeong-hd-walk.json').write_text(json.dumps(out, separators=(',', ':')) + '\n')
     print(f'{len(out["n"]) // 2} nodes, {len(out["e"]) // 5} edges, {len(out["crossings"])} crossings')
     print([(row['id'][-4:], row['reason']) for row in out['excluded']])

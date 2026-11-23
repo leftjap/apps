@@ -9,21 +9,11 @@ export type PeopleRehearsal = {
   people: { id: string; view: { at: XZ }; legs: { path: XZ[] }[] }[];
 };
 
-export type HapjeongWalk = WalkJson & { crossings: string[]; crossAreas?: number[][][][]; portals: Portal[] };
+export type HapjeongWalk = WalkJson & { crossings: string[]; portals: Portal[] };
 export type HapjeongPeopleInput = { walk: HapjeongWalk; rehearsal: PeopleRehearsal };
-
-function inRing(ring: number[], x: number, z: number) {
-  let inside = false;
-  for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
-    const [a, b] = [ring[i + 1], ring[j + 1]];
-    if ((a > z) !== (b > z) && x < ring[i] + (z - a) * (ring[j] - ring[i]) / (b - a)) inside = !inside;
-  }
-  return inside;
-}
 
 export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['crosswalks'], signals: SignalPlan) {
   const byId = new Map(crossings.map((c, i) => [c.id, i]));
-  const area = new Map<number, number[][][]>();
   const omitted: string[] = [];
   const x: number[] = [];
   for (let i = 0; i < asset.x.length; i += LINK_N) {
@@ -38,13 +28,10 @@ export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['
     // Walk and car data span different subsets of the surveyed faces.
     // Remap the packed walk links so busy, signal and approaching all use the same index.
     x.push(xw, ...asset.x.slice(i + 1, i + LINK_N));
-    if (asset.crossAreas) area.set(xw, asset.crossAreas[source]);
   }
   return {
     graph: decodeWalk({ ...asset, x }), omitted,
     walkLeft: (xw: number, tod: number) => crossings[xw].sig ? signals.walkLeft(xw, tod) : -1,
-    crossingContains: asset.crossAreas && ((xw: number, x: number, z: number) =>
-      area.get(xw)?.some(([outer, ...holes]) => inRing(outer, x, z) && !holes.some(ring => inRing(ring, x, z))) ?? false),
   };
 }
 
@@ -64,14 +51,14 @@ export const HAPJEONG_PEOPLE_MAX = 64;
 export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: ReturnType<typeof hapjeongCrossings>,
                                    cars: ReturnType<typeof makeCars>, busy: Uint32Array, focus: XZ) {
   const { walk, rehearsal } = input;
-  const { graph, walkLeft, crossingContains } = crossings;
+  const { graph, walkLeft } = crossings;
   const origins = rehearsal.people.map(row => pavementPoint(graph, row.legs[0].path[0]));
   const destinations = rehearsal.people.map(row => pavementPoint(graph, row.legs.at(-1)!.path.at(-1)!));
   const stops: Portal[] = destinations.map(([x, z], i) => ({ kind: 'stop', key: rehearsal.people[i].id, x, z }));
   const portals = walk.portals.filter(portal =>
     rehearsal.people.some(({ view }) => Math.hypot(portal.x - view.at[0], portal.z - view.at[1]) <= 48));
   const people = makePeople(graph, [...portals, ...stops], makeSimProvider(), 5, HAPJEONG_PEOPLE_MAX, {
-    cars: cars.cars, busy, walkLeft, crossingContains,
+    cars: cars.cars, busy, walkLeft,
     traffic: cars.approaching,
   });
   for (const [i, from] of origins.entries()) {

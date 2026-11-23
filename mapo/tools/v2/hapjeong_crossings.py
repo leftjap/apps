@@ -3,8 +3,8 @@ import json
 import math
 from itertools import pairwise
 
-from shapely import make_valid
-from shapely.geometry import LineString, Point, Polygon
+from shapely import affinity, get_coordinates, make_valid, set_precision
+from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
 from hapjeong_hd import (FRAME, MAPO, RAW, WINDOW, dbf, even_odd, face_rings, features,
@@ -167,3 +167,65 @@ def supplement_crossings(b3, walk, building_faces):
         audit.append({**entry,'status':'supplemented'})
     survey_continuations([row for row in audit if row['status']!='unconfirmed'],dict(topo))
     return rows,audit
+
+
+def walking_landings(row, pavement, lanes):
+    """Extend the full stripe to the kerb, keeping only verified traffic clearance."""
+    cross = unary_union([Polygon(outer, holes) for outer, *holes in row['faces']])
+    a, b = [Point(end['end']) for end in row['approaches']]
+    length = a.distance(b)
+    ux, uz = (b.x-a.x)/length, (b.y-a.y)/length
+    to_local = [ux, uz, -uz, ux, -a.x*ux-a.y*uz, a.x*uz-a.y*ux]
+    to_world = [ux, -uz, uz, ux, a.x, a.y]
+    project_local = lambda g: affinity.affine_transform(g, to_local)
+    paint = project_local(cross)
+    cap_a, lo, cap_b, hi = paint.bounds
+    span = hi-lo
+    # An A2 lane already traversed by this stripe is part of the crossing.
+    search = cross.buffer(6+span)
+    forbidden = unary_union([line.buffer(width+.02, cap_style='flat') for line, width in lanes
+                             if line.intersects(search) and line.intersection(cross).length < .1])
+    nearby = project_local(pavement.intersection(search))
+    blocked = project_local(forbidden)
+    ends = []
+    for cap, direction in [(cap_a, -1), (cap_b, 1)]:
+        # The terminal section lies slightly inside the kerb so the join
+        # survives coordinate rounding. Use the first full-width contact.
+        best = (0, 0)
+        for i in range(121):
+            distance = i*.05
+            at = cap + distance*direction
+            cut = LineString([(at, lo), (at, hi)])
+            ratio = cut.intersection(nearby.buffer(1e-7)).length / span
+            if ratio > best[0] + .001:
+                best = ratio, distance
+            if ratio >= .995:
+                break
+        _, distance = best
+        tip = cap + direction*distance
+        patch = box(min(tip, cap-.2*direction), lo, max(tip,cap-.2*direction), hi)
+        patch = patch.difference(paint.union(nearby))
+        clipped = patch.intersection(blocked).area > 1e-6
+        patch = patch.difference(blocked.buffer(1e-5))
+        # Measure the width of the actual join at the pavement edge after
+        # cutting away any encroachment on a neighbouring lane.
+        contact = patch.boundary.intersection(nearby.buffer(1e-6))
+        # Project each connected contact to the lateral axis. Union the
+        # intervals so corners or multiple components cannot inflate width.
+        intervals = []
+        for part in parts(contact, 'LineString'):
+            ys = get_coordinates(part)[:, 1]
+            if len(ys) and max(ys)-min(ys)>1e-6:
+                intervals.append(LineString([(0, min(ys)), (0, max(ys))]))
+        if distance == 0:
+            ratio = best[0]
+        else:
+            ratio = unary_union(intervals).length / span
+        connected = ratio > .01
+        world = set_precision(make_valid(affinity.affine_transform(patch, to_world)), 1e-7)
+        world = unary_union([p for p in parts(world, 'Polygon') if p.area > 1e-6])
+        # A strip that cannot reach a pavement edge is not traversable.
+        ends.append(dict(extension=round(distance, 2), ratio=round(min(1., ratio), 4),
+                         connected=connected, clipped=clipped,
+                         faces=rings(world) if connected else []))
+    return ends

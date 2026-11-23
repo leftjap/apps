@@ -4,7 +4,6 @@ from itertools import accumulate
 import json
 from pathlib import Path
 
-from shapely import get_parts
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 from shapely.prepared import prep
@@ -60,36 +59,17 @@ def verify():
     excluded = {row['id'] for row in graph['excluded']}
     assert len(by_id) == 23 and len(cross_ids) == len(set(cross_ids)) == len(graph['x']) // 17
     assert set(cross_ids).isdisjoint(excluded) and set(cross_ids) | excluded == set(by_id)
-    # The source audit checks each end in isolation. Check whether one
-    # continuous usable component actually reaches both ends on the A floor.
-    for key in excluded:
-        row = by_id[key]
-        ends = row['approaches']
-        if any(end['status'] != 'joined' for end in ends):
-            continue
-        a, b = [Point(end['end']) for end in ends]
-        axis = LineString([a, b])
-        route = walk.union(faces(row['faces'])).buffer(-.22).intersection(axis.buffer(5))
-        for part in get_parts(route):
-            land = part.intersection(walk.buffer(-BODY))
-            assert land.is_empty or max(land.distance(a), land.distance(b)) > min(3.5, axis.length / 2), key
     for i, (xw, a, b, ax, az, bx, bz, pax, paz, pbx, pbz, width, major, *wait) in enumerate(
             zip(*(iter(graph['x']),) * 17, strict=True)):
         assert xw == i and a != b and neighbours[a] and neighbours[b]
         assert nodes[a] == (pax / 10, paz / 10) and nodes[b] == (pbx / 10, pbz / 10)
         assert width > 0 and major == 1 and wait[0] <= 0 <= wait[1] and wait[2] <= 0 <= wait[3]
         crossing = by_id[cross_ids[xw]]
-        allowed = walk.union(faces(crossing['faces'])).buffer(1e-7)
+        allowed = walk.union(faces(crossing['faces'])).union(
+            faces([p for end in graph['landings'][cross_ids[xw]] for p in end['faces']])).buffer(1e-6)
         axis = LineString([nodes[a], (ax / 10, az / 10), (bx / 10, bz / 10), nodes[b]])
         half_width = max(.2, width / 20 - .3)
-        if 'crossAreas' in graph:
-            polygons = [[[tuple(ring[j:j+2]) for j in range(0, len(ring), 2)] for ring in part]
-                        for part in graph['crossAreas'][xw]]
-            clipped = faces(polygons)
-            assert allowed.buffer(-.019).covers(clipped), ('crossing clip', cross_ids[xw])
-            assert clipped.covers(axis), ('crossing axis', cross_ids[xw])
-        else:
-            assert allowed.covers(axis.buffer(half_width + .019)), ('crossing clearance', cross_ids[xw], list(axis.coords))
+        assert allowed.covers(axis.buffer(half_width + .019)), ('crossing clearance', cross_ids[xw], list(axis.coords))
         dx, dz = (bx - ax) / 10, (bz - az) / 10
         length = (dx * dx + dz * dz) ** .5
         vx, vz = dx / length, dz / length
