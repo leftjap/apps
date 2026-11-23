@@ -6,13 +6,24 @@ import math
 
 from shapely import get_parts
 from shapely.geometry import LineString, Point
+from shapely.ops import nearest_points
 
 from hapjeong_hd import ASSET, WINDOW, features, paths, project
 from hapjeong_hd_a import surface
-from hapjeong_vehicles import SEAM_COS, dot_forward
 
 OUTPUT = ASSET.with_name('hapjeong-hd-cars.json')
 C1_PEDESTRIAN = '11'  # NGII HD map production manual (2020), section 9.3.10.
+SEAM_COS = .5
+STOP_TIP_TOLERANCE = .05
+
+
+def dot_forward(a, b):
+    end = Point(a.coords[-1])
+    behind = a.interpolate(max(0, a.length - 2))
+    ahead = b.interpolate(min(2, b.length))
+    length = behind.distance(end) * end.distance(ahead)
+    return ((end.x - behind.x) * (ahead.x - end.x) +
+            (end.y - behind.y) * (ahead.y - end.y)) / length if length else -1
 
 
 def load_links():
@@ -178,6 +189,12 @@ def bake(floor):
              for line in paths(r)]
     for row in rows:
         line = LineString(row['points'])
+        tip = Point(line.coords[-1])
+        gap, name, stop = min((stop.distance(tip), name, stop) for name, stop in stops)
+        if gap <= STOP_TIP_TOLERANCE:
+            at = line.project(nearest_points(tip, stop)[1])
+            row['stop'] = dict(id=name, at=round(at, 6))
+            continue
         hits = [(line.project(p), name) for name, stop in stops
                 for p in get_parts(line.intersection(stop)) if p.geom_type == 'Point']
         if hits:

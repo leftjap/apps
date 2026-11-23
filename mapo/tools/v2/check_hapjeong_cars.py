@@ -31,12 +31,27 @@ def verify(data):
     assert sum(row['sig'] for row in data['crosswalks']) and len(data['crosswalks']) == 23
     assert all(not row['sig'] or row['lamps'] for row in data['crosswalks'])
     assert any(row['stop'] is not None for row in links if row['kind'] != '1')
+    central = set(data['central'])
+    ingresses = [row for row in links if row['kind'] != '1' and central.intersection(row['next'])]
+    b2 = {r['properties']['id']: LineString(paths(r)[0])
+          for r in features('b2') if r['properties']['kind'] == '530'}
+    missing = []
+    for row in ingresses:
+        tip = Point(row['points'][-1])
+        closest = min((line.distance(tip), key) for key, line in b2.items())
+        if closest[0] <= .05:
+            if not row['stop'] or row['stop']['id'] != closest[1] or row['len'] - row['stop']['at'] > .051:
+                missing.append(row['id'])
+    assert not missing, ('unmatched terminal stop lines', missing)
     bus = data['bus']
     assert sum(links[i]['kind'] == '4' for i in bus) >= 3
     assert all(b in links[a]['next'] for a, b in pairwise(bus))
     assert links[bus[0]]['kind'] == links[bus[-1]]['kind'] == '4'
     gaps.sort()
-    return dict(links=len(links), maxDeviation=max(gaps), p90Deviation=gaps[int(.9 * (len(gaps)-1))])
+    return dict(links=len(links), maxDeviation=max(gaps), p90Deviation=gaps[int(.9 * (len(gaps)-1))],
+                ingresses=len(ingresses), missingStops=[r['id'] for r in ingresses if not r['stop']],
+                maxStopGap=max(b2[r['stop']['id']].distance(Point(r['points'][-1]))
+                               for r in ingresses if r['stop']))
 
 
 if __name__ == '__main__':
