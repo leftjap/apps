@@ -82,7 +82,14 @@ def verify():
         allowed = walk.union(faces(crossing['faces'])).buffer(1e-7)
         axis = LineString([nodes[a], (ax / 10, az / 10), (bx / 10, bz / 10), nodes[b]])
         half_width = max(.2, width / 20 - .3)
-        assert allowed.covers(axis.buffer(half_width + .019)), ('crossing clearance', cross_ids[xw], list(axis.coords))
+        if 'crossAreas' in graph:
+            polygons = [[[tuple(ring[j:j+2]) for j in range(0, len(ring), 2)] for ring in part]
+                        for part in graph['crossAreas'][xw]]
+            clipped = faces(polygons)
+            assert allowed.buffer(-.019).covers(clipped), ('crossing clip', cross_ids[xw])
+            assert clipped.covers(axis), ('crossing axis', cross_ids[xw])
+        else:
+            assert allowed.covers(axis.buffer(half_width + .019)), ('crossing clearance', cross_ids[xw], list(axis.coords))
         dx, dz = (bx - ax) / 10, (bz - az) / 10
         length = (dx * dx + dz * dz) ** .5
         vx, vz = dx / length, dz / length

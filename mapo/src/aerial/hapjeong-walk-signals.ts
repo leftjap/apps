@@ -4,7 +4,7 @@ import type { WalkGraph, WalkJson } from '../sim/walknet.ts';
 import type { SignalFrame, SignalTrial } from './hapjeong-signal-trial.ts';
 import type { XZ } from './hapjeong-vehicles.ts';
 
-export type HapjeongWalk = WalkJson & { crossings: string[] };
+export type HapjeongWalk = WalkJson & { crossings: string[]; crossAreas?: number[][][][] };
 
 // The trial cars already have a continuous pose trajectory. Test the full
 // crossing corridor against their rectangles in each shared playback frame.

@@ -55,7 +55,7 @@ it('starts with 30–60 people, including automatic arrivals from Hapjeong exits
   }
 });
 
-it.fails('the showcase walker reaches the platform with the full crowd', () => {
+it('the showcase walker reaches the platform with the full crowd', () => {
   const playback = peoplePlayback(graph, rehearsal, trial, frames, true);
   const id = playback.at(0).w.id[rehearsal.people.findIndex(p => p.id === 'platform')];
   const end = playback.at(frames.length - 1);

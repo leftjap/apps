@@ -117,6 +117,14 @@ def crossing_route(row, network):
     distance = math.dist(a, b)
     vector = ux, uz = ((b[0] - a[0]) / distance, (b[1] - a[1]) / distance)
     cross = surface(row['faces'])
+    rectangle = list(cross.minimum_rotated_rectangle.exterior.coords)
+    span = min(range(4), key=lambda i: math.dist(rectangle[i], rectangle[i+1]))
+    width = math.floor(10 * math.dist(rectangle[span], rectangle[span+1]))
+    caps = [tuple((x+y)/2 for x, y in zip(rectangle[i], rectangle[i+1]))
+            for i in (span, (span+2) % 4)]
+    if math.dist(a, caps[0]) > math.dist(a, caps[1]):
+        caps.reverse()
+    survey_axis = LineString(caps)
     allowed = network.walk.union(cross)
     route_area = allowed.buffer(-CROSS_CLEAR)
     route = prep(route_area)
@@ -158,14 +166,20 @@ def crossing_route(row, network):
         candidates = [(start, p, q, end) for p, start in fst if start is not None
                       for q, end in lst if end is not None and p != q and route.covers(LineString([p, q]))]
 
-    def clearance(points):
-        line = LineString(points)
-        return min(.85, line.distance(allowed.boundary) - .02)
+    # Use the measured stripe axis if both ends can connect to that axis.
+    # The audited connectors remain inside pavement and the surveyed crossing.
+    inner = [dm(survey_axis.interpolate(t, normalized=True).coords[0]) for t in (.18, .82)]
+    candidates.extend((p, *inner, q) for _, p, q in direct
+                      if route.covers(LineString([p, *inner, q])))
 
-    for points in sorted(candidates, key=lambda pts: (-clearance(pts), LineString(pts).length, pts)):
+    def score(pts):
+        _, p, q, _ = pts
+        line = LineString(pts)
+        return (Point(p).distance(survey_axis) + Point(q).distance(survey_axis)
+                - min(1.2, line.distance(allowed.boundary)), line.length, pts)
+
+    for points in sorted(candidates, key=score):
         start, p, q, end = points
-        half = clearance(points)
-        width = max(10, math.floor((half + .3) * 20))
         # The static wait box is not clipped at runtime, so only keep room
         # already covered on both sides of its length.
         dx, dz = q[0] - p[0], q[1] - p[1]
@@ -236,17 +250,27 @@ def bake(floor):
     network = Network(walk)
     network.pavement()
     crossings, ids, excluded = [], [], []
+    cross_areas = []
     for row in floor['crossingAudit']:
         bad = [end['status'] for end in row['approaches'] if end['status'] != 'joined']
         result = None if bad else crossing_route(row, network)
         if result:
             crossings.append(result)
             ids.append(row['id'])
+            # The engine keeps one width for the surveyed stripe. At each
+            # approach and irregular boundary, clip that band to real surface.
+            cross_areas.append([
+                [[round(v, 5) for pt in ring.coords for v in pt]
+                 for ring in [poly.exterior, *poly.interiors]]
+                for poly in get_parts(walk.union(surface(row['faces'])).buffer(-.02)
+                                      .intersection(LineString(result[:4]).buffer(result[4]/20 + .1)))
+                if poly.geom_type == 'Polygon'
+            ])
         else:
             excluded.append(dict(id=row['id'], reason=', '.join(bad) if bad else 'no continuous corridor with two safe wait areas'))
     rehearsal = json.loads(ASSET.with_name('hapjeong-hd-pedestrians.json').read_text())
     portals = spawn_points(network, floor, [person['view'] for person in rehearsal['people']])
-    return dict(**network.encode(crossings), crossings=ids, excluded=excluded, portals=portals)
+    return dict(**network.encode(crossings), crossings=ids, crossAreas=cross_areas, excluded=excluded, portals=portals)
 
 
 if __name__ == '__main__':

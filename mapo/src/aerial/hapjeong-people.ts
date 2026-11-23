@@ -12,6 +12,15 @@ export type PeopleRehearsal = {
 
 const START = { tod: 14 * 3600, dow: 6, doy: 175 };
 
+function inRing(ring: number[], x: number, z: number) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+    const [a, b] = [ring[i + 1], ring[j + 1]];
+    if ((a > z) !== (b > z) && x < ring[i] + (z - a) * (ring[j] - ring[i]) / (b - a)) inside = !inside;
+  }
+  return inside;
+}
+
 export function peopleViews(rehearsal: PeopleRehearsal) {
   const centre = rehearsal.people.reduce(([x, z], p) => [x + p.view.at[0], z + p.view.at[1]], [0, 0]);
   return rehearsal.people.map(p => ({
@@ -62,6 +71,9 @@ export function peoplePlayback(asset: HapjeongWalk & { portals: Portal[] }, rehe
     setCars(frames[0]);
     const people = makePeople(graph, [...portals, ...stops], makeSimProvider(), 5, max, {
       cars,
+      crossingContains: asset.crossAreas && ((xw, x, z) => asset.crossAreas![xw].some(
+        ([outer, ...holes]) => inRing(outer, x, z) && !holes.some(ring => inRing(ring, x, z)),
+      )),
       walkLeft(xw, tod) {
         const frame = Math.round((tod - START.tod) * 60);
         return signals[xw]?.left[frame] ?? 0;

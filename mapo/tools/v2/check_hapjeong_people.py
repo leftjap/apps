@@ -3,6 +3,7 @@ from collections import Counter, defaultdict
 import json
 import math
 import subprocess
+import sys
 
 import numpy as np
 from shapely import intersects_xy, prepare
@@ -55,6 +56,18 @@ for (const [i, carFrame] of traffic.entries()) {
 """
 
 
+def widths(floor, walk):
+    survey = {row['id']: faces(row['faces']) for row in floor['crossingAudit']}
+    rows = []
+    for i, key in enumerate(walk['crossings']):
+        rect = survey[key].minimum_rotated_rectangle
+        edge = list(rect.exterior.coords)
+        short = min(math.dist(a, b) for a, b in zip(edge, edge[1:]))
+        usable = max(.4, walk['x'][17*i+11] / 10 - .6)
+        rows.append(dict(id=key[-4:], survey=short, usable=usable, ratio=usable / short))
+    return rows
+
+
 def audit():
     root = DATA.parents[2]
     process = subprocess.run(
@@ -69,11 +82,12 @@ def audit():
     areas = [prep(pavement.union(survey[key]).buffer(1e-7)) for key in walk['crossings']]
     prepare(pavement)
     totals, location, first = Counter(), Counter(), {}
-    waits, enters, stuck = Counter(), Counter(), {}
+    waits, enters, stuck, green_waits = Counter(), Counter(), {}, {}
     visible = [[], [], []]
     population = []
     previous_cross, old_pairs, old_raw_pairs, old_cars = {}, set(), set(), set()
     stationary = {}
+    green_since = {}
     crossing_scenes = defaultdict(list)
     for line in lines:
         time, folks, cars = json.loads(line)
@@ -99,14 +113,25 @@ def audit():
                 location[key] += 1
                 first.setdefault(key, [time, uid, x, z])
             base_x, base_z, since = stationary.get(uid, (x, z, time))
-            if math.hypot(x - base_x, z - base_z) > .15:
+            if state not in {'walk', 'cross'}:
+                stationary.pop(uid, None)
+            elif math.hypot(x - base_x, z - base_z) > .15:
                 stationary[uid] = (x, z, time)
             else:
                 stationary[uid] = (base_x, base_z, since)
                 if time - since > 30:
-                    stuck[uid] = [state, cross_id, round(time - since, 2)]
+                    stuck[uid] = [state, cross_id, round(time - since, 2), x, z, time]
             if state == 'wait':
                 waits[cross_id] += 1
+            if state == 'wait' and left > 0:
+                key, since = green_since.get(uid, (crossing, time))
+                if key != crossing:
+                    since = time
+                green_since[uid] = (crossing, since)
+                if time - since > 10:
+                    green_waits[uid] = [state, cross_id, round(time - since, 2), x, z, time]
+            else:
+                green_since.pop(uid, None)
         previous_cross = crossing_now
         totals['off_floor_samples'] += frame_off
         totals['off_floor_frames'] += frame_off > 0
@@ -150,6 +175,7 @@ def audit():
     return {**totals, 'population': [min(population), max(population)],
             'visible': {view: [min(visible[i]), max(visible[i])] for i, view in enumerate(views['ids'])},
             'entries_by_crossing': enters, 'waiting_samples': waits, 'stationary': stuck,
+            'green_waits': green_waits, 'widths': widths(floor, walk),
             'off_floor_locations': location, 'first_off_floor': first,
             'examples': {view: sorted(crossing_scenes[view], key=lambda p: (-sum(p[3].values()), -p[1], p[0]))[:8]
                          for view in views['ids']},
@@ -157,4 +183,9 @@ def audit():
 
 
 if __name__ == '__main__':
-    print(json.dumps(audit(), indent=2, ensure_ascii=False))
+    result = audit()
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if '--verify' in sys.argv:
+        # Survey width less 0.3 m of clearance on either side, rounded down to dm.
+        assert all(row['usable'] + .7 >= row['survey'] for row in result['widths']), 'crossing widths'
+        assert all(not result.get(key) for key in ('stationary', 'green_waits', 'off_floor_frames', 'red_entries')), 'people replay'
