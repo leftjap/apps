@@ -35,7 +35,7 @@ const site = S.list.filter(s=>s.j>=0&&!s.walkOnly).sort((a,b)=>
 const approach = [...S.approach].filter(([,a])=>S.list[a.c]===site).map(([i,a])=>({
   id:String(i), edge:i, group:a.group, degree:headingNear(edges[i],edges[i].len)*180/Math.PI, moves:a.moves,
   green:site.steps.filter(step=>step.green.has(i)).map(step=>[step.start,step.start+step.dur,step.green.get(i)]),
-  lanes:edges[i].lanes, bus:edges[i].bus,
+  lanes:edges[i].lanes, laneMoves:Array.from({length:edges[i].lanes},(_,lane)=>X.laneMoves(i,lane)), bus:edges[i].bus,
 }));
 const approaches = new Set(approach.map(a=>a.edge));
 const provider = makeSimProvider();

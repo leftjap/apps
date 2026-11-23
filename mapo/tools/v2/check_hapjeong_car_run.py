@@ -1,11 +1,14 @@
 """Measure the body and movement of every legacy-engine car at 30 Hz."""
 from collections import Counter
+from functools import lru_cache
 import json
 import math
 import subprocess
 import sys
 
+from shapely import affinity, union_all
 from shapely.geometry import LineString, Point, Polygon
+from shapely.prepared import prep
 
 from check_hapjeong_walk import DATA, faces, read
 
@@ -15,6 +18,37 @@ def body(x, z, yaw, length, half_width):
     return Polygon([(x + c*a - s*b, z + s*a + c*b)
                     for a, b in [(length/2, half_width), (-length/2, half_width),
                                  (-length/2, -half_width), (length/2, -half_width)]])
+
+
+@lru_cache(maxsize=1)
+def rendered_footprints():
+    raw = subprocess.check_output(['node', '--experimental-strip-types', 'tools/v2/hapjeong_car_footprints.mts'],
+                                  cwd=DATA.parents[2], text=True)
+    shapes = {}
+    for name, vertices in json.loads(raw).items():
+        # SHAPES returns non-indexed meshes. Project the actual triangles
+        # rather than filling the gaps between wheels and the rounded body.
+        triangles = [Polygon(vertices[i:i+3]) for i in range(0, len(vertices), 3)]
+        shape = union_all([triangle for triangle in triangles if triangle.is_valid and triangle.area > 0])
+        shapes[name] = (shape, *shape.bounds)
+    return shapes
+
+
+def model_name(kind, length):
+    if kind == 1:
+        return 'minibus' if length < 10 else 'coach' if length > 11.8 else 'bus'
+    if kind == 2:
+        return 'taxi'
+    return min([(4.94, 'sedan'), (4.74, 'suv'), (3.64, 'kei'), (5.22, 'van')],
+               key=lambda pair: abs(pair[0] - length))[1]
+
+
+def rendered_body(footprint, x, z, yaw, road):
+    shape, a, b, c, d = footprint
+    # Most poses are fully inside the road by the cheaper envelope test.
+    if road.covers(body(x,z,yaw,2*max(-a,c),max(-b,d))):
+        return None
+    return affinity.translate(affinity.rotate(shape, yaw, origin=(0,0), use_radians=True), x, z)
 
 
 def trace(seeded=False, with_people=False):
@@ -28,7 +62,8 @@ def audit(seeded, with_people=False, captured=None):
     lines = iter(captured if captured is not None else trace(seeded, with_people))
     signals = json.loads(next(lines))
     data, floor = read('cars'), read('a')['floor']
-    road = faces(floor['road']).difference(faces(floor['walk'])).buffer(1e-6)
+    road = prep(faces(floor['road']).difference(faces(floor['walk'])).buffer(1e-6))
+    footprints = rendered_footprints()
     source = {r['id']: r for r in data['links']}
     driven = [source[key] for key in signals['links']]
     surveyed = [LineString(r['points']) for r in driven]
@@ -60,11 +95,14 @@ def audit(seeded, with_people=False, captured=None):
                 stats['max_a2_deviation'] = error
                 boundary['worstDeviation'] = describe(t, r)
             if not road.covers(current):
+                stats['box_off_floor_samples'] += 1
+            footprint = rendered_body(footprints[model_name(kind,length)], x,z,yaw,road)
+            if footprint is not None and not road.covers(footprint):
                 outside.append(i)
                 if not road.covers(Point(x, z)):
                     stats['centre_out_samples'] += 1
                 boundary.setdefault('firstOffFloor', describe(t, r))
-                off_area = current.difference(road).area
+                off_area = footprint.difference(road.context).area
                 if off_area >= stats['largest_off_floor_area']:
                     stats['largest_off_floor_area'] = off_area
                     boundary['worstOffFloor'] = describe(t, r)
