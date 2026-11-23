@@ -3,6 +3,7 @@ import { arrowShape, lineStyle } from '../data/marks.ts';
 import { PAINT_DASHES } from './ground-paint.ts';
 import { groundPoint, PILOT_SITES, type LonLat } from './map.ts';
 
+export type GroundVariant = 'calibrated' | 'rules' | 'corridor';
 export type SurfaceMode = 'photo' | 'road' | 'overlay' | 'hand';
 type DrawnSurface = Exclude<SurfaceMode, 'photo'>;
 type Site = keyof typeof PILOT_SITES;
@@ -13,6 +14,8 @@ interface Ground {
   version: number;
   frame: Path;
   road: Path[];
+  roadHoles?: Path[][];
+  safety?: { parts: Path[] }[];
   curbs: { parts: Path[] }[];
   lines: Line[];
   crossings: { stripes: Path[]; estimatedStripes?: number[] }[];
@@ -31,6 +34,8 @@ export const AERIAL_BEARING = -42 * Math.PI / 180;
 export const ROAD_OVERLAY_ASSETS = {
   road: 'data/v2/seogyo-ground.json',
   overlay: 'data/v2/seogyo-ground.json',
+  rules: 'data/v2/seogyo-rules.json',
+  corridor: 'data/v2/yanghwa-ground.json',
   hand: 'data/v2/seogyo-lines.svg',
 };
 
@@ -41,14 +46,15 @@ function drawGround(ground: Ground, mode: 'road' | 'overlay') {
   const standalone = mode === 'road';
   const group = new THREE.Group();
   const batches = new Map<string, { y: number; color: string; positions: number[] }>();
-  function fill(ring: XZ[], color: string, y: number) {
+  function fill(ring: XZ[], color: string, y: number, holes: XZ[][] = []) {
     const key = `${color}/${y}`;
     if (!batches.has(key)) batches.set(key, { y, color, positions: [] });
     const { positions } = batches.get(key)!;
     const points = ring.map(([x, z]) => new THREE.Vector2(x, z));
-    for (const face of THREE.ShapeUtils.triangulateShape(points, [])) {
-      for (const i of face) positions.push(points[i].x, y, points[i].y);
-    }
+    const inner = holes.map(hole => hole.map(([x, z]) => new THREE.Vector2(x, z)));
+    const faces = THREE.ShapeUtils.triangulateShape(points, inner);
+    const vertices = points.concat(...inner);
+    for (const face of faces) for (const i of face) positions.push(vertices[i].x, y, vertices[i].y);
   }
 
   function stroke(path: Path, color: string, y: number, width: number, offset = 0, dash = 0, phase = 0) {
@@ -85,7 +91,11 @@ function drawGround(ground: Ground, mode: 'road' | 'overlay') {
 
   if (standalone) {
     fill(ground.frame.map(groundPoint), '#d1c6b1', 0.011);
-    for (const ring of ground.road) fill(ring.map(groundPoint), '#50585c', 0.018);
+    ground.road.forEach((ring, i) => fill(ring.map(groundPoint), '#50585c', 0.018,
+      ground.roadHoles?.[i]?.map(hole => hole.map(groundPoint))));
+  }
+  for (const zone of ground.safety ?? []) {
+    for (const ring of zone.parts) fill(ring.map(groundPoint), '#d4aa69', 0.033);
   }
   for (const curb of ground.curbs) {
     for (const path of curb.parts) stroke(path, standalone ? '#e3d9c3' : '#69f3c6', 0.030, .15);
@@ -145,7 +155,7 @@ function drawGround(ground: Ground, mode: 'road' | 'overlay') {
     const faded = !standalone;
     const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
       color, side: THREE.DoubleSide, transparent: faded,
-      depthWrite: !faded, opacity: faded && y === 0.044 ? .56 : faded ? .90 : 1,
+      depthWrite: !faded, opacity: faded && y === 0.033 ? .35 : faded && y === 0.044 ? .56 : faded ? .90 : 1,
     }));
     mesh.renderOrder = 1;
     group.add(mesh);
@@ -156,7 +166,7 @@ function drawGround(ground: Ground, mode: 'road' | 'overlay') {
 export function createRoadOverlay(onChange: () => void, anisotropy = 1) {
   const group = new THREE.Group();
   const cache = new Map<string, { state: Status; mesh?: THREE.Object3D }>();
-  const dataCache = new Map<Site, Promise<Ground>>();
+  const dataCache = new Map<string, Promise<Ground>>();
   let active = '';
 
   async function hand() {
@@ -170,27 +180,26 @@ export function createRoadOverlay(onChange: () => void, anisotropy = 1) {
     return mesh;
   }
 
-  function ground(site: Site) {
-    if (!dataCache.has(site)) {
-      const path = site === 'seogyo' ? ROAD_OVERLAY_ASSETS.road : 'data/v2/hapjeong-ground.json';
-      dataCache.set(site, fetch(`${import.meta.env.BASE_URL}${path}`).then(async response => {
+  function ground(path: string) {
+    if (!dataCache.has(path)) {
+      dataCache.set(path, fetch(`${import.meta.env.BASE_URL}${path}`).then(async response => {
         if (!response.ok) throw new Error('Ground file unavailable');
         const value = await response.json() as Ground;
         if (value.version !== 1) throw new Error('Unsupported ground format');
         return value;
       }).catch(error => {
-        dataCache.delete(site);
+        dataCache.delete(path);
         throw error;
       }));
     }
-    return dataCache.get(site)!;
+    return dataCache.get(path)!;
   }
 
-  async function load(site: Site, mode: DrawnSurface, key: string) {
+  async function load(path: string, mode: DrawnSurface, key: string) {
     const entry: { state: Status; mesh?: THREE.Object3D } = { state: 'loading' };
     cache.set(key, entry);
     try {
-      entry.mesh = mode === 'hand' ? await hand() : drawGround(await ground(site), mode);
+      entry.mesh = mode === 'hand' ? await hand() : drawGround(await ground(path), mode);
       entry.state = 'ready';
       entry.mesh.visible = key === active;
       group.add(entry.mesh);
@@ -202,11 +211,13 @@ export function createRoadOverlay(onChange: () => void, anisotropy = 1) {
 
   return {
     group,
-    setMode(mode: SurfaceMode, site: Site = 'seogyo') {
-      active = mode === 'photo' ? '' : `${site}/${mode}`;
+    setMode(mode: SurfaceMode, site: Site = 'seogyo', variant: GroundVariant = 'calibrated') {
+      const path = variant !== 'calibrated' ? ROAD_OVERLAY_ASSETS[variant]
+        : site === 'seogyo' ? ROAD_OVERLAY_ASSETS.road : 'data/v2/hapjeong-ground.json';
+      active = mode === 'photo' ? '' : `${path}/${mode}`;
       for (const [key, entry] of cache) if (entry.mesh) entry.mesh.visible = key === active;
       const current = cache.get(active);
-      if (mode !== 'photo' && (!current || current.state === 'error')) void load(site, mode, active);
+      if (mode !== 'photo' && (!current || current.state === 'error')) void load(path, mode, active);
     },
     state: () => active ? cache.get(active)?.state ?? 'loading' : 'ready',
   };

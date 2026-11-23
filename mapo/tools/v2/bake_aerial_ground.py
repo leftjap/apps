@@ -11,11 +11,12 @@ from pathlib import Path
 from statistics import median
 
 from shapely import affinity
-from shapely.geometry import LineString, Point, Polygon, box
+from shapely.geometry import GeometryCollection, LineString, Point, Polygon, box
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 
 from aerial_paint import arrow_conflicts, arrow_footprint, line_footprint, style
+from aerial_rules import is_guide, merge_guides, move_stop, road_extent, zebra
 
 MAPO = Path(__file__).resolve().parents[2]
 RAW = MAPO / 'tools/raw'
@@ -486,13 +487,17 @@ def cut_guide_at_zebras(mark, zebras, frame, margin):
     mark['phase'] = [round(a,4) for a,_ in pieces]
 
 
-def build(centre, size, config):
+def build(centre, size, config, end=None):
     fixes = config.get('fixes',[])
     if len(fixes)>20 or len({f['id'] for f in fixes})!=len(fixes) or any(not f['why'] or not f['photo'] for f in fixes):
         raise ValueError('at most 20 distinct corrections with reasons and photo evidence')
+    rules_only = not config
+    if end and not rules_only:
+        raise ValueError('a corridor requires source-only rules')
     lanes = read('lanes','lanes')
     frame = fitting_frame(lanes,centre,size)
-    window = square(frame,size)
+    route = LineString([(0,0),frame.project(end)]) if end else None
+    window = route.buffer(size/2,cap_style='square') if route else square(frame,size)
     lines = load_lines(lanes,frame,window)
     crossings = {}
     for row in read('crosswalks','areas'):
@@ -516,9 +521,14 @@ def build(centre, size, config):
     for observation in config.get('differences',[]):
         key = observation['source']
         lines[key] = replace(lines[key],photo='reference-mismatch')
-    arms = crossing_arms(crossings)
-    radii = {f['target']['corner']:f for f in fixes if f['op']=='radius'}
-    road,curbs = make_road(lines,crossings,arms,window,config.get('curbOffsetMetres',0),radii)
+    arms = crossing_arms(crossings) if not route else {}
+    fit_crossing = not rules_only or set(arms)==set(ARMS)
+    if fit_crossing:
+        radii = {f['target']['corner']:f for f in fixes if f['op']=='radius'}
+        road,curbs = make_road(lines,crossings,arms,window,config.get('curbOffsetMetres',0),radii)
+    else:
+        road = road_extent(RAW,frame,window)
+        curbs = []
 
     def coords(seq):
         return [frame.geographic(x,y) for x,y in seq]
@@ -545,8 +555,9 @@ def build(centre, size, config):
             face = unary_union(halves).convex_hull
             fixids = (*fixids,calibration['id'])
         else:
-            halves,stripes = stripe_faces(face,axis,'이단' in kind)
+            halves,stripes = (zebra(face,'이단' in kind) if rules_only else stripe_faces(face,axis,'이단' in kind))
             marked = [(stripe,False) for stripe in stripes]
+        halves = [part for half in halves for part in polygon_parts(half)]
         shapes = [(part,estimated) for stripe,estimated in marked
                   for part in polygon_parts(stripe.intersection(paintable))]
         result = {'id':key,'kind':kind,'source':'seoul','fixes':fixids,
@@ -559,16 +570,28 @@ def build(centre, size, config):
         crosses.append(result)
     # Apply the original source boundaries first to preserve existing cuts.
     crossing_mask = unary_union([crossings[c['id']][1] for c in crosses])
-    # The union of inner half-planes separates intersection guides from the
-    # longitudinal approach lines even when the source paint passes the mouth.
-    inner = {}
-    for arm,key in arms.items():
-        axis,sign = arm
-        inner[arm] = min(sign*n for n in extent(crossings[key][1],axis))
-    junction = box(-inner[0,-1],-inner[1,-1],inner[0,1],inner[1,1])
-    stops = [s for m in lines.values() if m.kind==4
-             for s in ([m] if m.photo=='occluded' else make_stops(m,corrections.get(m.id,[]),lines))]
-    stop_shadows = approach_stop_shadows(stops,crossings,arms)
+    faces = [crossings[c['id']][1] for c in crosses]
+    merged = {}
+    if rules_only:
+        junction = GeometryCollection()
+        stop_shadows = GeometryCollection()
+        stops = [replace(m,geom=unary_union([
+                    move_stop(part,faces,style(m.kind,m.subtype)['w']) for part in line_parts(m.geom)]))
+                 for m in lines.values() if m.kind==4]
+        guide_ids = {m.id for m in lines.values() if is_guide(m,faces)}
+        _,merged = merge_guides([lines[key] for key in sorted(guide_ids)])
+        for key in (key for group in merged.values() for key in group):
+            del lines[key]
+    else:
+        # Four arms are only used by the archived calibrated intersection.
+        inner = {}
+        for arm,key in arms.items():
+            axis,sign = arm
+            inner[arm] = min(sign*n for n in extent(crossings[key][1],axis))
+        junction = box(-inner[0,-1],-inner[1,-1],inner[0,1],inner[1,1])
+        stops = [s for m in lines.values() if m.kind==4
+                 for s in ([m] if m.photo=='occluded' else make_stops(m,corrections.get(m.id,[]),lines))]
+        stop_shadows = approach_stop_shadows(stops,crossings,arms)
     stop_mask = unary_union([s.geom.buffer(style(s.kind,s.subtype)['w']/2,cap_style='flat') for s in stops])
     paint = []
     for mark in [*(m for m in lines.values() if m.kind!=4),*stops]:
@@ -576,7 +599,7 @@ def build(centre, size, config):
             continue
         geom = mark.geom
         in_junction = geom.intersection(junction).length / geom.length
-        guide = mark.kind==12 or (mark.kind==17 and in_junction>.65)
+        guide = mark.id in guide_ids if rules_only else mark.kind==12 or (mark.kind==17 and in_junction>.65)
         ink = style(mark.kind,mark.subtype)
         margin = ink['w']/2+ink['sep']+.015
         allowed = road.buffer(-margin)
@@ -607,6 +630,8 @@ def build(centre, size, config):
                'fixes':mark.fixes,'photo':mark.photo,'parts':draw}
         if guide:
             out['guide'] = True
+            if mark.id in merged:
+                out['mergedFrom'] = merged[mark.id]
             cut_guide_at_zebras(out,guide_zebras,frame,margin)
             if not out['parts']:
                 continue
@@ -653,12 +678,28 @@ def build(centre, size, config):
     for arrow in arrows:
         if arrow['id'] in issues:
             arrow['conflicts'] = issues[arrow['id']]
-    return {'version':1,'centre':centre,'size':size,'frame':rings(window)[0],
+    ground = {'version':1,'centre':centre,'size':size,'frame':rings(window)[0],
             'road':road_faces,'curbOffsetMetres':config.get('curbOffsetMetres',0),
             'curbs':[{'corner':name,'parts':line_coords(g),'radius':round(r,3),'sources':sources,
                       'source':source,'fixes':[fix] if fix else []} for name,g,r,sources,source,fix in curbs],
             'lines':paint,'crossings':crosses,'arrows':arrows,
             'arrowInventory':{'frameRows':len(arrow_rows),'uniquePositionTypeBearing':len(set(arrow_rows))},'fixes':[f['id'] for f in fixes],'hidden':suppressed}
+
+    if rules_only:
+        ground.update({
+            'rulesOnly':True, 'end':end,
+            'roadSource':'seoul-edge-fit' if fit_crossing else 'TL_SPRD_RW',
+            'roadHoles':[[coords(ring.coords) for ring in p.interiors] for p in polygon_parts(road)],
+            'safety':[
+                {'id':r['id'],'parts':rings(Polygon([frame.project(p[::-1]) for p in r['ring']]).intersection(window))}
+                for r in read('safety','zones')
+                if window.intersects(Polygon([frame.project(p[::-1]) for p in r['ring']]))
+            ],
+        })
+        if not fit_crossing:
+            ground['curbs'] = [{'source':'seoul-edge-paint','id':m.id,'parts':line_coords(m.geom),'fixes':[]}
+                               for m in lines.values() if m.kind in EDGE]
+    return ground
 
 
 def main():
@@ -668,11 +709,12 @@ def main():
     parser.add_argument('size',type=float)
     parser.add_argument('output',type=Path)
     parser.add_argument('--fixes',type=Path)
+    parser.add_argument('--corridor-end',nargs=2,type=float,metavar=('LON','LAT'))
     args = parser.parse_args()
     config = json.loads(args.fixes.read_text()) if args.fixes else {}
-    data = build((args.lon,args.lat),args.size,config)
+    data = build((args.lon,args.lat),args.size,config,end=args.corridor_end)
     content = json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n'
-    if len(content.encode())>100_000:
+    if not args.corridor_end and len(content.encode())>100_000:
         raise SystemExit('generated data exceeds 100 KB')
     args.output.write_text(content)
     print(f'{args.output}: {len(content.encode())} B, {len(data["lines"])} lines, '

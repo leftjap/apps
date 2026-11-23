@@ -32,6 +32,16 @@
         <label><input type="radio" name="surface" value="hand">손 도면</label>
       </fieldset>
       <div class="layers">
+        <label for="ground-variant">자료</label>
+        <select id="ground-variant">
+          <option value="calibrated">기존 보정 도면</option>
+          <option value="rules">서교동 무보정</option>
+          <option value="corridor">양화로 연속 구간</option>
+        </select>
+        <div class="layers" id="corridor-controls" hidden>
+          <label for="corridor-view">비교 지점</label>
+          <select id="corridor-view"></select>
+        </div>
         <label for="width">화면 폭</label>
         <select id="width">
           <option value="60">60 m</option>

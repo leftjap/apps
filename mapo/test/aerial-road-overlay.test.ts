@@ -33,6 +33,20 @@ describe('the Seogyo road comparison', () => {
     expect(ROAD_OVERLAY_ASSETS.hand).toBe('data/v2/seogyo-lines.svg');
   });
 
+  it('loads calibrated, rule-only and corridor geometry into separate layers', async () => {
+    const fetchGround = vi.fn(async () => new Response(data));
+    vi.stubGlobal('fetch', fetchGround);
+    const overlay = createRoadOverlay(() => {});
+    for (const [variant, asset] of [
+      ['calibrated', 'seogyo-ground.json'], ['rules', 'seogyo-rules.json'], ['corridor', 'yanghwa-ground.json'],
+    ] as const) {
+      overlay.setMode('overlay', 'seogyo', variant);
+      await vi.waitFor(() => expect(overlay.state()).toBe('ready'));
+      expect(fetchGround).toHaveBeenLastCalledWith(expect.stringContaining(asset));
+      expect(overlay.group.children.filter(layer => layer.visible)).toHaveLength(1);
+    }
+  });
+
   it('keeps an earlier JSON response hidden when the viewer returns to the photo', async () => {
     let finish!: (response: Response) => void;
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { finish = resolve; })));

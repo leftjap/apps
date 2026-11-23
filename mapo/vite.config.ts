@@ -1,12 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import { configDefaults, defineConfig } from 'vitest/config';
 
+import { AERIAL_DEV_PORT } from './src/aerial/map.ts';
 import { localAerial } from './tools/v2/aerial-local.ts';
 
 export default defineConfig({
   plugins: [localAerial()],
   base: '/apps/mapo/',
-  server: { port: 5197, strictPort: true },
+  server: { port: AERIAL_DEV_PORT, strictPort: true },
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 900,

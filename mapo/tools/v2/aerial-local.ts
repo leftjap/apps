@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { parseEnv } from 'node:util';
 import type { Plugin } from 'vite';
-import { groundPoint, PILOT_SITES, tileAtGround, vworldTileUrl } from '../../src/aerial/map.ts';
+import { AERIAL_DEV_ORIGIN, AERIAL_DEV_PORT, groundPoint, PILOT_SITES, tileAtGround, vworldTileUrl } from '../../src/aerial/map.ts';
 
 const prefix = '/apps/mapo/__aerial/';
 const centres = Object.values(PILOT_SITES).map(site => tileAtGround(...groundPoint(site)));
@@ -11,7 +11,7 @@ const centres = Object.values(PILOT_SITES).map(site => tileAtGround(...groundPoi
 type LocalRequest = { host?: string; remote?: string; site?: string; path: string };
 
 export function allowedTile({ host, remote, site, path }: LocalRequest) {
-  if (host !== 'localhost:5197' || !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote ?? '')) return null;
+  if (host !== `localhost:${AERIAL_DEV_PORT}` || !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote ?? '')) return null;
   if (site !== 'same-origin') return null;
   const parts = /^\/(\d{6})\/(\d{6})\.jpeg$/.exec(path);
   if (!parts) return null;
@@ -43,7 +43,7 @@ export function localAerial(): Plugin {
         }
         try {
           const upstream = await fetch(vworldTileUrl(key, tile), {
-            headers: { Referer: 'http://localhost:5197/apps/mapo/aerial.html' },
+            headers: { Referer: `${AERIAL_DEV_ORIGIN}/apps/mapo/aerial.html` },
             redirect: 'error', signal: AbortSignal.timeout(10_000),
           });
           if (!upstream.ok || !upstream.headers.get('content-type')?.startsWith('image/jpeg')) {

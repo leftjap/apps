@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { loadBuildings } from './buildings';
-import { groundPoint, PILOT_SITES, TILE_METRES, tileAtGround, tileBounds, vworldTileUrl } from './map';
+import { AERIAL_DEV_ORIGIN, CORRIDOR_VIEWS, groundPoint, PILOT_SITES, TILE_METRES, tileAtGround, tileBounds, vworldTileUrl } from './map';
 import type { Tile } from './map';
 import { AERIAL_BEARING, createRoadOverlay } from './road-overlay';
-import type { SurfaceMode } from './road-overlay';
+import type { GroundVariant, SurfaceMode } from './road-overlay';
 import './style.css';
 
 type TileSource = (tile: Tile) => string;
@@ -35,13 +35,25 @@ function initMap(canvas: HTMLCanvasElement) {
   const buildingStatus = document.querySelector<HTMLParagraphElement>('#building-status')!;
   const buildingControl = document.querySelector<HTMLInputElement>('#buildings')!;
   const widthControl = document.querySelector<HTMLSelectElement>('#width')!;
+  const variants = document.querySelector<HTMLSelectElement>('#ground-variant')!;
+  const locationOptions = document.querySelector<HTMLFieldSetElement>('.locations')!;
+  const corridorControls = document.querySelector<HTMLDivElement>('#corridor-controls')!;
+  const corridorView = document.querySelector<HTMLSelectElement>('#corridor-view')!;
+  for (const [id, { label }] of Object.entries(CORRIDOR_VIEWS)) corridorView.add(new Option(label, id));
   const imageryForm = document.querySelector<HTMLFormElement>('#imagery-form')!;
   const keyControl = document.querySelector<HTMLInputElement>('#imagery-key')!;
   buildings.visible = buildingControl.checked;
   let site: keyof typeof PILOT_SITES = 'seogyo';
   const query = new URLSearchParams(location.search);
   const localInspection = import.meta.env.DEV && query.has('inspect');
-  let preferredSurface: SurfaceMode = query.get('surface') === 'road' ? 'road' : 'photo';
+  const requestedVariant = query.get('ground');
+  if (requestedVariant === 'rules' || requestedVariant === 'corridor') variants.value = requestedVariant;
+  const requestedView = query.get('view');
+  if (requestedView && Object.hasOwn(CORRIDOR_VIEWS, requestedView)) corridorView.value = requestedView;
+  const requestedWidth = query.get('width');
+  if (requestedWidth && ['60', '80', '100'].includes(requestedWidth)) widthControl.value = requestedWidth;
+  const requestedSurface = query.get('surface');
+  let preferredSurface: SurfaceMode = requestedSurface === 'road' || requestedSurface === 'overlay' ? requestedSurface : 'photo';
   let surfaceMode: SurfaceMode = 'photo';
   let source: TileSource | undefined;
   let requests = new AbortController();
@@ -70,25 +82,35 @@ function initMap(canvas: HTMLCanvasElement) {
         surfaceStatus.textContent = `${label}용 도면을 불러오는 중입니다.`;
       } else {
         surfaceStatus.textContent = surfaceMode === 'road'
-          ? '도로 그림 · 베이지색은 차도 밖 배경입니다. 보행 가능 여부는 미확인입니다.'
+          ? variants.value === 'corridor'
+            ? '회색 바닥은 실폭도로 자료의 도로구역입니다. 민트색은 서울시 길가 선입니다.'
+            : '도로 그림 · 베이지색은 차도 밖 배경입니다. 보행 가능 여부는 미확인입니다.'
           : surfaceMode === 'hand'
             ? '항공사진을 보고 그린 손 도면입니다. 주황 점선은 가려진 부분의 추정 위치입니다.'
-            : '민트색은 연석, 하늘색은 노면 표시입니다. 주황색은 사진 미확인입니다. 주황 횡단보도 줄은 가린 곳의 추정 위치입니다. 분홍색은 위치 차이나 도색 충돌을 표시합니다.';
+            : variants.value !== 'calibrated'
+              ? variants.value === 'corridor'
+                ? '민트색은 서울시 길가 선, 하늘색은 노면 표시, 황토색 면은 서울시 안전지대입니다.'
+                : '민트색은 서울시 길가 선에서 계산한 연석, 하늘색은 노면 표시입니다.'
+              : '민트색은 연석, 하늘색은 노면 표시입니다. 주황색은 사진 미확인입니다. 주황 횡단보도 줄은 가린 곳의 추정 위치입니다. 분홍색은 위치 차이나 도색 충돌을 표시합니다.';
       }
     }
     render();
   }
 
   function showSurface() {
-    const available = site === 'seogyo' || localInspection;
-    surfaceMode = available && !(site !== 'seogyo' && preferredSurface === 'hand') ? preferredSurface : 'photo';
+    const variant = variants.value as GroundVariant;
+    const handAvailable = variant === 'calibrated' && site === 'seogyo';
+    const available = variant !== 'calibrated' || site === 'seogyo' || localInspection;
+    surfaceMode = available && (preferredSurface !== 'hand' || handAvailable) ? preferredSurface : 'photo';
     surfaceOptions.hidden = !available;
     surfaceStatus.hidden = !available;
-    surfaceOptions.querySelector<HTMLLabelElement>('label:has([value="hand"])')!.hidden = site !== 'seogyo';
+    surfaceOptions.querySelector<HTMLLabelElement>('label:has([value="hand"])')!.hidden = !handAvailable;
+    locationOptions.hidden = variant !== 'calibrated';
+    corridorControls.hidden = variant !== 'corridor';
     imageryStatus.hidden = surfaceMode === 'road';
     for (const input of surfaceInputs) input.checked = input.value === surfaceMode;
     photos.visible = surfaceMode !== 'road';
-    roads.setMode(surfaceMode, site);
+    roads.setMode(surfaceMode, site, variant);
     updateSurfaceStatus();
   }
 
@@ -183,7 +205,10 @@ function initMap(canvas: HTMLCanvasElement) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(clientWidth, clientHeight, false);
     camera.aspect = clientWidth / clientHeight;
-    const [x, z] = groundPoint(PILOT_SITES[site]);
+    const view = CORRIDOR_VIEWS[corridorView.value as keyof typeof CORRIDOR_VIEWS];
+    const centre = variants.value === 'corridor' ? view.at
+      : variants.value === 'rules' ? PILOT_SITES.seogyo : PILOT_SITES[site];
+    const [x, z] = groundPoint(centre);
     const radians = Math.PI / 180;
     const tilt = 34 * radians;
     const turn = AERIAL_BEARING;
@@ -228,6 +253,11 @@ function initMap(canvas: HTMLCanvasElement) {
       showSurface();
     });
   }
+  variants.addEventListener('change', () => {
+    showSurface();
+    fitCamera();
+  });
+  corridorView.addEventListener('change', fitCamera);
   showSurface();
   widthControl.addEventListener('change', fitCamera);
   buildingControl.addEventListener('change', () => {
@@ -243,7 +273,7 @@ function initMap(canvas: HTMLCanvasElement) {
   });
 
   const localTiles = document.querySelector<HTMLMetaElement>('meta[name="local-aerial-tiles"]')?.content;
-  if (import.meta.env.DEV && location.origin === 'http://localhost:5197' && localTiles) {
+  if (import.meta.env.DEV && location.origin === AERIAL_DEV_ORIGIN && localTiles) {
     imageryForm.hidden = true;
     setSource(({ x, y }) => `${localTiles}${y}/${x}.jpeg`);
   }

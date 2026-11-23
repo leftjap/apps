@@ -3,6 +3,9 @@ import { ORIGIN, toLatLon } from '../geo.ts';
 export type LonLat = readonly [number, number];
 export type Tile = { x: number; y: number };
 
+export const AERIAL_DEV_PORT = 5198;
+export const AERIAL_DEV_ORIGIN = `http://localhost:${AERIAL_DEV_PORT}`;
+
 const TILE_ZOOM = 19;
 const matrixSize = 2 ** TILE_ZOOM;
 const radians = Math.PI / 180;
@@ -57,3 +60,13 @@ export const PILOT_SITES = {
   seogyo: crossingCentre(-70, -130),
   hapjeong: crossingCentre(-490, 245),
 };
+
+// Public source anchors for the 60m corridor comparison cameras.
+export const CORRIDOR_VIEWS = {
+  'alley-east': { label: '양화로12길 입구', at: [126.9169743, 37.5516929] },
+  'alley-west': { label: '양화로7길 입구', at: [126.9154903, 37.5508189] },
+  crossing: { label: '구간 중간 횡단보도', at: [126.9166891, 37.5513413] },
+  bus: { label: '우리은행서교동지점 정류장', at: [126.9176946, 37.5521948] },
+  island: { label: '합정역 북동쪽 교통섬', at: [126.9135794, 37.549519] },
+  hapjeong: { label: '합정 사거리', at: PILOT_SITES.hapjeong },
+} as const satisfies Record<string, { label: string; at: LonLat }>;
