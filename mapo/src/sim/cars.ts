@@ -82,6 +82,12 @@ export function clearRun(v0: number, u: number, need: number, obs: number, xl: n
   return [t, xl];
 }
 
+/** The projected front must move a body length past each face to clear the rear. */
+export function clearsWalkSignals(faces: readonly [end: number, greenIn: number][], length: number,
+                                  travelTime: (distance: number) => number) {
+  return faces.every(([end, greenIn]) => travelTime(end + length) + 1 < greenIn);
+}
+
 export function makeCars(
   edges: Edge[],
   provider: DataProvider,
@@ -1209,6 +1215,7 @@ export function makeCars(
   const XG: number[] = [];
   /** 묶음의 신호 횡단보도 번호 */
   const XW: number[] = [];
+  const walkEnds: number[] = [];
   /** 묶음마다 든 포개진 자리(자리 × 2 + 쪽) */
   const XZ: number[][] = [];
   /** 앞길 구간 [구간, 차로, 앞 범퍼에서 그 구간 시작까지 거리] */
@@ -1355,6 +1362,7 @@ export function makeCars(
   function xwAhead(i: number, reach: number, platoon = false) {
     XG.length = 0;
     XW.length = 0;
+    walkEnds.length = 0;
     XZ.length = 0;
     XP.length = 0;
     XT.length = 0;
@@ -1439,7 +1447,14 @@ export function makeCars(
         if (n && c0 <= XG[n - 3] + size[i] + 3) XG[n - 3] = Math.max(XG[n - 3], c1);
         else XG.push(c0, c1, XW.length, XW.length), XZ.push([]);
         if (zc >= 0 && !XZ[XZ.length - 1].includes(zc)) XZ[XZ.length - 1].push(zc);
-        if (x >= 0 && S.crossSite[x] >= 0 && XW.lastIndexOf(x) < XG[XG.length - 2]) XW.push(x), (XG[XG.length - 1] = XW.length);
+        if (x >= 0 && S.crossSite[x] >= 0) {
+          const k = XW.lastIndexOf(x);
+          if (k < XG[XG.length - 2]) {
+            XW.push(x);
+            walkEnds.push(c1);
+            XG[XG.length - 1] = XW.length;
+          } else walkEnds[k] = Math.max(walkEnds[k], c1);
+        }
       }
       // 따라가기 규칙의 바라는 속도: 이 앞 구간들 가운데 가장 느린 것
       XA.v0 = Math.min(XA.v0, Math.max(0.5, speed[id] * vf[i]));
@@ -1521,9 +1536,12 @@ export function makeCars(
     for (let k = 0; k < XT.length; k += 3) if (XT[k] > c0 && XT[k] - size[i] < c1 + 1 && !gateOpen(i, XT[k], XT[k + 1], tod)) obs = Math.min(obs, XT[k] + 1.7);
     if (obs < need + 2.5) return false;
     let soon = Infinity;
+    const deadlines: [number, number][] = [];
     for (let k = a; k < b; k++) {
       if (S.walkState(XW[k], tod) !== RED) return false;
-      soon = Math.min(soon, S.walkIn(XW[k], tod));
+      const greenIn = S.walkIn(XW[k], tod);
+      if (X.surveyed) deadlines.push([walkEnds[k], greenIn]);
+      else soon = Math.min(soon, greenIn);
     }
     // 짐으로 본 앞차를 뺀 그려 보기에서 찾은 장애물 뒤에도 그 짐이 함께 선다(재작업 W37)
     const ld = skipLoads ? XA.load : 0;
@@ -1536,6 +1554,7 @@ export function makeCars(
     // 옮겨 그려 보기는 지금 장애물(obs)보다 가까운 것만 찾으면 된다
     obs = Math.min(obs, sweepAhead(i, Math.min(need + 3, obs + 1) + ld) - ld);
     if (obs < need + 2.5) return false;
+    if (X.surveyed) return clearsWalkSignals(deadlines, size[i], distance => clearSim(i, distance, obs));
     return soon > 40 || clearSim(i, need, obs) + 1 < soon;
   }
   /** clearRun 을 차 i 로: 바라는 속도는 앞 구간들 가운데 가장 느린 것, 짐으로 본 바로 앞차가 있으면(재작업 W37) 그 꽁무니를 따라간다 */
