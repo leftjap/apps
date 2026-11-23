@@ -35,10 +35,10 @@
 - 보행 연결성은 수치지형도의 물리적 횡단면 23개를 기준으로 셌다. 양끝 46개 중 44개는 보도, 1개는 바로 다음 횡단면에 이어지고 1개는 0020의 공백이다. 중앙 사거리까지 이어진 횡단면은 22개다. 한쪽 끝의 접속과 중앙 사거리까지의 도달성은 각각 검사했다. [양끝과 중앙 연결 검사](http://localhost:5198/apps/mapo/tmp/hapjeong-hd/crossing-fix/check.txt)
 - 남쪽 중앙 승강장 옆 긴 띠 61.5㎡를 보행면에 포함했다. 두 정지선 사이 작은 홈에는 버스 차체가 지나간다. 횡단보도와 인도에 얼룩처럼 보이던 바닥 겹침은 깊이 표시 순서를 수정하고 16비트 화면에서도 확인했다. [승강장과 항공사진](http://localhost:5198/apps/mapo/tmp/hapjeong-hd/floor-fix/after-platform.png) · [화면 검사](http://localhost:5198/apps/mapo/tmp/hapjeong-hd/floor-fix/pixels.txt)
 
-독립 검수 때는 `~/apps/mapo`에서 아래 두 검사를 실행하면 바닥의 양끝 연결과 실제 주행 결과를 각각 재현할 수 있다.
+아래는 바닥 검사와 현재의 차량·보행 합동 검사다. 이 문서의 고정 재생은 당시 커밋과 로컬 기록에 남아 있다.
 
 ```sh
-tools/.venv/bin/python tools/v2/check_hapjeong_hd_a.py
-tools/.venv/bin/python tools/v2/check_hapjeong_pedestrians.py
+tools/.venv/bin/python -B tools/v2/check_hapjeong_hd_a.py
+tools/.venv/bin/python -B tools/v2/check_hapjeong_people.py
 ```
 

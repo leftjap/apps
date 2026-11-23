@@ -3,10 +3,7 @@ import { loadBuildings } from './buildings.ts';
 import { PAINT_DASHES } from './ground-paint.ts';
 import { AERIAL_DEV_ORIGIN, PILOT_SITES, groundPoint, tileAtGround, tileBounds } from './map.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
-import type { SignalTrial } from './hapjeong-signal-trial.ts';
-import type { PeopleRehearsal } from './hapjeong-people.ts';
-import type { HapjeongWalk } from './hapjeong-walk-signals.ts';
-import type { Portal } from '../sim/people/index.ts';
+import type { HapjeongPeopleInput } from './hapjeong-people.ts';
 
 type XZ = [number, number];
 type Face = XZ[][];
@@ -124,41 +121,25 @@ function addInk(parent: THREE.Object3D, vertices: number[], color: string, groun
 async function init() {
   const query = new URLSearchParams(location.search);
   const peopleMode = query.get('people') === '1' || query.get('pedestrians') === '1';
-  const carsMode = !peopleMode && query.get('cars') === '1';
-  const signalMode = peopleMode ? 'straight' : query.get('signalTrial');
-  const signalTrial = signalMode === 'straight' || signalMode === 'left';
-  const vehicleTrial = query.get('vehicles') === '1';
-  const variantA = carsMode || signalTrial || vehicleTrial || query.get('variant') === 'a';
+  const carsMode = query.get('cars') === '1';
+  const simulation = carsMode || peopleMode;
+  const variantA = simulation || query.get('variant') === 'a';
   const suffix = variantA ? '-a' : '';
   const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd${suffix}.json`);
   if (!response.ok) throw Error(`가공 자료 응답 ${response.status}`);
   const data: Asset = await response.json();
-  let scenario: SignalTrial | undefined;
-  let people: { rehearsal: PeopleRehearsal; walk: HapjeongWalk & { portals: Portal[] } } | undefined;
+  let people: HapjeongPeopleInput | undefined;
+  const load = async (name: string) => {
+    const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-${name}.json`);
+    if (!response.ok) throw Error(`합정 자료 응답 ${response.status} · ${name}`);
+    return response.json();
+  };
   if (peopleMode) {
-    const [rehearsal, walk] = await Promise.all(['pedestrians', 'walk'].map(async name => {
-      const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-${name}.json`);
-      if (!response.ok) throw Error(`보행 자료 응답 ${response.status}`);
-      return response.json();
-    }));
+    const [rehearsal, walk] = await Promise.all(['pedestrians', 'walk'].map(load));
     people = { rehearsal, walk };
-    const { peopleViews } = await import('./hapjeong-people.ts');
-    data.views = [...data.views.filter(view => view.id === 'overview'), ...peopleViews(people.rehearsal)];
   }
-  if (signalTrial) {
-    const trials = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-signal-trial.json`);
-    if (!trials.ok) throw Error(`신호 시험 자료 응답 ${trials.status}`);
-    scenario = (await trials.json() as Record<string,SignalTrial>)[signalMode!];
-    if (!peopleMode) {
-      const title = signalMode==='straight' ? '직진 차량 시험' : '좌회전 차량 시험';
-      data.views=[{id:'overview',title,...scenario.view,mode:'photo'}];
-    }
-  }
-  let cars: import('./hapjeong-car-graph.ts').HapjeongCars | undefined;
-  if (carsMode && !scenario) {
-    const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-cars.json`);
-    if (!response.ok) throw Error(`차량 자료 응답 ${response.status}`);
-    cars = await response.json();
+  const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
+  if (simulation) {
     const { carViews } = await import('./hapjeong-car-playback.ts');
     data.views = [...carViews];
   }
@@ -199,13 +180,13 @@ async function init() {
   }
   addInk(route,lane,'#69e7ff',5);
   addInk(route,inside,'#f6a3eb',5);
-  const [imagery] = await Promise.all([photoPlane(carsMode || vehicleTrial || signalTrial),loadBuildings(buildings, new Set(data.hiddenBuildingOutlines))]);
+  const [imagery] = await Promise.all([photoPlane(simulation),loadBuildings(buildings, new Set(data.hiddenBuildingOutlines))]);
   photo.add(imagery);
 
   const camera = new THREE.PerspectiveCamera(34,1);
   const canvas = (id: string) => document.querySelector<HTMLCanvasElement>(`#${id}`)!;
   const left = new THREE.WebGLRenderer({ canvas:canvas('left'), antialias:true });
-  const right = new THREE.WebGLRenderer({ canvas:canvas('right'), antialias:true, preserveDrawingBuffer:carsMode || vehicleTrial || signalTrial });
+  const right = new THREE.WebGLRenderer({ canvas:canvas('right'), antialias:true, preserveDrawingBuffer:simulation });
   const form = document.querySelector<HTMLSelectElement>('#view')!;
   const pair = document.querySelector<HTMLDivElement>('#pair')!;
   const leftCaption = document.querySelector<HTMLDivElement>('#left-caption')!;
@@ -219,19 +200,11 @@ async function init() {
     const gallery = document.querySelector<HTMLAnchorElement>('#capture-gallery')!;
     gallery.href = './tmp/hapjeong-hd/a/gallery.html';
     gallery.textContent = 'A 비교 이미지 5장';
-    if (cars) {
-      gallery.href = './tmp/hapjeong-hd/cars-1/';
+    if (simulation) {
+      gallery.href = './tmp/hapjeong-hd/cars-people/';
       gallery.textContent = '차량·보행 영상과 검수';
-    } else if (peopleMode) {
-      gallery.href = './tmp/hapjeong-hd/people/README.md';
-      gallery.textContent = '보행 시험 기록';
-    } else if (signalTrial) {
-      gallery.href = './tmp/hapjeong-hd/signal-trial/';
-      gallery.textContent = '신호 차량 시험 기록';
-    } else if (vehicleTrial) {
-      gallery.href = './tmp/hapjeong-hd/vehicles/';
-      gallery.textContent = '차량 시험 기록';
     }
+
   }
 
   let refreshSimulation: (() => void) | undefined;
@@ -278,9 +251,7 @@ async function init() {
     const params = new URLSearchParams();
     if (variantA) params.set('variant', 'a');
     if (peopleMode) params.set('people', '1');
-    else if (signalTrial) params.set('signalTrial', signalMode!);
-    else if (carsMode) params.set('cars', '1');
-    else if (vehicleTrial) params.set('vehicles', '1');
+    if (carsMode) params.set('cars', '1');
     params.set('view', view.id);
     for (const key of ['paused', 'at', 'seeded']) if (query.has(key)) params.set(key, query.get(key)!);
     history.replaceState(null, '', `?${params}`);
@@ -288,33 +259,11 @@ async function init() {
   form.addEventListener('change',draw);
   new ResizeObserver(draw).observe(left.domElement.parentElement!);
   draw();
-  if (scenario) {
-    const { attachSignalTrial } = await import('./hapjeong-signal-trial.ts');
-    const render=()=>right.render(model,camera);
-    if (people) {
-      const { rehearsal, walk } = people, traffic = scenario;
-      const { attachHapjeongPeople } = await import('./hapjeong-pedestrians.ts');
-      attachSignalTrial(model, traffic, render, !query.has('paused'), frames => {
-        const show = attachHapjeongPeople(model, camera, right.domElement, walk, rehearsal, traffic, frames);
-        let index = 0;
-        refreshSimulation = () => show(index);
-        return frame => {
-          index = frame;
-          show(index);
-        };
-      }, Number(query.get('at')) || 0);
-      document.querySelector<HTMLElement>('#trial-explanation')!.textContent='보행 신호는 차량 시험과 같은 시간축의 모의 신호입니다.';
-    } else {
-      attachSignalTrial(model,scenario,render,!query.has('paused'));
-    }
-  } else if (cars) {
-    const { attachHapjeongCars } = await import('./hapjeong-cars.ts');
-    refreshSimulation = attachHapjeongCars(model, camera, right.domElement, cars, () => right.render(model,camera), query);
-  } else if (vehicleTrial) {
-    const { attachTrial } = await import('./hapjeong-vehicles.ts');
-    const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-vehicles.json`);
-    if (!response.ok) throw Error(`차량 경로 응답 ${response.status}`);
-    attachTrial(model, await response.json(), () => right.render(model,camera), !query.has('paused'));
+  if (cars) {
+    const { attachHapjeongSimulation } = await import('./hapjeong-cars.ts');
+    refreshSimulation = attachHapjeongSimulation(
+      model, camera, right.domElement, cars, () => right.render(model, camera), query, carsMode, people,
+    );
   }
   document.querySelector('main')!.dataset.ready='true';
 }

@@ -3,9 +3,13 @@ import { carPlayback, carVisibility } from '../../src/aerial/hapjeong-car-playba
 import type { HapjeongCars } from '../../src/aerial/hapjeong-car-graph.ts';
 import { headingNear } from '../../src/sim/graph.ts';
 import { CYCLE, STRAIGHT } from '../../src/sim/intersection/index.ts';
+import { BODY_R } from '../../src/sim/people/index.ts';
+import type { HapjeongPeopleInput } from '../../src/aerial/hapjeong-people.ts';
 
-const data: HapjeongCars = JSON.parse(readFileSync(new URL('../../public/data/v2/hapjeong-hd-cars.json', import.meta.url), 'utf8'));
-const run = carPlayback(data, !process.argv.includes('--seeded'));
+const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url), 'utf8'));
+const data: HapjeongCars = read('cars');
+const people: HapjeongPeopleInput | undefined = process.argv.includes('--people') ? { walk: read('walk'), rehearsal: read('pedestrians') } : undefined;
+const run = carPlayback(data, !process.argv.includes('--seeded'), people);
 const { inter: { X, S }, edges, links } = run.graph;
 const site = S.list.find(row => row.j >= 0)!;
 const visible = carVisibility();
@@ -19,6 +23,7 @@ const approach = [...S.approach].map(([i, row]) => {
 console.log(JSON.stringify({
   links: links.map(r => r.id), entries: edges.filter(e => e.entry).map(e => links[e.id].id),
   approach, cycle: CYCLE, duration: run.duration, offset: site.offset, axis: wraps(site.axis),
+  ingressAudit: run.ingressAudit, removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
     green: site.steps.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
     associated: S.crossSite[i] >= 0,
@@ -40,7 +45,21 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
       p?.j ?? -1, p?.move ?? 0, X.jStart[e] >= 0 && X.jStart[e] === X.jEnd[e],
       visible(cars.x[i], cars.z[i]), d.blockBy[i] >= 0 ? cars.uid[d.blockBy[i]] : null,
       d.ahead[i] >= 0 ? cars.uid[d.ahead[i]] : null,
-      ap && d.v[i] < .12 && !d.past[i] ? d.gateWhy(i, tod) : -1];
+      ap && d.v[i] < .12 && !d.past[i] ? d.gateWhy(i, tod) : -1, d.nextE[i]];
   });
-  console.log(JSON.stringify([t, rows]));
+  const walk = run.people();
+  const pedestrians = walk ? Array.from({length:walk.w.n}, (_, i) => {
+    const { w, MODES } = walk;
+    const { mode, cross } = walk.stateOf(i);
+    const xw = cross?.xw ?? -1;
+    const sig = xw >= 0 && data.crosswalks[xw].sig;
+    const state = mode === MODES.WAITX ? 'wait' : mode === MODES.CROSS ? 'cross' : mode === MODES.WALK ? 'walk' : 'other';
+    let byCar = false;
+    if (state === 'wait' && !sig && xw >= 0 && !w.moving[i] && sim.approaching(xw)) {
+      const { tx, tz } = walk.debugOf(i);
+      byCar = Math.hypot(w.x[i] - tx, w.z[i] - tz) <= .05;
+    }
+    return [w.id[i], w.x[i], w.z[i], state, xw, sig ? S.walkState(xw, tod) : -1, walk.validAt(i), byCar, w.moving[i]];
+  }) : undefined;
+  console.log(JSON.stringify([t, rows, pedestrians, people ? Array.from(run.busy()) : undefined]));
 }

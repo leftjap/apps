@@ -3,7 +3,7 @@ import { cumLen, pointAt } from '../poly.ts';
 import type { BusRoute } from '../sim/buses.ts';
 import type { Edge } from '../sim/graph.ts';
 import { makeIntersections } from '../sim/intersection/index.ts';
-import type { XZ } from './hapjeong-vehicles.ts';
+export type XZ = [number, number];
 
 type Link = {
   id: string;

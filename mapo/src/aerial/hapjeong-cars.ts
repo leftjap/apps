@@ -1,20 +1,24 @@
 import * as THREE from 'three';
 import { makeCarMeshes } from '../render/cars.ts';
+import { makeWalkerMesh } from '../render/walkers.ts';
 import { env, updateEnv } from '../render/env.ts';
 import { pointAt } from '../poly.ts';
 import { GREEN, LEFT, RED, RIGHT, STRAIGHT, YELLOW } from '../sim/intersection/index.ts';
 import type { HapjeongCars } from './hapjeong-car-graph.ts';
 import { carPlayback } from './hapjeong-car-playback.ts';
+import { HAPJEONG_PEOPLE_MAX, type HapjeongPeopleInput } from './hapjeong-people.ts';
 
 const colors = [0x56eb8b, 0xffcb56, 0xff5656];
 const names = ['초록', '노랑', '빨강'];
 
-export function attachHapjeongCars(model: THREE.Scene, camera: THREE.PerspectiveCamera, canvas: HTMLCanvasElement,
-                                   data: HapjeongCars, render: () => void, query: URLSearchParams) {
+export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.PerspectiveCamera, canvas: HTMLCanvasElement,
+                                         data: HapjeongCars, render: () => void, query: URLSearchParams,
+                                         carsEnabled: boolean, people?: HapjeongPeopleInput) {
   const seeded = query.get('seeded') === '1';
-  const run = carPlayback(data, !seeded);
+  const run = carPlayback(data, !seeded, people, carsEnabled);
   const { edges, inter: { X, S } } = run.graph;
-  const mesh = makeCarMeshes(run.max);
+  const mesh = carsEnabled ? makeCarMeshes(run.max) : undefined;
+  const walkers = people ? makeWalkerMesh(HAPJEONG_PEOPLE_MAX) : undefined;
   const shade = document.createElement('div');
   const bulb = new THREE.SphereGeometry(.75, 12, 8);
   const lamps = [...S.approach].filter(([id, a]) => X.exits.get(id)?.length && a.moves).map(([id, a]) => {
@@ -27,7 +31,19 @@ export function attachHapjeongCars(model: THREE.Scene, camera: THREE.Perspective
     const movement = [STRAIGHT, LEFT, RIGHT].find(m => a.moves & m) ?? STRAIGHT;
     return { a, light, movement };
   });
-  model.add(mesh.group);
+  if (mesh) model.add(mesh.group);
+  if (walkers) model.add(walkers.mesh, walkers.flash);
+  const walkBulb = new THREE.SphereGeometry(.24, 8, 6);
+  const walkLamps = (run.crossings?.graph.links ?? []).flatMap(link => {
+    if (!data.crosswalks[link.xw].sig) return [];
+    const material = new THREE.MeshBasicMaterial();
+    for (const [x, z] of [[link.pax, link.paz], [link.pbx, link.pbz]]) {
+      const lamp = new THREE.Mesh(walkBulb, material);
+      lamp.position.set(x, 1.6, z);
+      model.add(lamp);
+    }
+    return [{ xw: link.xw, material }];
+  });
 
   const controls = document.querySelector<HTMLElement>('#trial-controls')!;
   const seek = document.querySelector<HTMLInputElement>('#trial-time')!;
@@ -35,11 +51,13 @@ export function attachHapjeongCars(model: THREE.Scene, camera: THREE.Perspective
   const explanation = document.querySelector<HTMLElement>('#trial-explanation')!;
   const play = document.querySelector<HTMLButtonElement>('#trial-play')!;
   const replay = document.querySelector<HTMLButtonElement>('#trial-replay')!;
+  const pedestrianStatus = document.querySelector<HTMLOutputElement>('#pedestrian-status')!;
+  pedestrianStatus.hidden = !people;
   controls.hidden = false;
   seek.step = 'any';
   seek.max = String(run.duration);
-  explanation.textContent = seeded ? '승용차와 버스 지정 출발 · 합정 중앙 모의 신호'
-    : '승용차와 버스 · 12초부터 자동 진입 · 합정 중앙 모의 신호';
+  explanation.textContent = people && carsEnabled ? '차와 사람 · 같은 시간과 모의 신호'
+    : carsEnabled ? '승용차와 버스 · 합정 중앙 모의 신호' : '보행 · 합정 중앙 모의 신호';
 
   let t = Math.max(0, Math.min(run.duration, Number(query.get('at')) || 0));
   let playing = false;
@@ -49,7 +67,20 @@ export function attachHapjeongCars(model: THREE.Scene, camera: THREE.Perspective
     const now = run.clock(t);
     updateEnv(now, t, shade);
     env.uProjK.value = canvas.height * camera.projectionMatrix.elements[5] / 2;
-    mesh.update(state.cars, 0, camera);
+    mesh?.update(state.cars, 0, camera);
+    const walk = run.people();
+    if (walk) {
+      walkers?.update(walk.w, camera);
+      let waiting = 0, crossing = 0;
+      for (let i = 0; i < walk.w.n; i++) {
+        const { mode } = walk.stateOf(i);
+        waiting += Number(mode === walk.MODES.WAITX);
+        crossing += Number(mode === walk.MODES.CROSS);
+      }
+      pedestrianStatus.value = `보행 ${walk.w.n}명 · 횡단 대기 ${waiting}명 · 횡단 중 ${crossing}명`;
+      Object.assign(pedestrianStatus.dataset, { total: walk.w.n, waiting, crossing });
+    }
+    for (const lamp of walkLamps) lamp.material.color.setHex(colors[S.walkState(lamp.xw, now.tod)]);
     const byGroup = [RED, RED] as number[];
     for (const { a, light, movement } of lamps) {
       const state = S.moveState(a, movement, now.tod);
@@ -58,6 +89,7 @@ export function attachHapjeongCars(model: THREE.Scene, camera: THREE.Perspective
     }
     seek.value = String(t);
     status.value = `${t.toFixed(1)}초 · 차량 ${state.cars.n}대 · 신호 0 ${names[byGroup[0]]} / 신호 1 ${names[byGroup[1]]}`;
+    status.dataset.cars = String(state.cars.n);
     render();
   }
   function pause() {

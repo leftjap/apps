@@ -17,11 +17,15 @@ def body(x, z, yaw, length, half_width):
                                  (-length/2, -half_width), (length/2, -half_width)]])
 
 
-def audit(seeded):
+def trace(seeded=False, with_people=False):
     command = ['node', '--experimental-strip-types', 'tools/v2/trace_hapjeong_cars.mts']
-    raw = subprocess.run([*command, *(['--seeded'] if seeded else [])],
+    raw = subprocess.run([*command, *(['--seeded'] if seeded else []), *(['--people'] if with_people else [])],
                          cwd=DATA.parents[2], text=True, capture_output=True, check=True)
-    lines = iter(raw.stdout.splitlines())
+    return raw.stdout.splitlines()
+
+
+def audit(seeded, with_people=False, captured=None):
+    lines = iter(captured if captured is not None else trace(seeded, with_people))
     signals = json.loads(next(lines))
     data, floor = read('cars'), read('a')['floor']
     road = faces(floor['road']).difference(faces(floor['walk'])).buffer(1e-6)
@@ -38,7 +42,7 @@ def audit(seeded):
         return [round(t, 2), r[0], driven[r[7]]['id'], round(r[1], 2), round(r[2], 2)]
 
     for line in lines:
-        t, rows = json.loads(line)
+        t, rows, *_ = json.loads(line)
         now = {r[0]: r for r in rows}
         stats['samples'] += 1
         seen_count.append(len(rows))
@@ -46,7 +50,7 @@ def audit(seeded):
         distances, outside = [], []
         touching = set()
         for i, r in enumerate(rows):
-            uid, x, z, yaw, kind, length, hwidth, edge, at, speed, why, light, _, past, site, move, internal, visible, blocker, leader, gate = r
+            uid, x, z, yaw, kind, length, hwidth, edge, at, speed, why, light, _, past, site, move, internal, visible, blocker, leader, gate, _ = r
             prev = old.get(uid)
             current = body(x, z, yaw, length, hwidth)
             car_bodies.append(current)
@@ -129,4 +133,4 @@ def audit(seeded):
 
 
 if __name__ == '__main__':
-    print(json.dumps(audit('--seeded' in sys.argv), ensure_ascii=False, indent=2, allow_nan=False))
+    print(json.dumps(audit('--seeded' in sys.argv, '--people' in sys.argv), ensure_ascii=False, indent=2, allow_nan=False))

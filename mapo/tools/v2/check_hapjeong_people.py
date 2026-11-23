@@ -1,191 +1,162 @@
-"""Measure each 60 Hz frame of the same Hapjeong people playback used by the page."""
-from collections import Counter, defaultdict
+"""Measure the shared Hapjeong replay on the actual survey polygons at 30 Hz."""
+from collections import Counter
 import json
 import math
-import subprocess
 import sys
 
 import numpy as np
 from shapely import intersects_xy, prepare
-from shapely.geometry import Point
+from shapely.geometry import LineString
 from shapely.prepared import prep
 
-from check_hapjeong_walk import DATA, faces, read
-
-TRACE = """
-import {readFileSync} from 'node:fs';
-import {PerspectiveCamera, Vector3, MathUtils} from 'three';
-import {peoplePlayback, peopleViews} from './src/aerial/hapjeong-people.ts';
-import {signalFrames} from './src/aerial/hapjeong-signal-trial.ts';
-import {AERIAL_BEARING} from './src/aerial/road-overlay.ts';
-const read = name => JSON.parse(readFileSync('public/data/v2/hapjeong-hd-' + name + '.json'));
-const graph = read('walk'), rehearsal = read('pedestrians'), trial = read('signal-trial').straight;
-const traffic = signalFrames(trial);
-const playback = peoplePlayback(graph, rehearsal, trial, traffic, true);
-const cameras = peopleViews(rehearsal).map(view => {
-  const camera = new PerspectiveCamera(34, 4 / 3);
-  const distance = view.width / (2 * camera.aspect * Math.tan(MathUtils.degToRad(camera.fov / 2)));
-  const tilt = MathUtils.degToRad(28);
-  const offset = distance * Math.sin(tilt);
-  const [x, z] = view.at;
-  camera.position.set(x + offset * Math.sin(AERIAL_BEARING), distance * Math.cos(tilt), z + offset * Math.cos(AERIAL_BEARING));
-  camera.lookAt(x, 0, z);
-  camera.near = distance / 5;
-  camera.far = distance * 2;
-  camera.updateProjectionMatrix();
-  camera.updateMatrixWorld();
-  return camera;
-});
-const screen = new Vector3();
-console.log(JSON.stringify({ids: rehearsal.people.map(p => p.id), types: trial.vehicles.map(v => [v.length, v.width])}));
-for (const [i, carFrame] of traffic.entries()) {
-  const {w, MODES, stateOf, validAt} = playback.at(i);
-  const people = Array.from({length: w.n}, (_, p) => {
-    const x = w.x[p], z = w.z[p];
-    const {mode, cross} = stateOf(p);
-    const xw = cross?.xw ?? -1;
-    const step = mode === MODES.CROSS ? 'cross' : mode === MODES.WAITX ? 'wait' : mode === MODES.QUEUE ? 'queue' : 'walk';
-    const visible = cameras.map(camera => {
-      screen.set(x, .8, z).project(camera);
-      return w.fade[p] >= .2 && Math.abs(screen.x) <= 1 && Math.abs(screen.y) <= 1 && Math.abs(screen.z) <= 1;
-    });
-    return [w.id[p], x, z, step, xw, playback.signals[xw]?.left[i] ?? 0, visible, validAt(p)];
-  });
-  console.log(JSON.stringify([carFrame.time, people, carFrame.vehicles.map(v => [...v.center, v.heading])]));
-}
-"""
+from check_hapjeong_car_run import audit as audit_cars, body, trace
+from check_hapjeong_walk import faces, read
 
 
-def widths(floor, walk):
-    survey = {row['id']: faces(row['faces']) for row in floor['crossingAudit']}
-    rows = []
-    for i, key in enumerate(walk['crossings']):
-        rect = survey[key].minimum_rotated_rectangle
-        edge = list(rect.exterior.coords)
-        short = min(math.dist(a, b) for a, b in zip(edge, edge[1:]))
-        usable = max(.4, walk['x'][17*i+11] / 10 - .6)
-        rows.append(dict(id=key[-4:], survey=short, usable=usable, ratio=usable / short))
-    return rows
-
-
-def audit():
-    root = DATA.parents[2]
-    process = subprocess.run(
-        ['node', '--disable-warning=ExperimentalWarning', '--experimental-strip-types', '--input-type=module', '-e', TRACE],
-        cwd=root, text=True, capture_output=True, check=True
-    )
-    lines = iter(process.stdout.splitlines())
-    views = json.loads(next(lines))
-    floor, walk = read('a'), read('walk')
-    pavement = faces(floor['floor']['walk']).buffer(1e-7)
-    survey = {row['id']: faces(row['faces']) for row in floor['crossingAudit']}
-    areas = [prep(pavement.union(survey[key]).buffer(1e-7)) for key in walk['crossings']]
+def audit(captured):
+    frames = iter(captured)
+    meta = json.loads(next(frames))
+    data, floor = read('cars'), read('a')['floor']
+    pavement = faces(floor['walk']).buffer(1e-7)
+    shapes = [faces(r['faces']).buffer(1e-7) for r in data['crosswalks']]
+    allowed = [pavement.union(face) for face in shapes]
+    physical = [prep(face) for face in shapes]
     prepare(pavement)
-    totals, location, first = Counter(), Counter(), {}
-    waits, enters, stuck, green_waits = Counter(), Counter(), {}, {}
-    visible = [[], [], []]
-    population = []
-    previous_cross, old_pairs, old_raw_pairs, old_cars = {}, set(), set(), set()
-    stationary = {}
-    green_since = {}
-    crossing_scenes = defaultdict(list)
-    for line in lines:
-        time, folks, cars = json.loads(line)
-        totals['frames'] += 1
-        population.append(len(folks))
-        xs = np.array([p[1] for p in folks])
-        zs = np.array([p[2] for p in folks])
-        on_walk = intersects_xy(pavement, xs, zs)
+    for area in allowed:
+        prepare(area)
+    ids = [row['id'][-4:] for row in data['crosswalks']]
+    signed = [row['sig'] for row in data['crosswalks']]
+    nearest = {ids[i]: min(face.distance(LineString(row['points'])) for row in data['links'])
+               for i, face in enumerate(shapes)}
+    stats, entries, completions, active_in = Counter(), Counter(), Counter(), Counter()
+    contacts, green_wait, stuck, red_start = [], {}, {}, []
+    stop_for_car, stop_for_person = {}, {}
+    previous, old_contacts, entered_face, car_previous = {}, set(), set(), {}
+    anchors, green_since, p_yield_since, c_yield_since = {}, {}, {}, {}
+    pass_during_crossing, signal_examples, red_wait = set(), {}, set()
+    approach = {r['edge']: r['id'] for r in meta['approach']}
+    min_pop, max_pop = math.inf, 0
+
+    def episode(target, timers, key, current, time, detail):
+        if not current:
+            timers.pop(key, None)
+            return
+        t0 = timers.setdefault(key, time)
+        if time - t0 >= target.get('seconds', -1):
+            target.update(seconds=round(time - t0 + 1/30, 3), start=round(t0, 2), end=round(time, 2), **detail)
+
+    for line in frames:
+        t, cars, people, busy = json.loads(line)
+        if not people:
+            continue
+        c_by_id = {r[0]: r for r in cars}
+        min_pop, max_pop = min(min_pop, len(people)), max(max_pop, len(people))
+        stats['samples'] += 1
+        p_now, actual, overlap = {}, set(), set()
+        p_x = np.array([p[1] for p in people])
+        p_z = np.array([p[2] for p in people])
+        on_walk = intersects_xy(pavement, p_x, p_z)
         frame_off = 0
-        crossing_now = {}
-        for index, (uid, x, z, state, crossing, left, on_screen, valid) in enumerate(folks):
-            cross_id = walk['crossings'][crossing][-4:] if crossing >= 0 else None
+        for i, (uid, x, z, state, idx, light, valid, waiting_car, moves) in enumerate(people):
+            p_now[uid] = (state, idx)
+            old, old_idx = previous.get(uid, ('', -1))
+            label = ids[idx] if idx >= 0 else None
+            if state == 'wait' and light == 2:
+                red_wait.add((uid, idx))
             if not valid:
-                totals['engine_invalid_samples'] += 1
-            if state == 'cross':
-                crossing_now[uid] = crossing
-                if previous_cross.get(uid) != crossing:
-                    enters[cross_id] += 1
-                    totals['red_entries'] += left <= 0
-            if not on_walk[index] and (state != 'cross' or not areas[crossing].covers(Point(x, z))):
+                stats['engine_invalid_samples'] += 1
+            if not on_walk[i] and (state != 'cross' or idx < 0 or not intersects_xy(allowed[idx], x, z)):
                 frame_off += 1
-                key = cross_id or state
-                location[key] += 1
-                first.setdefault(key, [time, uid, x, z])
-            base_x, base_z, since = stationary.get(uid, (x, z, time))
+            if state == 'cross':
+                if idx >= 0 and intersects_xy(shapes[idx], x, z):
+                    actual.add(idx)
+                    entered_face.add((uid, idx))
+                if t and (old != 'cross' or old_idx != idx):
+                    if t < meta['cycle']:
+                        entries[label] += 1
+                    if light == 2:
+                        red_start.append([round(t, 2), uid, label])
+                    if signed[idx] and (uid, idx) in red_wait:
+                        signal_examples.setdefault(label, []).append([round(t, 2), uid, x, z])
+                    red_wait.discard((uid, idx))
+            if old == 'cross' and (state != 'cross' or idx != old_idx) and (uid, old_idx) in entered_face:
+                if t < meta['cycle']:
+                    completions[ids[old_idx]] += 1
+                entered_face.remove((uid, old_idx))
+
+            x0, z0, since = anchors.get(uid, (x, z, t))
             if state not in {'walk', 'cross'}:
-                stationary.pop(uid, None)
-            elif math.hypot(x - base_x, z - base_z) > .15:
-                stationary[uid] = (x, z, time)
+                anchors.pop(uid, None)
+            elif math.hypot(x-x0, z-z0) > .15:
+                anchors[uid] = (x, z, t)
             else:
-                stationary[uid] = (base_x, base_z, since)
-                if time - since > 30:
-                    stuck[uid] = [state, cross_id, round(time - since, 2), x, z, time]
-            if state == 'wait':
-                waits[cross_id] += 1
-            if state == 'wait' and left > 0:
-                key, since = green_since.get(uid, (crossing, time))
-                if key != crossing:
-                    since = time
-                green_since[uid] = (crossing, since)
-                if time - since > 10:
-                    green_waits[uid] = [state, cross_id, round(time - since, 2), x, z, time]
-            else:
-                green_since.pop(uid, None)
-        previous_cross = crossing_now
-        totals['off_floor_samples'] += frame_off
-        totals['off_floor_frames'] += frame_off > 0
+                anchors[uid] = x0, z0, since
+                if t - since > 30:
+                    stuck[uid] = [state, label, round(t-since, 2), round(x, 2), round(z, 2), round(t, 2)]
 
-        dx, dz = xs[:, None] - xs[None, :], zs[:, None] - zs[None, :]
-        distances = dx * dx + dz * dz
-        # Positions are Float32. At x≈−550 m, one ULP is about 0.06 mm.
-        raw_i, raw_j = np.nonzero(np.triu(distances < .6**2, k=1))
-        pair_i, pair_j = np.nonzero(np.triu(distances < (.6 - .0001)**2, k=1))
-        raw_pairs = {tuple(sorted((folks[i][0], folks[j][0]))) for i, j in zip(raw_i, raw_j, strict=True)}
-        totals['person_raw_contact_events'] += len(raw_pairs - old_raw_pairs)
-        old_raw_pairs = raw_pairs
-        totals['person_boundary_rounding_samples'] += len(raw_i) - len(pair_i)
-        pairs = {tuple(sorted((folks[i][0], folks[j][0]))) for i, j in zip(pair_i, pair_j, strict=True)}
-        totals['person_contact_samples'] += len(pairs)
-        totals['person_contact_events'] += len(pairs - old_pairs)
-        old_pairs = pairs
-        touched = set()
-        for i, ((cx, cz, heading), (length, width)) in enumerate(zip(cars, views['types'], strict=True)):
-            dx, dz = xs - cx, zs - cz
-            across = np.maximum(np.abs(dx * math.cos(heading) - dz * math.sin(heading)) - width / 2, 0)
-            along = np.maximum(np.abs(dx * math.sin(heading) + dz * math.cos(heading)) - length / 2, 0)
-            for j in np.flatnonzero(across * across + along * along < .4**2):
-                uid, _, _, state, crossing, *_ = folks[j]
-                contact = (uid, i)
-                touched.add(contact)
-                if contact not in old_cars:
-                    cross_id = walk['crossings'][crossing][-4:] if crossing >= 0 else state
-                    crossing_scenes['car contacts'].append([round(time, 2), cross_id, uid, i])
-        totals['car_contact_samples'] += len(touched)
-        totals['car_contact_events'] += len(touched - old_cars)
-        old_cars = touched
+            if state == 'wait' and light == 0:
+                since = green_since.setdefault((uid, idx), t)
+                if t - since > 10:
+                    green_wait[uid] = [label, round(t-since, 2), round(x, 2), round(z, 2), round(t, 2)]
+            elif idx >= 0:
+                green_since.pop((uid, idx), None)
 
-        for j, view in enumerate(views['ids']):
-            on_screen = [p for p in folks if p[6][j]]
-            visible[j].append(len(on_screen))
-            crossing = Counter(walk['crossings'][p[4]][-4:] for p in on_screen if p[3] == 'cross')
-            waiting = sum(p[3] == 'wait' for p in on_screen)
-            if crossing and totals['frames'] % 15 == 1:
-                crossing_scenes[view].append([round(time, 2), len(on_screen), waiting, crossing])
-    return {**totals, 'population': [min(population), max(population)],
-            'visible': {view: [min(visible[i]), max(visible[i])] for i, view in enumerate(views['ids'])},
-            'entries_by_crossing': enters, 'waiting_samples': waits, 'stationary': stuck,
-            'green_waits': green_waits, 'widths': widths(floor, walk),
-            'off_floor_locations': location, 'first_off_floor': first,
-            'examples': {view: sorted(crossing_scenes[view], key=lambda p: (-sum(p[3].values()), -p[1], p[0]))[:8]
-                         for view in views['ids']},
-            'car_contact_locations': crossing_scenes['car contacts']}
+            episode(stop_for_car, p_yield_since, (uid, idx), waiting_car, t,
+                    {'uid':uid, 'crossing':label})
+
+        stats['off_floor_frames'] += bool(frame_off)
+        stats['off_floor_samples'] += frame_off
+        active = [i for i in actual if not signed[i]]
+        for row in cars:
+            uid, x, z, yaw, kind, length, half_width, edge, at, speed, why = row[:11]
+            hx, hz = math.cos(yaw), math.sin(yaw)
+            dx, dz = p_x - x, p_z - z
+            longitudinal = np.maximum(np.abs(dx*hx + dz*hz) - length/2, 0)
+            transverse = np.maximum(np.abs(-dx*hz + dz*hx) - half_width, 0)
+            for i in np.flatnonzero(longitudinal**2 + transverse**2 < (meta['bodyRadius'] - .0001)**2):
+                person = people[i]
+                key = (uid, person[0])
+                overlap.add(key)
+                if key not in old_contacts:
+                    xw = ids[person[4]] if person[4] >= 0 else None
+                    contacts.append([round(t, 2), uid, person[0], xw, meta['links'][edge], round(x, 2), round(z, 2)])
+            if t and uid in car_previous:
+                last = car_previous[uid]
+                if last[7] in approach and last[7] != edge and t < meta['cycle']:
+                    active_in[approach[last[7]]] += 1
+            if not active:
+                continue
+            shape = body(x, z, yaw, length, half_width)
+            for idx in active:
+                if physical[idx].intersects(shape) and speed >= .1:
+                    pass_during_crossing.add((uid, ids[idx]))
+                # Codes 7/13 are engine stops for crossing occupancy/body.
+                close = shapes[idx].distance(shape) < length + 4
+                episode(stop_for_person, c_yield_since, (uid, idx), close and speed < .1 and why in (7, 13), t,
+                        {'uid':uid, 'crossing':ids[idx]})
+        for key in list(c_yield_since):
+            if key[1] not in active or key[0] not in c_by_id:
+                del c_yield_since[key]
+        for key in list(p_yield_since):
+            if p_now.get(key[0]) != ('wait', key[1]):
+                del p_yield_since[key]
+        for key in list(green_since):
+            if p_now.get(key[0]) != ('wait', key[1]):
+                del green_since[key]
+        previous, car_previous = p_now, c_by_id
+        old_contacts = overlap
+
+    return {**stats, 'people': [min_pop, max_pop], 'contact': contacts, 'red_entries': red_start,
+            'stuck': stuck, 'green_wait': green_wait, 'longest_wait_for_car': stop_for_car,
+            'longest_wait_for_person': stop_for_person, 'passing_with_person': sorted(pass_during_crossing),
+            'crossing_starts': entries, 'crossing_completions': completions, 'nearest_a2': nearest,
+            'red_to_crossing_examples': signal_examples, 'used_approaches': active_in}
 
 
 if __name__ == '__main__':
-    result = audit()
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    captured = trace(with_people=True)
+    result = {'people': audit(captured), 'cars': audit_cars(False, True, captured)}
+    print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
     if '--verify' in sys.argv:
-        # Survey width less 0.3 m of clearance on either side, rounded down to dm.
-        assert all(row['usable'] + .7 >= row['survey'] for row in result['widths']), 'crossing widths'
-        assert all(not result.get(key) for key in ('stationary', 'green_waits', 'off_floor_frames', 'red_entries')), 'people replay'
+        assert not result['people']['contact'] and not result['people']['red_entries']
+        assert not result['people']['passing_with_person']

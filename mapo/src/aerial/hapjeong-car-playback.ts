@@ -3,8 +3,8 @@ import { makeCars } from '../sim/cars.ts';
 import { headingNear } from '../sim/graph.ts';
 import { CYCLE, LEFT, RIGHT, STRAIGHT } from '../sim/intersection/index.ts';
 import { makeSimProvider } from '../sim/provider.ts';
-import { hapjeongCarGraph, type HapjeongCars } from './hapjeong-car-graph.ts';
-import type { XZ } from './hapjeong-vehicles.ts';
+import { hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-graph.ts';
+import { hapjeongCrossings, makeHapjeongPeople, type HapjeongPeopleInput } from './hapjeong-people.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
 
 export const carViews = [
@@ -39,7 +39,7 @@ function delta(a: number, b: number) {
   return (b - a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
 }
 
-export function carPlayback(data: HapjeongCars, ambient = true) {
+export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true) {
   const visible = carVisibility();
   const full = hapjeongCarGraph(data);
   const central = new Set(data.central);
@@ -104,14 +104,17 @@ export function carPlayback(data: HapjeongCars, ambient = true) {
   const dt = 1 / 30;
   const start = { tod: 14 * 3600, dow: 6, doy: 175 };
   const seed = 11, max = 256;
+  const clock = (seconds: number) => ({ ...start, tod: start.tod + seconds });
+  const crossings = pedestrians && hapjeongCrossings(pedestrians.walk, data.crosswalks, graph.inter.S);
   function reset() {
+    const busy = new Uint32Array(graph.crosswalks.length);
     const sim = makeCars(graph.edges, makeSimProvider(), seed, max, [graph.bus], graph.inter,
-      { list: graph.crosswalks, busy: new Uint32Array(graph.crosswalks.length) });
+      { list: graph.crosswalks, busy });
     const site = graph.inter.S.list.find(site => site.j >= 0);
     if (!site) throw Error('합정 차량 신호를 연결하지 못했습니다.');
     sim.setFocus(site.x, site.z, 100, visible);
     const seeded = new Set<number>();
-    for (const move of ambient ? [] : [STRAIGHT, LEFT, RIGHT]) {
+    for (const move of ambient || !carsEnabled ? [] : [STRAIGHT, LEFT, RIGHT]) {
       const route = chosen.find(r => r.movement === move && !seeded.has(r.chain[0]));
       if (!route) continue;
       seeded.add(route.chain[0]);
@@ -120,20 +123,33 @@ export function carPlayback(data: HapjeongCars, ambient = true) {
       sim.put(e.id, at, 0);
       if (move === STRAIGHT && at >= 14) sim.put(e.id, at - 12, 0);
     }
-    if (!sim.addBus(0, Math.min(graph.edges[graph.bus.edges[0]].len - 18, 34))) throw Error('버스 시험 출발점이 막혔습니다.');
-    return sim;
+    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, [site.x, site.z]);
+    if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.bus.edges[0]].len - 18, 34))) {
+      throw Error('버스 시험 출발점이 막혔습니다.');
+    }
+    if (people) {
+      // Run the same clock during pre-roll so pedestrians and cars see one another from the start.
+      for (let i = -12 / dt; i < 0; i++) {
+        const now = clock(i * dt);
+        if (carsEnabled) sim.step(dt, now, ambient);
+        people.step(dt, now, true);
+      }
+    }
+    return { sim, people, busy };
   }
 
-  let sim = reset(), frame = 0;
-  const clock = (seconds: number) => ({ ...start, tod: start.tod + seconds });
+  let state = reset(), frame = 0;
   function at(seconds: number) {
     const target = Math.round(Math.max(0, Math.min(duration, seconds)) / dt);
-    if (target < frame) { sim = reset(); frame = 0; }
+    if (target < frame) { state = reset(); frame = 0; }
     while (frame < target) {
       frame++;
-      sim.step(dt, clock(frame * dt), ambient);
+      const now = clock(frame * dt);
+      if (carsEnabled) state.sim.step(dt, now, ambient);
+      state.people?.step(dt, now, true);
     }
-    return sim;
+    return state.sim;
   }
-  return { at, clock, duration, graph, max, chosen, ingressAudit };
+  return { at, clock, duration, graph, max, chosen, ingressAudit, crossings,
+    people: () => state.people, busy: () => state.busy };
 }
