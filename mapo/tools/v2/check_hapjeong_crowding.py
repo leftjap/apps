@@ -76,7 +76,7 @@ def audit(records, plan):
     walk_at = {}
     frozen = {}
     for line in records:
-        t, cars, people, _ = json.loads(line)
+        t, cars, people, *_ = json.loads(line)
         xy = np.asarray([p[1:3] for p in people]).reshape(-1,2)
         waiting = defaultdict(set)
         for p in people:

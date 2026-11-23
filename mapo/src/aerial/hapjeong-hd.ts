@@ -135,8 +135,7 @@ async function init() {
     return response.json();
   };
   if (peopleMode) {
-    people = { walk: await load('walk'), signalTest: query.get('signaltest') === '1' };
-    if (query.get('crowd') === '1') people.crowd = await load('crowd');
+    people = { walk: await load('walk'), entrances: await load('entrances'), signalTest: query.get('signaltest') === '1' };
   }
   const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
   const demand = simulation ? await load('demand') as import('./hapjeong-car-playback.ts').HapjeongDemand : undefined;
@@ -156,6 +155,16 @@ async function init() {
   const sun = new THREE.DirectionalLight('#fff0d8', 1.35);
   sun.position.set(-200, 300, 100);
   model.add(survey, hd, route, buildings, sun, new THREE.HemisphereLight('#dceafa','#5c5751',2));
+  if (people?.entrances) {
+    const { makeStations } = await import('../render/stations.ts');
+    const { exits, station, lines } = people.entrances;
+    const stations = makeStations({
+      exits, stations: [{ name:station, x:0, z:0 }], buildings: [], elevators: new Float32Array(),
+      lines: lines.map(line=>({ ...line, stopNames:[station] })),
+    });
+    stations.setUnderVisible(false);
+    model.add(stations.group);
+  }
   addFaces(model,data.floor.road,flat('#535e69'),.01);
   const walk = flat('#e0c9a8',1);
   addFaces(survey,[...data.floor.walk,...data.floor.islands],walk,.02);
@@ -254,7 +263,7 @@ async function init() {
     if (peopleMode) params.set('people', '1');
     if (carsMode) params.set('cars', '1');
     params.set('view', view.id);
-    for (const key of ['paused', 'at', 'seeded', 'crowd', 'signaltest']) if (query.has(key)) params.set(key, query.get(key)!);
+    for (const key of ['paused', 'at', 'seeded', 'signaltest']) if (query.has(key)) params.set(key, query.get(key)!);
     history.replaceState(null, '', `?${params}`);
   }
   form.addEventListener('change',draw);

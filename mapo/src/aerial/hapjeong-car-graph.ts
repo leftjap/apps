@@ -3,6 +3,7 @@ import { cumLen, pointAt } from '../poly.ts';
 import type { BusRoute } from '../sim/buses.ts';
 import type { Edge } from '../sim/graph.ts';
 import { makeIntersections } from '../sim/intersection/index.ts';
+import type { HapjeongPlatform } from './hapjeong-people.ts';
 export type XZ = [number, number];
 
 type Link = {
@@ -28,7 +29,7 @@ export type HapjeongCars = {
 };
 
 export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<number>, entries = new Set<number>(), margin = 0,
-                                busChains = [data.bus]) {
+                                busChains = [data.bus], platforms: HapjeongPlatform[] = []) {
   const volume = new Map(data.bundles.flatMap(bundle => bundle.lanes.map(i => [i, bundle.lanes.length] as const)));
   const central = new Set(data.central);
   const ids = data.links.map((_, i) => i).filter(i => !selected || selected.has(i));
@@ -102,8 +103,12 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
       len += edges[id].len;
       return at;
     });
+    const stops = busEdges.flatMap((id,k) => platforms.filter(stop => stop.link===links[id].id)
+      .map(stop => ({key:stop.key, at:start[k]+stop.at-(boundary(data.links[chain[k]].points[0]) ? margin : 0)})))
+      .sort((a,b)=>a.at-b.at);
     return { ref: '합정', to: '', kind: 0, edges: busEdges, start, len,
-      stops: [], stopNames: [], shift: [], med: [], usesMed: false };
+      stops: stops.map(stop=>stop.at), stopNames: stops.map(stop=>stop.key), shift: [],
+      med: stops.map(()=>false), usesMed: false };
   });
   return { edges, inter, buses, links, crosswalks, stopLines };
 }

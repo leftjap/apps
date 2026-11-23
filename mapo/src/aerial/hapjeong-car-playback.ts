@@ -130,7 +130,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     return { id: link.id, reason };
   });
   // Keep the entire body inside the drawn map at source and sink boundaries.
-  const graph = hapjeongCarGraph(data, selected, entries, 8, buses);
+  const graph = hapjeongCarGraph(data, selected, entries, 8, buses, pedestrians?.entrances?.platforms);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   // Keep the second walk phase available for trips that reach a refuge
   // too late to finish both faces during their first green.
@@ -157,7 +157,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       sim.put(e.id, at, 0);
       if (move === STRAIGHT && at >= 14) sim.put(e.id, at - 12, 0);
     }
-    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod);
+    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod, (x,z)=>!visible(x,z));
     if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
     }

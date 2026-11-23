@@ -71,7 +71,7 @@ def audit(captured):
             target.update(seconds=round(time - t0 + 1/30, 3), start=round(t0, 2), end=round(time, 2), **detail)
 
     for line in frames:
-        t, cars, people, busy = json.loads(line)
+        t, cars, people, busy, *_ = json.loads(line)
         if people is None:
             continue
         c_by_id = {r[0]: r for r in cars}

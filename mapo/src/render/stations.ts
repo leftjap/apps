@@ -126,7 +126,11 @@ export const EXIT_SHAPES: Record<ExitKind, () => THREE.BufferGeometry> = {
 const KIND_NO: Record<ExitKind, number> = { open: 0, old: 1, vault: 2, box: 3, slim: 4, kiosk: 5, grand: 6, mural: 7 };
 
 /** ground 가 있으면 출구 모형·엘리베이터 바닥이 그린 찻길 면 안(가장자리에서 0.3m 넘게)일 때 찻길 면 밖 가장 가까운 자리로 옮겨 그린다(재작업 W57. 사람이 드나드는 출구 자리는 그대로) */
-export function makeStations(board: Board, ground?: GroundQuery) {
+type StationBoard = Pick<Board, 'stations' | 'exits' | 'buildings' | 'elevators'> & {
+  lines: (Board['lines'][number] | Pick<Board['lines'][number], 'id' | 'color' | 'stopNames'>)[];
+};
+
+export function makeStations(board: StationBoard, ground?: GroundQuery) {
   const group = new THREE.Group();
   const names = board.stations.map((s) => s.name);
   const color = (name: string) => new THREE.Color(ACCENT[name] ?? '#8fd3ff');
@@ -142,8 +146,9 @@ export function makeStations(board: Board, ground?: GroundQuery) {
     const c = color(name);
     const info: [number, number, number, number] = [c.r, c.g, c.b, si];
     const mine = ribbon();
-    const corridors: { l: (typeof board.lines)[number]; a: number; b: number }[] = [];
+    const corridors: { l: Board['lines'][number]; a: number; b: number }[] = [];
     for (const l of board.lines) {
+      if (!('p' in l)) continue;
       const k = l.stopNames.indexOf(name);
       if (k < 0) continue;
       const len = l.cum[l.cum.length - 1];

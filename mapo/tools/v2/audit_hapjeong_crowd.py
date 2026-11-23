@@ -70,7 +70,7 @@ def frames(records, meta, plan, static):
     p_ever = set()
     dt = 1/30
     for line in records:
-        t, cars, people, busy = json.loads(line)
+        t, cars, people, busy, *_ = json.loads(line)
         cycle = min(1,int(t // meta['cycle']))
         count_views = round(t * 30) % 6 == 0
         across = np.array([[p[1],p[2]] for p in people]).reshape(-1,2)

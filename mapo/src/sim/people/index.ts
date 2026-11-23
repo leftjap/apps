@@ -52,6 +52,8 @@ export interface Portal {
   key: string;
   x: number;
   z: number;
+  /** Physical entrance connected to the walking graph. */
+  mouth?: [number, number];
   /** 중앙버스정류장: (x, z)는 버스가 서는 자리(승강장 가운데에서 버스 진행 방향으로 ISLAND_BACK 앞), yaw 는 버스 진행 방향 */
   median?: boolean;
   yaw?: number;
@@ -383,7 +385,7 @@ export function makePeople(
     if (!at) continue;
     const [he, t, lat] = at;
     const zone = zoneOf(p.x, p.z);
-    pushDock({ kind: p.kind, key: p.key, x: p.x, z: p.z, he, t, lat, zone, mask: placeMask(p.x, p.z, 20), weight: 1 });
+    pushDock({ kind: p.kind, key: p.key, x: p.x, z: p.z, he, t, lat, zone, mask: placeMask(p.x, p.z, 20), weight: 1, door:p.mouth });
   }
   for (const d of g.doors) {
     const he = heOf.get(d.a * 64 + d.k);
@@ -2318,7 +2320,9 @@ export function makePeople(
       // 문 앞 걷는 띠 자리부터 0.9m 씩 옆으로
       let done = false;
       for (let r = 0; r < 6 && !done; r++) {
-        const s = Math.max(0, Math.min(h.L, d.t - 5.5, Math.max(d.t - 5.5, Math.min(d.t + 5.5, Math.max(d.t - 4, Math.min(d.t + 4, s0)) + (r % 2 ? -1 : 1) * Math.ceil(r / 2) * 0.9))));
+        const space = (r % 2 ? -1 : 1) * Math.ceil(r / 2) * 0.9;
+        const s = o.surveyedCrossings ? Math.max(0, Math.min(h.L, s0 + space)) :
+          Math.max(0, Math.min(h.L, d.t - 5.5, Math.max(d.t - 5.5, Math.min(d.t + 5.5, Math.max(d.t - 4, Math.min(d.t + 4, s0)) + space))));
         const lat = d.lat || (h.hi > -h.lo ? h.hi * 0.7 : h.lo * 0.7);
         const i = spawnAt(k, onHe(d.he, s, Math.max(h.lo, Math.min(h.hi, lat))));
         if (i >= 0) {
@@ -2331,6 +2335,7 @@ export function makePeople(
   /** 버스가 섰다: 그 정류장 줄에 선 사람이 문 앞 보도 자리로 걸어가 탄다 */
   function board(key: string, doorX: number, doorZ: number) {
     const ds = new Set(docksOf('stop', key));
+    let boarding = 0;
     for (let i = 0; i < w.n; i++) {
       if (mode[i] !== QUEUE || !ds.has(dockOf[i])) continue;
       const d = docks[dockOf[i]];
@@ -2338,8 +2343,10 @@ export function makePeople(
       const [s] = proj(d.he, doorX, doorZ);
       [tx[i], tz[i]] = onHe(d.he, Math.max(0, Math.min(h.L, s)), d.lat || (h.hi > -h.lo ? h.hi * 0.9 : h.lo * 0.9));
       mode[i] = BOARD;
+      boarding++;
       waitT[i] = 0;
     }
+    return boarding;
   }
   /** 정류장에서 기다리는 사람 수 */
   const waitingAt = (key: string) => {
@@ -2486,7 +2493,16 @@ export function makePeople(
     seek(i, g);
     return w.id[i];
   }
-  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, put, goHome, trip, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
+  /** A passenger already waiting when a surveyed replay opens. */
+  function openingPassenger(stop: number) {
+    if (!o.surveyedCrossings || stepNo || docks[stop]?.kind !== 'stop') return -1;
+    rebuildGrid();
+    const i = spawnAt(stop);
+    if (i < 0) return -1;
+    arrive(i, stop);
+    return w.id[i];
+  }
+  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, put, goHome, trip, openingPassenger, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
 }
 export type People = ReturnType<typeof makePeople>;
 
