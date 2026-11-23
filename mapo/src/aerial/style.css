@@ -30,7 +30,7 @@ button { background: #345652; border-color: #5d827c; white-space: nowrap; }
 input[type=password] { width: min(225px, 55vw); }
 .toolbar { align-items: center; margin-bottom: 8px; }
 .locations, .surface-options, .layers { display: flex; align-items: center; gap: 8px; padding: 0; margin: 0; border: 0; }
-.surface-options[hidden] { display: none; }
+.surface-options[hidden], .surface-options label[hidden] { display: none; }
 .locations label, .surface-options label, .building-toggle {
   position: relative;
   display: inline-flex;

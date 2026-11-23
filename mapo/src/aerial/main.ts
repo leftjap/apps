@@ -39,7 +39,9 @@ function initMap(canvas: HTMLCanvasElement) {
   const keyControl = document.querySelector<HTMLInputElement>('#imagery-key')!;
   buildings.visible = buildingControl.checked;
   let site: keyof typeof PILOT_SITES = 'seogyo';
-  let preferredSurface: SurfaceMode = new URLSearchParams(location.search).get('surface') === 'road' ? 'road' : 'photo';
+  const query = new URLSearchParams(location.search);
+  const localInspection = import.meta.env.DEV && query.has('inspect');
+  let preferredSurface: SurfaceMode = query.get('surface') === 'road' ? 'road' : 'photo';
   let surfaceMode: SurfaceMode = 'photo';
   let source: TileSource | undefined;
   let requests = new AbortController();
@@ -61,28 +63,32 @@ function initMap(canvas: HTMLCanvasElement) {
     if (surfaceMode === 'photo') {
       surfaceStatus.textContent = '항공사진 원본';
     } else {
-      const label = surfaceMode === 'road' ? '도로 그림' : '겹쳐 보기';
+      const label = surfaceMode === 'road' ? '도로 그림' : surfaceMode === 'hand' ? '손 도면' : '겹쳐 보기';
       if (state === 'error') {
         surfaceStatus.textContent = `${label}용 도면을 불러오지 못했습니다.`;
       } else if (state === 'loading') {
         surfaceStatus.textContent = `${label}용 도면을 불러오는 중입니다.`;
       } else {
         surfaceStatus.textContent = surfaceMode === 'road'
-          ? '서교동사거리 도로 그림 · 베이지색은 인도, 화면 가장자리의 진회색은 도면 범위 밖입니다.'
-          : '민트색은 연석, 하늘색은 노면 표시입니다. 주황 점선은 차량이나 나무에 가려 위치를 추정한 부분입니다.';
+          ? '도로 그림 · 베이지색은 차도 밖 배경입니다. 보행 가능 여부는 미확인입니다.'
+          : surfaceMode === 'hand'
+            ? '항공사진을 보고 그린 손 도면입니다. 주황 점선은 가려진 부분의 추정 위치입니다.'
+            : '민트색은 연석, 하늘색은 노면 표시입니다. 주황색은 사진 미확인입니다. 주황 횡단보도 줄은 가린 곳의 추정 위치입니다. 분홍색은 위치 차이나 도색 충돌을 표시합니다.';
       }
     }
     render();
   }
 
   function showSurface() {
-    surfaceMode = site === 'seogyo' ? preferredSurface : 'photo';
-    surfaceOptions.hidden = site !== 'seogyo';
-    surfaceStatus.hidden = site !== 'seogyo';
+    const available = site === 'seogyo' || localInspection;
+    surfaceMode = available && !(site !== 'seogyo' && preferredSurface === 'hand') ? preferredSurface : 'photo';
+    surfaceOptions.hidden = !available;
+    surfaceStatus.hidden = !available;
+    surfaceOptions.querySelector<HTMLLabelElement>('label:has([value="hand"])')!.hidden = site !== 'seogyo';
     imageryStatus.hidden = surfaceMode === 'road';
-    for (const input of surfaceInputs) input.checked = input.value === preferredSurface;
+    for (const input of surfaceInputs) input.checked = input.value === surfaceMode;
     photos.visible = surfaceMode !== 'road';
-    roads.setMode(surfaceMode);
+    roads.setMode(surfaceMode, site);
     updateSurfaceStatus();
   }
 
