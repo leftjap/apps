@@ -10,7 +10,8 @@ import type { HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 
 export type HapjeongPortal = Portal & { origin: XZ };
 export type HapjeongWalk = WalkJson & { crossings: string[]; portals: HapjeongPortal[] };
-export type HapjeongPeopleInput = { walk: HapjeongWalk; signalTest?: boolean };
+export type HapjeongCrowd = { max: number; interval: number; routes: [string, string, number][] };
+export type HapjeongPeopleInput = { walk: HapjeongWalk; signalTest?: boolean; crowd?: HapjeongCrowd };
 
 export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['crosswalks'], signals: SignalPlan, groups: readonly string[][] = []) {
   const byId = new Map(crossings.map((c, i) => [c.id, i]));
@@ -85,12 +86,22 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
                                    cars: ReturnType<typeof makeCars>, busy: Uint32Array, start = 14 * 3600) {
   const { portals } = input.walk;
   const { graph, walkLeft, signalPairs } = crossings;
-  const trial = input.signalTest ? crossingCourses(graph, signalPairs, crossings.signals, start) : undefined;
+  const populationLimit = input.crowd?.max ?? HAPJEONG_PEOPLE_MAX;
+  const trial = input.signalTest ? crossingCourses(graph, signalPairs, crossings.signals, start, input.crowd ? 2 : 1) : undefined;
   const people = makePeople(graph, trial ? [...portals, ...trial.portals] : portals, makeSimProvider(), 5,
-    HAPJEONG_PEOPLE_MAX + (trial?.pending.length ?? 0), {
+    populationLimit + (trial?.pending.length ?? 0), {
     cars: cars.cars, busy, walkLeft, traffic: cars.approaching,
   });
   const routes = portalRoutes(graph, portals);
+  const portalIndices = new Map(portals.map((p, i) => [p.key, i]));
+  const crowdRoutes = input.crowd?.routes.map(([source, destination, weight]) => {
+    const from = portalIndices.get(source);
+    const to = portalIndices.get(destination);
+    if (from === undefined || to === undefined || !routes[from].some(row => row.to === to))
+      throw Error(`밀집 시험 출입구를 이을 수 없습니다. ${source} → ${destination}`);
+    return { from, to, weight };
+  }) ?? [];
+  const crowdWeights = crowdRoutes.map(route => route.weight);
   const portalAudit = portals.map((p,i) => ({ ...p, destinations: routes[i].map(row => portals[row.to].key) }));
   const froms = routes.flatMap((row,i) => row.length ? [i] : []);
   // Start the replay with a real, shortest trip across each divided
@@ -130,13 +141,16 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
     }
     untilNext -= dt;
     if (untilNext > 0 || !froms.length) return;
-    if (trial && people.w.n-trial.active.size >= HAPJEONG_PEOPLE_MAX) return;
+    if (trial && people.w.n-trial.active.size >= populationLimit) return;
     const earlier = firstTrips.shift();
     const nearby = earlier ? [earlier] : routes[froms[cursor++ % froms.length]].slice(0, 5);
-    const { from, to } = nearby[pick(nearby.map(row => 1 / (30 + row.cost)), rand())];
+    // Keep a small background of ordinary routes in the measured crowd case.
+    const { from, to } = !earlier && crowdRoutes.length && rand() >= .075
+      ? crowdRoutes[pick(crowdWeights, rand())]
+      : nearby[pick(nearby.map(row => 1 / (30 + row.cost)), rand())];
     const id = people.trip(dockIndices.get(portals[from].key) ?? -1, dockIndices.get(portals[to].key) ?? -1);
     if (id >= 0) journeys.set(id, { from:portals[from].key, to:portals[to].key, tod:now.tod });
-    untilNext = 1.5 + 1.1 * rand();
+    untilNext = input.crowd ? input.crowd.interval * (.73 + .54 * rand()) : 1.5 + 1.1 * rand();
   }
   cars.setPeople(people.w);
   return { ...people, advance, portalAudit, journeys, crossingTrial:trial };

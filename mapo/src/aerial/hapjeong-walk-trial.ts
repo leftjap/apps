@@ -11,7 +11,7 @@ function ends(link: CrossLink) {
   ] as const;
 }
 
-export function crossingCourses(graph: WalkGraph, pairs: readonly number[][], signals: SignalPlan, start: number) {
+export function crossingCourses(graph: WalkGraph, pairs: readonly number[][], signals: SignalPlan, start: number, minPerSide = 1) {
   const portals: HapjeongPortal[] = [];
   const together = [...pairs, ...graph.links.filter(link=>!pairs.some(pair=>pair.includes(link.xw))).map(link=>[link.xw])];
   const courses = together.flatMap(crossings=>{
@@ -43,7 +43,7 @@ export function crossingCourses(graph: WalkGraph, pairs: readonly number[][], si
     const green = signed ? endOfGreen+signals.walkIn(first,endOfGreen+.001)+.001 : start;
     const launch = signed ? Math.max(start-11,green-14) : start-6;
     const width = Math.min(...links.map(l=>l!.wid),...bank.map(side=>side.width));
-    const perSide = Math.max(1,Math.floor(width/(4*BODY_R)));
+    const perSide = Math.max(minPerSide,Math.floor(width/(4*BODY_R)));
     return [{crossings,keys,signed,perSide,launch:launch-start,green:green-start}];
   });
   const pending = courses.flatMap((course,index)=>[0,1].flatMap(wave=>[0,1].flatMap(side=>

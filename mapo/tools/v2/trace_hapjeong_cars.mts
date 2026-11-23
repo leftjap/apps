@@ -10,6 +10,7 @@ const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/dat
 const data: HapjeongCars = read('cars');
 const signalTest = process.argv.includes('--signal-test');
 const people: HapjeongPeopleInput | undefined = signalTest || process.argv.includes('--people') ? { walk: read('walk'), signalTest } : undefined;
+if (people && process.argv.includes('--crowd')) people.crowd = read('crowd');
 const run = carPlayback(data, !process.argv.includes('--seeded'), people, true,
   process.argv.includes('--unscaled') ? undefined : read('demand'));
 const { inter: { X, S }, edges, links } = run.graph;
@@ -31,7 +32,7 @@ console.log(JSON.stringify({
   gates:Object.fromEntries(approach.map(a=>[a.edge,edges[a.edge].len-X.gate(a.edge,0)])),
   portalAudit: run.people()?.portalAudit,
   crossingTrial: run.people()?.crossingTrial?.courses,
-  removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
+  removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R, crowd: people?.crowd,
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
     green: site.steps.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
     associated: S.crossSite[i] >= 0,

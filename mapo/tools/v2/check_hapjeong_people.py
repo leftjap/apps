@@ -25,6 +25,7 @@ def audit(captured):
             for row in data['crosswalks']]
     allowed = union_all([pavement, *shapes, *pads])
     prepare(allowed)
+    prepare(pads)
     physical_pads = [prep(pad) for pad in pads]
     # Same framing as the 80m production review cameras.
     views = meta['views']
@@ -81,6 +82,7 @@ def audit(captured):
         p_x = np.array([p[1] for p in people])
         p_z = np.array([p[2] for p in people])
         on_walk = intersects_xy(allowed, p_x, p_z)
+        at_pad.update(np.flatnonzero(intersects_xy(pads, p_x[:, None], p_z[:, None]).any(axis=0)))
         frame_off = 0
         for i, row in enumerate(people):
             uid, x, z, state, idx, light, valid, waiting_car, moves, trip = row[:10]
@@ -92,9 +94,6 @@ def audit(captured):
                 trip_positions[uid] = x, z, length
                 if state == 'leave' and uid not in arrived:
                     arrived[uid] = [round(t,3), trip['from'], trip['to'], round(length,2), x, z]
-            for j, pad in enumerate(pads):
-                if intersects_xy(pad, x, z):
-                    at_pad.add(j)
             p_now[uid] = (state, idx)
             old, old_idx = previous.get(uid, ('', -1))
             label = ids[idx] if idx >= 0 else None
@@ -219,8 +218,15 @@ def audit(captured):
 
 
 if __name__ == '__main__':
-    captured = open(sys.argv[sys.argv.index('--trace')+1]).read().splitlines() if '--trace' in sys.argv else trace(with_people=True)
-    result = {'people': audit(captured), 'cars': audit_cars(False, True, captured)}
+    if '--trace' in sys.argv:
+        with open(sys.argv[sys.argv.index('--trace')+1]) as captured:
+            people = audit(captured)
+            captured.seek(0)
+            cars = audit_cars(False, True, captured)
+    else:
+        captured = trace(with_people=True)
+        people, cars = audit(captured), audit_cars(False, True, captured)
+    result = {'people': people, 'cars': cars}
     print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
     if '--verify' in sys.argv:
         assert not result['people']['contact'] and not result['people']['red_entries']
