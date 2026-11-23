@@ -3,6 +3,8 @@ import math
 from collections import defaultdict
 from itertools import pairwise
 import json
+import subprocess
+from pathlib import Path
 
 import numpy as np
 from shapely import constrained_delaunay_triangles, contains_xy, get_parts
@@ -25,16 +27,43 @@ class Network:
     def __init__(self, walk):
         self.walk = walk
         self.safe = walk.buffer(-BODY)
+        self.room = prep(self.safe)
         self.edges = {}
         self.nodes = defaultdict(set)
 
-    def edge(self, a, b):
+    def band(self, a, b):
+        # Like walkfix, measure each side independently after dm rounding.
+        # Here the surveyed pavement can certify the entire rectangle.
+        line = LineString([a, b])
+        if not self.room.covers(line) or line.distance(self.safe.boundary) < EDGE_PAD:
+            return None
+        length = line.length
+        nx, nz = (a[1] - b[1]) / length, (b[0] - a[0]) / length
+
+        def room(sign):
+            lo, hi = 0, 80
+            while lo < hi:
+                m = (lo + hi + 1) // 2
+                dx, dz = (m / 10 + EDGE_PAD) * nx * sign, (m / 10 + EDGE_PAD) * nz * sign
+                if self.room.covers(Polygon([a, b, (b[0]+dx, b[1]+dz), (a[0]+dx, a[1]+dz)])):
+                    lo = m
+                else:
+                    hi = m - 1
+            return lo
+
+        return -room(-1), room(1)
+
+    def edge(self, a, b, band=None):
         if a == b:
             return False
-        line = LineString([a, b])
-        if not self.safe.covers(line) or line.distance(self.safe.boundary) < EDGE_PAD:
+        if a > b:
+            a, b = b, a
+            band = (-band[1], -band[0]) if band is not None else None
+        if band is None:
+            band = self.band(a, b)
+        if band is None:
             return False
-        self.edges[min(a, b), max(a, b)] = min(14, math.floor((line.distance(self.safe.boundary) - EDGE_PAD) * 10))
+        self.edges[a, b] = band
         self.nodes[a].add(b)
         self.nodes[b].add(a)
         return True
@@ -54,37 +83,47 @@ class Network:
                             self.edge(p, middle)
                             self.edge(middle, q)
 
-    def attach(self, p, reach=math.inf):
+    def attach(self, p, reach=math.inf, landing=False):
         if p in self.nodes:
             return True
+        options = []
         for q in sorted(self.nodes, key=lambda q: math.dist(p, q))[:48]:
-            if math.dist(p, q) > reach:
+            distance = math.dist(p, q)
+            if distance > reach:
                 break
-            if self.edge(p, q):
-                return True
-        return False
+            band = self.band(p, q)
+            if band is None:
+                continue
+            if not landing:
+                return self.edge(p, q, band)
+            # Don't funnel the end of a broad crossing into the nearest
+            # skinny triangle. Prefer a direct two-way approach when one fits.
+            width = band[1] - band[0]
+            options.append((max(0, 24 - width), distance, q, band))
+        if not options:
+            return False
+        _, _, q, band = min(options)
+        return self.edge(p, q, band)
 
     def encode(self, crossings):
         n, e, r, x = [], [], [], []
-        landings = {p for a, _, _, b, *_ in crossings for p in (a, b)}
         ids = {p: i for i, p in enumerate(sorted(self.nodes))}
         prev = (0, 0)
         for p in ids:
             n.extend(round((v - q) * 10) for v, q in zip(p, prev, strict=True))
-            # Finish the crossing close to the attached edge. A large node
-            # circle can end CROSS before the walker reaches the pavement grid.
-            cap = 3 if p in landings else 20
-            r.append(min(cap, max(0, math.floor((Point(p).distance(self.safe.boundary) - .01) * 10))))
+            # Legacy node-circle bound, also constrained by the surveyed pavement.
+            limit = min(30, max(6, *(max(map(abs, self.edges[min(p,q), max(p,q)])) for q in self.nodes[p])))
+            r.append(max(0, min(limit, math.floor(Point(p).distance(self.safe.boundary) * 10)) - 1))
             prev = p
         last = 0
-        ordered = sorted((min(ids[a], ids[b]), max(ids[a], ids[b]), width) for (a, b), width in self.edges.items())
-        for a, b, width in ordered:
-            e.extend([a - last, b - a, 6, -width, width])
+        ordered = sorted((min(ids[a], ids[b]), max(ids[a], ids[b]), band) for (a, b), band in self.edges.items())
+        for a, b, (lo, hi) in ordered:
+            e.extend([a - last, b - a, 6, lo, hi])
             last = a
         for i, (a, p, q, b, width, wait_a, wait_b) in enumerate(crossings):
             coords = [round(v * 10) for pt in (p, q, a, b) for v in pt]
             x.extend([i, ids[a], ids[b], *coords, width, 1, *wait_a, *wait_b])
-        return dict(v=3, n=n, e=e, r=r, x=x, a=encode_area(self.safe))
+        return dict(v=3, n=n, e=e, r=r, x=x, d=[], a=encode_area(self.safe))
 
 
 def encode_area(safe):
@@ -202,9 +241,10 @@ def crossing_route(row, network, landings):
             lo, hi = min(0, math.floor(v*10)), max(0, math.ceil(v*10))
             if not fits(lo/10-.01,hi/10+.01):
                 return None
-            while lo > -14 and fits((lo-1)/10,hi/10):
+            lim = math.floor(max(.25, width / 20 - .3) * 10)
+            while lo > -lim and fits((lo-1)/10,hi/10):
                 lo -= 1
-            while hi < 14 and fits(lo/10,(hi+1)/10):
+            while hi < lim and fits(lo/10,(hi+1)/10):
                 hi += 1
             return [lo, hi]
 
@@ -220,7 +260,7 @@ def crossing_route(row, network, landings):
         if usable < 6:
             continue
         wait_a, wait_b = wait(start, -1), wait(end, 1)
-        if wait_a is not None and wait_b is not None and network.attach(start) and network.attach(end):
+        if wait_a is not None and wait_b is not None and network.attach(start, reach=15, landing=True) and network.attach(end, reach=15, landing=True):
             return (*points, usable, wait_a, wait_b)
     return None
 
@@ -289,7 +329,10 @@ def bake(floor, cars):
             reason = 'pavement missing at one or both ends' if not all(e['connected'] for e in ends) else 'full-width engine corridor does not fit'
             excluded.append(dict(id=row['id'], reason=reason))
     portals, rejected = spawn_points(network, floor, box(*cars['window']))
-    return dict(**network.encode(crossings), crossings=ids, landings=landings, excluded=excluded, portals=portals, rejectedPortals=rejected)
+    graph = network.encode(crossings)
+    derived = subprocess.run(['node', '--experimental-strip-types', str(Path(__file__).with_name('hapjeong_walk_width.mts'))],
+                             input=json.dumps(graph), text=True, capture_output=True, check=True)
+    return dict(**graph, **json.loads(derived.stdout), crossings=ids, landings=landings, excluded=excluded, portals=portals, rejectedPortals=rejected)
 
 
 if __name__ == '__main__':

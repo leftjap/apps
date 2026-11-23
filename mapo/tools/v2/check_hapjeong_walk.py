@@ -48,7 +48,10 @@ def verify():
         bx, bz = nodes[b]
         line = LineString([nodes[a], nodes[b]])
         assert line.length > 0 and lo <= 0 <= hi
-        clearance = line.buffer(max(-lo, hi) / 10 + .02)
+        nx, nz = (az - bz) / line.length, (bx - ax) / line.length
+        low, high = lo / 10 - .02, hi / 10 + .02
+        clearance = Polygon([(ax + t*nx, az + t*nz) for t in (low, high)] +
+                            [(bx + t*nx, bz + t*nz) for t in (high, low)])
         assert safe.covers(clearance), ('edge clearance', nodes[a], nodes[b], lo, hi)
         assert not road.intersects(line), ('ordinary edge crosses traffic', nodes[a], nodes[b])
         neighbours[a].add(b)
