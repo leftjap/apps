@@ -45,7 +45,9 @@ class Network:
             while lo < hi:
                 m = (lo + hi + 1) // 2
                 dx, dz = (m / 10 + EDGE_PAD) * nx * sign, (m / 10 + EDGE_PAD) * nz * sign
-                if self.room.covers(Polygon([a, b, (b[0]+dx, b[1]+dz), (a[0]+dx, a[1]+dz)])):
+                tx, tz = nz * EDGE_PAD, -nx * EDGE_PAD
+                start, end = (a[0]-tx, a[1]-tz), (b[0]+tx, b[1]+tz)
+                if self.room.covers(Polygon([start, end, (end[0]+dx, end[1]+dz), (start[0]+dx, start[1]+dz)])):
                     lo = m
                 else:
                     hi = m - 1
@@ -176,9 +178,10 @@ def crossing_route(row, network, landings):
         target = (origin[0] + direction * (base + 1.2) * ux,
                   origin[1] + direction * (base + 1.2) * uz)
         places = samples(origin, vector,
-                         [direction * (base + d * .25) for d in range(2, 15)],
+                         [direction * (base + d * .25) for d in range(2, 19)],
                          [d * .25 for d in range(-9, 10)])
-        return [p for p in sorted(places, key=lambda p: (math.dist(p, target), p))
+        return [p for p in sorted(places, key=lambda p: (
+                    -min(1.3, Point(p).distance(network.safe.boundary)), math.dist(p, target), p))
                 if network.safe.covers(LineString([p, (p[0]+direction*.8*ux, p[1]+direction*.8*uz)]).buffer(.06))
                 and route.covers(Point(p))][:32]
 
@@ -218,7 +221,7 @@ def crossing_route(row, network, landings):
         line = LineString(pts)
         room = min(Point(pts[i]).distance(network.safe.boundary) for i in (0, 3))
         return (-min(max(.2, width / 20 - .3) + .021, line.distance(allowed.boundary), (room-.375)/.27+.021),
-                Point(p).distance(survey_axis) + Point(q).distance(survey_axis), line.length, pts)
+                -min(1.3, room), Point(p).distance(survey_axis) + Point(q).distance(survey_axis), line.length, pts)
 
     for points in sorted(candidates, key=score):
         start, p, q, end = points
@@ -228,7 +231,7 @@ def crossing_route(row, network, landings):
         scale = math.hypot(dx, dz)
         vx, vz = dx / scale, dz / scale
 
-        def wait(at, direction):
+        def wait(at, direction, usable):
             u = (at[0]-p[0])*vx + (at[1]-p[1])*vz
             v = -(at[0]-p[0])*vz + (at[1]-p[1])*vx
             # The engine includes axis offset 0 and extends the box behind the wait point.
@@ -241,11 +244,18 @@ def crossing_route(row, network, landings):
             lo, hi = min(0, math.floor(v*10)), max(0, math.ceil(v*10))
             if not fits(lo/10-.01,hi/10+.01):
                 return None
-            lim = math.floor(max(.25, width / 20 - .3) * 10)
+            lim = math.floor(max(.25, usable / 20 - .3) * 10)
             while lo > -lim and fits((lo-1)/10,hi/10):
                 lo -= 1
             while hi < lim and fits(lo/10,(hi+1)/10):
                 hi += 1
+            # The incoming right-hand lane is on the opposite side of the
+            # crossing axis. Keep it clear when the departure side fits seats
+            # at the engine's 0.85m spacing. Offset 0 is included by the engine.
+            if direction == -1 and hi >= v*10 + 8.5:
+                lo = min(0, math.floor(v*10))
+            if direction == 1 and lo <= v*10 - 8.5:
+                hi = max(0, math.ceil(v*10))
             return [lo, hi]
 
         # The legacy crossing can hand a walker to the ordinary graph
@@ -259,7 +269,7 @@ def crossing_route(row, network, landings):
         usable = min(width, max(6, math.floor(20 * (clearance(points) + .279))), arrival_width)
         if usable < 6:
             continue
-        wait_a, wait_b = wait(start, -1), wait(end, 1)
+        wait_a, wait_b = wait(start, -1, usable), wait(end, 1, usable)
         if wait_a is not None and wait_b is not None and network.attach(start, reach=15, landing=True) and network.attach(end, reach=15, landing=True):
             return (*points, usable, wait_a, wait_b)
     return None
