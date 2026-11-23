@@ -48,13 +48,27 @@ function progress(time: number, { ramp, duration }: Profile) {
   return (t-ramp/2)/scale;
 }
 
-export function vehicleMotion(vehicle: TrialVehicle) {
+export function vehiclePlacement(vehicle: Pick<TrialVehicle,'path'|'length'>) {
   const lengths = [0];
   for (let i=1;i<vehicle.path.length;i++) {
     const [x,z] = vehicle.path[i-1];
     const [nextX,nextZ] = vehicle.path[i];
     lengths.push(lengths[i-1]+Math.hypot(nextX-x,nextZ-z));
   }
+  return (distance: number) => {
+    const front = pointOnPath(vehicle.path,lengths,distance);
+    const behind = pointOnPath(vehicle.path,lengths,distance-vehicle.length);
+    const dx = front[0]-behind[0], dz = front[1]-behind[1];
+    const scale = vehicle.length/(2*Math.hypot(dx,dz));
+    return {
+      front, center:[front[0]-dx*scale,front[1]-dz*scale] as XZ,
+      heading:Math.atan2(dx,dz),
+    };
+  };
+}
+
+export function vehicleMotion(vehicle: TrialVehicle) {
+  const place = vehiclePlacement(vehicle);
   return (time: number): Pose => {
     const after = time-vehicle.departAt;
     const phase = time < vehicle.approach.duration ? 'approach'
@@ -63,18 +77,11 @@ export function vehicleMotion(vehicle: TrialVehicle) {
       ? vehicle.start+(vehicle.stop-vehicle.start)*progress(time,vehicle.approach)
       : phase === 'stopped' ? vehicle.stop : phase === 'finished' ? vehicle.end
       : vehicle.stop+(vehicle.end-vehicle.stop)*progress(after,vehicle.departure);
-    const front = pointOnPath(vehicle.path,lengths,distance);
-    const behind = pointOnPath(vehicle.path,lengths,distance-vehicle.length);
-    const dx = front[0]-behind[0], dz = front[1]-behind[1];
-    const scale = vehicle.length/(2*Math.hypot(dx,dz));
-    return {
-      front, center:[front[0]-dx*scale,front[1]-dz*scale],
-      heading:Math.atan2(dx,dz), distance, phase,
-    };
+    return { ...place(distance), distance, phase };
   };
 }
 
-function vehicleShape({kind,length,width}: TrialVehicle, index: number) {
+export function vehicleShape({kind,length,width}: Pick<TrialVehicle,'kind'|'length'|'width'>, index: number) {
   const group = new THREE.Group();
   const bus = kind==='bus';
   const paint = bus ? '#77bc4c' : ['#fff1d6','#3fb4d8','#e85646','#f3bc45','#777de8'][index-1];

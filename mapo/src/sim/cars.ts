@@ -19,6 +19,7 @@ import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, leftEdg
 import { GREEN, LEFT, makeIntersections, RED, RIGHT, STEP, STRAIGHT, UTURN, YELLOW, type Inter, type LanePath } from './intersection/index.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
+import { A_MAX, B_COMF, capStopSpeed, followingAcceleration, integrateSpeed, limitAcceleration } from './longitudinal.ts';
 
 export interface Cars {
   n: number;
@@ -46,10 +47,8 @@ const VFREE = [22, 14, 12.5, 10, 7, 5.5]; // 등급별 자유 속도(m/s)
 const BUS_LEN = [11.5, 11.5, 12, 7.5]; // 종류별 버스 길이(m)
 /** 가장 긴 차의 반길이(m) */
 const HALF_MAX = Math.max(...BUS_LEN, ...BODY_LEN, 11.5) / 2;
-const A_MAX = 1.6;
 /** 차로를 바꿀 때 옆으로 옮겨 가는 빠르기(m/s) */
 const SIDE_V = 1.1;
-const B_COMF = 2.5;
 /** 노란불에 편히 설 수 있는 감속(m/s²)과 빨간불에 서는 가장 센 감속 */
 const B_AMBER = 3;
 const B_HARD = 6;
@@ -1846,14 +1845,7 @@ export function makeCars(
         }
       }
       const v0 = slowAt[e.id] >= 0 && Math.abs(s[i] - slowAt[e.id]) < 25 ? Math.min(slowV[e.id], Math.max(0.5, speed[e.id] * vf[i])) : Math.max(0.5, speed[e.id] * vf[i]);
-      const want = 2 + v[i] * 1.3 + Math.max(0, (v[i] * dv) / (2 * Math.sqrt(A_MAX * B_COMF)));
-      let a = Math.max(-0.8 * B_COMF, A_MAX * (1 - (v[i] / v0) ** 4));
-      if (front >= 0) {
-        const idm = a - A_MAX * (want / Math.max(0.3, gap)) ** 2;
-        const vl = Math.max(0, v[i] - dv);
-        const cah = v[i] <= vl ? 0 : -((v[i] - vl) ** 2) / (2 * Math.max(0.1, gap - 2));
-        a = idm >= cah ? idm : 0.01 * idm + 0.99 * (cah + B_COMF * Math.tanh((idm - cah) / B_COMF));
-      }
+      let a = followingAcceleration(v[i], v0, dv, gap, front >= 0);
       if (front >= 0 && front !== i) {
         const dc = Math.max(0, gap) + (size[front] + size[i]) / 2;
         cars.room[i] = Math.min(cars.room[i], dc);
@@ -1863,13 +1855,12 @@ export function makeCars(
       ahead[i] = front;
       aheadWhy[i] = front >= 0 ? why : 0;
       // 서는 자리(게이트·신호) 앞에서는 거기를 넘지 않게: 남은 거리에 설 수 있는 감속을 쓴다(최대 8m/s²)
-      if (front === i && gap - 2 < (v[i] * v[i]) / (2 * 2)) a = Math.min(a, -(v[i] * v[i]) / (2 * Math.max(0.05, gap - 2)));
-      a = Math.max(-8, Math.min(A_MAX, a));
+      a = limitAcceleration(a, v[i], gap, front === i);
       const slow = v[i] < 0.3 * VFREE[e.cls] * vf[i];
       cars.brake[i] += ((a < -0.5 || slow ? 1 : 0) - cars.brake[i]) * Math.min(1, dt * 6);
-      v[i] = Math.max(0, v[i] + a * dt);
+      v[i] = integrateSpeed(v[i], a, dt);
       // 서는 자리를 넘지 않는다
-      if (front === i) v[i] = Math.min(v[i], Math.max(0, gap - 2) / dt);
+      if (front === i) v[i] = capStopSpeed(v[i], gap, dt);
       stopT[i] = v[i] < 0.3 ? stopT[i] + dt : 0;
       // 일반 차: 가로변 버스전용차로가 있는 진입로에서 우회전할 차는 상자 앞 45~30m 에서 버스전용차로로 들어간다(그 차로가 우회전을 허용하면)
       if (r < 0 && e.bus >= 0 && jp[i] >= 0 && jk[i] === 0 && !go[i] && PS[jp[i]].move === RIGHT && lane[i] === e.bus - 1 && Math.abs(side[i]) < 0.3) {

@@ -39,7 +39,12 @@ async function fetchLayer(layer: keyof typeof types, bbox: number[], suffix = ''
   console.log(layer+suffix, data.features.length, bbox.join(','));
 }
 
-const requests = [
+const audit = [126.9075, 37.5460, 126.9190, 37.5540];
+const requests = process.argv.includes('--vehicle-audit') ? [
+  ['a1', audit, '-vehicle-audit'] as const, ['a2', audit, '-vehicle-audit'] as const,
+] : process.argv.includes('--crossing-audit') ? [
+  ['b3', expanded, '-expanded'] as const, ['a4', expanded, '-expanded'] as const,
+] : [
   ...Object.keys(types).map(layer => [layer as keyof typeof types, core, ''] as const),
   ['a2', expanded, '-expanded'] as const, ['a1', expanded, '-expanded'] as const,
 ];

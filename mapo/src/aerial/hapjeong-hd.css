@@ -37,3 +37,7 @@ footer p { margin: 6px 0; }
 .trial-toolbar input { width: min(30vw, 380px); min-width: 100px; }
 .trial-toolbar button { font: inherit; padding: 4px 10px; }
 #trial-controls p { color: #b6cbd6; margin: 4px 0; font-size: .9rem; }
+#pedestrian-status { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; margin: 8px 0 0; padding: 0; }
+#pedestrian-status[hidden] { display: none; }
+#pedestrian-status li { font-size: .88rem; }
+#pedestrian-status span { font-weight: 700; }

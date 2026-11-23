@@ -3,6 +3,8 @@ import { loadBuildings } from './buildings.ts';
 import { PAINT_DASHES } from './ground-paint.ts';
 import { AERIAL_DEV_ORIGIN, PILOT_SITES, groundPoint, tileAtGround, tileBounds } from './map.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
+import type { SignalTrial } from './hapjeong-signal-trial.ts';
+import type { PedestrianTrial } from './hapjeong-pedestrians.ts';
 
 type XZ = [number, number];
 type Face = XZ[][];
@@ -22,7 +24,11 @@ type Asset = {
 
 const TILT = THREE.MathUtils.degToRad(28);
 const status = document.querySelector<HTMLParagraphElement>('#status')!;
-const flat = (color: string) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
+const flat = (color: string, groundLayer = 0) => new THREE.MeshBasicMaterial({
+  color, side: THREE.DoubleSide,
+  // Ground overlays remain depth-tested against buildings and vehicles.
+  polygonOffset: groundLayer > 0, polygonOffsetFactor: 0, polygonOffsetUnits: -groundLayer,
+});
 
 async function photoPlane(trial = false) {
   const center = tileAtGround(...groundPoint(PILOT_SITES.hapjeong));
@@ -106,21 +112,43 @@ function stroke(vertices: number[], path: Path, y: number, width: number, dash: 
   }
 }
 
-function addInk(parent: THREE.Object3D, vertices: number[], color: string) {
+function addInk(parent: THREE.Object3D, vertices: number[], color: string, groundLayer: number) {
   if (!vertices.length) return;
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-  parent.add(new THREE.Mesh(geometry, flat(color)));
+  parent.add(new THREE.Mesh(geometry, flat(color,groundLayer)));
 }
 
 async function init() {
   const query = new URLSearchParams(location.search);
+  const signalMode = query.get('signalTrial');
+  const signalTrial = signalMode === 'straight' || signalMode === 'left';
+  const pedestrianTrial = query.get('pedestrians') === '1';
   const vehicleTrial = query.get('vehicles') === '1';
-  const variantA = vehicleTrial || query.get('variant') === 'a';
+  const variantA = signalTrial || pedestrianTrial || vehicleTrial || query.get('variant') === 'a';
   const suffix = variantA ? '-a' : '';
   const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd${suffix}.json`);
   if (!response.ok) throw Error(`가공 자료 응답 ${response.status}`);
   const data: Asset = await response.json();
+  let scenario: SignalTrial | undefined;
+  let pedestrians: PedestrianTrial | undefined;
+  if (pedestrianTrial) {
+    const trial = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-pedestrians.json`);
+    if (!trial.ok) throw Error(`보행 시험 자료 응답 ${trial.status}`);
+    pedestrians = await trial.json() as PedestrianTrial;
+    data.views=[...data.views.filter(view=>view.id==='overview'),...pedestrians.people.map(p=>({
+      id:p.id,title:p.label,...p.view,mode:'photo' as const,
+    }))];
+  }
+  if (signalTrial || pedestrianTrial) {
+    const trials = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-signal-trial.json`);
+    if (!trials.ok) throw Error(`신호 시험 자료 응답 ${trials.status}`);
+    scenario = (await trials.json() as Record<string,SignalTrial>)[pedestrians?.traffic ?? signalMode ?? 'straight'];
+    if (!pedestrianTrial) {
+      const title = signalMode==='straight' ? '직진 차량 시험' : '좌회전 차량 시험';
+      data.views=[{id:'overview',title,...scenario.view,mode:'photo'}];
+    }
+  }
   const photo = new THREE.Scene();
   const model = new THREE.Scene();
   photo.background = new THREE.Color('#46555a');
@@ -134,51 +162,57 @@ async function init() {
   sun.position.set(-200, 300, 100);
   model.add(survey, hd, route, buildings, sun, new THREE.HemisphereLight('#dceafa','#5c5751',2));
   addFaces(model,data.floor.road,flat('#535e69'),.01);
-  const walk = flat('#e0c9a8');
+  const walk = flat('#e0c9a8',1);
   addFaces(survey,[...data.floor.walk,...data.floor.islands],walk,.02);
   addFaces(hd,data.floor.a4.flatMap(row=>row.faces),walk,.02);
 
-  const white = flat('#fbf2d9');
-  const crossingBase = flat('#6b827e');
-  const unresolved = flat('#9eada4');
+  const white = flat('#fbf2d9',3);
+  const crossingBase = flat('#6b827e',2);
+  const unresolved = flat('#9eada4',2);
   for (const cross of data.crossings) {
     addFaces(model,cross.faces,cross.stripes.length ? crossingBase : unresolved,.044);
     addFaces(model,cross.stripes,white,.05);
   }
-  addFaces(model,data.bicycles.flatMap(row=>row.faces),flat('#619188'),.052);
+  addFaces(model,data.bicycles.flatMap(row=>row.faces),flat('#619188',3),.052);
   const colors = ['#a5a9ab','#ebc75e','#f9f2db','#679bf9'];
   const paint = colors.map(() => [] as number[]);
   for (const row of data.lines) {
     for (const path of row.paths) stroke(paint[row.ink.color],path,.065,row.ink.width,row.ink.dash);
   }
-  paint.forEach((vertices,i)=>addInk(model,vertices,colors[i]));
+  paint.forEach((vertices,i)=>addInk(model,vertices,colors[i],4));
   const lane: number[] = [], inside: number[] = [];
   for (const row of data.links) {
     for (const path of row.paths) stroke(row.type === '1' ? inside : lane,path,.095,.23,0);
   }
-  addInk(route,lane,'#69e7ff');
-  addInk(route,inside,'#f6a3eb');
-  const [imagery] = await Promise.all([photoPlane(vehicleTrial),loadBuildings(buildings, new Set(data.hiddenBuildingOutlines))]);
+  addInk(route,lane,'#69e7ff',5);
+  addInk(route,inside,'#f6a3eb',5);
+  const [imagery] = await Promise.all([photoPlane(vehicleTrial || signalTrial || pedestrianTrial),loadBuildings(buildings, new Set(data.hiddenBuildingOutlines))]);
   photo.add(imagery);
 
-  const camera = new THREE.PerspectiveCamera(34,1,0.5,1_000);
+  const camera = new THREE.PerspectiveCamera(34,1);
   const canvas = (id: string) => document.querySelector<HTMLCanvasElement>(`#${id}`)!;
   const left = new THREE.WebGLRenderer({ canvas:canvas('left'), antialias:true });
-  const right = new THREE.WebGLRenderer({ canvas:canvas('right'), antialias:true, preserveDrawingBuffer:vehicleTrial });
+  const right = new THREE.WebGLRenderer({ canvas:canvas('right'), antialias:true, preserveDrawingBuffer:vehicleTrial || signalTrial || pedestrianTrial });
   const form = document.querySelector<HTMLSelectElement>('#view')!;
   const pair = document.querySelector<HTMLDivElement>('#pair')!;
   const leftCaption = document.querySelector<HTMLDivElement>('#left-caption')!;
   const rightCaption = document.querySelector<HTMLDivElement>('#right-caption')!;
   const routeLegend = document.querySelectorAll<HTMLElement>('[data-route]');
   for (const view of data.views) form.add(new Option(view.title,view.id));
-  form.value = data.views.find(view => view.id===query.get('view'))?.id ?? 'overview';
+  form.value = data.views.find(view => view.id===query.get('view'))?.id ?? (pedestrianTrial ? 'west' : 'overview');
   document.getElementById('bicycle')!.hidden = !data.bicycles.length;
   document.getElementById('missing')!.hidden = data.crossings.every(row => row.stripes.length);
   if (variantA) {
     const gallery = document.querySelector<HTMLAnchorElement>('#capture-gallery')!;
     gallery.href = './tmp/hapjeong-hd/a/gallery.html';
     gallery.textContent = 'A 비교 이미지 5장';
-    if (vehicleTrial) {
+    if (pedestrianTrial) {
+      gallery.href = './tmp/hapjeong-hd/pedestrians/';
+      gallery.textContent = '보행 시험 기록';
+    } else if (signalTrial) {
+      gallery.href = './tmp/hapjeong-hd/signal-trial/';
+      gallery.textContent = '신호 차량 시험 기록';
+    } else if (vehicleTrial) {
       gallery.href = './tmp/hapjeong-hd/vehicles/';
       gallery.textContent = '차량 시험 기록';
     }
@@ -194,6 +228,8 @@ async function init() {
     const [x,z] = view.at;
     camera.position.set(x+offset*Math.sin(AERIAL_BEARING),distance*Math.cos(TILT),z+offset*Math.cos(AERIAL_BEARING));
     camera.lookAt(x,0,z);
+    camera.near = distance/5;
+    camera.far = distance*2;
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
 
@@ -221,12 +257,24 @@ async function init() {
     status.textContent = `${view.title} · 폭 ${view.width}m · 수직 기준 기울기 28°`;
     pair.dataset.view=view.id;
     pair.dataset.mode=view.mode;
-    history.replaceState(null,'',`?${variantA ? 'variant=a&' : ''}${vehicleTrial ? 'vehicles=1&' : ''}view=${view.id}`);
+    const trialQuery = pedestrianTrial ? 'pedestrians=1&' : signalTrial ? `signalTrial=${signalMode}&` : vehicleTrial ? 'vehicles=1&' : '';
+    history.replaceState(null,'',`?${variantA ? 'variant=a&' : ''}${trialQuery}view=${view.id}`);
   }
   form.addEventListener('change',draw);
   new ResizeObserver(draw).observe(left.domElement.parentElement!);
   draw();
-  if (vehicleTrial) {
+  if (scenario) {
+    const { attachSignalTrial } = await import('./hapjeong-signal-trial.ts');
+    const render=()=>right.render(model,camera);
+    if (pedestrians) {
+      const trial=pedestrians, traffic=scenario;
+      const { attachPedestrians } = await import('./hapjeong-pedestrians.ts');
+      attachSignalTrial(model,traffic,render,!query.has('paused'),frames=>attachPedestrians(model,trial,traffic,frames));
+      document.querySelector<HTMLElement>('#trial-explanation')!.textContent='보행자 3명 · 기존 직진 차량 시험과 같은 시간축 · 보행 신호는 모의';
+    } else {
+      attachSignalTrial(model,scenario,render,!query.has('paused'));
+    }
+  } else if (vehicleTrial) {
     const { attachTrial } = await import('./hapjeong-vehicles.ts');
     const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-vehicles.json`);
     if (!response.ok) throw Error(`차량 경로 응답 ${response.status}`);
