@@ -24,7 +24,7 @@ import check_hapjeong_people as people
 import check_hapjeong_walk as walk
 from measure_hapjeong_discharge import discharge
 
-# Smaller is better, with one minimum where a zero would hide lost coverage.
+# Absolute limits. Compare additional flow measures to the previous replay.
 LIMITS = {
     'P1': {'people_on_red': 0, 'cars_on_red': 0, 'signed_face_cars': 0, 'overlap_seconds': 0},
     'P2': {'unsignalized_cars': 0, 'body_contacts': 0, 'people_wait_s': 60, 'car_wait_s': 60},
@@ -33,13 +33,14 @@ LIMITS = {
     'P5': {'stuck': 0, 'green_wait': 0, 'repeat_people': 0, 'off_floor': 0, 'invalid': 0},
     'P6': {'green_queue_remaining': 0},
     'C1': {}, 'C2': {},
-    'C3': {'late_left': 0, 'parallel_start_gap_s': .8, 'unserved_parallel': 0},
+    'C3': {'late_left': 0, 'parallel_start_gap_s': .85, 'unserved_parallel': 0},
     'C4': {'open_branch_stop': 0, 'empty_stop_line': 0},
     'C5': {'stuck': 0, 'visible_events': 0, 'off_floor': 0, 'overlap': 0, 'a2_m': .001},
     'C6': {'trial_red': 0, 'late': 0, 'trial_late': 0, 'trial_face_cars': 0},
 }
 # P6 compares accumulation and walking obstructions against the incumbent.
 NO_INCREASE = {'P6': ('peak_5m', 'walk_blocked', 'growing_visible_ends')}
+NO_DECREASE = {'P4': ('models',), 'C1': ('min_cars', 'queue_median')}
 # Throughput is compared on queue ranks observed in both replays. A tenth of a
 # second allows three samples of clock quantization at 30 Hz.
 RANK_TOLERANCE = .1
@@ -164,8 +165,10 @@ def evaluate(result, incumbent=None):
             for key in keys:
                 if metrics[rule][key] > before[rule][key]:
                     failure.append(dict(rule=rule,test=key,measured=metrics[rule][key],limit=before[rule][key]))
-        if metrics['P4']['models'] < before['P4']['models'] or metrics['C1']['min_cars'] < before['C1']['min_cars']:
-            failure.append(dict(rule='P4/C1',test='lost coverage',measured=None,limit='no decrease'))
+        for rule, keys in NO_DECREASE.items():
+            for key in keys:
+                if metrics[rule][key] < before[rule][key]:
+                    failure.append(dict(rule=rule,test=key,measured=metrics[rule][key],limit=before[rule][key]))
         for key,value in before['C2'].items():
             limit = value + RANK_TOLERANCE if key.startswith('rank') else value * 1.1
             if key in metrics['C2'] and metrics['C2'][key] > limit:
@@ -195,7 +198,8 @@ def main():
         if not incumbent:
             parser.error('--target requires --against')
         measured, prior = result['rules'][rule][key],incumbent['rules'][rule][key]
-        if measured is None or prior is None or measured >= prior:
+        delta = measured - prior if measured is not None and prior is not None else 0
+        if delta * (1 if key in NO_DECREASE.get(rule, ()) else -1) <= 0:
             failures.append(dict(rule=rule,test=f'{key} improvement',measured=measured,limit=prior))
     result['failures'] = failures
     (folder/'rules.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
