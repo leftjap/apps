@@ -38,6 +38,11 @@ def measure(path, plan, static):
     people, contact, yielding, stop, departed = {}, defaultdict(set), defaultdict(set), defaultdict(set), defaultdict(dict)
     intersections = defaultdict(int)
     checked_bounds = [(i,*bounds[i]) for i in mates]
+    axes = {c['i']:c['ends'] for c in plan['faces']}
+
+    def progress(i, x, z):
+        (a,b),(c,d) = axes[i]
+        return (x-(a+c)/2)*(c-a)+(z-(b+d)/2)*(d-b)
 
     for line in handle:
         t, cars, walkers, *_ = json.loads(line)
@@ -53,9 +58,12 @@ def measure(path, plan, static):
             if not probe:
                 continue
             key=(probe['course'],probe['wave'],probe['side'],probe['at'])
-            row=people.setdefault(key,dict(**probe, wait={},enter={},on={},exit={},red=[],route=[]))
+            row=people.setdefault(key,dict(**probe, wait={},enter={},enter_side={},on={},exit={},far={},red=[],route=[]))
             old = row.get('previous')
             row['previous']=(mode,i)
+            for visited in row['on']:
+                if visited not in row['far'] and progress(visited,x,z)*row['enter_side'][visited]<0 and not covers[visited].intersects(Point(x,z)):
+                    row['far'][visited]=t
             if i<0:
                 continue
             if mode=='wait':
@@ -63,6 +71,7 @@ def measure(path, plan, static):
             if mode=='cross' and old!=('cross',i):
                 row['route'].append(labels[i])
                 row['enter'].setdefault(i,t)
+                row['enter_side'].setdefault(i,progress(i,x,z))
                 if light==2: row['red'].append([labels[i],round(t,3)])
             if mode=='cross' and covers[i].intersects(Point(x,z)):
                 row['on'].setdefault(i,t)
@@ -111,12 +120,12 @@ def measure(path, plan, static):
         for p in cohorts:
             g=descriptor['green']+p['wave']*clock
             end=g+(phase[0][1]-phase[0][0]) if phase else math.inf
-            end_actual=p['exit'].get(i)
+            end_actual=p['far'].get(i)
             complete=i in p['on'] and p.get('previous')!=('cross',i)
             first=descriptor['crossings'][0 if p['side']==0 else -1]
             detail.append(dict(uid=p['uid'],wave=p['wave'],side=p['side'],at=round(p['at'],3),
                 waiting=p['wait'].get(i),started=p['enter'].get(i),physicalEnd=end_actual,
-                complete=complete,within=complete and end_actual is not None and end_actual < end,
+                complete=complete,within=end_actual is not None and end_actual < end,
                 delay=round(p['enter'][i]-g,3) if i in p['enter'] and phase else None,
                 first=first==i,red=p['red'],route=p['route'],
                 refuge=len(mates[i])>1 and

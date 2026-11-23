@@ -19,7 +19,7 @@ import { headingNear, ISLAND_BACK, ISLAND_L, ISLAND_W, laneOff, lanePos, leftEdg
 import { GREEN, LEFT, makeIntersections, RED, RIGHT, STEP, STRAIGHT, UTURN, YELLOW, type Inter, type LanePath } from './intersection/index.ts';
 import type { DataProvider } from './provider.ts';
 import { pick, rng } from './rng.ts';
-import { A_MAX, B_COMF, capStopSpeed, followingAcceleration, integrateSpeed, limitAcceleration } from './longitudinal.ts';
+import { B_COMF, capStopSpeed, DEFAULT_FOLLOWING, followingAcceleration, integrateSpeed, limitAcceleration, type Following } from './longitudinal.ts';
 
 export interface Cars {
   n: number;
@@ -52,15 +52,17 @@ const SIDE_V = 1.1;
 /** 노란불에 편히 설 수 있는 감속(m/s²)과 빨간불에 서는 가장 센 감속 */
 const B_AMBER = 3;
 const B_HARD = 6;
+const SURVEYED_FOLLOWING: Following = { headway:.45, acceleration:2.4 };
 
 /** 따라가기 규칙(서 있는 장애물이 obs 에 있다고 보고, 바라는 속도 v0)대로 속도 u 에서 달려 앞 범퍼가 need 를 지나는 데 걸리는 시간(초, 못 지나면 ∞)과 그때 짐 차 꽁무니 자리.
  *  짐으로 본 바로 앞차(꽁무니 xl, 속도 ul, 없으면 xl = ∞)도 같은 규칙으로 달린다고 보고 그 꽁무니를 따라간다. 거리는 모두 내 앞 범퍼 기준 */
 export function clearRun(v0: number, u: number, need: number, obs: number, xl: number, ul: number,
-                         freeAt?: (distance: number) => number): [number, number] {
-  const idm = (w: number, gap: number, free: number) => {
-    let a = A_MAX * (1 - (w / free) ** 4);
-    if (gap < Infinity) a -= A_MAX * ((2 + w * 1.3 + (w * w) / (2 * Math.sqrt(A_MAX * B_COMF))) / Math.max(0.3, gap)) ** 2;
-    return Math.max(-8, Math.min(A_MAX, a));
+                         freeAt?: (distance: number) => number, following = DEFAULT_FOLLOWING,
+                         leaderFollowing = following): [number, number] {
+  const idm = (w: number, gap: number, free: number, { headway, acceleration }: Following) => {
+    let a = acceleration * (1 - (w / free) ** 4);
+    if (gap < Infinity) a -= acceleration * ((2 + w * headway + (w * w) / (2 * Math.sqrt(acceleration * B_COMF))) / Math.max(0.3, gap)) ** 2;
+    return Math.max(-8, Math.min(acceleration, a));
   };
   const load = xl < Infinity;
   // obs 는 짐이 장애물 뒤에 붙어 섰을 때 가장 가까운 짐의 꽁무니 자리라, 그 짐 앞 범퍼가 볼 장애물은 꽁무니 좌표로 obs + 2.5 다(재작업 W42: 전에는 내 몸 길이를 더해 짐을 그만큼 더 보냈다)
@@ -69,9 +71,9 @@ export function clearRun(v0: number, u: number, need: number, obs: number, xl: n
   let x = 0;
   let t = 0;
   while (x < need) {
-    const a = idm(u, Math.min(obs - x, xl - x), freeAt?.(x) ?? v0);
+    const a = idm(u, Math.min(obs - x, xl - x), freeAt?.(x) ?? v0, following);
     if (load) {
-      ul = Math.max(0, ul + idm(ul, obsL - xl, freeAt?.(xl) ?? v0) * h);
+      ul = Math.max(0, ul + idm(ul, obsL - xl, freeAt?.(xl) ?? v0, leaderFollowing) * h);
       xl += ul * h;
     }
     u = Math.max(0, u + a * h);
@@ -119,6 +121,7 @@ export function makeCars(
     uid: new Int32Array(max),
     room: new Float32Array(max).fill(99),
   };
+  const followingOf = (i: number) => X.surveyed && cars.route[i] < 0 ? SURVEYED_FOLLOWING : DEFAULT_FOLLOWING;
   let nextUid = 1;
   let nBus = 0;
   /** 버스 몫으로 남겨 두는 자리. 일반 차는 max - reserve 대까지만 둔다 */
@@ -1567,7 +1570,8 @@ export function makeCars(
       return Math.max(.5, speed[XP[k] ?? edge[i]] * vf[i]);
     } : undefined;
     return clearRun(Math.min(XA.v0, Math.max(0.5, speed[edge[i]] * vf[i])), v[i], need, obs,
-      fl >= 0 ? XA.firstAt : Infinity, fl >= 0 ? v[fl] : 0, freeAt)[0];
+      fl >= 0 ? XA.firstAt : Infinity, fl >= 0 ? v[fl] : 0, freeAt, followingOf(i),
+      fl >= 0 ? followingOf(fl) : undefined)[0];
   }
 
   /** 정류장에 선 버스 몸(가운데가 정류장 자리 2.5m 앞까지, 그 노선 버스 길이)이 횡단보도 면에 걸치면 걸치지 않을 때까지 앞으로 옮기는 거리(m, 노선·정류장마다, 재작업 W22) */
@@ -1952,7 +1956,8 @@ export function makeCars(
         }
       }
       const v0 = slowAt[e.id] >= 0 && Math.abs(s[i] - slowAt[e.id]) < 25 ? Math.min(slowV[e.id], Math.max(0.5, speed[e.id] * vf[i])) : Math.max(0.5, speed[e.id] * vf[i]);
-      let a = followingAcceleration(v[i], v0, dv, gap, front >= 0);
+      const following = followingOf(i);
+      let a = followingAcceleration(v[i], v0, dv, gap, front >= 0, following);
       if (front >= 0 && front !== i) {
         const dc = Math.max(0, gap) + (size[front] + size[i]) / 2;
         cars.room[i] = Math.min(cars.room[i], dc);
@@ -1962,7 +1967,7 @@ export function makeCars(
       ahead[i] = front;
       aheadWhy[i] = front >= 0 ? why : 0;
       // 서는 자리(게이트·신호) 앞에서는 거기를 넘지 않게: 남은 거리에 설 수 있는 감속을 쓴다(최대 8m/s²)
-      a = limitAcceleration(a, v[i], gap, front === i);
+      a = limitAcceleration(a, v[i], gap, front === i, following.acceleration);
       const slow = v[i] < 0.3 * VFREE[e.cls] * vf[i];
       cars.brake[i] += ((a < -0.5 || slow ? 1 : 0) - cars.brake[i]) * Math.min(1, dt * 6);
       v[i] = integrateSpeed(v[i], a, dt);
