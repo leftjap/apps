@@ -278,6 +278,16 @@ export function makeCars(
   const bigOf = (i: number) => (cars.route[i] >= 0 || size[i] > 5.4 ? 1 : 0);
   /** 경로 id 위 거리 d 의 자리 → out [x, y, z, 방향] */
   function pathPose(id: number, d: number, out: number[]) {
+    if (X.surveyed) {
+      const path = PS[id];
+      let q = 0;
+      while (q + 1 < path.edges.length && path.base[q + 1] <= d) q++;
+      const e = edges[path.edges[q]];
+      const at = d - path.base[q];
+      pointAt(e.p, e.cum, at, out);
+      out[3] = headingNear(e, at);
+      return;
+    }
     const p = PS[id].pts;
     const f = Math.max(0, Math.min(p.length / 4 - 1.001, d / STEP));
     const k = Math.floor(f);

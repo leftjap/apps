@@ -117,9 +117,17 @@ export interface Intersections {
   /** 이음매·상자 곡선 위 점: a 의 차로 la 끝 상자에서 b 의 차로 lb 로, a 상자 가장자리에서 d(m) 간 자리 → out [x, y, z, 방향] */
   curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[]): void;
   stops: LaneStops;
+  surveyed?: SurveyedIntersection;
 }
 
-export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], stopLines: ArrayLike<number> = []): Intersections {
+export interface SurveyedIntersection {
+  /** IDs of the original through-intersection links in the local junction. */
+  links: ReadonlySet<number>;
+  /** Distance along each approach to the surveyed stop line. */
+  stopAt: ReadonlyMap<number, number>;
+}
+
+export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], stopLines: ArrayLike<number> = [], surveyed?: SurveyedIntersection): Intersections {
   // ── 노드 ──
   const ix = new Map<string, number>();
   const nx: number[] = [];
@@ -271,6 +279,17 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
   }
   hasFork.clear();
   for (let n = 0; n < N; n++) if (!pass(n)) hasFork.add(find(n));
+  if (surveyed) {
+    // Surveyed lane nodes can be one-to-one even at a signal. Use the
+    // endpoints of the declared A2 crossings to delimit this junction.
+    const nodes = [...surveyed.links].flatMap(id => [startN[id], endN[id]]);
+    parent.forEach((_, i) => { parent[i] = i; });
+    hasFork.clear();
+    if (nodes.length) {
+      for (const n of nodes) unite(n, nodes[0]);
+      hasFork.add(find(nodes[0]));
+    }
+  }
 
   const list: Junction[] = [];
   for (let n = 0; n < N; n++) {
@@ -313,6 +332,11 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
       const last = edges[path[path.length - 1]];
       for (const k of last.next) {
         if (path.includes(k) || path.length > 8) continue;
+        if (surveyed) {
+          if (surveyed.links.has(k)) walk([...path, k]);
+          else if (path.length > 1 && jEnd[k] !== j) out.push({ edges: [...path, k], move: 0 });
+          continue;
+        }
         if (jEnd[k] === j) walk([...path, k]);
         else out.push({ edges: [...path, k], move: 0 });
       }
@@ -326,6 +350,13 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     const e = edges[a];
     const h0 = headingNear(e, e.len);
     const dh = out.map((x) => wrap(outHeading(edges[x.edges[x.edges.length - 1]]) - h0));
+    if (surveyed) {
+      out.forEach((x, k) => {
+        const angle = dh[k];
+        x.move = Math.abs(angle) > 150 * D2R ? UTURN : Math.abs(angle) <= 35 * D2R ? STRAIGHT : angle < 0 ? LEFT : RIGHT;
+      });
+      continue;
+    }
     // 직진: 75° 안에서 가장 곧은 길(같은 이름 길이 있으면 그 길)
     let best = -1;
     let bk = Infinity;
@@ -424,7 +455,8 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     const hit = g0Cache.get(key);
     if (hit !== undefined) return hit;
     const e = edges[a];
-    let g = Math.max(rIn[a], stops.back(a, l === MED ? 0 : l));
+    const measured = surveyed?.stopAt.get(a);
+    let g = Math.max(rIn[a], measured === undefined ? stops.back(a, l === MED ? 0 : l) : e.len - measured + .3);
     // 앞 교차로에서 나온 길이면 게이트에 선 차(6m)가 앞 교차로 상자와 그 횡단보도 끝 너머에 있어야 한다(정지선 자료를 다른 방향·다른 교차로 것으로 짚은 곳)
     const most = jStart[a] >= 0 ? e.len - startClear(a, l) - 6 : e.len - 0.5;
     g = Math.max(rIn[a], Math.min(g, most));
@@ -545,6 +577,12 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return [P[0] - Math.sin(h) * off, P[1], P[2] + Math.cos(h) * off, h];
   };
   function curve(a: Edge, b: Edge, la: number, lb: number, d: number, out: number[], right = false) {
+    if (surveyed) {
+      const s = d - rIn[a.id];
+      const v = s < 0 ? lp(a, a.len + s, la) : lp(b, s, lb);
+      for (let k = 0; k < 4; k++) out[k] = v[k];
+      return;
+    }
     const p = lp(a, a.len - rIn[a.id], la);
     const q = lp(b, rOut[b.id], lb);
     if (right && fillet(a, b, la, lb, p, q, d, out)) return;
@@ -673,8 +711,8 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
       while (q + 1 < n && base[q + 1] <= d) q++;
       const eq = edges[list[q]];
       const s = d - base[q];
-      if (q + 1 < n && s >= eq.len - rIn[eq.id]) curve(eq, edges[list[q + 1]], lanes[q], lanes[q + 1], s - (eq.len - rIn[eq.id]), o4, ex.move === RIGHT);
-      else if (q > 0 && s <= rOut[eq.id]) curve(edges[list[q - 1]], eq, lanes[q - 1], lanes[q], rIn[list[q - 1]] + s, o4, ex.move === RIGHT);
+      if (!surveyed && q + 1 < n && s >= eq.len - rIn[eq.id]) curve(eq, edges[list[q + 1]], lanes[q], lanes[q + 1], s - (eq.len - rIn[eq.id]), o4, ex.move === RIGHT);
+      else if (!surveyed && q > 0 && s <= rOut[eq.id]) curve(edges[list[q - 1]], eq, lanes[q - 1], lanes[q], rIn[list[q - 1]] + s, o4, ex.move === RIGHT);
       else {
         const v = lp(eq, s, lanes[q]);
         o4[0] = v[0];
@@ -901,5 +939,5 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return c;
   }
 
-  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, relEnd, holdOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, touch, moveOf, curve, stops };
+  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, relEnd, holdOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, touch, moveOf, curve, stops, surveyed };
 }
