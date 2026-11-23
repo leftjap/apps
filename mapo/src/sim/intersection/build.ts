@@ -105,6 +105,8 @@ export interface Intersections {
   /** 두 경로를 지나는 두 차 몸(bp·bq: 0 승용차, 1 버스)이 어디서든 닿을 수 있는가(재작업 W25). 진입로 게이트에서 나가는 길 holdOut 까지의 몸 자리를 모두 견준다.
    *  이것이 거짓인 두 경로의 차는 교차로를 함께 잡아도 몸이 닿지 않는다(같은 경로는 같은 차로 앞뒤 차라 거짓) */
   touch(p: number, q: number, bp: number, bq: number): boolean;
+  /** Whether a surveyed path can still hit the reserved car at or after qDistance. */
+  touchAfter?(p: number, q: number, bp: number, bq: number, qDistance: number): boolean;
   /** 나가는 길 x 의 차로 l 에서 교차로 몫이 끝나는 자리(구간 시작에서 m, 재작업 W25): holdOut 과 그 차로가 지나는 횡단보도(상자 끝 20m 안)를 지난 자리.
    *  나갈 자리는 여기부터 잰다 */
   relEnd(x: number, l: number): number;
@@ -872,6 +874,7 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return c;
   }
   const trackCache = new Map<number, Float32Array>();
+  const trackDistance = new Map<number, number[]>();
   function track(id: number): Float32Array {
     const hit = trackCache.get(id);
     if (hit) return hit;
@@ -880,10 +883,21 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     const x = edges[P.edges[P.edges.length - 1]];
     const lo = P.lanes[P.lanes.length - 1];
     const out: number[] = [];
-    for (let sv = Math.max(0, a.len - gate(P.a, P.lane) - BODY[1][0]); sv < a.len - rIn[P.a]; sv += STEP) out.push(...lp(a, sv, P.lane));
-    for (let i = 0; i < P.pts.length; i += 4) out.push(P.pts[i], P.pts[i + 1], P.pts[i + 2], P.pts[i + 3]);
+    const distances = surveyed ? [] as number[] : undefined;
+    for (let sv = Math.max(0, a.len - gate(P.a, P.lane) - BODY[1][0]); sv < a.len - rIn[P.a]; sv += STEP) {
+      out.push(...lp(a, sv, P.lane));
+      distances?.push(P.base[0] + sv);
+    }
+    for (let i = 0; i < P.pts.length; i += 4) {
+      out.push(P.pts[i], P.pts[i + 1], P.pts[i + 2], P.pts[i + 3]);
+      distances?.push(i / 4 * STEP);
+    }
     const stop = Math.min(x.len, holdOut(x.id, lo) + BODY[1][0]);
-    for (let sv = rOut[x.id] + STEP; sv <= stop; sv += STEP) out.push(...lp(x, sv, lo));
+    for (let sv = rOut[x.id] + STEP; sv <= stop; sv += STEP) {
+      out.push(...lp(x, sv, lo));
+      distances?.push(P.base[P.base.length - 1] + sv);
+    }
+    if (distances) trackDistance.set(id, distances);
     const t = Float32Array.from(out);
     trackCache.set(id, t);
     return t;
@@ -943,5 +957,28 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return c;
   }
 
-  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, relEnd, holdOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, touch, moveOf, curve, stops, surveyed };
+  const lastTouch = new Map<string, number>();
+  function touchAfter(p: number, q: number, bp: number, bq: number, distance: number) {
+    if (!touch(p,q,bp,bq)) return false;
+    const key = `${p},${q},${bp},${bq}`;
+    let last = lastTouch.get(key);
+    if (last === undefined) {
+      const a = track(p), b = track(q);
+      const [al,aw] = BODY[bp], [bl,bw] = BODY[bq];
+      const reach = al + aw + bl + bw + GAP;
+      last = -Infinity;
+      search: for (let k = b.length-4; k >= 0; k -= 4)
+        for (let i = 0; i < a.length; i += 4) {
+          if (Math.abs(a[i]-b[k]) > reach || Math.abs(a[i+2]-b[k+2]) > reach || Math.abs(a[i+1]-b[k+1]) > 2.5) continue;
+          if (obb(a[i],a[i+2],a[i+3],al,aw,b[k],b[k+2],b[k+3],bl,bw)) {
+            last = trackDistance.get(q)![k/4] + STEP;
+            break search;
+          }
+        }
+      lastTouch.set(key,last);
+    }
+    return distance <= last;
+  }
+
+  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, relEnd, holdOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, touch, touchAfter: surveyed ? touchAfter : undefined, moveOf, curve, stops, surveyed };
 }

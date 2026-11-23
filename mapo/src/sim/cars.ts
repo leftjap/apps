@@ -55,9 +55,10 @@ const B_HARD = 6;
 
 /** 따라가기 규칙(서 있는 장애물이 obs 에 있다고 보고, 바라는 속도 v0)대로 속도 u 에서 달려 앞 범퍼가 need 를 지나는 데 걸리는 시간(초, 못 지나면 ∞)과 그때 짐 차 꽁무니 자리.
  *  짐으로 본 바로 앞차(꽁무니 xl, 속도 ul, 없으면 xl = ∞)도 같은 규칙으로 달린다고 보고 그 꽁무니를 따라간다. 거리는 모두 내 앞 범퍼 기준 */
-export function clearRun(v0: number, u: number, need: number, obs: number, xl: number, ul: number): [number, number] {
-  const idm = (w: number, gap: number) => {
-    let a = A_MAX * (1 - (w / v0) ** 4);
+export function clearRun(v0: number, u: number, need: number, obs: number, xl: number, ul: number,
+                         freeAt?: (distance: number) => number): [number, number] {
+  const idm = (w: number, gap: number, free: number) => {
+    let a = A_MAX * (1 - (w / free) ** 4);
     if (gap < Infinity) a -= A_MAX * ((2 + w * 1.3 + (w * w) / (2 * Math.sqrt(A_MAX * B_COMF))) / Math.max(0.3, gap)) ** 2;
     return Math.max(-8, Math.min(A_MAX, a));
   };
@@ -68,9 +69,9 @@ export function clearRun(v0: number, u: number, need: number, obs: number, xl: n
   let x = 0;
   let t = 0;
   while (x < need) {
-    const a = idm(u, Math.min(obs - x, xl - x));
+    const a = idm(u, Math.min(obs - x, xl - x), freeAt?.(x) ?? v0);
     if (load) {
-      ul = Math.max(0, ul + idm(ul, obsL - xl) * h);
+      ul = Math.max(0, ul + idm(ul, obsL - xl, freeAt?.(xl) ?? v0) * h);
       xl += ul * h;
     }
     u = Math.max(0, u + a * h);
@@ -162,6 +163,36 @@ export function makeCars(
   const canLeave = new Uint8Array(edges.length);
   const before: number[][] = edges.map(() => []);
   for (const e of edges) for (const k of e.next) before[k].push(e.id);
+  const mergeHold = new Float32Array(X.surveyed ? max : 0);
+  const mergePairs: { outlet: number; feeders: [number, number]; limit: [number, number] }[] = [];
+  if (X.surveyed) {
+    const busEdges = new Set(routes.flatMap(route => route.edges));
+    const shapes = edges.map(e => {
+      const hl = busEdges.has(e.id) ? HALF_MAX : Math.max(...BODY_LEN) / 2;
+      const hw = busEdges.has(e.id) ? Math.max(...BUS_HW) : Math.max(...BODY_HW);
+      const points: { s: number; x: number; z: number; yaw: number }[] = [];
+      const p = [0, 0, 0];
+      for (let d = 0; d <= Math.min(24, e.len); d += STEP) {
+        const at = e.len - d;
+        pointAt(e.p, e.cum, at, p);
+        points.push({ s: at, x: p[0], z: p[2], yaw: headingNear(e, at) });
+      }
+      return { hl, hw, points };
+    });
+    for (const [outlet, feeders] of before.entries()) {
+      for (let a = 0; a < feeders.length; a++) for (let b = a + 1; b < feeders.length; b++) {
+        const p = shapes[feeders[a]], q = shapes[feeders[b]];
+        let firstP = Infinity, firstQ = Infinity;
+        for (const u of p.points) for (const w of q.points) {
+          if (!hit(u.x, u.z, u.yaw, p.hl, p.hw, w.x, w.z, w.yaw, q.hl, q.hw)) continue;
+          firstP = Math.min(firstP, u.s);
+          firstQ = Math.min(firstQ, w.s);
+        }
+        if (!Number.isFinite(firstP)) continue;
+        mergePairs.push({ outlet, feeders: [feeders[a], feeders[b]], limit: [firstP - 2*STEP, firstQ - 2*STEP] });
+      }
+    }
+  }
   const queue = edges.filter((e) => Math.hypot(e.p[e.p.length - 3], e.p[e.p.length - 1]) > BOARD_R - 40).map((e) => e.id);
   for (const k of queue) canLeave[k] = 1;
   while (queue.length) for (const k of before[queue.pop()!]) if (!canLeave[k]) (canLeave[k] = 1), queue.push(k);
@@ -999,7 +1030,15 @@ export function makeCars(
     for (const h of held[P.j]) {
       if (h === i) continue;
       const hp = jp[h] >= 0 && PS[jp[h]].j === P.j ? jp[h] : pp[h];
-      if (hp >= 0 && X.touch(P.id, hp, bigOf(i), bigOf(h))) return 3;
+      if (hp < 0) continue;
+      if (!X.touchAfter) {
+        if (X.touch(P.id, hp, bigOf(i), bigOf(h))) return 3;
+      } else {
+        const Q = PS[hp];
+        const k = Q.edges.indexOf(edge[h]);
+        const progress = k >= 0 ? Q.base[k] + s[h] : pp[h] === hp ? pd[h] : -Infinity;
+        if (X.touchAfter(P.id, hp, bigOf(i), bigOf(h), progress)) return 3;
+      }
     }
     if (!exitRoom(i, P, tod)) return 4;
     // 양보: 신호 교차로의 양보 움직임, 신호 없는 교차로의 작은 길
@@ -1191,7 +1230,7 @@ export function makeCars(
       const pe = edges[XP[k - 3]];
       const e = edges[XP[k]];
       let w = 0;
-      if (X.jEnd[pe.id] < 0 && !bent(pe, e)) {
+      if (!X.surveyed && X.jEnd[pe.id] < 0 && !bent(pe, e)) {
         side[i] = XS[XS.length - 1];
         pose(i, pe.id, pe.len, XP[k - 2], PS0);
         side[i] = 0;
@@ -1478,7 +1517,7 @@ export function makeCars(
     for (const zc of zones) if (zoneOcc[zc >> 1] & (1 << (1 - (zc & 1))) && zclaim[i] !== zc) return false;
     // 값이 싼 것부터 본다(차 계산 시간, 재작업 W29): 앞차·게이트·보행 신호로 이미 못 들어가면 내 몸을 앞으로 옮겨 그려 보지 않는다
     const need = c1 + 1 + size[i];
-    let obs = XA.lead;
+    let obs = Math.min(XA.lead, mergeHold[i] ?? Infinity);
     for (let k = 0; k < XT.length; k += 3) if (XT[k] > c0 && XT[k] - size[i] < c1 + 1 && !gateOpen(i, XT[k], XT[k + 1], tod)) obs = Math.min(obs, XT[k] + 1.7);
     if (obs < need + 2.5) return false;
     let soon = Infinity;
@@ -1488,8 +1527,12 @@ export function makeCars(
     }
     // 짐으로 본 앞차를 뺀 그려 보기에서 찾은 장애물 뒤에도 그 짐이 함께 선다(재작업 W37)
     const ld = skipLoads ? XA.load : 0;
-    obs = Math.min(obs, bodyAhead(i, need + 3 + ld) - ld);
-    if (obs < need + 2.5) return false;
+    // Surveyed motion follows the A2 path exactly. The straight ray can
+    // mistake a stopped car on another approach for an outlet obstruction.
+    if (!X.surveyed) {
+      obs = Math.min(obs, bodyAhead(i, need + 3 + ld) - ld);
+      if (obs < need + 2.5) return false;
+    }
     // 옮겨 그려 보기는 지금 장애물(obs)보다 가까운 것만 찾으면 된다
     obs = Math.min(obs, sweepAhead(i, Math.min(need + 3, obs + 1) + ld) - ld);
     if (obs < need + 2.5) return false;
@@ -1498,7 +1541,14 @@ export function makeCars(
   /** clearRun 을 차 i 로: 바라는 속도는 앞 구간들 가운데 가장 느린 것, 짐으로 본 바로 앞차가 있으면(재작업 W37) 그 꽁무니를 따라간다 */
   function clearSim(i: number, need: number, obs: number): number {
     const fl = skipLoads ? XA.first : -1;
-    return clearRun(Math.min(XA.v0, Math.max(0.5, speed[edge[i]] * vf[i])), v[i], need, obs, fl >= 0 ? XA.firstAt : Infinity, fl >= 0 ? v[fl] : 0)[0];
+    const freeAt = X.surveyed ? (front: number) => {
+      const center = front - size[i]/2;
+      let k = 0;
+      while (k + 3 < XP.length && XP[k+5] <= center) k += 3;
+      return Math.max(.5, speed[XP[k] ?? edge[i]] * vf[i]);
+    } : undefined;
+    return clearRun(Math.min(XA.v0, Math.max(0.5, speed[edge[i]] * vf[i])), v[i], need, obs,
+      fl >= 0 ? XA.firstAt : Infinity, fl >= 0 ? v[fl] : 0, freeAt)[0];
   }
 
   /** 정류장에 선 버스 몸(가운데가 정류장 자리 2.5m 앞까지, 그 노선 버스 길이)이 횡단보도 면에 걸치면 걸치지 않을 때까지 앞으로 옮기는 거리(m, 노선·정류장마다, 재작업 W22) */
@@ -1568,6 +1618,22 @@ export function makeCars(
       }
       for (let k = 0; k < e.lanes; k++) tail[e.id * 8 + k] = lead[k];
       if (e.med) tail[e.id * 8 + MED] = lead[MED];
+    }
+    if (X.surveyed) {
+      mergeHold.fill(Infinity);
+      // On surveyed single-lane edges, two separate feeders can overlap
+      // before they share an edge ID. Yield before the first body contact.
+      for (const { outlet, feeders: [p, q], limit: [ps, qs] } of mergePairs) {
+        const a = lists[p].find(i => nextE[i] === outlet);
+        const b = lists[q].find(i => nextE[i] === outlet);
+        if (a === undefined || b === undefined) continue;
+        const da = ps - s[a], db = qs - s[b];
+        if (da > Math.max(8, 2 * v[a]) || db > Math.max(8, 2 * v[b])) continue;
+        const ta = da / Math.max(1, v[a]), tb = db / Math.max(1, v[b]);
+        const first = (da < .5) !== (db < .5) ? da < .5 : ta < tb || (ta === tb && cars.uid[a] < cars.uid[b]);
+        const yielding = first ? b : a, distance = first ? db : da;
+        if (distance > 0) mergeHold[yielding] = Math.min(mergeHold[yielding], distance);
+      }
     }
     leaveTail.fill(-1);
     for (let i = 0; i < cars.n; i++) {
@@ -1708,6 +1774,12 @@ export function makeCars(
                 why = 4;
               }
             }
+      }
+      if ((mergeHold[i] ?? Infinity) + 2 < gap) {
+        gap = mergeHold[i] + 2;
+        dv = v[i];
+        front = i;
+        why = 14;
       }
       // 앞길에 선 사람: 사람 몸 0.4m 앞에 선다(사람은 차가 0.6m 안으로 다가오면 비켜난다)
       if (peds) {

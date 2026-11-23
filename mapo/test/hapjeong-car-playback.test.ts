@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { carPlayback, carVisibility } from '../src/aerial/hapjeong-car-playback.ts';
-import { nearestS } from '../src/poly.ts';
+import { nearestS, pointAt } from '../src/poly.ts';
+import { makeCars } from '../src/sim/cars.ts';
 import { CYCLE } from '../src/sim/intersection/index.ts';
+import { makeSimProvider } from '../src/sim/provider.ts';
 
 const asset = JSON.parse(readFileSync(new URL('../public/data/v2/hapjeong-hd-cars.json', import.meta.url), 'utf8'));
 
@@ -77,4 +79,96 @@ it('feeds from the mapped boundary to the measured reference count without dropp
   const midpoint = samples.sort((a,b)=>a-b)[Math.floor(samples.length/2)];
   expect(midpoint).toBeGreaterThanOrEqual(0.85*86);
   expect(removals).toBe(0);
+});
+
+it('lets a bus with a clear curved A2 path reach its outlet during the replay', () => {
+  const walk = JSON.parse(readFileSync(new URL('../public/data/v2/hapjeong-hd-walk.json', import.meta.url), 'utf8'));
+  const run = carPlayback(asset,true,{walk});
+  const route = run.graph.buses[1];
+  let through = false;
+  for (let frame=0; frame<=180*30; frame++) {
+    const sim = run.at(frame/30);
+    const { edge } = sim.debug();
+    for (let i=0;i<sim.cars.n;i++) {
+      if (sim.cars.route[i]===1 && edge[i]===route.edges.at(-1)) through = true;
+    }
+  }
+  expect(through).toBe(true);
+});
+
+it('stops a bus for a person on its curved path and moves again when the path clears', () => {
+  const run = carPlayback(asset, false);
+  const { edges, inter, buses, crosswalks } = run.graph;
+  const sim = makeCars(edges, makeSimProvider(), 11, 32, buses, inter,
+    { list:crosswalks, busy:new Uint32Array(crosswalks.length) });
+  const [entry, turn] = buses[1].edges;
+  const approach = edges[entry], curve = edges[turn];
+  const p = [0, 0, 0];
+  pointAt(curve.p, curve.cum, curve.len / 2, p);
+  const pedestrians = { n:1, x:Float32Array.of(p[0]), z:Float32Array.of(p[2]) };
+  sim.setPeople(pedestrians);
+  expect(sim.addBus(1, approach.len - inter.X.gate(entry,0) - 8)).toBe(true);
+  let yielded = false, cleared = false;
+  for (let frame=0; frame<=150*30; frame++) {
+    const t = frame/30;
+    if (t >= 18) pedestrians.n = 0;
+    sim.step(1/30, run.clock(t), false);
+    if (!sim.cars.n) break;
+    const d = sim.debug();
+    if (t < 18) {
+      expect(d.edge[0] === turn && d.s[0] > curve.len / 2).toBe(false);
+      yielded ||= d.edge[0] === turn && d.v[0] < .12;
+    }
+    cleared ||= d.edge[0] === buses[1].edges.at(-1);
+  }
+  expect(yielded).toBe(true);
+  expect(cleared).toBe(true);
+});
+
+it('keeps a surveyed bus outside the junction when an occupied outlet cannot fit it', () => {
+  const run = carPlayback(asset, false);
+  const { edges, inter, buses, crosswalks } = run.graph;
+  const sim = makeCars(edges, makeSimProvider(), 11, 32, buses, inter,
+    { list:crosswalks, busy:new Uint32Array(crosswalks.length) });
+  const entry = buses[1].edges[0], exit = buses[1].edges.at(-1)!;
+  const outlet = edges[exit], at = inter.X.relEnd(exit, 0) + 6;
+  const p = [0, 0, 0];
+  pointAt(outlet.p, outlet.cum, at + 4, p);
+  const pedestrians = { n:1, x:Float32Array.of(p[0]), z:Float32Array.of(p[2]) };
+  sim.setPeople(pedestrians);
+  sim.put(exit, at, 0);
+  for (let frame=-5*30; frame<0; frame++) sim.step(1/30, run.clock(frame/30), false);
+  expect(sim.debug().v[0]).toBeLessThan(.12);
+  expect(sim.addBus(1, edges[entry].len - inter.X.gate(entry,0) - 8)).toBe(true);
+  let full = false;
+  for (let frame=0; frame<=9*30; frame++) {
+    const t = frame/30, now = run.clock(t);
+    sim.step(1/30, now, false);
+    const d = sim.debug();
+    expect(d.edge[1]).toBe(entry);
+    full ||= d.gateWhy(1, now.tod) === 4;
+  }
+  expect(full).toBe(true);
+});
+
+it('releases a surveyed reservation after the last possible contact on the departing path', () => {
+  const { graph: { inter: { X } } } = carPlayback(asset);
+  const pair = X.paths.flatMap(p=>X.paths.filter(q=>p.move===1&&q.move===1&&X.touch(p.id,q.id,0,0)).map(q=>[p,q] as const))[0];
+  expect(pair).toBeDefined();
+  const [p,q]=pair;
+  expect(X.touchAfter!(p.id,q.id,0,0,-Infinity)).toBe(true);
+  expect(X.touchAfter!(p.id,q.id,0,0,q.end+40)).toBe(false);
+});
+
+it('resolves surveyed outlet merges without two cars blocking one another', () => {
+  const walk = JSON.parse(readFileSync(new URL('../public/data/v2/hapjeong-hd-walk.json', import.meta.url), 'utf8'));
+  const run = carPlayback(asset, true, { walk }, true, { vehicles:86, walkers:0 });
+  let mutual = 0;
+  for (let frame=0; frame<=60*30; frame++) {
+    const sim = run.at(frame/30);
+    const { blockBy } = sim.debug();
+    for (let i=0; i<sim.cars.n; i++)
+      if (blockBy[i] > i && blockBy[blockBy[i]] === i) mutual++;
+  }
+  expect(mutual).toBe(0);
 });
