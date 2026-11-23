@@ -172,3 +172,33 @@ it('resolves surveyed outlet merges without two cars blocking one another', () =
   }
   expect(mutual).toBe(0);
 });
+
+it('releases both parallel left-turn lanes at green and clears the shared part in turns', () => {
+  const run = carPlayback(asset);
+  const {edges,inter,buses,crosswalks} = run.graph;
+  const {X,S} = inter;
+  const pair = X.paths.flatMap(p=>X.paths.filter(q=>q.id>p.id && p.move===1 && q.move===1 &&
+    X.surveyed?.parallel?.get(p.a)?.includes(q.a) && X.touch(p.id,q.id,0,0)).map(q=>[p,q] as const))[0];
+  expect(pair).toBeDefined();
+  const site=S.list[S.approach.get(pair[0].a)!.c];
+  const green=site.steps.find(s=>pair.every(p=>(s.green.get(p.a)??0)&1))!;
+  const start=(green.start-site.offset+CYCLE)%CYCLE;
+  const sim=makeCars(edges,makeSimProvider(),11,16,buses,inter,{list:crosswalks,busy:new Uint32Array(crosswalks.length)});
+  for(const p of pair) for(const back of [3,11]) sim.put(p.a,edges[p.a].len-X.gate(p.a,p.lane)-back,p.lane);
+  const departed=new Map<number,number>();
+  const passed:number[]=[];
+  for(let f=-15*30;f<=38*30;f++) {
+    const t=f/30;
+    sim.step(1/30,run.clock(start+t),false);
+    const d=sim.debug();
+    for(let i=0;i<sim.cars.n;i++) {
+      const uid=sim.cars.uid[i], p=pair[uid>2?1:0];
+      if(t>=0 && d.edge[i]===p.a && d.v[i]>=.12 && !departed.has(uid)) departed.set(uid,t);
+      if(d.edge[i]===p.edges.at(-1) && !passed.includes(uid)) passed.push(uid);
+    }
+  }
+  expect(departed.has(1) && departed.has(3)).toBe(true);
+  expect(Math.abs(departed.get(1)!-departed.get(3)!)).toBeLessThanOrEqual(.5);
+  expect(passed.length).toBeGreaterThanOrEqual(3);
+  expect(passed.every((uid,k)=>!k || (uid>2)!==(passed[k-1]>2))).toBe(true);
+});

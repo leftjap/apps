@@ -107,6 +107,8 @@ export interface Intersections {
   touch(p: number, q: number, bp: number, bq: number): boolean;
   /** Whether a surveyed path can still hit the reserved car at or after qDistance. */
   touchAfter?(p: number, q: number, bp: number, bq: number, qDistance: number): boolean;
+  /** Passenger-car centre ranges and longitudinal separation on parallel turns. */
+  turnOverlap?(p: LanePath, q: LanePath): { limits: [[number, number], [number, number]]; spacing: [number, number] } | undefined;
   /** 나가는 길 x 의 차로 l 에서 교차로 몫이 끝나는 자리(구간 시작에서 m, 재작업 W25): holdOut 과 그 차로가 지나는 횡단보도(상자 끝 20m 안)를 지난 자리.
    *  나갈 자리는 여기부터 잰다 */
   relEnd(x: number, l: number): number;
@@ -980,5 +982,44 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
     return distance <= last;
   }
 
-  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, relEnd, holdOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, touch, touchAfter: surveyed ? touchAfter : undefined, moveOf, curve, stops, surveyed };
+  function turnOverlap(p: LanePath, q: LanePath) {
+    if (p.j !== q.j || p.move !== LEFT || q.move !== LEFT ||
+        !surveyed?.parallel?.get(p.a)?.includes(q.a) || p.a === q.a ||
+        p.edges.some(id => q.edges.includes(id)) || !touch(p.id,q.id,0,0)) return;
+    const a = track(p.id), b = track(q.id);
+    const da = trackDistance.get(p.id)!, db = trackDistance.get(q.id)!;
+    const [hl,hw] = BODY[0];
+    const reach = 2*(hl+hw)+GAP;
+    const limits: [[number, number], [number, number]] = [[Infinity,-Infinity],[Infinity,-Infinity]];
+    let least = Infinity, greatest = -Infinity;
+    for (let i=0; i<a.length; i+=4) for (let k=0; k<b.length; k+=4) {
+      if (Math.abs(a[i]-b[k])>reach || Math.abs(a[i+2]-b[k+2])>reach || Math.abs(a[i+1]-b[k+1])>2.5) continue;
+      if (!obb(a[i],a[i+2],a[i+3],hl,hw,b[k],b[k+2],b[k+3],hl,hw)) continue;
+      const delta = da[i/4]-db[k/4];
+      least = Math.min(least,delta);
+      greatest = Math.max(greatest,delta);
+      for (const [side,d] of [[0,da[i/4]],[1,db[k/4]]]) {
+        limits[side][0] = Math.min(limits[side][0], d-2*STEP);
+        limits[side][1] = Math.max(limits[side][1], d+STEP);
+      }
+    }
+    // Leave room after the gate to stagger these cars without holding up the
+    // entering crosswalk. Other conflicts keep the full junction reservation.
+    const safe = limits.every(([start,end],side)=>{
+      const path = side===0 ? p : q;
+      const inlet = edges[path.a];
+      const gateAt = inlet.len-gate(path.a,path.lane);
+      const stripes = stops.xwOf(path.a,path.lane);
+      let cleared = gateAt;
+      for (let k=0;k<stripes.length;k+=4) cleared = Math.max(cleared,stripes[k+1]);
+      return start>path.base[0]+cleared+2*hl && end<path.end+hl;
+    });
+    if (!safe) return;
+    const offset = limits[0][0]-limits[1][0];
+    const spacing: [number,number] = [greatest-offset+2*STEP, offset-least+2*STEP];
+    return { limits, spacing };
+  }
+
+  return { edges, list, jEnd, jStart, rIn, rOut, exits, laneMoves, setRules, gate, stopAt: gate0, clearOut, relEnd, holdOut, path: (a, l, k) => path(a, l, k), pathAny: (a, l, k) => path(a, l, k, true), paths, conflict, touch, touchAfter: surveyed ? touchAfter : undefined,
+    turnOverlap: surveyed ? turnOverlap : undefined, moveOf, curve, stops, surveyed };
 }

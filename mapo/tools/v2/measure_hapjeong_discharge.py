@@ -71,7 +71,7 @@ def discharge(path):
                 ahead=current.get(c[19])
                 if ahead and c[10] in (1,2) and c[7]==ahead[7] and c[22]==ahead[22] and ahead[9]>.5 and c[9]>.5:
                     kmh=c[9]*3.6
-                    for v in (10,20,30):
+                    for v in (10,20,30,50):
                         if abs(kmh-v)<=1:
                             gap=ahead[8]-c[8]-(c[5]+ahead[5])/2
                             if gap>=0:

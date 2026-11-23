@@ -167,6 +167,23 @@ export function makeCars(
   const held: number[][] = X.list.map(() => []);
   const coming: number[][] = X.list.map(() => []);
   const PS = X.paths;
+  const turns: { paths:[number,number]; limits:[[number,number],[number,number]]; spacing:[number,number];
+    order:number[]; last:number }[] = [];
+  const turnsByPath = new Map<number,Set<number>>();
+  if (X.turnOverlap) for (const p of PS) for (const q of PS) {
+    if (p.move!==LEFT || q.move!==LEFT || q.id<=p.id) continue;
+    const a = S.approach.get(p.a), b = S.approach.get(q.a);
+    if (!a || !b || a.c!==b.c || !S.list[a.c].steps.every(step=>
+      Boolean((step.green.get(p.a)??0)&LEFT)===Boolean((step.green.get(q.a)??0)&LEFT))) continue;
+    const overlap = X.turnOverlap(p,q);
+    if (!overlap) continue;
+    turns.push({paths:[p.id,q.id],...overlap,order:[],last:-1});
+    for (const [id,other] of [[p.id,q.id],[q.id,p.id]]) {
+      const pairs = turnsByPath.get(id) ?? new Set<number>();
+      pairs.add(other);
+      turnsByPath.set(id,pairs);
+    }
+  }
 
   // 판 가장자리로 빠져나갈 수 있는 구간
   const canLeave = new Uint8Array(edges.length);
@@ -1040,6 +1057,7 @@ export function makeCars(
       if (h === i) continue;
       const hp = jp[h] >= 0 && PS[jp[h]].j === P.j ? jp[h] : pp[h];
       if (hp < 0) continue;
+      if (turnsByPath.get(P.id)?.has(hp) && bigOf(i)===0 && bigOf(h)===0) continue;
       if (!X.touchAfter) {
         if (X.touch(P.id, hp, bigOf(i), bigOf(h))) return 3;
       } else {
@@ -1656,6 +1674,40 @@ export function makeCars(
         const first = (da < .5) !== (db < .5) ? da < .5 : ta < tb || (ta === tb && cars.uid[a] < cars.uid[b]);
         const yielding = first ? b : a, distance = first ? db : da;
         if (distance > 0) mergeHold[yielding] = Math.min(mergeHold[yielding], distance);
+      }
+      for (const turn of turns) {
+        const carriers = new Map<number,{i:number; side:number; distance:number}>();
+        for (let i=0;i<cars.n;i++) {
+          const path = past[i] && jp[i]>=0 ? jp[i] : pp[i];
+          const side = turn.paths.indexOf(path);
+          if (side<0 || bigOf(i)!==0) continue;
+          const p = PS[path], k = p.edges.indexOf(edge[i]);
+          const progress = k>=0 ? p.base[k]+s[i] : pd[i];
+          const [start,end] = turn.limits[side];
+          if (progress>end) continue;
+          carriers.set(cars.uid[i],{i,side,distance:start-progress});
+        }
+        turn.order = turn.order.filter(uid=>carriers.has(uid));
+        const waiting = [...carriers.entries()].filter(([uid,car])=>
+          !turn.order.includes(uid) && car.distance<=Math.max(8,v[car.i]*v[car.i]/(2*B_COMF)+size[car.i]));
+        waiting.sort(([,a],[,b])=>Number(a.side===turn.last)-Number(b.side===turn.last) ||
+          a.distance/Math.max(1,v[a.i])-b.distance/Math.max(1,v[b.i]) || cars.uid[a.i]-cars.uid[b.i]);
+        const leader = carriers.get(turn.order.at(-1) ?? 0);
+        if (waiting.length && (!leader || -leader.distance >= turn.spacing[leader.side]+1)) {
+          const [uid,car] = waiting.shift()!;
+          turn.order.push(uid);
+          turn.last=car.side;
+        }
+        for (const [,car] of waiting)
+          mergeHold[car.i] = Math.min(mergeHold[car.i],Math.max(0,car.distance));
+        // Keep the admitted lanes longitudinally staggered throughout the
+        // pinch, allowing the next car in before the first leaves the turn.
+        for (let k=1;k<turn.order.length;k++) {
+          const ahead = carriers.get(turn.order[k-1])!, car = carriers.get(turn.order[k])!;
+          if (ahead.side===car.side) continue;
+          const gap = car.distance-ahead.distance-turn.spacing[ahead.side];
+          mergeHold[car.i] = Math.min(mergeHold[car.i],Math.max(0,gap));
+        }
       }
     }
     leaveTail.fill(-1);
