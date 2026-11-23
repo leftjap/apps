@@ -128,7 +128,7 @@ DataProvider는 세 가지만 내놓는다: 구역 상태, 도로 구간의 속�
 ## 5. 실행
 
 ```
-pnpm dev        개발 서버 (http://localhost:5197/apps/mapo/)
+pnpm dev        개발 서버 (http://localhost:5198/apps/mapo/)
 pnpm test       테스트
 pnpm build      타입 검사 후 배포용 빌드
 pnpm fetch      OSM 원자료 다시 받기 (tools/raw/ 의 파일을 지운 것만 받는다)

@@ -50,7 +50,7 @@
 
 - [ ] `package.json`(scripts: dev, build, preview, test=`vitest run`, bake), `tsconfig.json`, `vite.config.ts`(base `/apps/mapo/`), `index.html`, `.gitignore`.
 - [ ] `pnpm install` 후 `pnpm test`, `pnpm build`가 끝까지 도는지 확인.
-- [ ] `~/apps/.claude/launch.json`에 `mapo-dev`(포트 5197) 추가.
+- [ ] `~/apps/.claude/launch.json`에 `mapo-dev`(포트 5198) 추가.
 
 ## 작업 2: 좌표와 꺾은선 (테스트 먼저)
 
