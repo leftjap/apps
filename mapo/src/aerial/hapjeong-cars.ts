@@ -5,7 +5,7 @@ import { env, updateEnv } from '../render/env.ts';
 import { pointAt } from '../poly.ts';
 import { GREEN, LEFT, RED, RIGHT, STRAIGHT, YELLOW } from '../sim/intersection/index.ts';
 import type { HapjeongCars } from './hapjeong-car-graph.ts';
-import { carPlayback } from './hapjeong-car-playback.ts';
+import { carPlayback, type HapjeongDemand } from './hapjeong-car-playback.ts';
 import { HAPJEONG_PEOPLE_MAX, type HapjeongPeopleInput } from './hapjeong-people.ts';
 
 const colors = [0x56eb8b, 0xffcb56, 0xff5656];
@@ -13,9 +13,9 @@ const names = ['초록', '노랑', '빨강'];
 
 export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.PerspectiveCamera, canvas: HTMLCanvasElement,
                                          data: HapjeongCars, render: () => void, query: URLSearchParams,
-                                         carsEnabled: boolean, people?: HapjeongPeopleInput) {
+                                         carsEnabled: boolean, people?: HapjeongPeopleInput, demand?: HapjeongDemand) {
   const seeded = query.get('seeded') === '1';
-  const run = carPlayback(data, !seeded, people, carsEnabled);
+  const run = carPlayback(data, !seeded, people, carsEnabled, demand);
   const { edges, inter: { X, S } } = run.graph;
   const mesh = carsEnabled ? makeCarMeshes(run.max) : undefined;
   const walkers = people ? makeWalkerMesh(HAPJEONG_PEOPLE_MAX) : undefined;

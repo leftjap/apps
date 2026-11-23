@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { carPlayback } from '../src/aerial/hapjeong-car-playback.ts';
+import { carPlayback, carVisibility } from '../src/aerial/hapjeong-car-playback.ts';
 import { nearestS } from '../src/poly.ts';
 import { CYCLE } from '../src/sim/intersection/index.ts';
 
@@ -57,4 +57,24 @@ it('feeds the surveyed slip lane at the southeast crossing as well as the throug
     used ||= cars.debug().edge.subarray(0, cars.cars.n).some(id => lanes.has(id));
   }
   expect(used).toBe(true);
+});
+
+it('feeds from the mapped boundary to the measured reference count without dropping a visible car', () => {
+  const walk = JSON.parse(readFileSync(new URL('../public/data/v2/hapjeong-hd-walk.json', import.meta.url), 'utf8'));
+  const run = carPlayback(asset, true, { walk }, true, { vehicles:86, walkers:0 });
+  const samples: number[] = [];
+  let previous = new Map<number, boolean>();
+  const onScreen = carVisibility();
+
+  let removals = 0;
+  for (let frame = 0; frame <= 180*30; frame++) {
+    const { cars } = run.at(frame/30);
+    const current = new Map(Array.from({length:cars.n}, (_,i)=>[cars.uid[i], onScreen(cars.x[i],cars.z[i])]));
+    for (const [uid, visible] of previous) if (visible && !current.has(uid)) removals++;
+    previous = current;
+    if (frame >= 60*30 && frame%30===0) samples.push(cars.n);
+  }
+  const midpoint = samples.sort((a,b)=>a-b)[Math.floor(samples.length/2)];
+  expect(midpoint).toBeGreaterThanOrEqual(0.85*86);
+  expect(removals).toBe(0);
 });

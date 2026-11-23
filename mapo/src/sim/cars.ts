@@ -90,11 +90,13 @@ export function makeCars(
   inter?: Inter,
   /** 횡단보도와, 횡단보도마다 지금 사람이 건너고 있는 자리(축을 2m 칸으로 나눈 비트, 보행자가 쓴다) */
   xw?: { list: Crosswalk[]; busy: Uint32Array },
+  surveyedCount?: number,
 ) {
   const rand = rng(seed);
   const I = inter ?? makeIntersections(edges, xw ? { crosswalks: xw.list, stopLines: new Float32Array() } : undefined);
   const X = I.X;
   const S = I.S;
+  const boundaryDemand = X.surveyed ? surveyedCount : undefined;
   const stops = X.stops;
   const cars: Cars = {
     n: 0,
@@ -2017,7 +2019,7 @@ export function makeCars(
           else fresh.push(cars.n - 1);
         }
       });
-    if (spawn && focus) {
+    if (spawn && focus && boundaryDemand === undefined) {
       let cin = 0;
       let cout = 0;
       for (let i = 0; i < cars.n; i++) if (cars.route[i] < 0) nearFocus(cars.x[i], cars.z[i]) ? cin++ : cout++;
@@ -2028,7 +2030,7 @@ export function makeCars(
       for (let k = 0; k < 4; k++) dropHidden();
     }
     if (spawn && entries.length) {
-      const want = Math.round(nIn + nOut);
+      const want = boundaryDemand === undefined ? Math.round(nIn + nOut) : Math.max(0, boundaryDemand - nBus);
       for (let k = 0; k < 6 && cars.n - nBus < want && cars.n < max; k++) {
         const e = entries[pick(entryW, rand())];
         if (closed[e.id] || inner(e.id)) continue;
@@ -2037,7 +2039,7 @@ export function makeCars(
         if (t >= 0 && s[t] < 16) continue;
         put(cars.n, e, 0.5, ln);
         locate(cars.n++);
-        if (touches(cars.n - 1)) {
+        if (touches(cars.n - 1) || (boundaryDemand !== undefined && seen(cars.x[cars.n - 1], cars.z[cars.n - 1]))) {
           cars.n--;
           continue;
         }

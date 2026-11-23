@@ -9,7 +9,8 @@ import type { HapjeongPeopleInput } from '../../src/aerial/hapjeong-people.ts';
 const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url), 'utf8'));
 const data: HapjeongCars = read('cars');
 const people: HapjeongPeopleInput | undefined = process.argv.includes('--people') ? { walk: read('walk') } : undefined;
-const run = carPlayback(data, !process.argv.includes('--seeded'), people);
+const run = carPlayback(data, !process.argv.includes('--seeded'), people, true,
+  process.argv.includes('--unscaled') ? undefined : read('demand'));
 const { inter: { X, S }, edges, links } = run.graph;
 const site = S.list.find(row => row.j >= 0)!;
 const visible = carVisibility();
@@ -26,6 +27,7 @@ console.log(JSON.stringify({
   ingressAudit: run.ingressAudit, overlappingTerminals: [...run.overlappingTerminals],
   busRoutes: run.graph.buses.map(route => route.edges.map(id => links[id].id)),
   views: carViews,
+  gates:Object.fromEntries(approach.map(a=>[a.edge,edges[a.edge].len-X.gate(a.edge,0)])),
   portalAudit: run.people()?.portalAudit,
   removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
@@ -49,7 +51,7 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
       p?.j ?? -1, p?.move ?? 0, X.jStart[e] >= 0 && X.jStart[e] === X.jEnd[e],
       visible(cars.x[i], cars.z[i]), d.blockBy[i] >= 0 ? cars.uid[d.blockBy[i]] : null,
       d.ahead[i] >= 0 ? cars.uid[d.ahead[i]] : null,
-      ap && d.v[i] < .12 && !d.past[i] ? d.gateWhy(i, tod) : -1, d.nextE[i]];
+      ap && d.v[i] < .12 && !d.past[i] ? d.gateWhy(i, tod) : -1, d.nextE[i], d.lane[i], edges[e].len-(ap?.setback??0), p?.a??-1, p?.edges.at(-1)??-1, d.jk[i]];
   });
   const walk = run.people();
   const pedestrians = walk ? Array.from({length:walk.w.n}, (_, i) => {

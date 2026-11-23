@@ -138,6 +138,7 @@ async function init() {
     people = { walk: await load('walk') };
   }
   const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
+  const demand = simulation ? await load('demand') as import('./hapjeong-car-playback.ts').HapjeongDemand : undefined;
   if (simulation) {
     const { carViews } = await import('./hapjeong-car-playback.ts');
     data.views = [...carViews];
@@ -261,7 +262,7 @@ async function init() {
   if (cars) {
     const { attachHapjeongSimulation } = await import('./hapjeong-cars.ts');
     refreshSimulation = attachHapjeongSimulation(
-      model, camera, right.domElement, cars, () => right.render(model, camera), query, carsMode, people,
+      model, camera, right.domElement, cars, () => right.render(model, camera), query, carsMode, people, demand,
     );
   }
   document.querySelector('main')!.dataset.ready='true';

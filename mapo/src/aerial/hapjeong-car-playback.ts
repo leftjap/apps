@@ -39,7 +39,11 @@ function delta(a: number, b: number) {
   return (b - a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
 }
 
-export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true) {
+/** Basic-board measurements from the same survey window, Saturday at 14:00. */
+export type HapjeongDemand = { vehicles: number; walkers: number };
+
+export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true,
+                            demand?: HapjeongDemand) {
   const visible = carVisibility();
   const full = hapjeongCarGraph(data);
   const central = new Set(data.central);
@@ -130,7 +134,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   // Keep the second walk phase available for trips that reach a refuge
   // too late to finish both faces during their first green.
-  const duration = CYCLE + (pedestrians ? 60 : 22);
+  const duration = demand ? CYCLE * 2 : CYCLE + (pedestrians ? 60 : 22);
   const dt = 1 / 30;
   const start = { tod: 14 * 3600, dow: 6, doy: 175 };
   const seed = 11, max = 256;
@@ -139,7 +143,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   function reset() {
     const busy = new Uint32Array(graph.crosswalks.length);
     const sim = makeCars(graph.edges, makeSimProvider(), seed, max, graph.buses, graph.inter,
-      { list: graph.crosswalks, busy });
+      { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined);
     const site = graph.inter.S.list.find(site => site.j >= 0);
     if (!site) throw Error('합정 차량 신호를 연결하지 못했습니다.');
     sim.setFocus(site.x, site.z, 100, visible);
@@ -157,12 +161,12 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
     }
-    if (people) {
+    if (people || demand) {
       // Run the same clock during pre-roll so pedestrians and cars see one another from the start.
       for (let i = -12 / dt; i < 0; i++) {
         const now = clock(i * dt);
         if (carsEnabled) sim.step(dt, now, ambient);
-        people.advance(dt, now);
+        people?.advance(dt, now);
       }
     }
     return { sim, people, busy };

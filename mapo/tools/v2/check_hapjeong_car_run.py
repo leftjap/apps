@@ -50,7 +50,7 @@ def audit(seeded, with_people=False, captured=None):
         distances, outside = [], []
         touching = set()
         for i, r in enumerate(rows):
-            uid, x, z, yaw, kind, length, hwidth, edge, at, speed, why, light, _, past, site, move, internal, visible, blocker, leader, gate, _ = r
+            uid, x, z, yaw, kind, length, hwidth, edge, at, speed, why, light, _, past, site, move, internal, visible, blocker, leader, gate, _ = r[:22]
             prev = old.get(uid)
             current = body(x, z, yaw, length, hwidth)
             car_bodies.append(current)
