@@ -3,6 +3,7 @@ import { groundPoint } from './map.ts';
 import type { ArrowOmission } from './road-overlay.ts';
 
 const KIND_NAMES: Partial<Record<number, string>> = {
+  1: '우회전 금지', 2: '직진 금지', 12: '좌회전 금지',
   5: '좌회전', 6: '우회전', 7: '직진', 8: '직진·좌회전', 9: '직진·우회전', 10: '유턴',
 };
 const kindLabel = (kind: number) => {
@@ -11,11 +12,13 @@ const kindLabel = (kind: number) => {
 };
 
 function describe(row: ArrowOmission): string {
+  const source = `원자료 ${row.id} ${kindLabel(row.kind)}`;
+  if (row.reason === 'no-lane') return `미표시 · 담당 차로를 찾지 못함 · ${source} · 채택 화살표 없음`;
   const reason = row.reason === 'lane-kind-conflict' ? '같은 칸의 종류 상충' : '같은 칸의 상류 반복';
   const adopted = row.adopted
     ? `채택 ${row.adopted.id} ${kindLabel(row.adopted.kind)}`
     : row.of ? `채택 ID ${row.of}, 종류 미확인` : '채택 자료 미확인';
-  return `미표시 · ${reason} · 원자료 ${row.id} ${kindLabel(row.kind)} · ${adopted}`;
+  return `미표시 · ${reason} · ${source} · ${adopted}`;
 }
 
 export function createOmissionMarkers(layer: HTMLDivElement, note: HTMLDivElement) {

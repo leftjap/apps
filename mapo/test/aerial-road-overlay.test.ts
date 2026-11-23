@@ -71,6 +71,29 @@ describe('the Seogyo road comparison', () => {
     expect(overlay.omissions()).toEqual([]);
   });
 
+  it('shows every unassigned corridor arrow at its source with no adopted arrow', async () => {
+    const corridor = readFileSync(new URL('../public/data/v2/yanghwa-ground.json', import.meta.url), 'utf8');
+    const { arrowInventory } = JSON.parse(corridor);
+    const expected = arrowInventory.omitted
+      .filter((row: { reason: string }) => ['lane-already-assigned', 'lane-kind-conflict', 'no-lane'].includes(row.reason));
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(corridor)));
+    const overlay = createRoadOverlay(() => {});
+
+    overlay.setMode('overlay', 'seogyo', 'corridor');
+    await vi.waitFor(() => expect(overlay.state()).toBe('ready'));
+    expect(overlay.omissions().map(row => row.id)).toEqual(expected.map((row: { id: string }) => row.id));
+    const unassigned = overlay.omissions().filter(row => row.reason === 'no-lane');
+    expect(unassigned).toHaveLength(25);
+    expect(unassigned).toEqual(expected.filter((row: { reason: string }) => row.reason === 'no-lane'));
+    expect(unassigned.every(row => row.adopted === undefined)).toBe(true);
+
+    overlay.setMode('road', 'seogyo', 'corridor');
+    await vi.waitFor(() => expect(overlay.state()).toBe('ready'));
+    expect(overlay.omissions()).toEqual([]);
+    overlay.setMode('photo', 'seogyo', 'corridor');
+    expect(overlay.omissions()).toEqual([]);
+  });
+
   it('keeps an earlier JSON response hidden when the viewer returns to the photo', async () => {
     let finish!: (response: Response) => void;
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { finish = resolve; })));

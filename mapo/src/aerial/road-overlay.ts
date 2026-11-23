@@ -215,7 +215,7 @@ export function createRoadOverlay(onChange: () => void, anisotropy = 1) {
         if (mode === 'overlay') {
           const adopted = new Map(data.arrows.map(({ id, kind }) => [id, { id, kind }]));
           entry.omissions = (data.arrowInventory?.omitted ?? [])
-            .filter(row => row.reason === 'lane-already-assigned' || row.reason === 'lane-kind-conflict')
+            .filter(row => row.reason === 'lane-already-assigned' || row.reason === 'lane-kind-conflict' || row.reason === 'no-lane')
             .map(row => ({ ...row, adopted: row.of ? adopted.get(row.of) : undefined }));
         }
       }

@@ -69,4 +69,5 @@ export const CORRIDOR_VIEWS = {
   bus: { label: '우리은행서교동지점 정류장', at: [126.9176946, 37.5521948] },
   island: { label: '합정역 북동쪽 교통섬', at: [126.9135794, 37.549519] },
   hapjeong: { label: '합정 사거리', at: PILOT_SITES.hapjeong },
+  'hapjeong-south': { label: '합정 사거리 남쪽 접근로', at: [126.9131747, 37.5487375] },
 } as const satisfies Record<string, { label: string; at: LonLat }>;
