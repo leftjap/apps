@@ -18,6 +18,13 @@ def in_view(points, view):
     return (abs(right) <= half * (4/3)) & (abs(depth * math.cos(tilt)) <= half)
 
 
+def walker_identity(p):
+    # The engine guarantees unique IDs among live walkers. Deliberate trips
+    # can reuse a departed walker's ID; their recorded departure distinguishes them.
+    trial = p[10] if len(p)>10 else None
+    return p[0], trial['at'] if trial else p[9]['tod'] if len(p)>9 and p[9] else None
+
+
 def peak(points, views):
     """Test each walker and both radius-five circle centres through nearby pairs."""
     if not len(points):
@@ -91,8 +98,9 @@ def audit(records, plan):
         wait_xy = xy[[p[3]=='wait' and p[4] in signed for p in people]]
         for p in people:
             uid,x,z,mode,idx = p[:5]
-            if mode == 'cross' and t and previous_cross.get(uid) != idx:
-                crossings[uid,idx] += 1
+            identity = walker_identity(p)
+            if mode == 'cross' and t and previous_cross.get(identity) != idx:
+                crossings[identity,idx] += 1
             if mode not in ('walk','cross'):
                 continue
             ax,az,m,t0,near_t = walk_at.get(uid,(x,z,mode,t,None))
@@ -106,7 +114,7 @@ def audit(records, plan):
                 frozen.setdefault(uid, [round(t,3), x, z, mode, labels.get(idx)])
             anchors[uid] = (ax,az,m,t0,near_t)
         walk_at = anchors
-        previous_cross = {p[0]:p[4] for p in people if p[3]=='cross'}
+        previous_cross = {walker_identity(p):p[4] for p in people if p[3]=='cross'}
         for k, active in enumerate((
             [(p[0],p[4],p[1],p[2]) for p in people if p[7]],
             [(c[0],c[7],c[1],c[2]) for c in cars if c[9]<.1 and c[10] in (7,13)],
@@ -131,7 +139,7 @@ def audit(records, plan):
                            ratio=late/early if early else None, exceed=late > 1.5*early))
     return dict(peaks=peaks, ends=growth, series=series, green_clearance=left_behind,
                 queue_blocked=jam, traffic_delay=traffic_delay, frozen=frozen,
-                repeated=[[uid,labels.get(idx),n] for (uid,idx),n in sorted(crossings.items()) if n>1])
+                repeated=[[uid,labels.get(idx),n] for ((uid,_),idx),n in crossings.items() if n>1])
 
 
 if __name__=='__main__':

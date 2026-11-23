@@ -12,6 +12,7 @@ from shapely.prepared import prep
 
 from check_hapjeong_car_run import audit as audit_cars, body, trace
 from check_hapjeong_walk import faces, read
+from check_hapjeong_crowding import walker_identity
 
 
 def audit(captured):
@@ -117,7 +118,7 @@ def audit(captured):
                     red_wait.discard((uid, idx))
             if old == 'cross' and (state != 'cross' or idx != old_idx) and (uid, old_idx) in entered_face:
                 completed[ids[old_idx]] += 1
-                completed_by_person[uid, ids[old_idx]] += 1
+                completed_by_person[walker_identity(row), ids[old_idx]] += 1
                 if t < meta['cycle']:
                     completions[ids[old_idx]] += 1
                 entered_face.remove((uid, old_idx))
@@ -207,8 +208,8 @@ def audit(captured):
             'per_view':{key:[min(n),max(n)] for key,n in views_count.items()},
             'landings_passage_episodes':touches_pad, 'landings_passage_samples':pad_samples,
             'crossings_completed_in_run':completed,
-            'repeat_over_three':sorted({uid for (uid,_), n in completed_by_person.items() if n>3}),
-            'repeat': [[uid,c,n] for (uid,c),n in completed_by_person.items() if n>1],
+            'repeat_over_three':sorted({uid for ((uid,_),_), n in completed_by_person.items() if n>3}),
+            'repeat': [[uid,c,n] for ((uid,_),c),n in completed_by_person.items() if n>1],
             'people': [min_pop, max_pop], 'contact': contacts, 'red_entries': red_start,
             'stuck': stuck, 'green_wait': green_wait, 'longest_wait_for_car': stop_for_car,
             'longest_wait_for_person': stop_for_person, 'passing_with_person': sorted(pass_during_crossing),

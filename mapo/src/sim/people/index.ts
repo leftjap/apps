@@ -204,6 +204,8 @@ export function makePeople(
     busy?: Uint32Array;
     /** 신호 없는 횡단보도로 차가 다가오는가 */
     traffic?: (xw: number) => boolean;
+    /** 측량 횡단의 꺾이는 지점에서는 다음 띠 안에 든 뒤 그 띠를 따라간다 */
+    surveyedCrossings?: boolean;
     /** 차 몸통 */
     cars?: CarBodies;
     /** 처음에 문·출구에서 나오는 빠르기를 키울 시간(초): 미리 돌리기 */
@@ -870,6 +872,7 @@ export function makePeople(
   let why = 0;
   function tryMove(i: number, x: number, z: number): boolean {
     why = 1;
+    if (o.surveyedCrossings && mode[i] === CROSS && xLeg[i] < 3 && !inBand(he[i], x, z)) return false;
     if (!valid(i, x, z)) return false;
     why = 2;
     if (crowded(i, x, z)) return false;
@@ -1542,7 +1545,7 @@ export function makePeople(
         const d = docks[dk];
         if (!wantsDock(i, dk)) continue;
         const t = d.he === h ? d.t : e.L - d.t;
-        if (Math.abs(t - s) < 0.6) return arrive(i, dk);
+        if (Math.abs(t - s) < 0.6 || (o.surveyedCrossings && goal[i] >= 2 && t <= s)) return arrive(i, dk);
         // 이 선 위 앞쪽에 갈 곳이 있으면 거기로 곧장 간다(모퉁이에서 먼저 갈아타 지나치지 않게)
         if (t > s && (goalDk < 0 || t < goalT)) (goalDk = dk), (goalT = t);
       }
@@ -1827,6 +1830,13 @@ export function makePeople(
       head[i] = Math.atan2(c.pts[3] - c.pts[1], c.pts[2] - c.pts[0]);
       const v = startSpeed(i, c, tod);
       if (v > 0 && !carAhead(c, 0)) {
+        if (o.surveyedCrossings && !inBand(h, w.x[i], w.z[i])) {
+          // The queue may wait outside the crossing strip. Reach it from
+          // the sidewalk before claiming road occupancy.
+          const [sx, sz] = c.pts;
+          w.moving[i] = walkTo(i, sx, sz, spd[i], dt, sx, sz) > 0 ? 1 : 0;
+          return;
+        }
         mode[i] = CROSS;
         xSpd[i] = v;
         xLeg[i] = 1;
@@ -1871,7 +1881,11 @@ export function makePeople(
     const m = walkTo(i, gx, gz, v, dt, bx, bz);
     w.moving[i] = m > 0 ? 1 : 0;
     // 건너편 노드 원·기다리는 자리·승강장 네모 안에 들면 다 건넌 것이다(W28: 붐비는 승강장 끝 한 점에 닿으려다 횡단보도 위를 맴돌았다)
-    if (Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.3 || (L - ((w.x[i] - ax) * ux + (w.z[i] - az) * uz) < 0.3 && !last) || (last && inNode(hes[h].b, w.x[i], w.z[i]))) {
+    const atTarget = Math.hypot(gx - w.x[i], gz - w.z[i]) < 0.3;
+    const pastTurn = !last && L - ((w.x[i] - ax) * ux + (w.z[i] - az) * uz) < 0.3;
+    const nextBand = last || !o.surveyedCrossings ||
+      segDist(w.x[i], w.z[i], bx, bz, c.pts[k * 2 + 2], c.pts[k * 2 + 3]) <= c.hw - 0.05;
+    if (((atTarget || pastTurn) && nextBand) || (last && inNode(hes[h].b, w.x[i], w.z[i]))) {
       if (last) {
         // 건너편 노드에서 다시 걷는다
         mode[i] = WALK;

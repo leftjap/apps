@@ -254,7 +254,7 @@ async function init() {
     if (peopleMode) params.set('people', '1');
     if (carsMode) params.set('cars', '1');
     params.set('view', view.id);
-    for (const key of ['paused', 'at', 'seeded']) if (query.has(key)) params.set(key, query.get(key)!);
+    for (const key of ['paused', 'at', 'seeded', 'crowd', 'signaltest']) if (query.has(key)) params.set(key, query.get(key)!);
     history.replaceState(null, '', `?${params}`);
   }
   form.addEventListener('change',draw);

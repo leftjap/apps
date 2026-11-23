@@ -91,6 +91,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
   const people = makePeople(graph, trial ? [...portals, ...trial.portals] : portals, makeSimProvider(), 5,
     populationLimit + (trial?.pending.length ?? 0), {
     cars: cars.cars, busy, walkLeft, traffic: cars.approaching,
+    surveyedCrossings: !!input.crowd,
   });
   const routes = portalRoutes(graph, portals);
   const portalIndices = new Map(portals.map((p, i) => [p.key, i]));
