@@ -36,3 +36,9 @@ it('keeps every vehicle on its A2 line through seams and turns', () => {
   }
   expect(worst).toBeLessThan(.0001);
 });
+
+it('includes parallel central approaches with a complete offscreen route', () => {
+  const { graph } = carPlayback(asset);
+  const approaches = [...graph.inter.X.exits.values()].filter(exits => exits.length > 0);
+  expect(approaches.length).toBeGreaterThan(8);
+});

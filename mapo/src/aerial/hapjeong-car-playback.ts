@@ -47,9 +47,9 @@ export function carPlayback(data: HapjeongCars, ambient = true) {
   const sideTurn = new Set(full.edges.filter(e =>
     data.links[e.id].kind === '6' && delta(headingNear(e, 0), headingNear(e, e.len)) > Math.PI / 3,
   ).map(e => e.id));
-  const candidates: { chain: number[]; movement: number; approach: number; duplicates: number }[] = [];
+  const candidates: { chain: number[]; movement: number; ingress: number; duplicates: number }[] = [];
   const follow = (chain: number[]) => {
-    const a = chain[0], end = chain.at(-1)!;
+    const end = chain.at(-1)!;
     const next = full.edges[end].next.filter(id => !bus.has(id) && data.links[id].kind !== '4');
     if (chain.length > 20) return;
     for (const id of next) if (!chain.includes(id)) follow([...chain, id]);
@@ -57,40 +57,53 @@ export function carPlayback(data: HapjeongCars, ambient = true) {
     const intersection = chain.findIndex(i => central.has(i));
     const turning = chain.findIndex(i => sideTurn.has(i));
     if (intersection < 1 && turning < 0) return;
-    let movement: number, approach: number;
+    let movement: number, ingress = -1;
     if (intersection >= 1) {
       // Keep the connector and its outlet so the original reservation can be released.
-      const entry = chain[intersection - 1];
-      const exit = full.inter.X.exits.get(entry)?.find(ex => ex.edges.every((id, q) => chain[intersection - 1 + q] === id));
+      ingress = chain[intersection - 1];
+      const exit = full.inter.X.exits.get(ingress)?.find(ex => ex.edges.every((id, q) => chain[intersection - 1 + q] === id));
       if (!exit) return;
       movement = exit.move;
-      approach = headingNear(full.edges[entry], full.edges[entry].len);
     } else {
       movement = RIGHT;
-      approach = headingNear(full.edges[chain[turning]], 0);
     }
-    candidates.push({ chain, movement, approach, duplicates: chain.filter(i => data.links[i].duplicateOf).length });
+    candidates.push({ chain, movement, ingress, duplicates: chain.filter(i => data.links[i].duplicateOf).length });
   };
   for (const e of full.edges) {
     if (data.links[e.id].kind !== '6' || e.len < 12 || visible(...data.links[e.id].points[0])) continue;
     follow([e.id]);
   }
 
-  // Multiple vintages cover some lanes. Keep the best continuous route for
-  // each arm and movement, favouring recent data when the whole route works.
+  // Keep every complete route unless it would duplicate a physical lane
+  // already present in the best available survey route.
   candidates.sort((a, b) => a.duplicates - b.duplicates ||
     full.edges[b.chain[0]].len - full.edges[a.chain[0]].len);
-  const chosen = candidates.filter((r, i) => !candidates.slice(0, i).some(s =>
-    r.movement === s.movement && Math.abs(delta(r.approach, s.approach)) < Math.PI / 5));
-  const entries = new Set(chosen.map(r => r.chain[0]));
-  const selected = new Set([...data.bus, ...chosen.flatMap(r => r.chain)]);
+  const chosen: typeof candidates = [];
+  const selected = new Set(data.bus);
+  for (const route of candidates) {
+    if (route.chain.some(i => [...selected].some(j =>
+      data.links[i].duplicateOf === data.links[j].id || data.links[j].duplicateOf === data.links[i].id))) continue;
+    chosen.push(route);
+    for (const i of route.chain) selected.add(i);
+  }
+  const destinations = new Set([...selected].flatMap(i => full.edges[i].next.filter(j => selected.has(j))));
+  const entries = new Set(chosen.map(r => r.chain[0]).filter(i => !destinations.has(i)));
+  const byIngress = new Set(candidates.map(route => route.ingress));
+  const ingressAudit = [...full.inter.X.exits].filter(([i, paths]) =>
+    paths.length || full.edges[i].next.some(j => central.has(j))).map(([i]) => {
+    const link = data.links[i];
+    const shadow = [...selected].find(j => data.links[j].id === link.duplicateOf || data.links[j].duplicateOf === link.id);
+    const reason = selected.has(i) ? 'active' : shadow !== undefined ? 'duplicate'
+      : byIngress.has(i) ? 'overlapping-route' : 'no-complete-offscreen-route';
+    return { id: link.id, reason };
+  });
   // Keep the entire body inside the drawn map at source and sink boundaries.
   const graph = hapjeongCarGraph(data, selected, entries, 8);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   const duration = CYCLE + 22;
   const dt = 1 / 30;
   const start = { tod: 14 * 3600, dow: 6, doy: 175 };
-  const seed = 11, max = 22;
+  const seed = 11, max = 256;
   function reset() {
     const sim = makeCars(graph.edges, makeSimProvider(), seed, max, [graph.bus], graph.inter,
       { list: graph.crosswalks, busy: new Uint32Array(graph.crosswalks.length) });
@@ -98,7 +111,7 @@ export function carPlayback(data: HapjeongCars, ambient = true) {
     if (!site) throw Error('합정 차량 신호를 연결하지 못했습니다.');
     sim.setFocus(site.x, site.z, 100, visible);
     const seeded = new Set<number>();
-    for (const move of [STRAIGHT, LEFT, RIGHT]) {
+    for (const move of ambient ? [] : [STRAIGHT, LEFT, RIGHT]) {
       const route = chosen.find(r => r.movement === move && !seeded.has(r.chain[0]));
       if (!route) continue;
       seeded.add(route.chain[0]);
@@ -118,9 +131,9 @@ export function carPlayback(data: HapjeongCars, ambient = true) {
     if (target < frame) { sim = reset(); frame = 0; }
     while (frame < target) {
       frame++;
-      sim.step(dt, clock(frame * dt), ambient && frame * dt >= 12);
+      sim.step(dt, clock(frame * dt), ambient);
     }
     return sim;
   }
-  return { at, clock, duration, graph, max, chosen };
+  return { at, clock, duration, graph, max, chosen, ingressAudit };
 }

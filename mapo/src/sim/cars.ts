@@ -165,7 +165,7 @@ export function makeCars(
   while (queue.length) for (const k of before[queue.pop()!]) if (!canLeave[k]) (canLeave[k] = 1), queue.push(k);
   const placeable = canLeave.some((c) => c) ? canLeave : new Uint8Array(edges.length).fill(1);
   const entries = edges.filter((e) => e.entry);
-  const entryW = entries.map((e) => e.vol * Math.max(0, 4 - e.cls));
+  const entryW = entries.map((e) => X.surveyed ? Math.max(1, 4 - e.cls) : e.vol * Math.max(0, 4 - e.cls));
   const speed = new Float32Array(edges.length).fill(10);
   const midX = new Float32Array(edges.length);
   const midZ = new Float32Array(edges.length);
@@ -751,7 +751,7 @@ export function makeCars(
       const r = provider.roadSpeed(now, e.cls, e.key, midX[e.id], midZ[e.id], midH[e.id]);
       const curve = base + (JAM - base) * Math.max(0, Math.min(1, (0.65 - r) / 0.5));
       const k = Math.min(curve + (Math.min(curve, base / Math.max(r, 0.15)) - curve) * (1 - busy), 1000 / (6.6 + 1.3 * r * VFREE[e.cls]));
-      real[e.id] = (k * e.len * e.vol) / 1000;
+      real[e.id] = (k * e.len * (X.surveyed ? e.lanes : e.vol)) / 1000;
       F += real[e.id] * inF[e.id];
       O += real[e.id] * (1 - inF[e.id]);
     }
@@ -1924,7 +1924,7 @@ export function makeCars(
         side[i] = side0;
         if (sideNew !== side0 && ds > 0 && !blockedNext(i, ds)) {
           // 옆 거리를 그대로 두면 갈 수 있다
-        } else if (ds > 0 && hitBy >= 0 && waitsOn(hitBy, i) && leads(i, hitBy) && straightStep(i, ds, hitBy)) {
+        } else if (!X.surveyed && ds > 0 && hitBy >= 0 && waitsOn(hitBy, i) && leads(i, hitBy) && straightStep(i, ds, hitBy)) {
           // 나란한 두 차는 앞선 차가 먼저 간다(곧게 한 걸음)
         } else {
           side[i] = sideNew;
