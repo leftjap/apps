@@ -9,12 +9,12 @@ from shapely import constrained_delaunay_triangles, contains_xy, get_parts
 from shapely.geometry import LineString, Point, Polygon
 from shapely.prepared import prep
 
-from hapjeong_hd import ASSET
+from hapjeong_hd import ASSET, MAPO, ORIGIN, project
 from hapjeong_hd_a import surface
 
 BODY = .4
 EDGE_PAD = .025
-CELL = .25
+CELL = .10
 # The original engine uses a minimum .20 m half-width for walking across a crossing.
 CROSS_CLEAR = .23
 
@@ -66,11 +66,15 @@ class Network:
 
     def encode(self, crossings):
         n, e, r, x = [], [], [], []
+        landings = {p for a, _, _, b, *_ in crossings for p in (a, b)}
         ids = {p: i for i, p in enumerate(sorted(self.nodes))}
         prev = (0, 0)
         for p in ids:
             n.extend(round((v - q) * 10) for v, q in zip(p, prev, strict=True))
-            r.append(min(20, max(0, math.floor((Point(p).distance(self.safe.boundary) - .01) * 10))))
+            # Finish the crossing close to the attached edge. A large node
+            # circle can end CROSS before the walker reaches the pavement grid.
+            cap = 3 if p in landings else 20
+            r.append(min(cap, max(0, math.floor((Point(p).distance(self.safe.boundary) - .01) * 10))))
             prev = p
         last = 0
         ordered = sorted((min(ids[a], ids[b]), max(ids[a], ids[b]), width) for (a, b), width in self.edges.items())
@@ -193,6 +197,40 @@ def crossing_route(row, network):
     return None
 
 
+def spawn_points(network, floor, views):
+    road = prep(surface(floor['floor']['road']).difference(network.walk))
+    board = json.loads((MAPO / 'public/data/board.json').read_text())
+    lat0, lon0 = ORIGIN
+    longitude_metres = 111320 * math.cos(math.radians(lat0))
+    portals = []
+    for exit in board['exits']:
+        if exit['st'] != '합정':
+            continue
+        origin = project((lon0 + exit['x'] / 10 / longitude_metres, lat0 - exit['z'] / 10 / 110950))
+        for node in sorted(network.nodes, key=lambda p: math.dist(p, origin)):
+            if math.dist(node, origin) > 7:
+                break
+            if not road.intersects(LineString([origin, node])):
+                portals.append(dict(kind='exit', key=exit['st'], ref=exit['ref'], x=node[0], z=node[1]))
+                break
+
+    spacious = [p for p in sorted(network.nodes)
+                if len(network.nodes[p]) > 1 and Point(p).distance(network.safe.boundary) >= .5]
+    for view in views:
+        centre = view['at']
+        nearby = sorted((p for p in spacious if math.dist(p, centre) <= 29),
+                        key=lambda p: math.dist(p, centre))
+        count = 0
+        for x, z in nearby:
+            if any(math.dist((portal['x'], portal['z']), (x, z)) < 9 for portal in portals):
+                continue
+            portals.append(dict(kind='exit', key='인도', x=x, z=z))
+            count += 1
+            if count == 4:
+                break
+    return portals
+
+
 def bake(floor):
     walk = surface(floor['floor']['walk']).buffer(1e-7)
     network = Network(walk)
@@ -206,7 +244,9 @@ def bake(floor):
             ids.append(row['id'])
         else:
             excluded.append(dict(id=row['id'], reason=', '.join(bad) if bad else 'no continuous corridor with two safe wait areas'))
-    return dict(**network.encode(crossings), crossings=ids, excluded=excluded)
+    rehearsal = json.loads(ASSET.with_name('hapjeong-hd-pedestrians.json').read_text())
+    portals = spawn_points(network, floor, [person['view'] for person in rehearsal['people']])
+    return dict(**network.encode(crossings), crossings=ids, excluded=excluded, portals=portals)
 
 
 if __name__ == '__main__':

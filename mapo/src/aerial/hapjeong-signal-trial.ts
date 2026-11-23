@@ -83,7 +83,7 @@ const lamps = { [GREEN]:'#59f29c', [YELLOW]:'#ffcd64', [RED]:'#ff685f' };
 const names = { [GREEN]:'초록', [YELLOW]:'노랑', [RED]:'빨강' };
 
 export function attachSignalTrial(model:THREE.Scene, scene:SignalTrial, render:()=>void, autoplay:boolean,
-                                  setupOverlay?:(frames:SignalFrame[])=>(index:number)=>void) {
+                                  setupOverlay?:(frames:SignalFrame[])=>(index:number)=>void, initialTime = 0) {
   const frames=signalFrames(scene);
   const drawOverlay=setupOverlay?.(frames);
   const duration=frames[frames.length-1].time;
@@ -104,7 +104,7 @@ export function attachSignalTrial(model:THREE.Scene, scene:SignalTrial, render:(
   model.add(...cars,...signals);
   controls.hidden=false;
   seek.max=String(duration);
-  let position=0, frame:number|undefined, last:number|undefined;
+  let position=Math.min(duration, Math.max(0, initialTime)), frame:number|undefined, last:number|undefined;
 
   function draw() {
     const index=Math.round(position/DT);
