@@ -234,6 +234,20 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     if (c >= 0) walkGroup[i] = list[c].j < 0 || list[c].walkOnly ? 1 : axisGap(Math.atan2(xw.uz, xw.ux), list[c].axis) < Math.PI / 4 ? 0 : 1;
   });
 
+  // Assign both measured faces to one phase before checking which vehicle
+  // movements cross that phase. Keep both face indices for the conflict test.
+  for (const group of X.surveyed?.walkTogether ?? []) {
+    const owner = group.find(i => crossSite[i] >= 0);
+    if (owner === undefined) continue;
+    for (const i of group) {
+      if (crossSite[i] >= 0 && crossSite[i] !== crossSite[owner]) {
+        throw Error('분리대 횡단이 서로 다른 신호 교차로에 연결됐습니다.');
+      }
+      crossSite[i] = crossSite[owner];
+      walkGroup[i] = walkGroup[owner];
+    }
+  }
+
   // ── 현시 ──
   /** 움직임 단위(진입로, 움직임 비트)의 경로들 */
   const mvPaths = (a: number, m: number) => allPaths(a).map(({ l, k }) => X.path(a, l, k)!).filter((p) => p.move === m);

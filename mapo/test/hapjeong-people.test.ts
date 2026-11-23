@@ -38,3 +38,17 @@ it('replays the same car and pedestrian state after seeking back with shared cro
   snapshot(120);
   expect(snapshot(t)).toEqual(first);
 });
+
+it('defines a single surveyed phase for each divided crossing, including both faces in the plan', () => {
+  const { graph: { inter: { S } } } = carPlayback(asset);
+  const suffix = (ids: string[]) => ids.map(id => id.slice(-4)).sort();
+  expect(asset.walkSignalGroups?.map(suffix)).toEqual([['0031', '0032'], ['0044', '0046']]);
+  for (const pair of asset.walkSignalGroups) {
+    const [a, b] = pair.map((id: string) => asset.crosswalks.findIndex((row: {id: string}) => row.id === id));
+    expect(S.crossSite[a]).toBeGreaterThanOrEqual(0);
+    expect(S.crossSite[a]).toBe(S.crossSite[b]);
+    const site = S.list[S.crossSite[a]];
+    expect(site.steps.some(step => step.walk.has(a))).toBe(true);
+    for (const step of site.steps) expect(step.walk.has(a)).toBe(step.walk.has(b));
+  }
+});

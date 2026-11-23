@@ -23,6 +23,7 @@ export type HapjeongCars = {
   central: number[];
   window: [number, number, number, number];
   stopLines: number[];
+  walkSignalGroups?: string[][];
   crosswalks: { id: string; ends: [XZ, XZ]; width: number; faces: XZ[][][]; sig: boolean; lamps: string[] }[];
 };
 
@@ -91,6 +92,7 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
   const inter = makeIntersections(edges, { crosswalks, stopLines }, {
     links: new Set(ids.filter(i => central.has(i)).map(i => index.get(i)!)),
     stopAt, parallel,
+    walkTogether: data.walkSignalGroups?.map(group => group.map(id => data.crosswalks.findIndex(c => c.id === id))),
   });
   const buses: BusRoute[] = busChains.map(chain => {
     const busEdges = chain.map(i => index.get(i)!);

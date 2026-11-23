@@ -1,8 +1,9 @@
 """Bake exact A2 lane geometry and directed topology for the Hapjeong A floor."""
 from collections import defaultdict
-from itertools import pairwise
+from itertools import combinations, pairwise
 import json
 import math
+import sys
 
 from shapely import get_parts
 from shapely.geometry import LineString, Point
@@ -181,6 +182,37 @@ def duplicates(rows):
         row['duplicateOf'] = max(matches)[2] if matches else None
 
 
+def walk_signal_groups(rows, pavement):
+    """Find collinear signalized stripes joined by a paved central refuge."""
+    adjacent = defaultdict(set)
+    for a, b in combinations((row for row in rows if row['sig']), 2):
+        a0, a1 = a['ends']
+        b0, b1 = b['ends']
+        ux, uz = ((q-p)/math.dist(a0, a1) for p, q in zip(a0, a1, strict=True))
+        vx, vz = ((q-p)/math.dist(b0, b1) for p, q in zip(b0, b1, strict=True))
+        if abs(ux*vx + uz*vz) < math.cos(math.pi/12):
+            continue
+        gap, p, q = min((math.dist(p, q), p, q) for p in (a0, a1) for q in (b0, b1))
+        if not .2 < gap < 7 or abs((q[0]-p[0])*uz - (q[1]-p[1])*ux) > min(a['width'], b['width'])/2:
+            continue
+        bridge = LineString([p, q])
+        if bridge.intersection(pavement).length < .9*gap:
+            continue
+        adjacent[a['id']].add(b['id'])
+        adjacent[b['id']].add(a['id'])
+    groups = []
+    while adjacent:
+        pending = [min(adjacent)]
+        group = set()
+        while pending:
+            key = pending.pop()
+            if key not in group:
+                group.add(key)
+                pending.extend(adjacent.pop(key))
+        groups.append(sorted(group))
+    return groups
+
+
 def bake(floor):
     rows = load_links()
     nodes = {r['properties']['id']: r['geometry']['coordinates'] for r in features('a1-vehicle-seams')}
@@ -213,13 +245,19 @@ def bake(floor):
     for r in rows:
         for key in ('raw', 'line'):
             del r[key]
+    crossings = crosswalks(floor, lights)
     return dict(v=1, a1Count=len(nodes), links=rows, seams=seams, bundles=lane_groups,
                 bus=routes, central=central, window=list(WINDOW.bounds),
-                crosswalks=crosswalks(floor, lights), lights=lights,
+                crosswalks=crossings, lights=lights,
+                walkSignalGroups=walk_signal_groups(crossings, surface(floor['floor']['walk'])),
                 stopLines=[pt for _, line in stops for a, b in pairwise(line.coords) for pt in (*a, *b)])
 
 
 if __name__ == '__main__':
     floor = json.loads(ASSET.with_name('hapjeong-hd-a.json').read_text())
-    data = bake(floor)
+    if '--walk-signals' in sys.argv:
+        data = json.loads(OUTPUT.read_text())
+        data['walkSignalGroups'] = walk_signal_groups(data['crosswalks'], surface(floor['floor']['walk']))
+    else:
+        data = bake(floor)
     OUTPUT.write_text(json.dumps(data, separators=(',', ':')) + '\n')

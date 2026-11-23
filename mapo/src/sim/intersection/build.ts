@@ -127,6 +127,8 @@ export interface SurveyedIntersection {
   stopAt: ReadonlyMap<number, number>;
   /** Parallel lanes from one bundle, represented here as separate A2 Edges. */
   parallel?: ReadonlyMap<number, readonly number[]>;
+  /** Surveyed stripes on either side of the same pedestrian refuge. */
+  walkTogether?: readonly (readonly number[])[];
 }
 
 export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], stopLines: ArrayLike<number> = [], surveyed?: SurveyedIntersection): Intersections {
