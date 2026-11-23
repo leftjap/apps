@@ -4,6 +4,7 @@ import { AERIAL_DEV_ORIGIN, CORRIDOR_VIEWS, groundPoint, PILOT_SITES, TILE_METRE
 import type { Tile } from './map';
 import { AERIAL_BEARING, createRoadOverlay } from './road-overlay';
 import type { GroundVariant, SurfaceMode } from './road-overlay';
+import { createOmissionMarkers } from './arrow-omissions.ts';
 import './style.css';
 
 type TileSource = (tile: Tile) => string;
@@ -28,6 +29,10 @@ function initMap(canvas: HTMLCanvasElement) {
   sun.position.set(-200, 300, 100);
   scene.add(photos, roads.group, buildings, sun, new THREE.HemisphereLight('#dceafa', '#5c5751', 2));
 
+  const omissionMarkers = createOmissionMarkers(
+    document.querySelector<HTMLDivElement>('#arrow-omission-markers')!,
+    document.querySelector<HTMLDivElement>('#arrow-omission-note')!,
+  );
   const surfaceStatus = document.querySelector<HTMLParagraphElement>('#surface-status')!;
   const surfaceOptions = document.querySelector<HTMLFieldSetElement>('.surface-options')!;
   const surfaceInputs = surfaceOptions.querySelectorAll<HTMLInputElement>('input[name="surface"]');
@@ -65,6 +70,7 @@ function initMap(canvas: HTMLCanvasElement) {
     frame = requestAnimationFrame(() => {
       frame = undefined;
       renderer.render(scene, camera);
+      omissionMarkers.update(roads.omissions(), camera);
     });
   }
 
@@ -93,6 +99,9 @@ function initMap(canvas: HTMLCanvasElement) {
                 : '민트색은 서울시 길가 선에서 계산한 연석, 하늘색은 노면 표시입니다.'
               : '민트색은 연석, 하늘색은 노면 표시입니다. 주황색은 사진 미확인입니다. 주황 횡단보도 줄은 가린 곳의 추정 위치입니다. 분홍색은 위치 차이나 도색 충돌을 표시합니다.';
       }
+    }
+    if (roads.omissions().length) {
+      surfaceStatus.textContent += ' 보라색 ID는 도색에서 빠진 화살표의 원자료 위치입니다.';
     }
     render();
   }

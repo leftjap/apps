@@ -63,3 +63,31 @@ footer p[data-state="error"], footer p[data-state="partial"] { color: #f3c19b; }
   header { margin-bottom: 12px; }
   .toolbar { gap: 8px; }
 }
+
+#arrow-omission-markers { position: absolute; inset: 0; pointer-events: none; }
+#arrow-omission-markers button {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  border: 1px dashed #e2c4ff;
+  border-radius: 4px;
+  background: #281b39;
+  color: #f4e8ff;
+  padding: 2px 4px;
+  font: 600 11px/1.25 system-ui, sans-serif;
+}
+#arrow-omission-markers button:hover,
+#arrow-omission-markers button:focus-visible,
+#arrow-omission-markers button[aria-pressed="true"] { z-index: 1; outline: 2px solid #f4e8ff; }
+#arrow-omission-note {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  padding: 8px 12px;
+  border: 1px solid #e2c4ff;
+  border-radius: 5px;
+  background: #281b39;
+  color: #f4e8ff;
+  pointer-events: none;
+}

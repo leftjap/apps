@@ -10,8 +10,13 @@ type Site = keyof typeof PILOT_SITES;
 type Status = 'loading' | 'ready' | 'error';
 type Path = LonLat[];
 type Line = { kind: number; subtype: number; parts: Path[]; stripes?: [Path[], Path[]]; phase?: number[]; photo: string };
+type SourceOmission = { id: string; kind: number; sourceAt: LonLat; reason: string; of?: string };
+export type ArrowOmission = SourceOmission & { adopted?: { id: string; kind: number } };
+const NO_OMISSIONS: readonly ArrowOmission[] = [];
+
 interface Ground {
   version: number;
+  arrowInventory?: { omitted?: SourceOmission[] };
   frame: Path;
   road: Path[];
   roadHoles?: Path[][];
@@ -20,6 +25,7 @@ interface Ground {
   lines: Line[];
   crossings: { stripes: Path[]; estimatedStripes?: number[] }[];
   arrows: {
+    id: string;
     kind: number;
     bearing: number;
     laneWidth?: number;
@@ -166,7 +172,8 @@ function drawGround(ground: Ground, mode: 'road' | 'overlay') {
 
 export function createRoadOverlay(onChange: () => void, anisotropy = 1) {
   const group = new THREE.Group();
-  const cache = new Map<string, { state: Status; mesh?: THREE.Object3D }>();
+  type Entry = { state: Status; mesh?: THREE.Object3D; omissions?: ArrowOmission[] };
+  const cache = new Map<string, Entry>();
   const dataCache = new Map<string, Promise<Ground>>();
   let active = '';
 
@@ -197,10 +204,21 @@ export function createRoadOverlay(onChange: () => void, anisotropy = 1) {
   }
 
   async function load(path: string, mode: DrawnSurface, key: string) {
-    const entry: { state: Status; mesh?: THREE.Object3D } = { state: 'loading' };
+    const entry: Entry = { state: 'loading' };
     cache.set(key, entry);
     try {
-      entry.mesh = mode === 'hand' ? await hand() : drawGround(await ground(path), mode);
+      if (mode === 'hand') {
+        entry.mesh = await hand();
+      } else {
+        const data = await ground(path);
+        entry.mesh = drawGround(data, mode);
+        if (mode === 'overlay') {
+          const adopted = new Map(data.arrows.map(({ id, kind }) => [id, { id, kind }]));
+          entry.omissions = (data.arrowInventory?.omitted ?? [])
+            .filter(row => row.reason === 'lane-already-assigned' || row.reason === 'lane-kind-conflict')
+            .map(row => ({ ...row, adopted: row.of ? adopted.get(row.of) : undefined }));
+        }
+      }
       entry.state = 'ready';
       entry.mesh.visible = key === active;
       group.add(entry.mesh);
@@ -221,5 +239,6 @@ export function createRoadOverlay(onChange: () => void, anisotropy = 1) {
       if (mode !== 'photo' && (!current || current.state === 'error')) void load(path, mode, active);
     },
     state: () => active ? cache.get(active)?.state ?? 'loading' : 'ready',
+    omissions: () => cache.get(active)?.omissions ?? NO_OMISSIONS,
   };
 }

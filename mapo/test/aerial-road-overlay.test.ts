@@ -47,6 +47,30 @@ describe('the Seogyo road comparison', () => {
     }
   });
 
+  it('exposes only related omitted arrows at their source positions in overlay mode', async () => {
+    const original = JSON.parse(data);
+    const response = vi.fn(async () => new Response(data));
+    vi.stubGlobal('fetch', response);
+    const overlay = createRoadOverlay(() => {});
+    expect(overlay.omissions()).toEqual([]);
+    overlay.setMode('overlay');
+    await vi.waitFor(() => expect(overlay.state()).toBe('ready'));
+
+    const rows = original.arrowInventory.omitted.filter((a: { reason: string }) => a.reason === 'lane-already-assigned');
+    expect(overlay.omissions().map(o => o.id)).toEqual(rows.map((a: {id: string}) => a.id));
+    expect(overlay.omissions()[0]).toMatchObject({
+      id: rows[0].id, sourceAt: rows[0].sourceAt, kind: rows[0].kind,
+      adopted: { id: rows[0].of, kind: original.arrows.find((a: {id: string}) => a.id === rows[0].of).kind },
+    });
+
+    overlay.setMode('road');
+    expect(overlay.omissions()).toEqual([]);
+    await vi.waitFor(() => expect(overlay.state()).toBe('ready'));
+    expect(overlay.omissions()).toEqual([]);
+    overlay.setMode('photo');
+    expect(overlay.omissions()).toEqual([]);
+  });
+
   it('keeps an earlier JSON response hidden when the viewer returns to the photo', async () => {
     let finish!: (response: Response) => void;
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { finish = resolve; })));

@@ -314,7 +314,10 @@ def check(data, size):
     for index, (key,d) in enumerate(zip(GUIDE_IDS, GUIDES+BUS_GUIDES), 1):
         ds = distances(trace_path(d)[0], geometry(key), mask)
         med = percentile(ds,.5)
-        row(f'유도선 {index}/12 {key} 중앙값(m)', f'{med:.3f} · 대응 {int(not geometry(key).is_empty)}/1 · {len(ds)}점', med <= 2.0)
+        row(f'유도선 {index}/12 {key} 중앙값(m)',
+            f'{med:.3f} · 대응 {int(not geometry(key).is_empty)}/1 · {len(ds)}점'
+            f" · 구기준 1.2m {'통과' if med<=1.2 else '미달'} · 현기준 2.0m {'통과' if med<=2.0 else '미달'}",
+            med <= 2.0)
 
     faces = {f['id']: f for f in data['crossings']}
     counts = {side: [0,0,0,0,[]] for side in CROSS_IDS}
@@ -358,8 +361,11 @@ def check(data, size):
         actual = united(by_id(curbs.get(corner, {}),'parts'))
         pts = photo_points(ref,curb_masks)
         vals = stats(distances(ref, actual, curb_masks))
-        row(f'연석 {corner} 중앙값 / 90% / 최대(m)', f'{fmt(vals)} · {len(pts)}점',
-            all(x <= limit for x, limit in zip(vals, (1.2,1.5,2))))
+        old = all(x <= limit for x, limit in zip(vals, (.8,1.5,2)))
+        current = all(x <= limit for x, limit in zip(vals, (1.2,1.5,2)))
+        row(f'연석 {corner} 중앙값 / 90% / 최대(m)',
+            f"{fmt(vals)} · {len(pts)}점 · 구기준 0.8m {'통과' if old else '미달'}"
+            f" · 현기준 1.2m {'통과' if current else '미달'}", current)
         if isinstance(actual, LineString):
             for p in pts:
                 x,y = p.coords[0]
