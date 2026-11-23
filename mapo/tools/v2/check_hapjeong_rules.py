@@ -38,12 +38,11 @@ LIMITS = {
     'C5': {'stuck': 0, 'visible_events': 0, 'off_floor': 0, 'overlap': 0, 'a2_m': .001},
     'C6': {'trial_red': 0, 'late': 0, 'trial_late': 0, 'trial_face_cars': 0},
 }
-# P6 compares accumulation and walking obstructions against the incumbent.
-NO_INCREASE = {'P6': ('peak_5m', 'walk_blocked', 'growing_visible_ends')}
-NO_DECREASE = {'P4': ('models',), 'C1': ('min_cars', 'queue_median')}
-# Throughput is compared on queue ranks observed in both replays. A tenth of a
-# second allows three samples of clock quantization at 30 Hz.
-RANK_TOLERANCE = .1
+# Compare the traffic counts and accumulation where a zero is not the goal.
+NO_INCREASE = {'P2': ('people_wait_s', 'car_wait_s'), 'P6': ('peak_5m', 'walk_blocked', 'growing_visible_ends')}
+NO_DECREASE = {'P4': ('models',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
+# Allow one tick of 30 Hz quantization at each recorded stop line.
+RANK_TOLERANCE = 1 / 30
 
 
 def load(path):
@@ -170,9 +169,10 @@ def evaluate(result, incumbent=None):
                 if metrics[rule][key] < before[rule][key]:
                     failure.append(dict(rule=rule,test=key,measured=metrics[rule][key],limit=before[rule][key]))
         for key,value in before['C2'].items():
-            limit = value + RANK_TOLERANCE if key.startswith('rank') else value * 1.1
-            if key in metrics['C2'] and metrics['C2'][key] > limit:
-                failure.append(dict(rule='C2',test=key,measured=metrics['C2'][key],limit=round(limit,3)))
+            limit = value + (RANK_TOLERANCE if key.startswith('rank') else 0)
+            measured = metrics['C2'].get(key)
+            if measured is None or measured > limit:
+                failure.append(dict(rule='C2',test=key,measured=measured,limit=round(limit,3)))
     return failure
 
 
