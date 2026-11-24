@@ -3,14 +3,14 @@ import { PAINT_DASHES } from './ground-paint.ts';
 import { AERIAL_DEV_ORIGIN, tileBounds } from './map.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
 import { hapjeongArea, photoTiles, type SurveyArea } from './survey-area.ts';
+import { groundShape, makeSurveyBuildings, type Face, type SurveyBuilding } from './survey-buildings.ts';
 import type { HapjeongEntrances, HapjeongPeopleInput } from './hapjeong-people.ts';
 
 type XZ = [number, number];
-type Face = XZ[][];
 type BuiltArea = {
   window: [number, number, number, number];
   ground?: Face[];
-  buildings: { faces: Face[]; height: number }[];
+  buildings: SurveyBuilding[];
   parking: Face[];
 };
 type Path = XZ[];
@@ -72,13 +72,6 @@ async function photoPlane(photo: SurveyArea['photo'], trial = false) {
   return mesh;
 }
 
-function groundShape([outer, ...holes]: Face) {
-  const vector = (ring: Path) => ring.map(([x,z]) => new THREE.Vector2(x,-z));
-  const shape = new THREE.Shape(vector(outer));
-  shape.holes = holes.map(ring => new THREE.Path(vector(ring)));
-  return shape;
-}
-
 function addFaces(parent: THREE.Object3D, faces: Face[], material: THREE.Material, y: number) {
   for (const face of faces) {
     const mesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape(face)).rotateX(-Math.PI/2), material);
@@ -91,12 +84,7 @@ function addBuiltArea(parent: THREE.Group, area: BuiltArea) {
   const [west, north, east, south] = area.window;
   addFaces(parent, area.ground ?? [[[[west,north], [east,north], [east,south], [west,south]]]], flat('#a8a093'), 0);
   addFaces(parent, area.parking, flat('#87837d',1), .004);
-  const roof = new THREE.MeshLambertMaterial({ color: '#d9cbbc' });
-  const wall = new THREE.MeshLambertMaterial({ color: '#b2a79a' });
-  for (const { height, faces } of area.buildings) for (const face of faces) {
-    const geometry = new THREE.ExtrudeGeometry(groundShape(face), { depth: height, bevelEnabled: false });
-    parent.add(new THREE.Mesh(geometry.rotateX(-Math.PI/2), [roof,wall]));
-  }
+  parent.add(...makeSurveyBuildings(area.buildings));
 }
 
 function stroke(vertices: number[], path: Path, y: number, width: number, dash: number) {
