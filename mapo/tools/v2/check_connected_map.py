@@ -6,13 +6,34 @@ from pathlib import Path
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
-from area import area_window, read_area
+from area import COMPARISON_SEAM_MARGIN, area_window, read_area
 from hapjeong_hd import AREA, SHEETS, WINDOW, asset, parts, project, survey_faces
 from hapjeong_hd_a import polygon, surface
 from shp import dbf, shapes
 from tm import tm_to_ll
 
 AREA_EPS = 1e-6  # m², for floating-point polygon operations
+
+
+def floor_layers(paving):
+    return {key: surface([face for row in rows for face in row['faces']] if key == 'a4' else rows)
+            for key, rows in paving.items()}
+
+
+def floor_parity(paving, areas):
+    combined = floor_layers(paving)
+    compared = {}
+    for area in areas:
+        core = area_window(area).buffer(-COMPARISON_SEAM_MARGIN)
+        reference = floor_layers(json.loads(asset(area, '-a').read_text())['floor'])
+        compared[area['id']] = {}
+        for layer, original in reference.items():
+            actual, expected = combined[layer].intersection(core), original.intersection(core)
+            compared[area['id']][layer] = {
+                'combinedOnlyM2': actual.difference(expected).area,
+                'areaOnlyM2': expected.difference(actual).area,
+            }
+    return compared
 
 
 def named_road_footprint(road, name, number):
@@ -39,7 +60,8 @@ def inspect():
     built = json.loads(asset(AREA, '-buildings').read_text())
     paving = floor['floor']
     road, walk = (surface(paving[key]) for key in ('road', 'walk'))
-    older = [area_window(read_area(Path(name))) for name in AREA['comparisonAreas']]
+    comparisons = [read_area(Path(name)) for name in AREA['comparisonAreas']]
+    older = [area_window(area) for area in comparisons]
     old_union = unary_union(older)
     seams = unary_union([area.boundary for area in older]).intersection(WINDOW.buffer(-.001))
     buildings = [surface(row['faces']) for row in built['buildings']]
@@ -92,6 +114,7 @@ def inspect():
         'outsideSheetsM2': WINDOW.difference(unary_union([face for face, _ in sheets])).area,
         'sheets': [key for _, key in sheets],
         'floorFaces': {key: len(rows) for key, rows in master['floor'].items()},
+        'floorParity': floor_parity(paving, comparisons),
         'crossings': len(floor['crossings']),
         'crossingsByKind': dict(Counter(row.get('kind', 'survey') for row in floor['crossings'])),
         'landingCoverage': dict(Counter(sum(row['connected'] for row in rows) for rows in landings.values())),
@@ -108,6 +131,8 @@ if __name__ == '__main__':
             'buildingRoadOverlapM2', 'buildingWalkOverlapM2', 'outsideSheetsM2',
         ))
         or any(result[key] for key in ('withoutHeight', 'oldBoundaryBuildingFaces', 'oldBoundaryWalkFaces'))
+        or any(value > AREA_EPS for area in result['floorParity'].values()
+               for layer in area.values() for value in layer.values())
         or (result['shortestConcaveDistanceM'] is not None
             and result['shortestConcaveDistanceM'] < AREA['coverage']['roadMargin'])
     )

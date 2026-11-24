@@ -10,7 +10,9 @@
     body, main { margin: 0; width: 100%; height: 100dvh; overflow: hidden; }
     canvas { display: block; width: 100%; height: 100%; touch-action: none; }
     button, footer, #status { position: absolute; padding: .55rem .8rem; background: #161b23eb; color: #eef2f6; }
-    button { top: 1rem; right: 1rem; border: 1px solid #858f9d; border-radius: .4rem; cursor: pointer; }
+    button { top: 1rem; border: 1px solid #858f9d; border-radius: .4rem; cursor: pointer; }
+    #overview { right: 1rem; }
+    #play { left: 1rem; }
     footer { bottom: 1rem; left: 1rem; font-size: 12px; border-radius: .25rem; pointer-events: none; }
     #status { top: 1rem; left: 1rem; margin: 0; }
   </style>
@@ -19,7 +21,8 @@
   <main>
     <canvas aria-label="합정부터 동교동삼거리까지의 3D 지도"></canvas>
     <p id="status" role="status">지도를 불러오는 중</p>
-    <button type="button" disabled>전체 보기</button>
+    <button id="overview" type="button" disabled>전체 보기</button>
+    <button id="play" type="button" hidden>멈춤</button>
     <footer>국토지리정보원 수치지형도·정밀도로지도 · 브이월드</footer>
   </main>
   <script type="module" src="/src/aerial/yanghwa-map.ts"></script>

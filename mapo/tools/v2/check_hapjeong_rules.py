@@ -61,7 +61,7 @@ def load(path):
     return json.loads(path.read_text())
 
 
-def replay(tree, folder, area, area_path, *, cars_only=False):
+def replay(tree, folder, area, area_path, *, cars_only=False, cycles=None):
     area_args = ['--area', str(area_path)] if area_path else []
     def run(script, output, *args):
         dest = folder / output
@@ -69,7 +69,7 @@ def replay(tree, folder, area, area_path, *, cars_only=False):
             subprocess.run(['node', '--experimental-strip-types', f'tools/v2/{script}.mts', *args, *area_args],
                            cwd=tree, stdout=stream, check=True)
     if cars_only:
-        run('trace_hapjeong_cars', 'trace.ndjson')
+        run('trace_hapjeong_cars', 'trace.ndjson', *(['--cycles', str(cycles)] if cycles else []))
         return
     legacy_crowd = ['--crowd'] if asset(area, '-crowd', root=tree).is_file() else []
     run('trace_hapjeong_cars', 'trace.ndjson', '--people', *legacy_crowd)
@@ -100,8 +100,9 @@ def measure_cars_only(tree, folder, area):
     with (folder/'trace.ndjson').open() as stream:
         report = cars.audit(False, False, stream)
     hashes = visible.check_legacy(tree)
+    stall_gate = 'stoppedOverCycle' if area.get('checks', {}).get('stallGate') == 'signal-cycle' else 'stalled'
     failures = {name: report[name] for name in
-                ('red', 'visible_events', 'overlap', 'stalled', 'off_floor_samples') if report[name]}
+                ('red', 'visible_events', 'overlap', stall_gate, 'off_floor_samples') if report.get(name)}
     failures.update({name: data for name, data in hashes.items() if not data['passed']})
     return dict(cars=report, legacy=hashes, failures=failures)
 
@@ -293,6 +294,7 @@ def main():
     parser.add_argument('--target',nargs=2,metavar=('RULE','METRIC'),help='require this metric to improve against the incumbent')
     parser.add_argument('--relative-only',action='store_true',help='gate on target improvement and regressions, with absolute limits still reported')
     parser.add_argument('--cars-only', action='store_true', help='only the vehicle portions of visible rules 1, 2, 3, and legacy hashes')
+    parser.add_argument('--cycles', type=int, help='replay this many cycles in the car-only audit')
     parser.add_argument('--visible-only',action='store_true',
                         help='gate only on the eight visible-behavior rules in the ordinary 240-second replay')
     parser.add_argument('--skip-bus-gate',action='store_true',
@@ -301,6 +303,8 @@ def main():
     parser.add_argument('--recorded',action='store_true',help='reuse trace.ndjson, signal.ndjson and paths.json already in --out')
     parser.add_argument('--measure-only',action='store_true',help='write results for a historical revision even when the gate rejects it')
     arg = parser.parse_args()
+    if arg.cycles is not None and (not arg.cars_only or arg.cycles < 1):
+        parser.error('--cycles requires --cars-only and a positive integer')
     if arg.skip_bus_gate and not arg.visible_only:
         parser.error('--skip-bus-gate requires --visible-only')
     if arg.visible_only and arg.relative_only:
@@ -315,7 +319,7 @@ def main():
     folder.mkdir(parents=True,exist_ok=True)
     area = read_area(arg.area) if arg.area else read_area()
     if not arg.recorded:
-        replay(tree, folder, area, arg.area.resolve() if arg.area else None, cars_only=arg.cars_only)
+        replay(tree, folder, area, arg.area.resolve() if arg.area else None, cars_only=arg.cars_only, cycles=arg.cycles)
     if arg.cars_only:
         result = measure_cars_only(tree, folder, area)
         (folder/'rules.json').write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n')

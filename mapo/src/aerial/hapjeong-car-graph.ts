@@ -26,6 +26,7 @@ export type HapjeongCars = {
   bundles: { lanes: number[]; at: number[]; offsets: number[] }[];
   bus: number[];
   busRoutes?: number[][];
+  platforms?: HapjeongPlatform[];
   central: number[];
   window: [number, number, number, number];
   boundaryFaces?: XZ[][][];

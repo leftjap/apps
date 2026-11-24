@@ -1,5 +1,5 @@
 """Measure the body and movement of every legacy-engine car at 30 Hz."""
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import lru_cache
 import json
 import math
@@ -14,6 +14,36 @@ import check_hapjeong_walk as area_data
 from check_hapjeong_walk import faces, read
 
 MIN_OFF_FLOOR_AREA = .01  # m², behavior-rules.md C5
+
+
+class ConnectedStops:
+    """Track uninterrupted residence within 0.8m of a recorded position."""
+
+    def __init__(self, cycle):
+        self.cycle = cycle
+        self.anchors = {}
+        self.longest = {}
+
+    def add(self, t, rows, describe):
+        current = {}
+        for row in rows:
+            uid, x, z = row[:3]
+            x0, z0, start = self.anchors.get(uid, (x, z, t))
+            if (x-x0)**2 + (z-z0)**2 > .8**2:
+                x0, z0, start = x, z, t
+            current[uid] = x0, z0, start
+            elapsed = t-start
+            if elapsed > self.longest.get(uid, (0,))[0]:
+                self.longest[uid] = elapsed, [*describe(t, row), round(elapsed, 2), round(start, 2)]
+        self.anchors = current
+
+    @property
+    def over_cycle(self):
+        return [row for duration, row in self.longest.values() if duration > self.cycle]
+
+    @property
+    def longest_stop(self):
+        return max(self.longest.values(), default=(0, None), key=lambda record: record[0])[1]
 
 
 def body(x, z, yaw, length, half_width):
@@ -74,6 +104,9 @@ def audit(seeded, with_people=False, captured=None):
     surveyed = [LineString(r['points']) for r in driven]
     red, overlap, excessive, included, scenes = [], [], {}, [], []
     stats, movement, right = Counter(), Counter(), set()
+    off_floor_links, calls, counts = Counter(), defaultdict(list), []
+    connected = 'routing' in signals
+    connected_stops = ConnectedStops(signals['cycle']) if connected else None
     boundary, old, contacts = {}, {}, set()
     stopped, complete, stopped_at_red, waiting_red = {}, set(), set(), set()
     seen_count, speeds, min_gap = [], [], math.inf
@@ -82,13 +115,21 @@ def audit(seeded, with_people=False, captured=None):
         return [round(t, 2), r[0], driven[r[7]]['id'], round(r[1], 2), round(r[2], 2)]
 
     for line in lines:
-        t, rows, *_ = json.loads(line)
+        t, rows, *detail = json.loads(line)
         now = {r[0]: r for r in rows}
         stats['samples'] += 1
         seen_count.append(len(rows))
         car_bodies = []
         distances, outside = [], []
         touching = set()
+        grid = defaultdict(list)
+        if connected:
+            connected_stops.add(t, rows, describe)
+            if t % 30 == 0:
+                counts.append([t,len(rows)])
+            for event in detail[4]:
+                if event[0] == 'bus-stop':
+                    calls[event[2]].append(t)
         for i, r in enumerate(rows):
             uid, x, z, yaw, kind, length, hwidth, edge, at, speed, why, light, _, past, site, move, internal, visible, blocker, leader, gate, _ = r[:22]
             prev = old.get(uid)
@@ -107,6 +148,8 @@ def audit(seeded, with_people=False, captured=None):
                 stats['raw_off_floor_samples'] += 1
                 if off_area >= MIN_OFF_FLOOR_AREA:
                     outside.append(i)
+                    if connected:
+                        off_floor_links[driven[edge]['id']] += 1
                     boundary.setdefault('firstCountedOffFloor', describe(t, r))
                 if not road.covers(Point(x, z)):
                     stats['centre_out_samples'] += 1
@@ -127,9 +170,10 @@ def audit(seeded, with_people=False, captured=None):
                 right.add(uid)
                 scenes.append(['right slip', 4, *describe(t, r)])
             stop = driven[edge]['stop']
-            if stop and prev and prev[7] == edge and (uid, edge) not in stopped_at_red:
+            painted = signals['paintedStops'][edge] if 'paintedStops' in signals else stop['at'] if stop else None
+            if painted is not None and prev and prev[7] == edge and (uid, edge) not in stopped_at_red:
                 front, last = at + length / 2, prev[8] + length / 2
-                if light == 2 and last <= stop['at'] < front:
+                if light == 2 and last <= painted < front:
                     red.append(describe(t, r))
                     stopped_at_red.add((uid, edge))
             # Red/amber and a queue behind one are expected stops. Walk the
@@ -153,7 +197,12 @@ def audit(seeded, with_people=False, captured=None):
             if uid in waiting_red and speed > .15 and light == 0:
                 speeds.append(describe(t, r))
                 waiting_red.remove(uid)
-            for j in range(i):
+            nearby = range(i)
+            if connected:
+                gx,gz = math.floor(x/16),math.floor(z/16)
+                nearby = sorted(j for dx in (-1,0,1) for dz in (-1,0,1) for j in grid.get((gx+dx,gz+dz),()))
+                grid[gx,gz].append(i)
+            for j in nearby:
                 b = rows[j]
                 if math.hypot(x - b[1], z - b[2]) > (length + b[5]) / 2 + 2:
                     continue
@@ -173,9 +222,13 @@ def audit(seeded, with_people=False, captured=None):
                 stats['visible_removals'] += 1
                 included.append(['removal', *describe(t, prev)])
         old = now
+    connected_stats = dict(offFloorLinks=off_floor_links, busCalls=calls, counts=counts) if connected else {}
+    if connected_stops:
+        connected_stats['stoppedOverCycle'] = connected_stops.over_cycle
+        connected_stats['longestStop'] = connected_stops.longest_stop
     return dict(**stats, cars=[min(seen_count), max(seen_count)], red=red, overlap=overlap,
                 stalled=list(excessive.values()), visible_events=included, movement=movement, signals=signals,
-                exits=scenes, departures_on_green=speeds, min_same_lane_bumper_gap=min_gap, **boundary)
+                exits=scenes, departures_on_green=speeds, min_same_lane_bumper_gap=min_gap, **boundary, **connected_stats)
 
 
 if __name__ == '__main__':

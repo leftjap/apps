@@ -4,11 +4,13 @@ import math
 import re
 from itertools import pairwise
 from collections import defaultdict
+from pathlib import Path
 
 from shapely import affinity, make_valid
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
+from area import COMPARISON_SEAM_MARGIN, area_window, read_area
 from hapjeong_hd import AREA, ASSET, MAPO, ORIGIN, WINDOW, asset, features, parts, paths, project, offset_zebra, rings
 from hapjeong_crossings import expanded_walk, supplement_crossings, vehicle_clearance, walking_landings
 from aerial_paint import footprint
@@ -175,11 +177,23 @@ def connected_paint(lines):
             for color, polys in sorted(fills.items())]
 
 
+def preserve_inferred_pavement(measured, inferred):
+    """Use reviewed additions inside the earlier areas; infer across their joins."""
+    for name in AREA.get('comparisonAreas', ()):
+        reference = read_area(Path(name))
+        core = area_window(reference).buffer(-COMPARISON_SEAM_MARGIN)
+        paving = json.loads(asset(reference, '-a').read_text())['floor']['walk']
+        confirmed = surface(paving).intersection(core)
+        inferred = inferred.difference(core).union(confirmed.difference(measured))
+    return measured.union(inferred)
+
+
 def bake_a(old):
     floor = old['floor']
     clip = AREA.get('floor', {}).get('clipToWindow')
     survey_walk = surface(floor['walk'] + floor['islands'])
     combined = survey_walk.union(surface([face for row in floor['a4'] for face in row['faces']]))
+    measured = combined
     common_road = surface(floor['road']).difference(survey_walk)
     source_buildings = json.loads((MAPO/AREA['sources']['pilotBuildings']).read_text())['buildings']
     segments = list(link_segments(features('a2-expanded')))
@@ -202,6 +216,8 @@ def bake_a(old):
     approaches = surface([face for row in crossing_audit if row['status']!='unconfirmed'
                           for end in row['approaches'] for face in end['faces']])
     combined = combined.union(approaches.difference(cross_faces))
+    if AREA.get('comparisonAreas'):
+        combined = preserve_inferred_pavement(measured, combined.difference(measured))
     if clip:
         combined = combined.intersection(WINDOW)
     result = {

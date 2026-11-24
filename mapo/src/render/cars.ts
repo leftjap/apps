@@ -386,10 +386,19 @@ function glowGeometry(front: number, rear: number): THREE.BufferGeometry {
   return merge([tag(head, 0), tag(tail, 1)]);
 }
 
-export function makeCarMeshes(max: number) {
+export function makeCarMeshes(max: number, physicalSize = false) {
   const group = new THREE.Group();
   const busCols = BUS_KINDS.map((k) => new THREE.Color(k.color));
-  const glowMat = material({ vertex: GLOW_VERT, fragment: GLOW_FRAG, transparent: true, additive: true, depthWrite: false, doubleSide: true });
+  // This map shares its depth buffer with logarithmically drawn terrain.
+  const vertex = (shader: string) => physicalSize
+    ? '#include <common>\n#include <logdepthbuf_pars_vertex>\n' +
+      shader.replaceAll(sizeGlsl('mover'), '1.0').replace(/(gl_Position\s*=[^;]+;)/, '$1\n#include <logdepthbuf_vertex>')
+    : shader;
+  const fragment = (shader: string) => physicalSize
+    ? '#include <logdepthbuf_pars_fragment>\n' +
+      shader.replace('void main() {', 'void main() {\n#include <logdepthbuf_fragment>\n')
+    : shader;
+  const glowMat = material({ vertex: vertex(GLOW_VERT), fragment: fragment(GLOW_FRAG), transparent: true, additive: true, depthWrite: false, doubleSide: true });
   // 0 세단, 1 SUV, 2 경차, 3 승합, 4 택시, 5 시내버스, 6 광역버스, 7 마을버스
   const kinds = [
     { base: SHAPES.sedan(), look: CAR_SHAPES.sedan.look, max },
@@ -404,8 +413,8 @@ export function makeCarMeshes(max: number) {
     const inst = instanced(base, max, { aInst: 4, aMore: 4, aRoom: 1 });
     const isBus = k >= 5 ? 1 : 0;
     const mat = material({
-      vertex: VERT,
-      fragment: FRAG,
+      vertex: vertex(VERT),
+      fragment: fragment(FRAG),
       uniforms: {
         uBus: { value: busCols },
         uPick: { value: -1 },

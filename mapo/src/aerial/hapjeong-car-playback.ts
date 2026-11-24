@@ -9,6 +9,7 @@ import { makeSimProvider } from '../sim/provider.ts';
 import { carBoundary, hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-graph.ts';
 import { hapjeongCrossings, makeHapjeongPeople, type HapjeongPeopleInput } from './hapjeong-people.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
+import { surveyBoundaryTraffic, insideOutline, nearestOutlineEdge } from './connected-traffic.ts';
 
 import { hapjeongArea, type SurveyArea } from './survey-area.ts';
 
@@ -70,9 +71,16 @@ function speedRatio(edge: Edge) {
 /** Basic-board measurements from the same survey window, Saturday at 14:00. */
 export type HapjeongDemand = { vehicles: number; walkers: number };
 
+export const CAR_TICK = 1 / 30;
+
 export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true,
-                            demand?: HapjeongDemand, replayCycles?: number, entrances = pedestrians?.entrances, area: SurveyArea = hapjeongArea) {
-  const visible = carVisibility(area.views.simulation);
+                            demand?: HapjeongDemand, replayCycles?: number, entrances = pedestrians?.entrances,
+                            area: Pick<SurveyArea,'title'|'views'|'replay'> = hapjeongArea) {
+  const connected = area.replay.connectedTraffic;
+  const outline = connected && data.boundaryFaces;
+  const visible = outline ? (x: number,z: number) =>
+    insideOutline(outline,[x,z]) && nearestOutlineEdge(outline,[x,z]).distance > 15
+    : carVisibility(area.views.simulation);
   const full = hapjeongCarGraph(data, undefined, undefined, undefined, undefined, undefined, area.replay.busName);
   const central = new Set(data.central);
   const boundary = (point: XZ) => carBoundary(data, point);
@@ -141,7 +149,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     }
     candidates.push({ chain, movement, ingress, duplicates: chain.filter(i => data.links[i].duplicateOf).length });
   };
-  for (const e of full.edges) {
+  for (const e of connected ? [] : full.edges) {
     if (data.links[e.id].kind !== '6' || e.len < (data.boundaryRoutes ? 8.5 : 12) || visible(...data.links[e.id].points[0]) ||
       (data.signalSites && !boundary(data.links[e.id].points[0]))) continue;
     follow([e.id]);
@@ -152,7 +160,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   candidates.sort((a, b) => Number(a.ingress < 0) - Number(b.ingress < 0) || a.duplicates - b.duplicates ||
     full.edges[b.chain[0]].len - full.edges[a.chain[0]].len);
   const chosen: typeof candidates = [];
-  const selected = new Set(bus);
+  let selected = new Set(bus);
   const terminals = new Map(buses.map(chain => [terminalKey(chain.at(-1)!), chain.at(-1)!]));
   const overlappingTerminals = new Set<string>();
   for (const route of candidates) {
@@ -171,7 +179,25 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     for (const i of route.chain) selected.add(i);
   }
   const destinations = new Set([...selected].flatMap(i => full.edges[i].next.filter(j => selected.has(j))));
-  const entries = new Set(chosen.map(r => r.chain[0]).filter(i => !destinations.has(i)));
+  let entries = new Set(chosen.map(r => r.chain[0]).filter(i => !destinations.has(i)));
+  let routedData = data;
+  let routingAudit;
+  if (connected) {
+    const routes = surveyBoundaryTraffic(data.links, full.edges, bus, boundary);
+    entries = routes.entries;
+    selected = new Set([...bus,...routes.selected]);
+    const busNext = new Map<number,number[]>();
+    for (const chain of buses) for (let i=1;i<chain.length;i++)
+      busNext.set(chain[i-1],[...(busNext.get(chain[i-1]) ?? []),chain[i]]);
+    routedData = {...data,links:data.links.map((row,i)=>({...row,next:busNext.get(i)
+      ?? routes.successors[i].filter(j=>routes.selected.has(j))}))};
+    routingAudit = { links:data.links.length, selected:selected.size, entries:routes.allInlets.filter(i=>selected.has(i)).length, totalEntries:routes.allInlets.length,
+      exits:routes.allOutlets.filter(i=>selected.has(i)).length, totalExits:routes.allOutlets.length,
+      excluded:data.links.flatMap((row,i)=>selected.has(i) ? [] : [{id:row.id,
+        reason:routes.shadows.has(i) ? 'duplicate' : row.kind === '4' ? 'unused bus lane'
+          : !routes.entryReachable.has(i) ? (routes.exitReachable.has(i) ? 'no boundary ingress' : 'no boundary ingress or egress')
+          : 'no boundary egress'}]) };
+  }
   const byIngress = new Set(candidates.map(route => route.ingress));
   const ingressAudit = [...full.inter.X.exits].filter(([i, paths]) =>
     paths.length || full.edges[i].next.some(j => central.has(j))).map(([i]) => {
@@ -182,16 +208,17 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     return { id: link.id, reason };
   });
   // Keep the entire body inside the drawn map at source and sink boundaries.
-  const graph = hapjeongCarGraph(data, selected, entries, 8, buses, entrances?.platforms, area.replay.busName);
+  const graph = hapjeongCarGraph(routedData, selected, entries, 8, buses, entrances?.platforms ?? data.platforms,
+    area.replay.busName);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   const speeds = new Map(graph.edges.map(edge => [edge.key, speedRatio(edge)]));
   // Keep the second walk phase available for trips that reach a refuge
   // too late to finish both faces during their first green.
   const duration = replayCycles !== undefined ? CYCLE * replayCycles
     : demand ? CYCLE * 2 : CYCLE + (pedestrians ? 60 : 22);
-  const dt = 1 / 30;
+  const dt = CAR_TICK;
   const start = { tod: 14 * 3600, dow: 6, doy: 175 };
-  const seed = 11, max = 256;
+  const seed = 11, max = connected?.maxVehicles ?? 256;
   const clock = (seconds: number) => ({ ...start, tod: start.tod + seconds });
   const crossings = pedestrians && hapjeongCrossings(pedestrians.walk, data.crosswalks, graph.inter.S, data.walkSignalGroups);
   const paintedStops = area.replay.enforcePaintedMidStops && new Map(
@@ -258,7 +285,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     }
     if (people || demand) {
       // Run the same clock during pre-roll so pedestrians and cars see one another from the start.
-      for (let i = -12 / dt; i < 0; i++) {
+      for (let i = -Math.round((connected?.warmupSeconds ?? 12) / dt); i < 0; i++) {
         const now = clock(i * dt);
         if (carsEnabled) stepCars(now);
         people?.advance(dt, now);
@@ -269,7 +296,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
 
   let state = reset(), frame = 0;
   function at(seconds: number) {
-    const target = Math.round(Math.max(0, Math.min(duration, seconds)) / dt);
+    const target = Math.round(Math.max(0, connected ? seconds : Math.min(duration, seconds)) / dt);
     if (target < frame) { state = reset(); frame = 0; }
     while (frame < target) {
       frame++;
@@ -279,6 +306,6 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     }
     return state.sim;
   }
-  return { at, clock, duration, graph, max, chosen, ingressAudit, overlappingTerminals, crossings,
+  return { at, clock, duration, graph, max, chosen, ingressAudit, overlappingTerminals, crossings, visible, routingAudit,
     people: () => state.people, busy: () => state.busy };
 }

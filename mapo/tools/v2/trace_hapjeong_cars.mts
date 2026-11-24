@@ -16,12 +16,13 @@ const cycles = cycleArg < 0 ? undefined : Number(process.argv[cycleArg + 1]);
 if (cycles !== undefined && (!Number.isSafeInteger(cycles) || cycles < 1)) throw Error('--cycles requires a positive integer');
 const people: HapjeongPeopleInput | undefined = signalTest || process.argv.includes('--people')
   ? { walk: read('walk'), entrances: read('entrances'), signalTest } : undefined;
+const connected = !!area.replay.connectedTraffic;
 const run = carPlayback(data, !process.argv.includes('--seeded'), people, true,
   process.argv.includes('--unscaled') ? undefined : read('demand'), cycles, undefined, area);
 const { inter: { X, S }, edges, links } = run.graph;
 const site = S.list.find(row => row.j >= 0)!;
 const phases = replaySteps(S, !!data.signalSites);
-const visible = carVisibility(area.views.simulation);
+const visible = connected ? run.visible : carVisibility(area.views.simulation);
 const wraps = (a: number) => ((a * 180 / Math.PI + 540) % 360) - 180;
 const approach = [...S.approach].map(([i, row]) => {
   const degree = wraps(headingNear(edges[i], edges[i].len));
@@ -34,6 +35,8 @@ console.log(JSON.stringify({
   approach, cycle: CYCLE, duration: run.duration, offset: site.offset, axis: wraps(site.axis),
   ingressAudit: run.ingressAudit, overlappingTerminals: [...run.overlappingTerminals],
   busRoutes: run.graph.buses.map(route => route.edges.map(id => links[id].id)),
+  ...(connected ? { routing:run.routingAudit, platforms:data.platforms, clockStart:run.clock(0).tod,
+    paintedStops:links.map(link=>link.stop?.at ?? null) } : {}),
   views: area.views.simulation,
   gates:Object.fromEntries(approach.map(a=>[a.edge,edges[a.edge].len-X.gate(a.edge,0)])),
   portalAudit: run.people()?.portalAudit,
@@ -55,6 +58,7 @@ console.log(JSON.stringify({
   curves: edges.flatMap(e => links[e.id].kind === '6' &&
     wraps(headingNear(e,e.len) - headingNear(e,0)) > 60 ? [e.id] : []),
 }));
+let previous = new Map<number,unknown[]>();
 for (let frame = 0; frame <= run.duration * 30; frame++) {
   const t = frame / 30;
   const sim = run.at(t);
@@ -103,8 +107,23 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
       walk.crossingTrial?.active.get(w.id[i]), state === 'wait' && sig ? [S.walkLeft(xw,tod),
         walk.crossingTime(i, run.crossings?.signalPairs.find(pair => pair.includes(xw)))] : undefined];
   }) : undefined;
+  const events = [];
+  if (connected) {
+    const current = new Map<number,unknown[]>();
+    for (const [i,row] of rows.entries()) {
+      const uid = cars.uid[i];
+      current.set(uid,row);
+      const old = previous.get(uid);
+      if (frame && !old) events.push(['birth',uid,cars.x[i],cars.z[i],links[d.edge[i]].id]);
+      if (d.dwell[i] > 0 && !(Number(old?.[27]) > 0)) events.push(['bus-stop',uid,sim.nextStop(i),cars.x[i],cars.z[i]]);
+    }
+    for (const [uid,row] of previous) if (!current.has(uid))
+      events.push(['exit',uid,row[1],row[2],links[row[7] as number].id]);
+    previous = current;
+  }
   console.log(JSON.stringify([t, rows, pedestrians, people ? Array.from(run.busy()) : undefined,
     walk?.busEvents.filter(event=>Math.abs(event.at-t)<1e-5),
     walk && people?.entrances ? Object.fromEntries(people.entrances.platforms.map(
-      ({key})=>[key,walk.waitingAt(key)])) : undefined]));
+      ({key})=>[key,walk.waitingAt(key)])) : undefined,
+    ...(connected ? [events] : [])]));
 }

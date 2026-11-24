@@ -188,11 +188,24 @@
     "replayDefault": "all"
   },
   "replay": {
-    "enabled": false,
+    "enabled": true,
     "people": false,
     "busName": "양화로",
     "axisNames": [],
-    "signalLabel": ""
+    "signalLabel": "",
+    "busIntervals": [
+      84.4,
+      70
+    ],
+    "connectedTraffic": {
+      "maxVehicles": 768,
+      "warmupSeconds": 240,
+      "maxTicksPerFrame": 4
+    },
+    "enforcePaintedMidStops": true
+  },
+  "checks": {
+    "stallGate": "signal-cycle"
   },
   "floor": {
     "clipToWindow": true,
@@ -205,5 +218,25 @@
     "initialTilt": 34,
     "initialBearing": 46,
     "fitPadding": 1.05
+  },
+  "signals": {
+    "lampClusterMetres": 26,
+    "junctionLampMetres": 3,
+    "stopMatchMetres": 63,
+    "byJunctionArms": true,
+    "allowConnectorSeams": true,
+    "nodeJoinMetres": 0.05
+  },
+  "platforms": {
+    "keys": [
+      "14011",
+      "14012",
+      "14013",
+      "14014",
+      "14015",
+      "14016",
+      "14061",
+      "13019"
+    ]
   }
 }

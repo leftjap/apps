@@ -5,6 +5,7 @@ from pathlib import Path
 
 MAPO = Path(__file__).resolve().parents[2]
 DEFAULT_AREA = Path(__file__).with_name('areas') / 'hapjeong.json'
+COMPARISON_SEAM_MARGIN = 2  # metres
 
 
 def load_area():

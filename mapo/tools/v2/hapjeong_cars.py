@@ -28,6 +28,11 @@ def dot_forward(a, b):
             (end.y - behind.y) * (ahead.y - end.y)) / length if length else -1
 
 
+def short_boundary_piece(line):
+    return line.length < .5 and any(WINDOW.boundary.distance(Point(p)) < .001
+                                    for p in (line.coords[0], line.coords[-1]))
+
+
 def load_links():
     result = []
     for feature in sorted(features('a2-vehicle-audit'), key=lambda row: row['properties']['id']):
@@ -42,6 +47,8 @@ def load_links():
         if not parts:
             continue
         assert len(parts) == 1, (props['id'], 'disjoint in the map window')
+        if AREA.get('coverage') and short_boundary_piece(parts[0]):
+            continue
         points = list(parts[0].coords)
         if line.project(Point(points[0])) > line.project(Point(points[-1])):
             points.reverse()
@@ -55,11 +62,14 @@ def load_links():
     return result
 
 
-def connect(rows, nodes, allow_connector_seams=False):
+def connect(rows, nodes, allow_connector_seams=False, node_tolerance=0):
     starts = defaultdict(list)
+    at_node = defaultdict(list)
     for j, row in enumerate(rows):
         if WINDOW.covers(Point(row['line'].coords[0])):
             starts[tuple(row['raw'][0])].append(j)
+            if node_tolerance and row['from_id'] in nodes:
+                at_node[row['from_id']].append(j)
     seams = []
     connector_kinds = {}
     if allow_connector_seams:
@@ -76,7 +86,8 @@ def connect(rows, nodes, allow_connector_seams=False):
     for a in rows:
         if not WINDOW.covers(Point(a['line'].coords[-1])):
             continue
-        for j in starts[tuple(a['raw'][-1])]:
+        exact = starts[tuple(a['raw'][-1])]
+        for j in exact + [i for i in at_node.get(a['to'], ()) if i not in exact]:
             b = rows[j]
             if a is b or dot_forward(a['line'], b['line']) < SEAM_COS:
                 continue
@@ -84,7 +95,12 @@ def connect(rows, nodes, allow_connector_seams=False):
             # Do not route from a regular lane directly into a reserved one.
             compatible = a['kind'] == b['kind'] or '1' in (a['kind'], b['kind'])
             if match and compatible:
-                a['next'].append(j)
+                gap = Point(a['line'].coords[-1]).distance(Point(b['line'].coords[0]))
+                if j in exact or gap <= node_tolerance:
+                    a['next'].append(j)
+                    if j not in exact:
+                        seams.append(dict(a=a['id'], b=b['id'], fromNode=a['to'], toNode=b['from_id'],
+                                          a1=[True, True], joined=True, method='A1 proximity', gap=gap))
                 continue
             if match:
                 continue
@@ -253,7 +269,7 @@ def bake(floor):
     nodes = {r['properties']['id']: r['geometry']['coordinates'] for r in features('a1-vehicle-seams')}
     settings = AREA.get('signals', {})
     by_arms = settings.get('byJunctionArms')
-    seams = connect(rows, nodes, settings.get('allowConnectorSeams', False))
+    seams = connect(rows, nodes, settings.get('allowConnectorSeams', False), settings.get('nodeJoinMetres', 0))
     stops = [(r['properties']['id'], LineString(line)) for r in features('b2') if r['properties']['kind'] == '530'
              for line in paths(r)]
     for row in rows:
@@ -296,9 +312,17 @@ def bake(floor):
     if by_arms:
         data['busRoutes'] = boundary_bus_routes(rows)
         data['boundaryRoutes'] = True
+        if AREA.get('coverage'):
+            for route in data['busRoutes']:
+                for i in route:
+                    rows[i]['duplicateOf'] = None
     if settings:
         sites = survey_signal_sites(rows, crossings, lights, stops, central, central_floor, settings, junctions)
         split_at_signal_stops(data, sites)
+    if AREA.get('coverage'):
+        from survey_bus_platforms import bus_platforms
+
+        data['platforms'] = bus_platforms(AREA, data, floor)
     return data
 
 

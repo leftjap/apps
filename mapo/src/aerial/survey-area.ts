@@ -30,6 +30,7 @@ export type SurveyArea = {
   combinedByDefault?: boolean;
   replay: { enabled?: boolean; people?: boolean; busName: string; busIntervals?: number[]; axisNames: string[]; signalLabel: string;
     enforcePaintedMidStops?: boolean;
+    connectedTraffic?: { maxVehicles: number; warmupSeconds: number; maxTicksPerFrame: number };
     boundaryTrips?: { intervalSeconds: number; passengerWarmupSeconds: number;
       stationShare?: number; passengersPerBus?: number; softLimit?: number; validateJunctionExit?: boolean } };
   galleries?: Partial<Record<'base' | 'combined' | 'replay', { url: string; label: string }>>;
