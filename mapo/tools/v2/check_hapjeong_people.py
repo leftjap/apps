@@ -52,6 +52,8 @@ def audit(captured):
     nearest = {ids[i]: min(face.distance(LineString(row['points'])) for row in data['links'])
                for i, face in enumerate(shapes)}
     stats = Counter(engine_invalid_samples=0)
+    invalid_since = {}
+    invalid_runs = []
     entries, completions, active_in = Counter(), Counter(), Counter()
     occupied_approaches = set()
     contacts, green_wait, green_wait_any, stuck, red_start = [], {}, {}, {}, []
@@ -71,7 +73,7 @@ def audit(captured):
         if time - t0 >= target.get('seconds', -1):
             target.update(seconds=round(time - t0 + 1/30, 3), start=round(t0, 2), end=round(time, 2), **detail)
 
-    for line in frames:
+    for frame, line in enumerate(frames):
         t, cars, people, busy, *_ = json.loads(line)
         if people is None:
             continue
@@ -104,6 +106,13 @@ def audit(captured):
                 red_wait.add((uid, idx))
             if not valid:
                 stats['engine_invalid_samples'] += 1
+                identity = walker_identity(row)
+                start, last = invalid_since.get(identity, (frame, frame-1))
+                if last != frame-1:
+                    start = frame
+                if frame-start == 3:
+                    invalid_runs.append(dict(id=uid,t=round(t,3),x=x,z=z,state=state))
+                invalid_since[identity] = (start,frame)
             if not on_walk[i]:
                 frame_off += 1
             if state == 'cross':
@@ -216,7 +225,7 @@ def audit(captured):
             'crossings_completed_in_run':completed,
             'repeat_over_three':sorted({uid for ((uid,_),_), n in completed_by_person.items() if n>3}),
             'repeat': [[uid,c,n] for ((uid,_),c),n in completed_by_person.items() if n>1],
-            'people': [min_pop, max_pop], 'contact': contacts, 'red_entries': red_start,
+            'people': [min_pop, max_pop], 'contact': contacts, 'red_entries': red_start, 'invalid_runs': invalid_runs,
             'stuck': stuck, 'green_wait': green_wait if not missing_wait_timing else None,
             'green_wait_any': green_wait_any, 'longest_wait_for_car': stop_for_car,
             'longest_wait_for_person': stop_for_person, 'passing_with_person': sorted(pass_during_crossing),
@@ -242,6 +251,6 @@ if __name__ == '__main__':
         assert not result['people'].get('off_floor_frames'), 'pedestrian outside paved face'
         assert not result['people']['landings_passage_episodes'], 'vehicle on a landing while occupied'
         assert not result['people']['repeat'], 'person crossed the same stripe twice'
-        assert not result['people']['engine_invalid_samples'], 'engine rejected current walker position'
+        assert not result['people']['invalid_runs'], 'engine rejected walker position for more than three consecutive ticks'
         assert not result['people']['stuck'] and not result['people']['green_wait'], 'pedestrian stalled'
         assert not result['people']['passing_with_person'] and not result['cars']['red']

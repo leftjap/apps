@@ -9,10 +9,13 @@ import type { HapjeongPeopleInput } from '../../src/aerial/hapjeong-people.ts';
 const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url), 'utf8'));
 const data: HapjeongCars = read('cars');
 const signalTest = process.argv.includes('--signal-test');
+const cycleArg = process.argv.indexOf('--cycles');
+const cycles = cycleArg < 0 ? undefined : Number(process.argv[cycleArg + 1]);
+if (cycles !== undefined && (!Number.isSafeInteger(cycles) || cycles < 1)) throw Error('--cycles requires a positive integer');
 const people: HapjeongPeopleInput | undefined = signalTest || process.argv.includes('--people')
   ? { walk: read('walk'), entrances: read('entrances'), signalTest } : undefined;
 const run = carPlayback(data, !process.argv.includes('--seeded'), people, true,
-  process.argv.includes('--unscaled') ? undefined : read('demand'));
+  process.argv.includes('--unscaled') ? undefined : read('demand'), cycles);
 const { inter: { X, S }, edges, links } = run.graph;
 const site = S.list.find(row => row.j >= 0)!;
 const visible = carVisibility();

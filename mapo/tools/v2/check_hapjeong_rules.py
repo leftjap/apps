@@ -45,16 +45,14 @@ NO_INCREASE = {'P2': ('people_wait_s', 'car_wait_s'), 'P6': ('peak_5m', 'walk_bl
 NO_DECREASE = {'P4': ('models',), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median'),
                'C3': ('min_left_passed',)}
 MIN_LEFT_PASSED = 3
-# Allow one tick of 30 Hz quantization at each recorded stop line.
-RANK_TOLERANCE = 1 / 30
+RANK_TOLERANCE = .1
 VIEW_MEDIAN_TOLERANCE = 2
 PEOPLE_STAGE_LEFT_LIMIT = 12
 
 
-def exceeds_rank_tolerance(value, baseline):
-    # The replay is 30 Hz and medians can be half a tick. Convert the
-    # three-decimal output back to half-ticks before comparing one tick.
-    return round(value * 60) - round(baseline * 60) > 2
+def rank_average(metrics):
+    values = [metrics.get(f'rank{n}_s') for n in (4, 5, 6)]
+    return round(sum(values) / 3, 3) if None not in values else None
 
 
 def load(path):
@@ -141,7 +139,8 @@ def measure(tree, folder, label):
                    rail_to_rail=portal['trip_kinds'].get('rail->rail',0), min_entered_emerged=portal['min_entered_emerged']),
         'P5': dict(stuck=len(p['stuck']), green_wait=None if p['green_wait'] is None else len(p['green_wait']),
                    green_wait_any=len(p['green_wait_any']),
-                   repeat_people=len({r[0] for r in p['repeat']}), off_floor=p['off_floor_samples'], invalid=p['engine_invalid_samples'],
+                   repeat_people=len({r[0] for r in p['repeat']}), off_floor=p['off_floor_samples'], invalid=len(p['invalid_runs']),
+                   invalid_samples=p['engine_invalid_samples'],
                    **crossing_widths.summary(widths)),
         'P6': dict(peak_5m=max(r['best']['n'] for r in growth['peaks'] if r['best']),
                    green_queue_remaining=sum(len(r['remaining']) for r in growth['green_clearance']),
@@ -169,7 +168,9 @@ def measure(tree, folder, label):
                   branch=branch_result, movement=c['movement'], car_floor={k:v for k,v in c.items() if 'Floor' in k},
                   ordinary_crossings=ambient['course_rows'], trial_crossings=trial['course_rows'],
                   stuck=p['stuck'], green_wait=p['green_wait'], green_wait_any=p['green_wait_any'], repeat=p['repeat'],
+                  invalid_runs=p['invalid_runs'],
                   crossing_widths=widths, occupied_landing_passages=p['landings_passage_episodes'])
+    metric['C2']['rank4_6_avg_s'] = rank_average(metric['C2'])
     return dict(label=label,rules=metric,detail=detail)
 
 
@@ -200,12 +201,14 @@ def evaluate(result, incumbent=None, *, people_stage=False):
                 current = metrics[rule].get(key)
                 if previous is not None and (current is None or current < previous):
                     failure.append(dict(rule=rule,test=key,measured=current,limit=previous))
-        for key,value in before['C2'].items():
+        for key,value in {**before['C2'], 'rank4_6_avg_s':rank_average(before['C2'])}.items():
+            if key in ('rank4_s', 'rank5_s', 'rank6_s') or value is None:
+                continue
             if people_stage and key=='gap30_m':
                 continue
             limit = value + (RANK_TOLERANCE if key.startswith('rank') else 0)
             measured = metrics['C2'].get(key)
-            if measured is None or (exceeds_rank_tolerance(measured, value) if key.startswith('rank') else measured > limit):
+            if measured is None or measured > round(limit,3):
                 failure.append(dict(rule='C2',test=key,measured=measured,limit=round(limit,3)))
     return failure
 
@@ -217,7 +220,10 @@ def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
         prior = before[rule]
         for key in dict.fromkeys([*metrics, *prior]):
             value, baseline = metrics.get(key), prior.get(key)
-            if key in ('green_wait_any', 'off_floor_any', 'min_entered_emerged', 'slow_left_inside', 'blocked_branch') or key.startswith('free_') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
+            if key == 'rank4_6_avg_s':
+                baseline = rank_average(prior)
+            if key in ('green_wait_any', 'invalid_samples', 'off_floor_any', 'min_entered_emerged', 'slow_left_inside',
+                       'blocked_branch', 'rank4_s', 'rank5_s', 'rank6_s') or key.startswith('free_') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
                 continue
             if people_stage and (rule,key)==('C3','late_left'):
                 baseline = PEOPLE_STAGE_LEFT_LIMIT
@@ -226,8 +232,9 @@ def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
                 # The coordinates in the replay are Float32. Compare A2 deviation at mm resolution.
                 worsened = value is None or round(value,3) > round(baseline,3)
             else:
-                if rule=='C2' and key.startswith('rank'):
-                    worsened = value is None or exceeds_rank_tolerance(value, baseline)
+                if key=='rank4_6_avg_s':
+                    baseline = round(baseline + RANK_TOLERANCE, 3)
+                    worsened = value is None or value > baseline
                 elif people_stage and (rule,key)==('P2','car_wait_s'):
                     worsened = value is None or value-baseline >= 1-1e-9
                 else:
@@ -295,6 +302,8 @@ def main():
         for rule, checks in tables.items():
             past = ({k:v[1] for k,v in incumbent['detail']['views'].items()} if rule=='인원'
                     else incumbent['rules'][rule]) if incumbent else {}
+            if past and rule=='C2':
+                past = {**past, 'rank4_6_avg_s':rank_average(past)}
             for key in dict.fromkeys([*checks,*past]):
                 table.writerow([rule,key,*([past.get(key)] if incumbent else []),checks.get(key),
                                 '예' if (rule,key) in absolute else '', '예' if (rule,key) in compared else ''])

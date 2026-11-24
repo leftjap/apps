@@ -43,7 +43,7 @@ function delta(a: number, b: number) {
 export type HapjeongDemand = { vehicles: number; walkers: number };
 
 export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true,
-                            demand?: HapjeongDemand) {
+                            demand?: HapjeongDemand, replayCycles?: number) {
   const visible = carVisibility();
   const full = hapjeongCarGraph(data);
   const central = new Set(data.central);
@@ -134,7 +134,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   // Keep the second walk phase available for trips that reach a refuge
   // too late to finish both faces during their first green.
-  const duration = demand ? CYCLE * 2 : CYCLE + (pedestrians ? 60 : 22);
+  const duration = replayCycles !== undefined ? CYCLE * replayCycles
+    : demand ? CYCLE * 2 : CYCLE + (pedestrians ? 60 : 22);
   const dt = 1 / 30;
   const start = { tod: 14 * 3600, dow: 6, doy: 175 };
   const seed = 11, max = 256;
