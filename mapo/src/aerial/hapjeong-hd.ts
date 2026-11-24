@@ -141,7 +141,11 @@ async function init() {
   const demand = simulation ? await load('demand') as import('./hapjeong-car-playback.ts').HapjeongDemand : undefined;
   if (simulation) {
     const { carViews } = await import('./hapjeong-car-playback.ts');
-    data.views = [...carViews];
+    // The wide view only changes the camera. Playback keeps using its three
+    // approach views for entry/exit placement and traffic measurements.
+    data.views = [...carViews, {
+      id: 'all', title: '합정 사거리·역 출구 전체', at: [-425, 231], width: 320, mode: 'photo',
+    }];
   }
   const photo = new THREE.Scene();
   const model = new THREE.Scene();
