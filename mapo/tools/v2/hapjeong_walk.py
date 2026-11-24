@@ -13,6 +13,7 @@ from shapely.prepared import prep
 
 from hapjeong_hd import AREA, MAPO, ORIGIN, asset, project
 from hapjeong_hd_a import pedestrian_landings, surface
+from hapjeong_walk_turns import refit
 
 BODY = .4
 EDGE_PAD = .025
@@ -117,15 +118,18 @@ class Network:
         q, band = found
         return q == p or self.edge(p, q, band)
 
-    def encode(self, crossings):
+    def radius(self, point, bands):
+        # Legacy node-circle bound, also constrained by the surveyed pavement.
+        limit = min(30, max(6, *(max(map(abs, band)) for band in bands)))
+        return max(0, min(limit, math.floor(Point(point).distance(self.safe.boundary) * 10)) - 1)
+
+    def encode(self, crossings, packed_area=None):
         n, e, r, x = [], [], [], []
         ids = {p: i for i, p in enumerate(sorted(self.nodes))}
         prev = (0, 0)
         for p in ids:
             n.extend(round((v - q) * 10) for v, q in zip(p, prev, strict=True))
-            # Legacy node-circle bound, also constrained by the surveyed pavement.
-            limit = min(30, max(6, *(max(map(abs, self.edges[min(p,q), max(p,q)])) for q in self.nodes[p])))
-            r.append(max(0, min(limit, math.floor(Point(p).distance(self.safe.boundary) * 10)) - 1))
+            r.append(self.radius(p, (self.edges[min(p,q), max(p,q)] for q in self.nodes[p])))
             prev = p
         last = 0
         ordered = sorted((min(ids[a], ids[b]), max(ids[a], ids[b]), band) for (a, b), band in self.edges.items())
@@ -135,7 +139,7 @@ class Network:
         for i, (a, p, q, b, width, wait_a, wait_b) in enumerate(crossings):
             coords = [round(v * 10) for pt in (p, q, a, b) for v in pt]
             x.extend([i, ids[a], ids[b], *coords, width, 1, *wait_a, *wait_b])
-        return dict(v=3, n=n, e=e, r=r, x=x, d=[], a=encode_area(self.safe))
+        return dict(v=3, n=n, e=e, r=r, x=x, d=[], a=packed_area if packed_area is not None else encode_area(self.safe))
 
 
 def encode_area(safe):
@@ -484,10 +488,18 @@ def bake(floor, cars, reference=None):
         ids.append(key)
         crossings.append(result)
     portals, rejected = spawn_points(network, floor, box(*cars['window']))
-    graph = network.encode(crossings)
-    derived = subprocess.run(['node', '--experimental-strip-types', str(Path(__file__).with_name('hapjeong_walk_width.mts'))],
-                             input=json.dumps(graph), text=True, capture_output=True, check=True)
-    return dict(**graph, **json.loads(derived.stdout), crossings=ids, landings=landings,
+    def widths(graph):
+        derived = subprocess.run(['node', '--experimental-strip-types', str(Path(__file__).with_name('hapjeong_walk_width.mts'))],
+                                 input=json.dumps(graph), text=True, capture_output=True, check=True)
+        graph.update(json.loads(derived.stdout))
+        return graph
+
+    graph = widths(network.encode(crossings))
+    pinned = {(p['x'], p['z']) for p in portals}
+    pinned.update(point for crossing in crossings for point in (crossing[0], crossing[3]))
+    if refit(network, graph, pinned):
+        graph = widths(network.encode(crossings, graph['a']))
+    return dict(**graph, crossings=ids, landings=landings,
                 excluded=excluded, portals=portals, rejectedPortals=rejected,
                 waitDepths=crossing_wait_depths(floor, graph))
 
