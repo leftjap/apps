@@ -23,6 +23,13 @@ const degrees = THREE.MathUtils.radToDeg;
 async function init() {
   THREE.ColorManagement.enabled = false;
   const district = canvas.dataset.area;
+  const query = new URLSearchParams(location.search);
+  const useTiles = district === 'hongdae-district' && query.get('tiles') === '1'
+    && query.get('cars') !== '1' && query.get('signals') !== '1';
+  let frame = 0;
+  const requestDraw = () => {
+    if (!frame) frame = requestAnimationFrame(draw);
+  };
   const loadDistrict = manifests[`../../tools/v2/areas/${district}.json`];
   if (district && !loadDistrict) throw Error(`구역 설정 없음: ${district}`);
   const area: MapManifest = district ? (await loadDistrict()).default : yanghwa;
@@ -39,28 +46,41 @@ async function init() {
       ? new Response(response.body!.pipeThrough(new DecompressionStream('gzip'))).json()
       : response.json();
   }
-  const [data, buildings, roadPaint] = await Promise.all([
-    read<YanghwaFloor>('a'), read<YanghwaBuildings>('buildings'), read<SurveyRoadPaint>('road-paint'),
-  ]);
-  const [west,north,east,south] = buildings.window;
-  const center = new THREE.Vector3((west+east)/2,0,(north+south)/2);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0b0d11');
-  const detailed = district ? (await import('./district-terrain.ts')).makeDistrictTerrain(data,buildings,roadPaint) : undefined;
-  const terrain = detailed?.group ?? makeYanghwaTerrain(data,buildings,true,0,roadPaint);
+  const tiles = useTiles ? await (async () => {
+    const { loadDistrictTiles } = await import('./district-tiles.ts');
+    const { directory, stem } = area.output;
+    return loadDistrictTiles(`${import.meta.env.BASE_URL}${directory.replace(/^public\//, '')}/${stem}-tiles/`, requestDraw, canvas);
+  })() : undefined;
+  const legacy = tiles ? undefined : await (async () => {
+    const [data, buildings, roadPaint] = await Promise.all([
+      read<YanghwaFloor>('a'), read<YanghwaBuildings>('buildings'), read<SurveyRoadPaint>('road-paint'),
+    ]);
+    const detailed = district ? (await import('./district-terrain.ts')).makeDistrictTerrain(data,buildings,roadPaint) : undefined;
+    const group = detailed?.group ?? makeYanghwaTerrain(data,buildings,true,0,roadPaint);
+    return { data, buildings, group, update: detailed?.update };
+  })();
+  const terrain = tiles ?? legacy!;
+  const ground = tiles?.ground ?? legacy!.buildings.ground;
+  const windowBounds = tiles?.window ?? legacy!.buildings.window;
+  const [west,north,east,south] = windowBounds;
+  const center = new THREE.Vector3((west+east)/2,0,(north+south)/2);
   const sun = new THREE.DirectionalLight('#fff0d8',1.35);
   sun.position.set(-200,300,100);
-  scene.add(terrain,sun,new THREE.HemisphereLight('#dceafa','#5c5751',2));
+  scene.add(terrain.group,sun,new THREE.HemisphereLight('#dceafa','#5c5751',2));
   scene.updateMatrixWorld(true);
 
   // Fit the actual outline and roofs, including at oblique bearings.
-  const points = buildings.ground.flatMap(([outer])=>outer.map(([x,z])=>new THREE.Vector3(x,0,z)));
-  for (const building of buildings.buildings) for (const [outer] of building.faces)
-    for (const [x,z] of outer) points.push(new THREE.Vector3(x,building.height,z));
-  const hull = new ConvexHull().setFromPoints(points);
-  const corners = [...new Set(hull.faces.flatMap(({edge})=>[
-    edge.head().point,edge.next.head().point,edge.prev.head().point,
-  ]))];
+  const corners = tiles?.corners ?? (() => {
+    const points = ground.flatMap(([outer])=>outer.map(([x,z])=>new THREE.Vector3(x,0,z)));
+    for (const building of legacy!.buildings.buildings) for (const [outer] of building.faces)
+      for (const [x,z] of outer) points.push(new THREE.Vector3(x,building.height,z));
+    const hull = new ConvexHull().setFromPoints(points);
+    return [...new Set(hull.faces.flatMap(({edge})=>[
+      edge.head().point,edge.next.head().point,edge.prev.head().point,
+    ]))];
+  })();
 
   const renderer = new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true});
   const camera = new THREE.PerspectiveCamera(34,1);
@@ -76,17 +96,12 @@ async function init() {
   const relative = new THREE.Vector3();
   const offset = new THREE.Vector3();
   const direction = new THREE.Vector3();
-  let frame = 0;
-  const query = new URLSearchParams(location.search);
   const value = (key: string,fallback: number) => {
     const raw = query.get(key);
     const n = raw?.trim() ? Number(raw) : NaN;
     return Number.isFinite(n) ? n : fallback;
   };
 
-  const requestDraw = () => {
-    if (!frame) frame = requestAnimationFrame(draw);
-  };
   const traffic = area.replay?.connectedTraffic && query.get('cars') === '1' ? await (async () => {
     const [{carPlayback,CAR_TICK},{makeCarMeshes},{env,updateEnv},{makeYanghwaSignals},cars,demand] = await Promise.all([
       import('./hapjeong-car-playback.ts'),import('../render/cars.ts'),import('../render/env.ts'),
@@ -96,7 +111,7 @@ async function init() {
     const run = carPlayback(cars,true,undefined,true,demand,undefined,undefined,area);
     const limit = area.replay.connectedTraffic!.maxTicksPerFrame;
     const mesh = makeCarMeshes(run.max,true);
-    const signals = makeYanghwaSignals(cars, run.graph, data.floor.walk);
+    const signals = makeYanghwaSignals(cars, run.graph, legacy!.data.floor.walk);
     scene.add(mesh.group, signals.group);
     let ticks = Math.round(Math.max(0,value('at',0))/CAR_TICK);
     let sim = run.at(ticks*CAR_TICK);
@@ -138,7 +153,7 @@ async function init() {
       import('./hapjeong-car-graph.ts'), import('./yanghwa-signals.ts'), read<HapjeongCars>('cars'),
     ]);
     const graph = districtCarGraph(cars, '');
-    const signals = makeYanghwaSignals(cars, graph, data.floor.walk);
+    const signals = makeYanghwaSignals(cars, graph, legacy!.data.floor.walk);
     signals.update(14*3600+Math.max(0,value('at',0)));
     scene.add(signals.group);
     return signals.group;
@@ -162,7 +177,7 @@ async function init() {
     offset.subVectors(camera.position,target);
     direction.copy(offset).normalize();
     controls.maxDistance = fit(direction);
-    const [x,z] = nearestOutlinePoint(buildings.ground,[target.x,target.z]);
+    const [x,z] = nearestOutlinePoint(ground,[target.x,target.z]);
     target.set(x,0,z);
     const distance = clamp(offset.length(),controls.minDistance,controls.maxDistance);
     camera.position.copy(target).addScaledVector(direction,distance);
@@ -179,7 +194,7 @@ async function init() {
     camera.updateMatrixWorld(true);
     traffic?.(stamp);
     if (signalPreview) signalPreview.visible = distance*widthPerDepth() <= 500;
-    detailed?.update(camera,distance*widthPerDepth());
+    terrain.update?.(camera,distance*widthPerDepth());
     renderer.render(scene,camera);
     canvas.dataset.camera = JSON.stringify({
       center: [target.x,target.z],
@@ -197,7 +212,7 @@ async function init() {
     const azimuth = radians(bearing%360);
     direction.set(Math.sin(polar)*Math.sin(azimuth),Math.cos(polar),Math.sin(polar)*Math.cos(azimuth));
     controls.maxDistance = fit(direction);
-    const [x,z] = nearestOutlinePoint(buildings.ground,at);
+    const [x,z] = nearestOutlinePoint(ground,at);
     target.set(x,0,z);
     const distance = clamp(width === undefined ? controls.maxDistance : width/widthPerDepth(),
       controls.minDistance,controls.maxDistance);
@@ -234,7 +249,7 @@ async function init() {
   });
   reset.disabled = false;
   status.hidden = true;
-  canvas.dataset.bounds = JSON.stringify(buildings.window);
+  canvas.dataset.bounds = JSON.stringify(windowBounds);
   canvas.dataset.ready = main.dataset.ready = 'true';
 }
 

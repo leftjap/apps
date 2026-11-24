@@ -42,7 +42,7 @@ function windowPatterns() {
   return texture;
 }
 
-function material(facadeFade?: { value: number }) {
+export function makeSurveyFacadeMaterial(facadeFade?: { value: number }) {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
   const patterns = facadeFade ? sharedDistrictPatterns ??= windowPatterns() : windowPatterns();
   mat.onBeforeCompile = shader => {
@@ -135,7 +135,7 @@ function parapetInset(outer: Point[], signedArea: number) {
 
 export function makeSurveyBuildings(buildings: SurveyBuilding[],
                                     { chunkSize = CHUNK, detail = true, facadeFade }: BuildingOptions = {}) {
-  const mat = detail ? material(facadeFade) : new THREE.MeshLambertMaterial({ vertexColors: true });
+  const mat = detail ? makeSurveyFacadeMaterial(facadeFade) : new THREE.MeshLambertMaterial({ vertexColors: true });
   const batches = new Map<string, Batch>();
   for (const { height, floors, faces, appearance } of buildings) for (const [i, face] of faces.entries()) {
     const paint = appearance?.[i] ?? fallback;

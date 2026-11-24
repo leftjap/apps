@@ -29,7 +29,7 @@ export type YanghwaBuildings = {
 const CHUNK = 192;
 const ink = ['#a5a9ab', '#ebc75e', '#f9f2db', '#679bf9'];
 
-export function tileSurface(faces: Face[], cellSize: number) {
+export function tileSurfaceCells(faces: Face[], cellSize: number) {
   const cells = new Map<string, number[]>();
   const geometry = new THREE.ShapeGeometry(faces.map(groundShape)).rotateX(-Math.PI / 2);
   const { index } = geometry;
@@ -44,7 +44,11 @@ export function tileSurface(faces: Face[], cellSize: number) {
     for (const at of [a, b, c]) points.push(pos.getX(at), pos.getY(at), pos.getZ(at));
   }
   geometry.dispose();
-  return [...cells.values()].map(points => new THREE.BufferGeometry()
+  return cells;
+}
+
+export function tileSurface(faces: Face[], cellSize: number) {
+  return [...tileSurfaceCells(faces, cellSize).values()].map(points => new THREE.BufferGeometry()
     .setAttribute('position', new THREE.Float32BufferAttribute(points, 3)));
 }
 
@@ -68,37 +72,17 @@ function fadeFinePaint(material: THREE.MeshBasicMaterial, width: number) {
   };
 }
 
-export function makeYanghwaTerrain(data: YanghwaFloor, area: YanghwaBuildings, batch = true, tileSize = 0, roadPaint?: SurveyRoadPaint) {
-  const group = new THREE.Group();
-  const layer = (faces: Face[], color: string, y: number, priority = 0, fineWidth = 0) => {
-    const material = new THREE.MeshBasicMaterial({
-      color, side: THREE.DoubleSide,
-      polygonOffset: priority > 0, polygonOffsetFactor: 0, polygonOffsetUnits: -priority,
-    });
-    if (!faces.length) return;
-    if (fineWidth) fadeFinePaint(material, fineWidth);
-    const add = (geometry: THREE.BufferGeometry) => {
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.y = y;
-      group.add(mesh);
-    };
-    if (tileSize) {
-      for (const geometry of tileSurface(faces, tileSize)) add(geometry);
-      return;
-    }
-    const chunks = new Map<string | number, Face[]>();
-    faces.forEach((face, i) => {
-      const [x,z] = face[0][0];
-      const key = batch ? `${Math.floor(x/CHUNK)},${Math.floor(z/CHUNK)}` : i;
-      const list = chunks.get(key);
-      if (list) list.push(face);
-      else chunks.set(key,[face]);
-    });
-    for (const chunk of chunks.values()) {
-      add(new THREE.ShapeGeometry(chunk.map(groundShape)).rotateX(-Math.PI/2));
-    }
-  };
+export function makeYanghwaSurfaceMaterial(color: string, priority = 0, fineWidth = 0) {
+  const material = new THREE.MeshBasicMaterial({
+    color, side: THREE.DoubleSide,
+    polygonOffset: priority > 0, polygonOffsetFactor: 0, polygonOffsetUnits: -priority,
+  });
+  if (fineWidth) fadeFinePaint(material, fineWidth);
+  return material;
+}
 
+export function visitYanghwaLayers(data: YanghwaFloor, area: YanghwaBuildings, roadPaint: SurveyRoadPaint | undefined,
+                                  layer: (faces: Face[], color: string, y: number, priority?: number, fineWidth?: number) => void) {
   layer(data.land ?? area.ground,'#a8a093',0);
   if (data.parks) layer(data.parks,'#829369',0);
   if (data.water) layer(data.water,'#54879b',0);
@@ -121,6 +105,34 @@ export function makeYanghwaTerrain(data: YanghwaFloor, area: YanghwaBuildings, b
       layer(roadPaint.white.stops, ink[2], .065, 4, .45);
     } else layer(row.faces, ink[row.color], .065, 4, .15);
   }
+}
+
+export function makeYanghwaTerrain(data: YanghwaFloor, area: YanghwaBuildings, batch = true, tileSize = 0, roadPaint?: SurveyRoadPaint) {
+  const group = new THREE.Group();
+  visitYanghwaLayers(data, area, roadPaint, (faces, color, y, priority, fineWidth) => {
+    if (!faces.length) return;
+    const material = makeYanghwaSurfaceMaterial(color, priority, fineWidth);
+    const add = (geometry: THREE.BufferGeometry) => {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.y = y;
+      group.add(mesh);
+    };
+    if (tileSize) {
+      for (const geometry of tileSurface(faces, tileSize)) add(geometry);
+      return;
+    }
+    const chunks = new Map<string | number, Face[]>();
+    faces.forEach((face, i) => {
+      const [x,z] = face[0][0];
+      const key = batch ? `${Math.floor(x/CHUNK)},${Math.floor(z/CHUNK)}` : i;
+      const list = chunks.get(key);
+      if (list) list.push(face);
+      else chunks.set(key,[face]);
+    });
+    for (const chunk of chunks.values()) {
+      add(new THREE.ShapeGeometry(chunk.map(groundShape)).rotateX(-Math.PI/2));
+    }
+  });
   if (area.buildings.length) group.add(...makeSurveyBuildings(area.buildings));
   return group;
 }
