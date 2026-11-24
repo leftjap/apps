@@ -106,19 +106,19 @@
         "title": "교차로",
         "at": [
           692,
-          -805
+          -800
         ],
-        "width": 127,
+        "width": 88,
         "mode": "photo"
       },
       {
         "id": "platform",
         "title": "중앙정류소",
         "at": [
-          883,
-          -715
+          868,
+          -724
         ],
-        "width": 160,
+        "width": 104,
         "mode": "photo"
       }
     ],
@@ -150,13 +150,15 @@
     ]
   },
   "replay": {
-    "enabled": false,
-    "busName": "서교동",
-    "axisNames": [
-      "양화로",
-      "교차축"
-    ],
-    "signalLabel": "모의 차량 신호"
+    "enabled": true,
+    "busName": "동교동삼거리",
+    "axisNames": [],
+    "signalLabel": "모의 차량 신호",
+    "people": false,
+    "busIntervals": [
+      43.9,
+      40.0
+    ]
   },
   "combinedByDefault": true,
   "floor": {
@@ -168,6 +170,8 @@
   "signals": {
     "lampClusterMetres": 26,
     "junctionLampMetres": 3,
-    "stopMatchMetres": 63
+    "stopMatchMetres": 63,
+    "byJunctionArms": true,
+    "allowConnectorSeams": true
   }
 }
