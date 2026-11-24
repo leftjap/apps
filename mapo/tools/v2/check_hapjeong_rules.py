@@ -42,7 +42,9 @@ LIMITS = {
 }
 # Compare the traffic counts and accumulation where a zero is not the goal.
 NO_INCREASE = {'P2': ('people_wait_s', 'car_wait_s'), 'P6': ('peak_5m', 'walk_blocked', 'growing_visible_ends')}
-NO_DECREASE = {'P4': ('models',), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
+NO_DECREASE = {'P4': ('models',), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median'),
+               'C3': ('min_left_passed',)}
+MIN_LEFT_PASSED = 3
 # Allow one tick of 30 Hz quantization at each recorded stop line.
 RANK_TOLERANCE = 1 / 30
 VIEW_MEDIAN_TOLERANCE = 2
@@ -144,11 +146,13 @@ def measure(tree, folder, label):
         'P6': dict(peak_5m=max(r['best']['n'] for r in growth['peaks'] if r['best']),
                    green_queue_remaining=sum(len(r['remaining']) for r in growth['green_clearance']),
                    walk_blocked=len(growth['queue_blocked']), growing_visible_ends=len(visible_growth)),
-        'C1': dict(min_cars=c['cars'][0], max_cars=c['cars'][1], queue_median=median(len(r['queue']) for r in flow['phases'] if r['move']==2)),
+        'C1': dict(min_cars=c['cars'][0], max_cars=c['cars'][1], queue_median=median(len(r['queue']) for r in flow['phases'] if r['move']==2),
+                   **{f'free_{k}_kmh': v[1] for k,v in flow['free_speeds'].items()}),
         'C2': dict(**{f'rank{k}_s':v[1] for k,v in flow['rank'].items() if int(k)>=4},
                    **{f'gap{k}_m':v[1] for k,v in flow['speed_gaps'].items()}),
         'C3': dict(late_left=len(flow['left_conflicts_over_three']),
-                   parallel_start_gap_s=maximum(pairs,'gap'), unserved_parallel=sum(r['gap'] is None for r in pairs)),
+                   parallel_start_gap_s=maximum(pairs,'gap'), unserved_parallel=sum(r['gap'] is None for r in pairs),
+                   min_left_passed=flow['min_left_passed']),
         'C4': dict(open_branch_stop=branch_result['counts'].get('branch',0), empty_stop_line=branch_result['counts'].get('stopLine',0)),
         'C5': dict(stuck=len(c['stalled']), visible_events=len(c['visible_events']), off_floor=c['off_floor_samples'],
                    off_floor_any=c.get('raw_off_floor_samples',0),
@@ -158,7 +162,7 @@ def measure(tree, folder, label):
                    trial_face_cars=len({uid for r in trial['course_rows'] for uid in r['car_touch']})),
     }
     detail = dict(seconds=meta['duration'], views=ambient['views'], signed_cars=signed_cars, unsignalized_cars=unsignalized,
-                  phases=flow['phases'], ranks=flow['rank'], speed_gaps=flow['speed_gaps'], reasons=flow['reasons'],
+                  phases=flow['phases'], ranks=flow['rank'], speed_gaps=flow['speed_gaps'], free_speeds=flow['free_speeds'], reasons=flow['reasons'],
                   left_pairs=pairs, turn_conflicts=flow['left_conflicts_over_three'], crowding=growth, entrances=portal,
                   branch=branch_result, movement=c['movement'], car_floor={k:v for k,v in c.items() if 'Floor' in k},
                   ordinary_crossings=ambient['course_rows'], trial_crossings=trial['course_rows'],
@@ -177,6 +181,9 @@ def evaluate(result, incumbent=None, *, people_stage=False):
                 failure.append(dict(rule=rule,test=key,measured=val,limit=limit))
     if not metrics['P4']['models']:
         failure.append(dict(rule='P4',test='models',measured=0,limit='at least 1'))
+    left = metrics['C3']['min_left_passed']
+    if left is None or left < MIN_LEFT_PASSED:
+        failure.append(dict(rule='C3',test='min_left_passed',measured=left,limit=f'at least {MIN_LEFT_PASSED}'))
     if incumbent:
         before = incumbent['rules']
         for rule, keys in NO_INCREASE.items():
@@ -187,8 +194,10 @@ def evaluate(result, incumbent=None, *, people_stage=False):
                     failure.append(dict(rule=rule,test=key,measured=metrics[rule][key],limit=before[rule][key]))
         for rule, keys in NO_DECREASE.items():
             for key in keys:
-                if metrics[rule][key] < before[rule][key]:
-                    failure.append(dict(rule=rule,test=key,measured=metrics[rule][key],limit=before[rule][key]))
+                previous = before[rule].get(key)
+                current = metrics[rule].get(key)
+                if previous is not None and (current is None or current < previous):
+                    failure.append(dict(rule=rule,test=key,measured=current,limit=previous))
         for key,value in before['C2'].items():
             if people_stage and key=='gap30_m':
                 continue
@@ -206,7 +215,7 @@ def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
         prior = before[rule]
         for key in dict.fromkeys([*metrics, *prior]):
             value, baseline = metrics.get(key), prior.get(key)
-            if key in ('green_wait_any', 'off_floor_any', 'min_entered_emerged') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
+            if key in ('green_wait_any', 'off_floor_any', 'min_entered_emerged') or key.startswith('free_') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
                 continue
             if people_stage and (rule,key)==('C3','late_left'):
                 baseline = PEOPLE_STAGE_LEFT_LIMIT
@@ -264,7 +273,8 @@ def main():
     target_failure = None
     if arg.target:
         rule,key = arg.target
-        measured, prior = result['rules'][rule][key],incumbent['rules'][rule][key]
+        measured = result['rules'].get(rule, {}).get(key)
+        prior = incumbent['rules'].get(rule, {}).get(key)
         delta = measured - prior if measured is not None and prior is not None else 0
         if delta * (1 if key in NO_DECREASE.get(rule, ()) else -1) <= 0:
             target_failure = dict(rule=rule,test=f'{key} improvement',measured=measured,limit=prior)

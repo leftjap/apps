@@ -13,6 +13,8 @@ def discharge(path):
         meta = json.loads(next(trace))
         approaches = {a['edge']:a for a in meta['approach']}
         gates = {int(edge):at for edge,at in meta['gates'].items()}
+        slips = set(meta.get('curves', ()))
+        movements = {1: 'left', 2: 'straight', 4: 'right'}
         raw_lengths = {row['id']:row['len'] for row in read('cars')['links']}
         lengths = [raw_lengths[name] for name in meta['links']]
         step = 1/30
@@ -32,6 +34,7 @@ def discharge(path):
         greens.sort()
         active, histories, previous = {}, [], {}
         gaps, samples, reasons, reason_runs = defaultdict(list), defaultdict(list), Counter(), {}
+        free = defaultdict(list)
         long_conflicts = set()
         for line in trace:
             t, cars, *_ = json.loads(line)
@@ -52,6 +55,14 @@ def discharge(path):
                 histories.append(row)
             for c in cars:
                 uid,e,move = c[0],c[7],c[15]
+                # No active traffic, signal or stop constraint in this frame.
+                if c[10] == 0 and c[9] > .5:
+                    if c[16]:
+                        section = movements.get(move)
+                    else:
+                        section = 'right_slip' if e in slips else 'outside'
+                    if section:
+                        free[section].append(c[9] * 3.6)
                 row = active.get((e,move))
                 p = previous.get(uid)
                 if row is not None and t < row['end']:
@@ -86,7 +97,9 @@ def discharge(path):
                     samples[idx].append(round(row['passed'][uid]-delta,3))
                 delta = row['passed'].get(uid)
         stat = lambda d:{str(k):[len(v),round(median(v),3)] for k,v in sorted(d.items()) if v}
-        return dict(rank=stat(samples),speed_gaps=stat(gaps),phases=histories,
+        left = [r['mouth'] for r in histories if r['move'] == 1 and r['end'] <= meta['duration']]
+        return dict(rank=stat(samples),speed_gaps=stat(gaps),free_speeds=stat(free),
+                    min_left_passed=min(left, default=None), phases=histories,
                     left_conflicts_over_three=sorted(long_conflicts),
                     reasons=[(a,k,round(n*step,2)) for (a,k),n in sorted(reasons.items())])
 
