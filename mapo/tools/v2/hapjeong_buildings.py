@@ -2,11 +2,13 @@
 from collections import Counter
 import json
 import re
+import sys
 
 from shapely import union_all
 
 from hapjeong_hd import AREA, WINDOW, asset, rings, survey_faces
 from hapjeong_hd_a import surface
+from survey_building_colors import apply_colors, read_tiles
 
 OMIT = {'무벽건물', '가건물'}
 
@@ -52,6 +54,10 @@ def bake(floor):
 if __name__ == '__main__':
     floor = json.loads(asset(AREA, '-a').read_text())
     out = bake(floor)
+    requested, tiles = read_tiles(sys.argv[1:])
+    cars = asset(AREA, '-cars')
+    colors = apply_colors(out['buildings'], json.loads(cars.read_text()) if cars.exists() else {}, tiles)
     path = asset(AREA, '-buildings')
     path.write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')) + '\n')
     print(f"{len(out['buildings'])} buildings; clipped {out['clipped']}")
+    print(json.dumps(dict(tiles=[len(tiles), requested], **colors)))

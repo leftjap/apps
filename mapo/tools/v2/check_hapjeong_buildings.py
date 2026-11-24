@@ -1,6 +1,7 @@
 """Check a surveyed area's building and ground asset."""
 from collections import Counter
 import json
+import re
 
 from shapely import union_all
 
@@ -19,19 +20,27 @@ def verify(data, floor):
     buildings = data['buildings']
     assert Counter((row['id'], row['floors']) for row in buildings) == eligible
     poses = []
+    roof_sources = Counter()
     for building in buildings:
         face = surface(building['faces'])
         floors = building['floors']
         assert floors > 0 and building['height'] == 3 * floors
         assert face.area > 0 and WINDOW.covers(face), building['id']
         poses.append(face)
+        assert len(building.get('appearance', ())) == len(building['faces']), ('missing building paint', building['id'])
+        for rings, paint in zip(building['faces'], building['appearance'], strict=True):
+            assert all(re.fullmatch('#[0-9a-f]{6}', paint[key]) for key in ('roof', 'wall'))
+            assert paint['style'] in ('low', 'urban', 'glass')
+            assert all(0 <= edge < len(rings[0]) - 1 for edge in paint.get('street', ()))
+            roof_sources[paint['source']] += 1
     footprint = union_all(poses)
     overlap = {key: footprint.intersection(face).area for key, face in [('road', road), ('walk', pavement)]}
     assert all(area < 1e-7 for area in overlap.values()), overlap
     parking = surface(data['parking'])
     assert parking.is_empty or WINDOW.covers(parking)
     assert parking.intersection(footprint.union(road).union(pavement)).area < 1e-7
-    return dict(buildings=len(buildings), missingHeight=0, offWindow=0, overlap=overlap)
+    return dict(buildings=len(buildings), pieces=sum(roof_sources.values()), roofSources=dict(roof_sources),
+                missingHeight=0, missingPaint=0, offWindow=0, overlap=overlap)
 
 
 if __name__ == '__main__':
