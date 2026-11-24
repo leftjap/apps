@@ -20,7 +20,8 @@ footer p { margin: 6px 0; }
 .crossing { --swatch: #fbf2d9; }
 .unresolved { --swatch: #9eada4; }
 .bike { --swatch: #619188; }
-.land { --swatch: #3b414a; }
+.land { --swatch: #a8a093; }
+.parking { --swatch: #87837d; }
 .lane { --swatch: #69e7ff; }
 .inside { --swatch: #f6a3eb; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 510px), 1fr)); gap: 18px; }

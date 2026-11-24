@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { loadBuildings } from './buildings.ts';
 import { PAINT_DASHES } from './ground-paint.ts';
 import { AERIAL_DEV_ORIGIN, PILOT_SITES, groundPoint, tileAtGround, tileBounds } from './map.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
@@ -7,6 +6,11 @@ import type { HapjeongPeopleInput } from './hapjeong-people.ts';
 
 type XZ = [number, number];
 type Face = XZ[][];
+type BuiltArea = {
+  window: [number, number, number, number];
+  buildings: { faces: Face[]; height: number }[];
+  parking: Face[];
+};
 type Path = XZ[];
 type View = { id: string; title: string; at: XZ; width: number; mode: 'photo' | 'paths' | 'floors' };
 type Feature = { faces: Face[] };
@@ -18,7 +22,6 @@ type Asset = {
   crossings: (Feature & { stripes: Face[] })[];
   bicycles: Feature[];
   links: { paths: Path[]; type: string }[];
-  hiddenBuildingOutlines?: number[];
 };
 
 const TILT = THREE.MathUtils.degToRad(28);
@@ -71,14 +74,30 @@ async function photoPlane(trial = false) {
   return mesh;
 }
 
-function addFaces(parent: THREE.Object3D, faces: Face[], material: THREE.Material, y: number) {
+function groundShape([outer, ...holes]: Face) {
   const vector = (ring: Path) => ring.map(([x,z]) => new THREE.Vector2(x,-z));
-  for (const [outer, ...holes] of faces) {
-    const shape = new THREE.Shape(vector(outer));
-    shape.holes = holes.map(ring => new THREE.Path(vector(ring)));
-    const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape).rotateX(-Math.PI/2), material);
+  const shape = new THREE.Shape(vector(outer));
+  shape.holes = holes.map(ring => new THREE.Path(vector(ring)));
+  return shape;
+}
+
+function addFaces(parent: THREE.Object3D, faces: Face[], material: THREE.Material, y: number) {
+  for (const face of faces) {
+    const mesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape(face)).rotateX(-Math.PI/2), material);
     mesh.position.y = y;
     parent.add(mesh);
+  }
+}
+
+function addBuiltArea(parent: THREE.Group, area: BuiltArea) {
+  const [west, north, east, south] = area.window;
+  addFaces(parent, [[[[west,north], [east,north], [east,south], [west,south]]]], flat('#a8a093'), 0);
+  addFaces(parent, area.parking, flat('#87837d',1), .004);
+  const roof = new THREE.MeshLambertMaterial({ color: '#d9cbbc' });
+  const wall = new THREE.MeshLambertMaterial({ color: '#b2a79a' });
+  for (const { height, faces } of area.buildings) for (const face of faces) {
+    const geometry = new THREE.ExtrudeGeometry(groundShape(face), { depth: height, bevelEnabled: false });
+    parent.add(new THREE.Mesh(geometry.rotateX(-Math.PI/2), [roof,wall]));
   }
 }
 
@@ -125,12 +144,13 @@ async function init() {
   const simulation = carsMode || peopleMode;
   const variantA = simulation || query.get('variant') === 'a';
   const suffix = variantA ? '-a' : '';
-  const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd${suffix}.json`);
+  const asset = `${import.meta.env.BASE_URL}data/v2/hapjeong-hd`;
+  const response = await fetch(`${asset}${suffix}.json`);
   if (!response.ok) throw Error(`가공 자료 응답 ${response.status}`);
   const data: Asset = await response.json();
   let people: HapjeongPeopleInput | undefined;
   const load = async (name: string) => {
-    const response = await fetch(`${import.meta.env.BASE_URL}data/v2/hapjeong-hd-${name}.json`);
+    const response = await fetch(`${asset}-${name}.json`);
     if (!response.ok) throw Error(`합정 자료 응답 ${response.status} · ${name}`);
     return response.json();
   };
@@ -194,7 +214,8 @@ async function init() {
   }
   addInk(route,lane,'#69e7ff',5);
   addInk(route,inside,'#f6a3eb',5);
-  const [imagery] = await Promise.all([photoPlane(simulation),loadBuildings(buildings, new Set(data.hiddenBuildingOutlines))]);
+  const [imagery, builtArea] = await Promise.all([photoPlane(simulation),load('buildings') as Promise<BuiltArea>]);
+  addBuiltArea(buildings,builtArea);
   photo.add(imagery);
 
   const camera = new THREE.PerspectiveCamera(34,1);
