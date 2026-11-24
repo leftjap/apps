@@ -28,7 +28,8 @@ from measure_hapjeong_discharge import discharge
 LIMITS = {
     'P1': {'people_on_red': 0, 'cars_on_red': 0, 'signed_face_cars': 0, 'overlap_seconds': 0},
     'P2': {'unsignalized_cars': 0, 'body_contacts': 0, 'people_wait_s': 60, 'car_wait_s': 60},
-    'P3': {'different_green': 0, 'refuge_wait': 0, 'trial_refuge_wait': 0},
+    'P3': {'different_green': 0, 'refuge_wait': 0, 'trial_refuge_wait': 0,
+           'island_wait_on_red': 0, 'trial_island_wait_on_red': 0},
     'P4': {'missing_direction': 0, 'visible_events': 0, 'peak_exit_per_second': 1},
     'P5': {'stuck': 0, 'green_wait': 0, 'repeat_people': 0, 'off_floor': 0, 'invalid': 0},
     'P6': {'green_queue_remaining': 0},
@@ -119,10 +120,13 @@ def measure(tree, folder, label):
                    car_wait_s=growth['traffic_delay'][1]['seconds']),
         'P3': dict(different_green=sum(len({str(green[full[x]]) for x in group})>1 for group in walk.read('cars')['walkSignalGroups']),
                    refuge_wait=sum(r['next_phase_wait'] for r in ambient['course_rows']),
-                   trial_refuge_wait=sum(r['next_phase_wait'] for r in trial['course_rows'])),
+                   trial_refuge_wait=sum(r['next_phase_wait'] for r in trial['course_rows']),
+                   island_wait_on_red=sum(r['island_wait_on_red'] for r in ambient['course_rows']),
+                   trial_island_wait_on_red=sum(r['island_wait_on_red'] for r in trial['course_rows'])),
         'P4': dict(models=portal['models'], missing_direction=sum(not (r.get('incoming') and r.get('outgoing')) for r in exit_rows.values()) if exit_rows else None,
                    visible_events=len(portal['visible']), peak_exit_per_second=max((r.get('peakPerSecond',0) for r in exit_rows.values()),default=None)),
-        'P5': dict(stuck=len(p['stuck']), green_wait=len(p['green_wait']),
+        'P5': dict(stuck=len(p['stuck']), green_wait=None if p['green_wait'] is None else len(p['green_wait']),
+                   green_wait_any=len(p['green_wait_any']),
                    repeat_people=len({r[0] for r in p['repeat']}), off_floor=p['off_floor_samples'], invalid=p['engine_invalid_samples']),
         'P6': dict(peak_5m=max(r['best']['n'] for r in growth['peaks'] if r['best']),
                    green_queue_remaining=sum(len(r['remaining']) for r in growth['green_clearance']),
@@ -144,7 +148,7 @@ def measure(tree, folder, label):
                   left_pairs=pairs, turn_conflicts=flow['left_conflicts_over_three'], crowding=growth, entrances=portal,
                   branch=branch_result, movement=c['movement'], car_floor={k:v for k,v in c.items() if 'Floor' in k},
                   ordinary_crossings=ambient['course_rows'], trial_crossings=trial['course_rows'],
-                  stuck=p['stuck'], green_wait=p['green_wait'], repeat=p['repeat'])
+                  stuck=p['stuck'], green_wait=p['green_wait'], green_wait_any=p['green_wait_any'], repeat=p['repeat'])
     return dict(label=label,rules=metric,detail=detail)
 
 
@@ -176,6 +180,31 @@ def evaluate(result, incumbent=None):
     return failure
 
 
+def regressions(result, incumbent):
+    current, before = result['rules'], incumbent['rules']
+    rows = []
+    for rule, metrics in current.items():
+        prior = before[rule]
+        for key in dict.fromkeys([*metrics, *prior]):
+            value, baseline = metrics.get(key), prior.get(key)
+            if key == 'green_wait_any' or baseline is None:
+                continue
+            increase = key not in NO_DECREASE.get(rule, ())
+            if key == 'a2_m':
+                # The coordinates in the replay are Float32. Compare A2 deviation at mm resolution.
+                worsened = value is None or round(value,3) > round(baseline,3)
+            else:
+                tolerance = RANK_TOLERANCE if rule=='C2' and key.startswith('rank') else 0
+                worsened = value is None or (value > baseline+tolerance if increase else value < baseline)
+            if worsened:
+                rows.append(dict(rule=rule,test=key,measured=value,limit=baseline))
+    for view, values in incumbent['detail']['views'].items():
+        now = result['detail']['views'].get(view)
+        if not now or now[1] < values[1]:
+            rows.append(dict(rule='인원',test=view,measured=now[1] if now else None,limit=values[1]))
+    return rows
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out',type=Path,required=True)
@@ -183,35 +212,53 @@ def main():
     parser.add_argument('--label', default='worktree')
     parser.add_argument('--against',type=Path,help='incumbent rules.json for non-regression')
     parser.add_argument('--target',nargs=2,metavar=('RULE','METRIC'),help='require this metric to improve against the incumbent')
+    parser.add_argument('--relative-only',action='store_true',help='gate on target improvement and regressions, with absolute limits still reported')
     parser.add_argument('--recorded',action='store_true',help='reuse trace.ndjson, signal.ndjson and paths.json already in --out')
     parser.add_argument('--measure-only',action='store_true',help='write results for a historical revision even when the gate rejects it')
     arg = parser.parse_args()
+    if arg.relative_only and not (arg.against and arg.target):
+        parser.error('--relative-only requires --against and --target')
+    if arg.target and not arg.against:
+        parser.error('--target requires --against')
     folder, tree = arg.out.resolve(),arg.tree.resolve()
     folder.mkdir(parents=True,exist_ok=True)
     if not arg.recorded:
         replay(tree,folder)
     result = measure(tree,folder,arg.label)
     incumbent = load(arg.against) if arg.against else None
+    if arg.relative_only and (incumbent['rules']['P5'].get('green_wait_any') is None or
+                              incumbent['rules']['P5'].get('green_wait') is None):
+        parser.error('--relative-only needs a baseline measured with the current green-wait definition')
     failures = evaluate(result,incumbent)
+    worse = regressions(result,incumbent) if incumbent else []
+    target_failure = None
     if arg.target:
         rule,key = arg.target
-        if not incumbent:
-            parser.error('--target requires --against')
         measured, prior = result['rules'][rule][key],incumbent['rules'][rule][key]
         delta = measured - prior if measured is not None and prior is not None else 0
         if delta * (1 if key in NO_DECREASE.get(rule, ()) else -1) <= 0:
-            failures.append(dict(rule=rule,test=f'{key} improvement',measured=measured,limit=prior))
+            target_failure = dict(rule=rule,test=f'{key} improvement',measured=measured,limit=prior)
+            failures.append(target_failure)
     result['failures'] = failures
+    result['regressions'] = worse
+    result['target_failure'] = target_failure
     (folder/'rules.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     with (folder/'rules.tsv').open('w') as stream:
         table = csv.writer(stream,delimiter='\t')
-        table.writerow(['기준','항목',*([incumbent['label']] if incumbent else []),arg.label,'미달'])
-        for rule, checks in result['rules'].items():
-            for key,value in checks.items():
-                table.writerow([rule,key,*([incumbent['rules'][rule].get(key)] if incumbent else []),
-                                value,'예' if any(f['rule']==rule and f['test']==key for f in failures) else ''])
-    print(f"{folder/'rules.tsv'} | {len(failures)}개 기준 미달")
-    return int(bool(failures) and not arg.measure_only)
+        compared = {(r['rule'],r['test']):r for r in worse}
+        absolute = {(r['rule'],r['test']) for r in failures}
+        table.writerow(['기준','항목',*([incumbent['label']] if incumbent else []),arg.label,'미달','회귀'])
+        tables = {**result['rules'], '인원': {k:v[1] for k,v in result['detail']['views'].items()}}
+        for rule, checks in tables.items():
+            past = ({k:v[1] for k,v in incumbent['detail']['views'].items()} if rule=='인원'
+                    else incumbent['rules'][rule]) if incumbent else {}
+            for key in dict.fromkeys([*checks,*past]):
+                table.writerow([rule,key,*([past.get(key)] if incumbent else []),checks.get(key),
+                                '예' if (rule,key) in absolute else '', '예' if (rule,key) in compared else ''])
+    print(f"{folder/'rules.tsv'} | {len(failures)}개 기준 미달, {len(worse)}개 회귀" +
+          (' | 목표 개선 실패' if target_failure else ''))
+    failed = worse or target_failure if arg.relative_only else failures
+    return int(bool(failed) and not arg.measure_only)
 
 
 if __name__ == '__main__':

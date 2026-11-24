@@ -54,10 +54,11 @@ def audit(captured):
     stats = Counter(engine_invalid_samples=0)
     entries, completions, active_in = Counter(), Counter(), Counter()
     occupied_approaches = set()
-    contacts, green_wait, stuck, red_start = [], {}, {}, []
+    contacts, green_wait, green_wait_any, stuck, red_start = [], {}, {}, {}, []
     stop_for_car, stop_for_person = {}, {}
     previous, old_contacts, entered_face, car_previous = {}, set(), set(), {}
-    anchors, green_since, p_yield_since, c_yield_since = {}, {}, {}, {}
+    anchors, green_since, eligible_since, p_yield_since, c_yield_since = {}, {}, {}, {}, {}
+    missing_wait_timing = 0
     pass_during_crossing, signal_examples, red_wait = set(), {}, set()
     approach = {r['edge']: r['id'] for r in meta['approach']}
     min_pop, max_pop = math.inf, 0
@@ -85,6 +86,7 @@ def audit(captured):
         on_walk = intersects_xy(allowed, p_x, p_z)
         at_pad.update(np.flatnonzero(intersects_xy(pads, p_x[:, None], p_z[:, None]).any(axis=0)))
         frame_off = 0
+        green_now, eligible_now = {}, {}
         for i, row in enumerate(people):
             uid, x, z, state, idx, light, valid, waiting_car, moves, trip = row[:10]
             if trip:
@@ -134,15 +136,22 @@ def audit(captured):
                     stuck[uid] = [state, label, round(t-since, 2), round(x, 2), round(z, 2), round(t, 2)]
 
             if state == 'wait' and light == 0:
-                since = green_since.setdefault((uid, idx), t)
+                key = (walker_identity(row), idx)
+                since = green_now[key] = green_since.get(key, t)
                 if t - since > 10:
-                    green_wait[uid] = [label, round(t-since, 2), round(x, 2), round(z, 2), round(t, 2)]
-            elif idx >= 0:
-                green_since.pop((uid, idx), None)
+                    green_wait_any[uid] = [label, round(t-since, 2), round(x, 2), round(z, 2), round(t, 2)]
+                timing = row[11] if len(row)>11 else None
+                if not timing or timing[1] is None:
+                    missing_wait_timing += 1
+                elif timing[0] >= timing[1]:
+                    ready_since = eligible_now[key] = eligible_since.get(key,t)
+                    if t - ready_since > 10:
+                        green_wait[uid] = [label, round(t-ready_since, 2), round(x, 2), round(z, 2), round(t, 2)]
 
             episode(stop_for_car, p_yield_since, (uid, idx), waiting_car, t,
                     {'uid':uid, 'crossing':label})
 
+        green_since, eligible_since = green_now, eligible_now
         stats['off_floor_frames'] += bool(frame_off)
         stats['off_floor_samples'] += frame_off
         active = [i for i in actual if not signed[i]]
@@ -189,9 +198,6 @@ def audit(captured):
         for key in list(p_yield_since):
             if p_now.get(key[0]) != ('wait', key[1]):
                 del p_yield_since[key]
-        for key in list(green_since):
-            if p_now.get(key[0]) != ('wait', key[1]):
-                del green_since[key]
         previous, car_previous = p_now, c_by_id
         old_contacts = overlap
         pad_active = this_pad
@@ -211,7 +217,8 @@ def audit(captured):
             'repeat_over_three':sorted({uid for ((uid,_),_), n in completed_by_person.items() if n>3}),
             'repeat': [[uid,c,n] for ((uid,_),c),n in completed_by_person.items() if n>1],
             'people': [min_pop, max_pop], 'contact': contacts, 'red_entries': red_start,
-            'stuck': stuck, 'green_wait': green_wait, 'longest_wait_for_car': stop_for_car,
+            'stuck': stuck, 'green_wait': green_wait if not missing_wait_timing else None,
+            'green_wait_any': green_wait_any, 'longest_wait_for_car': stop_for_car,
             'longest_wait_for_person': stop_for_person, 'passing_with_person': sorted(pass_during_crossing),
             'crossing_starts': entries, 'crossing_completions': completions, 'nearest_a2': nearest,
             'red_to_crossing_examples': signal_examples, 'used_approaches': active_in,
@@ -230,6 +237,7 @@ if __name__ == '__main__':
     result = {'people': people, 'cars': cars}
     print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
     if '--verify' in sys.argv:
+        assert result['people']['green_wait'] is not None, 're-record with crossing timing'
         assert not result['people']['contact'] and not result['people']['red_entries']
         assert not result['people'].get('off_floor_frames'), 'pedestrian outside paved face'
         assert not result['people']['landings_passage_episodes'], 'vehicle on a landing while occupied'

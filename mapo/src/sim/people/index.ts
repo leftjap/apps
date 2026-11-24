@@ -922,29 +922,36 @@ export function makePeople(
     const dz = pz - NX[b * 2 + 1];
     return dx * e0.ux + dz * e0.uz < -0.5 * Math.hypot(dx, dz);
   }
+  /** 목적지 거리 장으로 다음 선을 조회한다. 보행자의 경로 상태는 건드리지 않는다. */
+  function goalEdge(i: number, h: number, opts: number[], allowBack: boolean) {
+    const b = hes[h].b;
+    const back = hes[h].rev;
+    const Dg = D[goal[i]];
+    let best = -1;
+    let bv = Infinity;
+    for (const k of opts) {
+      if (k === back && opts.length > 1 && !allowBack) continue;
+      const e = hes[k];
+      // 이 선에 닿을 정류장·문이 있으면 그 거리
+      // 붐빔은 넣지 않는다: 집에 가는 길은 거리 장을 따라 내려가기만 해야 붐빔이 바뀔 때마다 길을 바꾸며 오가지 않는다
+      let v = e.L + (e.x >= 0 ? CROSS_COST : 0) + Dg[e.b] + (e.a !== b ? Math.hypot(NX[e.a * 2] - NX[b * 2], NX[e.a * 2 + 1] - NX[b * 2 + 1]) : 0);
+      for (const dk of dockAtHe.get(k) ?? []) {
+        const d = docks[dk];
+        if (!wantsDock(i, dk)) continue;
+        const t = d.he === k ? d.t : e.L - d.t;
+        if (t < v) v = t;
+      }
+      if (v < bv) (bv = v), (best = k);
+    }
+    return best;
+  }
   /** 노드 hes[h].b 에서 갈 다음 선 */
   function plan(i: number, h: number, now: number, opts0 = out[hes[h].b], junc = false): number {
     const b = hes[h].b;
     const back = hes[h].rev;
     const opts = avoidT[i] > now && opts0.length > 1 ? opts0.filter((k) => k !== avoidHe[i]) : opts0;
     if (goal[i] >= 0) {
-      const Dg = D[goal[i]];
-      let best = -1;
-      let bv = Infinity;
-      for (const k of opts) {
-        if (k === back && opts.length > 1 && !fresh[i]) continue;
-        const e = hes[k];
-        // 이 선에 닿을 정류장·문이 있으면 그 거리
-        // 붐빔은 넣지 않는다: 집에 가는 길은 거리 장을 따라 내려가기만 해야 붐빔이 바뀔 때마다 길을 바꾸며 오가지 않는다
-        let v = e.L + (e.x >= 0 ? CROSS_COST : 0) + Dg[e.b] + (e.a !== b ? Math.hypot(NX[e.a * 2] - NX[b * 2], NX[e.a * 2 + 1] - NX[b * 2 + 1]) : 0);
-        for (const dk of dockAtHe.get(k) ?? []) {
-          const d = docks[dk];
-          if (!wantsDock(i, dk)) continue;
-          const t = d.he === k ? d.t : e.L - d.t;
-          if (t < v) v = t;
-        }
-        if (v < bv) (bv = v), (best = k);
-      }
+      const best = goalEdge(i, h, opts, !!fresh[i]);
       fresh[i] = 0;
       return best;
     }
@@ -1084,6 +1091,49 @@ export function makePeople(
     gridHead[key] = i;
     cellOf[i] = key;
     return i;
+  }
+
+  /** 목적지로 이어지는 짧은 보행 구간 끝에 같은 신호의 짝 면이 있는가. */
+  function pairedWalk(i: number, peers: readonly number[] | undefined) {
+    const initial = he[i];
+    const first = crosses[hes[initial]?.x];
+    if (!first || !peers || goal[i] < 0) return;
+    let h = initial;
+    let gap = 0;
+    const seen = new Set<number>();
+    while (gap <= 8 && !seen.has(h)) {
+      seen.add(h);
+      const node = hes[h].b;
+      const region = h === initial ? -1 : J.of[node];
+      let options = region >= 0 ? J.exits[region] : out[node];
+      if (avoidT[i] > clockS && options.length > 1) options = options.filter(k => k !== avoidHe[i]);
+      if (region >= 0 && J.inner[region].some(k => dockAtHe.get(k)?.some(d => wantsDock(i, d)))) return;
+      let next = goalEdge(i, h, options, h === initial && !!fresh[i]);
+      // 횡단을 끝낸 걸음은 일반 보행선에 인계한다.
+      if (h === initial && (next < 0 || hes[next].x >= 0)) next = out[node].find(k => hes[k].x < 0) ?? -1;
+      if (next < 0 || next === hes[h].rev) return;
+      const e = hes[next];
+      gap += Math.hypot(NX[e.a * 2] - NX[node * 2], NX[e.a * 2 + 1] - NX[node * 2 + 1]);
+      if (e.x >= 0) {
+        const mate = crosses[e.x];
+        if (gap <= 8 && mate.xw !== first.xw && peers.includes(mate.xw)) return { gap, mate };
+        return;
+      }
+      if (dockAtHe.get(next)?.some(d => wantsDock(i, d))) return;
+      gap += e.L;
+      h = next;
+    }
+  }
+  const crossingLength = (c: Cross) => c.cum[c.cum.length - 1];
+  // Typical same-phase transfers took about two to three seconds including
+  // the short walk. Its length is already counted, so allow two more seconds.
+  const PAIRED_TRANSFER = 2;
+  function crossingTime(i: number, peers: readonly number[] | undefined) {
+    const c = crosses[hes[he[i]]?.x];
+    if (!c) return;
+    const next = pairedWalk(i, peers);
+    const span = crossingLength(c) + (next ? next.gap + crossingLength(next.mate) : 0);
+    return span / HURRY + 1 + (next ? PAIRED_TRANSFER : 0);
   }
 
   // ── 신호 ──
@@ -2502,7 +2552,7 @@ export function makePeople(
     arrive(i, stop);
     return w.id[i];
   }
-  return { w, popStats, debugOf, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, put, goHome, trip, openingPassenger, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
+  return { w, popStats, debugOf, crossingTime, step, warm, burst, alight, board, waitingAt, hold, docks, dockPoint, dockPos, setRain, zoneCounts, setFocus, setDetail, scale, expected, stateOf, validAt, put, goHome, trip, openingPassenger, crosses, rects, MODES: { WALK, WAITX, CROSS, QUEUE, BOARD, LEAVE, OUTDOOR, INDOOR } };
 }
 export type People = ReturnType<typeof makePeople>;
 

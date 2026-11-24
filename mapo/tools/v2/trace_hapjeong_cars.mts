@@ -70,7 +70,8 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
       byCar = Math.hypot(w.x[i] - tx, w.z[i] - tz) <= .05;
     }
     return [w.id[i], w.x[i], w.z[i], state, xw, sig ? S.walkState(xw, tod) : -1, walk.validAt(i), byCar, w.moving[i], walk.journeys.get(w.id[i]),
-      walk.crossingTrial?.active.get(w.id[i])];
+      walk.crossingTrial?.active.get(w.id[i]), state === 'wait' && sig ? [S.walkLeft(xw,tod),
+        walk.crossingTime(i, run.crossings?.signalPairs.find(pair => pair.includes(xw)))] : undefined];
   }) : undefined;
   console.log(JSON.stringify([t, rows, pedestrians, people ? Array.from(run.busy()) : undefined,
     walk?.busEvents.filter(event=>Math.abs(event.at-t)<1e-5)]));

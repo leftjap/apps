@@ -1,5 +1,6 @@
 """Audit two complete replay cycles, including non-fixture walkers at each crossing."""
 from collections import Counter, defaultdict
+from itertools import combinations
 import json
 import math
 from pathlib import Path
@@ -10,6 +11,7 @@ import numpy as np
 from shapely import intersects_xy, prepare
 
 from check_hapjeong_car_run import body
+from check_hapjeong_crowding import walker_identity
 from check_hapjeong_walk import faces, read
 
 
@@ -33,6 +35,15 @@ def frames(records, meta, plan, static):
         for i in indices:
             groups[i] = indices
     crosses = [faces(row['faces']) for row in plan['faces']]
+    island = {}
+    for i,j in combinations(linked,2):
+        if j not in groups[i]:
+            continue
+        ends = lambda r: ((r['pax'],r['paz']), (r['pbx'],r['pbz']))
+        island[i],island[j] = min(((a,b) for a in ends(linked[i]) for b in ends(linked[j])),
+                                  key=lambda pair: math.dist(*pair))
+    island_since, waited_five, held_on_red = {}, defaultdict(set), defaultdict(set)
+    last_face = {}
     prepare(crosses)
     bounds = np.array([face.bounds if not face.is_empty else [0]*4 for face in crosses])
     phase = [next(((p['start'], p['start']+p['duration']) for p in plan['phase'] if key in p['walk']), None)
@@ -80,6 +91,7 @@ def frames(records, meta, plan, static):
         tested_faces = sorted(set().union(*(groups[i] for i in tested)))
         tested_bounds = bounds[tested_faces]
         cur, c_now = {}, {}
+        island_now = {}
         waiters = defaultdict(list)
         for p in people:
             if p[3]=='wait':
@@ -96,8 +108,19 @@ def frames(records, meta, plan, static):
                 views[v['id']].append(int(((abs(right)<=half*4/3)&(abs(depth*math.cos(tilt))<=half)).sum()))
         for idx,p in enumerate(people):
             uid,x,z,mode,i,light = p[:6]
+            identity = walker_identity(p)
             p_ever.add(uid)
             cur[uid] = (mode,i)
+            if mode=='cross':
+                last_face[identity] = i
+            if i in island and mode=='wait' and math.dist((x,z),island[i]) <= 3:
+                if light==2 and last_face.get(identity) in groups[i]-{i}:
+                    held_on_red[i].add(identity)
+                if not p[8]:
+                    key = (identity,i)
+                    t0 = island_now[key] = island_since.get(key,t)
+                    if t-t0+dt > 5+1e-8:
+                        waited_five[i].add(identity)
             if count_views:
                 if mode in ('cross','walk'):
                     x0,z0,t0,m0 = anchors.get(uid,(x,z,t,mode))
@@ -188,6 +211,7 @@ def frames(records, meta, plan, static):
             else:
                 road_wait.pop(uid,None)
         old = cur
+        island_since = island_now
         last_cars = c_now
         if count_views:
             anchors = {uid:a for uid,a in anchors.items() if uid in cur}
@@ -200,6 +224,7 @@ def frames(records, meta, plan, static):
                          late=sum(r['due'] is not None and r['due']<=meta['duration'] and
                                   r.get('physical_end',math.inf)>r['due'] for r in e),
                          next_phase_wait=len(refuges[i]), car_touch=sorted(contacts[i]),
+                         island_wait_over_5=len(waited_five[i]), island_wait_on_red=len(held_on_red[i]),
                          car_stop=len(stopped[i]), car_start=len(launched[i]),
                          blocked=[uid for uid,xw in sorted(blocked) if xw==i]))
     left = [dict(lane=lane,cycle=period+1,count=counts[1])
