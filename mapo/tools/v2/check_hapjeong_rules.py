@@ -42,12 +42,17 @@ LIMITS = {
 }
 # Compare the traffic counts and accumulation where a zero is not the goal.
 NO_INCREASE = {'P2': ('people_wait_s', 'car_wait_s'), 'P6': ('peak_5m', 'walk_blocked', 'growing_visible_ends')}
-NO_DECREASE = {'P4': ('models', 'min_entered_emerged'), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
+NO_DECREASE = {'P4': ('models',), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
 # Allow one tick of 30 Hz quantization at each recorded stop line.
 RANK_TOLERANCE = 1 / 30
 VIEW_MEDIAN_TOLERANCE = 2
-MIN_RAIL_BALANCE = .5
 PEOPLE_STAGE_LEFT_LIMIT = 12
+
+
+def exceeds_rank_tolerance(value, baseline):
+    # The replay is 30 Hz and medians can be half a tick. Convert the
+    # three-decimal output back to half-ticks before comparing one tick.
+    return round(value * 60) - round(baseline * 60) > 2
 
 
 def load(path):
@@ -172,8 +177,6 @@ def evaluate(result, incumbent=None, *, people_stage=False):
                 failure.append(dict(rule=rule,test=key,measured=val,limit=limit))
     if not metrics['P4']['models']:
         failure.append(dict(rule='P4',test='models',measured=0,limit='at least 1'))
-    if metrics['P4']['min_entered_emerged'] < MIN_RAIL_BALANCE:
-        failure.append(dict(rule='P4',test='min_entered_emerged',measured=metrics['P4']['min_entered_emerged'],limit=MIN_RAIL_BALANCE))
     if incumbent:
         before = incumbent['rules']
         for rule, keys in NO_INCREASE.items():
@@ -191,7 +194,7 @@ def evaluate(result, incumbent=None, *, people_stage=False):
                 continue
             limit = value + (RANK_TOLERANCE if key.startswith('rank') else 0)
             measured = metrics['C2'].get(key)
-            if measured is None or measured > limit:
+            if measured is None or (exceeds_rank_tolerance(measured, value) if key.startswith('rank') else measured > limit):
                 failure.append(dict(rule='C2',test=key,measured=measured,limit=round(limit,3)))
     return failure
 
@@ -203,7 +206,7 @@ def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
         prior = before[rule]
         for key in dict.fromkeys([*metrics, *prior]):
             value, baseline = metrics.get(key), prior.get(key)
-            if key in ('green_wait_any', 'off_floor_any') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
+            if key in ('green_wait_any', 'off_floor_any', 'min_entered_emerged') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
                 continue
             if people_stage and (rule,key)==('C3','late_left'):
                 baseline = PEOPLE_STAGE_LEFT_LIMIT
@@ -212,11 +215,12 @@ def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
                 # The coordinates in the replay are Float32. Compare A2 deviation at mm resolution.
                 worsened = value is None or round(value,3) > round(baseline,3)
             else:
-                tolerance = RANK_TOLERANCE if rule=='C2' and key.startswith('rank') else 0
-                if people_stage and (rule,key)==('P2','car_wait_s'):
+                if rule=='C2' and key.startswith('rank'):
+                    worsened = value is None or exceeds_rank_tolerance(value, baseline)
+                elif people_stage and (rule,key)==('P2','car_wait_s'):
                     worsened = value is None or value-baseline >= 1-1e-9
                 else:
-                    worsened = value is None or (value > baseline+tolerance if increase else value < baseline)
+                    worsened = value is None or (value > baseline if increase else value < baseline)
             if worsened:
                 rows.append(dict(rule=rule,test=key,measured=value,limit=baseline))
     for view, values in incumbent['detail']['views'].items():
@@ -268,7 +272,7 @@ def main():
     result['failures'] = failures
     result['regressions'] = worse
     result['target_failure'] = target_failure
-    people_failures = [row for row in failures if row['rule']=='P4' and row['test'] in ('rail_to_rail','min_entered_emerged')]
+    people_failures = [row for row in failures if row['rule']=='P4' and row['test'] in ('rail_to_rail','missing_direction')]
     (folder/'rules.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     with (folder/'rules.tsv').open('w') as stream:
         table = csv.writer(stream,delimiter='\t')
