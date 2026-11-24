@@ -9,6 +9,7 @@ type XZ = [number, number];
 type Face = XZ[][];
 type BuiltArea = {
   window: [number, number, number, number];
+  ground?: Face[];
   buildings: { faces: Face[]; height: number }[];
   parking: Face[];
 };
@@ -88,7 +89,7 @@ function addFaces(parent: THREE.Object3D, faces: Face[], material: THREE.Materia
 
 function addBuiltArea(parent: THREE.Group, area: BuiltArea) {
   const [west, north, east, south] = area.window;
-  addFaces(parent, [[[[west,north], [east,north], [east,south], [west,south]]]], flat('#a8a093'), 0);
+  addFaces(parent, area.ground ?? [[[[west,north], [east,north], [east,south], [west,south]]]], flat('#a8a093'), 0);
   addFaces(parent, area.parking, flat('#87837d',1), .004);
   const roof = new THREE.MeshLambertMaterial({ color: '#d9cbbc' });
   const wall = new THREE.MeshLambertMaterial({ color: '#b2a79a' });

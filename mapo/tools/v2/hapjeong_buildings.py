@@ -41,7 +41,9 @@ def bake(floor):
 
     original = union_all(eligible)
     parking = union_all([face for face, _ in survey_faces('C0430000')])
-    return dict(window=list(WINDOW.bounds), buildings=buildings,
+    return dict(window=list(WINDOW.bounds),
+                **({'ground': rings(WINDOW)} if AREA.get('excludeWindows') else {}),
+                buildings=buildings,
                 parking=rings(parking.difference(cut.union(original))),
                 omitted=dict(omitted), clipped=dict(road=original.intersection(road).area,
                                                     walk=original.intersection(pavement).area))

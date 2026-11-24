@@ -21,6 +21,8 @@ RAW = MAPO / AREA['sources']['hd']
 SHEETS = MAPO / AREA['sources']['sheets']
 ASSET = asset(AREA)
 WINDOW = box(*AREA['window'])
+for excluded in AREA.get('excludeWindows', ()):
+    WINDOW = WINDOW.difference(box(*excluded))
 FRAME = Frame(*AREA['frame']['origin'], 0)
 VIEWS = AREA['views']['display']
 
