@@ -1,0 +1,173 @@
+{
+  "id": "hongdae-donggyo",
+  "title": "동교동삼거리와 중앙정류소",
+  "fetch": {
+    "core": [
+      126.917697,
+      37.5542398,
+      126.9324837,
+      37.5615155
+    ],
+    "expanded": [
+      126.9168471,
+      37.5534763,
+      126.9336168,
+      37.5624586
+    ],
+    "vehicleAudit": [
+      126.9110684,
+      37.5497932,
+      126.9379225,
+      37.5656022
+    ],
+    "vehicleSeams": [
+      126.9103886,
+      37.549344,
+      126.938829,
+      37.5663207
+    ]
+  },
+  "window": [
+    500,
+    -890,
+    970,
+    -548
+  ],
+  "frame": {
+    "origin": [
+      126.919,
+      37.5515
+    ]
+  },
+  "sources": {
+    "hd": "tools/raw/ngii/corridor-hd",
+    "sheets": "tools/raw/ngii/suchi/sheets",
+    "seoulCrossings": "tools/raw/seoul-crosswalks.json",
+    "board": "public/data/board.json",
+    "medianStops": "src/data/medStops.ts",
+    "pilotBuildings": "public/data/aerial-pilot.json"
+  },
+  "output": {
+    "directory": "public/data/v2",
+    "stem": "hongdae-donggyo-hd"
+  },
+  "station": "홍대입구",
+  "junctionAt": [
+    677,
+    -802
+  ],
+  "views": {
+    "display": [
+      {
+        "id": "all",
+        "title": "구역 전체",
+        "at": [
+          735.0,
+          -719.0
+        ],
+        "width": 620,
+        "mode": "photo",
+        "tilt": 50
+      },
+      {
+        "id": "junction",
+        "title": "교차로",
+        "at": [
+          692,
+          -805
+        ],
+        "width": 127,
+        "mode": "photo"
+      },
+      {
+        "id": "platform",
+        "title": "중앙정류소",
+        "at": [
+          883,
+          -715
+        ],
+        "width": 160,
+        "mode": "photo"
+      },
+      {
+        "id": "exits",
+        "title": "홍대입구역 출구 주변",
+        "at": [
+          690,
+          -685
+        ],
+        "width": 240,
+        "mode": "photo"
+      }
+    ],
+    "simulation": [
+      {
+        "id": "junction",
+        "title": "교차로",
+        "at": [
+          692,
+          -805
+        ],
+        "width": 127,
+        "mode": "photo"
+      },
+      {
+        "id": "platform",
+        "title": "중앙정류소",
+        "at": [
+          883,
+          -715
+        ],
+        "width": 160,
+        "mode": "photo"
+      }
+    ],
+    "default": "all",
+    "replayDefault": "junction"
+  },
+  "photo": {
+    "bounds": [
+      375,
+      -1015,
+      1095,
+      -423
+    ]
+  },
+  "platforms": {
+    "keys": [
+      "14061",
+      "13019"
+    ],
+    "name": "동교동삼거리"
+  },
+  "checks": {
+    "exitKeys": [
+      "역 3번",
+      "역 4번",
+      "역 5번",
+      "역 7번",
+      "역 6번"
+    ]
+  },
+  "replay": {
+    "enabled": false,
+    "busName": "서교동",
+    "axisNames": [
+      "양화로",
+      "교차축"
+    ],
+    "signalLabel": "모의 차량 신호"
+  },
+  "combinedByDefault": true,
+  "floor": {
+    "clipToWindow": true,
+    "bakeLandings": true,
+    "sidewalkGapMetres": 14,
+    "matchSidewalkGapWidths": true
+  },
+  "signals": {
+    "lampClusterMetres": 26,
+    "junctionLampMetres": 3,
+    "stopMatchMetres": 63
+  }
+}
