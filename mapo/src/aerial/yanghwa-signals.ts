@@ -1,15 +1,29 @@
 import * as THREE from 'three';
 import { pointAt } from '../poly.ts';
 import { headingNear } from '../sim/graph.ts';
-import { LEFT, RIGHT, STRAIGHT, UTURN } from '../sim/intersection/index.ts';
+import { GREEN, LEFT, RED, RIGHT, STRAIGHT, UTURN } from '../sim/intersection/index.ts';
+import { insideOutline, nearestOutlineEdge, type Outline } from './connected-traffic.ts';
 import type { hapjeongCarGraph, HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 
-const colors = [0x56eb8b, 0xffcb56, 0xff5656];
-const vehicleHeight = 4.5;
-const walkHeight = 1.6;
+const vehicleHeight = 4.8;
+const walkHeight = 1.72;
+
+// Supply linear values even when the survey viewer disables Three's input
+// color conversion. The output pass still converts to sRGB.
+function signalColor(r: number, g: number, b: number) {
+  const toLinear = (c: number) => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4;
+  return new THREE.Color().setRGB(toLinear(r), toLinear(g), toLinear(b));
+}
+const active = [signalColor(.03,.94,.24), signalColor(1,.68,.03), signalColor(1,.055,.035)];
+const dark = signalColor(.09,.105,.12);
+const frame = signalColor(.24,.28,.31);
+
+function offset([x,z]: XZ, [dx,dz]: XZ, distance: number): XZ {
+  return [x+dx*distance, z+dz*distance];
+}
 const maxSurveyDistance = 50;
 
-export function makeYanghwaSignals(data: HapjeongCars, graph: ReturnType<typeof hapjeongCarGraph>) {
+export function makeYanghwaSignals(data: HapjeongCars, graph: ReturnType<typeof hapjeongCarGraph>, sidewalk?: Outline) {
   const { edges, links, inter: { S, X } } = graph;
   const approaches = [...S.approach].flatMap(([edge, approach]) => {
     const site = S.list[approach.c];
@@ -50,47 +64,102 @@ export function makeYanghwaSignals(data: HapjeongCars, graph: ReturnType<typeof 
     surveyed.set(index, light);
     used.add(light.id);
   }
-  const cars = approaches.flatMap(({ edge, at, movements, heading }, index) => movements.map((movement, i) => {
-    const measured = i === 0 ? surveyed.get(index) : undefined;
+  function curb(at: XZ, fallback: XZ) {
+    if (!sidewalk) return fallback;
+    if (insideOutline(sidewalk, at)) return at;
+    const { point, distance } = nearestOutlineEdge(sidewalk, at);
+    if (distance > 16) return fallback;
+    return point;
+  }
+  const cars = approaches.flatMap(({ edge, at, movements, heading }, index) => {
+    const measured = surveyed.get(index);
     const left: XZ = [Math.sin(heading), -Math.cos(heading)];
-    const position: XZ = measured?.at ?? [at[0] + left[0] * i * 2, at[1] + left[1] * i * 2];
-    return { edge, movement, at: position, surveyed: measured?.id, left };
-  }));
-  const walks = data.crosswalks.flatMap((walk, crossing) =>
-    walk.sig && S.list[S.crossSite[crossing]]?.steps.length ? walk.ends.map(at => ({ crossing, at })) : []);
+    const forward: XZ = [Math.cos(heading), Math.sin(heading)];
+    const pole = measured?.at ?? curb(at, offset(at, left, -2.4));
+    const towardLane: XZ = [(at[0]-pole[0]), (at[1]-pole[1])];
+    const side = towardLane[0]*left[0] + towardLane[1]*left[1] < 0 ? -1 : 1;
+    return movements.map((movement, i) => ({
+      edge, movement, at: pole, surveyed: i === 0 ? measured?.id : undefined, heading,
+      head: offset(pole, left, side*(2.1 + .95*i)),
+      forward,
+    }));
+  });
+  const walks = data.crosswalks.flatMap((walk, crossing) => {
+    if (!walk.sig || !S.list[S.crossSite[crossing]]?.steps.length) return [];
+    return walk.ends.map((end, i) => {
+      const other = walk.ends[1-i];
+      const heading = Math.atan2(other[1]-end[1], other[0]-end[0]);
+      const at = curb(end, offset(end, [Math.sin(heading), -Math.cos(heading)], .65));
+      return { crossing, at, heading };
+    });
+  });
 
   const group = new THREE.Group();
-  const bulbMaterial = new THREE.MeshBasicMaterial();
-  const walkBulb = new THREE.OctahedronGeometry(.47);
-  const vehicleMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.75, 12, 8), bulbMaterial, cars.length);
-  const walkMesh = new THREE.InstancedMesh(walkBulb, bulbMaterial, walks.length);
-  const matrix = new THREE.Matrix4();
-  const outline = new THREE.EdgesGeometry(walkBulb);
-  const vertices = outline.getAttribute('position');
-  const white: number[] = [];
-  cars.forEach(({ at: [x, z], movement, left: [dx, dz] }, i) => {
-    vehicleMesh.setMatrixAt(i, matrix.makeTranslation(x, vehicleHeight, z));
-    if (movement !== LEFT) return;
-    const y = vehicleHeight + .76;
-    const tip = [x + dx*.42, y, z + dz*.42];
-    white.push(x - dx*.14 - dz*.29, y, z - dz*.14 + dx*.29, ...tip,
-      ...tip, x - dx*.14 + dz*.29, y, z - dz*.14 - dx*.29);
-  });
-  walks.forEach(({ at: [x, z] }, i) => {
-    walkMesh.setMatrixAt(i, matrix.makeTranslation(x, walkHeight, z));
-    for (let v = 0; v < vertices.count; v++)
-      white.push(x + vertices.getX(v), walkHeight + vertices.getY(v), z + vertices.getZ(v));
-  });
-  outline.dispose();
-  const lines = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(white, 3));
-  group.add(vehicleMesh, walkMesh, new THREE.LineSegments(lines, new THREE.LineBasicMaterial({ color: 0xf3f9ff })));
-
-  const palette = colors.map(hex => new THREE.Color(hex));
-  function update(tod: number) {
-    cars.forEach(({ edge, movement }, i) => vehicleMesh.setColorAt(i, palette[S.state(edge, movement, tod)]));
-    walks.forEach(({ crossing }, i) => walkMesh.setColorAt(i, palette[S.walkState(crossing, tod)]));
-    if (vehicleMesh.instanceColor) vehicleMesh.instanceColor.needsUpdate = true;
-    if (walkMesh.instanceColor) walkMesh.instanceColor.needsUpdate = true;
+  const material = new THREE.MeshBasicMaterial({ toneMapped: false });
+  const uniquePoles = new Set<string>();
+  const geometry = new THREE.BoxGeometry(1,1,1);
+  const frames = new THREE.InstancedMesh(geometry, material, cars.length*4 + walks.length*2);
+  const lens = new THREE.SphereGeometry(.5,10,6);
+  const vehicleLenses = new THREE.InstancedMesh(lens, material, cars.length*3);
+  const pedestrianLenses = new THREE.InstancedMesh(lens, material, walks.length*2);
+  const pose = new THREE.Object3D();
+  function instance(mesh: THREE.InstancedMesh, index: number, at: XZ, y: number,
+                    width: number, height: number, depth: number, rotation = 0) {
+    pose.position.set(at[0], y, at[1]);
+    pose.rotation.y = rotation;
+    pose.scale.set(width, height, depth);
+    pose.updateMatrix();
+    mesh.setMatrixAt(index, pose.matrix);
   }
+
+  let parts = 0;
+  function box(at: XZ, y: number, width: number, height: number, depth: number, rotation = 0, color = frame) {
+    instance(frames, parts, at, y, width, height, depth, rotation);
+    frames.setColorAt(parts++, color);
+  }
+  function post(at: XZ, y: number, width: number) {
+    const key = at.join(',');
+    if (uniquePoles.has(key)) return;
+    uniquePoles.add(key);
+    box(at,y/2,width,y,width);
+  }
+  cars.forEach(({at, head, heading, forward, movement}, i) => {
+    const supportY = vehicleHeight+.78;
+    post(at,supportY,.19);
+    const middle: XZ = [(at[0]+head[0])/2, (at[1]+head[1])/2];
+    const span = Math.hypot(at[0]-head[0], at[1]-head[1]);
+    const rotation = Math.PI/2-heading;
+    box(middle,supportY,span,.14,.14,rotation);
+    box(head,vehicleHeight,.8,1.69,.31,rotation, dark);
+    // A short directional plate distinguishes a separate left-turn head.
+    if (movement === LEFT) box(offset(head,forward,.16),vehicleHeight+.74,.65,.09,.06,rotation,frame);
+    for (let slot=0; slot<3; slot++)
+      instance(vehicleLenses,i*3+slot,head,vehicleHeight+(.51-slot*.51),.56,.50,.55,rotation);
+  });
+  walks.forEach(({ at, heading },i) => {
+    const rotation = Math.PI/2-heading;
+    post(at,walkHeight,.14);
+    box(at,walkHeight,.58,1.02,.27,rotation,dark);
+    for (let slot=0; slot<2; slot++)
+      instance(pedestrianLenses,i*2+slot,at,walkHeight+.24-slot*.48,.43,.42,.46,rotation);
+  });
+  frames.count = parts;
+  group.add(frames,vehicleLenses,pedestrianLenses);
+
+  function update(tod: number) {
+    cars.forEach(({ edge, movement }, i) => {
+      const state = S.state(edge,movement,tod);
+      for (let slot=0;slot<3;slot++)
+        vehicleLenses.setColorAt(i*3+slot,slot === 2-state ? active[state] : dark);
+    });
+    walks.forEach(({ crossing }, i) => {
+      const state = S.walkState(crossing,tod) === GREEN ? GREEN : RED;
+      for (let slot=0;slot<2;slot++)
+        pedestrianLenses.setColorAt(i*2+slot,slot === (state === GREEN ? 1 : 0) ? active[state] : dark);
+    });
+    if (vehicleLenses.instanceColor) vehicleLenses.instanceColor.needsUpdate = true;
+    if (pedestrianLenses.instanceColor) pedestrianLenses.instanceColor.needsUpdate = true;
+  }
+  update(0);
   return { group, cars, walks, update };
 }

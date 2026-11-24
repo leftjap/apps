@@ -28,11 +28,12 @@ async function init() {
   async function read<T>(suffix: string): Promise<T> {
     const { directory, stem, gzip: compressed } = area.output;
     const base = directory.replace(/^public\//, '');
-    const extension = compressed ? '.json.gz' : '.json';
+    const gzip = compressed && (suffix === 'a' || suffix === 'buildings');
+    const extension = gzip ? '.json.gz' : '.json';
     const response = await fetch(`${import.meta.env.BASE_URL}${base}/${stem}-${suffix}${extension}`);
     if (!response.ok) throw Error(`${suffix} 자료 응답 ${response.status}`);
     // Vite serves .json.gz as HTTP-encoded JSON. Static hosts may serve it as a gzip file.
-    return compressed && !response.headers.get('content-encoding')?.includes('gzip')
+    return gzip && !response.headers.get('content-encoding')?.includes('gzip')
       ? new Response(response.body!.pipeThrough(new DecompressionStream('gzip'))).json()
       : response.json();
   }
@@ -91,7 +92,7 @@ async function init() {
     const run = carPlayback(cars,true,undefined,true,demand,undefined,undefined,yanghwa);
     const limit = yanghwa.replay.connectedTraffic.maxTicksPerFrame;
     const mesh = makeCarMeshes(run.max,true);
-    const signals = makeYanghwaSignals(cars, run.graph);
+    const signals = makeYanghwaSignals(cars, run.graph, data.floor.walk);
     scene.add(mesh.group, signals.group);
     let ticks = Math.round(Math.max(0,value('at',0))/CAR_TICK);
     let sim = run.at(ticks*CAR_TICK);
@@ -128,6 +129,16 @@ async function init() {
       canvas.dataset.traffic = JSON.stringify({seconds:ticks*CAR_TICK,vehicles:sim.cars.n,paused});
     };
   })() : undefined;
+  const signalPreview = district && query.get('signals') === '1' ? await (async () => {
+    const [{districtCarGraph},{makeYanghwaSignals},cars] = await Promise.all([
+      import('./hapjeong-car-graph.ts'), import('./yanghwa-signals.ts'), read<HapjeongCars>('cars'),
+    ]);
+    const graph = districtCarGraph(cars, '');
+    const signals = makeYanghwaSignals(cars, graph, data.floor.walk);
+    signals.update(14*3600+Math.max(0,value('at',0)));
+    scene.add(signals.group);
+    return signals.group;
+  })() : undefined;
 
   function fit(out: THREE.Vector3) {
     right.crossVectors(up,out).normalize();
@@ -163,6 +174,7 @@ async function init() {
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     traffic?.(stamp);
+    if (signalPreview) signalPreview.visible = distance*widthPerDepth() <= 500;
     detailed?.update(camera,distance*widthPerDepth());
     renderer.render(scene,camera);
     canvas.dataset.camera = JSON.stringify({
