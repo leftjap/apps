@@ -44,8 +44,10 @@ def bus_platforms(area, cars, floor):
                         candidates.append((score, i, at, dict(key=key,name=name,link=row['id'],at=at,x=x,z=z,yaw=yaw)))
                         break
         if not candidates:
+            if 'districtTraffic' in area:
+                continue
             raise ValueError(f'No platform approaches the through bus lanes: {key}')
         result.append(min(candidates)[3])
-    if {stop['key'] for stop in result} != set(area['platforms']['keys']):
+    if 'districtTraffic' not in area and {stop['key'] for stop in result} != set(area['platforms']['keys']):
         raise ValueError('Missing configured median stop')
     return result

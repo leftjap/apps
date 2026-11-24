@@ -154,8 +154,11 @@ def split_at_signal_stops(data, sites):
                 raise ValueError(f"Surveyed stop spacing is too small on {row['id']}")
             part = dict(row)
             if cuts_for_lane:
-                part.update(source=row['id'], sourceAt=start, id=row['id'] if k == 0 else f"{row['id']}~{k}",
+                part.update(source=row.get('source', row['id']), sourceAt=start, id=row['id'] if k == 0 else f"{row['id']}~{k}",
                             points=list(substring(lane, start, end).coords), len=end-start)
+                if 'clippedStart' in row:
+                    part.update(clippedStart=k == 0 and row['clippedStart'],
+                                clippedEnd=k == len(marks)-2 and row['clippedEnd'])
             if k < len(cuts_for_lane):
                 hit = cuts_for_lane[k]
                 hit['edge'] = edge

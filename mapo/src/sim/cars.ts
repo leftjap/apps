@@ -90,6 +90,10 @@ export function clearsWalkSignals(faces: readonly [end: number, greenIn: number]
   return faces.every(([end, greenIn]) => travelTime(end + length) + 1 < greenIn);
 }
 
+export function carGridRadius(bounds?: readonly number[]) {
+  return Math.max(BOARD_R, ...((bounds ?? []).map(value => Math.ceil(Math.abs(value)))));
+}
+
 export function makeCars(
   edges: Edge[],
   provider: DataProvider,
@@ -101,6 +105,7 @@ export function makeCars(
   xw?: { list: Crosswalk[]; busy: Uint32Array },
   surveyedCount?: number,
   surveyedMidStopLines?: ReadonlyMap<number, number>,
+  surveyedBounds?: readonly number[],
 ) {
   const rand = rng(seed);
   const I = inter ?? makeIntersections(edges, xw ? { crosswalks: xw.list, stopLines: new Float32Array() } : undefined);
@@ -242,10 +247,11 @@ export function makeCars(
   const tail = new Int32Array(edges.length * 8);
   const leaveTail = new Int32Array(edges.length * 8); // 구간·차로에서 막 빠져나가 아직 상자 안에 꽁무니가 있는 차
   const CELL = 8;
-  const GW = Math.ceil((2 * BOARD_R + 400) / CELL);
+  const gridRadius = carGridRadius(X.surveyed ? surveyedBounds : undefined);
+  const GW = Math.ceil((2 * gridRadius + 400) / CELL);
   const cellHead = new Int32Array(GW * GW);
   const cellNext = new Int32Array(max);
-  const cellAt = (x: number) => Math.max(0, Math.min(GW - 1, Math.floor((x + BOARD_R + 200) / CELL)));
+  const cellAt = (x: number) => Math.max(0, Math.min(GW - 1, Math.floor((x + gridRadius + 200) / CELL)));
   const tmp = [0, 0, 0];
   const meanV = new Float32Array(edges.length).fill(-1);
   const blockLane = new Int8Array(edges.length).fill(-1);

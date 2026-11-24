@@ -5,7 +5,7 @@ import json
 import math
 import sys
 
-from shapely import get_parts
+from shapely import STRtree, get_parts
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 
@@ -34,8 +34,20 @@ def short_boundary_piece(line):
                                     for p in (line.coords[0], line.coords[-1]))
 
 
+def directed_pieces(line, window):
+    pieces = []
+    for part in get_parts(line.intersection(window)):
+        if part.geom_type != 'LineString' or not part.length:
+            continue
+        first = line.project(Point(part.coords[0]))
+        last = line.project(Point(part.coords[-1]))
+        pieces.append((min(first, last), part if first < last else part.reverse()))
+    return (part for _, part in sorted(pieces, key=lambda row: row[0]))
+
+
 def load_links():
     result = []
+    district = 'districtTraffic' in AREA
     for feature in sorted(features('a2-vehicle-audit'), key=lambda row: row['properties']['id']):
         props = feature['properties']
         kind = props['linktype']
@@ -44,22 +56,30 @@ def load_links():
         coordinates = feature['geometry']['coordinates']
         raw = coordinates[0] if feature['geometry']['type'] == 'MultiLineString' else coordinates
         line = LineString(paths(feature)[0])
-        parts = [part for part in get_parts(line.intersection(WINDOW)) if part.geom_type == 'LineString' and part.length]
+        parts = list(directed_pieces(line, WINDOW)) if district else [
+            part for part in get_parts(line.intersection(WINDOW)) if part.geom_type == 'LineString' and part.length]
         if not parts:
             continue
-        assert len(parts) == 1, (props['id'], 'disjoint in the map window')
-        if AREA.get('coverage') and short_boundary_piece(parts[0]):
-            continue
-        points = list(parts[0].coords)
-        if line.project(Point(points[0])) > line.project(Point(points[-1])):
-            points.reverse()
-        points = [tuple(round(x, 6) for x in p) for p in points]
-        result.append(dict(
-            id=props['id'], kind=kind, rank=int(props['roadrank']), seq=props['laneno'], date=props['updatedate'] or '',
-            left=props['l_linkid'], right=props['r_linkid'], from_id=props['fromnodeid'],
-            to=props['tonodeid'], raw=raw, line=line, points=points, len=LineString(points).length,
-            next=[], stop=None,
-        ))
+        assert district or len(parts) == 1, (props['id'], 'disjoint in the map window')
+        for k, part in enumerate(parts):
+            if (district or AREA.get('coverage')) and short_boundary_piece(part):
+                continue
+            points = list(part.coords)
+            if line.project(Point(points[0])) > line.project(Point(points[-1])):
+                points.reverse()
+            points = [tuple(round(x, 6) for x in p) for p in points]
+            row = dict(
+                id=props['id'], kind=kind, rank=int(props['roadrank']), seq=props['laneno'], date=props['updatedate'] or '',
+                left=props['l_linkid'], right=props['r_linkid'], from_id=props['fromnodeid'],
+                to=props['tonodeid'], raw=raw, line=line, points=points, len=LineString(points).length,
+                next=[], stop=None,
+            )
+            if district:
+                row.update(clippedStart=Point(part.coords[0]).distance(Point(line.coords[0])) > .001,
+                           clippedEnd=Point(part.coords[-1]).distance(Point(line.coords[-1])) > .001)
+                if len(parts) > 1:
+                    row.update(id=f"{props['id']}:clip:{k}", source=props['id'])
+            result.append(row)
     return result
 
 
@@ -67,7 +87,7 @@ def connect(rows, nodes, allow_connector_seams=False, node_tolerance=0):
     starts = defaultdict(list)
     at_node = defaultdict(list)
     for j, row in enumerate(rows):
-        if WINDOW.covers(Point(row['line'].coords[0])):
+        if not row.get('clippedStart') and WINDOW.covers(Point(row['line'].coords[0])):
             starts[tuple(row['raw'][0])].append(j)
             if node_tolerance and row['from_id'] in nodes:
                 at_node[row['from_id']].append(j)
@@ -85,7 +105,7 @@ def connect(rows, nodes, allow_connector_seams=False, node_tolerance=0):
             if len(kinds) == 1 and '1' not in kinds:
                 connector_kinds[row['id']] = kinds.pop()
     for a in rows:
-        if not WINDOW.covers(Point(a['line'].coords[-1])):
+        if a.get('clippedEnd') or not WINDOW.covers(Point(a['line'].coords[-1])):
             continue
         exact = starts[tuple(a['raw'][-1])]
         for j in exact + [i for i in at_node.get(a['to'], ()) if i not in exact]:
@@ -219,10 +239,13 @@ def longest_bus(rows):
 def duplicates(rows):
     shapes = [LineString(r['points']) for r in rows]
     buffers = [line.buffer(.65) for line in shapes]
+    index = STRtree(buffers) if 'districtTraffic' in AREA else None
     for i, (row, line) in enumerate(zip(rows, shapes)):
         a, b = line.coords[0], line.coords[-1]
         matches = []
-        for j, other in enumerate(rows):
+        neighbours = range(len(rows)) if index is None else sorted(index.query(line))
+        for j in neighbours:
+            other = rows[j]
             if row['kind'] != other['kind'] or row['date'] >= other['date']:
                 continue
             ref = shapes[j]
@@ -267,10 +290,14 @@ def walk_signal_groups(rows, pavement):
 
 def bake(floor):
     rows = load_links()
+    district = 'districtTraffic' in AREA
     nodes = {r['properties']['id']: r['geometry']['coordinates'] for r in features('a1-vehicle-seams')}
     settings = AREA.get('signals', {})
     by_arms = settings.get('byJunctionArms')
     seams = connect(rows, nodes, settings.get('allowConnectorSeams', False), settings.get('nodeJoinMetres', 0))
+    if district:
+        from district_car_graph import grade_crossings
+        grade = grade_crossings(rows)
     stops = [(r['properties']['id'], LineString(line)) for r in features('b2') if r['properties']['kind'] == '530'
              for line in paths(r)]
     for row in rows:
@@ -308,22 +335,45 @@ def bake(floor):
                 crosswalks=crossings, lights=lights,
                 stopLines=[pt for _, line in stops for a, b in pairwise(line.coords) for pt in (*a, *b)],
                 walkSignalGroups=walk_signal_groups(crossings, surface(floor['floor']['walk'])))
-    if AREA.get('excludeWindows') or AREA.get('coverage'):
+    if AREA.get('excludeWindows') or AREA.get('coverage') or district:
         data['boundaryFaces'] = rings(WINDOW)
     if by_arms:
-        data['busRoutes'] = boundary_bus_routes(rows)
+        if district:
+            from district_car_graph import district_bus_routes
+            data['busRoutes'] = district_bus_routes(rows, WINDOW)
+        else:
+            data['busRoutes'] = boundary_bus_routes(rows)
         data['boundaryRoutes'] = True
-        if AREA.get('coverage'):
+        if AREA.get('coverage') or district:
             for route in data['busRoutes']:
                 for i in route:
                     rows[i]['duplicateOf'] = None
     if settings:
         sites = survey_signal_sites(rows, crossings, lights, stops, central, central_floor, settings, junctions)
         split_at_signal_stops(data, sites)
-    if AREA.get('coverage'):
+    if AREA.get('coverage') or district:
         from survey_bus_platforms import bus_platforms
-
         data['platforms'] = bus_platforms(AREA, data, floor)
+    if district:
+        from district_car_graph import district_routes
+        parts_by_id = {row['id']: [] for row in rows}
+        for i, row in enumerate(data['links']):
+            owner = row['id'].split('~', 1)[0]
+            parts_by_id[owner].append(i)
+        for cross in grade:
+            for key in ('lower', 'upper'):
+                at = Point(cross['at'])
+                cross[key] = min(parts_by_id[rows[cross[key]]['id']],
+                                 key=lambda i: LineString(data['links'][i]['points']).distance(at))
+        stops = {row['link'] for row in data['platforms']}
+        routes = sorted(data['busRoutes'], key=lambda route: -sum(data['links'][i]['id'] in stops for i in route))
+        data['busRoutes'] = []
+        for route in routes:
+            if served := stops.intersection(data['links'][i]['id'] for i in route):
+                data['busRoutes'].append(route)
+                stops -= served
+        data['districtTraffic'] = district_routes(data['links'], data['busRoutes'], WINDOW, grade)
+        data['districtTraffic']['gradeCrossings'] = grade
     return data
 
 

@@ -7,6 +7,7 @@ import { makeIntersections } from '../sim/intersection/index.ts';
 import { hapjeongArea } from './survey-area.ts';
 import type { HapjeongPlatform } from './hapjeong-people.ts';
 export type XZ = [number, number];
+export type TrafficPortal = { edge: number; at: XZ; boundary: boolean };
 
 type Link = {
   id: string;
@@ -31,6 +32,11 @@ export type HapjeongCars = {
   window: [number, number, number, number];
   boundaryFaces?: XZ[][][];
   boundaryRoutes?: boolean;
+  districtTraffic?: {
+    selected: number[]; entries: TrafficPortal[]; exits: TrafficPortal[];
+    excluded: { id: string; reason: string }[];
+    gradeCrossings: { lower: number; upper: number; at: XZ; metres: number; excluded: string }[];
+  };
   stopLines: number[];
   lights?: { id: string; kind: string; link: string | null; at: XZ }[];
   walkSignalGroups?: string[][];
@@ -38,6 +44,26 @@ export type HapjeongCars = {
     approaches: { link: string; line: string | null; at: number; edge: number; arm?: number }[] }[];
   crosswalks: { id: string; ends: [XZ, XZ]; width: number; faces: XZ[][][]; sig: boolean; lamps: string[] }[];
 };
+
+export function districtCarGraph(data: HapjeongCars, busName: string) {
+  const { selected, entries } = data.districtTraffic!;
+  const buses = data.busRoutes ?? [];
+  const byEdge = new Map<number, Set<number>>();
+  for (const route of buses) {
+    for (let k = 1; k < route.length; k++) {
+      const id = route[k - 1];
+      if (!byEdge.has(id)) byEdge.set(id, new Set());
+      byEdge.get(id)!.add(route[k]);
+    }
+  }
+  const routed = { ...data, links: data.links.map((link, i) => {
+    const bus = byEdge.get(i);
+    const next = link.kind === '4' || (link.kind === '1' && bus) ? [...(bus ?? [])]
+      : [...new Set([...link.next, ...(bus ?? [])])];
+    return { ...link, next };
+  }) };
+  return hapjeongCarGraph(routed, new Set(selected), new Set(entries.map(p => p.edge)), 8, buses, data.platforms, busName);
+}
 
 export function carBoundary(data: HapjeongCars, [x,z]: XZ) {
   if (data.boundaryFaces) return data.boundaryFaces.some(face => face.some(ring => ring.some(([a,b], i) => {

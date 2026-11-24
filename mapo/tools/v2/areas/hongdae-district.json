@@ -237,5 +237,28 @@
     "initialTilt": 34,
     "initialBearing": 46,
     "fitPadding": 1.05
-  }
+  },
+  "signals": {
+    "lampClusterMetres": 26,
+    "junctionLampMetres": 3,
+    "stopMatchMetres": 63,
+    "byJunctionArms": true,
+    "allowConnectorSeams": true,
+    "nodeJoinMetres": 0.05
+  },
+  "platforms": {
+    "keys": [
+      "14011",
+      "14012",
+      "14013",
+      "14014",
+      "14015",
+      "14016",
+      "14061",
+      "13019",
+      "13021",
+      "14062"
+    ]
+  },
+  "districtTraffic": {}
 }
