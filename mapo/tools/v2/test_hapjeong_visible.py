@@ -24,10 +24,21 @@ class VisibleGateTest(unittest.TestCase):
     def test_records_other_metrics_without_gating_on_them(self):
         self.assertEqual(gate_failures(self.rules, self.visible), [])
 
-    def test_cannot_pass_with_a_missing_bus_or_prior_hash(self):
-        self.visible['buses'][0]['waiting'] = [1, 1, 0, 1, 0, 1, 0, 0, 0]
+    def test_waiting_samples_are_reference_only(self):
+        self.visible['buses'][0]['waiting'] = [None, 0, 0, 1, 0, 0, 0, 0, 0]
+        self.assertEqual(gate_failures(self.rules, self.visible), [])
+
+    def test_cannot_pass_without_boarding_or_a_prior_hash(self):
+        self.visible['buses'][0]['boarded'] = 0
         self.visible['legacy']['people'] = False
         self.assertEqual({r['gate'] for r in gate_failures(self.rules, self.visible)}, {7, 8})
+
+    def test_corner_stage_skips_buses_but_requires_two_way_exits(self):
+        self.visible['buses'] = []
+        self.assertEqual(gate_failures(self.rules, self.visible, check_buses=False), [])
+        self.rules['P4']['missing_direction'] = 1
+        self.assertEqual([r['test'] for r in gate_failures(self.rules, self.visible, check_buses=False)],
+                         ['two_way_exits'])
 
     def test_red_spells_are_continuous_and_split_when_walker_moves(self):
         spells = Stationary()

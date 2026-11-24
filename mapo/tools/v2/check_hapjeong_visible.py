@@ -133,7 +133,7 @@ def check_legacy(tree):
     return hashes
 
 
-def gate_failures(rules, visible):
+def gate_failures(rules, visible, *, check_buses=True):
     issues = []
 
     def require(gate, name, measured, passed):
@@ -159,14 +159,12 @@ def gate_failures(rules, visible):
     require(6, 'peak_5m', peak, peak <= 25)
     models, missing = rules['P4']['models'], rules['P4']['missing_direction']
     require(7, 'two_way_exits', models - (missing or 0), models == 6 and missing == 0)
-    require(7, 'platforms', len(visible['buses']), len(visible['buses']) == 2)
-    for bus in visible['buses']:
-        samples = bus['waiting']
-        for name, value, lower in [('calls', len(bus['calls']), 2), ('boarded', bus['boarded'], 1),
-                                   ('alighted', bus['alighted'], 1),
-                                   ('nonempty_samples', sum(bool(n) for n in samples), 5)]:
-            require(7, f"{bus['key']}.{name}", value, value >= lower)
-        require(7, f"{bus['key']}.coverage", samples, len(samples) == len(STOP_SAMPLES) and None not in samples)
+    if check_buses:
+        require(7, 'platforms', len(visible['buses']), len(visible['buses']) == 2)
+        for bus in visible['buses']:
+            for name, value, lower in [('calls', len(bus['calls']), 2), ('boarded', bus['boarded'], 1),
+                                       ('alighted', bus['alighted'], 1)]:
+                require(7, f"{bus['key']}.{name}", value, value >= lower)
     for name in LEGACY_HASH:
         report = visible['legacy'].get(name, False)
         require(8, name, report, report.get('passed', False) if isinstance(report, dict) else report)

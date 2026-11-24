@@ -89,7 +89,7 @@ def left_pairs(flow, plan):
     return pairs
 
 
-def measure(tree, folder, label, *, visible_only=False):
+def measure(tree, folder, label, *, visible_only=False, check_buses=True):
     # The historical code drives each replay and supplies the matching geometry.
     walk.DATA = cars.DATA = tree/'public/data/v2'
     cars.rendered_footprints.cache_clear()
@@ -177,7 +177,8 @@ def measure(tree, folder, label, *, visible_only=False):
         with trace.open() as stream:
             view = visible.measure(stream,plan,walk.read('a')['floor'],walk.read('walk'))
         view['legacy'] = visible.check_legacy(tree)
-        view['failures'] = visible.gate_failures(metric,view)
+        view['bus_gate_checked'] = check_buses
+        view['failures'] = visible.gate_failures(metric,view,check_buses=check_buses)
         detail['visible_gate'] = dict(
             vehicle_red=c['red'], vehicle_overlap=c['overlap'], vehicle_stalled=c['stalled'],
             vehicle_off_floor=c.get('firstCountedOffFloor'), vehicle_appearance=c['visible_events'],
@@ -272,10 +273,14 @@ def main():
     parser.add_argument('--relative-only',action='store_true',help='gate on target improvement and regressions, with absolute limits still reported')
     parser.add_argument('--visible-only',action='store_true',
                         help='gate only on the eight visible-behavior rules in the ordinary 240-second replay')
+    parser.add_argument('--skip-bus-gate',action='store_true',
+                        help='record bus metrics without gating on them in a pedestrian-only stage')
     parser.add_argument('--people-stage',action='store_true',help='apply S3 gates and traffic tolerances to a relative comparison')
     parser.add_argument('--recorded',action='store_true',help='reuse trace.ndjson, signal.ndjson and paths.json already in --out')
     parser.add_argument('--measure-only',action='store_true',help='write results for a historical revision even when the gate rejects it')
     arg = parser.parse_args()
+    if arg.skip_bus_gate and not arg.visible_only:
+        parser.error('--skip-bus-gate requires --visible-only')
     if arg.visible_only and arg.relative_only:
         parser.error('--visible-only cannot be combined with --relative-only')
     if arg.relative_only and not (arg.against and arg.target):
@@ -288,7 +293,7 @@ def main():
     folder.mkdir(parents=True,exist_ok=True)
     if not arg.recorded:
         replay(tree,folder)
-    result = measure(tree,folder,arg.label,visible_only=arg.visible_only)
+    result = measure(tree,folder,arg.label,visible_only=arg.visible_only,check_buses=not arg.skip_bus_gate)
     incumbent = load(arg.against) if arg.against else None
     if arg.relative_only and (incumbent['rules']['P5'].get('green_wait_any') is None or
                               incumbent['rules']['P5'].get('green_wait') is None):
@@ -326,7 +331,8 @@ def main():
                                 '예' if (rule,key) in absolute else '', '예' if (rule,key) in compared else ''])
         if arg.visible_only:
             view = result['visible']
-            rows = {'road_red_over_30': len(view['road_red_over_30']),
+            rows = {'bus_gate_checked': view['bus_gate_checked'],
+                    'road_red_over_30': len(view['road_red_over_30']),
                     'stuck_over_120': len(view['stuck_over_120']),
                     'sidewalk_30_to_120': len(view['sidewalk_30_to_120']),
                     'sidewalk_max_s': round(max((r['seconds'] for r in view['sidewalk_30_to_120']), default=0), 3)}
