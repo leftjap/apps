@@ -10,7 +10,7 @@ from shapely.ops import unary_union
 
 from aerial_paint import style
 from aerial_rules import PITCH, STRIPE_WIDTH
-from area import MAPO, asset, load_area
+from area import MAPO, area_window, asset, load_area
 from bake_aerial_ground import Frame, parts
 from land import even_odd
 from shp import dbf, shapes
@@ -20,9 +20,7 @@ AREA = load_area()
 RAW = MAPO / AREA['sources']['hd']
 SHEETS = MAPO / AREA['sources']['sheets']
 ASSET = asset(AREA)
-WINDOW = box(*AREA['window'])
-for excluded in AREA.get('excludeWindows', ()):
-    WINDOW = WINDOW.difference(box(*excluded))
+WINDOW = area_window(AREA)
 FRAME = Frame(*AREA['frame']['origin'], 0)
 VIEWS = AREA['views']['display']
 
@@ -93,7 +91,7 @@ def rings(geom):
             for p in parts(geom, 'Polygon') if p.area > 0]
 
 
-def survey_faces(code):
+def survey_faces(code, *, include_sheet=False):
     """Yield clipped original faces in sheet and record order."""
     for sheet in sorted(SHEETS.iterdir()):
         stem = sheet / f'N1A_{code}'
@@ -108,7 +106,7 @@ def survey_faces(code):
                 continue
             face = even_odd(projected)
             if face is not None:
-                yield face.intersection(WINDOW), row
+                yield face.intersection(WINDOW), ({**row, 'sheet': sheet.name} if include_sheet else row)
 
 
 def survey_islands():

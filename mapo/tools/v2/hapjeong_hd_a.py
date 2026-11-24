@@ -3,6 +3,7 @@ import json
 import math
 import re
 from itertools import pairwise
+from collections import defaultdict
 
 from shapely import affinity, make_valid
 from shapely.geometry import LineString, Point, Polygon
@@ -10,6 +11,7 @@ from shapely.ops import unary_union
 
 from hapjeong_hd import AREA, ASSET, MAPO, ORIGIN, WINDOW, asset, features, parts, paths, project, offset_zebra, rings
 from hapjeong_crossings import expanded_walk, supplement_crossings, vehicle_clearance, walking_landings
+from aerial_paint import footprint
 
 OUTPUT = asset(AREA, '-a')
 LINE_KINDS = {'501','503','506','504','525','530','505','515'}
@@ -159,6 +161,20 @@ def platform_strips(face, span, width, edges):
                     yield affinity.rotate(strip, angle, origin, use_radians=True)
 
 
+def connected_paint(lines):
+    # Start dash phase at each original line, before the new perimeter cuts it.
+    ink = {row['id']: row['ink'] for row in lines}
+    fills = defaultdict(list)
+    for row in features('b2'):
+        style = ink.get(row['properties']['id'])
+        if style is None:
+            continue
+        for path in paths(row):
+            fills[style['color']].extend(footprint(path, style['width'], 0, style['dash']))
+    return [{'color': color, 'faces': rings(unary_union(polys).intersection(WINDOW))}
+            for color, polys in sorted(fills.items())]
+
+
 def bake_a(old):
     floor = old['floor']
     clip = AREA.get('floor', {}).get('clipToWindow')
@@ -188,13 +204,33 @@ def bake_a(old):
     combined = combined.union(approaches.difference(cross_faces))
     if clip:
         combined = combined.intersection(WINDOW)
-    return {
+    result = {
         'views': [view for view in old['views'] if view['mode']=='photo'],
         'floor': {'road':floor['road'], 'walk':rings(combined), 'islands':[], 'a4':[]},
         'lines': [row for row in old['lines'] if row['kind'] in LINE_KINDS],
         'crossings':crossings+recovered, 'crossingAudit':crossing_audit, 'bicycles':[], 'links':[],
         'hiddenBuildingOutlines':outline_exclusions(source_buildings, common_road),
     }
+    if AREA.get('coverage'):
+        result['crossings'] = [clipped for row in result['crossings']
+                               if (clipped := clip_crossing(row))['faces']]
+        result['crossingAudit'] = [
+            {**row, 'faces': clip_faces(row['faces']),
+             'approaches': [{**end, 'faces': clip_faces(end['faces'])} for end in row['approaches']]}
+            for row in result['crossingAudit']
+            if surface(row['faces']).intersection(WINDOW).area > 0
+        ]
+        result['paint'] = connected_paint(result['lines'])
+        result['bicycles'] = old['bicycles']
+    return result
+
+
+def clip_faces(faces):
+    return rings(surface(faces).intersection(WINDOW))
+
+
+def clip_crossing(row):
+    return {**row, 'faces': clip_faces(row['faces']), 'stripes': clip_faces(row['stripes'])}
 
 
 def pedestrian_landings(floor, cars):
@@ -208,7 +244,12 @@ def pedestrian_landings(floor, cars):
         links = load_links()
     lanes = [(LineString(row['points']), 1.245 if row['kind'] == '4' else 1.0)
              for row in links]
-    return {row['id']: walking_landings(row, pavement, lanes) for row in floor['crossingAudit']}
+    result = {row['id']: walking_landings(row, pavement, lanes) for row in floor['crossingAudit']}
+    if AREA.get('coverage'):
+        for ends in result.values():
+            for end in ends:
+                end['faces'] = clip_faces(end['faces'])
+    return result
 
 
 if __name__=='__main__':

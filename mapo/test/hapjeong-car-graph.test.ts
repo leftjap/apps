@@ -1,11 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { hapjeongCarGraph, type HapjeongCars } from '../src/aerial/hapjeong-car-graph.ts';
+import { carBoundary, hapjeongCarGraph, type HapjeongCars } from '../src/aerial/hapjeong-car-graph.ts';
 import { nearestS } from '../src/poly.ts';
 import { headingNear } from '../src/sim/graph.ts';
 import { CYCLE, LEFT, STRAIGHT } from '../src/sim/intersection/index.ts';
 
 const data: HapjeongCars = JSON.parse(readFileSync(new URL('../public/data/v2/hapjeong-hd-cars.json', import.meta.url), 'utf8'));
+
+it('matches a diagonal edge of survey coverage without treating its bounding box as a boundary', () => {
+  const polygon: HapjeongCars = { ...data, boundaryFaces: [[[[0,0],[10,10],[20,0],[0,0]]]] };
+  expect(carBoundary(polygon,[5,5])).toBe(true);
+  expect(carBoundary(polygon,[5,5.0005])).toBe(true);
+  expect(carBoundary(polygon,[5,10])).toBe(false);
+  expect(carBoundary(polygon,[11,11])).toBe(false);
+});
 
 it('uses the same surveyed line for each junction path and its conflict samples', () => {
   const { edges, inter: { X, S }, links } = hapjeongCarGraph(data);

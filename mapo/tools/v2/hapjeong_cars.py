@@ -291,7 +291,7 @@ def bake(floor):
                 crosswalks=crossings, lights=lights,
                 stopLines=[pt for _, line in stops for a, b in pairwise(line.coords) for pt in (*a, *b)],
                 walkSignalGroups=walk_signal_groups(crossings, surface(floor['floor']['walk'])))
-    if AREA.get('excludeWindows'):
+    if AREA.get('excludeWindows') or AREA.get('coverage'):
         data['boundaryFaces'] = rings(WINDOW)
     if by_arms:
         data['busRoutes'] = boundary_bus_routes(rows)

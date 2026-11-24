@@ -1,0 +1,209 @@
+{
+  "id": "yanghwa-map",
+  "title": "양화로 이어진 지도",
+  "window": [
+    -750,
+    -943,
+    970,
+    499
+  ],
+  "coverage": {
+    "windows": [
+      [
+        -618,
+        103,
+        -344,
+        398
+      ],
+      [
+        -219,
+        -363,
+        171,
+        -3
+      ],
+      [
+        110,
+        -689,
+        500,
+        -340
+      ],
+      [
+        500,
+        -890,
+        970,
+        -548
+      ]
+    ],
+    "limits": [
+      -794,
+      -943,
+      970,
+      721
+    ],
+    "strips": [
+      {
+        "axis": [
+          [
+            -387,
+            145
+          ],
+          [
+            -187,
+            -51
+          ]
+        ],
+        "halfWidth": 70,
+        "cap": "flat"
+      },
+      {
+        "axis": [
+          [
+            -603,
+            352
+          ],
+          [
+            -493,
+            257
+          ],
+          [
+            -305,
+            80
+          ],
+          [
+            -69,
+            -135
+          ],
+          [
+            171,
+            -366
+          ],
+          [
+            416,
+            -599
+          ],
+          [
+            676,
+            -802
+          ],
+          [
+            884,
+            -719
+          ],
+          [
+            979,
+            -675
+          ]
+        ],
+        "halfWidth": 147
+      }
+    ],
+    "roadName": "양화로",
+    "roadNumber": "제6호",
+    "roadMargin": 100
+  },
+  "comparisonAreas": [
+    "hapjeong",
+    "seogyo",
+    "hongdae-west",
+    "hongdae-donggyo"
+  ],
+  "frame": {
+    "origin": [
+      126.919,
+      37.5515
+    ]
+  },
+  "fetch": {
+    "tiles": [
+      [
+        126.9156591,
+        37.5557733,
+        126.9211308,
+        37.5602756
+      ],
+      [
+        126.9211308,
+        37.5557733,
+        126.9266026,
+        37.5602756
+      ],
+      [
+        126.9266026,
+        37.5557733,
+        126.9320743,
+        37.5602756
+      ],
+      [
+        126.9101874,
+        37.5512708,
+        126.9156591,
+        37.5557733
+      ],
+      [
+        126.9156591,
+        37.5512708,
+        126.9211308,
+        37.5557733
+      ],
+      [
+        126.9211308,
+        37.5512708,
+        126.9266026,
+        37.5557733
+      ],
+      [
+        126.9101874,
+        37.5467679,
+        126.9156591,
+        37.5512708
+      ],
+      [
+        126.9156591,
+        37.5467679,
+        126.9211308,
+        37.5512708
+      ]
+    ]
+  },
+  "sources": {
+    "hd": "tools/raw/ngii/yanghwa-map",
+    "sheets": "tools/raw/ngii/suchi/sheets",
+    "seoulCrossings": "tools/raw/seoul-crosswalks.json",
+    "board": "public/data/board.json",
+    "medianStops": "src/data/medStops.ts",
+    "pilotBuildings": "public/data/aerial-pilot.json"
+  },
+  "output": {
+    "directory": "public/data/v2",
+    "stem": "yanghwa-map"
+  },
+  "junctionAt": [
+    -495,
+    248
+  ],
+  "views": {
+    "display": [],
+    "simulation": [],
+    "default": "all",
+    "replayDefault": "all"
+  },
+  "replay": {
+    "enabled": false,
+    "people": false,
+    "busName": "양화로",
+    "axisNames": [],
+    "signalLabel": ""
+  },
+  "floor": {
+    "clipToWindow": true,
+    "bakeLandings": true
+  },
+  "camera": {
+    "minWidth": 120,
+    "minTilt": 15,
+    "maxTilt": 60,
+    "initialTilt": 34,
+    "initialBearing": 46,
+    "fitPadding": 1.05
+  }
+}

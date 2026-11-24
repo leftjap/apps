@@ -462,15 +462,21 @@ def spawn_points(network, floor, window, boundary_walk=None, lanes=None, station
         ('동', (xmax, zmin), (xmax, zmax), -1, 0),
         ('남', (xmin, zmax), (xmax, zmax), 0, -1),
     ]
-    if AREA.get('excludeWindows'):
+    if AREA.get('excludeWindows') or AREA.get('coverage'):
         sides = []
         for u, v in pairwise(window.exterior.coords):
             line = LineString([u,v])
             x,z = line.interpolate(.5,normalized=True).coords[0]
-            nx,nz = (0,1) if u[1] == v[1] else (1,0)
+            if AREA.get('coverage'):
+                dx, dz = v[0]-u[0], v[1]-u[1]
+                if not line.length:
+                    continue
+                nx, nz = -dz/line.length, dx/line.length
+            else:
+                nx,nz = (0,1) if u[1] == v[1] else (1,0)
             if not window.covers(Point(x+.01*nx,z+.01*nz)):
                 nx,nz = -nx,-nz
-            name = '서' if nx>0 else '동' if nx<0 else '북' if nz>0 else '남'
+            name = ('서' if nx>0 else '동') if abs(nx)>abs(nz) else ('북' if nz>0 else '남')
             sides.append((name,u,v,nx,nz))
     counts = defaultdict(int)
     for name, u, v, nx, nz in sides:
@@ -627,7 +633,7 @@ def bake(floor, cars, reference=None):
             raise ValueError(f'{key}: crossing terminal does not connect to pavement')
         ids.append(key)
         crossings.append(result)
-    portals, rejected = spawn_points(network, floor, WINDOW if AREA.get('excludeWindows') else box(*cars['window']),
+    portals, rejected = spawn_points(network, floor, WINDOW if AREA.get('excludeWindows') or AREA.get('coverage') else box(*cars['window']),
                                      boundary_walk if gap_limit else None,
                                      lane_envelopes(cars['links']) if gap_limit else None, positions)
     def widths(graph):

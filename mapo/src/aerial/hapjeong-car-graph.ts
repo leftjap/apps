@@ -41,8 +41,11 @@ export function carBoundary(data: HapjeongCars, [x,z]: XZ) {
   if (data.boundaryFaces) return data.boundaryFaces.some(face => face.some(ring => ring.some(([a,b], i) => {
     if (!i) return false;
     const [c,d] = ring[i-1];
-    return a === c ? Math.abs(x-a) < .001 && z >= Math.min(b,d)-.001 && z <= Math.max(b,d)+.001
-      : Math.abs(z-b) < .001 && x >= Math.min(a,c)-.001 && x <= Math.max(a,c)+.001;
+    if (a === c) return Math.abs(x-a) < .001 && z >= Math.min(b,d)-.001 && z <= Math.max(b,d)+.001;
+    if (b === d) return Math.abs(z-b) < .001 && x >= Math.min(a,c)-.001 && x <= Math.max(a,c)+.001;
+    const dx = c-a, dz = d-b;
+    const t = Math.max(0,Math.min(1,((x-a)*dx+(z-b)*dz)/(dx*dx+dz*dz)));
+    return Math.hypot(x-(a+t*dx),z-(b+t*dz)) < .001;
   })));
   const [x0,z0,x1,z1] = data.window;
   return Math.min(x-x0,x1-x,z-z0,z1-z) < .001;
