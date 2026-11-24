@@ -145,7 +145,7 @@ async function init() {
   const area = loadArea ? await loadArea() : hapjeongArea;
   document.title = document.querySelector('h1')!.textContent = `${area.title} 정밀도로지도`;
   const canReplay = area.replay.enabled !== false;
-  const peopleMode = canReplay && (query.get('people') === '1' || query.get('pedestrians') === '1');
+  const peopleMode = canReplay && area.replay.people !== false && (query.get('people') === '1' || query.get('pedestrians') === '1');
   const carsMode = canReplay && query.get('cars') === '1';
   const simulation = carsMode || peopleMode;
   const variantA = simulation || query.get('variant') === 'a' || area.combinedByDefault;
@@ -161,7 +161,7 @@ async function init() {
     if (!response.ok) throw Error(`${area.title} 자료 응답 ${response.status} · ${name}`);
     return response.json();
   };
-  const entrances = simulation ? await load('entrances') as HapjeongEntrances : undefined;
+  const entrances = simulation && area.replay.people !== false ? await load('entrances') as HapjeongEntrances : undefined;
   if (peopleMode) {
     people = { walk: await load('walk'), entrances, signalTest: query.get('signaltest') === '1' };
   }

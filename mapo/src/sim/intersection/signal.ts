@@ -40,6 +40,7 @@ export interface SurveySignalSite {
   at: readonly [number, number];
   approaches: readonly number[];
   crossings: readonly number[];
+  arms?: ReadonlyMap<number, number>;
 }
 
 export interface SignalData {
@@ -156,7 +157,7 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
       site.approaches.some(id => X.jEnd[id] === J.id));
     if (surveyed && !measured) continue;
     const into = J.into.filter(id => !measured || measured.approaches.includes(id)).map(id => edges[id]);
-    if (into.filter((e) => e.cls >= 1 && e.cls <= 3).length < 3) continue;
+    if (into.filter((e) => e.cls >= 1 && e.cls <= 3).length < (measured?.arms ? 1 : 3)) continue;
     const pts = [...J.nodes].map((k) => k.split(',').map((v) => Number(v) / 10));
     const signalled = data ? sigXw.some(({ c }) => pts.some(([x, z]) => Math.hypot(c.x - x, c.z - z) < NEAR + c.half * 0.5)) : into.some((e) => e.cls <= 2);
     if (!measured && !signalled) continue;
@@ -165,8 +166,9 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     const c = list.length;
     junctionSite[J.id] = c;
     for (const i of measured?.crossings ?? []) owners.set(i, c);
-    const groups = into.map((e) => (axisGap(headingNear(e, e.len), axis) < Math.PI / 4 ? 0 : 1));
-    list.push({ x: J.x, z: J.z, j: J.id, axis, offset: hash01(c * 7.31 + 1) * CYCLE, steps: [], turn: [-1, -1], walkOnly: !groups.includes(1) });
+    const groups = into.map(e => measured?.arms?.get(e.id) ?? (axisGap(headingNear(e, e.len), axis) < Math.PI / 4 ? 0 : 1));
+    list.push({ x: J.x, z: J.z, j: J.id, axis, offset: hash01(c * 7.31 + 1) * CYCLE, steps: [], turn: [-1, -1],
+      walkOnly: !measured?.arms && !groups.includes(1) });
     into.forEach((e, k) => {
       const moves = (X.exits.get(e.id) ?? []).reduce((m, x) => m | x.move, 0);
       const setback = X.stopAt(e.id, Math.floor(e.lanes / 2));
@@ -301,7 +303,8 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     const leftLanes = [0, 0];
     const hasS = [false, false];
     const hasL = [false, false];
-    for (const a of into) {
+    const hasArms = surveyed?.some(s => s.arms && s.approaches.some(a => approach.get(a)?.c === c));
+    for (const a of hasArms ? [] : into) {
       const ap = approach.get(a)!;
       w[ap.group] += weight(edges[a]);
       if (ap.moves & STRAIGHT) hasS[ap.group] = true;
@@ -316,7 +319,7 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
         leftLanes[ap.group] = Math.max(leftLanes[ap.group], lanes || 1);
       }
     }
-    for (const g of [0, 1]) {
+    for (const g of hasArms ? [] : [0, 1]) {
       if (!into.some((a) => approach.get(a)!.group === g)) {
         if (g === 1 && site.walkOnly && xwOf(1).length) phases.push({ kind: 'walk', g, green: WALK_GREEN });
         continue;
@@ -379,6 +382,32 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
       steps.push({ start: t, dur: ALLRED, green: new Map(), amber: new Map(), yields: new Map(), walk: new Set() });
       t += ALLRED;
     };
+    if (hasArms) {
+      // No measured controller timing. Give each incoming arm a protected
+      // phase and separate movements within the arm if their paths conflict.
+      const batches: [number, number][][] = [];
+      for (const arm of new Set(into.map(a => approach.get(a)!.group))) {
+        const slots: [number, number][][] = [];
+        for (const [a, m] of moveList(arm, () => true)) {
+          const slot = slots.find(group => group.every(([b, n]) => a === b || !conflictM(a, m, b, n)));
+          if (slot) slot.push([a, m]);
+          else slots.push([[a, m]]);
+        }
+        batches.push(...slots);
+      }
+      const walkTime = myXw.length ? WALK_GREEN + AMBER + ALLRED : 0;
+      const available = CYCLE - walkTime - batches.length * (AMBER + ALLRED);
+      batches.forEach((batch, i) => {
+        push(Math.floor(available * (i + 1) / batches.length) - Math.floor(available * i / batches.length), batch, [], []);
+        endPhase(batch);
+      });
+      if (myXw.length) {
+        push(batches.length ? WALK_GREEN : CYCLE - AMBER - ALLRED, [], [], myXw);
+        endPhase([]);
+      }
+      site.steps = steps;
+      return;
+    }
     for (const p of phases) {
       if (p.kind === 'walk') {
         push(p.green, [], [], xwOf(p.g));

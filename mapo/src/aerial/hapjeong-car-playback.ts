@@ -6,7 +6,7 @@ import { makeCars, VFREE } from '../sim/cars.ts';
 import { headingNear, type Edge } from '../sim/graph.ts';
 import { CYCLE, LEFT, RIGHT, STRAIGHT } from '../sim/intersection/index.ts';
 import { makeSimProvider } from '../sim/provider.ts';
-import { hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-graph.ts';
+import { carBoundary, hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-graph.ts';
 import { hapjeongCrossings, makeHapjeongPeople, type HapjeongPeopleInput } from './hapjeong-people.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
 
@@ -75,8 +75,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const visible = carVisibility(area.views.simulation);
   const full = hapjeongCarGraph(data, undefined, undefined, undefined, undefined, undefined, area.replay.busName);
   const central = new Set(data.central);
-  const [x0, z0, x1, z1] = data.window;
-  const boundary = ([x, z]: XZ) => Math.min(x - x0, x1 - x, z - z0, z1 - z) < .001;
+  const boundary = (point: XZ) => carBoundary(data, point);
   const terminalKey = (i: number) => data.links[i].points.at(-1)!.join(',');
   const service = entrances?.busService;
   const idsByLink = new Map<string, number[]>();
@@ -89,7 +88,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     const pieces = idsByLink.get(id);
     if (!pieces) throw Error(`Bus route link missing: ${id}`);
     return pieces;
-  })) : [data.bus];
+  })) : data.busRoutes ?? [data.bus];
   // The two A2 paths are directions. Several legacy services share each
   // direction, so combine their departures per second, not their intervals.
   const sharedHeadway = service ? (r: number, tod: number) => {
@@ -99,7 +98,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       if (interval) rate += 1/interval;
     }
     return rate ? 1/rate : 0;
-  } : undefined;
+  } : area.replay.busIntervals && ((r: number) => area.replay.busIntervals?.[r] ?? 0);
   function busOutlet(chain: number[]): number[] | undefined {
     const last = chain.at(-1)!;
     const next = full.edges[last].next;
@@ -110,7 +109,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       if (route) return route;
     }
   }
-  if (!service) for (const [i, row] of data.links.entries()) {
+  if (!service && !data.busRoutes) for (const [i, row] of data.links.entries()) {
     if (row.kind !== '4' || i === data.bus[0] || !row.next.some(id => central.has(id)) || visible(...row.points[0])) continue;
     const route = busOutlet([i]);
     if (route) buses.push(route);
@@ -129,7 +128,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     if (next.length || visible(...endpoint) || (data.signalSites && !boundary(endpoint))) return;
     const intersection = chain.findIndex(i => central.has(i));
     const turning = chain.findIndex(i => sideTurn.has(i));
-    if (intersection < 1 && turning < 0) return;
+    if (intersection < 1 && turning < 0 && !data.boundaryRoutes) return;
     let movement: number, ingress = -1;
     if (intersection >= 1) {
       // Keep the connector and its outlet so the original reservation can be released.
@@ -138,12 +137,12 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       if (!exit) return;
       movement = exit.move;
     } else {
-      movement = RIGHT;
+      movement = turning < 0 ? STRAIGHT : RIGHT;
     }
     candidates.push({ chain, movement, ingress, duplicates: chain.filter(i => data.links[i].duplicateOf).length });
   };
   for (const e of full.edges) {
-    if (data.links[e.id].kind !== '6' || e.len < 12 || visible(...data.links[e.id].points[0]) ||
+    if (data.links[e.id].kind !== '6' || e.len < (data.boundaryRoutes ? 8.5 : 12) || visible(...data.links[e.id].points[0]) ||
       (data.signalSites && !boundary(data.links[e.id].points[0]))) continue;
     follow([e.id]);
   }
@@ -215,7 +214,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     }
     const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod, (x,z)=>!visible(x,z), carsEnabled && ambient ? sharedHeadway : undefined,
       area.replay.boundaryTrips);
-    if (carsEnabled && (!ambient || !sharedHeadway) && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
+    if (carsEnabled && graph.buses.length && (!ambient || !sharedHeadway) && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
     }
     const dispatchRandom = rng(seed);

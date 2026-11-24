@@ -93,7 +93,7 @@ export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.Persp
       const state = S.moveState(a, movement, now.tod);
       light.material.color.setHex(colors[state]);
       byGroup[a.group] = Math.min(byGroup[a.group], state);
-      if (state===GREEN) green.add(`${area.replay.axisNames[a.group]} ${movement===LEFT?'좌회전':movement===RIGHT?'우회전':'직진'}`);
+      if (state===GREEN) green.add(`${area.replay.axisNames[a.group] ?? `진입 ${a.group+1}`} ${movement===LEFT?'좌회전':movement===RIGHT?'우회전':'직진'}`);
     }
     seek.value = String(t);
     status.value = `${t.toFixed(1)}초 · 차량 ${state.cars.n}대 · 신호 0 ${names[byGroup[0]]} / 신호 1 ${names[byGroup[1]]}`;

@@ -9,9 +9,9 @@ from shapely import get_parts
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 
-from hapjeong_hd import AREA, ASSET, WINDOW, asset, features, paths, project
+from hapjeong_hd import AREA, ASSET, WINDOW, asset, features, paths, project, rings, survey_faces
 from hapjeong_hd_a import surface
-from survey_signal_sites import split_at_signal_stops, survey_signal_sites
+from survey_signal_sites import junction_layout, split_at_signal_stops, survey_signal_sites
 
 OUTPUT = asset(AREA, '-cars')
 C1_PEDESTRIAN = '11'  # NGII HD map production manual (2020), section 9.3.10.
@@ -55,12 +55,24 @@ def load_links():
     return result
 
 
-def connect(rows, nodes):
+def connect(rows, nodes, allow_connector_seams=False):
     starts = defaultdict(list)
     for j, row in enumerate(rows):
         if WINDOW.covers(Point(row['line'].coords[0])):
             starts[tuple(row['raw'][0])].append(j)
     seams = []
+    connector_kinds = {}
+    if allow_connector_seams:
+        # A type-1 connector inherits the class of its verified, unanimous
+        # ingress. Keep reserved routes distinct from ordinary lanes.
+        for row in rows:
+            if row['kind'] != '1':
+                continue
+            before = [r for r in rows if r['to'] == row['from_id'] and r['raw'][-1] == row['raw'][0]
+                      and dot_forward(r['line'], row['line']) >= SEAM_COS]
+            kinds = {r['kind'] for r in before}
+            if len(kinds) == 1 and '1' not in kinds:
+                connector_kinds[row['id']] = kinds.pop()
     for a in rows:
         if not WINDOW.covers(Point(a['line'].coords[-1])):
             continue
@@ -80,13 +92,35 @@ def connect(rows, nodes):
             # missing node, exact XYZ and matching lane types are required.
             both_nodes = a['to'] in nodes and b['from_id'] in nodes
             same_node_position = both_nodes and nodes[a['to']] == nodes[b['from_id']] == a['raw'][-1]
-            joined = compatible and (same_node_position if both_nodes else a['kind'] == b['kind'])
+            connector_join = connector_kinds.get(a['id']) == b['kind'] and any(
+                nodes.get(key) == a['raw'][-1] for key in (a['to'], b['from_id']))
+            joined = compatible and (same_node_position if both_nodes else a['kind'] == b['kind'] or connector_join)
             if joined:
                 a['next'].append(j)
             seams.append(dict(a=a['id'], b=b['id'], fromNode=a['to'], toNode=b['from_id'],
                               a1=[a['to'] in nodes, b['from_id'] in nodes], joined=joined,
-                              method='A1' if joined and same_node_position else 'XYZ' if joined else None))
+                              method=('A1' if same_node_position else 'A1+connector' if connector_join
+                                      else 'XYZ') if joined else None))
     return seams
+
+
+def boundary_bus_routes(rows):
+    """Complete reserved routes, including their measured junction connectors."""
+    def boundary(point):
+        return WINDOW.boundary.distance(Point(point)) < .001
+
+    def finish(chain):
+        row = rows[chain[-1]]
+        if boundary(row['points'][-1]) and row['kind'] == '4':
+            yield chain
+        else:
+            for i in row['next']:
+                if i not in chain and rows[i]['kind'] in {'1', '4'}:
+                    yield from finish([*chain, i])
+
+    return [max(routes, key=lambda chain: sum(rows[i]['len'] for i in chain))
+            for i, row in enumerate(rows) if row['kind'] == '4' and boundary(row['points'][0])
+            if (routes := list(finish([i])))]
 
 
 def bundles(rows):
@@ -217,7 +251,9 @@ def walk_signal_groups(rows, pavement):
 def bake(floor):
     rows = load_links()
     nodes = {r['properties']['id']: r['geometry']['coordinates'] for r in features('a1-vehicle-seams')}
-    seams = connect(rows, nodes)
+    settings = AREA.get('signals', {})
+    by_arms = settings.get('byJunctionArms')
+    seams = connect(rows, nodes, settings.get('allowConnectorSeams', False))
     stops = [(r['properties']['id'], LineString(line)) for r in features('b2') if r['properties']['kind'] == '530'
              for line in paths(r)]
     for row in rows:
@@ -240,6 +276,9 @@ def bake(floor):
     central_floor = surface(json.loads(ASSET.read_text())['centralJunction'])
     central = [i for i, r in enumerate(rows) if r['kind'] == '1'
                and central_floor.covers(LineString(r['points']).interpolate(.5, normalized=True))]
+    junctions = junction_layout(rows, [face for face, _ in survey_faces('A0080000')]) if by_arms else None
+    if junctions is not None:
+        central = [i for _, group in junctions for i in group]
     duplicates(rows)
     for i in routes:
         rows[i]['duplicateOf'] = None
@@ -252,8 +291,13 @@ def bake(floor):
                 crosswalks=crossings, lights=lights,
                 stopLines=[pt for _, line in stops for a, b in pairwise(line.coords) for pt in (*a, *b)],
                 walkSignalGroups=walk_signal_groups(crossings, surface(floor['floor']['walk'])))
-    if settings := AREA.get('signals'):
-        sites = survey_signal_sites(rows, crossings, lights, stops, central, central_floor, settings)
+    if AREA.get('excludeWindows'):
+        data['boundaryFaces'] = rings(WINDOW)
+    if by_arms:
+        data['busRoutes'] = boundary_bus_routes(rows)
+        data['boundaryRoutes'] = True
+    if settings:
+        sites = survey_signal_sites(rows, crossings, lights, stops, central, central_floor, settings, junctions)
         split_at_signal_stops(data, sites)
     return data
 

@@ -17,7 +17,7 @@ type Link = {
   points: XZ[];
   len: number;
   next: number[];
-  stop: { id: string; at: number } | null;
+  stop: { id: string | null; at: number } | null;
   duplicateOf: string | null;
 };
 
@@ -25,14 +25,28 @@ export type HapjeongCars = {
   links: Link[];
   bundles: { lanes: number[]; at: number[]; offsets: number[] }[];
   bus: number[];
+  busRoutes?: number[][];
   central: number[];
   window: [number, number, number, number];
+  boundaryFaces?: XZ[][][];
+  boundaryRoutes?: boolean;
   stopLines: number[];
   walkSignalGroups?: string[][];
-  signalSites?: { kind: SurveySignalSite['kind']; at: XZ; crossings: string[];
-    approaches: { link: string; line: string; at: number; edge: number }[] }[];
+  signalSites?: { kind: SurveySignalSite['kind']; at: XZ; crossings: string[]; connectors?: number[];
+    approaches: { link: string; line: string | null; at: number; edge: number; arm?: number }[] }[];
   crosswalks: { id: string; ends: [XZ, XZ]; width: number; faces: XZ[][][]; sig: boolean; lamps: string[] }[];
 };
+
+export function carBoundary(data: HapjeongCars, [x,z]: XZ) {
+  if (data.boundaryFaces) return data.boundaryFaces.some(face => face.some(ring => ring.some(([a,b], i) => {
+    if (!i) return false;
+    const [c,d] = ring[i-1];
+    return a === c ? Math.abs(x-a) < .001 && z >= Math.min(b,d)-.001 && z <= Math.max(b,d)+.001
+      : Math.abs(z-b) < .001 && x >= Math.min(a,c)-.001 && x <= Math.max(a,c)+.001;
+  })));
+  const [x0,z0,x1,z1] = data.window;
+  return Math.min(x-x0,x1-x,z-z0,z1-z) < .001;
+}
 
 export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<number>, entries = new Set<number>(), margin = 0,
                                 busChains = [data.bus], platforms: HapjeongPlatform[] = [], busName = hapjeongArea.replay.busName) {
@@ -40,11 +54,10 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
   const central = new Set(data.central);
   const ids = data.links.map((_, i) => i).filter(i => !selected || selected.has(i));
   const index = new Map(ids.map((id, i) => [id, i]));
-  const [x0, z0, x1, z1] = data.window;
-  const boundary = ([x, z]: XZ) => Math.min(x - x0, x1 - x, z - z0, z1 - z) < .001;
+  const boundary = (point: XZ) => carBoundary(data, point);
   const links = ids.map(i => {
     const row = data.links[i];
-    const head = boundary(row.points[0]) ? Math.min(margin, Math.max(0, row.len - 1)) : 0;
+    const head = boundary(row.points[0]) ? Math.min(margin, Math.max(0, row.len - (data.boundaryRoutes ? 5 : 1))) : 0;
     const tail = boundary(row.points.at(-1)!) ? Math.min(margin, Math.max(0, row.len - head - 1)) : 0;
     if (!head && !tail) return row;
     const original = row.points.flatMap(([x, z]) => [x, 0, z]);
@@ -101,9 +114,13 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
     at: site.at,
     approaches: site.approaches.flatMap(({ edge }) => index.has(edge) ? [index.get(edge)!] : []),
     crossings: site.crossings.map(key => data.crosswalks.findIndex(c => c.id === key)),
+    arms: site.connectors && new Map(site.approaches.flatMap(({ edge, arm }) =>
+      index.has(edge) && arm !== undefined ? [[index.get(edge)!,arm] as const] : [])),
   }));
   const inter = makeIntersections(edges, { crosswalks, stopLines, surveySites }, {
     links: new Set(ids.filter(i => central.has(i)).map(i => index.get(i)!)),
+    connectorGroups: data.boundaryRoutes ? data.signalSites?.flatMap(site => site.connectors
+      ? [site.connectors.flatMap(id => index.has(id) ? [index.get(id)!] : [])] : []) : undefined,
     stopAt, parallel,
     walkTogether: data.walkSignalGroups?.map(group => group.map(id => data.crosswalks.findIndex(c => c.id === id))),
   });

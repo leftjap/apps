@@ -3,11 +3,14 @@ import argparse
 from collections import defaultdict
 from itertools import combinations
 import json
+from pathlib import Path
+import subprocess
 
 from shapely.geometry import LineString
 from shapely.ops import substring
 
 from check_hapjeong_walk import faces
+from area import MAPO
 
 
 def measure(plan):
@@ -46,8 +49,42 @@ def measure(plan):
                 conflicts=[row for row in rows if row[-2]],paths_crossing={i:sorted(c) for i,c in crossing.items()})
 
 
+def measure_car_phases(plan, result):
+    paths = {p['id']:p for p in plan['paths']}
+    lines = {i:LineString([point for link in path['route'] for point in link['points']])
+             for i,path in paths.items()}
+    pairs = {tuple(pair) for pair in plan['vehicleConflicts']}
+    pairs.update((i,j) for i,j in combinations(paths,2)
+                 if paths[i]['ingress'] != paths[j]['ingress'] and lines[i].crosses(lines[j]))
+    vehicle, walking = [], []
+    for step in plan['phase']:
+        green = dict(step['green'])
+        active = {i for i,p in paths.items() if green.get(p['ingress'],0) & p['move']}
+        for i,j in sorted(pairs):
+            if i in active and j in active:
+                vehicle.append((step['start'], step['duration'], paths[i]['ingress'],paths[j]['ingress']))
+        for i in sorted(active):
+            for cross in sorted(set(result['paths_crossing'][i]).intersection(step['walk'])):
+                walking.append((step['start'],step['duration'],paths[i]['ingress'],cross))
+    result.update(vehicle_conflicts=vehicle, pedestrian_conflicts=walking,
+                  vehicle_conflict_seconds=round(sum(row[1] for row in vehicle),6),
+                  pedestrian_conflict_seconds=round(sum(row[1] for row in walking),6))
+
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
-    parser.add_argument('plan')
-    with open(parser.parse_args().plan) as f:
-        print(json.dumps(measure(json.load(f)),ensure_ascii=False))
+    source=parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('plan', nargs='?', type=Path)
+    source.add_argument('--area', type=Path)
+    args=parser.parse_args()
+    if args.area:
+        plan=json.loads(subprocess.check_output(['node','--experimental-strip-types','tools/v2/hapjeong_signal_paths.mts',
+                                                 '--cars-only','--area',str(args.area.resolve())],cwd=MAPO))
+    else:
+        plan=json.loads(args.plan.read_text())
+    result=measure(plan)
+    if 'vehicleConflicts' in plan:
+        measure_car_phases(plan,result)
+    print(json.dumps(result,ensure_ascii=False))
+    if args.area and (result['vehicle_conflict_seconds'] or result['pedestrian_conflict_seconds']):
+        raise SystemExit(1)

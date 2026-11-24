@@ -127,6 +127,8 @@ export interface Intersections {
 export interface SurveyedIntersection {
   /** IDs of the original through-intersection links in the local junction. */
   links: ReadonlySet<number>;
+  /** Separate surveyed junctions in the same replay. */
+  connectorGroups?: readonly (readonly number[])[];
   /** Distance along each approach to the surveyed stop line. */
   stopAt: ReadonlyMap<number, number>;
   /** Parallel lanes from one bundle, represented here as separate A2 Edges. */
@@ -290,13 +292,15 @@ export function buildIntersections(edges: Edge[], crosswalks: Crosswalk[] = [], 
   if (surveyed) {
     // Surveyed lane nodes can be one-to-one even at a signal. Use the
     // endpoints of the declared A2 crossings to delimit this junction.
-    const nodes = [...surveyed.links].flatMap(id => [startN[id], endN[id]]);
     parent.forEach((_, i) => { parent[i] = i; });
     hasFork.clear();
-    if (nodes.length) {
+    const groups = surveyed.connectorGroups ?? [[...surveyed.links]];
+    for (const group of groups) {
+      const nodes = group.flatMap(id => [startN[id], endN[id]]);
+      if (!nodes.length) continue;
       for (const n of nodes) unite(n, nodes[0]);
-      hasFork.add(find(nodes[0]));
     }
+    for (const group of groups) if (group.length) hasFork.add(find(startN[group[0]]));
   }
 
   const list: Junction[] = [];

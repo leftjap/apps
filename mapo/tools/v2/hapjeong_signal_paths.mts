@@ -8,7 +8,8 @@ import { pointAt } from '../../src/poly.ts';
 const area = loadArea();
 const read = (name: string) => readAsset(area, name);
 const data = read('cars') as import('../../src/aerial/hapjeong-car-graph.ts').HapjeongCars;
-const run = carPlayback(data,true,{walk:read('walk'), ...(data.signalSites ? {entrances:read('entrances')} : {})},true,read('demand'),undefined,undefined,area);
+const onlyCars = process.argv.includes('--cars-only');
+const run = carPlayback(data,true,onlyCars ? undefined : {walk:read('walk'), ...(data.signalSites ? {entrances:read('entrances')} : {})},true,read('demand'),undefined,undefined,area);
 const {inter:{X,S},edges,links} = run.graph;
 const site = S.list.find(site=>site.j>=0)!;
 const steps = replaySteps(S, !!data.signalSites);
@@ -21,7 +22,7 @@ function routePart(id: number, start: number, end: number) {
   });
   return {id:links[id].id,points};
 }
-const paths = X.paths.filter(p=>p.j===site.j).map(p=>{
+const paths = X.paths.filter(p=>onlyCars || p.j===site.j).map(p=>{
   const route = p.edges.map((id,k)=>{
     const e = edges[id];
     const start = k ? 0 : e.len - X.gate(id,p.lanes[k]);
@@ -49,5 +50,7 @@ console.log(JSON.stringify({cycle:CYCLE,offset:site.offset,paths,axis:site.axis,
   phase:steps.map(s=>({start:s.start,duration:s.dur,green:[...s.green].map(([id,move])=>[links[id].id,move]),
     walk:[...s.walk].flatMap(i=>groups.find(g=>g.includes(data.crosswalks[i].id))??[data.crosswalks[i].id])})),
   faces:data.crosswalks.map((c,i)=>({...c,i,signal:S.crossSite[i]>=0})),
-  linked:run.crossings!.graph.links,
+  linked:run.crossings?.graph.links ?? [],
+  ...(onlyCars ? {vehicleConflicts: X.paths.flatMap((p, i) => X.paths.slice(i+1)
+    .filter(q => p.a !== q.a && X.conflict(p.id,q.id)).map(q => [p.id,q.id]))} : {}),
 }));

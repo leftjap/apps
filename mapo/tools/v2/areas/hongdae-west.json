@@ -108,17 +108,17 @@
           222,
           -412
         ],
-        "width": 127,
+        "width": 112,
         "mode": "photo"
       },
       {
         "id": "platform",
         "title": "중앙정류소",
         "at": [
-          435,
-          -615
+          414,
+          -591
         ],
-        "width": 160,
+        "width": 104,
         "mode": "photo"
       }
     ],
@@ -149,13 +149,15 @@
     ]
   },
   "replay": {
-    "enabled": false,
-    "busName": "서교동",
-    "axisNames": [
-      "양화로",
-      "교차축"
-    ],
-    "signalLabel": "모의 차량 신호"
+    "enabled": true,
+    "busName": "홍대입구역",
+    "axisNames": [],
+    "signalLabel": "모의 차량 신호",
+    "people": false,
+    "busIntervals": [
+      48.65,
+      59.34
+    ]
   },
   "combinedByDefault": true,
   "floor": {
@@ -167,7 +169,9 @@
   "signals": {
     "lampClusterMetres": 26,
     "junctionLampMetres": 3,
-    "stopMatchMetres": 63
+    "stopMatchMetres": 63,
+    "byJunctionArms": true,
+    "allowConnectorSeams": true
   },
   "excludeWindows": [
     [
