@@ -10,6 +10,8 @@ from check_hapjeong_walk import faces, read
 def verify():
     graph, floor, cars = read('walk'), read('a'), read('cars')
     assert 'landings' in graph, 'the walk asset has no full-width crossing approaches'
+    if 'pedestrianLandings' in floor:
+        assert floor['pedestrianLandings'] == graph['landings'], 'walking-only layers disagree'
     pavement = faces(floor['floor']['walk'])
     cross = {r['id']: faces(r['faces']) for r in floor['crossingAudit']}
     lanes = [(LineString(r['points']), 1.245 if r['kind'] == '4' else 1.0)

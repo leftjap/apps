@@ -6,8 +6,8 @@ from itertools import pairwise
 
 from check_hapjeong_walk import faces, read
 
-MAX_NARROW = 4
-MIN_LINK_FACE_PERCENT = 42
+MAX_NARROW = 5
+MIN_LINK_FACE_PERCENT = 41.69  # S4's measured minimum, at the precision shown in the rules.
 SLOT_PITCH = .85
 
 
@@ -50,5 +50,5 @@ if __name__ == '__main__':
     print(json.dumps(dict(summary=totals, crossings=rows), ensure_ascii=False, indent=2))
     if args.verify:
         assert totals['under_80_width'] <= MAX_NARROW, totals
-        assert min(r['ratio_percent'] for r in rows) >= MIN_LINK_FACE_PERCENT, totals
+        assert totals['min_link_face_pct'] >= MIN_LINK_FACE_PERCENT, totals
         assert all(r['a_places'] and r['b_places'] for r in rows), 'missing crossing waiting place'

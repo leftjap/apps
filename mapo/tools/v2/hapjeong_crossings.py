@@ -169,8 +169,13 @@ def supplement_crossings(b3, walk, building_faces):
     return rows,audit
 
 
+LANDING_STRIP = .05
+LANDING_REACH = 6
+LANDING_SEAM = .09
+
+
 def walking_landings(row, pavement, lanes):
-    """Extend the full stripe to the kerb, keeping only verified traffic clearance."""
+    """Extend the actual ends of the stripe to their adjoining pavements."""
     cross = unary_union([Polygon(outer, holes) for outer, *holes in row['faces']])
     a, b = [Point(end['end']) for end in row['approaches']]
     length = a.distance(b)
@@ -192,8 +197,8 @@ def walking_landings(row, pavement, lanes):
         # The terminal section lies slightly inside the kerb so the join
         # survives coordinate rounding. Use the first full-width contact.
         best = (0, 0)
-        for i in range(121):
-            distance = i*.05
+        for i in range(round(LANDING_REACH / LANDING_STRIP) + 1):
+            distance = i*LANDING_STRIP
             at = cap + distance*direction
             cut = LineString([(at, lo), (at, hi)])
             ratio = cut.intersection(nearby.buffer(1e-7)).length / span
@@ -203,7 +208,33 @@ def walking_landings(row, pavement, lanes):
                 break
         _, distance = best
         tip = cap + direction*distance
+        # Keep the prior cap extension, and fill the wedges where a skew
+        # paint edge does not reach that cap. Follow the same pavement
+        # component as the centre of this end.
         patch = box(min(tip, cap-.2*direction), lo, max(tip,cap-.2*direction), hi)
+        origin = a if direction < 0 else b
+        components = parts(pavement, 'Polygon')
+        if components:
+            end_pavement = project_local(min(components, key=origin.distance))
+            strips = []
+            for i in range(math.ceil(span / LANDING_STRIP)):
+                low = lo + i*LANDING_STRIP
+                high = min(hi, low+LANDING_STRIP)
+                y = (low+high)/2
+                ray = LineString([(cap_a-LANDING_REACH, y), (cap_b+LANDING_REACH, y)])
+                stripe = parts(paint.intersection(ray), 'LineString')
+                if not stripe:
+                    continue
+                stripe_tip = max(max(direction*r.bounds[0], direction*r.bounds[2]) for r in stripe)
+                contacts = [max(stripe_tip, min(direction*r.bounds[0], direction*r.bounds[2]))
+                            for r in parts(end_pavement.intersection(ray), 'LineString')
+                            if r.length >= .08 and max(direction*r.bounds[0], direction*r.bounds[2]) > stripe_tip]
+                if not contacts or min(contacts)-stripe_tip > LANDING_REACH:
+                    continue
+                first, last = sorted((direction*(stripe_tip-LANDING_SEAM),
+                                      direction*(min(contacts)+LANDING_SEAM)))
+                strips.append(box(first, low, last, high))
+            patch = patch.union(unary_union(strips))
         patch = patch.difference(paint.union(nearby))
         clipped = patch.intersection(blocked).area > 1e-6
         patch = patch.difference(blocked.buffer(1e-5))
@@ -217,10 +248,7 @@ def walking_landings(row, pavement, lanes):
             ys = get_coordinates(part)[:, 1]
             if len(ys) and max(ys)-min(ys)>1e-6:
                 intervals.append(LineString([(0, min(ys)), (0, max(ys))]))
-        if distance == 0:
-            ratio = best[0]
-        else:
-            ratio = unary_union(intervals).length / span
+        ratio = max(best[0] if distance == 0 else 0, unary_union(intervals).length / span)
         connected = ratio > .01
         world = set_precision(make_valid(affinity.affine_transform(patch, to_world)), 1e-7)
         world = unary_union([p for p in parts(world, 'Polygon') if p.area > 1e-6])

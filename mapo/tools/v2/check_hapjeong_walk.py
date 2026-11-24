@@ -73,8 +73,15 @@ def verify():
         axis = LineString([nodes[a], (ax / 10, az / 10), (bx / 10, bz / 10), nodes[b]])
         half_width = max(.2, width / 20 - .3)
         assert allowed.covers(axis.buffer(half_width + .019)), ('crossing clearance', cross_ids[xw], list(axis.coords))
-        for node in (nodes[a], nodes[b]):
-            assert safe.covers(Point(node).buffer(.375 + half_width*.27 - .001)), ('crossing handoff', cross_ids[xw])
+        if 'pedestrianLandings' in floor:
+            from hapjeong_walk import arrival_envelope
+            handoff = walk.buffer(-BODY).union(faces(crossing['faces'])).union(
+                faces([p for end in graph['landings'][cross_ids[xw]] for p in end['faces']])).buffer(1e-6)
+            for tip, node in ((axis.coords[1], nodes[a]), (axis.coords[2], nodes[b])):
+                assert handoff.covers(arrival_envelope(tip, node, half_width)), ('crossing handoff', cross_ids[xw])
+        else:
+            for node in (nodes[a], nodes[b]):
+                assert safe.covers(Point(node).buffer(.375 + half_width*.27 - .001)), ('crossing handoff', cross_ids[xw])
         dx, dz = (bx - ax) / 10, (bz - az) / 10
         length = (dx * dx + dz * dz) ** .5
         vx, vz = dx / length, dz / length

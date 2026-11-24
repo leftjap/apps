@@ -17,6 +17,8 @@ from hapjeong_hd_a import pedestrian_landings, surface
 BODY = .4
 EDGE_PAD = .025
 CELL = .10
+PORT_SHIFT = .15
+PORT_REACH = 8
 
 
 def dm(point):
@@ -85,9 +87,9 @@ class Network:
                             self.edge(p, middle)
                             self.edge(middle, q)
 
-    def attach(self, p, reach=math.inf, landing=False):
+    def link_candidate(self, p, reach=math.inf, landing=False):
         if p in self.nodes:
-            return True
+            return p, None
         options = []
         for q in sorted(self.nodes, key=lambda q: math.dist(p, q))[:48]:
             distance = math.dist(p, q)
@@ -97,15 +99,22 @@ class Network:
             if band is None:
                 continue
             if not landing:
-                return self.edge(p, q, band)
+                return q, band
             # Don't funnel the end of a broad crossing into the nearest
             # skinny triangle. Prefer a direct two-way approach when one fits.
             width = band[1] - band[0]
             options.append((max(0, 24 - width), distance, q, band))
         if not options:
-            return False
+            return None
         _, _, q, band = min(options)
-        return self.edge(p, q, band)
+        return q, band
+
+    def attach(self, p, reach=math.inf, landing=False):
+        found = self.link_candidate(p, reach, landing)
+        if found is None:
+            return False
+        q, band = found
+        return q == p or self.edge(p, q, band)
 
     def encode(self, crossings):
         n, e, r, x = [], [], [], []
@@ -152,6 +161,39 @@ def samples(origin, vector, along, lateral):
     return {dm((x + u * ux - v * uz, z + u * uz + v * ux)) for u in along for v in lateral}
 
 
+def end_ports(cap, vector, direction, pavement, safe, route):
+    """Pairs of kerb contact and nearby waiting point, on the same pavement."""
+    x, z = cap
+    ux, uz = vector
+    for k in range(-12, 13):
+        shift = k*PORT_SHIFT
+        px, pz = x-uz*shift, z+ux*shift
+        dx, dz = direction*ux, direction*uz
+        ray = LineString([(px-dx, pz-dz), (px+PORT_REACH*dx, pz+PORT_REACH*dz)])
+        spans = []
+        for part in get_parts(ray.intersection(pavement)):
+            if part.geom_type != 'LineString' or part.length <= .05:
+                continue
+            distances = [(rx-px)*dx+(rz-pz)*dz for rx,rz in part.coords]
+            if max(distances) >= -1e-5:
+                spans.append(min(distances))
+        if not spans:
+            continue
+        d = min(spans)
+        kx, kz = px+d*dx, pz+d*dz
+        kerb = dm((kx, kz))
+        room = 0
+        for depth in (.5, .8, 1.05, 1.3, 1.55, 1.8, 2.1, 2.5, 3):
+            at = dm((kx+depth*dx, kz+depth*dz))
+            point = Point(at)
+            if at == kerb or not safe.covers(point) or not route.covers(LineString([kerb, at])):
+                continue
+            clearance = point.distance(safe.boundary)
+            if clearance >= room:
+                yield kerb, at
+                room = clearance + .10
+
+
 def crossing_route(row, network, landings):
     left, right = row['approaches']
     a, b = left['end'], right['end']
@@ -168,6 +210,7 @@ def crossing_route(row, network, landings):
     survey_axis = LineString(caps)
     approaches = surface([face for end in landings for face in end['faces']])
     allowed = network.walk.union(cross).union(approaches).buffer(1e-6)
+    arrival_area = prep(network.safe.union(cross).union(approaches).buffer(1e-6))
     route_area = allowed.buffer(-.221)
     route = prep(route_area)
     # Search outward from the audited caps. Both wait nodes must be on the
@@ -186,8 +229,6 @@ def crossing_route(row, network, landings):
                 and route.covers(Point(p))][:32]
 
     aa, bb = waits(left, -1), waits(right, 1)
-    if not aa or not bb:
-        return None
     # Use up to two interior turns, the original engine's four-point format.
     # Prefer a straight line and use the cap neighbourhoods only when needed.
     candidates = []
@@ -213,25 +254,50 @@ def crossing_route(row, network, landings):
     candidates.extend((p, *inner, q) for _, p, q in direct
                       if route.covers(LineString([p, *inner, q])))
 
-    def clearance(pts):
-        return LineString(pts).distance(allowed.boundary)
+    # Move the turns to the kerbs. The minimum rectangle offers a second
+    # alignment only when it points towards the same two pavements.
+    parts = list(get_parts(network.walk))
+    pavement = [min(parts, key=Point(pt).distance) for pt in (a, b)]
+    road_axis = [(a, b)]
+    rx, rz = (caps[1][0]-caps[0][0])/survey_axis.length, (caps[1][1]-caps[0][1])/survey_axis.length
+    if ux*rx+uz*rz > .85:
+        road_axis.append(tuple(caps))
+    for ca, cb in road_axis:
+        length = math.dist(ca, cb)
+        direction = (cb[0]-ca[0])/length, (cb[1]-ca[1])/length
+        starts = list(end_ports(ca, direction, -1, pavement[0], network.safe, route))
+        ends = list(end_ports(cb, direction, 1, pavement[1], network.safe, route))
+        for p, start in starts:
+            for q, end in ends:
+                if p != q and start != end:
+                    points = start, p, q, end
+                    if route.covers(LineString(points)):
+                        candidates.append(points)
 
+    boundary = allowed.boundary
     def score(pts):
-        _, p, q, _ = pts
+        start, p, q, end = pts
         line = LineString(pts)
-        room = min(Point(pts[i]).distance(network.safe.boundary) for i in (0, 3))
-        return (-min(max(.2, width / 20 - .3) + .021, line.distance(allowed.boundary), (room-.375)/.27+.021),
-                -min(1.3, room), Point(p).distance(survey_axis) + Point(q).distance(survey_axis), line.length, pts)
+        widest = min(width, math.floor(20 * (line.distance(boundary) + .279)))
+        soft_ends = math.dist(start, p) + math.dist(q, end)
+        return -widest, soft_ends, line.length, pts
 
-    for points in sorted(candidates, key=score):
+    best = None
+    for negative_width, soft_ends, length, points in sorted(map(score, candidates)):
+        usable = -negative_width
+        if usable < 6 or (best is not None and usable < best[0]):
+            break
         start, p, q, end = points
         # The static wait box is not clipped at runtime, so only keep room
         # already covered on both sides of its length.
         dx, dz = q[0] - p[0], q[1] - p[1]
         scale = math.hypot(dx, dz)
         vx, vz = dx / scale, dz / scale
+        half = max(.2, usable / 20 - .3)
+        if not all(arrival_area.covers(arrival_envelope(tip, at, half)) for tip, at in ((p,start),(q,end))):
+            continue
 
-        def wait(at, direction, usable):
+        def wait(at, direction):
             u = (at[0]-p[0])*vx + (at[1]-p[1])*vz
             v = -(at[0]-p[0])*vz + (at[1]-p[1])*vx
             # The engine includes axis offset 0 and extends the box behind the wait point.
@@ -244,7 +310,7 @@ def crossing_route(row, network, landings):
             lo, hi = min(0, math.floor(v*10)), max(0, math.ceil(v*10))
             if not fits(lo/10-.01,hi/10+.01):
                 return None
-            lim = math.floor(max(.25, usable / 20 - .3) * 10)
+            lim = math.floor(max(.25, half) * 10)
             while lo > -lim and fits((lo-1)/10,hi/10):
                 lo -= 1
             while hi < lim and fits(lo/10,(hi+1)/10):
@@ -256,23 +322,60 @@ def crossing_route(row, network, landings):
                 lo = min(0, math.floor(v*10))
             if direction == 1 and lo <= v*10 - 8.5:
                 hi = max(0, math.ceil(v*10))
-            return [lo, hi]
+            slots = sum(lo-1e-8 <= 10*v + k*8.5 <= hi+1e-8 for k in range(-3,4))
+            return [lo, hi], slots
 
-        # The legacy crossing can hand a walker to the ordinary graph
-        # within .3m of the lateral final target. The whole arrival zone
-        # has to be on the raster pavement, even if the crossing band
-        # temporarily allows more ground around it.
-        arrival_room = min(Point(p).distance(network.safe.boundary) for p in (start, end))
-        if arrival_room < .43:
+        one, two = wait(start, -1), wait(end, 1)
+        if one is None or two is None:
             continue
-        arrival_width = math.floor(20 * ((arrival_room - .375)/.27 + .3))
-        usable = min(width, max(6, math.floor(20 * (clearance(points) + .279))), arrival_width)
-        if usable < 6:
-            continue
-        wait_a, wait_b = wait(start, -1, usable), wait(end, 1, usable)
-        if wait_a is not None and wait_b is not None and network.attach(start, reach=15, landing=True) and network.attach(end, reach=15, landing=True):
-            return (*points, usable, wait_a, wait_b)
-    return None
+        rank = (usable, min(one[1],two[1]), one[1]+two[1], -soft_ends, -length)
+        if (best is None or rank > best) and network.link_candidate(start, reach=15, landing=True) is not None \
+                and network.link_candidate(end, reach=15, landing=True) is not None:
+            best, chosen = rank, (*points, usable, one[0], two[0])
+    if best is not None:
+        network.attach(chosen[0], reach=15, landing=True)
+        network.attach(chosen[3], reach=15, landing=True)
+        return chosen
+
+
+def arrival_envelope(tip, at, half):
+    # crossStep aims up to .27 half-width to the right of the last leg
+    # and can hand off within .3m of that target.
+    dx, dz = at[0]-tip[0], at[1]-tip[1]
+    length = math.hypot(dx, dz)
+    if not length:
+        return Point(at).buffer(.3)
+    lateral = .27*half/length
+    return LineString([at, (at[0]-dz*lateral, at[1]+dx*lateral)]).buffer(.3)
+
+
+def previous_corridors(graph):
+    rows = zip(*(iter(graph['x']),) * 17, strict=True)
+    for i, _, _, ax, az, bx, bz, pax, paz, pbx, pbz, width, _, alo, ahi, blo, bhi in rows:
+        yield graph['crossings'][i], (
+            (pax/10, paz/10), (ax/10, az/10), (bx/10, bz/10), (pbx/10, pbz/10),
+            width, [alo, ahi], [blo, bhi],
+        )
+
+
+def preserve_yielding_corridor(network, row, ends, previous, refitted):
+    pa, a, b, pb, prior, wa, wb = previous
+    face = surface(row['faces'])
+    landing = surface([poly for end in ends for poly in end['faces']])
+    line = LineString([pa, a, b, pb])
+    boundary = network.walk.union(face).union(landing).buffer(1e-6).boundary
+    arrival = prep(network.safe.union(face).union(landing).buffer(1e-6))
+    measured = min(math.dist(p, q) for p, q in pairwise(face.minimum_rotated_rectangle.exterior.coords))
+    # Retain the yielding approach and wait points. Widen towards 80% of
+    # the face only where the existing line and arrival envelope allow it.
+    width = max(prior, min(refitted[4], math.floor((line.distance(boundary)+.279)*20),
+                          math.ceil(measured*8)))
+    while width >= prior:
+        half = max(.2, width/20-.3)
+        if all(arrival.covers(arrival_envelope(tip, point, half)) for tip, point in ((a, pa), (b, pb))):
+            return pa, a, b, pb, width, wa, wb
+        width -= 1
+    raise ValueError(f"{row['id']}: existing yielding corridor no longer fits")
 
 
 def spawn_points(network, floor, window):
@@ -323,32 +426,55 @@ def spawn_points(network, floor, window):
     return portals, rejected
 
 
-def bake(floor, cars):
+def bake(floor, cars, reference=None):
     walk = surface(floor['floor']['walk']).buffer(1e-7)
     network = Network(walk)
     network.pavement()
-    crossings, ids, excluded = [], [], []
+    refitted, excluded = [], []
     landings = pedestrian_landings(floor, cars)
     for row in floor['crossingAudit']:
         ends = landings[row['id']]
-        result = crossing_route(row, network, ends) if all(end['connected'] for end in ends) else None
+        surveyed_ends = all(end['walkComponent'] is not None for end in row['approaches'])
+        result = crossing_route(row, network, ends) if surveyed_ends and all(end['connected'] for end in ends) else None
         if result:
-            crossings.append(result)
-            ids.append(row['id'])
+            refitted.append((row, result))
         else:
-            reason = 'pavement missing at one or both ends' if not all(e['connected'] for e in ends) else 'full-width engine corridor does not fit'
+            reason = 'pavement missing at one or both ends' if not surveyed_ends or not all(e['connected'] for e in ends) else 'full-width engine corridor does not fit'
             excluded.append(dict(id=row['id'], reason=reason))
+    # Reattach to a clean pavement graph in the same crossing order, since
+    # a yielding corridor may retain different terminals than the refit.
+    network = Network(walk)
+    network.pavement()
+    old = dict(previous_corridors(reference)) if reference is not None else {}
+    signals = {row['id']: row['sig'] for row in cars['crosswalks']}
+    crossings, ids = [], []
+    for row, result in refitted:
+        key = row['id']
+        if not signals[key] and key in old:
+            result = preserve_yielding_corridor(network, row, landings[key], old[key], result)
+        if not all(network.attach(point, reach=15, landing=True) for point in (result[0], result[3])):
+            raise ValueError(f'{key}: crossing terminal does not connect to pavement')
+        ids.append(key)
+        crossings.append(result)
     portals, rejected = spawn_points(network, floor, box(*cars['window']))
     graph = network.encode(crossings)
     derived = subprocess.run(['node', '--experimental-strip-types', str(Path(__file__).with_name('hapjeong_walk_width.mts'))],
                              input=json.dumps(graph), text=True, capture_output=True, check=True)
-    return dict(**graph, **json.loads(derived.stdout), crossings=ids, landings=landings, excluded=excluded, portals=portals, rejectedPortals=rejected)
+    return dict(**graph, **json.loads(derived.stdout), crossings=ids, landings=landings,
+                excluded=excluded, portals=portals, rejectedPortals=rejected)
 
 
 if __name__ == '__main__':
-    floor = json.loads(ASSET.with_name('hapjeong-hd-a.json').read_text())
+    floor_path = ASSET.with_name('hapjeong-hd-a.json')
+    walk_path = ASSET.with_name('hapjeong-hd-walk.json')
+    floor = json.loads(floor_path.read_text())
     cars = json.loads(ASSET.with_name('hapjeong-hd-cars.json').read_text())
-    out = bake(floor, cars)
-    ASSET.with_name('hapjeong-hd-walk.json').write_text(json.dumps(out, separators=(',', ':')) + '\n')
+    reference = json.loads(walk_path.read_text()) if walk_path.exists() else None
+    out = bake(floor, cars, reference)
+    # Metadata for pedestrians only. Keep the existing rendering layers and
+    # crossing audit faces byte-for-byte equivalent after JSON decoding.
+    floor['pedestrianLandings'] = out['landings']
+    floor_path.write_text(json.dumps(floor, ensure_ascii=False, separators=(',', ':')) + '\n')
+    walk_path.write_text(json.dumps(out, separators=(',', ':')) + '\n')
     print(f'{len(out["n"]) // 2} nodes, {len(out["e"]) // 5} edges, {len(out["crossings"])} crossings')
     print([(row['id'][-4:], row['reason']) for row in out['excluded']])

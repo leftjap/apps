@@ -193,7 +193,7 @@ def pedestrian_landings(floor, cars):
     # extensions and uses the very same measured crossing IDs as the car graph.
     pavement = surface(floor['floor']['walk'])
     lanes = [(LineString(row['points']), 1.245 if row['kind'] == '4' else 1.0)
-             for row in cars['links'] if not row['duplicateOf']]
+             for row in cars['links']]
     return {row['id']: walking_landings(row, pavement, lanes) for row in floor['crossingAudit']}
 
 
