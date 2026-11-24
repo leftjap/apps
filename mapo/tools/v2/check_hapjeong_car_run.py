@@ -138,7 +138,7 @@ def audit(seeded, with_people=False, captured=None):
             while head[19] in now and head[19] not in followed:
                 followed.add(head[19])
                 head = now[head[19]]
-            red_queue = head[20] in (1, 2)
+            red_queue = head[20] in (1, 2) or (signals.get('signalSites') and head[28])
             if speed < .10 and not red_queue:
                 x0, z0, start = stopped.get(uid, (x, z, t))
                 if math.hypot(x - x0, z - z0) > .8:

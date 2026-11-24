@@ -3,6 +3,7 @@ import json
 from itertools import pairwise
 
 from shapely.geometry import LineString, Point
+from shapely.ops import substring
 
 from hapjeong_hd import AREA, WINDOW, asset, features, paths
 from hapjeong_hd_a import surface
@@ -18,7 +19,9 @@ def verify(data):
     gaps = []
     for i, row in enumerate(links):
         line = LineString(row['points'])
-        reference = raw[row['id']].intersection(WINDOW)
+        reference = raw[row.get('source', row['id'])].intersection(WINDOW)
+        if 'sourceAt' in row:
+            reference = substring(reference, row['sourceAt'], row['sourceAt'] + row['len'])
         gaps.append(line.hausdorff_distance(reference))
         assert row['len'] > 0 and abs(row['len'] - line.length) < .001
         assert road.covers(line), ('A2 lane outside road', row['id'])

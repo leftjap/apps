@@ -35,10 +35,18 @@ export interface SignalLamps {
   /** 신호등 지주에 달리지 않은 표지 [x, z, 표지 번호] 3개씩 */
   signs: number[];
 }
+export interface SurveySignalSite {
+  kind: 'junction' | 'midblock';
+  at: readonly [number, number];
+  approaches: readonly number[];
+  crossings: readonly number[];
+}
+
 export interface SignalData {
   crosswalks: Crosswalk[];
   stopLines: Float32Array;
   lamps?: SignalLamps;
+  surveySites?: readonly SurveySignalSite[];
 }
 
 /** 신호 진입로 */
@@ -89,6 +97,8 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
   const edges = X.edges;
   const crosswalks = data?.crosswalks ?? [];
   const list: SignalSite[] = [];
+  const surveyed = data?.surveySites;
+  const owners = new Map<number, number>();
   const approach = new Map<number, Approach>();
   const sigXw = crosswalks.map((c, i) => ({ c, i })).filter(({ c }) => c.sig);
   const P = [0, 0, 0];
@@ -142,15 +152,19 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
   // ── 신호 교차로 ──
   const junctionSite = new Int32Array(X.list.length).fill(-1);
   for (const J of X.list) {
-    const into = J.into.map((id) => edges[id]);
+    const measured = surveyed?.find(site => site.kind === 'junction' &&
+      site.approaches.some(id => X.jEnd[id] === J.id));
+    if (surveyed && !measured) continue;
+    const into = J.into.filter(id => !measured || measured.approaches.includes(id)).map(id => edges[id]);
     if (into.filter((e) => e.cls >= 1 && e.cls <= 3).length < 3) continue;
     const pts = [...J.nodes].map((k) => k.split(',').map((v) => Number(v) / 10));
     const signalled = data ? sigXw.some(({ c }) => pts.some(([x, z]) => Math.hypot(c.x - x, c.z - z) < NEAR + c.half * 0.5)) : into.some((e) => e.cls <= 2);
-    if (!signalled) continue;
+    if (!measured && !signalled) continue;
     const main = [...into].sort((a, b) => a.cls - b.cls || b.vol - a.vol)[0];
     const axis = ((headingNear(main, main.len) % Math.PI) + Math.PI) % Math.PI;
     const c = list.length;
     junctionSite[J.id] = c;
+    for (const i of measured?.crossings ?? []) owners.set(i, c);
     const groups = into.map((e) => (axisGap(headingNear(e, e.len), axis) < Math.PI / 4 ? 0 : 1));
     list.push({ x: J.x, z: J.z, j: J.id, axis, offset: hash01(c * 7.31 + 1) * CYCLE, steps: [], turn: [-1, -1], walkOnly: !groups.includes(1) });
     into.forEach((e, k) => {
@@ -177,7 +191,20 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
   const ends = new Map<string, Edge[]>();
   for (const e of edges) if (X.jEnd[e.id] < 0) (ends.get(nodeKey(e.p[e.p.length - 3], e.p[e.p.length - 1])) ?? ends.set(nodeKey(e.p[e.p.length - 3], e.p[e.p.length - 1]), []).get(nodeKey(e.p[e.p.length - 3], e.p[e.p.length - 1]))!).push(e);
   const midApproach = new Map<number, number>(); // 구간 → 길 중간 신호
-  for (const { c: xw, i } of sigXw) {
+  for (const site of surveyed ?? []) {
+    if (site.kind !== 'midblock' || !site.approaches.length) continue;
+    const c = list.length;
+    const axis = ((headingNear(edges[site.approaches[0]], edges[site.approaches[0]].len) % Math.PI) + Math.PI) % Math.PI;
+    list.push({ x: site.at[0], z: site.at[1], j: -1, axis, offset: hash01(c * 7.31 + 1) * CYCLE,
+      steps: [], turn: [-1, -1], walkOnly: true });
+    for (const i of site.crossings) owners.set(i, c);
+    for (const id of site.approaches) {
+      midApproach.set(id, c);
+      approach.set(id, { c, group: 0, setback: midGate(edges[id]), left: 0, uturn: 0, arrow: false, moves: STRAIGHT });
+    }
+  }
+  for (const [i, c] of owners) crossSite[i] = c;
+  for (const { c: xw, i } of surveyed ? [] : sigXw) {
     for (let k = 0; k < xw.verts.length; k += 2) {
       const into = (ends.get(nodeKey(xw.verts[k], xw.verts[k + 1])) ?? []).filter((e) => !midApproach.has(e.id) && e.cls >= 1);
       if (!into.length) continue;
@@ -211,7 +238,7 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     for (const a of X.list[s.j].into) for (const { l, k } of allPaths(a)) for (const x of X.path(a, l, k)!.xw) set.add(x);
     pathXw.set(s.j, set);
   }
-  for (const { c: xw, i } of sigXw) {
+  for (const { c: xw, i } of surveyed ? [] : sigXw) {
     if (crossSite[i] >= 0) continue;
     let best = -1;
     let bd = Infinity;

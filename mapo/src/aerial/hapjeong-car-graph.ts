@@ -2,6 +2,7 @@ import type { Crosswalk } from '../data/board.ts';
 import { cumLen, pointAt } from '../poly.ts';
 import type { BusRoute } from '../sim/buses.ts';
 import type { Edge } from '../sim/graph.ts';
+import type { SurveySignalSite } from '../sim/intersection/signal.ts';
 import { makeIntersections } from '../sim/intersection/index.ts';
 import { hapjeongArea } from './survey-area.ts';
 import type { HapjeongPlatform } from './hapjeong-people.ts';
@@ -9,6 +10,8 @@ export type XZ = [number, number];
 
 type Link = {
   id: string;
+  source?: string;
+  sourceAt?: number;
   kind: '1' | '4' | '6';
   rank: number;
   points: XZ[];
@@ -26,6 +29,8 @@ export type HapjeongCars = {
   window: [number, number, number, number];
   stopLines: number[];
   walkSignalGroups?: string[][];
+  signalSites?: { kind: SurveySignalSite['kind']; at: XZ; crossings: string[];
+    approaches: { link: string; line: string; at: number; edge: number }[] }[];
   crosswalks: { id: string; ends: [XZ, XZ]; width: number; faces: XZ[][][]; sig: boolean; lamps: string[] }[];
 };
 
@@ -91,7 +96,13 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
     const members = bundle.lanes.flatMap(id => index.has(id) ? [index.get(id)!] : []);
     for (const id of members) parallel.set(id, members);
   }
-  const inter = makeIntersections(edges, { crosswalks, stopLines }, {
+  const surveySites = data.signalSites?.map(site => ({
+    kind: site.kind,
+    at: site.at,
+    approaches: site.approaches.flatMap(({ edge }) => index.has(edge) ? [index.get(edge)!] : []),
+    crossings: site.crossings.map(key => data.crosswalks.findIndex(c => c.id === key)),
+  }));
+  const inter = makeIntersections(edges, { crosswalks, stopLines, surveySites }, {
     links: new Set(ids.filter(i => central.has(i)).map(i => index.get(i)!)),
     stopAt, parallel,
     walkTogether: data.walkSignalGroups?.map(group => group.map(id => data.crosswalks.findIndex(c => c.id === id))),

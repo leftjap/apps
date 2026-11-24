@@ -11,6 +11,7 @@ from shapely.ops import nearest_points
 
 from hapjeong_hd import AREA, ASSET, WINDOW, asset, features, paths, project
 from hapjeong_hd_a import surface
+from survey_signal_sites import split_at_signal_stops, survey_signal_sites
 
 OUTPUT = asset(AREA, '-cars')
 C1_PEDESTRIAN = '11'  # NGII HD map production manual (2020), section 9.3.10.
@@ -246,11 +247,15 @@ def bake(floor):
         for key in ('raw', 'line'):
             del r[key]
     crossings = crosswalks(floor, lights)
-    return dict(v=1, a1Count=len(nodes), links=rows, seams=seams, bundles=lane_groups,
+    data = dict(v=1, a1Count=len(nodes), links=rows, seams=seams, bundles=lane_groups,
                 bus=routes, central=central, window=list(WINDOW.bounds),
                 crosswalks=crossings, lights=lights,
                 stopLines=[pt for _, line in stops for a, b in pairwise(line.coords) for pt in (*a, *b)],
                 walkSignalGroups=walk_signal_groups(crossings, surface(floor['floor']['walk'])))
+    if settings := AREA.get('signals'):
+        sites = survey_signal_sites(rows, crossings, lights, stops, central, central_floor, settings)
+        split_at_signal_stops(data, sites)
+    return data
 
 
 if __name__ == '__main__':

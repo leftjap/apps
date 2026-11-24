@@ -61,13 +61,16 @@ def load(path):
     return json.loads(path.read_text())
 
 
-def replay(tree, folder, area, area_path):
+def replay(tree, folder, area, area_path, *, cars_only=False):
     area_args = ['--area', str(area_path)] if area_path else []
     def run(script, output, *args):
         dest = folder / output
         with dest.open('w') as stream:
             subprocess.run(['node', '--experimental-strip-types', f'tools/v2/{script}.mts', *args, *area_args],
                            cwd=tree, stdout=stream, check=True)
+    if cars_only:
+        run('trace_hapjeong_cars', 'trace.ndjson')
+        return
     legacy_crowd = ['--crowd'] if asset(area, '-crowd', root=tree).is_file() else []
     run('trace_hapjeong_cars', 'trace.ndjson', '--people', *legacy_crowd)
     run('trace_hapjeong_cars', 'signal.ndjson', '--signal-test', *legacy_crowd)
@@ -89,6 +92,18 @@ def left_pairs(flow, plan):
         pairs.append(dict(lanes=[a['edge'],b['edge']], at=a['start'], first=first,
                           gap=round(abs(first[0]-first[1]),3) if None not in first else None))
     return pairs
+
+
+def measure_cars_only(tree, folder, area):
+    walk.ROOT, walk.AREA = tree, area
+    cars.rendered_footprints.cache_clear()
+    with (folder/'trace.ndjson').open() as stream:
+        report = cars.audit(False, False, stream)
+    hashes = visible.check_legacy(tree)
+    failures = {name: report[name] for name in
+                ('red', 'visible_events', 'overlap', 'stalled', 'off_floor_samples') if report[name]}
+    failures.update({name: data for name, data in hashes.items() if not data['passed']})
+    return dict(cars=report, legacy=hashes, failures=failures)
 
 
 def measure(tree, folder, label, area, *, visible_only=False, check_buses=True):
@@ -276,6 +291,7 @@ def main():
     parser.add_argument('--against',type=Path,help='incumbent rules.json for non-regression')
     parser.add_argument('--target',nargs=2,metavar=('RULE','METRIC'),help='require this metric to improve against the incumbent')
     parser.add_argument('--relative-only',action='store_true',help='gate on target improvement and regressions, with absolute limits still reported')
+    parser.add_argument('--cars-only', action='store_true', help='only the vehicle portions of visible rules 1, 2, 3, and legacy hashes')
     parser.add_argument('--visible-only',action='store_true',
                         help='gate only on the eight visible-behavior rules in the ordinary 240-second replay')
     parser.add_argument('--skip-bus-gate',action='store_true',
@@ -298,7 +314,12 @@ def main():
     folder.mkdir(parents=True,exist_ok=True)
     area = read_area(arg.area) if arg.area else read_area()
     if not arg.recorded:
-        replay(tree, folder, area, arg.area.resolve() if arg.area else None)
+        replay(tree, folder, area, arg.area.resolve() if arg.area else None, cars_only=arg.cars_only)
+    if arg.cars_only:
+        result = measure_cars_only(tree, folder, area)
+        (folder/'rules.json').write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n')
+        print(f"{folder/'rules.json'} | 차 보이는 문턱 미달 {len(result['failures'])}칸")
+        return int(bool(result['failures']) and not arg.measure_only)
     result = measure(tree,folder,arg.label,area,visible_only=arg.visible_only,check_buses=not arg.skip_bus_gate)
     incumbent = load(arg.against) if arg.against else None
     if arg.relative_only and (incumbent['rules']['P5'].get('green_wait_any') is None or

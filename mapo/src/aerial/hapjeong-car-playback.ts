@@ -75,13 +75,20 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const visible = carVisibility(area.views.simulation);
   const full = hapjeongCarGraph(data, undefined, undefined, undefined, undefined, undefined, area.replay.busName);
   const central = new Set(data.central);
+  const [x0, z0, x1, z1] = data.window;
+  const boundary = ([x, z]: XZ) => Math.min(x - x0, x1 - x, z - z0, z1 - z) < .001;
   const terminalKey = (i: number) => data.links[i].points.at(-1)!.join(',');
   const service = entrances?.busService;
-  const idsByLink = new Map(data.links.map((row,i) => [row.id,i]));
-  const buses = service ? service.map(route => route.links.map(id => {
-    const i = idsByLink.get(id);
-    if (i === undefined) throw Error(`Bus route link missing: ${id}`);
-    return i;
+  const idsByLink = new Map<string, number[]>();
+  for (const [i, row] of data.links.entries()) {
+    const key = row.source ?? row.id;
+    if (!idsByLink.has(key)) idsByLink.set(key, []);
+    idsByLink.get(key)!.push(i);
+  }
+  const buses = service ? service.map(route => route.links.flatMap(id => {
+    const pieces = idsByLink.get(id);
+    if (!pieces) throw Error(`Bus route link missing: ${id}`);
+    return pieces;
   })) : [data.bus];
   // The two A2 paths are directions. Several legacy services share each
   // direction, so combine their departures per second, not their intervals.
@@ -118,7 +125,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     const next = full.edges[end].next.filter(id => !bus.has(id) && data.links[id].kind !== '4');
     if (chain.length > 20) return;
     for (const id of next) if (!chain.includes(id)) follow([...chain, id]);
-    if (next.length || visible(...data.links[end].points.at(-1)!)) return;
+    const endpoint = data.links[end].points.at(-1)!;
+    if (next.length || visible(...endpoint) || (data.signalSites && !boundary(endpoint))) return;
     const intersection = chain.findIndex(i => central.has(i));
     const turning = chain.findIndex(i => sideTurn.has(i));
     if (intersection < 1 && turning < 0) return;
@@ -135,7 +143,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     candidates.push({ chain, movement, ingress, duplicates: chain.filter(i => data.links[i].duplicateOf).length });
   };
   for (const e of full.edges) {
-    if (data.links[e.id].kind !== '6' || e.len < 12 || visible(...data.links[e.id].points[0])) continue;
+    if (data.links[e.id].kind !== '6' || e.len < 12 || visible(...data.links[e.id].points[0]) ||
+      (data.signalSites && !boundary(data.links[e.id].points[0]))) continue;
     follow([e.id]);
   }
 

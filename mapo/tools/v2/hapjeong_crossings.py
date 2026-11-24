@@ -140,8 +140,15 @@ def survey_continuations(audit, surveyed):
 def supplement_crossings(b3, walk, building_faces):
     topo,seoul = crossing_sources()
     walk_parts = sorted(parts(walk,'Polygon'),key=lambda face: face.bounds)
-    lanes = unary_union([LineString(path) for row in features('a2-expanded') for path in paths(row)])
-    forbidden = lanes.buffer(.75).union(building_faces)
+    rows = features('a2-expanded')
+    if AREA.get('signals'):
+        # A landing is inferred between measured surfaces. Leave room for the
+        # vehicle body (including bus corner swing), not just the lane centre.
+        lanes = unary_union([LineString(path).buffer(1.0 if row['properties']['linktype'] == '6' else 1.3)
+                            for row in rows for path in paths(row)])
+    else:
+        lanes = unary_union([LineString(path) for row in rows for path in paths(row)]).buffer(.75)
+    forbidden = lanes.union(building_faces)
     painted = [(row,unary_union([Polygon(outer,holes) for outer,*holes in row['faces']])) for row in b3]
     primary = unary_union([face for _,face in painted])
     rows = []

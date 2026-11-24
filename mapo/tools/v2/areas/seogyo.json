@@ -145,5 +145,10 @@
   "floor": {
     "clipToWindow": true,
     "bakeLandings": true
+  },
+  "signals": {
+    "lampClusterMetres": 26,
+    "junctionLampMetres": 3,
+    "stopMatchMetres": 63
   }
 }
