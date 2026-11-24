@@ -58,7 +58,7 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
       p?.j ?? -1, p?.move ?? 0, X.jStart[e] >= 0 && X.jStart[e] === X.jEnd[e],
       visible(cars.x[i], cars.z[i]), d.blockBy[i] >= 0 ? cars.uid[d.blockBy[i]] : null,
       d.ahead[i] >= 0 ? cars.uid[d.ahead[i]] : null,
-      ap && d.v[i] < .12 && !d.past[i] ? d.gateWhy(i, tod) : -1, d.nextE[i], d.lane[i], edges[e].len-(ap?.setback??0), p?.a??-1, p?.edges.at(-1)??-1, d.jk[i]];
+      ap && d.v[i] < .12 && !d.past[i] ? d.gateWhy(i, tod) : -1, d.nextE[i], d.lane[i], edges[e].len-(ap?.setback??0), p?.a??-1, p?.edges.at(-1)??-1, d.jk[i], d.dwell[i]];
   });
   const walk = run.people();
   const pedestrians = walk ? Array.from({length:walk.w.n}, (_, i) => {
@@ -77,5 +77,7 @@ for (let frame = 0; frame <= run.duration * 30; frame++) {
         walk.crossingTime(i, run.crossings?.signalPairs.find(pair => pair.includes(xw)))] : undefined];
   }) : undefined;
   console.log(JSON.stringify([t, rows, pedestrians, people ? Array.from(run.busy()) : undefined,
-    walk?.busEvents.filter(event=>Math.abs(event.at-t)<1e-5)]));
+    walk?.busEvents.filter(event=>Math.abs(event.at-t)<1e-5),
+    walk && people?.entrances ? Object.fromEntries(people.entrances.platforms.map(
+      ({key})=>[key,walk.waitingAt(key)])) : undefined]));
 }

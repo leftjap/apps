@@ -23,6 +23,7 @@ import check_hapjeong_crossing_widths as crossing_widths
 import check_hapjeong_entrances as entrances
 import check_hapjeong_people as people
 import check_hapjeong_walk as walk
+import check_hapjeong_visible as visible
 from measure_hapjeong_discharge import discharge
 
 # Absolute limits. Compare additional flow measures to the previous replay.
@@ -88,7 +89,7 @@ def left_pairs(flow, plan):
     return pairs
 
 
-def measure(tree, folder, label):
+def measure(tree, folder, label, *, visible_only=False):
     # The historical code drives each replay and supplies the matching geometry.
     walk.DATA = cars.DATA = tree/'public/data/v2'
     cars.rendered_footprints.cache_clear()
@@ -171,7 +172,19 @@ def measure(tree, folder, label):
                   invalid_runs=p['invalid_runs'],
                   crossing_widths=widths, occupied_landing_passages=p['landings_passage_episodes'])
     metric['C2']['rank4_6_avg_s'] = rank_average(metric['C2'])
-    return dict(label=label,rules=metric,detail=detail)
+    result = dict(label=label,rules=metric,detail=detail)
+    if visible_only:
+        with trace.open() as stream:
+            view = visible.measure(stream,plan,walk.read('a')['floor'],walk.read('walk'))
+        view['legacy'] = visible.check_legacy(tree)
+        view['failures'] = visible.gate_failures(metric,view)
+        detail['visible_gate'] = dict(
+            vehicle_red=c['red'], vehicle_overlap=c['overlap'], vehicle_stalled=c['stalled'],
+            vehicle_off_floor=c.get('firstCountedOffFloor'), vehicle_appearance=c['visible_events'],
+            pedestrian_red=p['red_entries'], person_vehicle_contact=p['contact'],
+            pedestrian_appearance=portal['visible'])
+        result['visible'] = view
+    return result
 
 
 def evaluate(result, incumbent=None, *, people_stage=False):
@@ -257,10 +270,14 @@ def main():
     parser.add_argument('--against',type=Path,help='incumbent rules.json for non-regression')
     parser.add_argument('--target',nargs=2,metavar=('RULE','METRIC'),help='require this metric to improve against the incumbent')
     parser.add_argument('--relative-only',action='store_true',help='gate on target improvement and regressions, with absolute limits still reported')
+    parser.add_argument('--visible-only',action='store_true',
+                        help='gate only on the eight visible-behavior rules in the ordinary 240-second replay')
     parser.add_argument('--people-stage',action='store_true',help='apply S3 gates and traffic tolerances to a relative comparison')
     parser.add_argument('--recorded',action='store_true',help='reuse trace.ndjson, signal.ndjson and paths.json already in --out')
     parser.add_argument('--measure-only',action='store_true',help='write results for a historical revision even when the gate rejects it')
     arg = parser.parse_args()
+    if arg.visible_only and arg.relative_only:
+        parser.error('--visible-only cannot be combined with --relative-only')
     if arg.relative_only and not (arg.against and arg.target):
         parser.error('--relative-only requires --against and --target')
     if arg.people_stage and not arg.relative_only:
@@ -271,7 +288,7 @@ def main():
     folder.mkdir(parents=True,exist_ok=True)
     if not arg.recorded:
         replay(tree,folder)
-    result = measure(tree,folder,arg.label)
+    result = measure(tree,folder,arg.label,visible_only=arg.visible_only)
     incumbent = load(arg.against) if arg.against else None
     if arg.relative_only and (incumbent['rules']['P5'].get('green_wait_any') is None or
                               incumbent['rules']['P5'].get('green_wait') is None):
@@ -307,9 +324,28 @@ def main():
             for key in dict.fromkeys([*checks,*past]):
                 table.writerow([rule,key,*([past.get(key)] if incumbent else []),checks.get(key),
                                 '예' if (rule,key) in absolute else '', '예' if (rule,key) in compared else ''])
+        if arg.visible_only:
+            view = result['visible']
+            rows = {'road_red_over_30': len(view['road_red_over_30']),
+                    'stuck_over_120': len(view['stuck_over_120']),
+                    'sidewalk_30_to_120': len(view['sidewalk_30_to_120']),
+                    'sidewalk_max_s': round(max((r['seconds'] for r in view['sidewalk_30_to_120']), default=0), 3)}
+            for bus in view['buses']:
+                rows.update({f"{bus['key']}.{key}": bus[key]
+                             for key in ('calls','boarded','alighted','waiting','mean_waiting')})
+            for key, value in view['legacy'].items():
+                rows[f'legacy.{key}'] = value['passed']
+            for key, value in rows.items():
+                table.writerow(['보이는 문턱',key,*([''] if incumbent else []),value,'',''])
+            for issue in view['failures']:
+                table.writerow([f"보이는 문턱 {issue['gate']}",issue['test'],*([''] if incumbent else []),
+                                json.dumps(issue['measured'],ensure_ascii=False),'예',''])
     print(f"{folder/'rules.tsv'} | {len(failures)}개 기준 미달, {len(worse)}개 회귀" +
           (' | 목표 개선 실패' if target_failure else ''))
     failed = (worse or target_failure or (arg.people_stage and people_failures)) if arg.relative_only else failures
+    if arg.visible_only:
+        failed = result['visible']['failures']
+        print(f'보이는 문턱 미달 {len(failed)}칸')
     return int(bool(failed) and not arg.measure_only)
 
 
