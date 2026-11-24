@@ -31,7 +31,7 @@ LIMITS = {
     'P2': {'unsignalized_cars': 0, 'body_contacts': 0, 'people_wait_s': 60, 'car_wait_s': 60},
     'P3': {'different_green': 0, 'refuge_wait': 0, 'trial_refuge_wait': 0,
            'island_wait_on_red': 0, 'trial_island_wait_on_red': 0},
-    'P4': {'missing_direction': 0, 'visible_events': 0, 'peak_exit_per_second': 1},
+    'P4': {'missing_direction': 0, 'visible_events': 0, 'peak_exit_per_second': 1, 'rail_to_rail': 0},
     'P5': {'stuck': 0, 'green_wait': 0, 'repeat_people': 0, 'off_floor': 0, 'invalid': 0},
     'P6': {'green_queue_remaining': 0},
     'C1': {}, 'C2': {},
@@ -42,10 +42,12 @@ LIMITS = {
 }
 # Compare the traffic counts and accumulation where a zero is not the goal.
 NO_INCREASE = {'P2': ('people_wait_s', 'car_wait_s'), 'P6': ('peak_5m', 'walk_blocked', 'growing_visible_ends')}
-NO_DECREASE = {'P4': ('models',), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
+NO_DECREASE = {'P4': ('models', 'min_entered_emerged'), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
 # Allow one tick of 30 Hz quantization at each recorded stop line.
 RANK_TOLERANCE = 1 / 30
 VIEW_MEDIAN_TOLERANCE = 2
+MIN_RAIL_BALANCE = .5
+PEOPLE_STAGE_LEFT_LIMIT = 12
 
 
 def load(path):
@@ -128,7 +130,8 @@ def measure(tree, folder, label):
                    island_wait_on_red=sum(r['island_wait_on_red'] for r in ambient['course_rows']),
                    trial_island_wait_on_red=sum(r['island_wait_on_red'] for r in trial['course_rows'])),
         'P4': dict(models=portal['models'], missing_direction=sum(not (r.get('incoming') and r.get('outgoing')) for r in exit_rows.values()) if exit_rows else None,
-                   visible_events=len(portal['visible']), peak_exit_per_second=max((r.get('peakPerSecond',0) for r in exit_rows.values()),default=None)),
+                   visible_events=len(portal['visible']), peak_exit_per_second=max((r.get('peakPerSecond',0) for r in exit_rows.values()),default=None),
+                   rail_to_rail=portal['trip_kinds'].get('rail->rail',0), min_entered_emerged=portal['min_entered_emerged']),
         'P5': dict(stuck=len(p['stuck']), green_wait=None if p['green_wait'] is None else len(p['green_wait']),
                    green_wait_any=len(p['green_wait_any']),
                    repeat_people=len({r[0] for r in p['repeat']}), off_floor=p['off_floor_samples'], invalid=p['engine_invalid_samples'],
@@ -143,6 +146,7 @@ def measure(tree, folder, label):
                    parallel_start_gap_s=maximum(pairs,'gap'), unserved_parallel=sum(r['gap'] is None for r in pairs)),
         'C4': dict(open_branch_stop=branch_result['counts'].get('branch',0), empty_stop_line=branch_result['counts'].get('stopLine',0)),
         'C5': dict(stuck=len(c['stalled']), visible_events=len(c['visible_events']), off_floor=c['off_floor_samples'],
+                   off_floor_any=c.get('raw_off_floor_samples',0),
                    overlap=len(c['overlap']), a2_m=c['max_a2_deviation']),
         'C6': dict(trial_red=sum(r['red'] for r in trial['course_rows']), late=sum(r['late'] for r in ambient['course_rows']),
                    trial_late=sum(r['late'] for r in trial['course_rows']),
@@ -158,7 +162,7 @@ def measure(tree, folder, label):
     return dict(label=label,rules=metric,detail=detail)
 
 
-def evaluate(result, incumbent=None):
+def evaluate(result, incumbent=None, *, people_stage=False):
     failure = []
     metrics = result['rules']
     for rule, checks in LIMITS.items():
@@ -168,10 +172,14 @@ def evaluate(result, incumbent=None):
                 failure.append(dict(rule=rule,test=key,measured=val,limit=limit))
     if not metrics['P4']['models']:
         failure.append(dict(rule='P4',test='models',measured=0,limit='at least 1'))
+    if metrics['P4']['min_entered_emerged'] < MIN_RAIL_BALANCE:
+        failure.append(dict(rule='P4',test='min_entered_emerged',measured=metrics['P4']['min_entered_emerged'],limit=MIN_RAIL_BALANCE))
     if incumbent:
         before = incumbent['rules']
         for rule, keys in NO_INCREASE.items():
             for key in keys:
+                if people_stage and (rule,key)==('P2','car_wait_s') and metrics[rule][key]-before[rule][key] < 1-1e-9:
+                    continue
                 if metrics[rule][key] > before[rule][key]:
                     failure.append(dict(rule=rule,test=key,measured=metrics[rule][key],limit=before[rule][key]))
         for rule, keys in NO_DECREASE.items():
@@ -179,6 +187,8 @@ def evaluate(result, incumbent=None):
                 if metrics[rule][key] < before[rule][key]:
                     failure.append(dict(rule=rule,test=key,measured=metrics[rule][key],limit=before[rule][key]))
         for key,value in before['C2'].items():
+            if people_stage and key=='gap30_m':
+                continue
             limit = value + (RANK_TOLERANCE if key.startswith('rank') else 0)
             measured = metrics['C2'].get(key)
             if measured is None or measured > limit:
@@ -186,22 +196,27 @@ def evaluate(result, incumbent=None):
     return failure
 
 
-def regressions(result, incumbent, *, view_tolerance=0):
+def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
     current, before = result['rules'], incumbent['rules']
     rows = []
     for rule, metrics in current.items():
         prior = before[rule]
         for key in dict.fromkeys([*metrics, *prior]):
             value, baseline = metrics.get(key), prior.get(key)
-            if key == 'green_wait_any' or baseline is None:
+            if key in ('green_wait_any', 'off_floor_any') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
                 continue
+            if people_stage and (rule,key)==('C3','late_left'):
+                baseline = PEOPLE_STAGE_LEFT_LIMIT
             increase = key not in NO_DECREASE.get(rule, ())
             if key == 'a2_m':
                 # The coordinates in the replay are Float32. Compare A2 deviation at mm resolution.
                 worsened = value is None or round(value,3) > round(baseline,3)
             else:
                 tolerance = RANK_TOLERANCE if rule=='C2' and key.startswith('rank') else 0
-                worsened = value is None or (value > baseline+tolerance if increase else value < baseline)
+                if people_stage and (rule,key)==('P2','car_wait_s'):
+                    worsened = value is None or value-baseline >= 1-1e-9
+                else:
+                    worsened = value is None or (value > baseline+tolerance if increase else value < baseline)
             if worsened:
                 rows.append(dict(rule=rule,test=key,measured=value,limit=baseline))
     for view, values in incumbent['detail']['views'].items():
@@ -220,11 +235,14 @@ def main():
     parser.add_argument('--against',type=Path,help='incumbent rules.json for non-regression')
     parser.add_argument('--target',nargs=2,metavar=('RULE','METRIC'),help='require this metric to improve against the incumbent')
     parser.add_argument('--relative-only',action='store_true',help='gate on target improvement and regressions, with absolute limits still reported')
+    parser.add_argument('--people-stage',action='store_true',help='apply S3 gates and traffic tolerances to a relative comparison')
     parser.add_argument('--recorded',action='store_true',help='reuse trace.ndjson, signal.ndjson and paths.json already in --out')
     parser.add_argument('--measure-only',action='store_true',help='write results for a historical revision even when the gate rejects it')
     arg = parser.parse_args()
     if arg.relative_only and not (arg.against and arg.target):
         parser.error('--relative-only requires --against and --target')
+    if arg.people_stage and not arg.relative_only:
+        parser.error('--people-stage requires --relative-only')
     if arg.target and not arg.against:
         parser.error('--target requires --against')
     folder, tree = arg.out.resolve(),arg.tree.resolve()
@@ -236,8 +254,9 @@ def main():
     if arg.relative_only and (incumbent['rules']['P5'].get('green_wait_any') is None or
                               incumbent['rules']['P5'].get('green_wait') is None):
         parser.error('--relative-only needs a baseline measured with the current green-wait definition')
-    failures = evaluate(result,incumbent)
-    worse = regressions(result,incumbent,view_tolerance=VIEW_MEDIAN_TOLERANCE if arg.relative_only else 0) if incumbent else []
+    failures = evaluate(result,incumbent,people_stage=arg.people_stage)
+    worse = regressions(result,incumbent,view_tolerance=VIEW_MEDIAN_TOLERANCE if arg.relative_only else 0,
+                        people_stage=arg.people_stage) if incumbent else []
     target_failure = None
     if arg.target:
         rule,key = arg.target
@@ -249,6 +268,7 @@ def main():
     result['failures'] = failures
     result['regressions'] = worse
     result['target_failure'] = target_failure
+    people_failures = [row for row in failures if row['rule']=='P4' and row['test'] in ('rail_to_rail','min_entered_emerged')]
     (folder/'rules.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     with (folder/'rules.tsv').open('w') as stream:
         table = csv.writer(stream,delimiter='\t')
@@ -264,7 +284,7 @@ def main():
                                 '예' if (rule,key) in absolute else '', '예' if (rule,key) in compared else ''])
     print(f"{folder/'rules.tsv'} | {len(failures)}개 기준 미달, {len(worse)}개 회귀" +
           (' | 목표 개선 실패' if target_failure else ''))
-    failed = worse or target_failure if arg.relative_only else failures
+    failed = (worse or target_failure or (arg.people_stage and people_failures)) if arg.relative_only else failures
     return int(bool(failed) and not arg.measure_only)
 
 

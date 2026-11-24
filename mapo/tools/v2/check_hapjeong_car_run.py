@@ -12,6 +12,8 @@ from shapely.prepared import prep
 
 from check_hapjeong_walk import DATA, faces, read
 
+MIN_OFF_FLOOR_AREA = .01  # m², behavior-rules.md C5
+
 
 def body(x, z, yaw, length, half_width):
     c, s = math.cos(yaw), math.sin(yaw)
@@ -98,11 +100,14 @@ def audit(seeded, with_people=False, captured=None):
                 stats['box_off_floor_samples'] += 1
             footprint = rendered_body(footprints[model_name(kind,length)], x,z,yaw,road)
             if footprint is not None and not road.covers(footprint):
-                outside.append(i)
+                off_area = footprint.difference(road.context).area
+                stats['raw_off_floor_samples'] += 1
+                if off_area >= MIN_OFF_FLOOR_AREA:
+                    outside.append(i)
+                    boundary.setdefault('firstCountedOffFloor', describe(t, r))
                 if not road.covers(Point(x, z)):
                     stats['centre_out_samples'] += 1
                 boundary.setdefault('firstOffFloor', describe(t, r))
-                off_area = footprint.difference(road.context).area
                 if off_area >= stats['largest_off_floor_area']:
                     stats['largest_off_floor_area'] = off_area
                     boundary['worstOffFloor'] = describe(t, r)

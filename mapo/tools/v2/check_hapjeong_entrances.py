@@ -1,12 +1,14 @@
 """P4: count visible appearances and disappearances outside physical entrances."""
 import argparse
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
 import json
 import math
 
 import numpy as np
 
 from check_hapjeong_crowding import in_view, walker_identity
+
+BALANCE_WINDOW = (120, 240)
 
 
 def audit(trace):
@@ -17,6 +19,13 @@ def audit(trace):
     previous = {}
     births = defaultdict(deque)
     count = defaultdict(lambda: dict(incoming=0,outgoing=0,peakPerSecond=0))
+    by_kind = Counter()
+    balance = {key: Counter(emerged=0, entered=0) for key in entrances}
+    boundary = {p['key'] for p in (meta.get('portalAudit') or []) if p['kind']=='exit' and p['key'] not in entrances}
+
+    def kind(key):
+        return 'rail' if key in entrances else 'edge' if key in boundary else 'bus' if key in stops else 'other'
+
     visible = []
     bus = []
     for line in trace:
@@ -37,6 +46,10 @@ def audit(trace):
                 if not t:
                     continue
                 count[portal][mode] += 1
+                if mode=='incoming' and info and not row[10]:
+                    by_kind[f"{kind(info.get('from'))}->{kind(info.get('to'))}"] += 1
+                if portal in entrances and matched and BALANCE_WINDOW[0] <= t <= BALANCE_WINDOW[1]:
+                    balance[portal]['emerged' if mode=='incoming' else 'entered'] += 1
                 if mode=='incoming':
                     q = births[portal]
                     while q and q[0] <= t-1:
@@ -46,7 +59,9 @@ def audit(trace):
                 if not matched and not row[10] and any(in_view(np.array([at]),v)[0] for v in meta['views']):
                     visible.append(dict(id=row[0], t=t, kind=mode, portal=portal, at=at))
         previous = current
-    return dict(models=len(entrances), events=dict(count), visible=visible, buses=bus)
+    lowest = min((n['entered']/n['emerged'] if n['emerged'] else 0 for n in balance.values()), default=0)
+    return dict(models=len(entrances), events=dict(count), visible=visible, buses=bus,
+                trip_kinds=dict(by_kind), balance_120_240=balance, min_entered_emerged=lowest)
 
 
 if __name__=='__main__':
