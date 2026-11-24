@@ -194,11 +194,14 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const seed = 11, max = 256;
   const clock = (seconds: number) => ({ ...start, tod: start.tod + seconds });
   const crossings = pedestrians && hapjeongCrossings(pedestrians.walk, data.crosswalks, graph.inter.S, data.walkSignalGroups);
+  const paintedStops = area.replay.enforcePaintedMidStops && new Map(
+    graph.links.flatMap((link, edge) => link.stop?.id && graph.inter.S.midApproach.has(edge)
+      ? [[edge, link.stop.at] as const] : []));
   function reset() {
     const busy = new Uint32Array(graph.crosswalks.length);
     const provider = { ...makeSimProvider(), roadSpeed: (_now: ReturnType<typeof clock>, _cls: number, key: number) => speeds.get(key)! };
     const sim = makeCars(graph.edges, provider, seed, max, graph.buses, graph.inter,
-      { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined);
+      { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined, paintedStops || undefined);
     const site = graph.inter.S.list.find(site => site.j >= 0);
     if (!site) throw Error(`${area.title} 차량 신호를 연결하지 못했습니다.`);
     sim.setFocus(site.x, site.z, 100, visible);

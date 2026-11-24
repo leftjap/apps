@@ -100,6 +100,7 @@ export function makeCars(
   /** 횡단보도와, 횡단보도마다 지금 사람이 건너고 있는 자리(축을 2m 칸으로 나눈 비트, 보행자가 쓴다) */
   xw?: { list: Crosswalk[]; busy: Uint32Array },
   surveyedCount?: number,
+  surveyedMidStopLines?: ReadonlyMap<number, number>,
 ) {
   const rand = rng(seed);
   const I = inter ?? makeIntersections(edges, xw ? { crosswalks: xw.list, stopLines: new Float32Array() } : undefined);
@@ -1977,6 +1978,16 @@ export function makeCars(
         if (a) {
           const la = a === e ? lane[i] : laneAt(i, a, lanePos(e, a, pref[i] * e.lanes));
           const dist = (a === e ? 0 : e.len) - s[i] + a.len - X.gate(a.id, la === MED ? 0 : la) - size[i] / 2;
+          const line = surveyedMidStopLines?.get(a.id);
+          const paintedDist = line === undefined ? undefined : (a === e ? 0 : e.len) - s[i] + line - size[i] / 2;
+          // A car queued between the virtual gate and the paint still has to stop at the paint.
+          if (paintedDist !== undefined && dist <= -0.3 && paintedDist >= 0 &&
+              S.state(a.id, STRAIGHT, now.tod) === RED && paintedDist + 1.7 < gap) {
+            gap = paintedDist + 1.7;
+            dv = v[i];
+            front = i;
+            why = a === e ? 5 : 6;
+          }
           if (dist > -0.3 && !midGo(i, a, dist, now.tod) && dist > (v[i] * v[i]) / (2 * B_HARD) - 0.3 && dist + 1.7 < gap) {
             gap = dist + 1.7;
             dv = v[i];
