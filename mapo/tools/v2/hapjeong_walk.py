@@ -17,6 +17,7 @@ from hapjeong_hd_a import pedestrian_landings, surface
 BODY = .4
 EDGE_PAD = .025
 CELL = .10
+QUEUE_PITCH = .85
 PORT_SHIFT = .15
 PORT_REACH = 8
 
@@ -426,6 +427,32 @@ def spawn_points(network, floor, window):
     return portals, rejected
 
 
+def crossing_wait_depths(floor, graph):
+    """Check the full waiting rectangle for each successive row."""
+    pavement = prep(surface(floor['floor']['walk']).buffer(1e-7).buffer(-BODY))
+    result = []
+    for _, _, _, ax, az, bx, bz, pax, paz, pbx, pbz, _, _, alo, ahi, blo, bhi in zip(
+            *(iter(graph['x']),)*17, strict=True):
+        length = math.hypot(bx-ax, bz-az)
+        ux, uz = (bx-ax)/length, (bz-az)/length
+        depths = []
+        for x, z, lo, hi, direction in ((pax,paz,alo,ahi,-1), (pbx,pbz,blo,bhi,1)):
+            u = ((x-ax)*ux+(z-az)*uz)/10
+            lo, hi = min(lo,0)/10-.02, max(hi,0)/10+.02
+            rows = 0
+            while True:
+                rear = u + direction*(rows+1)*QUEUE_PITCH
+                front = u-direction*.05
+                rect = Polygon([(ax/10+s*ux-v*uz, az/10+s*uz+v*ux)
+                                for s,v in ((front,lo),(front,hi),(rear,hi),(rear,lo))])
+                if not pavement.covers(rect):
+                    break
+                rows += 1
+            depths.append(round(rows*QUEUE_PITCH,2) if rows else .75)
+        result.append(depths)
+    return result
+
+
 def bake(floor, cars, reference=None):
     walk = surface(floor['floor']['walk']).buffer(1e-7)
     network = Network(walk)
@@ -461,7 +488,8 @@ def bake(floor, cars, reference=None):
     derived = subprocess.run(['node', '--experimental-strip-types', str(Path(__file__).with_name('hapjeong_walk_width.mts'))],
                              input=json.dumps(graph), text=True, capture_output=True, check=True)
     return dict(**graph, **json.loads(derived.stdout), crossings=ids, landings=landings,
-                excluded=excluded, portals=portals, rejectedPortals=rejected)
+                excluded=excluded, portals=portals, rejectedPortals=rejected,
+                waitDepths=crossing_wait_depths(floor, graph))
 
 
 if __name__ == '__main__':

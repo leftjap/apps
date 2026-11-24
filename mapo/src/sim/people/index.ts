@@ -163,6 +163,8 @@ interface Cross {
   ez: number;
   vx: number;
   vz: number;
+  /** 이 방향의 확장 대기 자리. 건너기를 마치는 노드 원은 따로 유지한다. */
+  waitRect?: Rect;
 }
 /** 기울어진 네모 자리(기다리는 자리·승강장): 원점 o, 방향 U, 옆 V = (−Uz, Ux), 범위 [u0, u1] × [v0, v1] */
 interface Rect {
@@ -210,6 +212,8 @@ export function makePeople(
     surveyedCrossings?: boolean;
     /** 한 신호에 함께 건너는 횡단 번호 묶음 (분리대 양쪽). */
     signalPairs?: readonly (readonly number[])[];
+    /** 횡단 번호별 양 끝의 대기 깊이(m). 합정 굽기가 보도 안에서 잰 값. */
+    waitDepths?: readonly (readonly [number, number] | undefined)[];
     /** 차 몸통 */
     cars?: CarBodies;
     /** 처음에 문·출구에서 나오는 빠르기를 키울 시간(초): 미리 돌리기 */
@@ -308,10 +312,15 @@ export function makePeople(
     // 양 끝 기다리는 자리
     const ua = (l.pax - l.ax) * vx + (l.paz - l.az) * vz;
     const ub = (l.pbx - l.ax) * vx + (l.pbz - l.az) * vz;
-    rects.push({ ox: l.ax, oz: l.az, ux: vx, uz: vz, u0: ua - 0.75, u1: ua + 0.05, v0: Math.min(l.aLo, 0), v1: Math.max(l.aHi, 0) });
+    const waitA = { ox: l.ax, oz: l.az, ux: vx, uz: vz, u0: ua - 0.75, u1: ua + 0.05, v0: Math.min(l.aLo, 0), v1: Math.max(l.aHi, 0) };
+    rects.push(waitA);
     nodeRects[l.na].push(rects.length - 1);
-    rects.push({ ox: l.ax, oz: l.az, ux: vx, uz: vz, u0: ub - 0.05, u1: ub + 0.75, v0: Math.min(l.bLo, 0), v1: Math.max(l.bHi, 0) });
+    const waitB = { ox: l.ax, oz: l.az, ux: vx, uz: vz, u0: ub - 0.05, u1: ub + 0.75, v0: Math.min(l.bLo, 0), v1: Math.max(l.bHi, 0) };
+    rects.push(waitB);
     nodeRects[l.nb].push(rects.length - 1);
+    const [aDepth, bDepth] = o.waitDepths?.[l.xw] ?? [0, 0];
+    if (aDepth >= .85) crosses[c].waitRect = { ...waitA, u0: ua - aDepth };
+    if (bDepth >= .85) crosses[c + 1].waitRect = { ...waitB, u1: ub + bDepth };
   });
 
   // ── 출구·정류장·문 ──
@@ -804,6 +813,10 @@ export function makePeople(
   /** i 가 (x, z)에 있어도 되는가(걷는 길 안) */
   function valid(i: number, x: number, z: number): boolean {
     const m = mode[i];
+    if (m === WAITX) {
+      const wait = crosses[hes[he[i]].x]?.waitRect;
+      if (wait && inRect(wait, x, z)) return true;
+    }
     if (m === OUTDOOR || m === INDOOR) {
       const d = docks[dockOf[i]];
       const [px, pz] = dockPos(dockOf[i]);
@@ -1190,8 +1203,7 @@ export function makePeople(
   /** 횡단보도 앞 기다릴 빈자리: 기다리는 자리 네모 안에서 축에 가까운 것부터 */
   function waitSpot(i: number, n: number, c: Cross): [number, number] {
     const [sx, sz] = [c.pts[0], c.pts[1]];
-    for (const r of nodeRects[n]) {
-      const R = rects[r];
+    for (const R of c.waitRect ? [c.waitRect] : nodeRects[n].map(r => rects[r])) {
       if (!inRect(R, sx, sz)) continue;
       const ux = sx - R.ox;
       const uz = sz - R.oz;
@@ -1199,7 +1211,9 @@ export function makePeople(
       const v0 = -ux * R.uz + uz * R.ux;
       // 건너는 방향 오른쪽부터 0.85m 간격, 그다음 한 줄 뒤
       const dirU = (c.pts[2] - sx) * R.ux + (c.pts[3] - sz) * R.uz >= 0 ? 1 : -1;
-      for (const row of [0, 0.85]) {
+      const rows = c.waitRect ? 1 + Math.floor(((dirU > 0 ? u0 - R.u0 : R.u1 - u0) + 1e-8) / .85) : 2;
+      for (let line = 0; line < rows; line++) {
+        const row = line * .85;
         const u = Math.max(R.u0, Math.min(R.u1, u0 - dirU * row));
         for (const dv of [0, 0.85, -0.85, 1.7, -1.7, 2.55, -2.55]) {
           const v = v0 + dv * -dirU;
@@ -1262,7 +1276,9 @@ export function makePeople(
    * 마주 오는 사람이 앞에 있으면 조금 오른쪽으로 꺾는다(우측통행). 이웃(NEAR 안)과 벽으로 ORCA 반 평면을 만들어 바라는 속도에 가장 가까운 안전한 속도를 고르고,
    * 그 걸음이 걷는 길 밖·사람 하한(PASS_D)·차 몸통에 걸리면 반 걸음, 돌린 방향, 선 가운데(fallX, fallZ) 쪽 순으로 해 본다. 목표 쪽으로 나아간 거리를 돌려준다
    */
-  function walkTo(i: number, gx: number, gz: number, v: number, dt: number, fallX?: number, fallZ?: number, fwd = false): number {
+  function walkTo(i: number, gx: number, gz: number, v: number, dt: number,
+                  fallX?: number, fallZ?: number, fwd = false,
+                  mayStep?: (x: number, z: number) => boolean): number {
     const x0 = w.x[i];
     const z0 = w.z[i];
     let ux = gx - x0;
@@ -1326,7 +1342,8 @@ export function makePeople(
         // 돌린 방향은 목표에서 멀어지지 않을 때만(고른 속도 그대로는 물러서는 것도 된다: 상호 회피가 엇갈림을 푸는 길이다)
         // 갈래 영역 안(fwd)은 고른 속도도 앞으로만(W36)
         if ((a !== 0 || fwd) && qx * ux + qz * uz < 0) continue;
-        if (tryMove(i, x0 + qx * dt, z0 + qz * dt)) {
+        const x = x0 + qx * dt, z = z0 + qz * dt;
+        if ((!mayStep || mayStep(x, z)) && tryMove(i, x, z)) {
           vX[i] = qx;
           vZ[i] = qz;
           return Math.max(0, qx * ux + qz * uz) * dt;
@@ -1338,7 +1355,8 @@ export function makePeople(
       const fz = fallZ - z0;
       const fd = Math.hypot(fx, fz);
       const s2 = Math.min(fd, v * 0.5 * dt);
-      if (fd > 1e-3 && tryMove(i, x0 + (fx / fd) * s2, z0 + (fz / fd) * s2)) {
+      const x = x0 + (fx / fd) * s2, z = z0 + (fz / fd) * s2;
+      if (fd > 1e-3 && (!mayStep || mayStep(x, z)) && tryMove(i, x, z)) {
         vX[i] = (fx / fd) * (s2 / dt);
         vZ[i] = (fz / fd) * (s2 / dt);
         return s2 * Math.max(0, (fx * ux + fz * uz) / fd);
@@ -1875,9 +1893,15 @@ export function makePeople(
     const h = he[i];
     const c = crosses[hes[h].x];
     if (mode[i] === WAITX) {
+      const rect = c.waitRect;
+      const pavement = rect && area && (o.walkLeft?.(c.xw, tod) ?? -1) >= 0
+        ? (x: number, z: number) => area.at(x, z) || inRect(rect, x, z) : undefined;
+      // Once on the pavement, an extended queue must stay there until
+      // departure. The crossing band itself also admits points in the road.
+      const mayStep = pavement?.(w.x[i], w.z[i]) ? pavement : undefined;
       const dd = Math.hypot(tx[i] - w.x[i], tz[i] - w.z[i]);
       if (dd > 0.05) {
-        const m = walkTo(i, tx[i], tz[i], spd[i], dt);
+        const m = walkTo(i, tx[i], tz[i], spd[i], dt, undefined, undefined, false, mayStep);
         w.moving[i] = m > 0 ? 1 : 0;
         if (m === 0) waitT[i] += dt;
         if (waitT[i] > 3) [tx[i], tz[i]] = [w.x[i], w.z[i]]; // 자리에 못 가면 지금 자리에서 기다린다
@@ -1892,7 +1916,7 @@ export function makePeople(
           // The queue may wait outside the crossing strip. Reach it from
           // the sidewalk before claiming road occupancy.
           const [sx, sz] = c.pts;
-          w.moving[i] = walkTo(i, sx, sz, spd[i], dt, sx, sz) > 0 ? 1 : 0;
+          w.moving[i] = walkTo(i, sx, sz, spd[i], dt, sx, sz, false, mayStep) > 0 ? 1 : 0;
           return;
         }
         mode[i] = CROSS;

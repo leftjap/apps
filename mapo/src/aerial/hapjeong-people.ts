@@ -10,7 +10,7 @@ import { crossingCourses } from './hapjeong-walk-trial.ts';
 import type { HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 
 export type HapjeongPortal = Portal & { origin: XZ };
-export type HapjeongWalk = WalkJson & { crossings: string[]; portals: HapjeongPortal[] };
+export type HapjeongWalk = WalkJson & { crossings: string[]; portals: HapjeongPortal[]; waitDepths?: [number,number][] };
 export type HapjeongPlatform = { key: string; name: string; link: string; at: number; x: number; z: number; yaw: number };
 export type HapjeongEntrances = {
   exits: (Exit & { key: string })[];
@@ -27,6 +27,7 @@ export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['
   const byId = new Map(crossings.map((c, i) => [c.id, i]));
   const omitted: string[] = [];
   const x: number[] = [];
+  const waitDepths: ([number,number] | undefined)[] | undefined = asset.waitDepths ? [] : undefined;
   for (let i = 0; i < asset.x.length; i += LINK_N) {
     const source = asset.x[i];
     const id = asset.crossings[source];
@@ -39,9 +40,10 @@ export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['
     // Walk and car data span different subsets of the surveyed faces.
     // Remap the packed walk links so busy, signal and approaching all use the same index.
     x.push(xw, ...asset.x.slice(i + 1, i + LINK_N));
+    if (waitDepths) waitDepths[xw] = asset.waitDepths![source];
   }
   return {
-    graph: decodeWalk({ ...asset, x }), omitted, signals,
+    graph: decodeWalk({ ...asset, x }), omitted, signals, waitDepths,
     signalPairs: groups.map(group => group.map(id => byId.get(id)!)),
     walkLeft: (xw: number, tod: number) => crossings[xw].sig ? signals.walkLeft(xw, tod) : -1,
   };
@@ -105,12 +107,12 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
     }),
     ...platforms.map((p): HapjeongPortal => ({ ...p, kind:'stop', origin:[p.x,p.z] })),
   ];
-  const { graph, walkLeft, signalPairs } = crossings;
+  const { graph, walkLeft, signalPairs, waitDepths } = crossings;
   const provider = makeSimProvider();
   const trial = input.signalTest ? crossingCourses(graph, signalPairs, crossings.signals, start, entrances ? 2 : 1) : undefined;
   const people = makePeople(graph, trial ? [...portals, ...trial.portals] : portals, provider, 5,
     (entrances ? 512 : 64) + (trial?.pending.length ?? 0), {
-    cars: cars.cars, busy, walkLeft, traffic: cars.approaching, surveyedCrossings: !!entrances, signalPairs,
+    cars: cars.cars, busy, walkLeft, traffic: cars.approaching, surveyedCrossings: !!entrances, signalPairs, waitDepths,
   });
   const routes = portalRoutes(graph, portals);
   const portalAudit = portals.map((p,i) => ({ ...p, destinations: routes[i].map(row => portals[row.to].key) }));

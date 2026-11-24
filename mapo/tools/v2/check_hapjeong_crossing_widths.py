@@ -11,14 +11,16 @@ MIN_LINK_FACE_PERCENT = 41.69  # S4's measured minimum, at the precision shown i
 SLOT_PITCH = .85
 
 
-def waiting_places(at, a, b, limits):
-    """Count one place per column; the .75m-deep rear row cannot double it."""
+def waiting_places(at, a, b, limits, rear_depth=.75):
+    """Count positions a full 0.85m apart in both directions."""
     dx, dz = b[0]-a[0], b[1]-a[1]
     v = ((at[1]-a[1])*dx - (at[0]-a[0])*dz) / math.hypot(dx, dz)
     lo, hi = limits
     if not lo-.02 <= v <= hi+.02:
         return 0
-    return sum(lo-1e-9 <= v+k*SLOT_PITCH <= hi+1e-9 for k in range(-3, 4))
+    columns = sum(lo-1e-9 <= v+k*SLOT_PITCH <= hi+1e-9 for k in range(-3, 4))
+    rows = 1 + math.floor((rear_depth+1e-9)/SLOT_PITCH)
+    return columns*rows
 
 
 def measure(floor, graph):
@@ -30,9 +32,10 @@ def measure(floor, graph):
         key = graph['crossings'][i]
         a, b = (ax/10, az/10), (bx/10, bz/10)
         dims = (width/10, widths[key])
+        a_depth,b_depth = graph['waitDepths'][i] if 'waitDepths' in graph else (.75,.75)
         result.append(dict(id=key[-4:], link_m=dims[0], face_m=dims[1], ratio_percent=100*dims[0]/dims[1],
-                           a_places=waiting_places((pax/10, paz/10), a, b, (alo/10, ahi/10)),
-                           b_places=waiting_places((pbx/10, pbz/10), a, b, (blo/10, bhi/10))))
+                           a_places=waiting_places((pax/10,paz/10), a,b, (alo/10,ahi/10), a_depth),
+                           b_places=waiting_places((pbx/10,pbz/10), a,b, (blo/10,bhi/10), b_depth)))
     return result
 
 
