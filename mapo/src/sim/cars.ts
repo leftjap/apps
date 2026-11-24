@@ -1692,11 +1692,36 @@ export function makeCars(
       // On surveyed single-lane edges, two separate feeders can overlap
       // before they share an edge ID. Yield before the first body contact.
       for (const { outlet, feeders: [p, q], limit: [ps, qs] } of mergePairs) {
-        const a = lists[p].find(i => nextE[i] === outlet);
-        const b = lists[q].find(i => nextE[i] === outlet);
+        let a = lists[p].find(i => nextE[i] === outlet);
+        let b = lists[q].find(i => nextE[i] === outlet);
+        let pa = ps, qb = qs;
+        // A short feeder may need to yield before the car reaches it.
+        if (surveyedBounds && a === undefined) {
+          for (const incoming of before[p]) {
+            const car = lists[incoming].find(i => nextE[i] === p);
+            if (car === undefined) continue;
+            const gap = ps + edges[incoming].len - s[car];
+            if (a === undefined || gap < pa - s[a]) {
+              a = car;
+              pa = ps + edges[incoming].len;
+            }
+          }
+        }
+        if (surveyedBounds && b === undefined) {
+          for (const incoming of before[q]) {
+            const car = lists[incoming].find(i => nextE[i] === q);
+            if (car === undefined) continue;
+            const gap = qs + edges[incoming].len - s[car];
+            if (b === undefined || gap < qb - s[b]) {
+              b = car;
+              qb = qs + edges[incoming].len;
+            }
+          }
+        }
         if (a === undefined || b === undefined) continue;
-        const da = ps - s[a], db = qs - s[b];
-        if (da > Math.max(8, 2 * v[a]) || db > Math.max(8, 2 * v[b])) continue;
+        const da = pa - s[a], db = qb - s[b];
+        const range = (i: number) => surveyedBounds ? Math.max(10, 2*v[i], v[i]**2/4+4) : Math.max(8, 2*v[i]);
+        if (da > range(a) || db > range(b)) continue;
         const ta = da / Math.max(1, v[a]), tb = db / Math.max(1, v[b]);
         const first = (da < .5) !== (db < .5) ? da < .5 : ta < tb || (ta === tb && cars.uid[a] < cars.uid[b]);
         const yielding = first ? b : a, distance = first ? db : da;

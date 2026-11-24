@@ -38,6 +38,11 @@ export function nearestOutlinePoint(outline: Outline, point: XZ) {
   return insideOutline(outline,point) ? point : nearestOutlineEdge(outline,point).point;
 }
 
+export function insideTrafficView(outline: Outline, terminals: XZ[], point: XZ) {
+  return insideOutline(outline, point) && nearestOutlineEdge(outline, point).distance > 15
+    && terminals.every(([x, z]) => (x-point[0])**2 + (z-point[1])**2 > 8**2);
+}
+
 export function boundaryTraffic(successors: number[][], inlets: number[], outlets: number[]) {
   const previous: number[][] = successors.map(()=>[]);
   for (const [a,next] of successors.entries()) for (const b of next) previous[b].push(a);

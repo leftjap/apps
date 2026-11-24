@@ -96,8 +96,10 @@ def trace(seeded=False, with_people=False):
 def audit(seeded, with_people=False, captured=None):
     lines = iter(captured if captured is not None else trace(seeded, with_people))
     signals = json.loads(next(lines))
-    data, floor = read('cars'), read('a')['floor']
-    road = prep(faces(floor['road']).difference(faces(floor['walk'])).buffer(1e-6))
+    data, ground = read('cars'), read('a')
+    floor = ground['floor']
+    deck = [face for row in ground.get('decks', ()) for face in row['faces']]
+    road = prep(faces(floor['road'] + deck).difference(faces(floor['walk'])).buffer(1e-6))
     footprints = rendered_footprints()
     source = {r['id']: r for r in data['links']}
     driven = [source[key] for key in signals['links']]

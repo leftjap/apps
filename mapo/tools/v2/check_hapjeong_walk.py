@@ -2,7 +2,7 @@
 from collections import defaultdict
 from itertools import accumulate
 import json
-from area import MAPO, asset, load_area
+from area import MAPO, asset, load_area, read_asset
 
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
@@ -18,7 +18,8 @@ def faces(rows):
 
 
 def read(name):
-    return json.loads(asset(AREA, f'-{name}', root=ROOT).read_text())
+    path = asset(AREA, f'-{name}', root=ROOT)
+    return json.loads(path.read_text()) if path.is_file() else read_asset(AREA, f'-{name}', root=ROOT)
 
 
 def verify():

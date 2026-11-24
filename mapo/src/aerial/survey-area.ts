@@ -29,6 +29,7 @@ export type SurveyArea = {
   };
   combinedByDefault?: boolean;
   replay: { enabled?: boolean; people?: boolean; busName: string; busIntervals?: number[]; axisNames: string[]; signalLabel: string;
+    carAsset?: string;
     enforcePaintedMidStops?: boolean;
     connectedTraffic?: { maxVehicles: number; warmupSeconds: number; maxTicksPerFrame: number };
     boundaryTrips?: { intervalSeconds: number; passengerWarmupSeconds: number;

@@ -6,10 +6,10 @@ import { makeCars, VFREE } from '../sim/cars.ts';
 import { headingNear, type Edge } from '../sim/graph.ts';
 import { CYCLE, LEFT, RIGHT, STRAIGHT } from '../sim/intersection/index.ts';
 import { makeSimProvider } from '../sim/provider.ts';
-import { carBoundary, hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-graph.ts';
+import { carBoundary, districtCarGraph, hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-graph.ts';
 import { hapjeongCrossings, makeHapjeongPeople, type HapjeongPeopleInput } from './hapjeong-people.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
-import { surveyBoundaryTraffic, insideOutline, nearestOutlineEdge } from './connected-traffic.ts';
+import { surveyBoundaryTraffic, insideOutline, nearestOutlineEdge, insideTrafficView } from './connected-traffic.ts';
 
 import { hapjeongArea, type SurveyArea } from './survey-area.ts';
 
@@ -77,9 +77,12 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
                             demand?: HapjeongDemand, replayCycles?: number, entrances = pedestrians?.entrances,
                             area: Pick<SurveyArea,'title'|'views'|'replay'> = hapjeongArea) {
   const connected = area.replay.connectedTraffic;
+  const district = data.districtTraffic;
   const outline = connected && data.boundaryFaces;
+  const interiorTerminals = district ? [...district.entries,...district.exits].filter(p=>!p.boundary).map(p=>p.at) : [];
   const visible = outline ? (x: number,z: number) =>
-    insideOutline(outline,[x,z]) && nearestOutlineEdge(outline,[x,z]).distance > 15
+    (district ? insideTrafficView(outline, interiorTerminals, [x,z])
+      : insideOutline(outline,[x,z]) && nearestOutlineEdge(outline,[x,z]).distance > 15)
     : carVisibility(area.views.simulation);
   const full = hapjeongCarGraph(data, undefined, undefined, undefined, undefined, undefined, area.replay.busName);
   const central = new Set(data.central);
@@ -182,7 +185,12 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   let entries = new Set(chosen.map(r => r.chain[0]).filter(i => !destinations.has(i)));
   let routedData = data;
   let routingAudit;
-  if (connected) {
+  if (district) {
+    selected = new Set(district.selected);
+    routingAudit = { links: data.links.length, selected: selected.size,
+      entries: district.entries.length, exits: district.exits.length,
+      excluded: district.excluded };
+  } else if (connected) {
     const routes = surveyBoundaryTraffic(data.links, full.edges, bus, boundary);
     entries = routes.entries;
     selected = new Set([...bus,...routes.selected]);
@@ -208,8 +216,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     return { id: link.id, reason };
   });
   // Keep the entire body inside the drawn map at source and sink boundaries.
-  const graph = hapjeongCarGraph(routedData, selected, entries, 8, buses, entrances?.platforms ?? data.platforms,
-    area.replay.busName);
+  const graph = district ? districtCarGraph(data, area.replay.busName) :
+    hapjeongCarGraph(routedData, selected, entries, 8, buses, entrances?.platforms ?? data.platforms, area.replay.busName);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   const speeds = new Map(graph.edges.map(edge => [edge.key, speedRatio(edge)]));
   // Keep the second walk phase available for trips that reach a refuge
@@ -228,7 +236,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     const busy = new Uint32Array(graph.crosswalks.length);
     const provider = { ...makeSimProvider(), roadSpeed: (_now: ReturnType<typeof clock>, _cls: number, key: number) => speeds.get(key)! };
     const sim = makeCars(graph.edges, provider, seed, max, graph.buses, graph.inter,
-      { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined, paintedStops || undefined);
+      { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined, paintedStops || undefined,
+      district && data.window);
     const site = graph.inter.S.list.find(site => site.j >= 0);
     if (!site) throw Error(`${area.title} 차량 신호를 연결하지 못했습니다.`);
     sim.setFocus(site.x, site.z, 100, visible);

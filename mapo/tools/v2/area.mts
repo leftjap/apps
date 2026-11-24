@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 import type { SurveyArea } from '../../src/aerial/survey-area.ts';
 import type { HapjeongEntrances } from '../../src/aerial/hapjeong-people.ts';
 
@@ -26,4 +27,8 @@ export function loadArea(): Area {
 export const areaPath = (path: string) => resolve(root, path);
 export const assetPath = (area: Area, suffix = '') => join(areaPath(area.output.directory), `${area.output.stem}${suffix}.json`);
 
-export const readAsset = (area: Area, name: string) => JSON.parse(readFileSync(assetPath(area, `-${name}`), 'utf8'));
+export function readAsset(area: Area, name: string) {
+  const path = assetPath(area, `-${name}`);
+  if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf8'));
+  return JSON.parse(gunzipSync(readFileSync(`${path}.gz`)).toString('utf8'));
+}

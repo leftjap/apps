@@ -6,8 +6,10 @@ import { makeYanghwaTerrain, type YanghwaBuildings, type YanghwaFloor } from './
 import { nearestOutlinePoint } from './connected-traffic.ts';
 import type { HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 import type { HapjeongDemand } from './hapjeong-car-playback.ts';
+import type { SurveyArea } from './survey-area.ts';
 
-type MapManifest = { camera: typeof yanghwa.camera; output: typeof yanghwa.output & { gzip?: boolean } };
+type MapManifest = Pick<SurveyArea,'title'|'views'|'replay'> &
+  { camera: typeof yanghwa.camera; output: typeof yanghwa.output & { gzip?: boolean } };
 const manifests = import.meta.glob<{ default: MapManifest }>('../../tools/v2/areas/*.json');
 const canvas = document.querySelector('canvas')!;
 const main = document.querySelector('main')!;
@@ -28,7 +30,7 @@ async function init() {
   async function read<T>(suffix: string): Promise<T> {
     const { directory, stem, gzip: compressed } = area.output;
     const base = directory.replace(/^public\//, '');
-    const gzip = compressed && (suffix === 'a' || suffix === 'buildings');
+    const gzip = compressed && (suffix === 'a' || suffix === 'buildings' || suffix === area.replay?.carAsset);
     const extension = gzip ? '.json.gz' : '.json';
     const response = await fetch(`${import.meta.env.BASE_URL}${base}/${stem}-${suffix}${extension}`);
     if (!response.ok) throw Error(`${suffix} 자료 응답 ${response.status}`);
@@ -83,14 +85,14 @@ async function init() {
   const requestDraw = () => {
     if (!frame) frame = requestAnimationFrame(draw);
   };
-  const traffic = !district && query.get('cars') === '1' ? await (async () => {
+  const traffic = area.replay?.connectedTraffic && query.get('cars') === '1' ? await (async () => {
     const [{carPlayback,CAR_TICK},{makeCarMeshes},{env,updateEnv},{makeYanghwaSignals},cars,demand] = await Promise.all([
       import('./hapjeong-car-playback.ts'),import('../render/cars.ts'),import('../render/env.ts'),
       import('./yanghwa-signals.ts'),
-      read<HapjeongCars>('cars'),read<HapjeongDemand>('demand'),
+      read<HapjeongCars>(area.replay.carAsset ?? 'cars'),read<HapjeongDemand>('demand'),
     ]);
-    const run = carPlayback(cars,true,undefined,true,demand,undefined,undefined,yanghwa);
-    const limit = yanghwa.replay.connectedTraffic.maxTicksPerFrame;
+    const run = carPlayback(cars,true,undefined,true,demand,undefined,undefined,area);
+    const limit = area.replay.connectedTraffic!.maxTicksPerFrame;
     const mesh = makeCarMeshes(run.max,true);
     const signals = makeYanghwaSignals(cars, run.graph, data.floor.walk);
     scene.add(mesh.group, signals.group);
@@ -129,7 +131,7 @@ async function init() {
       canvas.dataset.traffic = JSON.stringify({seconds:ticks*CAR_TICK,vehicles:sim.cars.n,paused});
     };
   })() : undefined;
-  const signalPreview = district && query.get('signals') === '1' ? await (async () => {
+  const signalPreview = !traffic && district && query.get('signals') === '1' ? await (async () => {
     const [{districtCarGraph},{makeYanghwaSignals},cars] = await Promise.all([
       import('./hapjeong-car-graph.ts'), import('./yanghwa-signals.ts'), read<HapjeongCars>('cars'),
     ]);

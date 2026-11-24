@@ -9,7 +9,7 @@ import type { HapjeongPeopleInput } from '../../src/aerial/hapjeong-people.ts';
 
 const area = loadArea();
 const read = (name: string) => readAsset(area, name);
-const data: HapjeongCars = read('cars');
+const data: HapjeongCars = read(area.replay.carAsset ?? 'cars');
 const signalTest = process.argv.includes('--signal-test');
 const cycleArg = process.argv.indexOf('--cycles');
 const cycles = cycleArg < 0 ? undefined : Number(process.argv[cycleArg + 1]);

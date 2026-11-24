@@ -260,5 +260,22 @@
       "14062"
     ]
   },
-  "districtTraffic": {}
+  "districtTraffic": {},
+  "replay": {
+    "enabled": true,
+    "people": false,
+    "busName": "양화로·신촌로",
+    "axisNames": [],
+    "signalLabel": "모의 교통 신호",
+    "carAsset": "drive",
+    "connectedTraffic": {
+      "maxVehicles": 2000,
+      "warmupSeconds": 240,
+      "maxTicksPerFrame": 4
+    },
+    "enforcePaintedMidStops": true
+  },
+  "checks": {
+    "stallGate": "signal-cycle"
+  }
 }
