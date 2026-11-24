@@ -23,7 +23,6 @@ type Asset = {
   links: { paths: Path[]; type: string }[];
 };
 
-const TILT = THREE.MathUtils.degToRad(28);
 const status = document.querySelector<HTMLParagraphElement>('#status')!;
 const flat = (color: string, groundLayer = 0) => new THREE.MeshBasicMaterial({
   color, side: THREE.DoubleSide,
@@ -168,8 +167,9 @@ async function init() {
   const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
   const demand = simulation ? await load('demand') as import('./hapjeong-car-playback.ts').HapjeongDemand : undefined;
   // The whole-area view only changes the camera, never replay entry/exit placement.
+  const overview = area.views.overview ?? area.views.display.find(view => view.id === 'all');
   const views = simulation
-    ? [...area.views.simulation, ...(area.views.overview ? [area.views.overview] : [])]
+    ? [...area.views.simulation, ...(overview ? [overview] : [])]
     : variantA ? area.views.display.filter(view => view.mode === 'photo') : area.views.display;
   const photo = new THREE.Scene();
   const model = new THREE.Scene();
@@ -251,9 +251,11 @@ async function init() {
     if (!w || !h) return;
     camera.aspect=w/h;
     const distance = view.width/(2*camera.aspect*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
-    const offset = distance * Math.sin(TILT);
+    const tiltDegrees = view.tilt ?? 28;
+    const tilt = THREE.MathUtils.degToRad(tiltDegrees);
+    const offset = distance * Math.sin(tilt);
     const [x,z] = view.at;
-    camera.position.set(x+offset*Math.sin(AERIAL_BEARING),distance*Math.cos(TILT),z+offset*Math.cos(AERIAL_BEARING));
+    camera.position.set(x+offset*Math.sin(AERIAL_BEARING),distance*Math.cos(tilt),z+offset*Math.cos(AERIAL_BEARING));
     camera.lookAt(x,0,z);
     camera.near = distance/5;
     camera.far = distance*2;
@@ -269,7 +271,7 @@ async function init() {
       renderer.setSize(w,h,false);
       renderer.render(scene,camera);
       renderer.domElement.dataset.camera = JSON.stringify({
-        center:view.at, width:view.width, tilt:28, bearing:THREE.MathUtils.radToDeg(AERIAL_BEARING),
+        center:view.at, width:view.width, tilt:tiltDegrees, bearing:THREE.MathUtils.radToDeg(AERIAL_BEARING),
         worldInverse:camera.matrixWorldInverse.elements, projection:camera.projectionMatrix.elements,
       });
     };
@@ -282,7 +284,7 @@ async function init() {
     rightCaption.textContent = variantA ? 'A · 합친 인도·교통섬과 정밀도로지도 노면'
       : comparison ? '정밀도로지도 A4 인도·교통섬' : '수치지형도 바닥 · 정밀도로지도 노면';
     routeLegend.forEach(entry=>{entry.hidden = !route.visible;});
-    status.textContent = `${view.title} · 폭 ${view.width}m · 수직 기준 기울기 28°`;
+    status.textContent = `${view.title} · 폭 ${view.width}m · 수직 기준 기울기 ${tiltDegrees}°`;
     pair.dataset.view=view.id;
     pair.dataset.mode=view.mode;
     const params = new URLSearchParams();

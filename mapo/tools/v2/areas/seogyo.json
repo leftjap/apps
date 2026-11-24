@@ -62,10 +62,11 @@
         "id": "all",
         "title": "서교동 전체",
         "at": [
-          -53,
-          -151
+          -62,
+          -142
         ],
-        "width": 650,
+        "width": 530,
+        "tilt": 44,
         "mode": "photo"
       },
       {
@@ -133,7 +134,7 @@
     "exitKeys": []
   },
   "replay": {
-    "enabled": false,
+    "enabled": true,
     "busName": "서교동",
     "axisNames": [
       "양화로",

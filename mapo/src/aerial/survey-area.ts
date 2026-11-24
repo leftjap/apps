@@ -9,6 +9,7 @@ export type SurveyView = {
   title: string;
   at: Point;
   width: number;
+  tilt?: number;
   mode: 'photo' | 'paths' | 'floors';
 };
 
