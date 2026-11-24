@@ -1,6 +1,7 @@
 import { Frustum, Matrix4, PerspectiveCamera, Sphere, Vector3 } from 'three';
-import { makeCars } from '../sim/cars.ts';
-import { headingNear } from '../sim/graph.ts';
+import { pointAt } from '../poly.ts';
+import { makeCars, VFREE } from '../sim/cars.ts';
+import { headingNear, type Edge } from '../sim/graph.ts';
 import { CYCLE, LEFT, RIGHT, STRAIGHT } from '../sim/intersection/index.ts';
 import { makeSimProvider } from '../sim/provider.ts';
 import { hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-graph.ts';
@@ -37,6 +38,33 @@ export function carVisibility() {
 
 function delta(a: number, b: number) {
   return (b - a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+}
+
+/** One target speed per A2 link. Sample over metres, independent of point spacing. */
+function speedRatio(edge: Edge) {
+  // At a pronounced right slip turn, the tightest part sets the speed.
+  // Across broader turns, use a representative radius of the central arc.
+  const turn = delta(headingNear(edge, 0), headingNear(edge, edge.len));
+  const tight = turn > Math.PI / 3;
+  const arm = Math.min(tight ? 3 : 6, edge.len / 2);
+  const span = edge.len - 2 * arm;
+  const count = Math.max(1, Math.ceil(span / 3) + 1);
+  const a = [0, 0, 0], b = [0, 0, 0], c = [0, 0, 0];
+  const curvature: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const s = arm + span * i / Math.max(1, count - 1);
+    pointAt(edge.p, edge.cum, s - arm, a);
+    pointAt(edge.p, edge.cum, s, b);
+    pointAt(edge.p, edge.cum, s + arm, c);
+    const abx = b[0] - a[0], abz = b[2] - a[2];
+    const acx = c[0] - a[0], acz = c[2] - a[2];
+    const product = Math.hypot(abx, abz) * Math.hypot(acx, acz) * Math.hypot(c[0] - b[0], c[2] - b[2]);
+    if (product > 0) curvature.push(2 * Math.abs(abx * acz - abz * acx) / product);
+  }
+  curvature.sort((a, b) => a - b);
+  const quantile = tight ? 1 : turn < -Math.PI / 3 ? .5 : .7;
+  const bend = curvature[Math.round((curvature.length - 1) * quantile)] ?? 0;
+  return Math.min(VFREE[edge.cls], 40 / 3.6, Math.sqrt(2.5 / bend)) / VFREE[edge.cls];
 }
 
 /** Basic-board measurements from the same survey window, Saturday at 14:00. */
@@ -132,6 +160,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   // Keep the entire body inside the drawn map at source and sink boundaries.
   const graph = hapjeongCarGraph(data, selected, entries, 8, buses, pedestrians?.entrances?.platforms);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
+  const speeds = new Map(graph.edges.map(edge => [edge.key, speedRatio(edge)]));
   // Keep the second walk phase available for trips that reach a refuge
   // too late to finish both faces during their first green.
   const duration = replayCycles !== undefined ? CYCLE * replayCycles
@@ -143,7 +172,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
   const crossings = pedestrians && hapjeongCrossings(pedestrians.walk, data.crosswalks, graph.inter.S, data.walkSignalGroups);
   function reset() {
     const busy = new Uint32Array(graph.crosswalks.length);
-    const sim = makeCars(graph.edges, makeSimProvider(), seed, max, graph.buses, graph.inter,
+    const provider = { ...makeSimProvider(), roadSpeed: (_now: ReturnType<typeof clock>, _cls: number, key: number) => speeds.get(key)! };
+    const sim = makeCars(graph.edges, provider, seed, max, graph.buses, graph.inter,
       { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined);
     const site = graph.inter.S.list.find(site => site.j >= 0);
     if (!site) throw Error('합정 차량 신호를 연결하지 못했습니다.');

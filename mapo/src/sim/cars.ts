@@ -43,7 +43,7 @@ export interface Cars {
   room: Float32Array;
 }
 
-const VFREE = [22, 14, 12.5, 10, 7, 5.5]; // 등급별 자유 속도(m/s)
+export const VFREE = [22, 14, 12.5, 10, 7, 5.5] as const; // 등급별 자유 속도(m/s)
 const BUS_LEN = [11.5, 11.5, 12, 7.5]; // 종류별 버스 길이(m)
 /** 가장 긴 차의 반길이(m) */
 const HALF_MAX = Math.max(...BUS_LEN, ...BODY_LEN, 11.5) / 2;
