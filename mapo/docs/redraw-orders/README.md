@@ -24,7 +24,7 @@
 - 도엽: 228장 가운데 42장이 있었고 186장을 받는 중이다(지오가 04:28 에 로그인, 04:31 에 7장째, 오류 0). 상태는 `tools/raw/ngii/suchi/incoming/run.log`. 「오류가 많아 멈춤」이면 지오에게 디버그 크롬(9333) 국토정보플랫폼 탭의 로그인을 부탁하고 `cd tools/raw/ngii/suchi && nohup ./run_all.sh > incoming/run-all.out 2>&1 &` 로 다시 돌린다(받은 것은 건너뛴다). 방법과 도엽 번호 규칙은 `docs/area-recipe.md` 「도엽 받기」와 `history.md`.
 - I1 조사(고치지 않음): 04:28 에 새 Codex 세션 `01a20f07-7474-7503-ba45-6bda58eddced` 로 시작. 지시문 `tmp/connect/briefs/brief-i1-survey.md`, 답 `tmp/connect/answers/i1-answer.md`, 근거 `tmp/mapo-all/i1/`. 이 실행은 도구가 생기기 전이라 직접 불렀고 장부에는 끝난 뒤 손으로 적는다. 다음 실행부터는 `tools/sol/run.sh` 만 쓴다(지시문·답·기록은 `tmp/sol/`).
 
-**비용(단계가 끝날 때마다 고친다)**: 기준값은 장부의 G·H 단계다. 옛 세션 하나를 이어 쓴 13번 실행이 346만 토큰, 실행당 17만~39만, 11~22분이었다. G3(이어진 지도의 차)는 네 번 돌려 커밋 하나(109만), H3(넓힌 지도의 차)는 세 번이었다. 둘 다 구조(차를 어디서 넣고 빼는가, 윤곽)를 정하지 않고 구현부터 들어간 탓이다. 새 세션으로 시작하는 것이 실제로 싼지는 I1 의 값이 장부에 들어오면 H1(25만)과 견줘 확인한다.
+**비용(단계가 끝날 때마다 고친다)**: 재는 법과 원리는 `mapo/CLAUDE.md` 「비용이 어디서 나는가」. 기준값은 장부의 G·H 단계다: 옛 세션 하나를 이어 쓴 13번 실행이 입력 3억 1,900만 토큰(캐시 포함), 실행당 1,000만~3,800만, 문맥 15만~45만이었다. G3(이어진 지도의 차)는 네 번 돌려 커밋 하나에 1억 2,800만, H3(넓힌 지도의 차)는 세 번에 6,800만이 들었다. 둘 다 구조(차를 어디서 넣고 빼는가, 윤곽)를 정하지 않고 구현부터 들어간 탓이다. I1 은 새 세션인데도 일곱 주제를 한꺼번에 맡겨 59번째 호출에 문맥 32만·입력 1,330만이 됐다(Claude 의 지시문 잘못. 다음부터 한 세션 한 주제). 아직 써 보지 않은 절약 후보: Codex 설정 `tool_output_token_limit`(명령 출력 상한), `model_auto_compact_token_limit`(문맥 자동 줄이기). 한 실행에서 먼저 써 보고 결과물이 같을 때만 쓴다.
 
 **도구와 근거**: `tmp/connect/`(compare.sh·shots.mjs·pixdiff.py 구역 넷 대조, interior2.py·stops.py·coverage.py 재생 기록 세기, view.mjs·pagecheck.mjs 캡처, briefs/·answers/ 지난 지시문과 답), `tmp/wide/`(h1~h5 근거와 검수 페이지). 저장소에 올라가지 않는 폴더다. 지난 세션들의 인계와 기록은 `docs/redraw-orders/history.md`.
 

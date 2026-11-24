@@ -1,0 +1,302 @@
+# 코드 지도 (자동 생성: `tools/sol/codemap.py`. 손으로 고치지 않는다)
+
+파일마다 줄 수, 맨 위 설명, 함수·클래스의 줄 범위다. 들여 쓴 이름은 바로 위 함수 안에 있다. 여기서 자리를 찾아 `sed -n '시작,끝p'` 로 필요한 범위만 읽는다.
+
+## 새 화면(수치지형도·정밀도로지도 판)
+- `src/aerial/arrow-omissions.ts` (80줄)
+  - kindLabel 9-13 · describe 14-23 · createOmissionMarkers 24-80 · ↳clearNote 30-80
+- `src/aerial/buildings.ts` (46줄)
+  - loadBuildings 7-46
+- `src/aerial/connected-traffic.ts` (85줄)
+  - inRing 5-14 · insideOutline 15-18 · nearestOutlineEdge 19-36 · nearestOutlinePoint 37-40 · insideTrafficView 41-45 · boundaryTraffic 46-64 · ↳visit 49-64 · surveyBoundaryTraffic 65-85 · ↳regular 67-70 · ↳portal 71-85
+- `src/aerial/district-terrain.ts` (67줄)
+  - makeDistrictTerrain 9-67 · ↳update 34-67
+- `src/aerial/ground-paint.ts` (3줄): The same metres as the dash shader in src/render/marks.ts.
+- `src/aerial/hapjeong-car-graph.ts` (175줄)
+  - districtCarGraph 48-67 · carBoundary 68-81 · hapjeongCarGraph 82-175 · ↳boundary 88-175
+- `src/aerial/hapjeong-car-playback.ts` (321줄)
+  - carVisibility 18-39 · delta 40-44 · speedRatio 45-75 · carPlayback 76-321 · ↳boundary 89-89 · ↳terminalKey 90-112 · ↳busOutlet 113-132 · ↳follow 133-229 · ↳clock 230-234 · ↳reset 235-306 · ↳at 307-321
+- `src/aerial/hapjeong-cars.ts` (132줄)
+  - attachHapjeongSimulation 15-132 · ↳refresh 71-105 · ↳pause 106-110 · ↳tick 111-117 · ↳start 118-132
+- `src/aerial/hapjeong-hd.ts` (308줄)
+  - flat 28-33 · photoPlane 34-74 · ↳load 47-74 · addFaces 75-82 · addBuiltArea 83-89 · stroke 90-118 · addInk 119-127 · init 128-308 · ↳load 149-219 · ↳canvas 220-240 · ↳draw 241-308
+- `src/aerial/hapjeong-people.ts` (320줄)
+  - hapjeongCrossings 31-58 · portalRoutes 59-101 · makeHapjeongPeople 102-320 · ↳routeWeight 141-153 · ↳dock 154-156 · ↳oneBank 157-171 · ↳supplyPassengers 172-205 · ↳supplyBoundary 206-234 · ↳advance 235-320
+- `src/aerial/hapjeong-walk-trial.ts` (59줄)
+  - ends 7-13 · crossingCourses 14-59
+- `src/aerial/main.ts` (314줄)
+  - initMap 16-314 · ↳render 68-76 · ↳updateSurfaceStatus 77-108 · ↳showSurface 109-125 · ↳updateImageryStatus 126-143 · ↳loadTile 144-177 · ↳fitTiles 178-210 · ↳fitCamera 211-237 · ↳setSource 238-314
+- `src/aerial/map.ts` (74줄): Apply one local scale to both axes so the WMTS and the footprints still share exact edges.
+  - mercatorFraction 16-21 · groundPoint 22-26 · tileAtGround 27-33 · tileBounds 34-42 · vworldTileUrl 43-46 · buildingHeight 47-52 · crossingCentre 53-74
+- `src/aerial/road-overlay.ts` (245줄)
+  - drawGround 52-172 · ↳fill 56-66 · ↳stroke 67-70 · ↳strokeXZ 71-172 · createRoadOverlay 173-245 · ↳hand 180-190 · ↳ground 191-205 · ↳load 206-245
+- `src/aerial/survey-area.ts` (51줄)
+  - photoTiles 42-51
+- `src/aerial/survey-buildings.ts` (175줄)
+  - groundShape 16-22 · ↳vector 17-22 · windowPatterns 23-44 · material 45-74 · vertex 75-81 · roof 82-92 · sides 93-110 · unclose 111-115 · areaTwice 116-122 · parapetInset 123-135 · makeSurveyBuildings 136-175
+- `src/aerial/yanghwa-map.ts` (245줄)
+  - init 23-245 · ↳read 30-70 · ↳widthPerDepth 71-80 · ↳value 81-86 · ↳requestDraw 87-146 · ↳fit 147-159 · ↳draw 160-194 · ↳pose 195-209 · ↳size 210-217 · ↳overview 218-245
+- `src/aerial/yanghwa-signals.ts` (166줄): Supply linear values even when the survey viewer disables Three's input
+  - signalColor 13-20 · ↳toLinear 14-20 · offset 21-25 · makeYanghwaSignals 26-166 · ↳curb 67-105 · ↳instance 106-115 · ↳box 116-119 · ↳post 120-148 · ↳update 149-166
+- `src/aerial/yanghwa-terrain.ts` (127줄)
+  - tileSurface 32-52 · fadeFinePaint 53-70 · makeYanghwaTerrain 71-127 · ↳layer 73-127
+
+## 굽기와 검사(새 판)
+- `tools/v2/aerial-local.ts` (82줄)
+  - allowedTile 19-31 · localAerial 32-82
+- `tools/v2/aerial_buildings.py` (58줄): Extract complete government building footprints for the aerial pilot.
+  - extract 16-35 · positive 36-39 · main 40-58
+- `tools/v2/aerial_paint.py` (114줄): Bridge to the application's mark definitions for geometry checks and clipping.
+  - paint_definitions 15-29 · style 30-33 · footprint 34-58 · line_footprint 59-73 · arrow_footprint 74-90 · arrow_geometry 91-98 · arrow_conflicts 99-114
+- `tools/v2/aerial_placement.py` (262줄): Source lane assignment and dependent paint placement in a common metre frame.
+  - polylines 15-20 · deduplicate_marks 21-33 · duplicate_face 34-39 · unit 40-44 · shifted 45-48 · dot 49-52 · subtract 53-56 · lane_section 57-89 · matching_stop 90-105 · lane_slot 106-125 · rotated_to_ground 126-131 · stop_shadows 132-150 · same_stop_lane 151-170 · same_kind_point 171-175 · place_arrows 176-262
+- `tools/v2/aerial_rules.py` (130줄): Shared, source-only rules for an aerial road window of any shape.
+  - crossing_basis 16-25 · zebra 26-56 · move_stop 57-73 · merge_guides 74-86 · parallel_duplicate 87-95 · road_extent 96-114 · is_guide 115-130
+- `tools/v2/area.mts` (35줄)
+  - loadArea 20-26 · areaPath 27-27 · assetPath 28-29 · readAsset 30-35
+- `tools/v2/area.py` (74줄): Load the shared area manifest for the survey tools.
+  - load_area 12-18 · read_area 19-24 · area_window 25-50 · asset 51-55 · read_asset 56-63 · write_asset 64-74
+- `tools/v2/audit0.py` (80줄): 0단계 자료 확인(docs/redraw.md 9절): 층마다 쓸 자료가 판을 얼마나 채우는지 잰다. 아무것도 쓰지 않고 숫자만 찍는다.
+  - xz 17-20 · poly 21-80
+- `tools/v2/audit_district_car_graph.mts` (59줄): Inspect replay-ready A2 signals and routes without starting a simulation.
+- `tools/v2/audit_hapjeong_crowd.py` (286줄): Audit two complete replay cycles, including non-fixture walkers at each crossing.
+  - summary 18-21 · audit 22-27 · frames 28-286
+- `tools/v2/audit_hapjeong_signals.py` (91줄): Compare the released A2 paths and crossing polygons across the signal cycle.
+  - measure 16-51 · measure_car_phases 52-91
+- `tools/v2/bake_aerial_ground.py` (734줄): Build a local intersection from Seoul's public A058/A055 and crossing areas.
+  - mercator 32-36 · Frame 37-57 · Mark 58-66 · read 67-70 · parts 71-78 · line_parts 79-82 · polygon_parts 83-86 · square 87-90 · direction 91-95 · load_lines 96-110 · fitting_frame 111-123 · arm_at 124-128 · armpoint 129-132 · extent 133-136 · crossing_arms 137-147 · edge_candidates 148-180 · corner_arc 181-227 · make_road 228-267 · selector 268-282 · apply_fixes 283-325 · make_stops 326-371 · approach_stop_shadows 372-394 · stripe_faces 395-427 · calibrated_zebra 428-464 · cut_guide_at_zebras 465-490 · build 491-712 · main 713-734
+- `tools/v2/check_aerial_paint.py` (111줄): Fail on intersections in the actual painted geometry of an aerial asset.
+  - footprints 23-38 · conflicts 39-53 · check 54-111
+- `tools/v2/check_connected_map.py` (190줄): Check one connected static map with --area NAME or --area PATH.
+  - floor_layers 19-23 · floor_parity 24-39 · named_road_footprint 40-53 · coincident_faces 54-57 · sheet_parity 58-79 · inspect 80-190
+- `tools/v2/check_connected_routes.py` (102줄): Compare boundary-connected A2 links with the individual-area replay graphs.
+  - header 13-17 · originals 18-21 · dead_ends 22-44 · inspect 45-102
+- `tools/v2/check_district_car_preflight.py` (220줄): Rebuild district reachability from usable engine paths and rendered vehicle poses.
+  - topology 21-26 · sweep 27-54 · merge_portal_clearance 55-94 · main 95-220
+- `tools/v2/check_hapjeong_branch_stops.py` (120줄): C4: detect a stopped vehicle with an open lane past its branch or merge.
+  - blocked_mouth 15-39 · audit 40-97 · track 98-120
+- `tools/v2/check_hapjeong_buildings.py` (50줄): Check a surveyed area's building and ground asset.
+  - verify 13-50
+- `tools/v2/check_hapjeong_car_run.py` (238줄): Measure the body and movement of every legacy-engine car at 30 Hz.
+  - ConnectedStops 19-48 · body 49-56 · rendered_footprints 57-69 · model_name 70-78 · rendered_body 79-86 · trace 87-95 · audit 96-238
+- `tools/v2/check_hapjeong_cars.py` (67줄): Validate the Hapjeong A2 graph against the projected source and A floor.
+  - verify 12-67
+- `tools/v2/check_hapjeong_crossing_widths.py` (59줄): Measure crossing widths and the engine's 0.85m-spaced waiting places.
+  - waiting_places 14-25 · measure 26-41 · summary 42-59
+- `tools/v2/check_hapjeong_crowding.py` (165줄): Measure crowd growth and clearance over one 240-second Hapjeong replay.
+  - in_view 11-20 · walker_identity 21-27 · peak 28-51 · audit 52-165
+- `tools/v2/check_hapjeong_entrances.py` (80줄): P4: count visible appearances and disappearances outside physical entrances.
+  - audit 14-80
+- `tools/v2/check_hapjeong_hd.py` (89줄): Single numeric check for the Hapjeong HD comparison.
+  - read 10-12 · polygon 13-15 · surface 16-18 · main 19-89
+- `tools/v2/check_hapjeong_hd_a.py` (209줄): One numeric check for the A comparison asset.
+  - read 13-15 · surface 16-19 · survey_access 20-54 · verify_crossing_access 55-209
+- `tools/v2/check_hapjeong_landings.py` (52줄): Check the crossing approaches against the finished pavement and A2 lane widths.
+  - verify 11-52
+- `tools/v2/check_hapjeong_people.py` (266줄): Measure the shared Hapjeong replay on the actual survey polygons at 30 Hz.
+  - audit 18-266
+- `tools/v2/check_hapjeong_rules.py` (392줄): /// script
+  - rank_average 55-59 · load 60-63 · replay 64-79 · cross_cars 80-83 · left_pairs 84-96 · measure_cars_only 97-109 · measure 110-211 · evaluate 212-250 · regressions 251-286 · main 287-392
+- `tools/v2/check_hapjeong_visible.py` (181줄): Measure and gate the visible behavior in the ordinary 240-second replay.
+  - Stationary 21-44 · non_red_faces 45-52 · measure 53-126 · check_legacy 127-139 · gate_failures 140-181
+- `tools/v2/check_hapjeong_walk.py` (150줄): Check the exported Hapjeong graph against the finished A floor.
+  - faces 16-19 · read 20-24 · verify 25-150
+- `tools/v2/check_hapjeong_walk_profile.mts` (70줄): Compare the legacy walk asset within the same survey window.
+  - read 11-13 · q 14-18 · profile 19-70 · ↳point 21-70
+- `tools/v2/check_land.py` (139줄): 지시서 1(docs/redraw-orders/1-land.md): land.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
+  - dm 23-26 · even_odd 27-36 · samples 37-41 · main 42-139
+- `tools/v2/check_lanes.py` (221줄): 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판): lanes.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
+  - angle 22-25 · adiff 26-30 · xz 31-35 · main 36-221
+- `tools/v2/check_legacy_cars.mts` (30줄): Same board, traffic provider, seed and 30-second timeline before/after the A2 adapter.
+  - read 13-30
+- `tools/v2/check_legacy_people.mts` (63줄): Compare the original basic-board pedestrian run against the current engine.
+  - read 19-27 · snapshot 28-63
+- `tools/v2/check_marks.py` (115줄): 지시서 3b(docs/redraw-orders/3b-marks.md, 4판): marks.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와 찍는 수치(판정 없
+  - main 19-115
+- `tools/v2/check_seogyo_auto.py` (500줄): Measure Seoul inputs or the generated survey against the separate photo trace.
+  - mercator 25-28 · local 29-37 · lonlat 38-45 · trace_point 46-49 · trace_path 50-71 · percentile 72-80 · samples 81-85 · raw_data 86-103 · raw_inventory 104-133 · obscured 134-141 · stripe_samples 142-151 · crosswalk_photo_samples 152-164 · photo_points 165-168 · ordered_pairs 169-182 · stripe_comparison 183-229 · check 230-462 · north_baseline 463-479 · main 480-500
+- `tools/v2/check_seogyo_crosswalk.py` (181줄): Check the eight halves against the independent, photo-interpreted trace.
+  - coord 22-25 · pitch 26-33 · ends_of 34-43 · guide_axis 44-47 · intrudes 48-51 · check 52-181
+- `tools/v2/check_split.py` (187줄): 지시서 2(docs/redraw-orders/2-split.md): split.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
+  - to_polys 28-31 · even_odd 32-41 · survey 42-53 · samples 54-58 · centerline_points 59-68 · edges_of 69-76 · nearest 77-84 · stat 85-95 · main 96-187
+- `tools/v2/compare_hapjeong.py` (157줄): Compare the same Hapjeong window in basic-board and surveyed replays.
+  - camera_contains 12-22 · describe 23-26 · measure 27-157
+- `tools/v2/district_car_graph.py` (198줄): District A2 topology, grade separation and permitted entries and exits.
+  - height_axis 14-21 · grade_crossings 22-40 · traverse 41-51 · district_bus_routes 52-118 · plan_routes 119-185 · district_routes 186-198
+- `tools/v2/district_replay_topology.mts` (52줄): Report the transitions the surveyed engine can actually drive.
+  - entersJunction 7-9 · approaches 10-10 · key 11-52
+- `tools/v2/fetch_hapjeong_hd.mts` (60줄)
+  - fetchLayer 20-60
+- `tools/v2/hapjeong_buildings.py` (165줄): Bake a surveyed area's building volumes and ground decoration.
+  - connected_building_faces 19-77 · pavement_cutter 78-95 · bake 96-165
+- `tools/v2/hapjeong_car_footprints.mts` (10줄): Project the native vehicle geometry into the same metre frame as A2.
+- `tools/v2/hapjeong_cars.py` (388줄): Bake exact A2 lane geometry and directed topology for the Hapjeong A floor.
+  - dot_forward 23-31 · short_boundary_piece 32-36 · directed_pieces 37-47 · load_links 48-85 · connect 86-143 · boundary_bus_routes 144-162 · bundles 163-201 · crosswalks 202-226 · longest_bus 227-238 · duplicates 239-259 · walk_signal_groups 260-290 · bake 291-388
+- `tools/v2/hapjeong_crossings.py` (279줄): Supplement B3 crossings from survey faces and audit access at both ends.
+  - half_metre_routes 14-19 · crossing_sources 20-40 · crossing_axis 41-57 · overlap 58-61 · agreement 62-69 · expanded_walk 70-76 · survey_heading 77-94 · approach 95-118 · survey_continuations 119-139 · vehicle_clearance 140-145 · supplement_crossings 146-194 · walking_landings 195-279
+- `tools/v2/hapjeong_entrances.mts` (130줄): Use the basic board's station models, train arrivals and stop coordinates.
+  - mercator 31-32 · groundPoint 33-37 · inside 38-45 · on 46-79 · projectedPlatform 80-130
+- `tools/v2/hapjeong_hd.py` (298줄): Bake the Hapjeong HD source comparison without moving or clipping its surveyed lines.
+  - features 41-46 · project 47-50 · paths 51-56 · face_rings 57-62 · offset_zebra 63-76 · link_heading 77-90 · rings 91-95 · survey_faces 96-113 · survey_islands 114-137 · survey_floor 138-147 · marking_style 148-157 · connectivity 158-216 · floor_faces 217-222 · floor_paths 223-229 · bake 230-298
+- `tools/v2/hapjeong_hd_a.py` (300줄): Build the A view from the preserved Hapjeong HD comparison.
+  - polygon 23-26 · surface 27-30 · angle_difference 31-35 · link_segments 36-46 · choose_direction 47-82 · outline_exclusions 83-94 · median_faces 95-107 · median_paving 108-128 · platform_strips 129-164 · connected_paint 165-178 · preserve_inferred_pavement 179-192 · bake_a 193-258 · clip_faces 259-262 · clip_crossing 263-266 · pedestrian_landings 267-300
+- `tools/v2/hapjeong_queue_case.mts` (44줄): Seed six cars per eligible approach to expose the fourth-to-sixth discharge.
+  - read 9-44
+- `tools/v2/hapjeong_signal_paths.mts` (57줄)
+  - read 9-15 · routePart 16-57
+- `tools/v2/hapjeong_signal_phases.mts` (24줄): Express site-relative phases on the main site's clock for the existing audits.
+  - replaySteps 5-24 · ↳wrap 8-24
+- `tools/v2/hapjeong_walk.py` (680줄): Bake the Hapjeong A pavement into the original WalkJson coordinate format.
+  - dm 27-30 · Network 31-145 · encode_area 146-163 · samples 164-169 · end_ports 170-202 · crossing_route 203-346 · arrival_envelope 347-357 · previous_corridors 358-366 · preserve_yielding_corridor 367-386 · station_origins 387-398 · station_approaches 399-443 · spawn_points 444-542 · crossing_wait_depths 543-568 · trim_landing_wings 569-588 · bake 589-680
+- `tools/v2/hapjeong_walk_turns.py` (183줄): Find ordinary walk turns whose node cannot be reached directly from the approach.
+  - area_mask 16-35 · leg 36-49 · blind_turn 50-67 · junction_nodes 68-75 · turn_risks 76-90 · unpack 91-103 · measure 104-109 · refit 110-183
+- `tools/v2/hapjeong_walk_width.mts` (9줄): Use exactly the basic-board width and junction rules on the surveyed pavement.
+- `tools/v2/import_survey_tiles.py` (40줄): Merge the six layers of cached WFS tiles in the format read by the survey bakers.
+  - import_tiles 11-40
+- `tools/v2/land.py` (107줄): 지시서 1(docs/redraw-orders/1-land.md): 시제품 구역의 땅을 건물 / 도로 부지 / 그 밖으로 나눈다.
+  - even_odd 21-31 · polygons 32-39 · load_gis_roads 40-48 · load_buildings 49-60 · drop_small 61-70 · ring_dm 71-75 · main 76-107
+- `tools/v2/lanes.py` (549줄): 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판) + 지시서 3b(docs/redraw-orders/3b-marks.md, 3판) 「먼저 할 일」 1~7: 2단계 찻길 면
+  - dm 47-50 · key 51-54 · load_car 55-58 · right_of 59-63 · unit 64-68 · cum_len 69-74 · y_at 75-80 · build_sections 81-174 · Cutter 175-248 · lane_count 249-254 · out_dir 255-264 · trims 265-297 · lane_lines 298-318 · build 319-505 · flat_dm 506-509 · main 510-549
+- `tools/v2/marks.py` (305줄): 지시서 3b(docs/redraw-orders/3b-marks.md, 5판): 3a 의 차로에서 중앙선·차선·흰 실선·정지선·횡단보도를 규칙으로 만든다.
+  - dm 30-33 · flat 34-37 · unit 38-42 · axis_y 43-50 · axis_dir 51-57 · perp_hit 58-70 · load_xw 71-81 · build 82-286 · main 287-305
+- `tools/v2/measure_hapjeong_crossings.py` (154줄): Audit the explicitly placed crossing cohorts and every face occupied in their replay.
+  - measure 14-154
+- `tools/v2/measure_hapjeong_discharge.py` (117줄): Measure queues at green and same-lane gaps in a surveyed replay.
+  - discharge 11-117
+- `tools/v2/plot_land.py` (140줄): 지시서 1(docs/redraw-orders/1-land.md): land.json 을 위에서 본 그림으로(tmp/v2/), 수치지형도 도로 부지와 나란히 칠한 그림과 넓이.
+  - dm 19-22 · ring_area 23-29 · Canvas 30-47 · fill_polygons 48-58 · fill_even_odd 59-78 · paint 79-86 · count 87-90 · main 91-140
+- `tools/v2/plot_lanes.py` (76줄): 지시서 3a(docs/redraw-orders/3a-lanes.md): split.json·건물 위에 차로 경계선·차로 가운데선·진행 방향 화살촉·구간 끝 노드를 그린다(tmp/v2/).
+  - main 26-76
+- `tools/v2/plot_marks.py` (93줄): 지시서 3b(docs/redraw-orders/3b-marks.md): split.json·건물 위에 횡단보도·중앙선·흰 실선·차선(점선)·정지선을 그린다(tmp/v2/).
+  - dashes 25-45 · main 46-93
+- `tools/v2/plot_split.py` (93줄): 지시서 2(docs/redraw-orders/2-split.md): split.json 을 위에서 본 그림으로(tmp/v2/), 수치지형도 도로·인도 면과 나란히 칠한 그림.
+  - paint 27-34 · survey 35-44 · minus 45-48 · main 49-93
+- `tools/v2/road_audit.py` (266줄): Compare named survey roads against cached VWorld level-19 imagery.
+  - raw_features 30-33 · lines 34-37 · line_heading 38-41 · read_axes 42-59 · axis_score 60-63 · collect 64-172 · grade_crossings 173-202 · init_workers 203-209 · section 210-228 · main 229-266
+- `tools/v2/road_audit_profiles.py` (360줄): Transverse and longitudinal readings. Missing or ambiguous readings stay null.
+  - limits 15-18 · marks 19-34 · aux 35-56 · bracket 57-67 · a2_for 68-86 · collapse 87-93 · median_split 94-104 · readings 105-124 · shift 125-129 · smooth 130-132 · match 133-142 · photo_curb 143-166 · photo_lines 167-191 · sidewalk_frontage 192-211 · longitudinal 212-249 · configure 250-258 · inspect 259-360
+- `tools/v2/road_audit_raster.py` (175줄): Draw equal-scale VWorld, baked-model and alignment panels.
+  - floor 19-26 · rgb 27-30 · Grid 31-51 · tile 52-58 · aerial 59-78 · Polys 79-107 · Map 108-175
+- `tools/v2/road_audit_report.py` (146줄): Compile per-section tables and a static review index from the evidence.
+  - values 7-11 · rounded 12-13 · mx 14-15 · med 16-17 · collect 18-22 · status 23-25 · mismatch 26-33 · reason 34-47 · priority 48-51 · widths 52-54 · totals 55-80 · aggregate 81-99 · table 100-107 · report 108-146
+- `tools/v2/roads_json.ts` (16줄): 지시서 1(docs/redraw-orders/1-land.md): board.json 의 길 중심선을 파이썬이 읽을 수 있게 뽑는다.
+- `tools/v2/seogyo_trace.py` (164줄): Bake the Seogyo photo interpretation. One drawing unit is 0.2 ground metres.
+  - node 85-88 · paths 89-93 · build 94-164
+- `tools/v2/shp.py` (45줄): SHP 읽기(표준 라이브러리만): 면·선·점의 좌표를 고리 목록으로. dbf 는 필드 이름과 값을 글자로.
+  - shapes 5-28 · dbf 29-45
+- `tools/v2/sidewalk_gaps.py` (187줄): Connect short gaps in pavement at the mouths of roads without surveyed lanes.
+  - follows_sidewalk 15-27 · lane_envelopes 28-31 · sidewalk_gaps 32-111 · widen_gap_bands 112-187
+- `tools/v2/split.py` (189줄): 지시서 2(docs/redraw-orders/2-split.md): 1단계 도로 부지를 찻길 / 인도 / 함께 쓰는 면 / 보행 전용 띠로 나눈다.
+  - dm 29-32 · polygons 33-40 · road_chains 41-59 · load_lines 60-76 · load_plazas 77-90 · load_buildings 91-102 · clean 103-113 · ring_dm 114-118 · main 119-189
+- `tools/v2/stats_walk.py` (242줄): 지시서 2(docs/redraw-orders/2-split.md) 첫 일: 인도 폭 값이 자료에서 나온 것임을 다시 본다.
+  - angle 26-29 · adiff 30-34 · our_segments 35-48 · Matcher 49-65 · wq 66-80 · walk_stats 81-117 · centerline_stats 118-164 · even_odd 165-174 · survey 175-186 · edge_stats 187-231 · main 232-242
+- `tools/v2/survey_building_colors.py` (134줄): Read roof paint from the inner pixels of a surveyed building face.
+  - read_tiles 26-39 · roof_pixels 40-55 · hex_color 56-59 · wall_color 60-69 · street_tree 70-75 · street_edges 76-90 · apply_colors 91-134
+- `tools/v2/survey_bus_platforms.py` (54줄): Project surveyed median stops to the reserved routes before the walking bake.
+  - bus_platforms 11-54
+- `tools/v2/survey_open_ground.py` (42줄): Surveyed river/deck faces and original public-park extents.
+  - park_face 11-25 · open_ground 26-42
+- `tools/v2/survey_road_paint.py` (250줄): Bake optional safety-zone and B3 paint for a connected survey map.
+  - closed_zones 25-55 · long_axis 56-60 · hatch 61-71 · surface_arrow 72-95 · split_white_paint 96-104 · bake_details 105-232 · main 233-250
+- `tools/v2/survey_roof_tiles.mts` (52줄)
+  - cache 16-52 · ↳valid 17-52
+- `tools/v2/survey_signal_sites.py` (196줄): Associate surveyed signal faces and B2 stops, keeping A2 geometry intact.
+  - junction_layout 11-25 · approach_arms 26-45 · survey_signal_sites 46-131 · split_at_signal_stops 132-196
+- `tools/v2/test_aerial_buildings.py` (41줄)
+- `tools/v2/test_aerial_placement.py` (73줄): Geometry rules shared by calibrated and uncalibrated aerial drawings.
+- `tools/v2/test_aerial_rules.py` (68줄): No-adjustment road paint rules and corridor continuity.
+- `tools/v2/test_area_outline.py` (52줄)
+- `tools/v2/test_connected_car_audit.py` (32줄)
+- `tools/v2/test_connected_car_bake.py` (43줄)
+- `tools/v2/test_district_building_seams.py` (25줄)
+- `tools/v2/test_district_car_graph.py` (63줄)
+- `tools/v2/test_hapjeong_visible.py` (93줄): Focused tests for the optional 240-second visible gate.
+- `tools/v2/test_seogyo_trace.py` (62줄): Subpixel digitizing can be tested independently of the 3D camera.
+- `tools/v2/test_sidewalk_gaps.py` (49줄): Small geometry regressions for unmarked sidewalk continuations.
+- `tools/v2/test_survey_road_paint.py` (46줄)
+- `tools/v2/test_survey_signal_sites.py` (37줄): Fix the distance and ordering of several surveyed stops along one A2 lane.
+- `tools/v2/tm.py` (42줄): 한국 중부원점 TM(EPSG:5186, GRS80, 원점 38°N 127°E, 축척 1, 가산 200000/600000) ↔ 경위도 ↔ 판 좌표(x 동, z 남, m)
+  - _m 14-20 · tm_to_ll 21-35 · ll_to_xz 36-39 · tm_to_xz 40-42
+- `tools/v2/trace_hapjeong_basic.mts` (90줄): Basic-board reference, using the same surveyed measurement window and 80m views.
+  - read 19-20 · toLocal 21-24 · inside 25-30 · onScreen 31-90
+- `tools/v2/trace_hapjeong_cars.mts` (130줄)
+  - read 11-25 · wraps 26-130
+
+## 차 엔진(예전 판에서 가져와 그대로 쓴다)
+- `src/sim/boats.ts` (44줄): 한강 배(연출). 판 남쪽 한강 물길을 따라 천천히 오간다. 위치와 운항 시각은 지어낸 것이며, 시각만의 함수다.
+  - boatAt 32-44
+- `src/sim/bodies.ts` (21줄): 승용차 차종. 시뮬레이션은 차종 길이로 줄을 세우고, 그리기(src/render/cars.ts)는 같은 차종의 모형을 그린다.
+  - bodyType 13-21
+- `src/sim/buses.ts` (240줄): 버스 노선. 구운 노선(도로 조각 열)을 차 그래프의 구간 열로 바꾸고, 종류와 시간대로 배차 간격을 정한다.
+  - project 40-62 · makeBusRoutes 63-161 · busHeadway 162-176 · islandAt 177-192 · leftAt 193-209 · busStopPortals 210-240
+- `src/sim/cars.ts` (2460줄): 차. 방향 그래프의 구간 위를 달리며 앞차와의 간격으로 속도를 정한다(ACC 식으로 누그러뜨린 IDM).
+  - clearRun 59-87 · ↳idm 62-87 · clearsWalkSignals 88-92 · carGridRadius 93-96 · makeCars 97-2460 · ↳followingOf 130-253 · ↳cellAt 254-262 · ↳isApproach 263-264 · ↳inner 265-266 · ↳free 267-268 · ↳carLanes 269-269 · ↳carLane 270-285 · ↳avoid 286-297 · ↳laneAt 298-302 · ↳pickPath 303-326 · ↳laneInto 327-328 · ↳pathLane 329-338 · ↳holdEnd 339-343 · ↳bigOf 344-345 · ↳pathPose 346-372 · ↳onEdge 373-430 · ↳dropPath 431-438 · ↳put 439-475 · ↳addBus 476-493 · ↳remove 494-504 · ↳pose 505-548 · ↳bent 549-553 · ↳curveOut 554-560 · ↳medAlongPath 561-572 · ↳locate 573-582 · ↳islandShift 583-599 · ↳busWant 600-636 · ↳laneGap 637-646 · ↳solid 647-649 · ↳shiftLane 650-673 · ↳behind 674-677 · ↳hit 678-691 · ↳depth 692-710 · ↳pedGrid 711-722 · ↳pedDepth 723-739 · ↳pedAhead 740-760 · ↳surveyedLeadGap 761-780 · ↳blockedAt 781-810 · ↳touches 811-819 · ↳density 820-834 · ↳allot 835-868 · ↳setFocus 869-881 · ↳nearFocus 882-882 · ↳pickEdge 883-898 · ↳spawnRange 899-907 · ↳onCrosswalk 908-912 · ↳spawnHidden 913-949 · ↳dropHidden 950-956 · ↳fillBuses 957-967 · ↳overlapsAny 968-973 · ↳fill 974-1022 · ↳gateDist 1023-1030 · ↳exitRoom 1031-1065 · ↳wrongLane 1066-1067 · ↳rankOf 1068-1069 · ↳mayGo 1070-1071 · ↳gateWhy 1072-1137 · ↳midGo 1138-1273 · ↳sweepAhead 1274-1334 · ↳restPose 1335-1351 · ↳mover 1352-1357 · ↳stopTail 1358-1365 · ↳holdTail 1366-1398 · ↳chainLead 1399-1409 · ↳xwAhead 1410-1528 · ↳bound 1529-1530 · ↳glued 1531-1532 · ↳entryDist 1533-1538 · ↳gateOpen 1539-1544 · ↳bodyAhead 1545-1577 · ↳clearOk 1578-1608 · ↳clearSim 1609-1639 · ↳step 1640-2263 · ↳driftOk 2264-2289 · ↳waitsOn 2290-2291 · ↳leads 2292-2303 · ↳straightStep 2304-2326 · ↳blockedNext 2327-2367 · ↳laterEdge 2368-2390 · ↳approaching 2391-2460
+- `src/sim/catReact.ts` (122줄): 사람에 대한 고양이의 반응. 시각으로 정한 일정(catAt) 위에 덧씌운다.
+  - makeCatReactor 24-122 · ↳step 30-122
+- `src/sim/cats.ts` (315줄): 길고양이 18마리. 자리는 손으로 정한 것이고 실제 급식소 위치나 서식 통계와는 무관하다.
+  - spot 27-98 · catName 99-107 · shortest 108-133 · toPath 134-139 · makeCats 140-235 · ↳walkPath 182-235 · feeders 236-244 · nightOf 245-246 · activity 247-259 · along 260-268 · catAt 269-315 · ↳rest 274-275 · ↳walking 276-315
+- `src/sim/clock.ts` (66줄): 시계. 기본은 실제 한국 시각이고, ?t=HH:MM 로 시작 시각, ?speed=N 으로 배속, ?dow=0~6 으로 요일을 바꾼다(검증용).
+  - makeClock 24-66 · ↳real 26-66
+- `src/sim/curves.ts` (51줄): 시각 → 해의 위치와 사람·차가 몰리는 정도.
+  - clamp01 5-5 · smooth 6-11 · sunAngles 12-25 · daylight 26-28 · duskiness 29-30 · bump 31-37 · commute 38-40 · nightlife 41-46 · daytime 47-49 · inService 50-51
+- `src/sim/graph.ts` (464줄): 도로 조각 → 차가 달리는 방향 그래프(사람·고양이가 걷는 그래프는 walknet.ts).
+  - nodeKey 21-80 · headingNear 81-99 · sameLaneSeam 100-113 · extendFrames 114-149 · cell 150-159 · laneOff 160-163 · lerp 164-168 · laneWidth 169-174 · leftEdge 175-177 · rightEdge 178-181 · medAt 182-184 · lanePos 185-194 · spreadMap 195-209 · nearMap 210-231 · ↳near 213-231 · subLine 232-254 · carRoad 255-257 · makeEdges 258-318 · linkEdges 319-353 · buildCarGraph 354-398 · fixShortKinks 399-415 · ↳wrap 400-415 · setLaneMaps 416-433 · sinkTunnels 434-464
+- `src/sim/incidents.ts` (102줄): 돌발정보(사고·공사·통제)를 차 구간에 붙인다. 실시간 도로 속도에는 사고로 생긴 정체가 이미 들어 있으므로 속도를 낮추지 않고,
+  - effectOf 23-41 · project 42-60 · matchIncidents 61-94 · spotXZ 95-102
+- `src/sim/intersection/build.ts` (1030줄): 교차로 구조(재작업 W20, 설계 문서 45절). 옛 junctions.ts·signals.ts 의 교차로 묶기·움직임·차로 잇기를 쓰지 않고 처음부터 정한다.
+  - nodeKey 31-31 · wrap 32-36 · halfWidth 37-139 · buildIntersections 140-1030 · ↳node 145-165 · ↳pass 166-167 · ↳laneSeam 168-181 · ↳find 182-182 · ↳unite 183-189 · ↳around 190-194 · ↳dist 195-196 · ↳cross 197-210 · ↳joinPass 211-230 · ↳inJ 231-264 · ↳laneW 265-359 · ↳outHeading 360-407 · ↳moveOf 408-411 · ↳rightLane 412-417 · ↳setRules 418-422 · ↳laneMoves 423-455 · ↳startClear 456-464 · ↳gate0 465-489 · ↳gate 490-547 · ↳clearOut 548-584 · ↳lp 585-590 · ↳curve 591-618 · ↳fillet 619-672 · ↳inRing 673-677 · ↳xwAt 678-686 · ↳carLanes 687-688 · ↳outLane 689-699 · ↳makePath 700-755 · ↳path 756-769 · ↳conflict 770-819 · ↳converge 820-857 · ↳holdOut 858-870 · ↳relEnd 871-883 · ↳track 884-911 · ↳obb 912-923 · ↳touch 924-966 · ↳touchAfter 967-988 · ↳turnOverlap 989-1030
+- `src/sim/intersection/index.ts` (20줄): 교차로와 신호(재작업 W20). 차(cars.ts)·사람(walkers.ts)·신호등 그림(render/signals.ts)이 이것 하나를 함께 쓴다.
+  - makeIntersections 15-20
+- `src/sim/intersection/signal.ts` (661줄): 신호(재작업 W20, 설계 문서 45절). 교차로(build.ts) 하나에 신호 하나. 옛 signals.ts 를 쓰지 않는다.
+  - axisGap 91-94 · bits 95-96 · makeSignalPlan 97-661 · ↳lampsFor 109-150 · ↳midGate 151-229 · ↳allPaths 230-281 · ↳mvPaths 282-282 · ↳mvXw 283-284 · ↳conflictM 285-293 · ↳weight 294-483 · ↳startOf 484-505 · ↳wrap 506-508 · ↳findRoot 509-539 · ↳inRing 540-560 · ↳at 561-567 · ↳moveState 568-581 · ↳state 582-586 · ↳greenLeft 587-603 · ↳yields 604-610 · ↳walkState 611-621 · ↳walkLeft 622-634 · ↳walkIn 635-649 · ↳walkLen 650-655 · ↳siteOf 656-661
+- `src/sim/lanes.ts` (831줄): 차로 정하기(길 정본의 차로, 설계 문서 51절). 굽기(tools/road.ts)가 부르고, 정본 없이 차 그래프를 만들 때(시험의 만든 길)도 같은 함수로 정한다.
+  - plainDir 13-20 · medOff 21-24 · resolveLanes 25-96 · ↳open 46-47 · ↳reach 48-53 · ↳between 54-96 · trimShortBumps 97-123 · exportCanon 124-154 · inheritLanes 155-244 · ↳offs 159-159 · ↳aligned 160-164 · ↳seam 165-244 · keepApart 245-332 · ↳key 248-332 · densify 333-350 · reproject 351-381 · ↳fix 353-381 · chainsOf 382-406 · ↳walk 389-406 · spread 407-415 · pushRight 416-447 · ↳after 420-447 · lanePoints 448-466 · oppositeClashes 467-542 · ↳busyEnd 475-475 · ↳nearNode 476-476 · ↳ends 477-477 · ↳meet 478-487 · ↳crossNear 488-542 · seamGaps 543-564 · centreCrossings 565-612 · ↳ck 568-612 · junctionZone 613-618 · lanePoint 619-627 · canonConstraints 628-747 · ↳log 629-629 · ↳curbLeft 630-635 · ↳curbRight 636-654 · ↳clampAll 655-674 · ↳oppInner 675-747 · stitch 748-803 · simplifyTable 804-831 · ↳rec 809-831
+- `src/sim/longitudinal.ts` (32줄): The longitudinal ACC/IDM and stop limit used by makeCars.
+  - followingAcceleration 7-17 · limitAcceleration 18-24 · integrateSpeed 25-28 · capStopSpeed 29-32
+- `src/sim/places.ts` (71줄): 사람이 몰리는 명소(docs/places.md). 사람은 출구·정류장·건물 문에서 나와 돌아다니다가, 지금 붐비는 명소의 길로 더 자주 들어서고 거기서 더 오래 머문다.
+  - placeDist 37-52 · placeMask 53-61 · placeLevel 62-71 · ↳day 63-71
+- `src/sim/provider.ts` (133줄): 시뮬레이션에 들어가는 바깥 자료. 1단계는 시간대 곡선으로 만들고, 2단계에서 이 구현만 실데이터로 바꾼다.
+  - hash 58-61 · isWeekend 62-63 · nightBoost 64-65 · areaPopulation 66-76 · areaAges 77-88 · makeSimProvider 89-133 · ↳crowdNear 94-133
+- `src/sim/railSite.ts` (54줄): 철도 부지(재작업 W45): 땅 위로 드러난 선로 띠. 사람·걷는 길·걷는 면이 들어가면 안 되는 곳이다.
+  - railSite 22-54 · ↳inside 42-54
+- `src/sim/rng.ts` (38줄): 씨앗으로 정해지는 난수(0~1). 같은 씨앗이면 같은 순서가 나온다.
+  - rng 2-12 · hash01 13-19 · mix3 20-27 · pick 28-38
+- `src/sim/season.ts` (19줄): 계절과 주말 한강공원 피크닉. 날짜 번호(1월 1일 = 1)로 나무 색을 고르고, 주말 낮에만 돗자리를 편다.
+  - seasonOf 7-14 · picnicOn 15-19
+- `src/sim/stops.ts` (179줄): 차로마다 서는 자리. 교차로·신호 앞 진입 구간의 차로마다 서울시 정지선(일시정지선 004, 구운 판의 stopLines)이 그 차로 가운데선을 가로지르는 자리를
+  - laneStops 25-179 · ↳key 27-49 · ↳inRing 50-56 · ↳crosswalkAt 57-179
+- `src/sim/trains.ts` (244줄): 열차. 배차 간격표로 하루치 진입 시각을 만들고, 위치는 "진입 뒤 지난 시간"의 함수로만 정한다.
+  - makeProfile 39-103 · ↳push 44-50 · ↳leg 51-103 · headway 104-117 · departures 118-133 · profiles 134-153 · trainsAt 154-181 · arrivals 182-219 · stationBoard 220-244
+- `src/sim/walknet.ts` (264줄): 걷는 길 그래프(public/data/walk.json, tools/lib/walknet.ts 가 굽는다).
+  - HOT_W 92-93 · decodeWalk 94-264 · ↳cellKey 179-183 · ↳isAlley 184-187 · ↳edgeGrid 188-264
+
+## 사람 엔진(예전 판에서 가져와 그대로 쓴다)
+- `src/sim/people/area.ts` (78줄): 걷는 면(재작업 W28, 설계 문서 55절): walk.json `a`(tools/lib/walkarea.ts 가 굽는다)를 32 × 32 칸 조각으로 풀어 둔다.
+  - decodeArea 15-78 · ↳tileOf 27-57 · ↳cellAt 58-62 · ↳at 63-63 · ↳clear 64-69 · ↳room 70-78
+- `src/sim/people/index.ts` (2631줄): 사람(보행자) 시뮬레이션(재작업 W21, 설계 문서 45절). 옛 walkers.ts 를 고쳐 쓰지 않고 처음부터 다시 썼다.
+  - makePeople 196-2610 · ↳prand 230-266 · ↳addNode 267-273 · ↳addPair 274-297 · ↳addCross 298-336 · ↳pushDock 337-342 · ↳attach 343-428 · ↳areaWidth 429-445 · ↳dens 446-447 · ↳opposed 448-482 · ↳dockPos 483-490 · ↳dField 491-551 · ↳pullOf 552-570 · ↳wantsDock 571-611 · ↳remove 612-619 · ↳settle 620-643 · ↳compact 644-675 · ↳cellKey 676-677 · ↳crowded 678-692 · ↳near 693-707 · ↳nodeDens 708-732 · ↳carGrid 733-750 · ↳carDepth 751-770 · ↳carAt 771-788 · ↳inRect 789-795 · ↳inNode 796-803 · ↳inBand 804-817 · ↳inHe 818-819 · ↳valid 820-885 · ↳inRegion 886-894 · ↳tryMove 895-912 · ↳remember 913-917 · ↳wasAt 918-923 · ↳canTurn 924-924 · ↳markTurn 925-934 · ↳backOut 935-945 · ↳goalEdge 946-968 · ↳plan 969-1036 · ↳born 1037-1082 · ↳spawnAt 1083-1116 · ↳pairedWalk 1117-1146 · ↳crossingLength 1147-1151 · ↳crossingTime 1152-1161 · ↳startSpeed 1162-1175 · ↳carAhead 1176-1183 · ↳markBusy 1184-1191 · ↳queueSpot 1192-1208 · ↳waitSpot 1209-1236 · ↳onHe 1237-1242 · ↳sideU 1243-1249 · ↳toArea 1250-1261 · ↳pathOk 1262-1267 · ↳standing 1268-1283 · ↳walkTo 1284-1375 · ↳proj 1376-1392 · ↳someone 1393-1404 · ↳pickExit 1405-1423 · ↳gateOk 1424-1434 · ↳gateSpots 1435-1455 · ↳rightLane 1456-1477 · ↳along 1478-1490 · ↳exitAim 1491-1502 · ↳innerRoute 1503-1522 · ↳bfsRoute 1523-1539 · ↳juncStep 1540-1619 · ↳walkStep 1620-1858 · ↳seek 1859-1884 · ↳arrive 1885-1900 · ↳crossStep 1901-2027 · ↳weigh 2028-2061 · ↳refreshPlaces 2062-2078 · ↳inFocus 2079-2087 · ↳refocus 2088-2111 · ↳allot 2112-2137 · ↳rebuildGrid 2138-2153 · ↳populate 2154-2236 · ↳step 2237-2284 · ↳tick 2285-2368 · ↳escapeCar 2369-2392 · ↳docksOf 2393-2395 · ↳burst 2396-2405 · ↳alight 2406-2435 · ↳board 2436-2451 · ↳waitingAt 2452-2458 · ↳hold 2459-2470 · ↳dockPoint 2471-2477 · ↳setRain 2478-2480 · ↳zoneCounts 2481-2486 · ↳setFocus 2487-2494 · ↳setDetail 2495-2498 · ↳scale 2499-2500 · ↳expected 2501-2513 · ↳warm 2514-2523 · ↳stateOf 2524-2525 · ↳debugOf 2526-2540 · ↳popStats 2541-2542 · ↳validAt 2543-2546 · ↳put 2547-2577 · ↳goHome 2578-2581 · ↳trip 2582-2597 · ↳openingPassenger 2598-2610 · polyDist 2611-2615 · segDist 2616-2623 · polyAt 2624-2631
+- `src/sim/people/junction.ts` (90줄): 갈래 영역 입장 게이트(재작업 W31 S4, 설계 mapo-w31-people-design.md 4절 S4 행, W36).
+  - makeJunctions 37-84 · gateOpen 85-90
+- `src/sim/people/orca.ts` (189줄): 속도 기반 상호 회피(ORCA, van den Berg 외 2011 'Reciprocal n-body collision avoidance'. RVO2 라이브러리의 선형 계획을 옮겼다).
+  - makeLines 19-22 · push 23-32 · wallLine 33-41 · agentLine 42-92 · det 93-95 · lp1 96-127 · lp2 128-150 · lp3 151-184 · solve 185-189
+- `src/sim/people/zones.ts` (128줄): 사람 수 모형(재작업 W21에서 옛 walkers.ts 에서 옮김): 구역마다 지금 밖에 나와 걷는 실제 인원과, 구역 밖 명소 둘레의 인원.
+  - outdoors 23-31 · rainKeep 32-40 · placeNow 41-62 · outside 63-78 · doorWanted 79-82 · zoneOf 83-87 · walkerScale 88-91 · zoneTargets 92-96 · walkerTarget 97-101 · underpasses 102-128 · ↳near 103-128
+
+## 실시간 자료와 중계
+- `src/data/live.ts` (227줄): 실시간 도시데이터(중계 함수 supabase/functions/mapo-citydata 가 추린 값)를 시뮬레이션 공급자 위에 덧씌운다.
+  - rainOf 80-94 · snowOf 95-102 · airOf 103-106 · makeLiveProvider 107-227 · ↳fresh 111-115 · ↳key 116-117 · ↳set 118-142 · ↳linkSpeed 143-227
+- `src/data/subway.ts` (244줄): 실시간 지하철 위치(중계 함수 supabase/functions/mapo-subway 가 추린 값)로 판 위 열차를 움직인다.
+  - makeLiveSubway 78-244 · ↳len 95-97 · ↳move 98-118 · ↳set 119-155 · ↳arrivalState 156-244
+- `supabase/functions/mapo-citydata/index.ts` (279줄): 마포 라이브 3D 실시간 도시데이터 중계. 서울 열린데이터광장 '실시간 도시데이터'(한 번에 한 장소, 응답 약 130KB)를
+  - json 15-82 · num 83-91 · meridian 92-99 · tmToLonLat 100-116 · fromBoard 117-118 · tag 119-119 · unxml 120-120 · ymdhm 121-123 · trimAcc 124-150 · codeTable 151-155 · pt 156-158 · trim 159-215 · topis 216-279 · ↳get 218-279
+- `supabase/functions/mapo-subway/index.ts` (151줄): 마포 라이브 3D 실시간 지하철 위치 중계. 서울 열린데이터광장 '실시간 열차 위치'를 판 위 네 노선(2호선, 6호선, 경의중앙선, 공항철도)마다 받아
+  - json 33-67 · bare 68-68 · when 69-71 · trimArrivals 72-96 · trim 97-151
+
+## Sol 실행 도구
+- `tools/sol/codemap.py` (93줄): docs/code-map.md 를 코드에서 자동으로 만든다(손으로 고치지 않는다).
+  - describe 25-40 · symbols 41-63 · main 64-93
+- `tools/sol/run.sh` (67줄)
+- `tools/sol/usage.py` (62줄): Codex 세션 파일(~/.codex/sessions)에서 실제 토큰 내역을 뽑는다.
+  - events 16-32 · main 33-62
+- `tools/sol/where.py` (76줄): Sol(Codex) 실행 기록에서 문맥으로 들어간 출력이 어디서 왔는지 센다.
+  - blocks 19-41 · kind_of 42-48 · main 49-76
