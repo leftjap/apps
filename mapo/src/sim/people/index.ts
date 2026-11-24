@@ -208,6 +208,8 @@ export function makePeople(
     traffic?: (xw: number) => boolean;
     /** 측량 횡단의 꺾이는 지점에서는 다음 띠 안에 든 뒤 그 띠를 따라간다 */
     surveyedCrossings?: boolean;
+    /** 한 신호에 함께 건너는 횡단 번호 묶음 (분리대 양쪽). */
+    signalPairs?: readonly (readonly number[])[];
     /** 차 몸통 */
     cars?: CarBodies;
     /** 처음에 문·출구에서 나오는 빠르기를 키울 시간(초): 미리 돌리기 */
@@ -1128,6 +1130,7 @@ export function makePeople(
   // Typical same-phase transfers took about two to three seconds including
   // the short walk. Its length is already counted, so allow two more seconds.
   const PAIRED_TRANSFER = 2;
+  const signalPeers = new Map(o.signalPairs?.flatMap(group => group.map(xw => [xw, group] as const)));
   function crossingTime(i: number, peers: readonly number[] | undefined) {
     const c = crosses[hes[he[i]]?.x];
     if (!c) return;
@@ -1139,11 +1142,14 @@ export function makePeople(
   // ── 신호 ──
   /** 건너기 c 를 지금 시작해도 되는가: 걸음(m/s), 안 되면 0 */
   function startSpeed(i: number, c: Cross, tod: number): number {
-    const span = c.cum[c.cum.length - 1];
     const left = o.walkLeft ? o.walkLeft(c.xw, tod) : -1;
     if (left >= 0) {
-      if (left - 1 >= span / spd[i]) return spd[i];
-      if (left > 3 && span / (left - 1) <= HURRY) return span / (left - 1);
+      const next = pairedWalk(i, signalPeers.get(c.xw));
+      const span = crossingLength(c) + (next ? crossingLength(next.mate) : 0);
+      // Between crossings the person is in WALK and keeps their ordinary pace.
+      const available = left - 1 - (next ? PAIRED_TRANSFER + next.gap / spd[i] : 0);
+      if (available >= span / spd[i]) return spd[i];
+      if (available > 2 && span / available <= HURRY) return span / available;
       return 0;
     }
     return c.major && o.traffic?.(c.xw) ? 0 : spd[i];
@@ -1929,7 +1935,10 @@ export function makePeople(
     }
     const left = o.walkLeft ? o.walkLeft(c.xw, tod) : -1;
     const rest = c.cum[c.cum.length - 1] - c.cum[k - 1] - s;
-    const v = left > 1 ? Math.min(HURRY, Math.max(xSpd[i], rest / (left - 0.5))) : left === 0 ? HURRY : xSpd[i];
+    const next = left > 0 ? pairedWalk(i, signalPeers.get(c.xw)) : undefined;
+    const remaining = rest + (next ? crossingLength(next.mate) : 0);
+    const available = left - (next ? PAIRED_TRANSFER + next.gap / spd[i] : 0);
+    const v = available > 1 ? Math.min(HURRY, Math.max(xSpd[i], remaining / (available - 0.5))) : left === 0 || next ? HURRY : xSpd[i];
     const m = walkTo(i, gx, gz, v, dt, bx, bz);
     w.moving[i] = m > 0 ? 1 : 0;
     // 건너편 노드 원·기다리는 자리·승강장 네모 안에 들면 다 건넌 것이다(W28: 붐비는 승강장 끝 한 점에 닿으려다 횡단보도 위를 맴돌았다)

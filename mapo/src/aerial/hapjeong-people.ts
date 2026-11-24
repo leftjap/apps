@@ -110,7 +110,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
   const trial = input.signalTest ? crossingCourses(graph, signalPairs, crossings.signals, start, entrances ? 2 : 1) : undefined;
   const people = makePeople(graph, trial ? [...portals, ...trial.portals] : portals, provider, 5,
     (entrances ? 512 : 64) + (trial?.pending.length ?? 0), {
-    cars: cars.cars, busy, walkLeft, traffic: cars.approaching, surveyedCrossings: !!entrances,
+    cars: cars.cars, busy, walkLeft, traffic: cars.approaching, surveyedCrossings: !!entrances, signalPairs,
   });
   const routes = portalRoutes(graph, portals);
   const portalAudit = portals.map((p,i) => ({ ...p, destinations: routes[i].map(row => portals[row.to].key) }));
