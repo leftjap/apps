@@ -2,6 +2,7 @@ import unittest
 
 from shapely.geometry import LineString, box
 
+from check_district_car_preflight import merge_portal_clearance
 from hapjeong_cars import directed_pieces
 from district_car_graph import grade_crossings, plan_routes
 
@@ -36,3 +37,26 @@ class DistrictCarGraphTest(unittest.TestCase):
         self.assertEqual([p['edge'] for p in plan['entries']], [0])
         self.assertEqual([p['edge'] for p in plan['exits']], [1])
         self.assertFalse(plan['exits'][0]['boundary'])
+
+    def test_runtime_disconnected_lane_does_not_become_portal(self):
+        def lane(key, x0, x1, next_=()):
+            return dict(id=key, kind='6', points=[(x0, 1), (x1, 1)], len=x1-x0,
+                        next=list(next_), duplicateOf=None)
+        rows = [lane('entry', 0, 20, [1]), lane('middle', 20, 40, [2]),
+                lane('exit', 40, 60)]
+        plan = plan_routes(rows, [], box(0, 0, 100, 100), connections=[[1], [], []])
+        self.assertEqual(plan['selected'], [])
+        self.assertEqual(plan['entries'], [])
+        self.assertEqual(plan['exits'], [])
+
+    def test_interior_merge_portal_needs_room_before_contact(self):
+        model = (box(-2, -1, 2, 1), -2, -1, 2, 1)
+        lanes = [
+            {'key': 0, 'points': [(0, 2), (8, 0)], 'next': [2]},
+            {'key': 1, 'points': [(-15, -4), (8, 0)], 'next': [2]},
+        ]
+        rejection = merge_portal_clearance(lanes, {0}, model)
+        self.assertEqual(rejection[0]['outlet'], 2)
+        self.assertLess(rejection[0]['distanceM'], 8.5)
+        lanes[0]['points'] = [(-25, 8), (8, 0)]
+        self.assertEqual(merge_portal_clearance(lanes, {0}, model), {})

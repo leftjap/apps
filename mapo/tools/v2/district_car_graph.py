@@ -116,7 +116,7 @@ def district_bus_routes(rows, window):
         p[i:i+len(r)] == r for i in range(len(p)-len(r)+1)) for p in routes)]
 
 
-def plan_routes(rows, buses, window):
+def plan_routes(rows, buses, window, *, connections=None, permitted_portals=None):
     bus = {i for chain in buses for i in chain}
     before = [[] for _ in rows]
     for i, row in enumerate(rows):
@@ -130,18 +130,25 @@ def plan_routes(rows, buses, window):
         for side, candidates, connected in ((0, entry, before[i]), (-1, exit_, row['next'])):
             at = row['points'][side]
             boundary = window.boundary.distance(Point(at)) < .001
-            if boundary or not connected:
+            if (boundary or not connected) and (permitted_portals is None or (i, side) in permitted_portals):
                 candidates[i] = dict(edge=i, at=at, boundary=boundary)
+
+    # Detect terminals from surveyed topology, never from the pruned replay graph.
+    next_ = connections if connections is not None else [row['next'] for row in rows]
+    predecessors = [[] for _ in rows]
+    for i, arcs in enumerate(next_):
+        for j in arcs:
+            predecessors[j].append(i)
 
     usable = {i for i, row in enumerate(rows) if row['kind'] != '4'
               and (row['kind'] == '6' or i not in bus) and not row.get('disabled')}
     ids = {row['id']: i for i, row in enumerate(rows)}
 
     def search():
-        forward = [[j for j in row['next'] if j in usable] if i in usable else []
-                   for i, row in enumerate(rows)]
+        forward = [[j for j in arcs if j in usable] if i in usable else []
+                   for i, arcs in enumerate(next_)]
         reverse = [[j for j in incoming if j in usable] if i in usable else []
-                   for i, incoming in enumerate(before)]
+                   for i, incoming in enumerate(predecessors)]
         ingress = traverse(forward, usable.intersection(entry))
         egress = traverse(reverse, usable.intersection(exit_))
         return ingress, egress
