@@ -19,6 +19,7 @@ export type HapjeongEntrances = {
   trains: number[];
   platforms: HapjeongPlatform[];
   doors: { key: string; x: number; z: number }[];
+  busService?: { links: string[]; services: { ref: string; kind: number }[]; passengersPerBus: number; boundaryPassengersPerBus: number }[];
 };
 export type HapjeongPeopleInput = { walk: HapjeongWalk; signalTest?: boolean; entrances?: HapjeongEntrances };
 
@@ -49,13 +50,15 @@ export function hapjeongCrossings(asset: HapjeongWalk, crossings: HapjeongCars['
   };
 }
 
+const CROSSING_COST = 12;
+
 function portalRoutes(graph: WalkGraph, portals: HapjeongPortal[]) {
   const nodes = portals.map(portal => graph.nearest(portal.x, portal.z));
   const edges = graph.adj.map((row, a) => row.map(b => ({
     b, crossing: -1, cost: Math.hypot(graph.nx[a*2]-graph.nx[b*2], graph.nx[a*2+1]-graph.nx[b*2+1]),
   })));
   for (const link of graph.links) {
-    const cost = 12 + Math.hypot(link.ax-link.pax, link.az-link.paz) +
+    const cost = CROSSING_COST + Math.hypot(link.ax-link.pax, link.az-link.paz) +
       Math.hypot(link.bx-link.ax, link.bz-link.az) + Math.hypot(link.pbx-link.bx, link.pbz-link.bz);
     edges[link.na].push({ b:link.nb, cost, crossing:link.xw });
     edges[link.nb].push({ b:link.na, cost, crossing:link.xw });
@@ -94,7 +97,8 @@ function portalRoutes(graph: WalkGraph, portals: HapjeongPortal[]) {
 
 export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: ReturnType<typeof hapjeongCrossings>,
                                    cars: ReturnType<typeof makeCars>, busy: Uint32Array, start = 14 * 3600,
-                                   offscreen = (_x: number, _z: number) => true) {
+                                   offscreen = (_x: number, _z: number) => true,
+                                   busHeadway?: (route: number, tod: number) => number) {
   const { entrances } = input;
   const exits = new Map(entrances?.exits.map(exit => [exit.key, exit]));
   const platforms = entrances?.platforms.filter(stop => cars.routes.some(route => route.stopNames.includes(stop.key))) ?? [];
@@ -134,12 +138,59 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
   const cadence = 27/32;
   const dockIndices = new Map(people.docks.map((dock, i) => [dock.key, i]));
   const dock = (key:string) => dockIndices.get(key) ?? -1;
-  for (const stop of platforms) {
+  const fromPlatform = new Map(platforms.map(p => [p.key, portals.findIndex(q => q.key === p.key)]));
+  const nextPassenger = new Map<string, number>();
+  const oneBank = (r: { stripes: Set<number> }) =>
+    signalPairs.every(pair => pair.filter(i => r.stripes.has(i)).length <= 1);
+  const railAccess = portals.map(p => exits.has(p.key));
+  const nearestStop = routes.map(rows => rows.find(r => portals[r.to].kind === 'stop')?.to);
+  const passengerCount = new Map<string, number>();
+  const platformOrigins = new Map(platforms.map(stop => {
+    const i = fromPlatform.get(stop.key)!;
+    const candidates = (sources: number[]) => sources.flatMap(from => routes[from]
+      .filter(r => r.to === i && nearestStop[from] === i && oneBank(r))).sort((a,b) => a.cost-b.cost);
+    return [stop.key, { rail:candidates(rail), boundary:candidates(foot) }];
+  }));
+  if (!busHeadway) for (const stop of platforms) {
     const id = people.openingPassenger(dock(stop.key));
     if (id >= 0) journeys.set(id, {from:stop.key, to:stop.key, tod:start});
   }
-  function advance(dt: number, now: Now) {
+  function supplyPassengers(now: Now) {
+    if (!busHeadway || !entrances?.busService) return;
+    for (const stop of platforms) {
+      if (now.tod < (nextPassenger.get(stop.key) ?? -Infinity)) continue;
+      const r = cars.routes.findIndex(route => route.stopNames.includes(stop.key));
+      const interval = busHeadway(r, now.tod);
+      if (!interval) continue;
+      const { passengersPerBus, boundaryPassengersPerBus } = entrances.busService[r];
+      const sent = passengerCount.get(stop.key) ?? 0;
+      const origins = platformOrigins.get(stop.key)!;
+      const boundary = sent % passengersPerBus >= passengersPerBus - boundaryPassengersPerBus;
+      const preferred = boundary ? origins.boundary : origins.rail;
+      const open = (preferred.length ? preferred : [...origins.rail, ...origins.boundary])
+        .filter(({from}) => now.tod - railDeparture[from] >= 1);
+      const first = open[0];
+      if (!first) continue;
+      // Share demand among similarly short walks without adding crossings.
+      const similar = open.filter(route => route.stripes.size === first.stripes.size
+        && route.cost <= first.cost + CROSSING_COST);
+      const origin = similar[sent % similar.length];
+      const { from, to } = origin;
+      // Reuse the existing spawn and nearest-stop goal.
+      const id = people.trip(dock(portals[from].key), dock(portals[exitRoutes[from][0].to].key));
+      if (id < 0) continue;
+      people.goHome(id,1);
+      journeys.set(id,{from:portals[from].key,to:portals[to].key,tod:now.tod});
+      if (railAccess[from]) railDeparture[from] = now.tod;
+      passengerCount.set(stop.key,sent+1);
+      nextPassenger.set(stop.key,now.tod + interval/passengersPerBus);
+    }
+  }
+
+  function advance(dt: number, now: Now, passengersOnly = false) {
     people.step(dt, now, false);
+    supplyPassengers(now);
+    if (passengersOnly) return;
     for (const [r,k,i] of cars.dwells) {
       const key = cars.routes[r].stopNames[k];
       if (!platforms.some(stop => stop.key === key)) continue;
@@ -196,7 +247,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
     }
     if (!entering && now.tod - railDeparture[from] < 1) return;
     const id = people.trip(dock(portals[from].key),dock(portals[to].key));
-    if (id>=0) {
+    if (id >= 0) {
       journeys.set(id,{from:portals[from].key,to:portals[to].key,tod:now.tod});
       if (entering) inbound[to]++;
       else {

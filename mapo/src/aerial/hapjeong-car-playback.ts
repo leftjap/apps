@@ -1,3 +1,5 @@
+import { busHeadway } from '../sim/buses.ts';
+import { rng } from '../sim/rng.ts';
 import { Frustum, Matrix4, PerspectiveCamera, Sphere, Vector3 } from 'three';
 import { pointAt } from '../poly.ts';
 import { makeCars, VFREE } from '../sim/cars.ts';
@@ -71,12 +73,28 @@ function speedRatio(edge: Edge) {
 export type HapjeongDemand = { vehicles: number; walkers: number };
 
 export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true,
-                            demand?: HapjeongDemand, replayCycles?: number) {
+                            demand?: HapjeongDemand, replayCycles?: number, entrances = pedestrians?.entrances) {
   const visible = carVisibility();
   const full = hapjeongCarGraph(data);
   const central = new Set(data.central);
   const terminalKey = (i: number) => data.links[i].points.at(-1)!.join(',');
-  const buses = [data.bus];
+  const service = entrances?.busService;
+  const idsByLink = new Map(data.links.map((row,i) => [row.id,i]));
+  const buses = service ? service.map(route => route.links.map(id => {
+    const i = idsByLink.get(id);
+    if (i === undefined) throw Error(`Bus route link missing: ${id}`);
+    return i;
+  })) : [data.bus];
+  // The two A2 paths are directions. Several legacy services share each
+  // direction, so combine their departures per second, not their intervals.
+  const sharedHeadway = service ? (r: number, tod: number) => {
+    let rate = 0;
+    for (const line of service[r].services) {
+      const interval = busHeadway(line,tod);
+      if (interval) rate += 1/interval;
+    }
+    return rate ? 1/rate : 0;
+  } : undefined;
   function busOutlet(chain: number[]): number[] | undefined {
     const last = chain.at(-1)!;
     const next = full.edges[last].next;
@@ -87,7 +105,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       if (route) return route;
     }
   }
-  for (const [i, row] of data.links.entries()) {
+  if (!service) for (const [i, row] of data.links.entries()) {
     if (row.kind !== '4' || i === data.bus[0] || !row.next.some(id => central.has(id)) || visible(...row.points[0])) continue;
     const route = busOutlet([i]);
     if (route) buses.push(route);
@@ -158,7 +176,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     return { id: link.id, reason };
   });
   // Keep the entire body inside the drawn map at source and sink boundaries.
-  const graph = hapjeongCarGraph(data, selected, entries, 8, buses, pedestrians?.entrances?.platforms);
+  const graph = hapjeongCarGraph(data, selected, entries, 8, buses, entrances?.platforms);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   const speeds = new Map(graph.edges.map(edge => [edge.key, speedRatio(edge)]));
   // Keep the second walk phase available for trips that reach a refuge
@@ -188,19 +206,54 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       sim.put(e.id, at, 0);
       if (move === STRAIGHT && at >= 14) sim.put(e.id, at - 12, 0);
     }
-    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod, (x,z)=>!visible(x,z));
-    if (carsEnabled && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
+    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod, (x,z)=>!visible(x,z), carsEnabled && ambient ? sharedHeadway : undefined);
+    if (carsEnabled && (!ambient || !sharedHeadway) && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
+    }
+    const dispatchRandom = rng(seed);
+    const nextBus = new Float64Array(graph.buses.length).fill(Infinity);
+    const lastBus = new Uint32Array(graph.buses.length);
+    function stepCars(now: ReturnType<typeof clock>) {
+      sim.step(dt, now, ambient);
+      if (!ambient || !sharedHeadway) return;
+      const { cars } = sim;
+      const state = sim.debug();
+      for (let r = 0; r < graph.buses.length; r++) {
+        const route = graph.buses[r];
+        const first = route.edges[0];
+        const headway = sharedHeadway(r, now.tod);
+        if (!headway) continue;
+        const schedule = () => now.tod + headway * (.85 + .30 * dispatchRandom());
+        let space = true;
+        for (let i = 0; i < cars.n; i++) {
+          // A bus already sent by the legacy scheduler counts towards the
+          // combined frequency, and restarts this direction's interval.
+          if (cars.route[i] === r && cars.uid[i] > lastBus[r]) {
+            lastBus[r] = cars.uid[i];
+            nextBus[r] = schedule();
+          }
+          if (state.edge[i] === first && state.s[i] <= 16) space = false;
+        }
+        if (now.tod < nextBus[r] || !space || !sim.addBus(r)) continue;
+        lastBus[r] = cars.uid[cars.n - 1];
+        nextBus[r] = schedule();
+      }
+    }
+    if (people && ambient && carsEnabled && sharedHeadway) {
+      // Start the previous signal cycle's walks without changing normal
+      // replay seeding, so the first visible bus may have a line to serve.
+      for (let i = -(CYCLE + 12) / dt; i < -12 / dt; i++)
+        people.advance(dt, clock(i * dt), true);
     }
     if (people || demand) {
       // Run the same clock during pre-roll so pedestrians and cars see one another from the start.
       for (let i = -12 / dt; i < 0; i++) {
         const now = clock(i * dt);
-        if (carsEnabled) sim.step(dt, now, ambient);
+        if (carsEnabled) stepCars(now);
         people?.advance(dt, now);
       }
     }
-    return { sim, people, busy };
+    return { sim, people, busy, stepCars };
   }
 
   let state = reset(), frame = 0;
@@ -210,7 +263,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     while (frame < target) {
       frame++;
       const now = clock(frame * dt);
-      if (carsEnabled) state.sim.step(dt, now, ambient);
+      if (carsEnabled) state.stepCars(now);
       state.people?.advance(dt, now);
     }
     return state.sim;

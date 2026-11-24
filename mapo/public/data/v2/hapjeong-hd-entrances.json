@@ -87,5 +87,102 @@
       "yaw": 2.38591726191615
     }
   ],
-  "doors": []
+  "doors": [],
+  "busService": [
+    {
+      "links": [
+        "A2239F280001",
+        "A2239F280172",
+        "A2241C609001",
+        "A2248H005001"
+      ],
+      "services": [
+        {
+          "ref": "602",
+          "kind": 0
+        },
+        {
+          "ref": "603",
+          "kind": 0
+        },
+        {
+          "ref": "604",
+          "kind": 0
+        },
+        {
+          "ref": "G6000",
+          "kind": 2
+        },
+        {
+          "ref": "M6117",
+          "kind": 2
+        },
+        {
+          "ref": "M6724",
+          "kind": 2
+        },
+        {
+          "ref": "M7731",
+          "kind": 2
+        },
+        {
+          "ref": "N26",
+          "kind": 0
+        },
+        {
+          "ref": "N62",
+          "kind": 0
+        }
+      ],
+      "passengersPerBus": 5,
+      "boundaryPassengersPerBus": 1
+    },
+    {
+      "links": [
+        "A2248H005064",
+        "A2251H300749",
+        "A2251H300739"
+      ],
+      "services": [
+        {
+          "ref": "602",
+          "kind": 0
+        },
+        {
+          "ref": "603",
+          "kind": 0
+        },
+        {
+          "ref": "604",
+          "kind": 0
+        },
+        {
+          "ref": "G6000",
+          "kind": 2
+        },
+        {
+          "ref": "M6117",
+          "kind": 2
+        },
+        {
+          "ref": "M6724",
+          "kind": 2
+        },
+        {
+          "ref": "M7731",
+          "kind": 2
+        },
+        {
+          "ref": "N26",
+          "kind": 0
+        },
+        {
+          "ref": "N62",
+          "kind": 0
+        }
+      ],
+      "passengersPerBus": 5,
+      "boundaryPassengersPerBus": 1
+    }
+  ]
 }

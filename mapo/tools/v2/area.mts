@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { HapjeongEntrances } from '../../src/aerial/hapjeong-people.ts';
 
 type Bounds = [number, number, number, number];
 type Area = {
@@ -9,6 +10,7 @@ type Area = {
   sources: { hd: string; board: string };
   output: { directory: string; stem: string };
   station: string;
+  busService?: HapjeongEntrances['busService'];
 };
 
 const here = dirname(fileURLToPath(import.meta.url));

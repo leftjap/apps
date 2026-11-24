@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { PAINT_DASHES } from './ground-paint.ts';
 import { AERIAL_DEV_ORIGIN, PILOT_SITES, groundPoint, tileAtGround, tileBounds } from './map.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
-import type { HapjeongPeopleInput } from './hapjeong-people.ts';
+import type { HapjeongEntrances, HapjeongPeopleInput } from './hapjeong-people.ts';
 
 type XZ = [number, number];
 type Face = XZ[][];
@@ -154,8 +154,9 @@ async function init() {
     if (!response.ok) throw Error(`합정 자료 응답 ${response.status} · ${name}`);
     return response.json();
   };
+  const entrances = simulation ? await load('entrances') as HapjeongEntrances : undefined;
   if (peopleMode) {
-    people = { walk: await load('walk'), entrances: await load('entrances'), signalTest: query.get('signaltest') === '1' };
+    people = { walk: await load('walk'), entrances, signalTest: query.get('signaltest') === '1' };
   }
   const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
   const demand = simulation ? await load('demand') as import('./hapjeong-car-playback.ts').HapjeongDemand : undefined;
@@ -297,7 +298,7 @@ async function init() {
   if (cars) {
     const { attachHapjeongSimulation } = await import('./hapjeong-cars.ts');
     refreshSimulation = attachHapjeongSimulation(
-      model, camera, right.domElement, cars, () => right.render(model, camera), query, carsMode, people, demand,
+      model, camera, right.domElement, cars, () => right.render(model, camera), query, carsMode, people, demand, entrances,
     );
   }
   document.querySelector('main')!.dataset.ready='true';

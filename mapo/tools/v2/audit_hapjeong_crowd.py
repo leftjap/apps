@@ -44,6 +44,9 @@ def frames(records, meta, plan, static):
                                   key=lambda pair: math.dist(*pair))
     island_since, waited_five, held_on_red = {}, defaultdict(set), defaultdict(set)
     last_face = {}
+    platform_keys = {p['key'] for p in (meta.get('platforms') or [])}
+    passenger_holds = defaultdict(set)
+    red_holds = defaultdict(dict)
     prepare(crosses)
     bounds = np.array([face.bounds if not face.is_empty else [0]*4 for face in crosses])
     phase = [next(((p['start'], p['start']+p['duration']) for p in plan['phase'] if key in p['walk']), None)
@@ -109,6 +112,8 @@ def frames(records, meta, plan, static):
         for idx,p in enumerate(people):
             uid,x,z,mode,i,light = p[:6]
             identity = walker_identity(p)
+            journey = p[9] or {}
+            bus_passenger = journey.get('from') in platform_keys or journey.get('to') in platform_keys
             p_ever.add(uid)
             cur[uid] = (mode,i)
             if mode=='cross':
@@ -116,6 +121,9 @@ def frames(records, meta, plan, static):
             if i in island and mode=='wait' and math.dist((x,z),island[i]) <= 3:
                 if light==2 and last_face.get(identity) in groups[i]-{i}:
                     held_on_red[i].add(identity)
+                    if bus_passenger:
+                        passenger_holds[i].add(identity)
+                    red_holds[i].setdefault(identity, dict(uid=uid, at=t, x=x, z=z, bus=bus_passenger, journey=journey))
                 if not p[8]:
                     key = (identity,i)
                     t0 = island_now[key] = island_since.get(key,t)
@@ -150,7 +158,7 @@ def frames(records, meta, plan, static):
             if mode == 'cross' and old_state != ('cross',i) and t:
                 if last_exit.get(uid, (-1,))[0] == i:
                     last_exit.pop(uid)
-                enter = dict(uid=uid,i=i,cycle=cycle,start=t,due=deadline(i,t),red=light==2,seen=bool(inside[idx,i]))
+                enter = dict(uid=uid,i=i,cycle=cycle,start=t,due=deadline(i,t),red=light==2,seen=bool(inside[idx,i]),bus=bus_passenger, journey=journey)
                 episodes.append(enter)
                 start_side[uid] = (i,1 if progress < 0 else -1,enter)
             if mode == 'wait' and (last := last_exit.get(uid)) and last[0] != i and last[0] in groups[i]:
@@ -219,12 +227,16 @@ def frames(records, meta, plan, static):
     rows = []
     for i in sorted(linked):
         e = [r for r in episodes if r['i']==i]
+        late = [dict(uid=r['uid'], start=r['start'], due=r['due'], finish=r.get('physical_end'),
+                     bus=r['bus'], journey=r['journey'])
+                for r in e if r['due'] is not None and r['due']<=meta['duration']
+                and r.get('physical_end',math.inf)>r['due']]
         rows.append(dict(face=ids[i], group=sorted(ids[j] for j in groups[i]), starts=len(e), red=sum(r['red'] for r in e),
                          completed=[completions[i,k] for k in (0,1)],
-                         late=sum(r['due'] is not None and r['due']<=meta['duration'] and
-                                  r.get('physical_end',math.inf)>r['due'] for r in e),
+                         late=len(late), bus_late=sum(row['bus'] for row in late), late_detail=late,
                          next_phase_wait=len(refuges[i]), car_touch=sorted(contacts[i]),
                          island_wait_over_5=len(waited_five[i]), island_wait_on_red=len(held_on_red[i]),
+                         bus_island_wait_on_red=len(passenger_holds[i]), island_wait_detail=list(red_holds[i].values()),
                          car_stop=len(stopped[i]), car_start=len(launched[i]),
                          blocked=[uid for uid,xw in sorted(blocked) if xw==i]))
     left = [dict(lane=lane,cycle=period+1,count=counts[1])

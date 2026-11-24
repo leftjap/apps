@@ -85,6 +85,6 @@ const platforms = MED_STOPS.filter(([,name])=>name===`${station}역`).flatMap(([
   const {distance:_,...stop}=best;
   return [stop];
 });
-const data = {exits, station, lines:lines.map(({id,color})=>({id,color})), trains, platforms, doors:[]};
+const data = {exits, station, lines:lines.map(({id,color})=>({id,color})), trains, platforms, doors:[], busService: areaConfig.busService};
 writeFileSync(assetPath(areaConfig, '-entrances'),JSON.stringify(data,null,2)+'\n');
 console.log(JSON.stringify(data));
