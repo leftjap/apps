@@ -1,4 +1,5 @@
 """Check a surveyed area's building and ground asset."""
+from collections import Counter
 import json
 
 from shapely import union_all
@@ -13,16 +14,15 @@ def verify(data, floor):
     pavement = surface(floor['floor']['walk'])
     road = surface(floor['floor']['road']).difference(pavement)
     reserved = road.union(pavement)
-    eligible = {row['UFID']: int(row['층수']) for face, row in survey_faces('B0010000')
-                if row['종류'] not in OMIT and face.difference(reserved).area > 0}
+    eligible = Counter((row['UFID'], int(row['층수'])) for face, row in survey_faces('B0010000')
+                       if row['종류'] not in OMIT and face.difference(reserved).area > 0)
     buildings = data['buildings']
-    assert len(buildings) == len(eligible)
-    assert {row['id'] for row in buildings} == eligible.keys()
+    assert Counter((row['id'], row['floors']) for row in buildings) == eligible
     poses = []
     for building in buildings:
         face = surface(building['faces'])
-        floors = eligible[building['id']]
-        assert floors > 0 and building['floors'] == floors and building['height'] == 3 * floors
+        floors = building['floors']
+        assert floors > 0 and building['height'] == 3 * floors
         assert face.area > 0 and WINDOW.covers(face), building['id']
         poses.append(face)
     footprint = union_all(poses)

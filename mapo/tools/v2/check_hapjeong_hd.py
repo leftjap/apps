@@ -5,7 +5,7 @@ from math import pi
 from shapely import make_valid
 from shapely.geometry import LineString, Polygon
 from shapely.ops import unary_union
-from hapjeong_hd import AREA, ASSET, RAW, WINDOW, connectivity, features, paths, face_rings, offset_zebra
+from hapjeong_hd import AREA, ASSET, RAW, WINDOW, connectivity, features, paths, face_rings, floor_faces, floor_paths, offset_zebra
 
 def read(path):
     return json.loads(path.read_text())
@@ -27,12 +27,13 @@ def main():
     for key, expected in checks.get('baseCounts', {}).items():
         assert counts[key] == expected, (key, counts[key], expected)
     assert [row['paths'] for row in data['lines']] == [
-        json.loads(json.dumps(paths(row))) for row in features('b2')]
+        json.loads(json.dumps(sections)) for row in features('b2')
+        if (sections := floor_paths(paths(row)))]
     assert [row['paths'] for row in data['links']] == [
         json.loads(json.dumps(paths(row))) for row in features('a2')]
     marks = {row['properties']['id']: row for row in features('b3')}
     for row in data['crossings'] + data['bicycles']:
-        assert row['faces'] == json.loads(json.dumps(face_rings(marks[row['id']])))
+        assert row['faces'] == json.loads(json.dumps(floor_faces(face_rings(marks[row['id']]))))
     for row in data['crossings']:
         face = surface(row['faces'])
         assert surface(row['stripes']).difference(face).area < 1e-8, row['id']

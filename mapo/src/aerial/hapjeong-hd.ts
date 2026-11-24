@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { PAINT_DASHES } from './ground-paint.ts';
-import { AERIAL_DEV_ORIGIN, groundPoint, tileAtGround, tileBounds } from './map.ts';
+import { AERIAL_DEV_ORIGIN, tileBounds } from './map.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
-import { hapjeongArea, type SurveyArea } from './survey-area.ts';
+import { hapjeongArea, photoTiles, type SurveyArea } from './survey-area.ts';
 import type { HapjeongEntrances, HapjeongPeopleInput } from './hapjeong-people.ts';
 
 type XZ = [number, number];
@@ -31,16 +31,6 @@ const flat = (color: string, groundLayer = 0) => new THREE.MeshBasicMaterial({
   polygonOffset: groundLayer > 0, polygonOffsetFactor: 0, polygonOffsetUnits: -groundLayer,
 });
 
-function photoTiles(photo: SurveyArea['photo']) {
-  if ('bounds' in photo) {
-    const [x0, z0, x1, z1] = photo.bounds;
-    return [tileAtGround(x0, z0), tileAtGround(x1, z1)];
-  }
-  const { x, y } = tileAtGround(...groundPoint(photo.centerLonLat));
-  const r = photo.tileRadius;
-  return [{ x: x - r, y: y - r }, { x: x + r, y: y + r }];
-}
-
 async function photoPlane(photo: SurveyArea['photo'], trial = false) {
   const [first, last] = photoTiles(photo);
   const mosaic = document.createElement('canvas');
@@ -68,7 +58,8 @@ async function photoPlane(photo: SurveyArea['photo'], trial = false) {
       }
     }
   };
-  const batch = trial ? 7 : tiles.length;
+  // Keep large comparison views from issuing every request at once.
+  const batch = trial || 'bounds' in photo ? 7 : tiles.length;
   for (let i=0;i<tiles.length;i+=batch) await Promise.all(tiles.slice(i,i+batch).map(load));
   const texture = new THREE.CanvasTexture(mosaic);
   texture.colorSpace = THREE.SRGBColorSpace;

@@ -25,6 +25,9 @@ def survey_access(audit, actual, marked):
         ends = row['approaches']
         caps = []
         available = [actual.intersection(face.envelope.buffer(8)),face]
+        if row['status'] == 'unconfirmed':
+            counts.update(link['status'] for link in ends)
+            continue
         for link, other in (ends,ends[::-1]):
             status = link['status']
             counts[status] += 1
@@ -148,6 +151,9 @@ if __name__ == '__main__':
     assert new['floor']['road'] == old['floor']['road']
     expected = surface(old['floor']['walk']+old['floor']['islands']+[f for row in old['floor']['a4'] for f in row['faces']])
     actual = surface(new['floor']['walk'])
+    if AREA.get('floor', {}).get('clipToWindow'):
+        assert expected.difference(WINDOW).area < 1e-7
+        assert actual.difference(WINDOW).area < 1e-7
     assert expected.difference(actual).area < 1e-8
     additions = actual.difference(expected)
     edges = [LineString(path) for row in old['lines'] if row['kind']=='505' for path in row['paths']]

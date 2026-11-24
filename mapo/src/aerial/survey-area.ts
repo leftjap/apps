@@ -1,4 +1,5 @@
 import manifest from '../../tools/v2/areas/hapjeong.json' with { type: 'json' };
+import { groundPoint, tileAtGround } from './map.ts';
 
 type Point = [number, number];
 type Bounds = [number, number, number, number];
@@ -31,3 +32,13 @@ export type SurveyArea = {
 };
 
 export const hapjeongArea = manifest as unknown as SurveyArea;
+
+export function photoTiles(photo: SurveyArea['photo']) {
+  if ('bounds' in photo) {
+    const [x0, z0, x1, z1] = photo.bounds;
+    return [tileAtGround(x0, z0), tileAtGround(x1, z1)];
+  }
+  const { x, y } = tileAtGround(...groundPoint(photo.centerLonLat));
+  const r = photo.tileRadius;
+  return [{ x: x - r, y: y - r }, { x: x + r, y: y + r }];
+}

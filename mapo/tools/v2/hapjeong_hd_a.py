@@ -8,7 +8,7 @@ from shapely import affinity, make_valid
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
-from hapjeong_hd import AREA, ASSET, MAPO, ORIGIN, asset, features, parts, paths, project, offset_zebra, rings
+from hapjeong_hd import AREA, ASSET, MAPO, ORIGIN, WINDOW, asset, features, parts, paths, project, offset_zebra, rings
 from hapjeong_crossings import expanded_walk, supplement_crossings, walking_landings
 
 OUTPUT = asset(AREA, '-a')
@@ -158,6 +158,7 @@ def platform_strips(face, span, width, edges):
 
 def bake_a(old):
     floor = old['floor']
+    clip = AREA.get('floor', {}).get('clipToWindow')
     survey_walk = surface(floor['walk'] + floor['islands'])
     combined = survey_walk.union(surface([face for row in floor['a4'] for face in row['faces']]))
     common_road = surface(floor['road']).difference(survey_walk)
@@ -174,12 +175,16 @@ def bake_a(old):
         crossings.append({**row, 'stripes':stripes, 'spatial':result})
     cross_faces = surface([face for row in crossings+old['bicycles'] for face in row['faces']])
     combined = combined.union(median_paving(floor,cross_faces)).union(expanded_walk(floor['a4']))
+    if clip:
+        combined = combined.intersection(WINDOW)
     buildings = surface([[ [project(p) for p in ring] for ring in row['rings']]
                          for row in source_buildings if row['height'] or row['floors']])
     recovered, crossing_audit = supplement_crossings(crossings,combined,buildings)
     approaches = surface([face for row in crossing_audit if row['status']!='unconfirmed'
                           for end in row['approaches'] for face in end['faces']])
     combined = combined.union(approaches.difference(cross_faces))
+    if clip:
+        combined = combined.intersection(WINDOW)
     return {
         'views': [view for view in old['views'] if view['mode']=='photo'],
         'floor': {'road':floor['road'], 'walk':rings(combined), 'islands':[], 'a4':[]},
@@ -200,4 +205,8 @@ def pedestrian_landings(floor, cars):
 
 if __name__=='__main__':
     result = bake_a(json.loads(ASSET.read_text()))
+    if AREA.get('floor', {}).get('bakeLandings'):
+        from hapjeong_cars import load_links
+
+        result['pedestrianLandings'] = pedestrian_landings(result, {'links': load_links()})
     OUTPUT.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':'))+'\n')

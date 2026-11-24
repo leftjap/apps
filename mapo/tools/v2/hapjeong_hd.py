@@ -212,6 +212,19 @@ def connectivity(core, expanded, nodes, central):
             'expandedNodeCount': len(nodes), 'bboxReferenceCount': bbox_entries}
 
 
+def floor_faces(faces):
+    if not AREA.get('floor', {}).get('clipToWindow'):
+        return faces
+    return rings(unary_union([make_valid(Polygon(outer, holes)) for outer, *holes in faces]).intersection(WINDOW))
+
+
+def floor_paths(lines):
+    if not AREA.get('floor', {}).get('clipToWindow'):
+        return lines
+    return [list(section.coords) for line in lines
+            for section in parts(LineString(line).intersection(WINDOW), 'LineString')]
+
+
 def bake():
     core = features('a2')
     expanded = features('a2-expanded')
@@ -221,14 +234,19 @@ def bake():
     lines, crossings, bicycles = [], [], []
     for row in features('b2'):
         p = row['properties']
-        lines.append({'id': p['id'], 'kind': p['kind'], 'type': p['type'], 'paths': paths(row),
+        ink_paths = floor_paths(paths(row))
+        if not ink_paths:
+            continue
+        lines.append({'id': p['id'], 'kind': p['kind'], 'type': p['type'], 'paths': ink_paths,
                       'ink': marking_style(p['kind'], p['type'])})
 
     for row in features('b3'):
         p = row['properties']
         if p['kind'] not in ('533', '5321', '534'):
             continue
-        faces = face_rings(row)
+        faces = floor_faces(face_rings(row))
+        if not faces:
+            continue
         if p['kind'] == '534':
             bicycles.append({'id': p['id'], 'faces': faces})
             continue
@@ -250,7 +268,8 @@ def bake():
                           'directions': directions, 'faces': faces, 'stripes': stripes})
 
     floor = survey_floor()
-    a4 = [{'id': row['properties']['id'], 'faces': face_rings(row)} for row in features('a4')]
+    a4 = [{'id': row['properties']['id'], 'faces': faces} for row in features('a4')
+          if (faces := floor_faces(face_rings(row)))]
     return {
         'views': VIEWS,
         'floor': {'road': rings(floor['road']), 'walk': rings(floor['walk']), 'islands': rings(floor['island']), 'a4': a4},

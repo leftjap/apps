@@ -9,6 +9,10 @@ describe('local aerial preview', () => {
     expect(allowedTile({ ...request, path: '/203063/446975.jpeg' })).toEqual({ x: 446975, y: 203063 });
   });
 
+  it('allows tiles covered by a survey area photo window', () => {
+    expect(allowedTile({ ...request, path: '/203050/446976.jpeg' })).toEqual({ x: 446976, y: 203050 });
+  });
+
   it('rejects other sites, non-loopback clients, and unrelated tile requests', () => {
     for (const change of [
       { host: 'other.example:5198' }, { host: 'localhost:5197' }, { remote: '192.168.1.1' }, { site: 'cross-site' },

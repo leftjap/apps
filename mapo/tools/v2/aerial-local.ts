@@ -1,11 +1,17 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { parseEnv } from 'node:util';
+import { photoTiles, type SurveyArea } from '../../src/aerial/survey-area.ts';
 import type { Plugin } from 'vite';
 import { AERIAL_DEV_ORIGIN, AERIAL_DEV_PORT, groundPoint, PILOT_SITES, tileAtGround, vworldTileUrl } from '../../src/aerial/map.ts';
 
 const prefix = '/apps/mapo/__aerial/';
+const areaDirectory = new URL('./areas/', import.meta.url);
+const surveyTiles = readdirSync(areaDirectory).filter(name => name.endsWith('.json')).flatMap(name => {
+  const photo: SurveyArea['photo'] | undefined = JSON.parse(readFileSync(new URL(name, areaDirectory), 'utf8')).photo;
+  return photo ? [photoTiles(photo)] : [];
+});
 const centres = Object.values(PILOT_SITES).map(site => tileAtGround(...groundPoint(site)));
 
 type LocalRequest = { host?: string; remote?: string; site?: string; path: string };
@@ -17,7 +23,10 @@ export function allowedTile({ host, remote, site, path }: LocalRequest) {
   if (!parts) return null;
   const [, row, col] = parts;
   const tile = { x: Number(col), y: Number(row) };
-  return centres.some(c => Math.abs(c.x - tile.x) <= 5 && Math.abs(c.y - tile.y) <= 5) ? tile : null;
+  const pilot = centres.some(c => Math.abs(c.x - tile.x) <= 5 && Math.abs(c.y - tile.y) <= 5);
+  const survey = surveyTiles.some(([first, last]) =>
+    tile.x >= first.x && tile.x <= last.x && tile.y >= first.y && tile.y <= last.y);
+  return pilot || survey ? tile : null;
 }
 
 export function localAerial(): Plugin {

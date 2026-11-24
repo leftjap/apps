@@ -1,0 +1,149 @@
+{
+  "id": "seogyo",
+  "title": "서교동사거리와 서교동 중앙정류소",
+  "fetch": {
+    "core": [
+      126.9159407,
+      37.5509161,
+      126.9213228,
+      37.5551381
+    ],
+    "expanded": [
+      126.9146943,
+      37.549883,
+      126.9226259,
+      37.5561711
+    ],
+    "vehicleAudit": [
+      126.9129947,
+      37.5486253,
+      126.9243255,
+      37.5574286
+    ],
+    "vehicleSeams": [
+      126.911295,
+      37.5472778,
+      126.9260251,
+      37.558776
+    ]
+  },
+  "window": [
+    -219,
+    -363,
+    171,
+    -3
+  ],
+  "frame": {
+    "origin": [
+      126.919,
+      37.5515
+    ]
+  },
+  "sources": {
+    "hd": "tools/raw/ngii/seogyo-hd",
+    "sheets": "tools/raw/ngii/suchi/sheets",
+    "seoulCrossings": "tools/raw/seoul-crosswalks.json",
+    "board": "public/data/board.json",
+    "medianStops": "src/data/medStops.ts",
+    "pilotBuildings": "public/data/aerial-pilot.json"
+  },
+  "output": {
+    "directory": "public/data/v2",
+    "stem": "seogyo-hd"
+  },
+  "station": null,
+  "junctionAt": [
+    -70,
+    -130
+  ],
+  "views": {
+    "display": [
+      {
+        "id": "all",
+        "title": "서교동 전체",
+        "at": [
+          -53,
+          -151
+        ],
+        "width": 650,
+        "mode": "photo"
+      },
+      {
+        "id": "junction",
+        "title": "서교동사거리",
+        "at": [
+          -69.82,
+          -135.57
+        ],
+        "width": 100,
+        "mode": "photo"
+      },
+      {
+        "id": "platform",
+        "title": "서교동 중앙정류소",
+        "at": [
+          70,
+          -265
+        ],
+        "width": 110,
+        "mode": "photo"
+      }
+    ],
+    "simulation": [
+      {
+        "id": "junction",
+        "title": "서교동사거리",
+        "at": [
+          -69.82,
+          -135.57
+        ],
+        "width": 100,
+        "mode": "photo"
+      },
+      {
+        "id": "platform",
+        "title": "서교동 중앙정류소",
+        "at": [
+          70,
+          -265
+        ],
+        "width": 110,
+        "mode": "photo"
+      }
+    ],
+    "default": "all",
+    "replayDefault": "junction"
+  },
+  "photo": {
+    "bounds": [
+      -449,
+      -691,
+      491,
+      240
+    ]
+  },
+  "platforms": {
+    "name": "서교동",
+    "keys": [
+      "14013",
+      "14014"
+    ]
+  },
+  "checks": {
+    "exitKeys": []
+  },
+  "replay": {
+    "enabled": false,
+    "busName": "서교동",
+    "axisNames": [
+      "양화로",
+      "교차축"
+    ],
+    "signalLabel": "서교동 모의 신호"
+  },
+  "combinedByDefault": true,
+  "floor": {
+    "clipToWindow": true,
+    "bakeLandings": true
+  }
+}
