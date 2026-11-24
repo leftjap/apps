@@ -114,13 +114,22 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
   });
   const routes = portalRoutes(graph, portals);
   const portalAudit = portals.map((p,i) => ({ ...p, destinations: routes[i].map(row => portals[row.to].key) }));
-  const froms = routes.flatMap((row,i) => row.length && portals[i].kind==='exit' ? [i] : []);
+  const exitRoutes = routes.map((rows, i) => rows.filter(({to}) => portals[to].kind==='exit' &&
+    (!entrances || exits.has(portals[i].key) !== exits.has(portals[to].key))).slice(0,6));
+  const froms = exitRoutes.flatMap((row,i) => row.length && portals[i].kind==='exit' ? [i] : []);
   const rail = froms.filter(i => exits.has(portals[i].key));
   const foot = froms.filter(i => !exits.has(portals[i].key));
+  const routeWeight = (r: {cost:number; stripes:Set<number>}) => 1/((30+r.cost)*(entrances ? 1+r.stripes.size : 1));
+  const inboundRoutes = rail.map(to => foot.flatMap(from => exitRoutes[from].filter(r=>r.to===to))
+    .sort((a,b)=>routeWeight(b)-routeWeight(a)));
+  const inbound = new Uint16Array(portals.length);
+  const railDeparture = new Float64Array(portals.length).fill(-Infinity);
   const journeys = new Map<number, { from: string; to: string; tod: number }>();
   const busEvents: { at:number; key:string; vehicle:number; alighted:number; boarding:number }[] = [];
   const rand = rng(5);
-  let untilNext = 0, cursor = 0, boundaryCursor = 0, train = 0, burst = 0;
+  let untilNext = 0, railCursor = 0, footCursor = 0, train = 0, burst = 0, enterStation = true;
+  // The first replay filled the central view to 27 of the required 32.
+  const cadence = 27/32;
   const dockIndices = new Map(people.docks.map((dock, i) => [dock.key, i]));
   const dock = (key:string) => dockIndices.get(key) ?? -1;
   for (const stop of platforms) {
@@ -167,19 +176,34 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
     }
     untilNext -= dt;
     if (untilNext > 0 || !froms.length) return;
-    const from = rail.length
-      ? (!burst && foot.length && (cursor + 1)%8===0 ? foot[boundaryCursor++ % foot.length] : rail[cursor % rail.length])
-      : froms[cursor % froms.length];
-    cursor++;
-    const nearby = routes[from].filter(r=>portals[r.to].kind==='exit').slice(0,6);
-    if (!nearby.length) return;
-    const {to} = nearby[pick(nearby.map(r=>1/((30+r.cost)*(entrances ? 1+r.stripes.size : 1))),rand())];
+    const entering = foot.length && (!rail.length || enterStation);
+    let from: number, to: number;
+    if (entering && rail.length) {
+      const available = inboundRoutes.filter(r=>r.length);
+      const least = Math.min(...available.map(([r])=>inbound[r.to]));
+      const nearby = available.filter(([r])=>inbound[r.to]===least).map(r=>r[0]);
+      // Pick among equally supplied destinations with the existing weights.
+      // Each starts on the best route from the boundary, so long detours do
+      // not accumulate at the approaches to the under-served exits.
+      const r = nearby[pick(nearby.map(routeWeight),rand())];
+      ({from,to} = r);
+    } else {
+      from = entering ? foot[footCursor++ % foot.length] : rail[railCursor++ % rail.length];
+      const choices = exitRoutes[from];
+      ({to} = choices[pick(choices.map(routeWeight),rand())]);
+    }
+    if (!entering && now.tod - railDeparture[from] < 1) return;
     const id = people.trip(dock(portals[from].key),dock(portals[to].key));
     if (id>=0) {
       journeys.set(id,{from:portals[from].key,to:portals[to].key,tod:now.tod});
-      if (burst) burst--;
+      if (entering) inbound[to]++;
+      else {
+        railDeparture[from] = now.tod;
+        if (burst) burst--;
+      }
+      if (rail.length && foot.length) enterStation = !entering;
     }
-    untilNext = entrances ? (burst ? .46 : .76) + .16 * rand() : 1.5 + 1.1 * rand();
+    untilNext = entrances ? cadence * ((burst && !entering ? .46 : .76) + .16 * rand()) : 1.5 + 1.1 * rand();
   }
   cars.setPeople(people.w);
   return { ...people, advance, portalAudit, journeys, crossingTrial:trial, busEvents };
