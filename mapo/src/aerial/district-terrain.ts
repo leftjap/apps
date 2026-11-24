@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { makeSurveyBuildings, type SurveyBuilding } from './survey-buildings.ts';
-import { makeYanghwaTerrain, type YanghwaBuildings, type YanghwaFloor } from './yanghwa-terrain.ts';
+import { makeYanghwaTerrain, type SurveyRoadPaint, type YanghwaBuildings, type YanghwaFloor } from './yanghwa-terrain.ts';
 
 const DETAIL_CELL = 192;
 const DETAIL_WIDTH = 360;
 type Cell = { buildings: SurveyBuilding[]; bounds: THREE.Box3; group?: THREE.Group };
 
-export function makeDistrictTerrain(data: YanghwaFloor, area: YanghwaBuildings) {
-  const group = makeYanghwaTerrain(data, { ...area, buildings: [] }, true, 320);
+export function makeDistrictTerrain(data: YanghwaFloor, area: YanghwaBuildings, roadPaint: SurveyRoadPaint) {
+  const group = makeYanghwaTerrain(data, { ...area, buildings: [] }, true, 320, roadPaint);
   const distant = new THREE.Group().add(...makeSurveyBuildings(area.buildings, { chunkSize: 512, detail: false }));
   const nearby = new THREE.Group();
   group.add(distant, nearby);

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>큰길 항공사진 대조</title>
+<style>
+:root{color-scheme:light;--paper:#f5f4ed;--ink:#182526;--soft:#425956;--line:#d0d8cf;--teal:#23604e}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+main{max-width:1700px;padding:24px 22px 52px;margin:auto}
+h1{font-size:clamp(1.6rem,3vw,2.35rem);line-height:1.1;margin-bottom:10px}
+h2{font-size:1.22rem;margin:28px 0 10px}p{margin:8px 0}a{color:var(--teal)}
+.links{display:flex;gap:12px;flex-wrap:wrap}
+.count{font-variant-numeric:tabular-nums;color:var(--soft)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:right;border-bottom:1px solid var(--line);padding:4px 7px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+.table-scroll,.three-scroll{overflow:auto}
+details{margin:6px 0;border:1px solid var(--line);border-radius:7px;background:#fffeff}
+summary{cursor:pointer;padding:9px 13px;font-weight:650}
+.cards{padding:0 12px 12px}
+article{margin:14px 0 20px;border-top:1px solid var(--line);scroll-margin-top:12px}
+article.alarm{border-top:3px solid #a84c32}
+.caption{margin:7px 0;color:var(--soft)}
+.frame.pair{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;margin:8px 0 18px}
+.frame{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-width:610px;gap:8px}
+figure{margin:0;position:relative;min-width:0}figure img{display:block;width:100%;height:auto;background:#0b0d11}
+figcaption{line-height:1.15;font-size:.8rem;padding:5px 4px;background:#edf1ec}
+.kv{font-variant-numeric:tabular-nums;font-size:.88rem}
+.bad{color:#a03622;font-weight:680}
+.eyebrow{font-size:.84rem;color:var(--soft)}
+footer{margin-top:28px;color:var(--soft);font-size:.85rem}
+</style>
+<main>
+<header><h1>큰길 항공사진 대조</h1>
+<p class="count" id="coverage">구간 자료를 읽는 중입니다.</p>
+<p>브이월드 레벨 19 항공사진과 같은 좌표·축척의 평면도입니다. <strong>빨강</strong> 유효 찻길 경계, <strong style="color:#257993">하늘</strong> 노면선, <strong style="color:#9d218b">자홍</strong> 정지선, <strong style="color:#806900">노랑</strong> 횡단 면, <strong>흰색</strong> 건물 외곽선, <strong style="color:#91511a">주황</strong> 안전지대 외곽선. 눈금은 10m입니다.</p>
+<nav class="links" id="links"><a href="sections.tsv">칸별 TSV</a><a href="roads.tsv">길별 TSV</a></nav>
+</header>
+<section id="comparison" hidden><h2>앞뒤 비교</h2><div id="before-after"></div></section>
+<section id="benchmark" hidden><h2>기준 범위</h2><div id="base"></div></section>
+<section><h2>길별 비교</h2>
+<p class="eyebrow">자동 판독은 사진의 길 방향 ±8m를 사용합니다. —는 미판독입니다. 미짝 칠과 차로 수 불일치는 사진을 다시 볼 후보입니다. 그림자·차량이나 가까운 포장 경계를 잘못 잡을 수 있습니다. 표는 절댓값 가운데값·최댓값(m)입니다. 눈으로 확인한 값은 해당 칸에 따로 적었습니다.</p>
+<div class="table-scroll"><table id="totals"></table></div></section>
+<section><h2>자동 경보가 큰 칸</h2><div id="high"></div></section>
+<section><h2>길별 사진·모형·겹침</h2><div id="roads"></div></section>
+<footer>국토지리정보원 수치지형도·정밀도로지도 · 브이월드 항공사진. 타일 원본 약 0.237m/px, 촬영일 미상. 평면 비교는 10px/m로 표시합니다. 원사진은 수평 기준으로만 돌렸습니다.</footer>
+</main>
+<script type="module">
+const url=new URL('report.json',location.href);
+const coverage=document.querySelector('#coverage');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const get=await fetch(url);
+if(!get.ok)throw Error('구간 자료 '+get.status);
+const r=await get.json();
+const fmt=x=>x==null?'—':typeof x==='number'?x.toFixed(2):x;
+const nums=x=>x==null?'—':Array.isArray(x)?x.map(n=>fmt(n)).join(' / '):fmt(x);
+const empty=x=>fmt(x);
+const images=(s)=>['photo.jpg','model.png','overlay.jpg'].map((file,i)=>{
+  const src='panels/'+s.id.slice(0,3)+'/'+s.id+'-'+file;
+  return '<figure><a href="'+src+'"><img width="'+s.width*10+'" height="'+s.height*10+'" loading="lazy" src="'+src+'" alt="'+esc(s.road)+' '+['사진','모형','겹침'][i]+'"></a><figcaption>'+['사진','모형','겹침'][i]+'</figcaption></figure>';
+}).join('');
+function card(s,ids=false){
+  const p=s.paint_max!=null?s.paint_max.toFixed(2):'—';
+  const possible=s.model_extra==null?'—':s.model_extra.length+' / '+s.photo_extra.length;
+  const matched=s.stop_and_crossing.filter(x=>x.delta!=null).map(x=>x.kind+' '+x.delta+'m');
+  const count=s.manual?.manual_lanes_photo?' · 눈 판독 '+nums(s.manual.manual_lanes_photo)+' ↔ '+nums(s.manual.manual_lanes_model):'';
+  return '<article '+(s.rank>=4?'class="alarm" ':'')+(ids?'id="'+s.id+'"':'')+'><p class="caption"><strong>'+esc(s.id+' · '+s.road+' · '+s.kind)+'</strong> · '+s.d+'m · ('+s.xy.join(', ')+')'+(s.multi_grade?' · 복층 후보':'')+' · '+esc(s.cause)+'</p>'+
+    '<div class="three-scroll"><div class="frame">'+images(s)+'</div></div><p class="kv">차로 수 사진/모형 '+nums(s.lane_photo)+' ↔ '+nums(s.lane_model)+count+' · 찻길 '+empty(s.road_width_photo)+' ↔ '+empty(s.road_width_model)+'m · 연석 차이 '+nums(s.curb_signed)+'m · 노면선 최대 '+p+'m · 미짝 모형/사진 '+possible+' · 인도 모형↔사진 '+s.sidewalk.map(v=>v.map(fmt).join('↔')).join(' / ')+'m</p>'+
+    '<p class="kv">최소 차로 폭 '+fmt(s.min_lane_photo)+' ↔ '+fmt(s.min_lane_model)+'m · 가운데 띠 '+fmt(s.median_width_photo)+' ↔ '+fmt(s.median_width_model)+'m · '+(matched.length?esc(matched.join(' · ')):'')+(s.guides?' · 유도선 후보 '+s.guides:'')+
+    (s.multi_grade&&s.a2_at_heights?' · '+esc(s.a2_at_heights):'')+'</p>'+
+    '<p class="kv">빗금 면 '+s.hatch_faces+'</p>'+
+    (s.manual?'<p class="bad">'+esc(s.manual.note)+'</p>':'')+'</article>';
+}
+function fold(title,list,id,open=false,ids=false){
+  const detail=document.createElement('details');
+  if(id)detail.id=id;
+  if(open)detail.open=true;
+  const summary=document.createElement('summary');
+  summary.textContent=title;
+  detail.append(summary);
+  const content=document.createElement('div');content.className='cards';
+  detail.append(content);
+  function populate(){if(detail.open&&!content.children.length)content.innerHTML=list.map(s=>card(s,ids)).join('')}
+  detail.addEventListener('toggle',populate);populate();
+  return detail;
+}
+coverage.textContent='총 '+r.all.sections+'칸 · 자동 차로 수 미판독 '+(r.all.sections-r.all.lane_read)+'칸 · 네 항목 중 전부 미판독 '+r.all.not_read+'칸';
+if(r.baseline){
+  document.querySelector('#benchmark').hidden=false;
+  document.querySelector('#base').append(fold('같은 지도의 기준 범위 '+r.baseline.sections+'칸',
+    r.sections.filter(s=>s.reference),'hapjeong-baseline'));
+}
+const extraLabels={'manual.tsv':'눈 판독 표','manual-roads.tsv':'길별 눈 판독','sidewalk.tsv':'인도 재검수',
+  'multilevel.tsv':'복층 목록','perspective/pixels.tsv':'원근에서 칠 폭','contrast-pixels.tsv':'칠 대비 앞뒤'};
+for(const file of r.extraFiles){
+  const link=document.createElement('a');
+  link.href=file; link.textContent=extraLabels[file];
+  document.querySelector('#links').append(link);
+}
+if(r.before&&(r.cameraPair||r.visual_priority.length)){
+  document.querySelector('#comparison').hidden=false;
+  const frame=(src,label)=>'<figure><a href="'+esc(src)+'"><img src="'+esc(src)+'" alt="'+esc(label)+'"></a><figcaption>'+esc(label)+'</figcaption></figure>';
+  const before=document.querySelector('#before-after');
+  const pair=(a,b,label)=>'<div class="frame pair">'+frame(a,label+' · 앞')+frame(b,label+' · 뒤')+'</div>';
+  if(r.cameraPair)before.insertAdjacentHTML('beforeend', pair(r.before+'/shots/approach-400.png','shots/approach-400.png','합정에서 동교동삼거리 방향'));
+  for(const id of r.visual_priority){
+    const row=r.sections.find(s=>s.id===id);
+    const path='panels/'+id.slice(0,3)+'/'+id;
+    before.insertAdjacentHTML('beforeend','<p><a href="#'+id+'">'+esc(id+' · '+row.road)+'</a></p>'+
+      pair(r.before+'/'+path+'-model.png',path+'-model.png','평면 모형'));
+  }
+}
+const cells=x=>[x.road,x.sections,x.not_read,x.lane_mismatch+' / '+x.lane_read,
+  fmt(x.mark_median)+' · '+fmt(x.mark_max),fmt(x.curb_median)+' · '+fmt(x.curb_max),fmt(x.sidewalk_median)+' · '+fmt(x.sidewalk_max),x.model_extra+' / '+x.photo_extra];
+document.querySelector('#totals').innerHTML='<thead><tr>'+['길','전체','전부 미판독','차로 불일치/판독','노면선','연석','인도 폭','미짝 모형/사진 후보'].map(c=>'<th>'+c+'</th>').join('')+
+  '</tr></thead><tbody>'+[...(r.baseline?[r.baseline]:[]),...r.roads,r.all].map(x=>'<tr>'+cells(x).map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody>';
+document.querySelector('#high').append(fold('자동 경보 상위 10칸',r.high.map(id=>r.sections.find(s=>s.id===id)),'worst',false));
+r.roads.forEach((x,i)=>document.querySelector('#roads').append(
+  fold(x.road+' · '+x.sections+'칸',r.sections.filter(s=>s.road===x.road),'road-'+i,false,true)));
+function showSection(){
+  const id=location.hash.slice(1);
+  if(!id)return;
+  const direct=document.getElementById(id);
+  if(direct){if(direct instanceof HTMLDetailsElement)direct.open=true;direct.scrollIntoView()}
+  else {
+    const record=r.sections.find(s=>s.id===id);
+    const order=r.roads.findIndex(s=>s.road===record?.road);
+    if(order>=0){
+      const group=document.getElementById('road-'+order);
+      group.open=true;
+      group.dispatchEvent(new Event('toggle'));
+      requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView());
+    }
+  }
+}
+window.addEventListener('hashchange',showSection);
+showSection();
+</script>
+</html>

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { MapControls } from 'three/addons/controls/MapControls.js';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 import yanghwa from '../../tools/v2/areas/yanghwa-map.json';
-import { makeYanghwaTerrain, type YanghwaBuildings, type YanghwaFloor } from './yanghwa-terrain.ts';
+import { makeYanghwaTerrain, type SurveyRoadPaint, type YanghwaBuildings, type YanghwaFloor } from './yanghwa-terrain.ts';
 import { nearestOutlinePoint } from './connected-traffic.ts';
 import type { HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 import type { HapjeongDemand } from './hapjeong-car-playback.ts';
@@ -30,7 +30,7 @@ async function init() {
   async function read<T>(suffix: string): Promise<T> {
     const { directory, stem, gzip: compressed } = area.output;
     const base = directory.replace(/^public\//, '');
-    const gzip = compressed && (suffix === 'a' || suffix === 'buildings' || suffix === area.replay?.carAsset);
+    const gzip = compressed && (suffix === 'a' || suffix === 'buildings' || suffix === 'road-paint' || suffix === area.replay?.carAsset);
     const extension = gzip ? '.json.gz' : '.json';
     const response = await fetch(`${import.meta.env.BASE_URL}${base}/${stem}-${suffix}${extension}`);
     if (!response.ok) throw Error(`${suffix} 자료 응답 ${response.status}`);
@@ -39,13 +39,15 @@ async function init() {
       ? new Response(response.body!.pipeThrough(new DecompressionStream('gzip'))).json()
       : response.json();
   }
-  const [data, buildings] = await Promise.all([read<YanghwaFloor>('a'),read<YanghwaBuildings>('buildings')]);
+  const [data, buildings, roadPaint] = await Promise.all([
+    read<YanghwaFloor>('a'), read<YanghwaBuildings>('buildings'), read<SurveyRoadPaint>('road-paint'),
+  ]);
   const [west,north,east,south] = buildings.window;
   const center = new THREE.Vector3((west+east)/2,0,(north+south)/2);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0b0d11');
-  const detailed = district ? (await import('./district-terrain.ts')).makeDistrictTerrain(data,buildings) : undefined;
-  const terrain = detailed?.group ?? makeYanghwaTerrain(data,buildings);
+  const detailed = district ? (await import('./district-terrain.ts')).makeDistrictTerrain(data,buildings,roadPaint) : undefined;
+  const terrain = detailed?.group ?? makeYanghwaTerrain(data,buildings,true,0,roadPaint);
   const sun = new THREE.DirectionalLight('#fff0d8',1.35);
   sun.position.set(-200,300,100);
   scene.add(terrain,sun,new THREE.HemisphereLight('#dceafa','#5c5751',2));

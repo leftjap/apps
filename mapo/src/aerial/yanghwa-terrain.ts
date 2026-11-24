@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { groundShape, makeSurveyBuildings, type Face, type SurveyBuilding } from './survey-buildings.ts';
 
 type Feature = { faces: Face[] };
+export type SurveyRoadPaint = {
+  zones: (Feature & { yellow: boolean; stripes: Face[] })[];
+  symbols: Feature[];
+  white: { fine: Face[]; stops: Face[] };
+};
 
 export type YanghwaFloor = {
   floor: { road: Face[]; walk: Face[]; islands: Face[]; a4: Feature[] };
@@ -43,13 +48,35 @@ export function tileSurface(faces: Face[], cellSize: number) {
     .setAttribute('position', new THREE.Float32BufferAttribute(points, 3)));
 }
 
-export function makeYanghwaTerrain(data: YanghwaFloor, area: YanghwaBuildings, batch = true, tileSize = 0) {
+// Once a stripe is finer than a screen pixel, fade its coverage without
+// widening it or leaving a high-contrast single-pixel trace at a distance.
+function fadeFinePaint(material: THREE.MeshBasicMaterial, width: number) {
+  material.transparent = true;
+  material.depthWrite = false;
+  material.forceSinglePass = true;
+  material.onBeforeCompile = shader => {
+    shader.uniforms.paintWidth = { value: width };
+    shader.vertexShader = 'varying vec2 paintGround;\n' + shader.vertexShader.replace(
+      '#include <begin_vertex>', '#include <begin_vertex>\npaintGround = position.xz;');
+    shader.fragmentShader = 'varying vec2 paintGround;\nuniform float paintWidth;\n' +
+      shader.fragmentShader.replace('#include <alphatest_fragment>', `
+        vec2 dx = dFdx(paintGround), dy = dFdy(paintGround);
+        float pixel = max(min(length(dx), length(dy)), 0.001);
+        diffuseColor.a *= pow(min(1.0, paintWidth / (0.9 * pixel)), 1.7);
+        #include <alphatest_fragment>
+      `);
+  };
+}
+
+export function makeYanghwaTerrain(data: YanghwaFloor, area: YanghwaBuildings, batch = true, tileSize = 0, roadPaint?: SurveyRoadPaint) {
   const group = new THREE.Group();
-  const layer = (faces: Face[], color: string, y: number, priority = 0) => {
+  const layer = (faces: Face[], color: string, y: number, priority = 0, fineWidth = 0) => {
     const material = new THREE.MeshBasicMaterial({
       color, side: THREE.DoubleSide,
       polygonOffset: priority > 0, polygonOffsetFactor: 0, polygonOffsetUnits: -priority,
     });
+    if (!faces.length) return;
+    if (fineWidth) fadeFinePaint(material, fineWidth);
     const add = (geometry: THREE.BufferGeometry) => {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.y = y;
@@ -83,7 +110,17 @@ export function makeYanghwaTerrain(data: YanghwaFloor, area: YanghwaBuildings, b
   layer(data.crossings.filter(row=>!row.stripes.length).flatMap(row=>row.faces),'#9eada4',.044,2);
   layer(data.crossings.flatMap(row=>row.stripes),'#fbf2d9',.05,3);
   layer(data.bicycles.flatMap(row=>row.faces),'#619188',.052,3);
-  for (const row of data.paint) layer(row.faces,ink[row.color],.065,4);
+  if (roadPaint) {
+    layer(roadPaint.zones.filter(row=>row.yellow).flatMap(row=>row.stripes), ink[1], .055, 3, .22);
+    layer(roadPaint.zones.filter(row=>!row.yellow).flatMap(row=>row.stripes), ink[2], .055, 3, .22);
+    layer(roadPaint.symbols.flatMap(row=>row.faces), ink[2], .06, 4, .25);
+  }
+  for (const row of data.paint) {
+    if (roadPaint && row.color === 2) {
+      layer(roadPaint.white.fine, ink[2], .065, 4, .15);
+      layer(roadPaint.white.stops, ink[2], .065, 4, .45);
+    } else layer(row.faces, ink[row.color], .065, 4, .15);
+  }
   if (area.buildings.length) group.add(...makeSurveyBuildings(area.buildings));
   return group;
 }
