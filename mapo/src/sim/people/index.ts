@@ -210,6 +210,10 @@ export function makePeople(
     traffic?: (xw: number) => boolean;
     /** 측량 횡단의 꺾이는 지점에서는 다음 띠 안에 든 뒤 그 띠를 따라간다 */
     surveyedCrossings?: boolean;
+    /** Allow explicit trips from a boundary exit to a named bus stop. */
+    stopTrips?: boolean;
+    /** Release a crossing onto an adjoining surveyed walking surface. */
+    surveyedLandings?: boolean;
     /** 한 신호에 함께 건너는 횡단 번호 묶음 (분리대 양쪽). */
     signalPairs?: readonly (readonly number[])[];
     /** 횡단 번호별 양 끝의 대기 깊이(m). 합정 굽기가 보도 안에서 잰 값. */
@@ -1970,7 +1974,9 @@ export function makePeople(
     const pastTurn = !last && L - ((w.x[i] - ax) * ux + (w.z[i] - az) * uz) < 0.3;
     const nextBand = last || !o.surveyedCrossings ||
       segDist(w.x[i], w.z[i], bx, bz, c.pts[k * 2 + 2], c.pts[k * 2 + 3]) <= c.hw - 0.05;
-    if (((atTarget || pastTurn) && nextBand) || (last && inNode(hes[h].b, w.x[i], w.z[i]))) {
+    const onLanding = last && o.surveyedLandings && area &&
+      Math.hypot(bx-w.x[i], bz-w.z[i]) <= 1.2 && area.clear(w.x[i], w.z[i], bx, bz);
+    if (((atTarget || pastTurn) && nextBand) || (last && inNode(hes[h].b, w.x[i], w.z[i])) || onLanding) {
       if (last) {
         // 건너편 노드에서 다시 걷는다
         mode[i] = WALK;
@@ -2402,15 +2408,21 @@ export function makePeople(
     for (let q = 0; q < count; q++) {
       // 문 앞 걷는 띠 자리부터 0.9m 씩 옆으로
       let done = false;
-      for (let r = 0; r < 6 && !done; r++) {
+      for (let r = 0; r < (o.stopTrips ? 9 : 6) && !done; r++) {
         const space = (r % 2 ? -1 : 1) * Math.ceil(r / 2) * 0.9;
         const s = o.surveyedCrossings ? Math.max(0, Math.min(h.L, s0 + space)) :
           Math.max(0, Math.min(h.L, d.t - 5.5, Math.max(d.t - 5.5, Math.min(d.t + 5.5, Math.max(d.t - 4, Math.min(d.t + 4, s0)) + space))));
         const lat = d.lat || (h.hi > -h.lo ? h.hi * 0.7 : h.lo * 0.7);
-        const i = spawnAt(k, onHe(d.he, s, Math.max(h.lo, Math.min(h.hi, lat))));
-        if (i >= 0) {
-          done = true;
-          life[i] = 60 + prand(i) * 300;
+        const choices = o.stopTrips ? [lat, lat*.5, 0, h.lo*.7, h.hi*.7] : [lat];
+        for (const u of choices) {
+          const point = onHe(d.he, s, Math.max(h.lo, Math.min(h.hi, u)));
+          if (o.stopTrips && area && !area.at(...point)) continue;
+          const i = spawnAt(k, point);
+          if (i >= 0) {
+            done = true;
+            life[i] = 60 + prand(i) * 300;
+            break;
+          }
         }
       }
     }
@@ -2561,10 +2573,11 @@ export function makePeople(
   function goHome(id: number, g: number) {
     for (let i = 0; i < w.n; i++) if (w.id[i] === id) return seek(i, g);
   }
-  /** Explicit exit-to-exit trip. The default population and destinations do not use it. */
+  /** Explicit trip from an exit. Ordinary replays use exit destinations. */
   function trip(from: number, to: number) {
     const source = docks[from], destination = docks[to];
-    if (!source || destination?.kind !== 'exit' || source.kind !== 'exit' || from === to) return -1;
+    if (source?.kind !== 'exit' || !destination || from === to ||
+        (destination.kind !== 'exit' && !(o.stopTrips && destination.kind === 'stop'))) return -1;
     const g = to + 2;
     D[g] ??= dField(d => d === destination);
     if (!Number.isFinite(D[g][hes[source.he].a])) return -1;

@@ -172,6 +172,7 @@ if __name__ == '__main__':
     from check_hapjeong_walk import read
 
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--area', help='area manifest (default: Hapjeong)')
     parser.add_argument('--out', type=argparse.FileType('w'))
     args = parser.parse_args()
     risks = measure(read('walk'))

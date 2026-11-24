@@ -7,11 +7,12 @@ import subprocess
 from pathlib import Path
 
 import numpy as np
-from shapely import constrained_delaunay_triangles, contains_xy, get_parts
+from shapely import constrained_delaunay_triangles, contains_xy, get_parts, union_all
 from shapely.geometry import LineString, Point, Polygon, box
+from shapely.ops import nearest_points
 from shapely.prepared import prep
 
-from hapjeong_hd import AREA, MAPO, ORIGIN, asset, project
+from hapjeong_hd import AREA, MAPO, ORIGIN, asset, project, rings
 from hapjeong_hd_a import pedestrian_landings, surface
 from hapjeong_walk_turns import refit
 
@@ -383,7 +384,7 @@ def preserve_yielding_corridor(network, row, ends, previous, refitted):
     raise ValueError(f"{row['id']}: existing yielding corridor no longer fits")
 
 
-def spawn_points(network, floor, window):
+def spawn_points(network, floor, window, boundary_walk=None, lanes=None):
     road = prep(surface(floor['floor']['road']).difference(network.walk))
     board = json.loads((MAPO / AREA['sources']['board']).read_text())
     lat0, lon0 = ORIGIN
@@ -412,11 +413,50 @@ def spawn_points(network, floor, window):
         ('남', (xmin, zmax), (xmax, zmax), 0, -1),
     ]:
         boundary = LineString([u, v])
-        ends = sorted((g for g in get_parts(boundary.intersection(network.walk)) if g.length >= .8),
+        ends = sorted((g for g in get_parts(boundary.intersection(network.walk if boundary_walk is None else boundary_walk))
+                       if g.length >= .8),
                       key=lambda g: boundary.project(g.interpolate(.5, normalized=True)))
         for i, span in enumerate(ends, 1):
             key = f'{name}쪽 인도 {i}'
             origin = span.interpolate(.5, normalized=True).coords[0]
+            if boundary_walk is not None:
+                pavement = next((p.buffer(1e-6) for p in get_parts(network.walk) if p.distance(Point(origin)) < 1e-6), None)
+                # Use the local sidewalk inset rather than a ray normal to
+                # the window, which can land outside a diagonal sidewalk.
+                fits = []
+                insets = [pavement.buffer(-BODY-depth) for depth in (.08, .25, .5, .8)] if pavement else []
+                for u in (.5, .35, .65, .2, .8, .1, .9):
+                    start = span.interpolate(u, normalized=True)
+                    for inset in insets:
+                        if inset.is_empty:
+                            continue
+                        end = dm(nearest_points(start, inset)[1].coords[0])
+                        distance = math.dist(end, start.coords[0])
+                        if distance > 5 or not network.link_candidate(end, reach=16):
+                            continue
+                        fits.append((distance, start.coords[0], end))
+                if not fits and all(inset.is_empty for inset in insets):
+                    # A corner can leave a curb sliver on the cut which is
+                    # too thin for a body. Find the facing sidewalk just
+                    # inside the window without reaching across a live lane.
+                    from sidewalk_gaps import follows_sidewalk
+                    start = Point(origin)
+                    ground = network.walk.union(surface(floor['floor']['road'])).buffer(1e-6)
+                    for bank in get_parts(network.safe.buffer(-.2)):
+                        end = dm(nearest_points(start, bank)[1].coords[0])
+                        path = LineString([origin, end])
+                        if not 0 < path.length <= 5 or not ground.covers(path) or lanes.intersects(path.buffer(BODY)):
+                            continue
+                        direction = (np.array(end) - origin)/path.length
+                        if follows_sidewalk(bank, Point(end), direction) and network.link_candidate(end, reach=16):
+                            fits.append((path.length, origin, end))
+                if fits:
+                    _, origin, node = min(fits)
+                    network.attach(node, reach=16)
+                    portals.append(dict(kind='exit', key=key, x=node[0], z=node[1], origin=origin))
+                else:
+                    rejected.append(dict(key=key, reason='no safe path to the boundary footway', origin=origin))
+                continue
             for depth in [.7, 1., 1.5, 2., 3., 4.]:
                 node = dm((origin[0]+depth*nx, origin[1]+depth*nz))
                 if not network.safe.covers(Point(node)):
@@ -457,6 +497,26 @@ def crossing_wait_depths(floor, graph):
     return result
 
 
+def trim_landing_wings(landings, corridors, links):
+    from hapjeong_crossings import vehicle_clearance
+
+    lanes = union_all([LineString(row['points']).buffer(vehicle_clearance(row['kind']))
+                       for row in links])
+    used = {}
+    for key, (start, a, b, end, width, _, _) in corridors:
+        half = max(.2, width / 20 - .3)
+        used[key] = LineString([start, a, b, end]).buffer(half + BODY + .1)
+    for key, ends in landings.items():
+        for end in ends:
+            patch = surface(end['faces'])
+            overlap = patch.intersection(lanes)
+            if key in used:
+                overlap = overlap.difference(used[key])
+            if overlap.area > 1e-6:
+                end['faces'] = rings(patch.difference(overlap))
+                end['clipped'] = True
+
+
 def bake(floor, cars, reference=None):
     walk = surface(floor['floor']['walk']).buffer(1e-7)
     network = Network(walk)
@@ -474,6 +534,13 @@ def bake(floor, cars, reference=None):
             excluded.append(dict(id=row['id'], reason=reason))
     # Reattach to a clean pavement graph in the same crossing order, since
     # a yielding corridor may retain different terminals than the refit.
+    boundary_walk = walk
+    gap_limit = AREA.get('floor', {}).get('sidewalkGapMetres')
+    sidewalk_links = []
+    if gap_limit:
+        from sidewalk_gaps import sidewalk_gaps, lane_envelopes
+        sidewalk_links, rejected_links = sidewalk_gaps(walk, floor, cars['links'], [row['id'] for row, _ in refitted], gap_limit)
+        walk = union_all([walk, *(surface(link['faces']) for link in sidewalk_links)]).buffer(1e-7)
     network = Network(walk)
     network.pavement()
     old = dict(previous_corridors(reference)) if reference is not None else {}
@@ -487,7 +554,9 @@ def bake(floor, cars, reference=None):
             raise ValueError(f'{key}: crossing terminal does not connect to pavement')
         ids.append(key)
         crossings.append(result)
-    portals, rejected = spawn_points(network, floor, box(*cars['window']))
+    portals, rejected = spawn_points(network, floor, box(*cars['window']),
+                                     boundary_walk if gap_limit else None,
+                                     lane_envelopes(cars['links']) if gap_limit else None)
     def widths(graph):
         derived = subprocess.run(['node', '--experimental-strip-types', str(Path(__file__).with_name('hapjeong_walk_width.mts'))],
                                  input=json.dumps(graph), text=True, capture_output=True, check=True)
@@ -499,7 +568,16 @@ def bake(floor, cars, reference=None):
     pinned.update(point for crossing in crossings for point in (crossing[0], crossing[3]))
     if refit(network, graph, pinned):
         graph = widths(network.encode(crossings, graph['a']))
-    return dict(**graph, crossings=ids, landings=landings,
+    if sidewalk_links and AREA.get('floor', {}).get('matchSidewalkGapWidths'):
+        from sidewalk_gaps import widen_gap_bands
+        network = widen_gap_bands(network, boundary_walk, surface(floor['floor']['road']), cars['links'], sidewalk_links)
+        graph = widths(network.encode(crossings))
+    if cars.get('signalSites'):
+        # Keep each selected pedestrian corridor. Remove the side portions
+        # of its landing where the A2 vehicle body can otherwise pass.
+        trim_landing_wings(landings, zip(ids, crossings, strict=True), cars['links'])
+    return dict(**graph, **(dict(sidewalkLinks=sidewalk_links, rejectedSidewalkLinks=rejected_links) if gap_limit else {}),
+                crossings=ids, landings=landings,
                 excluded=excluded, portals=portals, rejectedPortals=rejected,
                 waitDepths=crossing_wait_depths(floor, graph))
 

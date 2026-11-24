@@ -1,3 +1,4 @@
+import { replaySteps } from './hapjeong_signal_phases.mts';
 import { loadArea, readAsset } from './area.mts';
 import { carPlayback, carVisibility } from '../../src/aerial/hapjeong-car-playback.ts';
 import type { HapjeongCars } from '../../src/aerial/hapjeong-car-graph.ts';
@@ -19,13 +20,13 @@ const run = carPlayback(data, !process.argv.includes('--seeded'), people, true,
   process.argv.includes('--unscaled') ? undefined : read('demand'), cycles, undefined, area);
 const { inter: { X, S }, edges, links } = run.graph;
 const site = S.list.find(row => row.j >= 0)!;
+const phases = replaySteps(S, !!data.signalSites);
 const visible = carVisibility(area.views.simulation);
 const wraps = (a: number) => ((a * 180 / Math.PI + 540) % 360) - 180;
 const approach = [...S.approach].map(([i, row]) => {
   const degree = wraps(headingNear(edges[i], edges[i].len));
-  const plan = data.signalSites ? S.list[row.c] : site;
   return { id: links[i].id, edge: i, group: row.group, degree, moves: row.moves, stop: links[i].stop,
-    green: plan.steps.filter(step => step.green.has(i)).map(s => [s.start, s.start+s.dur, s.green.get(i)]),
+    green: phases.filter(step => step.green.has(i)).map(s => [s.start, s.start+s.dur, s.green.get(i)]),
   };
 });
 console.log(JSON.stringify({
@@ -40,7 +41,7 @@ console.log(JSON.stringify({
   removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
   entrances: people?.entrances?.exits, platforms: people?.entrances?.platforms,
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
-    green: site.steps.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
+    green: phases.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
     associated: S.crossSite[i] >= 0,
   })),
   signalSites: data.signalSites && S.list.map((s,c) => ({

@@ -13,7 +13,9 @@ function ends(link: CrossLink) {
 
 export function crossingCourses(graph: WalkGraph, pairs: readonly number[][], signals: SignalPlan, start: number, minPerSide = 1) {
   const portals: HapjeongPortal[] = [];
-  const together = [...pairs, ...graph.links.filter(link=>!pairs.some(pair=>pair.includes(link.xw))).map(link=>[link.xw])];
+  const linked = new Set(graph.links.map(link => link.xw));
+  const usablePairs = pairs.map(pair => pair.filter(xw => linked.has(xw))).filter(pair => pair.length > 1);
+  const together = [...usablePairs, ...graph.links.filter(link=>!usablePairs.some(pair=>pair.includes(link.xw))).map(link=>[link.xw])];
   const courses = together.flatMap(crossings=>{
     const links = crossings.map(xw=>graph.links.find(link=>link.xw===xw));
     if (links.some(link=>!link)) return [];

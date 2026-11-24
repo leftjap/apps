@@ -139,16 +139,126 @@
       "양화로",
       "교차축"
     ],
-    "signalLabel": "서교동 모의 신호"
+    "signalLabel": "서교동 모의 신호",
+    "boundaryTrips": {
+      "intervalSeconds": 6,
+      "passengerWarmupSeconds": 480
+    }
   },
   "combinedByDefault": true,
   "floor": {
     "clipToWindow": true,
-    "bakeLandings": true
+    "bakeLandings": true,
+    "sidewalkGapMetres": 14,
+    "matchSidewalkGapWidths": true
   },
   "signals": {
     "lampClusterMetres": 26,
     "junctionLampMetres": 3,
     "stopMatchMetres": 63
-  }
+  },
+  "busService": [
+    {
+      "links": [
+        "A2248H005001",
+        "A2248H005002",
+        "A2248H005003"
+      ],
+      "services": [
+        {
+          "ref": "271",
+          "kind": 0
+        },
+        {
+          "ref": "602",
+          "kind": 0
+        },
+        {
+          "ref": "603",
+          "kind": 0
+        },
+        {
+          "ref": "604",
+          "kind": 0
+        },
+        {
+          "ref": "N26",
+          "kind": 0
+        },
+        {
+          "ref": "N62",
+          "kind": 0
+        },
+        {
+          "ref": "M7731",
+          "kind": 2
+        },
+        {
+          "ref": "M6724",
+          "kind": 2
+        },
+        {
+          "ref": "G6000",
+          "kind": 2
+        },
+        {
+          "ref": "M6117",
+          "kind": 2
+        }
+      ],
+      "passengersPerBus": 5,
+      "boundaryPassengersPerBus": 5
+    },
+    {
+      "links": [
+        "A2248H005062",
+        "A2248H005063",
+        "A2248H005064"
+      ],
+      "services": [
+        {
+          "ref": "271",
+          "kind": 0
+        },
+        {
+          "ref": "602",
+          "kind": 0
+        },
+        {
+          "ref": "603",
+          "kind": 0
+        },
+        {
+          "ref": "604",
+          "kind": 0
+        },
+        {
+          "ref": "N26",
+          "kind": 0
+        },
+        {
+          "ref": "N62",
+          "kind": 0
+        },
+        {
+          "ref": "M7731",
+          "kind": 2
+        },
+        {
+          "ref": "M6724",
+          "kind": 2
+        },
+        {
+          "ref": "G6000",
+          "kind": 2
+        },
+        {
+          "ref": "M6117",
+          "kind": 2
+        }
+      ],
+      "passengersPerBus": 5,
+      "boundaryPassengersPerBus": 5
+    }
+  ]
 }

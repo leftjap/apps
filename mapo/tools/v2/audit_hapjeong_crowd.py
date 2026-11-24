@@ -49,8 +49,33 @@ def frames(records, meta, plan, static):
     red_holds = defaultdict(dict)
     prepare(crosses)
     bounds = np.array([face.bounds if not face.is_empty else [0]*4 for face in crosses])
-    phase = [next(((p['start'], p['start']+p['duration']) for p in plan['phase'] if key in p['walk']), None)
-             for key in full_ids]
+    def walk_intervals(key):
+        ranges = []
+        for p in plan['phase']:
+            if key not in p['walk']:
+                continue
+            start, end = p['start'], p['start']+p['duration']
+            if ranges and abs(ranges[-1][1] - start) < 1e-8:
+                ranges[-1] = (ranges[-1][0], end)
+            else:
+                ranges.append((start, end))
+                if not meta.get('signalSites'):
+                    break
+        if len(ranges) > 1 and ranges[0][0] == 0 and ranges[-1][1] == meta['cycle']:
+            ranges = [(ranges[-1][0] - meta['cycle'], ranges[0][1]), *ranges[1:-1]]
+        return ranges
+
+    phase = [walk_intervals(key) for key in full_ids]
+
+    def green_interval(i, time):
+        now = (time + meta['offset']) % meta['cycle']
+        if not meta.get('signalSites'):
+            return phase[i][0] if phase[i] and phase[i][0][0] <= now < phase[i][0][1] else None
+        for first, last in phase[i]:
+            since = (now - first) % meta['cycle']
+            if since < last-first:
+                return first, last, since
+        return None
     links = meta['links']
     conflicting = defaultdict(set)
     for row in plan['paths']:
@@ -62,10 +87,17 @@ def frames(records, meta, plan, static):
     gates = {int(key): value for key, value in meta['gates'].items()}
 
     def deadline(i, t):
-        if phase[i] is None:
+        if not phase[i]:
             return None
-        _, end = phase[i]
-        return t + ((end - (t + meta['offset'])) % meta['cycle'])
+        if not meta.get('signalSites'):
+            _, end = phase[i][0]
+            return t + ((end - (t + meta['offset'])) % meta['cycle'])
+        interval = green_interval(i, t)
+        if interval:
+            first, end, since = interval
+            return t + (end-first) - since
+        # A red start is reported separately.
+        return t + ((phase[i][0][1] - (t+meta['offset'])) % meta['cycle'])
 
     start_side, old, last_exit = {}, {}, {}
     episodes = []
@@ -162,7 +194,7 @@ def frames(records, meta, plan, static):
                 episodes.append(enter)
                 start_side[uid] = (i,1 if progress < 0 else -1,enter)
             if mode == 'wait' and (last := last_exit.get(uid)) and last[0] != i and last[0] in groups[i]:
-                a,b = phase[i]
+                a,b = phase[i][0]
                 if last[2] is not None and t >= last[2] + meta['cycle'] - (b-a):
                     refuges[i].add(uid)
             if mode == 'cross' and uid in last_exit and last_exit[uid][0] == i and old_state == ('cross',i):
@@ -207,7 +239,7 @@ def frames(records, meta, plan, static):
                 for i, paths in conflicting.items():
                     if (a,b,c[15]) not in paths:
                         continue
-                    if phase[i] and phase[i][0] <= (t+meta['offset'])%meta['cycle'] < phase[i][1]:
+                    if green_interval(i,t):
                         if light == 2 and v < .12 and -.3<=gates[e]-s-length/2<=5:
                             stopped[i].add(uid)
                     elif uid in stopped[i] and light==0 and v>=.12:

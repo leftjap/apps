@@ -70,7 +70,9 @@ const platforms = MED_STOPS.filter(([key])=>areaConfig.platforms?.keys.includes(
   const candidates=links.flatMap(link=>{
     if(link.kind!=='4')return [];
     const p=link.points.flatMap(([x,z])=>[x,0,z]), cum=cumLen(p);
-    const {s}=nearestS(p,cum,mx,mz);
+    const projected=nearestS(p,cum,mx,mz).s;
+    // On a split link, stop the bus body on the approach side of a B2 line.
+    const s=link.source && link.stop && projected > link.len-8 ? link.len-8 : projected;
     const xyz=[0,0,0];
     const yaw=headingAt(p,pointAt(p,cum,s,xyz));
     const distance=Math.hypot(mx-xyz[0],mz-xyz[2]);

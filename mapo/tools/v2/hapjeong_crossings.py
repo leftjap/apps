@@ -137,6 +137,12 @@ def survey_continuations(audit, surveyed):
                     break
 
 
+def vehicle_clearance(kind):
+    # General lanes carry passenger cars. Reserved and intersection lanes may
+    # also carry a bus whose corners sweep wider than its 1.245m half-width.
+    return 1.1 if kind == '6' else 1.65
+
+
 def supplement_crossings(b3, walk, building_faces):
     topo,seoul = crossing_sources()
     walk_parts = sorted(parts(walk,'Polygon'),key=lambda face: face.bounds)

@@ -24,7 +24,8 @@ def audit(captured):
     walk = read('walk')
     pads = [faces([part for end in walk['landings'][row['id']] for part in end['faces']]).buffer(1e-7)
             for row in data['crosswalks']]
-    allowed = union_all([pavement, *shapes, *pads])
+    allowed = union_all([pavement, *shapes, *pads,
+                         *(faces(link['faces']) for link in walk.get('sidewalkLinks', ()))])
     prepare(allowed)
     prepare(pads)
     physical_pads = [prep(pad) for pad in pads]

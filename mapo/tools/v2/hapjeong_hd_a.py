@@ -9,7 +9,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from hapjeong_hd import AREA, ASSET, MAPO, ORIGIN, WINDOW, asset, features, parts, paths, project, offset_zebra, rings
-from hapjeong_crossings import expanded_walk, supplement_crossings, walking_landings
+from hapjeong_crossings import expanded_walk, supplement_crossings, vehicle_clearance, walking_landings
 
 OUTPUT = asset(AREA, '-a')
 LINE_KINDS = {'501','503','506','504','525','530','505','515'}
@@ -107,6 +107,8 @@ def median_paving(floor, crossings):
     lanes = {row['properties']['id']: unary_union([LineString(path) for path in paths(row)])
              for row in features('a2-expanded')}
     all_lanes = unary_union(list(lanes.values()))
+    clearance = (unary_union([lanes[row['properties']['id']].buffer(vehicle_clearance(row['properties']['linktype']))
+                              for row in features('a2-expanded')]) if AREA.get('signals') else None)
     edges = []
     for row in features('b2'):
         p = row['properties']
@@ -117,7 +119,8 @@ def median_paving(floor, crossings):
     for _,face,span,width in median_faces(floor):
         strips = platform_strips(face, span, width, edges)
         recovered.extend(strip for strip in strips if not strip.intersects(all_lanes))
-    return unary_union(recovered).intersection(surface(floor['road'])).difference(crossings)
+    added = unary_union(recovered).intersection(surface(floor['road'])).difference(crossings)
+    return added.difference(clearance) if clearance is not None else added
 
 
 def platform_strips(face, span, width, edges):
@@ -198,8 +201,13 @@ def pedestrian_landings(floor, cars):
     # Keep the rendered floor intact. The separate walking asset owns these
     # extensions and uses the very same measured crossing IDs as the car graph.
     pavement = surface(floor['floor']['walk'])
+    links = cars['links']
+    if cars.get('signalSites'):
+        # A stop split never changes whether a physical lane crosses the face.
+        from hapjeong_cars import load_links
+        links = load_links()
     lanes = [(LineString(row['points']), 1.245 if row['kind'] == '4' else 1.0)
-             for row in cars['links']]
+             for row in links]
     return {row['id']: walking_landings(row, pavement, lanes) for row in floor['crossingAudit']}
 
 

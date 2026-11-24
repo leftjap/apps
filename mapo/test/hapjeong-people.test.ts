@@ -72,6 +72,23 @@ it('walks from one exit to the requested farther exit past a nearer one', async 
   expect(last).toBeGreaterThan(27);
 });
 
+it('queues a stationless trip at its selected bus stop only with the option enabled', async () => {
+  const { makePeople } = await import('../src/sim/people/index.ts');
+  const { decodeWalk } = await import('../src/sim/walknet.ts');
+  const { makeSimProvider } = await import('../src/sim/provider.ts');
+  const graph = decodeWalk({ v: 3, n: [0,0,100,0,100,0,100,0], r: [15,15,15,15],
+    e: [0,1,4,-15,15,1,1,4,-15,15,1,1,4,-15,15], x: [] });
+  const portals = [{kind:'exit' as const,key:'boundary',x:1,z:0},
+    {kind:'stop' as const,key:'near',x:6,z:0}, {kind:'stop' as const,key:'far',x:28,z:0}];
+  expect(makePeople(graph,portals,makeSimProvider(),5,10).trip(0,2)).toBe(-1);
+  const person = makePeople(graph,portals,makeSimProvider(),5,10,{stopTrips:true});
+  expect(person.trip(0,2)).toBeGreaterThanOrEqual(0);
+  for (let i=0; i<450 && !person.waitingAt('far'); i++)
+    person.step(.1,{tod:50400+i/10,dow:6,doy:175},false);
+  expect(person.waitingAt('near')).toBe(0);
+  expect(person.waitingAt('far')).toBe(1);
+});
+
 it('runs an opt-in crossing trial with identified trips from both sides of every linked crossing', () => {
   const run = carPlayback(asset, true, { walk, signalTest:true }, true, read('demand'));
   const first = run.people()!;

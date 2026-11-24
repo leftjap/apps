@@ -213,7 +213,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
       sim.put(e.id, at, 0);
       if (move === STRAIGHT && at >= 14) sim.put(e.id, at - 12, 0);
     }
-    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod, (x,z)=>!visible(x,z), carsEnabled && ambient ? sharedHeadway : undefined);
+    const people = pedestrians && crossings && makeHapjeongPeople(pedestrians, crossings, sim, busy, start.tod, (x,z)=>!visible(x,z), carsEnabled && ambient ? sharedHeadway : undefined,
+      area.replay.boundaryTrips);
     if (carsEnabled && (!ambient || !sharedHeadway) && !sim.addBus(0, Math.min(graph.edges[graph.buses[0].edges[0]].len - 18, 34))) {
       throw Error('버스 시험 출발점이 막혔습니다.');
     }
@@ -249,7 +250,8 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     if (people && ambient && carsEnabled && sharedHeadway) {
       // Start the previous signal cycle's walks without changing normal
       // replay seeding, so the first visible bus may have a line to serve.
-      for (let i = -(CYCLE + 12) / dt; i < -12 / dt; i++)
+      const warmup = area.replay.boundaryTrips?.passengerWarmupSeconds ?? CYCLE;
+      for (let i = -Math.round((warmup + 12) / dt); i < -12 / dt; i++)
         people.advance(dt, clock(i * dt), true);
     }
     if (people || demand) {
