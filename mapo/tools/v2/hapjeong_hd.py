@@ -3,7 +3,6 @@ from collections import Counter, defaultdict, deque
 from itertools import pairwise
 import json
 import math
-from pathlib import Path
 
 from shapely import affinity, make_valid
 from shapely.geometry import LineString, MultiLineString, Point, Polygon, box
@@ -11,16 +10,20 @@ from shapely.ops import unary_union
 
 from aerial_paint import style
 from aerial_rules import PITCH, STRIPE_WIDTH
+from area import MAPO, asset, load_area
 from bake_aerial_ground import Frame, parts
 from land import even_odd
 from shp import dbf, shapes
 from tm import ORIGIN, tm_to_ll
 
-MAPO = Path(__file__).resolve().parents[2]
-RAW = MAPO / 'tools/raw/ngii/hapjeong-hd'
-ASSET = MAPO / 'public/data/v2/hapjeong-hd.json'
-WINDOW = box(-618, 103, -344, 398)
-FRAME = Frame(ORIGIN[1], ORIGIN[0], 0)
+AREA = load_area()
+RAW = MAPO / AREA['sources']['hd']
+SHEETS = MAPO / AREA['sources']['sheets']
+ASSET = asset(AREA)
+WINDOW = box(*AREA['window'])
+FRAME = Frame(*AREA['frame']['origin'], 0)
+VIEWS = AREA['views']['display']
+
 
 # NGII December 2020 manual, B2 tables 9.51 and 9.52 (printed pp. 106–107).
 # Last column selects the existing app paint width and dash family, not a new source.
@@ -35,27 +38,6 @@ TYPES = {
     for color, name in ((1, '황색 단선'), (2, '백색 단선'), (3, '청색 단선'))
     for form in (1, 2)
 }
-ISLANDS = {
-    '1000376082403A00510000000000000010', '1000376082403A00510000000000000006',
-    '1000376082403A00510000000000000007', '1000376082403A00510000000000000009',
-}
-# Centres, width and order of the four previous 3D island views, plus the shared overview.
-CLOSE = [
-    ('west', '서쪽 · 8번 출구 앞', [-525, 246]),
-    ('northeast', '북동쪽 · 9·10번 출구 사이', [-488, 222]),
-    ('east', '동쪽 · 6번 출구 방향', [-462, 261]),
-    ('south', '남쪽 · 독막로 쪽', [-493, 282]),
-]
-OVERVIEW = [-495, 248]
-VIEWS = [
-    *[dict(id=id, title=name, at=at, width=80, mode='photo') for id, name, at in CLOSE],
-    dict(id='overview', title='합정 사거리 전체', at=OVERVIEW, width=220, mode='photo'),
-    dict(id='routes', title='합정 사거리 주행경로', at=OVERVIEW, width=220, mode='paths'),
-    dict(id='floors-overview', title='사거리 전체 · 보도 자료 비교', at=OVERVIEW, width=220, mode='floors'),
-    dict(id='floors-west', title='서쪽 80m · 보도 자료 비교', at=CLOSE[0][2], width=80, mode='floors'),
-]
-
-
 def features(layer):
     return json.loads((RAW / f'{layer}.json').read_text())['features']
 
@@ -109,27 +91,56 @@ def rings(geom):
             for p in parts(geom, 'Polygon') if p.area > 0]
 
 
-def survey_floor():
-    groups = defaultdict(list)
-    for sheet in sorted((RAW.parent/'suchi/sheets').iterdir()):
-        for group, code in [('road','A0010000'), ('walk','A0033320'), ('junction','A0080000'), ('island','A0053326')]:
-            stem = sheet / f'N1A_{code}'
-            if not stem.with_suffix('.shp').is_file():
+def survey_faces(code):
+    """Yield clipped original faces in sheet and record order."""
+    for sheet in sorted(SHEETS.iterdir()):
+        stem = sheet / f'N1A_{code}'
+        if not stem.with_suffix('.shp').is_file():
+            continue
+        _, rows = dbf(stem.with_suffix('.dbf'))
+        for (kind, raw_rings), row in zip(shapes(stem.with_suffix('.shp')), rows, strict=True):
+            if kind != 5 or not raw_rings:
                 continue
-            _, rows = dbf(stem.with_suffix('.dbf'))
-            for (kind, raw_rings), row in zip(shapes(stem.with_suffix('.shp')), rows, strict=True):
-                if kind != 5 or not raw_rings or (group == 'island' and row['UFID'] not in ISLANDS):
-                    continue
-                projected = [[project(tm_to_ll(east,north)[::-1]) for east,north in ring] for ring in raw_rings]
-                if not Polygon(projected[0]).envelope.intersects(WINDOW):
-                    continue
-                face = even_odd(projected)
-                if face is not None:
-                    groups[group].append(face.intersection(WINDOW))
-    # The A008 survey face covering our shared overview centre is the central junction.
-    central, = [face for face in groups['junction'] if face.covers(Point(OVERVIEW))]
-    return {'road': unary_union(groups['road'] + groups['junction']), 'walk': unary_union(groups['walk']),
-            'island': unary_union(groups['island']), 'central': central}
+            projected = [[project(tm_to_ll(east,north)[::-1]) for east,north in ring] for ring in raw_rings]
+            if not Polygon(projected[0]).envelope.intersects(WINDOW):
+                continue
+            face = even_odd(projected)
+            if face is not None:
+                yield face.intersection(WINDOW), row
+
+
+def survey_islands():
+    paved = unary_union([
+        make_valid(Polygon(shell, holes))
+        for row in features('a4') if row['properties']['subtype'] == '3'
+        for shell, *holes in face_rings(row)
+    ])
+    curb = unary_union([
+        LineString(line) for row in features('b2') if row['properties']['kind'] == '505'
+        for line in paths(row)
+    ])
+    crossings = unary_union([face for face, _ in survey_faces('A0043325')])
+    traffic = unary_union([
+        LineString(line).buffer(1.245 if row['properties']['linktype'] == '4' else 1)
+        for row in features('a2-expanded') if row['properties']['linktype'] in ('1', '4', '6')
+        for line in paths(row)
+    ])
+    # A005 also contains painted safety zones. Require a paved refuge
+    # at a road edge with a crossing approach and room outside vehicle bodies.
+    return [(face, row) for face, row in survey_faces('A0053326')
+            if face.area > 0 and face.intersection(paved).area >= face.area / 2
+            and face.distance(curb) <= 1 and face.distance(crossings) <= 2
+            and face.intersection(traffic).area < 1e-6]
+
+
+def survey_floor():
+    roads = [face for face, _ in survey_faces('A0010000')]
+    walks = [face for face, _ in survey_faces('A0033320')]
+    junctions = [face for face, _ in survey_faces('A0080000')]
+    anchor = Point(AREA['junctionAt'])
+    central, = [face for face in junctions if face.covers(anchor)]
+    return {'road': unary_union(roads + junctions), 'walk': unary_union(walks),
+            'island': unary_union([face for face, _ in survey_islands()]), 'central': central}
 
 
 def marking_style(kind, type_):
@@ -253,6 +264,7 @@ def bake():
 
 if __name__ == '__main__':
     result = bake()
+    ASSET.parent.mkdir(parents=True, exist_ok=True)
     ASSET.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')) + '\n')
     print(ASSET)
     print('lines', len(result['lines']), 'crossings', Counter(row['lookup'] for row in result['crossings']),

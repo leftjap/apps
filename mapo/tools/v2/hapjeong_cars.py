@@ -9,10 +9,10 @@ from shapely import get_parts
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 
-from hapjeong_hd import ASSET, WINDOW, features, paths, project
+from hapjeong_hd import AREA, ASSET, WINDOW, asset, features, paths, project
 from hapjeong_hd_a import surface
 
-OUTPUT = ASSET.with_name('hapjeong-hd-cars.json')
+OUTPUT = asset(AREA, '-cars')
 C1_PEDESTRIAN = '11'  # NGII HD map production manual (2020), section 9.3.10.
 SEAM_COS = .5
 STOP_TIP_TOLERANCE = .05
@@ -249,12 +249,12 @@ def bake(floor):
     return dict(v=1, a1Count=len(nodes), links=rows, seams=seams, bundles=lane_groups,
                 bus=routes, central=central, window=list(WINDOW.bounds),
                 crosswalks=crossings, lights=lights,
-                walkSignalGroups=walk_signal_groups(crossings, surface(floor['floor']['walk'])),
-                stopLines=[pt for _, line in stops for a, b in pairwise(line.coords) for pt in (*a, *b)])
+                stopLines=[pt for _, line in stops for a, b in pairwise(line.coords) for pt in (*a, *b)],
+                walkSignalGroups=walk_signal_groups(crossings, surface(floor['floor']['walk'])))
 
 
 if __name__ == '__main__':
-    floor = json.loads(ASSET.with_name('hapjeong-hd-a.json').read_text())
+    floor = json.loads(asset(AREA, '-a').read_text())
     if '--walk-signals' in sys.argv:
         data = json.loads(OUTPUT.read_text())
         data['walkSignalGroups'] = walk_signal_groups(data['crosswalks'], surface(floor['floor']['walk']))

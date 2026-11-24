@@ -8,10 +8,10 @@ from shapely import affinity, make_valid
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
-from hapjeong_hd import ASSET, MAPO, features, parts, paths, project, offset_zebra, rings
+from hapjeong_hd import AREA, ASSET, MAPO, ORIGIN, asset, features, parts, paths, project, offset_zebra, rings
 from hapjeong_crossings import expanded_walk, supplement_crossings, walking_landings
 
-OUTPUT = ASSET.with_name('hapjeong-hd-a.json')
+OUTPUT = asset(AREA, '-a')
 LINE_KINDS = {'501','503','506','504','525','530','505','515'}
 TIE_METRES = .25
 TIE_DEGREES = 15
@@ -90,8 +90,9 @@ def outline_exclusions(buildings, road):
 
 
 def median_faces(floor):
-    stops = [Point(float(x), float(z)) for x, z in re.findall(
-        r"', (-?[\d.]+), (-?[\d.]+)\]", (MAPO/'src/data/medStops.ts').read_text())]
+    dx, dz = project(ORIGIN[::-1])
+    stops = [Point(float(x) + dx, float(z) + dz) for x, z in re.findall(
+        r"', (-?[\d.]+), (-?[\d.]+)\]", (MAPO/AREA['sources']['medianStops']).read_text())]
     for row in floor['a4']:
         for face in parts(surface(row['faces']), 'Polygon'):
             axes = list(pairwise(face.minimum_rotated_rectangle.exterior.coords))
@@ -160,7 +161,7 @@ def bake_a(old):
     survey_walk = surface(floor['walk'] + floor['islands'])
     combined = survey_walk.union(surface([face for row in floor['a4'] for face in row['faces']]))
     common_road = surface(floor['road']).difference(survey_walk)
-    source_buildings = json.loads((MAPO/'public/data/aerial-pilot.json').read_text())['buildings']
+    source_buildings = json.loads((MAPO/AREA['sources']['pilotBuildings']).read_text())['buildings']
     segments = list(link_segments(features('a2-expanded')))
     crossings = []
     for row in old['crossings']:

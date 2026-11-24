@@ -11,7 +11,7 @@ from shapely import constrained_delaunay_triangles, contains_xy, get_parts
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.prepared import prep
 
-from hapjeong_hd import ASSET, MAPO, ORIGIN, project
+from hapjeong_hd import AREA, MAPO, ORIGIN, asset, project
 from hapjeong_hd_a import pedestrian_landings, surface
 
 BODY = .4
@@ -381,12 +381,12 @@ def preserve_yielding_corridor(network, row, ends, previous, refitted):
 
 def spawn_points(network, floor, window):
     road = prep(surface(floor['floor']['road']).difference(network.walk))
-    board = json.loads((MAPO / 'public/data/board.json').read_text())
+    board = json.loads((MAPO / AREA['sources']['board']).read_text())
     lat0, lon0 = ORIGIN
     longitude_metres = 111320 * math.cos(math.radians(lat0))
     portals, rejected = [], []
     for exit in board['exits']:
-        if exit['st'] != '합정':
+        if exit['st'] != AREA['station']:
             continue
         origin = project((lon0 + exit['x'] / 10 / longitude_metres, lat0 - exit['z'] / 10 / 110950))
         if not window.covers(Point(origin)):
@@ -493,10 +493,10 @@ def bake(floor, cars, reference=None):
 
 
 if __name__ == '__main__':
-    floor_path = ASSET.with_name('hapjeong-hd-a.json')
-    walk_path = ASSET.with_name('hapjeong-hd-walk.json')
+    floor_path = asset(AREA, '-a')
+    walk_path = asset(AREA, '-walk')
     floor = json.loads(floor_path.read_text())
-    cars = json.loads(ASSET.with_name('hapjeong-hd-cars.json').read_text())
+    cars = json.loads(asset(AREA, '-cars').read_text())
     reference = json.loads(walk_path.read_text()) if walk_path.exists() else None
     out = bake(floor, cars, reference)
     # Metadata for pedestrians only. Keep the existing rendering layers and

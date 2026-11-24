@@ -4,23 +4,33 @@ import { decodeBoard, type BoardJson } from '../../src/data/board.ts';
 import { exitLook } from '../../src/data/exits.ts';
 import { exitOutline } from '../../src/data/exitFit.ts';
 import { MED_STOPS } from '../../src/data/medStops.ts';
-import { toLatLon } from '../../src/geo.ts';
+import { ORIGIN, toLatLon } from '../../src/geo.ts';
 import { cumLen, headingAt, nearestS, pointAt } from '../../src/poly.ts';
 import { decodeArea } from '../../src/sim/people/area.ts';
 import { decodeWalk } from '../../src/sim/walknet.ts';
 import { arrivals } from '../../src/sim/trains.ts';
-import { groundPoint } from '../../src/aerial/map.ts';
+import { areaPath, assetPath, loadArea } from './area.mts';
 import type { HapjeongCars, XZ } from '../../src/aerial/hapjeong-car-graph.ts';
 import type { HapjeongWalk } from '../../src/aerial/hapjeong-people.ts';
 
-const read = <T,>(path: string): T => JSON.parse(readFileSync(new URL(`../../public/data/${path}.json`, import.meta.url), 'utf8'));
-const board = decodeBoard(read<BoardJson>('board'));
-const walk = read<HapjeongWalk>('v2/hapjeong-hd-walk');
+const areaConfig = loadArea();
+const read = <T,>(path: string): T => JSON.parse(readFileSync(path, 'utf8'));
+const board = decodeBoard(read<BoardJson>(areaPath(areaConfig.sources.board)));
+const walk = read<HapjeongWalk>(assetPath(areaConfig, '-walk'));
 const graph = decodeWalk(walk), area=decodeArea(walk.a)!;
 const {portals}=walk;
-const floor = read<{floor:{road:XZ[][][];walk:XZ[][][]}}>('v2/hapjeong-hd-a').floor;
-const {links} = read<HapjeongCars>('v2/hapjeong-hd-cars');
-const station = '합정';
+const floor = read<{floor:{road:XZ[][][];walk:XZ[][][]}}>(assetPath(areaConfig, '-a')).floor;
+const {links} = read<HapjeongCars>(assetPath(areaConfig, '-cars'));
+const station = areaConfig.station;
+
+const radians = Math.PI / 180;
+const circumference = 2 * Math.PI * 6_378_137 * Math.cos(ORIGIN.lat * radians);
+const mercator = (lat: number) => (1 - Math.asinh(Math.tan(lat * radians)) / Math.PI) / 2;
+const [originLon, originLat] = areaConfig.frame.origin;
+const groundPoint = ([lon, lat]: XZ): XZ => [
+  ((lon + 180) / 360 - (originLon + 180) / 360) * circumference,
+  (mercator(lat) - mercator(originLat)) * circumference,
+];
 const lines = board.lines.filter(line => line.stopNames.includes(station));
 function inside(ring:XZ[], x:number,z:number) {
   let yes = false;
@@ -76,5 +86,5 @@ const platforms = MED_STOPS.filter(([,name])=>name===`${station}역`).flatMap(([
   return [stop];
 });
 const data = {exits, station, lines:lines.map(({id,color})=>({id,color})), trains, platforms, doors:[]};
-writeFileSync(new URL('../../public/data/v2/hapjeong-hd-entrances.json',import.meta.url),JSON.stringify(data,null,2)+'\n');
+writeFileSync(assetPath(areaConfig, '-entrances'),JSON.stringify(data,null,2)+'\n');
 console.log(JSON.stringify(data));

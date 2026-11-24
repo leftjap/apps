@@ -7,7 +7,7 @@ from shapely import affinity, get_coordinates, make_valid, set_precision
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
-from hapjeong_hd import (FRAME, MAPO, RAW, WINDOW, dbf, even_odd, face_rings, features,
+from hapjeong_hd import (AREA, FRAME, MAPO, SHEETS, WINDOW, dbf, even_odd, face_rings, features,
                          offset_zebra, parts, paths, project, rings, shapes, tm_to_ll)
 
 
@@ -19,7 +19,7 @@ def half_metre_routes(*areas):
 
 def crossing_sources():
     topo = []
-    for sheet in sorted((RAW.parent/'suchi/sheets').iterdir()):
+    for sheet in sorted(SHEETS.iterdir()):
         stem = sheet/'N1A_A0043325.shp'
         if not stem.exists():
             continue
@@ -31,7 +31,8 @@ def crossing_sources():
             if face is not None:
                 topo.extend((row['UFID'], p) for p in parts(face, 'Polygon') if WINDOW.covers(p.centroid))
     seoul = []
-    for row in json.loads((MAPO/'tools/raw/seoul-crosswalks.json').read_text())['areas']:
+    source = AREA['sources'].get('seoulCrossings')
+    for row in json.loads((MAPO/source).read_text())['areas'] if source else ():
         face = make_valid(Polygon([FRAME.project(p[::-1]) for p in row['ring']]))
         seoul.extend((row['id'], p) for p in parts(face, 'Polygon') if WINDOW.covers(p.centroid))
     return topo, seoul
