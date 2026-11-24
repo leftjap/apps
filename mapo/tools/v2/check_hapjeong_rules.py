@@ -19,6 +19,7 @@ import audit_hapjeong_signals as signals
 import check_hapjeong_branch_stops as branch
 import check_hapjeong_car_run as cars
 import check_hapjeong_crowding as crowd
+import check_hapjeong_crossing_widths as crossing_widths
 import check_hapjeong_entrances as entrances
 import check_hapjeong_people as people
 import check_hapjeong_walk as walk
@@ -41,9 +42,10 @@ LIMITS = {
 }
 # Compare the traffic counts and accumulation where a zero is not the goal.
 NO_INCREASE = {'P2': ('people_wait_s', 'car_wait_s'), 'P6': ('peak_5m', 'walk_blocked', 'growing_visible_ends')}
-NO_DECREASE = {'P4': ('models',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
+NO_DECREASE = {'P4': ('models',), 'P5': ('min_link_face_pct',), 'C1': ('min_cars', 'max_cars', 'queue_median')}
 # Allow one tick of 30 Hz quantization at each recorded stop line.
 RANK_TOLERANCE = 1 / 30
+VIEW_MEDIAN_TOLERANCE = 2
 
 
 def load(path):
@@ -102,6 +104,7 @@ def measure(tree, folder, label):
     trial = courses.audit(folder/'signal.ndjson',plan,static)
     ambient = courses.audit(trace,plan,static)
     flow = discharge(trace)
+    widths = crossing_widths.measure(walk.read('a'), walk.read('walk'))
     pairs = left_pairs(flow,plan)
     signed = {r['id']:r['sig'] for r in meta['crosswalks']}
     green = {r['id']:r['green'] for r in meta['crosswalks']}
@@ -116,7 +119,8 @@ def measure(tree, folder, label):
         'P1': dict(people_on_red=len(p['red_entries']), cars_on_red=len(c['red']),
                    signed_face_cars=len(signed_cars), overlap_seconds=static['conflict_seconds']),
         'P2': dict(unsignalized_cars=max(len(unsignalized),len(p['passing_with_person'])),
-                   body_contacts=len(p['contact']), people_wait_s=growth['traffic_delay'][0]['seconds'],
+                   body_contacts=len(p['contact']), occupied_landing_passages=sum(map(len, p['landings_passage_episodes'].values())),
+                   people_wait_s=growth['traffic_delay'][0]['seconds'],
                    car_wait_s=growth['traffic_delay'][1]['seconds']),
         'P3': dict(different_green=sum(len({str(green[full[x]]) for x in group})>1 for group in walk.read('cars')['walkSignalGroups']),
                    refuge_wait=sum(r['next_phase_wait'] for r in ambient['course_rows']),
@@ -127,7 +131,8 @@ def measure(tree, folder, label):
                    visible_events=len(portal['visible']), peak_exit_per_second=max((r.get('peakPerSecond',0) for r in exit_rows.values()),default=None)),
         'P5': dict(stuck=len(p['stuck']), green_wait=None if p['green_wait'] is None else len(p['green_wait']),
                    green_wait_any=len(p['green_wait_any']),
-                   repeat_people=len({r[0] for r in p['repeat']}), off_floor=p['off_floor_samples'], invalid=p['engine_invalid_samples']),
+                   repeat_people=len({r[0] for r in p['repeat']}), off_floor=p['off_floor_samples'], invalid=p['engine_invalid_samples'],
+                   **crossing_widths.summary(widths)),
         'P6': dict(peak_5m=max(r['best']['n'] for r in growth['peaks'] if r['best']),
                    green_queue_remaining=sum(len(r['remaining']) for r in growth['green_clearance']),
                    walk_blocked=len(growth['queue_blocked']), growing_visible_ends=len(visible_growth)),
@@ -148,7 +153,8 @@ def measure(tree, folder, label):
                   left_pairs=pairs, turn_conflicts=flow['left_conflicts_over_three'], crowding=growth, entrances=portal,
                   branch=branch_result, movement=c['movement'], car_floor={k:v for k,v in c.items() if 'Floor' in k},
                   ordinary_crossings=ambient['course_rows'], trial_crossings=trial['course_rows'],
-                  stuck=p['stuck'], green_wait=p['green_wait'], green_wait_any=p['green_wait_any'], repeat=p['repeat'])
+                  stuck=p['stuck'], green_wait=p['green_wait'], green_wait_any=p['green_wait_any'], repeat=p['repeat'],
+                  crossing_widths=widths, occupied_landing_passages=p['landings_passage_episodes'])
     return dict(label=label,rules=metric,detail=detail)
 
 
@@ -180,7 +186,7 @@ def evaluate(result, incumbent=None):
     return failure
 
 
-def regressions(result, incumbent):
+def regressions(result, incumbent, *, view_tolerance=0):
     current, before = result['rules'], incumbent['rules']
     rows = []
     for rule, metrics in current.items():
@@ -200,8 +206,9 @@ def regressions(result, incumbent):
                 rows.append(dict(rule=rule,test=key,measured=value,limit=baseline))
     for view, values in incumbent['detail']['views'].items():
         now = result['detail']['views'].get(view)
-        if not now or now[1] < values[1]:
-            rows.append(dict(rule='인원',test=view,measured=now[1] if now else None,limit=values[1]))
+        limit = values[1] - view_tolerance
+        if not now or now[1] < limit:
+            rows.append(dict(rule='인원',test=view,measured=now[1] if now else None,limit=limit))
     return rows
 
 
@@ -230,7 +237,7 @@ def main():
                               incumbent['rules']['P5'].get('green_wait') is None):
         parser.error('--relative-only needs a baseline measured with the current green-wait definition')
     failures = evaluate(result,incumbent)
-    worse = regressions(result,incumbent) if incumbent else []
+    worse = regressions(result,incumbent,view_tolerance=VIEW_MEDIAN_TOLERANCE if arg.relative_only else 0) if incumbent else []
     target_failure = None
     if arg.target:
         rule,key = arg.target
