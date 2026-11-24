@@ -11,6 +11,8 @@
   - inRing 5-14 · insideOutline 15-18 · nearestOutlineEdge 19-36 · nearestOutlinePoint 37-40 · insideTrafficView 41-45 · boundaryTraffic 46-64 · ↳visit 49-64 · surveyBoundaryTraffic 65-85 · ↳regular 67-70 · ↳portal 71-85
 - `src/aerial/district-terrain.ts` (67줄)
   - makeDistrictTerrain 9-67 · ↳update 34-67
+- `src/aerial/district-tiles.ts` (298줄): Load the district overview and retain detailed meshes around the camera.
+  - asset 32-40 · makeOverview 41-100 · makeTile 101-156 · ↳floats 105-156 · loadDistrictTiles 157-298 · ↳fetchTile 180-198 · ↳update 199-298
 - `src/aerial/ground-paint.ts` (3줄): The same metres as the dash shader in src/render/marks.ts.
 - `src/aerial/hapjeong-car-graph.ts` (175줄)
   - districtCarGraph 48-67 · carBoundary 68-81 · hapjeongCarGraph 82-175 · ↳boundary 88-175
@@ -33,13 +35,13 @@
 - `src/aerial/survey-area.ts` (51줄)
   - photoTiles 42-51
 - `src/aerial/survey-buildings.ts` (175줄)
-  - groundShape 16-22 · ↳vector 17-22 · windowPatterns 23-44 · material 45-74 · vertex 75-81 · roof 82-92 · sides 93-110 · unclose 111-115 · areaTwice 116-122 · parapetInset 123-135 · makeSurveyBuildings 136-175
-- `src/aerial/yanghwa-map.ts` (245줄)
-  - init 23-245 · ↳read 30-70 · ↳widthPerDepth 71-80 · ↳value 81-86 · ↳requestDraw 87-146 · ↳fit 147-159 · ↳draw 160-194 · ↳pose 195-209 · ↳size 210-217 · ↳overview 218-245
+  - groundShape 16-22 · ↳vector 17-22 · windowPatterns 23-44 · makeSurveyFacadeMaterial 45-74 · vertex 75-81 · roof 82-92 · sides 93-110 · unclose 111-115 · areaTwice 116-122 · parapetInset 123-135 · makeSurveyBuildings 136-175
+- `src/aerial/yanghwa-map.ts` (260줄)
+  - init 23-260 · ↳requestDraw 30-36 · ↳read 37-90 · ↳widthPerDepth 91-98 · ↳value 99-161 · ↳fit 162-174 · ↳draw 175-209 · ↳pose 210-224 · ↳size 225-232 · ↳overview 233-260
 - `src/aerial/yanghwa-signals.ts` (166줄): Supply linear values even when the survey viewer disables Three's input
   - signalColor 13-20 · ↳toLinear 14-20 · offset 21-25 · makeYanghwaSignals 26-166 · ↳curb 67-105 · ↳instance 106-115 · ↳box 116-119 · ↳post 120-148 · ↳update 149-166
-- `src/aerial/yanghwa-terrain.ts` (127줄)
-  - tileSurface 32-52 · fadeFinePaint 53-70 · makeYanghwaTerrain 71-127 · ↳layer 73-127
+- `src/aerial/yanghwa-terrain.ts` (139줄)
+  - tileSurfaceCells 32-49 · tileSurface 50-56 · fadeFinePaint 57-74 · makeYanghwaSurfaceMaterial 75-83 · visitYanghwaLayers 84-109 · makeYanghwaTerrain 110-139
 
 ## 굽기와 검사(새 판)
 - `tools/v2/aerial-local.ts` (82줄)
@@ -163,6 +165,8 @@
   - measure 14-154
 - `tools/v2/measure_hapjeong_discharge.py` (117줄): Measure queues at green and same-lane gaps in a surveyed replay.
   - discharge 11-117
+- `tools/v2/pack_district_tiles.py` (137줄): Pack a baked district into an overview and 500 m static detail tiles.
+  - read_asset 19-26 · simplified 27-39 · overview_buildings 40-78 · publish 79-83 · main 84-137
 - `tools/v2/plot_land.py` (140줄): 지시서 1(docs/redraw-orders/1-land.md): land.json 을 위에서 본 그림으로(tmp/v2/), 수치지형도 도로 부지와 나란히 칠한 그림과 넓이.
   - dm 19-22 · ring_area 23-29 · Canvas 30-47 · fill_polygons 48-58 · fill_even_odd 59-78 · paint 79-86 · count 87-90 · main 91-140
 - `tools/v2/plot_lanes.py` (76줄): 지시서 3a(docs/redraw-orders/3a-lanes.md): split.json·건물 위에 차로 경계선·차로 가운데선·진행 방향 화살촉·구간 끝 노드를 그린다(tmp/v2/).
