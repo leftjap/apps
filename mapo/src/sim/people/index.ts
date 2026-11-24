@@ -214,6 +214,8 @@ export function makePeople(
     stopTrips?: boolean;
     /** Release a crossing onto an adjoining surveyed walking surface. */
     surveyedLandings?: boolean;
+    /** Keep the current junction until the outgoing route can own the position. */
+    validateJunctionExit?: boolean;
     /** 한 신호에 함께 건너는 횡단 번호 묶음 (분리대 양쪽). */
     signalPairs?: readonly (readonly number[])[];
     /** 횡단 번호별 양 끝의 대기 깊이(m). 합정 굽기가 보도 안에서 잰 값. */
@@ -815,10 +817,9 @@ export function makePeople(
   };
   const inHe = (h: number, x: number, z: number) => inBand(h, x, z) || inNode(hes[h].a, x, z) || inNode(hes[h].b, x, z);
   /** i 가 (x, z)에 있어도 되는가(걷는 길 안) */
-  function valid(i: number, x: number, z: number): boolean {
-    const m = mode[i];
+  function valid(i: number, x: number, z: number, h = he[i], next = nk[i], previous = prv[i], region = jr[i], m = mode[i]): boolean {
     if (m === WAITX) {
-      const wait = crosses[hes[he[i]].x]?.waitRect;
+      const wait = crosses[hes[h].x]?.waitRect;
       if (wait && inRect(wait, x, z)) return true;
     }
     if (m === OUTDOOR || m === INDOOR) {
@@ -831,19 +832,19 @@ export function makePeople(
       if (d && (inHe(d.he, x, z) || inHe(hes[d.he].rev, x, z))) return true;
     }
     if (area && area.at(x, z)) return true;
-    if (inHe(he[i], x, z)) return true;
-    if (nk[i] >= 0 && inHe(nk[i], x, z)) return true;
-    if (prv[i] >= 0 && inHe(prv[i], x, z)) return true;
+    if (inHe(h, x, z)) return true;
+    if (next >= 0 && inHe(next, x, z)) return true;
+    if (previous >= 0 && inHe(previous, x, z)) return true;
     // 갈래 영역 안 선 띠(영역 안이거나, 지금 선이 영역에서 나오거나 영역으로 든다: 영역을 가로질러 선 자리가 그 띠 안일 수 있다)
-    const r0 = jr[i];
-    const r1 = J.of[hes[he[i]].a];
-    const r2 = J.of[hes[he[i]].b];
+    const r0 = region;
+    const r1 = J.of[hes[h].a];
+    const r2 = J.of[hes[h].b];
     if (r0 >= 0 && inRegion(r0, x, z)) return true;
     if (r1 >= 0 && r1 !== r0 && inRegion(r1, x, z)) return true;
     if (r2 >= 0 && r2 !== r0 && r2 !== r1 && inRegion(r2, x, z)) return true;
     // W50: 갈래 영역에서 막 나온 사람(앞 선이 영역에 닿는다)은 그 영역도 걸을 수 있다(영역 안 걷는 면 밖 자리에서 나가면 어느 걸음도 걷는 길 안이 아니라 60초 서 있었다)
-    if (prv[i] >= 0) {
-      const r3 = J.of[hes[prv[i]].b] >= 0 ? J.of[hes[prv[i]].b] : J.of[hes[prv[i]].a];
+    if (previous >= 0) {
+      const r3 = J.of[hes[previous].b] >= 0 ? J.of[hes[previous].b] : J.of[hes[previous].a];
       if (r3 >= 0 && r3 !== r0 && r3 !== r1 && r3 !== r2 && inRegion(r3, x, z)) return true;
     }
     return false;
@@ -1576,8 +1577,8 @@ export function makePeople(
       return;
     }
     const e = hes[k];
-    const out2 = (n: number) => {
-      prv[i] = he[i];
+    const out2 = (n: number, nextMode = mode[i]) => {
+      let previous = he[i];
       // 짧은 나갈 선을 지나 이어진 선 위에 와 있으면 그 선을 따라간다(지나온 노드로 되돌아가지 않게)
       let q = k;
       for (let c = 0; c < 20 && hes[q].x < 0 && proj(q, w.x[i], w.z[i])[0] > hes[q].L; c++) {
@@ -1585,9 +1586,11 @@ export function makePeople(
         if (out[b].length !== 2 || J.of[b] >= 0) break;
         const nx2 = out[b][0] === hes[q].rev ? out[b][1] : out[b][0];
         if (hes[nx2].x >= 0) break;
-        prv[i] = q;
+        previous = q;
         q = nx2;
       }
+      if (o.validateJunctionExit && !valid(i, w.x[i], w.z[i], q, -1, previous, -1, nextMode)) return false;
+      prv[i] = previous;
       he[i] = q;
       nk[i] = -1;
       viaNode[i] = 0;
@@ -1596,11 +1599,11 @@ export function makePeople(
       jx[i] = -1;
       jOutT[i] = clockS;
       remember(i, n);
+      return true;
     };
     if (e.x >= 0) {
       // 횡단보도로 나간다: 기다리는 자리로
-      if (left < XW_R) {
-        out2(e.a);
+      if (left < XW_R && out2(e.a, WAITX)) {
         mode[i] = WAITX;
         [tx[i], tz[i]] = waitSpot(i, e.a, crosses[e.x]);
       }
@@ -1608,7 +1611,9 @@ export function makePeople(
     }
     const [sk, uk] = proj(k, w.x[i], w.z[i]);
     // 나갈 선에 올라섰으면 나간다. 영역 안에서 JUNC_STUCK 초 넘게 못 나아가면(벽에 끼었다) 나갈 선을 따라 걷기로 돌아간다
-    if ((sk >= Math.min(EXIT_S, e.L * 0.6) && Math.abs(uk) < 2.5) || left < 0.5 || stuckT[i] > JUNC_STUCK) (stuckT[i] = 0), out2(e.a);
+    if (((sk >= Math.min(EXIT_S, e.L * 0.6) && Math.abs(uk) < 2.5) || left < 0.5 || stuckT[i] > JUNC_STUCK) && out2(e.a)) {
+      stuckT[i] = 0;
+    }
   }
 
   /** 걷는 사람 하나를 한 걸음(dt) 옮긴다 */

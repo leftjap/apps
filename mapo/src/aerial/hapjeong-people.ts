@@ -126,6 +126,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
     (entrances ? 512 : 64) + (trial?.pending.length ?? 0), {
     cars: cars.cars, busy, walkLeft, traffic: cars.approaching, surveyedCrossings: !!entrances, signalPairs, waitDepths,
     stopTrips: !!boundaryTrips, surveyedLandings: !!boundaryTrips,
+    validateJunctionExit: boundaryTrips?.validateJunctionExit,
   });
   const routes = portalRoutes(graph, portals);
   const portalAudit = portals.map((p,i) => ({ ...p, destinations: routes[i].map(row => portals[row.to].key) }));
