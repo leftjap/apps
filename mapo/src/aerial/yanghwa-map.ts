@@ -1,38 +1,48 @@
 import * as THREE from 'three';
 import { MapControls } from 'three/addons/controls/MapControls.js';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
-import area from '../../tools/v2/areas/yanghwa-map.json';
+import yanghwa from '../../tools/v2/areas/yanghwa-map.json';
 import { makeYanghwaTerrain, type YanghwaBuildings, type YanghwaFloor } from './yanghwa-terrain.ts';
 import { nearestOutlinePoint } from './connected-traffic.ts';
 import type { HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 import type { HapjeongDemand } from './hapjeong-car-playback.ts';
 
+type MapManifest = { camera: typeof yanghwa.camera; output: typeof yanghwa.output & { gzip?: boolean } };
+const manifests = import.meta.glob<{ default: MapManifest }>('../../tools/v2/areas/*.json');
 const canvas = document.querySelector('canvas')!;
 const main = document.querySelector('main')!;
 const reset = document.querySelector<HTMLButtonElement>('#overview')!;
 const play = document.querySelector<HTMLButtonElement>('#play')!;
 const status = document.querySelector<HTMLParagraphElement>('#status')!;
-const { minWidth, minTilt, maxTilt, initialTilt, initialBearing, fitPadding } = area.camera;
 const clamp = THREE.MathUtils.clamp;
 const radians = THREE.MathUtils.degToRad;
 const degrees = THREE.MathUtils.radToDeg;
 
-async function read<T>(suffix: string): Promise<T> {
-  const { directory, stem } = area.output;
-  const base = directory.replace(/^public\//, '');
-  const response = await fetch(`${import.meta.env.BASE_URL}${base}/${stem}-${suffix}.json`);
-  if (!response.ok) throw Error(`${suffix} 자료 응답 ${response.status}`);
-  return response.json();
-}
-
 async function init() {
   THREE.ColorManagement.enabled = false;
+  const district = canvas.dataset.area;
+  const loadDistrict = manifests[`../../tools/v2/areas/${district}.json`];
+  if (district && !loadDistrict) throw Error(`구역 설정 없음: ${district}`);
+  const area: MapManifest = district ? (await loadDistrict()).default : yanghwa;
+  const { minWidth, minTilt, maxTilt, initialTilt, initialBearing, fitPadding } = area.camera;
+  async function read<T>(suffix: string): Promise<T> {
+    const { directory, stem, gzip: compressed } = area.output;
+    const base = directory.replace(/^public\//, '');
+    const extension = compressed ? '.json.gz' : '.json';
+    const response = await fetch(`${import.meta.env.BASE_URL}${base}/${stem}-${suffix}${extension}`);
+    if (!response.ok) throw Error(`${suffix} 자료 응답 ${response.status}`);
+    // Vite serves .json.gz as HTTP-encoded JSON. Static hosts may serve it as a gzip file.
+    return compressed && !response.headers.get('content-encoding')?.includes('gzip')
+      ? new Response(response.body!.pipeThrough(new DecompressionStream('gzip'))).json()
+      : response.json();
+  }
   const [data, buildings] = await Promise.all([read<YanghwaFloor>('a'),read<YanghwaBuildings>('buildings')]);
   const [west,north,east,south] = buildings.window;
   const center = new THREE.Vector3((west+east)/2,0,(north+south)/2);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0b0d11');
-  const terrain = makeYanghwaTerrain(data,buildings);
+  const detailed = district ? (await import('./district-terrain.ts')).makeDistrictTerrain(data,buildings) : undefined;
+  const terrain = detailed?.group ?? makeYanghwaTerrain(data,buildings);
   const sun = new THREE.DirectionalLight('#fff0d8',1.35);
   sun.position.set(-200,300,100);
   scene.add(terrain,sun,new THREE.HemisphereLight('#dceafa','#5c5751',2));
@@ -72,14 +82,14 @@ async function init() {
   const requestDraw = () => {
     if (!frame) frame = requestAnimationFrame(draw);
   };
-  const traffic = query.get('cars') === '1' ? await (async () => {
+  const traffic = !district && query.get('cars') === '1' ? await (async () => {
     const [{carPlayback,CAR_TICK},{makeCarMeshes},{env,updateEnv},{makeYanghwaSignals},cars,demand] = await Promise.all([
       import('./hapjeong-car-playback.ts'),import('../render/cars.ts'),import('../render/env.ts'),
       import('./yanghwa-signals.ts'),
       read<HapjeongCars>('cars'),read<HapjeongDemand>('demand'),
     ]);
-    const run = carPlayback(cars,true,undefined,true,demand,undefined,undefined,area);
-    const limit = area.replay.connectedTraffic.maxTicksPerFrame;
+    const run = carPlayback(cars,true,undefined,true,demand,undefined,undefined,yanghwa);
+    const limit = yanghwa.replay.connectedTraffic.maxTicksPerFrame;
     const mesh = makeCarMeshes(run.max,true);
     const signals = makeYanghwaSignals(cars, run.graph);
     scene.add(mesh.group, signals.group);
@@ -153,6 +163,7 @@ async function init() {
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
     traffic?.(stamp);
+    detailed?.update(camera,distance*widthPerDepth());
     renderer.render(scene,camera);
     canvas.dataset.camera = JSON.stringify({
       center: [target.x,target.z],

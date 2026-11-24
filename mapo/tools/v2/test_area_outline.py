@@ -1,11 +1,34 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from shapely.geometry import LineString, Point, box
 
-from area import area_window
+from area import area_window, read_asset, write_asset
 
 
 class AreaOutlineTest(unittest.TestCase):
+    def test_polygon_keeps_its_hole(self):
+        polygon = {'type': 'Polygon', 'coordinates': [
+            [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]],
+            [[3, 3], [7, 3], [7, 7], [3, 7], [3, 3]],
+        ]}
+        window = area_window({'window': [0, 0, 10, 10], 'outline': polygon})
+        self.assertEqual(window.area, 84)
+        self.assertFalse(window.covers(Point(5, 5)))
+        self.assertTrue(window.covers(Point(1, 1)))
+
+    def test_compressed_assets_round_trip_with_deterministic_bytes(self):
+        data = {'name': '홍대 일대', 'face': [[0.1234, 2.3456]]}
+        with TemporaryDirectory() as folder:
+            area = {'output': {'directory': folder, 'stem': 'district', 'gzip': True}}
+            path = write_asset(area, '-a', data)
+            self.assertEqual(path, Path(folder, 'district-a.json.gz'))
+            first = path.read_bytes()
+            write_asset(area, '-a', data)
+            self.assertEqual(path.read_bytes(), first)
+            self.assertEqual(read_asset(area, '-a'), data)
+
     def test_rectangle_with_exclusion(self):
         window = area_window({'window': [0, 0, 10, 10], 'excludeWindows': [[0, 0, 4, 4]]})
         self.assertTrue(window.equals(box(0, 0, 10, 10).difference(box(0, 0, 4, 4))))

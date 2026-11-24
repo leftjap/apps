@@ -3,11 +3,12 @@ from collections import Counter
 import json
 from pathlib import Path
 
+from shapely import STRtree
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
-from area import COMPARISON_SEAM_MARGIN, area_window, read_area
-from hapjeong_hd import AREA, SHEETS, WINDOW, asset, parts, project, survey_faces
+from area import COMPARISON_SEAM_MARGIN, area_window, read_area, read_asset
+from hapjeong_hd import AREA, SHEETS, WINDOW, parts, project, survey_faces
 from hapjeong_hd_a import polygon, surface
 from shp import dbf, shapes
 from tm import tm_to_ll
@@ -20,12 +21,12 @@ def floor_layers(paving):
             for key, rows in paving.items()}
 
 
-def floor_parity(paving, areas):
+def floor_parity(paving, areas, margin=COMPARISON_SEAM_MARGIN):
     combined = floor_layers(paving)
     compared = {}
     for area in areas:
-        core = area_window(area).buffer(-COMPARISON_SEAM_MARGIN)
-        reference = floor_layers(json.loads(asset(area, '-a').read_text())['floor'])
+        core = area_window(area).buffer(-margin)
+        reference = floor_layers(read_asset(area, '-a')['floor'])
         compared[area['id']] = {}
         for layer, original in reference.items():
             actual, expected = combined[layer].intersection(core), original.intersection(core)
@@ -54,10 +55,32 @@ def coincident_faces(faces, seams):
     return sum(face.boundary.intersection(seams).length > .01 for face in faces)
 
 
+def sheet_parity(buildings, footways, sheets):
+    seams = unary_union([face.boundary for face, _ in sheets]).difference(WINDOW.boundary.buffer(.001))
+    lines = list(parts(seams, 'LineString'))
+    index = STRtree(lines)
+    strips = [line.buffer(.01, cap_style='flat') for line in lines]
+    strip_index = STRtree(strips)
+
+    def inspect_faces(faces):
+        hits = []
+        for face in faces:
+            boundary = face.boundary
+            exact = sum(boundary.intersection(lines[i]).length for i in index.query(boundary))
+            near = boundary.intersection(unary_union([strips[i] for i in strip_index.query(boundary)])).length
+            # A very short approach can cross the strip at an angle. A metre-long
+            # trace in the strip catches sheet-edge roundoff in the projected source.
+            if exact > .01 or near > 1:
+                hits.append({'at': list(face.representative_point().coords[0]),
+                             'lengthM': exact, 'withinCentimetreM': near})
+        return hits
+    return {'building': inspect_faces(buildings), 'walk': inspect_faces(footways)}
+
+
 def inspect():
-    master = json.loads(asset(AREA).read_text())
-    floor = json.loads(asset(AREA, '-a').read_text())
-    built = json.loads(asset(AREA, '-buildings').read_text())
+    master = read_asset(AREA)
+    floor = read_asset(AREA, '-a')
+    built = read_asset(AREA, '-buildings')
     paving = floor['floor']
     road, walk = (surface(paving[key]) for key in ('road', 'walk'))
     comparisons = [read_area(Path(name)) for name in AREA['comparisonAreas']]
@@ -86,15 +109,16 @@ def inspect():
         c, d = corners[(i+1) % len(corners)]
         if winding * ((x-a)*(d-z) - (z-b)*(c-x)) < -1e-7:
             concave.append((x, z))
-    coverage = AREA['coverage']
-    road_name = coverage['roadName']
-    arterial = named_road_footprint(road, road_name, coverage['roadNumber'])
-    if arterial.is_empty:
-        raise ValueError(f'No survey centreline for {road_name}')
-    distances = sorted((Point(p).distance(arterial), p) for p in concave)
+    distances = []
+    if coverage := AREA.get('coverage'):
+        road_name = coverage['roadName']
+        arterial = named_road_footprint(road, road_name, coverage['roadNumber'])
+        if arterial.is_empty:
+            raise ValueError(f'No survey centreline for {road_name}')
+        distances = sorted((Point(p).distance(arterial), p) for p in concave)
     sheets = [(face, row['도엽코드']) for face, row in survey_faces('H0010000') if face.area > AREA_EPS]
     new_land = WINDOW.difference(old_union)
-    return {
+    result = {
         'area': AREA['id'],
         'outlineM2': WINDOW.area,
         'addedM2': new_land.area,
@@ -120,6 +144,29 @@ def inspect():
         'landingCoverage': dict(Counter(sum(row['connected'] for row in rows) for rows in landings.values())),
         'landingFaces': sum(len(row['faces']) for rows in landings.values() for row in rows),
     }
+    if 'outline' in AREA:
+        result['crossingFaces'] = sum(len(row['faces']) for row in floor['crossings'])
+        extra = {name: surface(floor[name]) for name in ('land', 'water', 'parks')}
+        decks = [surface(row['faces']) for row in floor['decks']]
+        extra['decks'] = unary_union(decks)
+        result['outsideM2'].update({key: feature.difference(WINDOW).area for key, feature in extra.items()})
+        result['buildingDeckOverlapM2'] = building_union.intersection(extra['decks']).area
+        result['sheetSeamFaces'] = sheet_parity(
+            [polygon(face) for row in built['buildings'] for face in row['faces']], footways, sheets)
+        result['roofSources'] = dict(Counter(paint['source'] for row in built['buildings'] for paint in row['appearance']))
+        result['districtGroundM2'] = {key: face.area for key, face in extra.items()}
+        result['baseColorOverlapM2'] = sum(extra[first].intersection(extra[second]).area
+                                           for first, second in (('land', 'water'), ('land', 'parks'),
+                                                                 ('water', 'parks')))
+        result['deckOverlaps'] = [
+            {'at': face.representative_point().coords[0], 'kind': row['kind'], 'name': row['name'],
+             'roadM2': face.intersection(road).area, 'walkM2': face.intersection(walk).area,
+             'waterM2': face.intersection(extra['water']).area, 'buildingM2': face.intersection(building_union).area}
+            for face, row in zip(decks, floor['decks'], strict=True)
+        ]
+    if name := AREA.get('floorReference'):
+        result['floorReference'] = floor_parity(paving, [read_area(Path(name))], margin=0)
+    return result
 
 
 if __name__ == '__main__':
@@ -131,6 +178,9 @@ if __name__ == '__main__':
             'buildingRoadOverlapM2', 'buildingWalkOverlapM2', 'outsideSheetsM2',
         ))
         or any(result[key] for key in ('withoutHeight', 'oldBoundaryBuildingFaces', 'oldBoundaryWalkFaces'))
+        or any(result.get('sheetSeamFaces', {}).values())
+        or result.get('buildingDeckOverlapM2', 0) > AREA_EPS
+        or result.get('baseColorOverlapM2', 0) > AREA_EPS
         or any(value > AREA_EPS for area in result['floorParity'].values()
                for layer in area.values() for value in layer.values())
         or (result['shortestConcaveDistanceM'] is not None

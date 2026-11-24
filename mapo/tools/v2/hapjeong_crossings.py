@@ -3,7 +3,7 @@ import json
 import math
 from itertools import pairwise
 
-from shapely import affinity, get_coordinates, make_valid, set_precision
+from shapely import affinity, get_coordinates, make_valid, set_precision, STRtree
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
@@ -92,14 +92,14 @@ def survey_heading(face, painted):
     return None
 
 
-def approach(end, other, width, walk_parts, forbidden, crossing, reach):
+def approach(end, other, width, walk_parts, walk_index, forbidden, crossing, reach):
     # Look outward through the painted end, never sideways to the same curb.
     length = math.dist(end,other)
     dx,dz = (end[0]-other[0])/length,(end[1]-other[1])/length
     point = Point(end)
     ray = LineString([end,(end[0]+dx*reach,end[1]+dz*reach)])
-    hits = [(point.distance(section), i) for i,face in enumerate(walk_parts)
-            if not (section := face.intersection(ray)).is_empty]
+    hits = [(point.distance(section), int(i)) for i in walk_index.query(ray)
+            if not (section := walk_parts[i].intersection(ray)).is_empty]
     if not hits:
         return {'end':end, 'status':'no-walk-in-outward-range','distance':None,'walkComponent':None,'faces':[]}
     gap, component = min(hits)
@@ -146,6 +146,7 @@ def vehicle_clearance(kind):
 def supplement_crossings(b3, walk, building_faces):
     topo,seoul = crossing_sources()
     walk_parts = sorted(parts(walk,'Polygon'),key=lambda face: face.bounds)
+    walk_index = STRtree(walk_parts)
     rows = features('a2-expanded')
     if AREA.get('signals'):
         # A landing is inferred between measured surfaces. Leave room for the
@@ -156,14 +157,17 @@ def supplement_crossings(b3, walk, building_faces):
         lanes = unary_union([LineString(path) for row in rows for path in paths(row)]).buffer(.75)
     forbidden = lanes.union(building_faces)
     painted = [(row,unary_union([Polygon(outer,holes) for outer,*holes in row['faces']])) for row in b3]
+    paint_index = STRtree([face for _, face in painted])
     primary = unary_union([face for _,face in painted])
     rows = []
     audit = []
     for id, face in topo:
         covered = face.intersection(primary).area >= face.area*.15
-        score, city_id = max((agreement(face,city), key) for key,city in seoul)
-        a,b,width,heading = crossing_axis(face,survey_heading(face,painted) if covered else None)
-        approaches = [approach(end,other,width,walk_parts,forbidden,face,4*width) for end,other in ((a,b),(b,a))]
+        score, city_id = max(((agreement(face,city), key) for key,city in seoul), default=(0,None))
+        nearby = [painted[i] for i in sorted(paint_index.query(face))] if covered else []
+        a,b,width,heading = crossing_axis(face,survey_heading(face,nearby))
+        approaches = [approach(end,other,width,walk_parts,walk_index,forbidden,face,4*width)
+                      for end,other in ((a,b),(b,a))]
         entry = {'id':id, 'axisHeading':heading, 'approaches':approaches, 'faces':rings(face)}
         if covered:
             audit.append({**entry,'status':'covered-by-b3'})
@@ -188,7 +192,7 @@ LANDING_REACH = 6
 LANDING_SEAM = .09
 
 
-def walking_landings(row, pavement, lanes):
+def walking_landings(row, pavement, lanes, *, lane_index=None):
     """Extend the actual ends of the stripe to their adjoining pavements."""
     cross = unary_union([Polygon(outer, holes) for outer, *holes in row['faces']])
     a, b = [Point(end['end']) for end in row['approaches']]
@@ -202,7 +206,8 @@ def walking_landings(row, pavement, lanes):
     span = hi-lo
     # An A2 lane already traversed by this stripe is part of the crossing.
     search = cross.buffer(6+span)
-    forbidden = unary_union([line.buffer(width+.02, cap_style='flat') for line, width in lanes
+    nearby_lanes = lanes if lane_index is None else (lanes[i] for i in sorted(lane_index.query(search)))
+    forbidden = unary_union([line.buffer(width+.02, cap_style='flat') for line, width in nearby_lanes
                              if line.intersects(search) and line.intersection(cross).length < .1])
     nearby = project_local(pavement.intersection(search))
     blocked = project_local(forbidden)

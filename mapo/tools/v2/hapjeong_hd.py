@@ -10,7 +10,7 @@ from shapely.ops import unary_union
 
 from aerial_paint import style
 from aerial_rules import PITCH, STRIPE_WIDTH
-from area import MAPO, area_window, asset, load_area
+from area import MAPO, area_window, asset, load_area, write_asset
 from bake_aerial_ground import Frame, parts
 from land import even_odd
 from shp import dbf, shapes
@@ -39,6 +39,8 @@ TYPES = {
     for form in (1, 2)
 }
 def features(layer):
+    if AREA['sources'].get('hdSharedExtents'):
+        layer = layer.split('-', 1)[0]
     return json.loads((RAW / f'{layer}.json').read_text())['features']
 
 
@@ -228,7 +230,6 @@ def floor_paths(lines):
 def bake():
     core = features('a2')
     expanded = features('a2-expanded')
-    nodes = features('a1-expanded')
     core_index = {row['properties']['id']: paths(row) for row in core}
     expanded_index = {row['properties']['id']: paths(row) for row in expanded}
     lines, crossings, bicycles = [], [], []
@@ -270,24 +271,27 @@ def bake():
     floor = survey_floor()
     a4 = [{'id': row['properties']['id'], 'faces': faces} for row in features('a4')
           if (faces := floor_faces(face_rings(row)))]
-    return {
+    result = {
         'views': VIEWS,
         'floor': {'road': rings(floor['road']), 'walk': rings(floor['walk']), 'islands': rings(floor['island']), 'a4': a4},
         'lines': lines, 'crossings': crossings, 'bicycles': bicycles,
-        'links': [{'id': row['properties']['id'], 'type': row['properties']['linktype'],
-                   'paths': core_index[row['properties']['id']]} for row in core],
-        'routing': connectivity(core, expanded, nodes, floor['central']),
-        'centralJunction': rings(floor['central']),
     }
+    if 'outline' not in AREA:
+        result.update(
+            links=[{'id': row['properties']['id'], 'type': row['properties']['linktype'],
+                    'paths': core_index[row['properties']['id']]} for row in core],
+            routing=connectivity(core, expanded, features('a1-expanded'), floor['central']),
+        )
+    result['centralJunction'] = rings(floor['central'])
+    return result
 
 
 if __name__ == '__main__':
     result = bake()
-    ASSET.parent.mkdir(parents=True, exist_ok=True)
-    ASSET.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')) + '\n')
-    print(ASSET)
+    print(write_asset(AREA, '', result))
     print('lines', len(result['lines']), 'crossings', Counter(row['lookup'] for row in result['crossings']),
-          'bike', len(result['bicycles']), 'links', len(result['links']))
-    entries = result['routing']['entries']
-    print('routing', len(entries), 'reachable', sum(bool(row['route']) for row in entries),
-          'hops', Counter(len(row['route'])-1 for row in entries if row['route']))
+          'bike', len(result['bicycles']))
+    if 'routing' in result:
+        entries = result['routing']['entries']
+        print('routing', len(entries), 'reachable', sum(bool(row['route']) for row in entries),
+              'hops', Counter(len(row['route'])-1 for row in entries if row['route']))

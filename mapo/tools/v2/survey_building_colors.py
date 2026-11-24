@@ -8,7 +8,7 @@ import json
 import subprocess
 
 import numpy as np
-from shapely import contains_xy, is_ccw, LinearRing, LineString, Polygon, STRtree
+from shapely import contains_xy, is_ccw, LinearRing, LineString, Polygon, STRtree, box
 
 INSET_METRES = 1.2
 MIN_PIXELS = 96
@@ -90,6 +90,8 @@ def street_edges(outer, lanes):
 
 def apply_colors(buildings, cars, tiles):
     lanes = street_tree(cars)
+    tile_index = STRtree([box(x,z,x+pixel*TILE_PIXELS,z+pixel*TILE_PIXELS)
+                          for x,z,pixel,_ in tiles])
     sources, sample_sizes, spreads = Counter(), [], []
     for row in buildings:
         height = row['height']
@@ -97,7 +99,7 @@ def apply_colors(buildings, cars, tiles):
         row['appearance'] = []
         for i, (outer, *holes) in enumerate(row['faces']):
             inner = Polygon(outer, holes).buffer(-INSET_METRES)
-            pixels = roof_pixels(inner, tiles)
+            pixels = roof_pixels(inner, (tiles[i] for i in sorted(tile_index.query(inner))))
             source = 'tall' if style == 'glass' else 'photo'
             rgb = None
             if source == 'photo':

@@ -5,11 +5,13 @@ type Point = [number, number];
 export type Face = Point[][];
 type Paint = { roof: string; wall: string; style: 'low' | 'urban' | 'glass'; street?: number[] };
 export type SurveyBuilding = { height: number; floors: number; faces: Face[]; appearance?: Paint[] };
-type Batch = { positions: number[]; colors: number[]; facades: number[] };
+type Batch = { positions: number[]; colors: number[]; facades?: number[] };
+type BuildingOptions = { chunkSize?: number; detail?: boolean; facadeFade?: { value: number } };
 
 const fallback: Paint = { roof: '#d9cbbc', wall: '#b2a79a', style: 'low' };
 const PARAPET = .22;
 const CHUNK = 96;
+let sharedDistrictPatterns: THREE.DataArrayTexture | undefined;
 
 export function groundShape([outer, ...holes]: Face) {
   const vector = (ring: Point[]) => ring.map(([x,z]) => new THREE.Vector2(x,-z));
@@ -40,15 +42,18 @@ function windowPatterns() {
   return texture;
 }
 
-function material() {
+function material(facadeFade?: { value: number }) {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-  const patterns = windowPatterns();
+  const patterns = facadeFade ? sharedDistrictPatterns ??= windowPatterns() : windowPatterns();
   mat.onBeforeCompile = shader => {
     shader.uniforms.facadePatterns = { value: patterns };
+    if (facadeFade) shader.uniforms.facadeFade = facadeFade;
     shader.vertexShader = 'attribute vec4 facade; varying vec4 vFacade;\n' + shader.vertexShader.replace(
       '#include <begin_vertex>', '#include <begin_vertex>\nvFacade = facade;');
-    shader.fragmentShader = 'uniform highp sampler2DArray facadePatterns; varying vec4 vFacade;\n' + shader.fragmentShader.replace(
+    const fadeDeclaration = facadeFade ? 'uniform float facadeFade;\n' : '';
+    shader.fragmentShader = fadeDeclaration + 'uniform highp sampler2DArray facadePatterns; varying vec4 vFacade;\n' + shader.fragmentShader.replace(
       '#include <color_fragment>', `#include <color_fragment>
+      ${facadeFade ? 'vec3 bareWall = diffuseColor.rgb;' : ''}
       // u counts bays, y counts storeys, z selects glass and the frontage.
       float glassTower = mod(vFacade.z, 2.0);
       float ground = 1.0 - step(1.0, vFacade.y);
@@ -60,8 +65,10 @@ function material() {
         diffuseColor.rgb *= 1.0 - 0.16*shop;
         diffuseColor.rgb = mix(diffuseColor.rgb, glass, pattern.r*step(0.0,vFacade.x)*0.93);
         diffuseColor.rgb *= mix(0.80, 1.0, smoothstep(0.11,0.21,vFacade.w));
-      }`);
+      }
+      ${facadeFade ? 'diffuseColor.rgb = mix(bareWall, diffuseColor.rgb, facadeFade);' : ''}`);
   };
+  if (facadeFade) mat.customProgramCacheKey = () => 'survey-fade';
   return mat;
 }
 
@@ -69,7 +76,7 @@ function vertex(batch: Batch, [x,z]: Point, y: number, color: THREE.Color,
                 bay = -1, level = -1, flag = 0, belowRoof = 0) {
   batch.positions.push(x,y,z);
   batch.colors.push(color.r,color.g,color.b);
-  batch.facades.push(bay,level,flag,belowRoof);
+  batch.facades?.push(bay,level,flag,belowRoof);
 }
 
 function roof(batch: Batch, face: Face, height: number, color: THREE.Color) {
@@ -126,17 +133,18 @@ function parapetInset(outer: Point[], signedArea: number) {
   return inset && ccw.map((_,i): Point => [inset[2*i],inset[2*i+1]]);
 }
 
-export function makeSurveyBuildings(buildings: SurveyBuilding[]) {
-  const mat = material();
+export function makeSurveyBuildings(buildings: SurveyBuilding[],
+                                    { chunkSize = CHUNK, detail = true, facadeFade }: BuildingOptions = {}) {
+  const mat = detail ? material(facadeFade) : new THREE.MeshLambertMaterial({ vertexColors: true });
   const batches = new Map<string, Batch>();
   for (const { height, floors, faces, appearance } of buildings) for (const [i, face] of faces.entries()) {
     const paint = appearance?.[i] ?? fallback;
     const rings = face.map(unclose);
     const [outer] = rings;
     const [x,z] = outer[0];
-    const key = `${Math.floor(x/CHUNK)},${Math.floor(z/CHUNK)}`;
+    const key = `${Math.floor(x/chunkSize)},${Math.floor(z/chunkSize)}`;
     let batch = batches.get(key);
-    if (!batch) batches.set(key, batch = { positions: [], colors: [], facades: [] });
+    if (!batch) batches.set(key, batch = { positions: [], colors: [], facades: detail ? [] : undefined });
     const wall = new THREE.Color(paint.wall), top = new THREE.Color(paint.roof);
     const storey = height/(floors || Math.max(1, Math.round(height/3)));
     const pitch = paint.style === 'glass' ? 2.2 : paint.style === 'urban' ? 2.45 : 2.85;
@@ -144,7 +152,7 @@ export function makeSurveyBuildings(buildings: SurveyBuilding[]) {
       sides(batch, ring, (areaTwice(ring)>0) === (j===0), 0, height, wall,
         storey, pitch, Number(paint.style === 'glass'), j === 0 ? paint.street : undefined);
     }
-    const inset = rings.length === 1 && height >= 6 && parapetInset(outer, areaTwice(outer));
+    const inset = detail && rings.length === 1 && height >= 6 && parapetInset(outer, areaTwice(outer));
     if (inset) {
       roof(batch, [inset], height-PARAPET, top);
       roof(batch, [outer,inset], height, top.clone().lerp(wall,.22));
@@ -157,7 +165,7 @@ export function makeSurveyBuildings(buildings: SurveyBuilding[]) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
-    geometry.setAttribute('facade', new THREE.Float32BufferAttribute(facades,4));
+    if (facades) geometry.setAttribute('facade', new THREE.Float32BufferAttribute(facades,4));
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();

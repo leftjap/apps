@@ -9,7 +9,8 @@ from shapely import get_parts
 from shapely.geometry import LineString, Point
 from shapely.ops import nearest_points
 
-from hapjeong_hd import AREA, ASSET, WINDOW, asset, features, paths, project, rings, survey_faces
+from area import read_asset
+from hapjeong_hd import AREA, WINDOW, asset, features, paths, project, rings, survey_faces
 from hapjeong_hd_a import surface
 from survey_signal_sites import junction_layout, split_at_signal_stops, survey_signal_sites
 
@@ -289,7 +290,7 @@ def bake(floor):
                    at=project(r['geometry']['coordinates'])) for r in features('c1')]
     routes = longest_bus(rows)
     lane_groups = bundles(rows)
-    central_floor = surface(json.loads(ASSET.read_text())['centralJunction'])
+    central_floor = surface(read_asset(AREA)['centralJunction'])
     central = [i for i, r in enumerate(rows) if r['kind'] == '1'
                and central_floor.covers(LineString(r['points']).interpolate(.5, normalized=True))]
     junctions = junction_layout(rows, [face for face, _ in survey_faces('A0080000')]) if by_arms else None
@@ -327,7 +328,7 @@ def bake(floor):
 
 
 if __name__ == '__main__':
-    floor = json.loads(asset(AREA, '-a').read_text())
+    floor = read_asset(AREA, '-a')
     if '--walk-signals' in sys.argv:
         data = json.loads(OUTPUT.read_text())
         data['walkSignalGroups'] = walk_signal_groups(data['crosswalks'], surface(floor['floor']['walk']))

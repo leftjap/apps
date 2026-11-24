@@ -6,16 +6,15 @@ from itertools import pairwise
 from collections import defaultdict
 from pathlib import Path
 
-from shapely import affinity, make_valid
+from shapely import affinity, make_valid, STRtree
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
-from area import COMPARISON_SEAM_MARGIN, area_window, read_area
-from hapjeong_hd import AREA, ASSET, MAPO, ORIGIN, WINDOW, asset, features, parts, paths, project, offset_zebra, rings
-from hapjeong_crossings import expanded_walk, supplement_crossings, vehicle_clearance, walking_landings
+from area import COMPARISON_SEAM_MARGIN, area_window, read_area, read_asset, write_asset
+from hapjeong_hd import AREA, MAPO, ORIGIN, WINDOW, features, parts, paths, project, offset_zebra, rings, survey_faces
+from hapjeong_crossings import expanded_walk, supplement_crossings, walking_landings
 from aerial_paint import footprint
 
-OUTPUT = asset(AREA, '-a')
 LINE_KINDS = {'501','503','506','504','525','530','505','515'}
 TIE_METRES = .25
 TIE_DEGREES = 15
@@ -179,10 +178,13 @@ def connected_paint(lines):
 
 def preserve_inferred_pavement(measured, inferred):
     """Use reviewed additions inside the earlier areas; infer across their joins."""
-    for name in AREA.get('comparisonAreas', ()):
+    references = [(name, COMPARISON_SEAM_MARGIN) for name in AREA.get('comparisonAreas', ())]
+    if name := AREA.get('floorReference'):
+        references.insert(0, (name, 0))
+    for name, margin in references:
         reference = read_area(Path(name))
-        core = area_window(reference).buffer(-COMPARISON_SEAM_MARGIN)
-        paving = json.loads(asset(reference, '-a').read_text())['floor']['walk']
+        core = area_window(reference).buffer(-margin)
+        paving = read_asset(reference, '-a')['floor']['walk']
         confirmed = surface(paving).intersection(core)
         inferred = inferred.difference(core).union(confirmed.difference(measured))
     return measured.union(inferred)
@@ -195,14 +197,17 @@ def bake_a(old):
     combined = survey_walk.union(surface([face for row in floor['a4'] for face in row['faces']]))
     measured = combined
     common_road = surface(floor['road']).difference(survey_walk)
-    source_buildings = json.loads((MAPO/AREA['sources']['pilotBuildings']).read_text())['buildings']
     segments = list(link_segments(features('a2-expanded')))
+    wide = 'outline' in AREA
+    segment_index = STRtree([line for _, line, _ in segments]) if wide else None
     crossings = []
     for row in old['crossings']:
         if row['stripes']:
             crossings.append(row)
             continue
-        result = choose_direction(surface(row['faces']), segments)
+        face = surface(row['faces'])
+        nearby = (segments[i] for i in sorted(segment_index.query(face.buffer(12)))) if wide else segments
+        result = choose_direction(face, nearby)
         stripes = [ring for stripe in offset_zebra(surface(row['faces']), result['chosen']['angle'])
                    for ring in rings(stripe)] if result['method']=='spatial-crossing' else []
         crossings.append({**row, 'stripes':stripes, 'spatial':result})
@@ -210,8 +215,15 @@ def bake_a(old):
     combined = combined.union(median_paving(floor,cross_faces)).union(expanded_walk(floor['a4']))
     if clip:
         combined = combined.intersection(WINDOW)
-    buildings = surface([[ [project(p) for p in ring] for ring in row['rings']]
-                         for row in source_buildings if row['height'] or row['floors']])
+    if wide:
+        buildings = unary_union([face for face, row in survey_faces('B0010000')
+                                  if row['종류'] not in ('무벽건물', '가건물')])
+        hidden = []
+    else:
+        source_buildings = json.loads((MAPO/AREA['sources']['pilotBuildings']).read_text())['buildings']
+        buildings = surface([[ [project(p) for p in ring] for ring in row['rings']]
+                             for row in source_buildings if row['height'] or row['floors']])
+        hidden = outline_exclusions(source_buildings, common_road)
     recovered, crossing_audit = supplement_crossings(crossings,combined,buildings)
     approaches = surface([face for row in crossing_audit if row['status']!='unconfirmed'
                           for end in row['approaches'] for face in end['faces']])
@@ -225,9 +237,9 @@ def bake_a(old):
         'floor': {'road':floor['road'], 'walk':rings(combined), 'islands':[], 'a4':[]},
         'lines': [row for row in old['lines'] if row['kind'] in LINE_KINDS],
         'crossings':crossings+recovered, 'crossingAudit':crossing_audit, 'bicycles':[], 'links':[],
-        'hiddenBuildingOutlines':outline_exclusions(source_buildings, common_road),
+        'hiddenBuildingOutlines':hidden,
     }
-    if AREA.get('coverage'):
+    if AREA.get('coverage') or wide:
         result['crossings'] = [clipped for row in result['crossings']
                                if (clipped := clip_crossing(row))['faces']]
         result['crossingAudit'] = [
@@ -238,6 +250,9 @@ def bake_a(old):
         ]
         result['paint'] = connected_paint(result['lines'])
         result['bicycles'] = old['bicycles']
+    if wide:
+        from survey_open_ground import open_ground
+        result.update(open_ground())
     return result
 
 
@@ -258,10 +273,11 @@ def pedestrian_landings(floor, cars):
         # A stop split never changes whether a physical lane crosses the face.
         from hapjeong_cars import load_links
         links = load_links()
-    lanes = [(LineString(row['points']), 1.245 if row['kind'] == '4' else 1.0)
-             for row in links]
-    result = {row['id']: walking_landings(row, pavement, lanes) for row in floor['crossingAudit']}
-    if AREA.get('coverage'):
+    lanes = [(LineString(row['points']), 1.245 if row['kind'] == '4' else 1.0) for row in links]
+    lane_index = STRtree([line for line, _ in lanes]) if 'outline' in AREA else None
+    result = {row['id']: walking_landings(row, pavement, lanes, lane_index=lane_index)
+              for row in floor['crossingAudit']}
+    if AREA.get('coverage') or 'outline' in AREA:
         for ends in result.values():
             for end in ends:
                 end['faces'] = clip_faces(end['faces'])
@@ -269,9 +285,15 @@ def pedestrian_landings(floor, cars):
 
 
 if __name__=='__main__':
-    result = bake_a(json.loads(ASSET.read_text()))
+    result = bake_a(read_asset(AREA))
     if AREA.get('floor', {}).get('bakeLandings'):
-        from hapjeong_cars import load_links
-
-        result['pedestrianLandings'] = pedestrian_landings(result, {'links': load_links()})
-    OUTPUT.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':'))+'\n')
+        if 'outline' in AREA:
+            links = [{'points': line, 'kind': kind}
+                     for feature in features('a2-expanded')
+                     if (kind := feature['properties']['linktype']) in ('1', '4', '6')
+                     for line in paths(feature)]
+        else:
+            from hapjeong_cars import load_links
+            links = load_links()
+        result['pedestrianLandings'] = pedestrian_landings(result, {'links': links})
+    print(write_asset(AREA, '-a', result))
