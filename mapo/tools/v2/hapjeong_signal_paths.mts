@@ -1,12 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { loadArea, readAsset } from './area.mts';
 import { carPlayback } from '../../src/aerial/hapjeong-car-playback.ts';
 import { headingNear } from '../../src/sim/graph.ts';
 import { CYCLE } from '../../src/sim/intersection/index.ts';
 import { pointAt } from '../../src/poly.ts';
 
-const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url),'utf8'));
+const area = loadArea();
+const read = (name: string) => readAsset(area, name);
 const data = read('cars') as import('../../src/aerial/hapjeong-car-graph.ts').HapjeongCars;
-const run = carPlayback(data,true,{walk:read('walk')},true,read('demand'));
+const run = carPlayback(data,true,{walk:read('walk')},true,read('demand'),undefined,undefined,area);
 const {inter:{X,S},edges,links} = run.graph;
 const site = S.list.find(site=>site.j>=0)!;
 const paths = X.paths.filter(p=>p.j===site.j).map(p=>{

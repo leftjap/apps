@@ -5,6 +5,8 @@ import json
 import math
 from pathlib import Path
 
+from area import DEFAULT_AREA, asset, read_area
+
 from shapely.geometry import LineString
 
 from check_hapjeong_car_run import body
@@ -107,8 +109,9 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('trace')
     parser.add_argument('--verify',action='store_true')
+    parser.add_argument('--area', type=Path, default=DEFAULT_AREA)
     args=parser.parse_args()
-    path=Path(__file__).resolve().parents[2]/'public/data/v2/hapjeong-hd-cars.json'
+    path=asset(read_area(args.area), '-cars')
     with open(args.trace) as trace:
         result=audit(trace,json.loads(path.read_text()))
     print(json.dumps(result,ensure_ascii=False))

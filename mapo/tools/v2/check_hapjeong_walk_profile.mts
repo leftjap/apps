@@ -1,14 +1,16 @@
 // Compare the legacy walk asset within the same survey window.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { areaPath, loadArea, readAsset } from './area.mts';
 import { groundPoint } from '../../src/aerial/map.ts';
 import { toLatLon } from '../../src/geo.ts';
 import { decodeWalk, type WalkJson } from '../../src/sim/walknet.ts';
 import { edgeWidths, junctions, WIDTH_UNIT } from '../lib/walkwidth.ts';
 
-const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/${name}.json`, import.meta.url), 'utf8'));
-const local: WalkJson = read('v2/hapjeong-hd-walk');
-const [xmin, zmin, xmax, zmax] = read('v2/hapjeong-hd-cars').window;
+const area = loadArea();
+const read = (name: string) => JSON.parse(readFileSync(areaPath(`public/data/${name}.json`), 'utf8'));
+const local: WalkJson = readAsset(area, 'walk');
+const [xmin, zmin, xmax, zmax] = area.window;
 const q = (values: number[]) => {
   const sorted = [...values].sort((a, b) => a - b);
   return [0.1, 0.5, 0.9].map(f => sorted[Math.floor(f * (sorted.length - 1))] ?? null);

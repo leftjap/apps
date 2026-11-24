@@ -2,13 +2,14 @@
 from collections import defaultdict
 from itertools import accumulate
 import json
-from pathlib import Path
+from area import MAPO, asset, load_area
 
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 from shapely.prepared import prep
 
-DATA = Path(__file__).resolve().parents[2] / 'public/data/v2'
+AREA = load_area()
+ROOT = MAPO
 BODY = .4
 
 
@@ -17,12 +18,12 @@ def faces(rows):
 
 
 def read(name):
-    return json.loads((DATA / f'hapjeong-hd-{name}.json').read_text())
+    return json.loads(asset(AREA, f'-{name}', root=ROOT).read_text())
 
 
 def verify():
     floor = read('a')
-    assert (DATA / 'hapjeong-hd-walk.json').exists(), 'Hapjeong walk graph has not been baked'
+    assert asset(AREA, '-walk', root=ROOT).exists(), 'The area walk graph has not been baked'
     graph = read('walk')
     walk = faces(floor['floor']['walk']).buffer(1e-7)
     safe = prep(walk.buffer(-BODY))
@@ -60,7 +61,10 @@ def verify():
     cross_ids = graph['crossings']
     by_id = {row['id']: row for row in floor['crossingAudit']}
     excluded = {row['id'] for row in graph['excluded']}
-    assert len(by_id) == 23 and len(cross_ids) == len(set(cross_ids)) == len(graph['x']) // 17
+    assert len(cross_ids) == len(set(cross_ids)) == len(graph['x']) // 17
+    expected = AREA.get('checks', {}).get('surveyCrossings')
+    if expected is not None:
+        assert len(by_id) == expected
     assert set(cross_ids).isdisjoint(excluded) and set(cross_ids) | excluded == set(by_id)
     for i, (xw, a, b, ax, az, bx, bz, pax, paz, pbx, pbz, width, major, *wait) in enumerate(
             zip(*(iter(graph['x']),) * 17, strict=True)):

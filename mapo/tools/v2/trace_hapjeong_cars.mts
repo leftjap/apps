@@ -1,12 +1,13 @@
-import { readFileSync } from 'node:fs';
-import { carPlayback, carVisibility, carViews } from '../../src/aerial/hapjeong-car-playback.ts';
+import { loadArea, readAsset } from './area.mts';
+import { carPlayback, carVisibility } from '../../src/aerial/hapjeong-car-playback.ts';
 import type { HapjeongCars } from '../../src/aerial/hapjeong-car-graph.ts';
 import { headingNear } from '../../src/sim/graph.ts';
 import { CYCLE, STRAIGHT } from '../../src/sim/intersection/index.ts';
 import { BODY_R } from '../../src/sim/people/index.ts';
 import type { HapjeongPeopleInput } from '../../src/aerial/hapjeong-people.ts';
 
-const read = (name: string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${name}.json`, import.meta.url), 'utf8'));
+const area = loadArea();
+const read = (name: string) => readAsset(area, name);
 const data: HapjeongCars = read('cars');
 const signalTest = process.argv.includes('--signal-test');
 const cycleArg = process.argv.indexOf('--cycles');
@@ -15,10 +16,10 @@ if (cycles !== undefined && (!Number.isSafeInteger(cycles) || cycles < 1)) throw
 const people: HapjeongPeopleInput | undefined = signalTest || process.argv.includes('--people')
   ? { walk: read('walk'), entrances: read('entrances'), signalTest } : undefined;
 const run = carPlayback(data, !process.argv.includes('--seeded'), people, true,
-  process.argv.includes('--unscaled') ? undefined : read('demand'), cycles);
+  process.argv.includes('--unscaled') ? undefined : read('demand'), cycles, undefined, area);
 const { inter: { X, S }, edges, links } = run.graph;
 const site = S.list.find(row => row.j >= 0)!;
-const visible = carVisibility();
+const visible = carVisibility(area.views.simulation);
 const wraps = (a: number) => ((a * 180 / Math.PI + 540) % 360) - 180;
 const approach = [...S.approach].map(([i, row]) => {
   const degree = wraps(headingNear(edges[i], edges[i].len));
@@ -31,7 +32,7 @@ console.log(JSON.stringify({
   approach, cycle: CYCLE, duration: run.duration, offset: site.offset, axis: wraps(site.axis),
   ingressAudit: run.ingressAudit, overlappingTerminals: [...run.overlappingTerminals],
   busRoutes: run.graph.buses.map(route => route.edges.map(id => links[id].id)),
-  views: carViews,
+  views: area.views.simulation,
   gates:Object.fromEntries(approach.map(a=>[a.edge,edges[a.edge].len-X.gate(a.edge,0)])),
   portalAudit: run.people()?.portalAudit,
   crossingTrial: run.people()?.crossingTrial?.courses,

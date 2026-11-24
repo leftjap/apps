@@ -10,7 +10,8 @@ from shapely import affinity, union_all
 from shapely.geometry import LineString, Point, Polygon
 from shapely.prepared import prep
 
-from check_hapjeong_walk import DATA, faces, read
+import check_hapjeong_walk as area_data
+from check_hapjeong_walk import faces, read
 
 MIN_OFF_FLOOR_AREA = .01  # m², behavior-rules.md C5
 
@@ -25,7 +26,7 @@ def body(x, z, yaw, length, half_width):
 @lru_cache(maxsize=1)
 def rendered_footprints():
     raw = subprocess.check_output(['node', '--experimental-strip-types', 'tools/v2/hapjeong_car_footprints.mts'],
-                                  cwd=DATA.parents[2], text=True)
+                                  cwd=area_data.ROOT, text=True)
     shapes = {}
     for name, vertices in json.loads(raw).items():
         # SHAPES returns non-indexed meshes. Project the actual triangles
@@ -55,8 +56,10 @@ def rendered_body(footprint, x, z, yaw, road):
 
 def trace(seeded=False, with_people=False):
     command = ['node', '--experimental-strip-types', 'tools/v2/trace_hapjeong_cars.mts']
+    if '--area' in sys.argv:
+        command.extend(['--area', sys.argv[sys.argv.index('--area') + 1]])
     raw = subprocess.run([*command, *(['--seeded'] if seeded else []), *(['--people'] if with_people else [])],
-                         cwd=DATA.parents[2], text=True, capture_output=True, check=True)
+                         cwd=area_data.ROOT, text=True, capture_output=True, check=True)
     return raw.stdout.splitlines()
 
 

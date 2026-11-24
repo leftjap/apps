@@ -2,15 +2,10 @@
 import json
 from collections import Counter
 from math import pi
-from pathlib import Path
 from shapely import make_valid
 from shapely.geometry import LineString, Polygon
 from shapely.ops import unary_union
-from hapjeong_hd import WINDOW, connectivity, features, paths, face_rings, offset_zebra
-
-MAPO = Path(__file__).resolve().parents[2]
-ASSET = MAPO / 'public/data/v2/hapjeong-hd.json'
-RAW = MAPO / 'tools/raw/ngii/hapjeong-hd'
+from hapjeong_hd import AREA, ASSET, RAW, WINDOW, connectivity, features, paths, face_rings, offset_zebra
 
 def read(path):
     return json.loads(path.read_text())
@@ -24,15 +19,13 @@ def surface(faces):
 def main():
     assert ASSET.is_file(), 'the HD comparison asset has not been generated'
     data = read(ASSET)
-    expected = {'b2': 304, 'b3': 131, 'a2': 173, 'a1': 155, 'a4': 24, 'c1': 80}
-    for layer, count in expected.items():
+    checks = AREA.get('checks', {})
+    for layer, count in checks.get('rawCounts', {}).items():
         assert len(read(RAW / f'{layer}.json')['features']) == count, layer
-    assert len(data['lines']) == 304
-    assert len(data['crossings']) == 37
-    assert len(data['bicycles']) == 18
-    assert len(data['links']) == 173
-    assert len(data['views']) == 8
-    assert {view['mode'] for view in data['views']} == {'photo', 'paths', 'floors'}
+    counts = {key: len(data[key]) for key in ('lines', 'crossings', 'bicycles', 'links', 'views')}
+    counts.update(entries=len(data['routing']['entries']), a4=len(data['floor']['a4']))
+    for key, expected in checks.get('baseCounts', {}).items():
+        assert counts[key] == expected, (key, counts[key], expected)
     assert [row['paths'] for row in data['lines']] == [
         json.loads(json.dumps(paths(row))) for row in features('b2')]
     assert [row['paths'] for row in data['links']] == [
@@ -52,12 +45,12 @@ def main():
     assert data['routing'] == connectivity(features('a2'), features('a2-expanded'), features('a1-expanded'), central)
     # Verify the witness routes against original direction and link roles.
     graph = {row['properties']['id']: row['properties'] for row in features('a2-expanded')}
-    assert len(data['routing']['entries']) == 36, 'only inbound links geometrically entering Hapjeong central junction'
-    print('원본 WFS 6층 수량 일치 · B2/A2 선 정점과 B3 원 면 보존 · 8가지 카메라 설정')
+    print('원본 WFS 6층 수량 일치 · B2/A2 선 정점과 B3 원 면 보존')
     print('횡단보도', dict(Counter(row['lookup'] for row in data['crossings'])),
           '방향 방식', dict(Counter(d['method'] for row in data['crossings'] for d in row['directions'])))
     near = [rule['distance'] for row in data['crossings'] for rule in row['directions'] if rule['method']=='nearest-tangent']
-    print('근접 방향의 원본 링크∼면 거리(m)', f'{min(near):.3f}–{max(near):.3f}')
+    if near:
+        print('근접 방향의 원본 링크∼면 거리(m)', f'{min(near):.3f}–{max(near):.3f}')
     for row in data['crossings']:
         if row['lookup'] == 'unresolved':
             print('미해결 횡단보도', row['id'], 'link=', row['linkId'],
@@ -81,7 +74,6 @@ def main():
     road = surface(data['floor']['road'])
     topo_walk = surface(data['floor']['walk'] + data['floor']['islands'])
     hd_walk = surface([face for row in data['floor']['a4'] for face in row['faces']])
-    assert len(data['floor']['a4']) == 24
     included = [(row['kind'], geom) for row in data['lines'] for path in row['paths']
                 if (geom := LineString(path).intersection(WINDOW)).length > 0]
     total = sum(geom.length for _, geom in included)

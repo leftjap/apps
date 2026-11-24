@@ -1,12 +1,13 @@
 // Seed six cars per eligible approach to expose the fourth-to-sixth discharge.
-import { readFileSync } from 'node:fs';
+import { loadArea, readAsset } from './area.mts';
 import { carPlayback } from '../../src/aerial/hapjeong-car-playback.ts';
 import { makeCars } from '../../src/sim/cars.ts';
 import { CYCLE, STRAIGHT } from '../../src/sim/intersection/index.ts';
 import { makeSimProvider } from '../../src/sim/provider.ts';
 
-const read = (n:string) => JSON.parse(readFileSync(new URL(`../../public/data/v2/hapjeong-hd-${n}.json`,import.meta.url),'utf8'));
-const run = carPlayback(read('cars'));
+const area = loadArea();
+const read = (name: string) => readAsset(area, name);
+const run = carPlayback(read('cars'),true,undefined,true,undefined,undefined,undefined,area);
 const { edges,links,buses,crosswalks,inter } = run.graph;
 const {X,S} = inter;
 const cases = [...S.approach].flatMap(([id, row])=>{

@@ -151,5 +151,6 @@ if __name__=='__main__':
     parser.add_argument('trace',type=Path)
     parser.add_argument('--limit',type=float)
     parser.add_argument('--paved-only',action='store_true')
+    parser.add_argument('--area', help='area manifest (default: Hapjeong)')
     args=parser.parse_args()
     print(json.dumps(measure(args.trace,args.limit,args.paved_only),ensure_ascii=False))

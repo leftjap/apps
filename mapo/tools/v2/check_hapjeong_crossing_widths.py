@@ -47,6 +47,7 @@ def summary(rows):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--verify', action='store_true')
+    parser.add_argument('--area', help='area manifest (default: Hapjeong)')
     args = parser.parse_args()
     rows = measure(read('a'), read('walk'))
     totals = summary(rows)

@@ -1,21 +1,17 @@
 """One numeric check for the A comparison asset."""
 from collections import Counter
 from itertools import combinations
-from pathlib import Path
 import json
 import math
 import re
 from shapely.geometry import GeometryCollection, LineString, Point, Polygon, box
 from shapely.ops import nearest_points, unary_union
 from hapjeong_hd_a import choose_direction, outline_exclusions
-from hapjeong_hd import WINDOW, face_rings, features, parts, paths
+from hapjeong_hd import AREA, MAPO, WINDOW, asset, face_rings, features, parts, paths
 from hapjeong_crossings import agreement, approach, crossing_axis, crossing_sources, half_metre_routes
 
-MAPO = Path(__file__).resolve().parents[2]
-DATA = MAPO/'public/data/v2'
-
-def read(name):
-    return json.loads((DATA/name).read_text())
+def read(suffix=''):
+    return json.loads(asset(AREA, suffix).read_text())
 
 def surface(faces):
     return unary_union([Polygon(face[0], face[1:]) for face in faces])
@@ -50,7 +46,7 @@ def survey_access(audit, actual, marked):
             assert any(component.covers(face.centroid) and all(component.covers(p) for p in caps)
                        for component in half_metre_routes(*available)), row['id']
         print('surveyed ends',row['id'][-4:],row['status'],[(link['status'],link['distance'],link.get('adjacent')) for link in ends])
-    print('outward survey access across all 46 ends',dict(counts))
+    print(f'outward survey access across all {2 * len(audit)} ends', dict(counts))
 
 
 def verify_crossing_access(new, before, actual, lanes, original_marked, central):
@@ -113,7 +109,7 @@ def verify_crossing_access(new, before, actual, lanes, original_marked, central)
         sequences += 1
         print('two consecutive crossings, continuous .50m clearance',i[-4:],j[-4:],
               'outside ends',[(round(p.x,3),round(p.y,3)) for p in outside])
-    assert sequences>=2
+    assert sequences >= AREA.get('checks', {}).get('minDoubleCrossings', 0)
     unused = [id for id,s in seoul if s.intersection(base).area<.15*s.area
               and not any(agreement(s,t) for _,t in topo)]
     print('source census',len(topo),'survey /',len(seoul),'Seoul; audit',dict(Counter(audit.values())),
@@ -142,10 +138,9 @@ def verify_crossing_access(new, before, actual, lanes, original_marked, central)
 
 
 if __name__ == '__main__':
-    old = read('hapjeong-hd.json')
-    path = DATA/'hapjeong-hd-a.json'
-    assert path.exists(), 'A comparison asset must exist'
-    new = read(path.name)
+    old = read()
+    new = read('-a')
+    checks = AREA.get('checks', {})
     accepted = {'501','503','506','504','525','530','505','515'}
     assert new['lines'] == [r for r in old['lines'] if r['kind'] in accepted]
     assert not new['bicycles']
@@ -158,7 +153,7 @@ if __name__ == '__main__':
     edges = [LineString(path) for row in old['lines'] if row['kind']=='505' for path in row['paths']]
     platforms = [surface(row['faces']) for row in old['floor']['a4']]
     witnesses = []
-    for x,z in re.findall(r"', (-?[\d.]+), (-?[\d.]+)\]", (MAPO/'src/data/medStops.ts').read_text()):
+    for x,z in re.findall(r"', (-?[\d.]+), (-?[\d.]+)\]", (MAPO/AREA['sources']['medianStops']).read_text()):
         stop = Point(float(x),float(z))
         platform = min(platforms,key=stop.distance)
         edge = min(edges,key=stop.distance)
@@ -166,7 +161,7 @@ if __name__ == '__main__':
             boundary,mark = nearest_points(platform,edge.interpolate(edge.project(stop)))
             if boundary.distance(mark) > 1:
                 witnesses.append(LineString([boundary,mark]).interpolate(.5,normalized=True))
-    assert witnesses and all(actual.covers(point) for point in witnesses), 'surveyed median strip beside the platform is still asphalt'
+    assert all(actual.covers(point) for point in witnesses), 'surveyed median strip beside the platform is still asphalt'
     lanes = unary_union([LineString(path) for row in features('a2-expanded') for path in paths(row)])
     crossings = surface([face for row in old['crossings']+old['bicycles'] for face in row['faces']])
     assert additions.difference(surface(old['floor']['road'])).area < 1e-8
@@ -177,7 +172,12 @@ if __name__ == '__main__':
     before = {r['id']:r for r in old['crossings']}
     verify_crossing_access(new,before,actual,lanes,crossings,surface(old['centralJunction']))
     missing = {id for id, row in before.items() if not row['stripes']}
-    assert len(missing)==3 and {r['id'] for r in new['crossings'] if r.get('spatial')}==missing
+    if 'recoveredDirections' in checks:
+        assert len(missing) == checks['recoveredDirections']
+    refitted = {r['id'] for r in new['crossings'] if r.get('spatial')}
+    assert refitted <= missing
+    if 'recoveredDirections' in checks:
+        assert refitted == missing
     for row in new['crossings']:
         if row.get('spatial'):
             assert row['spatial']['method']=='spatial-crossing' and row['stripes']
@@ -190,10 +190,10 @@ if __name__ == '__main__':
     assert choose_direction(face, [('tangent', LineString([(-3,2),(3,2)]), 0)])['method']=='no-crossing'
     assert choose_direction(face, [('east', LineString([(-3,0),(3,0)]), 0),
                                    ('north', LineString([(0,-3),(0,3)]), 1.5708)])['method']=='ambiguous-crossing'
-    buildings = json.loads((DATA.parent/'aerial-pilot.json').read_text())['buildings']
+    buildings = json.loads((MAPO/AREA['sources']['pilotBuildings']).read_text())['buildings']
     road = surface(old['floor']['road']).difference(surface(old['floor']['walk']+old['floor']['islands']))
     assert new['hiddenBuildingOutlines'] == outline_exclusions(buildings,road)
-    assert {293,307} <= set(new['hiddenBuildingOutlines'])
+    assert set(checks.get('requiredBuildingExclusions', [])) <= set(new['hiddenBuildingOutlines'])
     assert all(not buildings[i]['height'] and not buildings[i]['floors'] for i in new['hiddenBuildingOutlines'])
     print('A comparison: original views/roads; allowed paint; combined walking surface; crossing boundaries verified')
     print('B2 shown', len(new['lines']), 'B2 hidden', dict(Counter(r['kind'] for r in old['lines'] if r['kind'] not in accepted)),

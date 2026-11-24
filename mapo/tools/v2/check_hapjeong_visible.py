@@ -133,7 +133,7 @@ def check_legacy(tree):
     return hashes
 
 
-def gate_failures(rules, visible, *, check_buses=True):
+def gate_failures(rules, visible, *, exit_keys, stop_keys, exit_events=None, check_buses=True):
     issues = []
 
     def require(gate, name, measured, passed):
@@ -158,9 +158,14 @@ def gate_failures(rules, visible, *, check_buses=True):
     peak = rules['P6']['peak_5m']
     require(6, 'peak_5m', peak, peak <= 25)
     models, missing = rules['P4']['models'], rules['P4']['missing_direction']
-    require(7, 'two_way_exits', models - (missing or 0), models == 6 and missing == 0)
+    two_way = models - (missing or 0)
+    if exit_events is not None:
+        two_way = sum(bool(exit_events.get(key, {}).get('incoming') and exit_events.get(key, {}).get('outgoing'))
+                      for key in exit_keys)
+    require(7, 'two_way_exits', two_way, models == len(exit_keys) and two_way == len(exit_keys))
     if check_buses:
-        require(7, 'platforms', len(visible['buses']), len(visible['buses']) == 2)
+        served = [bus['key'] for bus in visible['buses']]
+        require(7, 'platforms', served, sorted(served) == sorted(stop_keys))
         for bus in visible['buses']:
             for name, value, lower in [('calls', len(bus['calls']), 2), ('boarded', bus['boarded'], 1),
                                        ('alighted', bus['alighted'], 1)]:

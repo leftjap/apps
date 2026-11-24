@@ -10,15 +10,13 @@ import { hapjeongCarGraph, type HapjeongCars, type XZ } from './hapjeong-car-gra
 import { hapjeongCrossings, makeHapjeongPeople, type HapjeongPeopleInput } from './hapjeong-people.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
 
-export const carViews = [
-  { id: 'west', title: '서쪽 접근로', at: [-514, 257] as XZ, width: 80, mode: 'photo' as const },
-  { id: 'southeast', title: '남동쪽 접근로', at: [-469, 273] as XZ, width: 80, mode: 'photo' as const },
-  { id: 'platform', title: '중앙 승강장', at: [-495, 251] as XZ, width: 80, mode: 'photo' as const },
-];
+import { hapjeongArea, type SurveyArea } from './survey-area.ts';
 
-export function carVisibility() {
+export const carViews = hapjeongArea.views.simulation;
+
+export function carVisibility(views = carViews) {
   const tilt = 28 * Math.PI / 180;
-  const cameras = carViews.map(view => {
+  const cameras = views.map(view => {
     const camera = new PerspectiveCamera(34, 4 / 3);
     const d = view.width / (2 * camera.aspect * Math.tan(camera.fov * Math.PI / 360));
     const off = d * Math.sin(tilt);
@@ -73,9 +71,9 @@ function speedRatio(edge: Edge) {
 export type HapjeongDemand = { vehicles: number; walkers: number };
 
 export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true,
-                            demand?: HapjeongDemand, replayCycles?: number, entrances = pedestrians?.entrances) {
-  const visible = carVisibility();
-  const full = hapjeongCarGraph(data);
+                            demand?: HapjeongDemand, replayCycles?: number, entrances = pedestrians?.entrances, area: SurveyArea = hapjeongArea) {
+  const visible = carVisibility(area.views.simulation);
+  const full = hapjeongCarGraph(data, undefined, undefined, undefined, undefined, undefined, area.replay.busName);
   const central = new Set(data.central);
   const terminalKey = (i: number) => data.links[i].points.at(-1)!.join(',');
   const service = entrances?.busService;
@@ -176,7 +174,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     return { id: link.id, reason };
   });
   // Keep the entire body inside the drawn map at source and sink boundaries.
-  const graph = hapjeongCarGraph(data, selected, entries, 8, buses, entrances?.platforms);
+  const graph = hapjeongCarGraph(data, selected, entries, 8, buses, entrances?.platforms, area.replay.busName);
   const index = new Map(graph.links.map((link, i) => [link.id, i]));
   const speeds = new Map(graph.edges.map(edge => [edge.key, speedRatio(edge)]));
   // Keep the second walk phase available for trips that reach a refuge
@@ -194,7 +192,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     const sim = makeCars(graph.edges, provider, seed, max, graph.buses, graph.inter,
       { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined);
     const site = graph.inter.S.list.find(site => site.j >= 0);
-    if (!site) throw Error('합정 차량 신호를 연결하지 못했습니다.');
+    if (!site) throw Error(`${area.title} 차량 신호를 연결하지 못했습니다.`);
     sim.setFocus(site.x, site.z, 100, visible);
     const seeded = new Set<number>();
     for (const move of ambient || !carsEnabled ? [] : [STRAIGHT, LEFT, RIGHT]) {

@@ -25,6 +25,7 @@ import check_hapjeong_people as people
 import check_hapjeong_walk as walk
 import check_hapjeong_visible as visible
 from measure_hapjeong_discharge import discharge
+from area import MAPO, asset, read_area
 
 # Absolute limits. Compare additional flow measures to the previous replay.
 LIMITS = {
@@ -60,13 +61,14 @@ def load(path):
     return json.loads(path.read_text())
 
 
-def replay(tree, folder):
+def replay(tree, folder, area, area_path):
+    area_args = ['--area', str(area_path)] if area_path else []
     def run(script, output, *args):
         dest = folder / output
         with dest.open('w') as stream:
-            subprocess.run(['node', '--experimental-strip-types', f'tools/v2/{script}.mts', *args],
+            subprocess.run(['node', '--experimental-strip-types', f'tools/v2/{script}.mts', *args, *area_args],
                            cwd=tree, stdout=stream, check=True)
-    legacy_crowd = ['--crowd'] if (tree/'public/data/v2/hapjeong-hd-crowd.json').is_file() else []
+    legacy_crowd = ['--crowd'] if asset(area, '-crowd', root=tree).is_file() else []
     run('trace_hapjeong_cars', 'trace.ndjson', '--people', *legacy_crowd)
     run('trace_hapjeong_cars', 'signal.ndjson', '--signal-test', *legacy_crowd)
     run('hapjeong_signal_paths', 'paths.json')
@@ -89,9 +91,9 @@ def left_pairs(flow, plan):
     return pairs
 
 
-def measure(tree, folder, label, *, visible_only=False, check_buses=True):
+def measure(tree, folder, label, area, *, visible_only=False, check_buses=True):
     # The historical code drives each replay and supplies the matching geometry.
-    walk.DATA = cars.DATA = tree/'public/data/v2'
+    walk.ROOT, walk.AREA = tree, area
     cars.rendered_footprints.cache_clear()
     plan = load(folder/'paths.json')
     static = signals.measure(plan)
@@ -178,7 +180,9 @@ def measure(tree, folder, label, *, visible_only=False, check_buses=True):
             view = visible.measure(stream,plan,walk.read('a')['floor'],walk.read('walk'))
         view['legacy'] = visible.check_legacy(tree)
         view['bus_gate_checked'] = check_buses
-        view['failures'] = visible.gate_failures(metric,view,check_buses=check_buses)
+        view['failures'] = visible.gate_failures(metric, view, check_buses=check_buses,
+            exit_keys=area.get('checks', {}).get('exitKeys', []),
+            stop_keys=area.get('platforms', {}).get('keys', []), exit_events=exit_rows)
         detail['visible_gate'] = dict(
             vehicle_red=c['red'], vehicle_overlap=c['overlap'], vehicle_stalled=c['stalled'],
             vehicle_off_floor=c.get('firstCountedOffFloor'), vehicle_appearance=c['visible_events'],
@@ -266,7 +270,8 @@ def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out',type=Path,required=True)
-    parser.add_argument('--tree',type=Path,default=walk.DATA.parents[2])
+    parser.add_argument('--tree',type=Path,default=MAPO)
+    parser.add_argument('--area',type=Path,help='area manifest (default: Hapjeong)')
     parser.add_argument('--label', default='worktree')
     parser.add_argument('--against',type=Path,help='incumbent rules.json for non-regression')
     parser.add_argument('--target',nargs=2,metavar=('RULE','METRIC'),help='require this metric to improve against the incumbent')
@@ -291,9 +296,10 @@ def main():
         parser.error('--target requires --against')
     folder, tree = arg.out.resolve(),arg.tree.resolve()
     folder.mkdir(parents=True,exist_ok=True)
+    area = read_area(arg.area) if arg.area else read_area()
     if not arg.recorded:
-        replay(tree,folder)
-    result = measure(tree,folder,arg.label,visible_only=arg.visible_only,check_buses=not arg.skip_bus_gate)
+        replay(tree, folder, area, arg.area.resolve() if arg.area else None)
+    result = measure(tree,folder,arg.label,area,visible_only=arg.visible_only,check_buses=not arg.skip_bus_gate)
     incumbent = load(arg.against) if arg.against else None
     if arg.relative_only and (incumbent['rules']['P5'].get('green_wait_any') is None or
                               incumbent['rules']['P5'].get('green_wait') is None):

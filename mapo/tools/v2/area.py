@@ -11,9 +11,13 @@ def load_area():
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     parser.add_argument('--area', type=Path, default=DEFAULT_AREA)
     args, _ = parser.parse_known_args()
-    return json.loads(args.area.read_text())
+    return read_area(args.area)
 
 
-def asset(area, suffix=''):
+def read_area(path=DEFAULT_AREA):
+    return json.loads(path.read_text())
+
+
+def asset(area, suffix='', *, root=MAPO):
     output = area['output']
-    return MAPO / output['directory'] / f"{output['stem']}{suffix}.json"
+    return root / output['directory'] / f"{output['stem']}{suffix}.json"

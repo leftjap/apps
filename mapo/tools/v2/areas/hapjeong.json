@@ -180,7 +180,9 @@
       ],
       "width": 320,
       "mode": "photo"
-    }
+    },
+    "default": "overview",
+    "replayDefault": "west"
   },
   "busService": [
     {
@@ -278,5 +280,80 @@
       "passengersPerBus": 5,
       "boundaryPassengersPerBus": 1
     }
-  ]
+  ],
+  "photo": {
+    "centerLonLat": [
+      126.91344791581167,
+      37.549291798107255
+    ],
+    "tileRadius": 3
+  },
+  "replay": {
+    "busName": "합정",
+    "axisNames": [
+      "양화로",
+      "교차축"
+    ],
+    "signalLabel": "합정 중앙 모의 신호"
+  },
+  "galleries": {
+    "base": {
+      "url": "./tmp/hapjeong-hd/gallery.html",
+      "label": "비교 이미지 8장"
+    },
+    "combined": {
+      "url": "./tmp/hapjeong-hd/a/gallery.html",
+      "label": "A 비교 이미지 5장"
+    },
+    "replay": {
+      "url": "./tmp/hapjeong-hd/cars-people/",
+      "label": "차량·보행 영상과 검수"
+    }
+  },
+  "platforms": {
+    "name": "합정역",
+    "keys": [
+      "14011",
+      "14012"
+    ]
+  },
+  "checks": {
+    "rawCounts": {
+      "b2": 304,
+      "b3": 131,
+      "a2": 173,
+      "a1": 155,
+      "a4": 24,
+      "c1": 80
+    },
+    "baseCounts": {
+      "lines": 304,
+      "crossings": 37,
+      "bicycles": 18,
+      "links": 173,
+      "views": 8,
+      "entries": 36,
+      "a4": 24
+    },
+    "seams": [
+      11,
+      10
+    ],
+    "surveyCrossings": 23,
+    "recoveredDirections": 3,
+    "requiredBuildingExclusions": [
+      293,
+      307
+    ],
+    "minBusLinks": 3,
+    "minDoubleCrossings": 2,
+    "exitKeys": [
+      "역 1번",
+      "역 5번",
+      "역 6번",
+      "역 7번",
+      "역 8번",
+      "역 9번"
+    ]
+  }
 }

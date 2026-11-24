@@ -14,7 +14,7 @@ export type HapjeongWalk = WalkJson & { crossings: string[]; portals: HapjeongPo
 export type HapjeongPlatform = { key: string; name: string; link: string; at: number; x: number; z: number; yaw: number };
 export type HapjeongEntrances = {
   exits: (Exit & { key: string })[];
-  station: string;
+  station?: string | null;
   lines: { id: string; color: string }[];
   trains: number[];
   platforms: HapjeongPlatform[];
@@ -223,7 +223,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
         trial.pending.splice(i--,1);
       }
     }
-    while (entrances && train<entrances.trains.length && entrances.trains[train]<=now.tod) {
+    while (entrances?.station && train<entrances.trains.length && entrances.trains[train]<=now.tod) {
       train++;
       burst += Math.max(1, Math.min(14, Math.round(provider.alighting(now, entrances.station)/150)));
     }

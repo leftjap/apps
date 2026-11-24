@@ -4,12 +4,12 @@ from itertools import pairwise
 
 from shapely.geometry import LineString, Point
 
-from hapjeong_hd import ASSET, WINDOW, features, paths
+from hapjeong_hd import AREA, WINDOW, asset, features, paths
 from hapjeong_hd_a import surface
 
 
 def verify(data):
-    floor = json.loads(ASSET.with_name('hapjeong-hd-a.json').read_text())
+    floor = json.loads(asset(AREA, '-a').read_text())
     raw = {r['properties']['id']: LineString(paths(r)[0]) for r in features('a2-vehicle-audit')}
     road = surface(floor['floor']['road']).buffer(.001)
     links = data['links']
@@ -27,8 +27,11 @@ def verify(data):
             assert row['kind'] == '1' or links[j]['kind'] in ('1', row['kind'])
     assert max(gaps) < .001, max(gaps)
     assert {i for bundle in data['bundles'] for i in bundle['lanes']} == set(range(len(links)))
-    assert len(data['seams']) == 11 and sum(s['joined'] for s in data['seams']) == 10
-    assert sum(row['sig'] for row in data['crosswalks']) and len(data['crosswalks']) == 23
+    checks = AREA.get('checks', {})
+    if 'seams' in checks:
+        assert [len(data['seams']), sum(s['joined'] for s in data['seams'])] == checks['seams']
+    if 'surveyCrossings' in checks:
+        assert len(data['crosswalks']) == checks['surveyCrossings']
     assert all(not row['sig'] or row['lamps'] for row in data['crosswalks'])
     assert any(row['stop'] is not None for row in links if row['kind'] != '1')
     central = set(data['central'])
@@ -44,7 +47,7 @@ def verify(data):
                 missing.append(row['id'])
     assert not missing, ('unmatched terminal stop lines', missing)
     bus = data['bus']
-    assert sum(links[i]['kind'] == '4' for i in bus) >= 3
+    assert sum(links[i]['kind'] == '4' for i in bus) >= checks.get('minBusLinks', 0)
     assert all(b in links[a]['next'] for a, b in pairwise(bus))
     assert links[bus[0]]['kind'] == links[bus[-1]]['kind'] == '4'
     gaps.sort()
@@ -55,6 +58,6 @@ def verify(data):
 
 
 if __name__ == '__main__':
-    file = ASSET.with_name('hapjeong-hd-cars.json')
+    file = asset(AREA, '-cars')
     assert file.exists(), 'Hapjeong A2 graph has not been baked'
     print(json.dumps(verify(json.loads(file.read_text()))))

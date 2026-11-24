@@ -31,7 +31,7 @@ const groundPoint = ([lon, lat]: XZ): XZ => [
   ((lon + 180) / 360 - (originLon + 180) / 360) * circumference,
   (mercator(lat) - mercator(originLat)) * circumference,
 ];
-const lines = board.lines.filter(line => line.stopNames.includes(station));
+const lines = board.lines.filter(line => station && line.stopNames.includes(station));
 function inside(ring:XZ[], x:number,z:number) {
   let yes = false;
   for (let i=0,j=ring.length-1;i<ring.length;j=i++) {
@@ -62,9 +62,9 @@ const exits = board.exits.filter(e=>e.st===station).flatMap(e=>{
   throw Error(`출구 외곽을 인도에 맞출 수 없습니다. ${key}`);
 });
 const limit = 14*3600;
-const trains=Array.from({length:252},(_,i)=>limit-11+i).flatMap(t=>
-  arrivals(lines,t-1,t).filter(a=>a.name===station).map(()=>t));
-const platforms = MED_STOPS.filter(([,name])=>name===`${station}역`).flatMap(([key,name,x,z])=>{
+const trains=station ? Array.from({length:252},(_,i)=>limit-11+i).flatMap(t=>
+  arrivals(lines,t-1,t).filter(a=>a.name===station).map(()=>t)) : [];
+const platforms = MED_STOPS.filter(([key])=>areaConfig.platforms?.keys.includes(key)).flatMap(([key,name,x,z])=>{
   const [lat,lon]=toLatLon(x,z);
   const [mx,mz]=groundPoint([lon,lat]);
   const candidates=links.flatMap(link=>{

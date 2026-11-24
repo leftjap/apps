@@ -6,6 +6,7 @@ import { pointAt } from '../poly.ts';
 import { GREEN, LEFT, RED, RIGHT, STRAIGHT, YELLOW } from '../sim/intersection/index.ts';
 import type { HapjeongCars } from './hapjeong-car-graph.ts';
 import { carPlayback, type HapjeongDemand } from './hapjeong-car-playback.ts';
+import { hapjeongArea, type SurveyArea } from './survey-area.ts';
 import type { HapjeongEntrances, HapjeongPeopleInput } from './hapjeong-people.ts';
 
 const colors = [0x56eb8b, 0xffcb56, 0xff5656];
@@ -13,9 +14,9 @@ const names = ['초록', '노랑', '빨강'];
 
 export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.PerspectiveCamera, canvas: HTMLCanvasElement,
                                          data: HapjeongCars, render: () => void, query: URLSearchParams,
-                                         carsEnabled: boolean, people?: HapjeongPeopleInput, demand?: HapjeongDemand, entrances?: HapjeongEntrances) {
+                                         carsEnabled: boolean, people?: HapjeongPeopleInput, demand?: HapjeongDemand, entrances?: HapjeongEntrances, area: SurveyArea = hapjeongArea) {
   const seeded = query.get('seeded') === '1';
-  const run = carPlayback(data, !seeded, people, carsEnabled, demand, undefined, entrances);
+  const run = carPlayback(data, !seeded, people, carsEnabled, demand, undefined, entrances, area);
   const { edges, inter: { X, S } } = run.graph;
   const mesh = carsEnabled ? makeCarMeshes(run.max) : undefined;
   const capacity = run.people()?.w.x.length;
@@ -62,7 +63,7 @@ export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.Persp
   seek.max = String(run.duration);
   explanation.textContent = people?.signalTest ? '복합 신호 시험 · 차량 원형, 보행 흰 테두리 마름모'
     : people && carsEnabled ? '차와 사람 · 같은 시간과 모의 신호'
-    : carsEnabled ? '승용차와 버스 · 합정 중앙 모의 신호' : '보행 · 합정 중앙 모의 신호';
+    : carsEnabled ? `승용차와 버스 · ${area.replay.signalLabel}` : `보행 · ${area.replay.signalLabel}`;
 
   let t = Math.max(0, Math.min(run.duration, Number(query.get('at')) || 0));
   let playing = false;
@@ -92,7 +93,7 @@ export function attachHapjeongSimulation(model: THREE.Scene, camera: THREE.Persp
       const state = S.moveState(a, movement, now.tod);
       light.material.color.setHex(colors[state]);
       byGroup[a.group] = Math.min(byGroup[a.group], state);
-      if (state===GREEN) green.add(`${a.group ? '교차축' : '양화로'} ${movement===LEFT?'좌회전':movement===RIGHT?'우회전':'직진'}`);
+      if (state===GREEN) green.add(`${area.replay.axisNames[a.group]} ${movement===LEFT?'좌회전':movement===RIGHT?'우회전':'직진'}`);
     }
     seek.value = String(t);
     status.value = `${t.toFixed(1)}초 · 차량 ${state.cars.n}대 · 신호 0 ${names[byGroup[0]]} / 신호 1 ${names[byGroup[1]]}`;

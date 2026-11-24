@@ -147,6 +147,7 @@ if __name__=='__main__':
     parser.add_argument('trace')
     parser.add_argument('plan')
     parser.add_argument('--verify',action='store_true')
+    parser.add_argument('--area', help='area manifest (default: Hapjeong)')
     args=parser.parse_args()
     with open(args.trace) as trace, open(args.plan) as plan:
         checks=audit(trace,json.load(plan))

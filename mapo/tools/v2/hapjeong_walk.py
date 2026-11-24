@@ -390,7 +390,7 @@ def spawn_points(network, floor, window):
     longitude_metres = 111320 * math.cos(math.radians(lat0))
     portals, rejected = [], []
     for exit in board['exits']:
-        if exit['st'] != AREA['station']:
+        if not AREA.get('station') or exit['st'] != AREA['station']:
             continue
         origin = project((lon0 + exit['x'] / 10 / longitude_metres, lat0 - exit['z'] / 10 / 110950))
         if not window.covers(Point(origin)):

@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { PAINT_DASHES } from './ground-paint.ts';
-import { AERIAL_DEV_ORIGIN, PILOT_SITES, groundPoint, tileAtGround, tileBounds } from './map.ts';
+import { AERIAL_DEV_ORIGIN, groundPoint, tileAtGround, tileBounds } from './map.ts';
 import { AERIAL_BEARING } from './road-overlay.ts';
+import { hapjeongArea, type SurveyArea } from './survey-area.ts';
 import type { HapjeongEntrances, HapjeongPeopleInput } from './hapjeong-people.ts';
 
 type XZ = [number, number];
@@ -12,11 +13,9 @@ type BuiltArea = {
   parking: Face[];
 };
 type Path = XZ[];
-type View = { id: string; title: string; at: XZ; width: number; mode: 'photo' | 'paths' | 'floors' };
 type Feature = { faces: Face[] };
 type Ink = { color: number; width: number; dash: number };
 type Asset = {
-  views: View[];
   floor: { road: Face[]; walk: Face[]; islands: Face[]; a4: Feature[] };
   lines: { paths: Path[]; ink: Ink }[];
   crossings: (Feature & { stripes: Face[] })[];
@@ -32,13 +31,21 @@ const flat = (color: string, groundLayer = 0) => new THREE.MeshBasicMaterial({
   polygonOffset: groundLayer > 0, polygonOffsetFactor: 0, polygonOffsetUnits: -groundLayer,
 });
 
-async function photoPlane(trial = false) {
-  const center = tileAtGround(...groundPoint(PILOT_SITES.hapjeong));
-  const range = 3;
-  const first = { x: center.x - range, y: center.y - range };
-  const last = { x: center.x + range, y: center.y + range };
+function photoTiles(photo: SurveyArea['photo']) {
+  if ('bounds' in photo) {
+    const [x0, z0, x1, z1] = photo.bounds;
+    return [tileAtGround(x0, z0), tileAtGround(x1, z1)];
+  }
+  const { x, y } = tileAtGround(...groundPoint(photo.centerLonLat));
+  const r = photo.tileRadius;
+  return [{ x: x - r, y: y - r }, { x: x + r, y: y + r }];
+}
+
+async function photoPlane(photo: SurveyArea['photo'], trial = false) {
+  const [first, last] = photoTiles(photo);
   const mosaic = document.createElement('canvas');
-  mosaic.width = mosaic.height = (range * 2 + 1) * 256;
+  mosaic.width = (last.x - first.x + 1) * 256;
+  mosaic.height = (last.y - first.y + 1) * 256;
   const context = mosaic.getContext('2d', { alpha: false })!;
   const tiles: {x: number; y: number}[] = [];
   if (location.origin !== AERIAL_DEV_ORIGIN) throw Error('로컬 항공사진은 5198에서 열어 주세요.');
@@ -137,21 +144,30 @@ function addInk(parent: THREE.Object3D, vertices: number[], color: string, groun
   parent.add(new THREE.Mesh(geometry, flat(color,groundLayer)));
 }
 
+const areaManifests = import.meta.glob<SurveyArea>('../../tools/v2/areas/*.json', { import: 'default' });
+
 async function init() {
   const query = new URLSearchParams(location.search);
-  const peopleMode = query.get('people') === '1' || query.get('pedestrians') === '1';
-  const carsMode = query.get('cars') === '1';
+  const requestedArea = query.get('area');
+  const loadArea = requestedArea && areaManifests[`../../tools/v2/areas/${requestedArea}.json`];
+  if (requestedArea && !loadArea) throw Error(`알 수 없는 구역 · ${requestedArea}`);
+  const area = loadArea ? await loadArea() : hapjeongArea;
+  document.title = document.querySelector('h1')!.textContent = `${area.title} 정밀도로지도`;
+  const canReplay = area.replay.enabled !== false;
+  const peopleMode = canReplay && (query.get('people') === '1' || query.get('pedestrians') === '1');
+  const carsMode = canReplay && query.get('cars') === '1';
   const simulation = carsMode || peopleMode;
-  const variantA = simulation || query.get('variant') === 'a';
+  const variantA = simulation || query.get('variant') === 'a' || area.combinedByDefault;
   const suffix = variantA ? '-a' : '';
-  const asset = `${import.meta.env.BASE_URL}data/v2/hapjeong-hd`;
+  const directory = area.output.directory.replace(/^public\//, '');
+  const asset = `${import.meta.env.BASE_URL}${directory}/${area.output.stem}`;
   const response = await fetch(`${asset}${suffix}.json`);
   if (!response.ok) throw Error(`가공 자료 응답 ${response.status}`);
   const data: Asset = await response.json();
   let people: HapjeongPeopleInput | undefined;
   const load = async (name: string) => {
     const response = await fetch(`${asset}-${name}.json`);
-    if (!response.ok) throw Error(`합정 자료 응답 ${response.status} · ${name}`);
+    if (!response.ok) throw Error(`${area.title} 자료 응답 ${response.status} · ${name}`);
     return response.json();
   };
   const entrances = simulation ? await load('entrances') as HapjeongEntrances : undefined;
@@ -160,14 +176,10 @@ async function init() {
   }
   const cars = simulation ? await load('cars') as import('./hapjeong-car-graph.ts').HapjeongCars : undefined;
   const demand = simulation ? await load('demand') as import('./hapjeong-car-playback.ts').HapjeongDemand : undefined;
-  if (simulation) {
-    const { carViews } = await import('./hapjeong-car-playback.ts');
-    // The wide view only changes the camera. Playback keeps using its three
-    // approach views for entry/exit placement and traffic measurements.
-    data.views = [...carViews, {
-      id: 'all', title: '합정 사거리·역 출구 전체', at: [-425, 231], width: 320, mode: 'photo',
-    }];
-  }
+  // The whole-area view only changes the camera, never replay entry/exit placement.
+  const views = simulation
+    ? [...area.views.simulation, ...(area.views.overview ? [area.views.overview] : [])]
+    : variantA ? area.views.display.filter(view => view.mode === 'photo') : area.views.display;
   const photo = new THREE.Scene();
   const model = new THREE.Scene();
   photo.background = new THREE.Color('#46555a');
@@ -180,9 +192,10 @@ async function init() {
   const sun = new THREE.DirectionalLight('#fff0d8', 1.35);
   sun.position.set(-200, 300, 100);
   model.add(survey, hd, route, buildings, sun, new THREE.HemisphereLight('#dceafa','#5c5751',2));
-  if (people?.entrances) {
+  if (people?.entrances && area.station) {
     const { makeStations } = await import('../render/stations.ts');
-    const { exits, station, lines } = people.entrances;
+    const { exits, lines } = people.entrances;
+    const station = area.station;
     const stations = makeStations({
       exits, stations: [{ name:station, x:0, z:0 }], buildings: [], elevators: new Float32Array(),
       lines: lines.map(line=>({ ...line, stopNames:[station] })),
@@ -215,7 +228,7 @@ async function init() {
   }
   addInk(route,lane,'#69e7ff',5);
   addInk(route,inside,'#f6a3eb',5);
-  const [imagery, builtArea] = await Promise.all([photoPlane(simulation),load('buildings') as Promise<BuiltArea>]);
+  const [imagery, builtArea] = await Promise.all([photoPlane(area.photo, simulation),load('buildings') as Promise<BuiltArea>]);
   addBuiltArea(buildings,builtArea);
   photo.add(imagery);
 
@@ -228,24 +241,21 @@ async function init() {
   const leftCaption = document.querySelector<HTMLDivElement>('#left-caption')!;
   const rightCaption = document.querySelector<HTMLDivElement>('#right-caption')!;
   const routeLegend = document.querySelectorAll<HTMLElement>('[data-route]');
-  for (const view of data.views) form.add(new Option(view.title,view.id));
-  form.value = data.views.find(view => view.id===query.get('view'))?.id ?? (peopleMode || cars ? 'west' : 'overview');
+  for (const view of views) form.add(new Option(view.title,view.id));
+  form.value = views.find(view => view.id===query.get('view'))?.id ?? (simulation ? area.views.replayDefault : area.views.default);
   document.getElementById('bicycle')!.hidden = !data.bicycles.length;
   document.getElementById('missing')!.hidden = data.crossings.every(row => row.stripes.length);
-  if (variantA) {
-    const gallery = document.querySelector<HTMLAnchorElement>('#capture-gallery')!;
-    gallery.href = './tmp/hapjeong-hd/a/gallery.html';
-    gallery.textContent = 'A 비교 이미지 5장';
-    if (simulation) {
-      gallery.href = './tmp/hapjeong-hd/cars-people/';
-      gallery.textContent = '차량·보행 영상과 검수';
-    }
-
+  const gallery = document.querySelector<HTMLAnchorElement>('#capture-gallery')!;
+  const galleryInfo = area.galleries?.[simulation ? 'replay' : variantA ? 'combined' : 'base'];
+  gallery.hidden = !galleryInfo;
+  if (galleryInfo) {
+    gallery.href = galleryInfo.url;
+    gallery.textContent = galleryInfo.label;
   }
 
   let refreshSimulation: (() => void) | undefined;
   function draw() {
-    const view = data.views.find(row=>row.id===form.value)!;
+    const view = views.find(row=>row.id===form.value)!;
     const w = left.domElement.clientWidth, h = left.domElement.clientHeight;
     if (!w || !h) return;
     camera.aspect=w/h;
@@ -285,7 +295,8 @@ async function init() {
     pair.dataset.view=view.id;
     pair.dataset.mode=view.mode;
     const params = new URLSearchParams();
-    if (variantA) params.set('variant', 'a');
+    if (requestedArea) params.set('area', requestedArea);
+    if (variantA && (simulation || !area.combinedByDefault || query.has('variant'))) params.set('variant', 'a');
     if (peopleMode) params.set('people', '1');
     if (carsMode) params.set('cars', '1');
     params.set('view', view.id);
@@ -298,7 +309,7 @@ async function init() {
   if (cars) {
     const { attachHapjeongSimulation } = await import('./hapjeong-cars.ts');
     refreshSimulation = attachHapjeongSimulation(
-      model, camera, right.domElement, cars, () => right.render(model, camera), query, carsMode, people, demand, entrances,
+      model, camera, right.domElement, cars, () => right.render(model, camera), query, carsMode, people, demand, entrances, area,
     );
   }
   document.querySelector('main')!.dataset.ready='true';

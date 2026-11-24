@@ -112,4 +112,5 @@ def discharge(path):
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('trace')
+    parser.add_argument('--area', help='area manifest (default: Hapjeong)')
     print(json.dumps(discharge(parser.parse_args().trace),ensure_ascii=False))
