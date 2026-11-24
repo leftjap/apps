@@ -109,7 +109,7 @@ def sidewalk_gaps(walk, floor, lanes, corridors, limit):
     return selected, rejected
 
 
-def widen_gap_bands(network, pavement, road, lanes, links):
+def widen_gap_bands(network, pavement, road, lanes, links, preserve_branches=False):
     """Replace slanted triangle legs across a gap with one centred walking band."""
     safe_pavement = pavement.buffer(-.4)
     ground = pavement.union(road).buffer(1e-6)
@@ -129,14 +129,23 @@ def widen_gap_bands(network, pavement, road, lanes, links):
             approach_widths.append(min(widths_here, default=0))
         wanted = math.floor(min(approach_widths)*5+1e-7)
         gap = surface(link['faces'])
-        legs = {key for key in network.edges if LineString(key).intersection(gap).length > .05}
+        current = widened if preserve_branches else network
+        legs = {key for key in current.edges if LineString(key).intersection(gap).length > .05}
         ends = {point for key in legs for point in key if
                 sum(point in leg for leg in legs) == 1}
         if len(ends) != 2 or not wanted:
+            if preserve_branches:
+                # A branched approach has no unique pair to replace. Its
+                # original contained strips already certify the walk.
+                link['bandFallback'] = 'branched or narrow junction'
+                continue
             raise ValueError(f'Cannot match the sidewalk ends near {link["at"]}')
         start, stop = sorted(ends, key=lambda point: np.dot(point, vector))
         outside = LineString([a,b]).difference(pavement)
         if outside.geom_type != 'LineString':
+            if preserve_branches:
+                link['bandFallback'] = 'multiple pavement contacts'
+                continue
             raise ValueError(f'Sidewalk band does not cross one gap near {link["at"]}')
         e0, e1 = map(np.array, (outside.coords[0],outside.coords[-1]))
 
@@ -170,5 +179,8 @@ def widen_gap_bands(network, pavement, road, lanes, links):
             widened = candidate
             break
         else:
+            if preserve_branches:
+                link['bandFallback'] = 'no contained centred band'
+                continue
             raise ValueError(f'No centred sidewalk band fits near {link["at"]}')
     return widened

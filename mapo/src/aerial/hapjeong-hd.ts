@@ -161,7 +161,9 @@ async function init() {
     if (!response.ok) throw Error(`${area.title} 자료 응답 ${response.status} · ${name}`);
     return response.json();
   };
-  const entrances = simulation && area.replay.people !== false ? await load('entrances') as HapjeongEntrances : undefined;
+  const dockOnlyWithPeople = area.replay.boundaryTrips?.stationShare !== undefined;
+  const entrances = simulation && area.replay.people !== false && (!dockOnlyWithPeople || peopleMode)
+    ? await load('entrances') as HapjeongEntrances : undefined;
   if (peopleMode) {
     people = { walk: await load('walk'), entrances, signalTest: query.get('signaltest') === '1' };
   }
@@ -186,10 +188,10 @@ async function init() {
   model.add(survey, hd, route, buildings, sun, new THREE.HemisphereLight('#dceafa','#5c5751',2));
   if (people?.entrances && area.station) {
     const { makeStations } = await import('../render/stations.ts');
-    const { exits, lines } = people.entrances;
+    const { exits, lines, unlinkedExits } = people.entrances;
     const station = area.station;
     const stations = makeStations({
-      exits, stations: [{ name:station, x:0, z:0 }], buildings: [], elevators: new Float32Array(),
+      exits: [...exits, ...(unlinkedExits ?? [])], stations: [{ name:station, x:0, z:0 }], buildings: [], elevators: new Float32Array(),
       lines: lines.map(line=>({ ...line, stopNames:[station] })),
     });
     stations.setUnderVisible(false);

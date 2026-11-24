@@ -153,18 +153,26 @@
     "busName": "홍대입구역",
     "axisNames": [],
     "signalLabel": "모의 차량 신호",
-    "people": false,
+    "people": true,
     "busIntervals": [
       48.65,
       59.34
-    ]
+    ],
+    "boundaryTrips": {
+      "intervalSeconds": 3,
+      "passengerWarmupSeconds": 180,
+      "stationShare": 0.4444444444444444,
+      "passengersPerBus": 4,
+      "softLimit": 130
+    }
   },
   "combinedByDefault": true,
   "floor": {
     "clipToWindow": true,
     "bakeLandings": true,
     "sidewalkGapMetres": 14,
-    "matchSidewalkGapWidths": true
+    "matchSidewalkGapWidths": true,
+    "stationLinkMetres": 26
   },
   "signals": {
     "lampClusterMetres": 26,

@@ -29,7 +29,8 @@ export type SurveyArea = {
   };
   combinedByDefault?: boolean;
   replay: { enabled?: boolean; people?: boolean; busName: string; busIntervals?: number[]; axisNames: string[]; signalLabel: string;
-    boundaryTrips?: { intervalSeconds: number; passengerWarmupSeconds: number } };
+    boundaryTrips?: { intervalSeconds: number; passengerWarmupSeconds: number;
+      stationShare?: number; passengersPerBus?: number; softLimit?: number } };
   galleries?: Partial<Record<'base' | 'combined' | 'replay', { url: string; label: string }>>;
 };
 

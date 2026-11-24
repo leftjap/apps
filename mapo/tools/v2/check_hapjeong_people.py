@@ -24,11 +24,18 @@ def audit(captured):
     walk = read('walk')
     pads = [faces([part for end in walk['landings'][row['id']] for part in end['faces']]).buffer(1e-7)
             for row in data['crosswalks']]
+    # Opposite landings are separate pavement areas: a person on one does
+    # not occupy the other, even if both belong to the same crossing.
+    occupied_pads = [(i, faces(end['faces']).buffer(1e-7))
+                     for i,row in enumerate(data['crosswalks']) for end in walk['landings'][row['id']]] \
+        if 'unlinkedExits' in meta else list(enumerate(pads))
     allowed = union_all([pavement, *shapes, *pads,
-                         *(faces(link['faces']) for link in walk.get('sidewalkLinks', ()))])
+                         *(faces(link['faces']) for link in walk.get('sidewalkLinks', ())),
+                         *(faces(row['faces']) for row in walk.get('stationAccess', ()) if row.get('faces'))])
     prepare(allowed)
     prepare(pads)
-    physical_pads = [prep(pad) for pad in pads]
+    pad_shapes = [pad for _,pad in occupied_pads]
+    physical_pads = [prep(pad) for pad in pad_shapes]
     # Same framing as the 80m production review cameras.
     views = meta['views']
     tilt, bearing = map(math.radians, (28, -42))
@@ -87,7 +94,7 @@ def audit(captured):
         p_x = np.array([p[1] for p in people])
         p_z = np.array([p[2] for p in people])
         on_walk = intersects_xy(allowed, p_x, p_z)
-        at_pad.update(np.flatnonzero(intersects_xy(pads, p_x[:, None], p_z[:, None]).any(axis=0)))
+        at_pad.update(np.flatnonzero(intersects_xy(pad_shapes, p_x[:, None], p_z[:, None]).any(axis=0)))
         frame_off = 0
         green_now, eligible_now = {}, {}
         for i, row in enumerate(people):
@@ -190,10 +197,11 @@ def audit(captured):
             shape = body(x, z, yaw, length, half_width)
             for idx in at_pad:
                 if physical_pads[idx].intersects(shape):
-                    key = (uid, ids[idx])
+                    name = ids[occupied_pads[idx][0]]
+                    key = (uid, name)
                     this_pad.add(key)
                     if key not in pad_active:
-                        touches_pad[ids[idx]].append([round(t, 3), uid, why, speed])
+                        touches_pad[name].append([round(t, 3), uid, why, speed])
 
             for idx in active:
                 if physical[idx].intersects(shape) and speed >= .1:

@@ -196,7 +196,8 @@ def measure(tree, folder, label, area, *, visible_only=False, check_buses=True):
         view['legacy'] = visible.check_legacy(tree)
         view['bus_gate_checked'] = check_buses
         view['failures'] = visible.gate_failures(metric, view, check_buses=check_buses,
-            exit_keys=area.get('checks', {}).get('exitKeys', []),
+            exit_keys=[key for key in area.get('checks', {}).get('exitKeys', [])
+                       if key not in (meta.get('unlinkedExits') or [])],
             stop_keys=area.get('platforms', {}).get('keys', []), exit_events=exit_rows)
         detail['visible_gate'] = dict(
             vehicle_red=c['red'], vehicle_overlap=c['overlap'], vehicle_stalled=c['stalled'],

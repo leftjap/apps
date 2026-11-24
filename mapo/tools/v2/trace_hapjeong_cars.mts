@@ -40,6 +40,7 @@ console.log(JSON.stringify({
   crossingTrial: run.people()?.crossingTrial?.courses,
   removedWalkLinks: run.crossings?.omitted, bodyRadius: BODY_R,
   entrances: people?.entrances?.exits, platforms: people?.entrances?.platforms,
+  unlinkedExits: people?.entrances?.unlinkedExits?.map(exit => exit.key),
   crosswalks: data.crosswalks.map((r, i) => ({ id:r.id.slice(-4), sig:r.sig,
     green: phases.filter(s => s.walk.has(i)).map(s => [s.start, s.start+s.dur]),
     associated: S.crossSite[i] >= 0,

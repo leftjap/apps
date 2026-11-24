@@ -12,7 +12,7 @@ from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import nearest_points
 from shapely.prepared import prep
 
-from hapjeong_hd import AREA, MAPO, ORIGIN, asset, project, rings
+from hapjeong_hd import AREA, MAPO, ORIGIN, WINDOW, asset, project, rings
 from hapjeong_hd_a import pedestrian_landings, surface
 from hapjeong_walk_turns import refit
 
@@ -384,40 +384,103 @@ def preserve_yielding_corridor(network, row, ends, previous, refitted):
     raise ValueError(f"{row['id']}: existing yielding corridor no longer fits")
 
 
-def spawn_points(network, floor, window, boundary_walk=None, lanes=None):
-    road = prep(surface(floor['floor']['road']).difference(network.walk))
+def station_origins(window):
     board = json.loads((MAPO / AREA['sources']['board']).read_text())
     lat0, lon0 = ORIGIN
     longitude_metres = 111320 * math.cos(math.radians(lat0))
-    portals, rejected = [], []
     for exit in board['exits']:
         if not AREA.get('station') or exit['st'] != AREA['station']:
             continue
         origin = project((lon0 + exit['x'] / 10 / longitude_metres, lat0 - exit['z'] / 10 / 110950))
-        if not window.covers(Point(origin)):
+        if window.covers(Point(origin)):
+            yield f'역 {exit["ref"]}번', origin
+
+
+def station_approaches(walk, road, lanes, buildings, limit):
+    """Add short, straight access across open ground, preserving the drawn surface."""
+    bare_road = road.difference(walk)
+    forbidden = bare_road.union(buildings).union(lanes)
+    reachable = walk.buffer(-.65)
+    positions, rows, added = {}, [], []
+    for key, coords in station_origins(WINDOW):
+        origin = Point(coords)
+        distance = origin.distance(walk)
+        row = dict(key=key, origin=coords, distance=round(distance, 2))
+        rows.append(row)
+        if walk.covers(origin):
+            row['reason'] = 'pavement'
             continue
+        banks = sorted(get_parts(reachable), key=origin.distance)
+        for bank in banks:
+            _, nearby = nearest_points(origin, bank)
+            if nearby.distance(origin) > limit:
+                break
+            # A source just outside the measured kerb may be placed inside
+            # the pavement without turning that sliver of road into a walk.
+            if distance <= .25 and nearby.distance(origin) <= 1.5 and not lanes.covers(origin) and not buildings.covers(origin):
+                positions[key] = nearby.coords[0]
+                row.update(reason='kerb placement', length=round(nearby.distance(origin), 2))
+                break
+            vector = (np.array(nearby.coords[0])-coords)/nearby.distance(origin)
+            normal = vector[::-1]*[-1,1]
+            for offset in (0, -.5, .5, -1, 1, -1.5, 1.5, -2, 2):
+                end = nearest_points(Point(np.array(nearby.coords[0])+offset*normal), bank)[1]
+                axis = LineString([origin, end])
+                if axis.length > limit:
+                    continue
+                strip = axis.buffer(.8).intersection(WINDOW).difference(forbidden.buffer(1e-7))
+                if not walk.union(strip).buffer(-BODY).covers(axis):
+                    continue
+                added.append(strip)
+                row.update(reason='open ground', length=round(axis.length, 2), faces=rings(strip.difference(walk)))
+                break
+            if 'reason' in row:
+                break
+        if 'reason' not in row:
+            row['reason'] = 'blocked by road or building' if forbidden.covers(origin) else 'no clear approach within limit'
+    return union_all([walk, *added]).buffer(1e-7), positions, rows
+
+
+def spawn_points(network, floor, window, boundary_walk=None, lanes=None, station_positions=None):
+    road = prep(surface(floor['floor']['road']).difference(network.walk))
+    portals, rejected = [], []
+    for key, original in station_origins(window):
+        origin = (station_positions or {}).get(key, original)
         for node in sorted(network.nodes, key=lambda p: math.dist(p, origin)):
             if math.dist(node, origin) > 8:
                 break
             if not road.intersects(LineString([origin, node])):
-                portals.append(dict(kind='exit', key=f'역 {exit["ref"]}번', x=node[0], z=node[1], origin=origin))
+                portals.append(dict(kind='exit', key=key, x=node[0], z=node[1], origin=origin))
                 break
-        if not portals or portals[-1]['key'] != f'역 {exit["ref"]}번':
-            rejected.append(dict(key=f'역 {exit["ref"]}번', reason='no safe path to the walk graph', origin=origin))
+        if not portals or portals[-1]['key'] != key:
+            rejected.append(dict(key=key, reason='no safe path to the walk graph', origin=original))
 
     xmin, zmin, xmax, zmax = window.bounds
-    for name, u, v, nx, nz in [
+    sides = [
         ('서', (xmin, zmin), (xmin, zmax), 1, 0),
         ('북', (xmin, zmin), (xmax, zmin), 0, 1),
         ('동', (xmax, zmin), (xmax, zmax), -1, 0),
         ('남', (xmin, zmax), (xmax, zmax), 0, -1),
-    ]:
+    ]
+    if AREA.get('excludeWindows'):
+        sides = []
+        for u, v in pairwise(window.exterior.coords):
+            line = LineString([u,v])
+            x,z = line.interpolate(.5,normalized=True).coords[0]
+            nx,nz = (0,1) if u[1] == v[1] else (1,0)
+            if not window.covers(Point(x+.01*nx,z+.01*nz)):
+                nx,nz = -nx,-nz
+            name = '서' if nx>0 else '동' if nx<0 else '북' if nz>0 else '남'
+            sides.append((name,u,v,nx,nz))
+    counts = defaultdict(int)
+    for name, u, v, nx, nz in sides:
         boundary = LineString([u, v])
         ends = sorted((g for g in get_parts(boundary.intersection(network.walk if boundary_walk is None else boundary_walk))
                        if g.length >= .8),
                       key=lambda g: boundary.project(g.interpolate(.5, normalized=True)))
-        for i, span in enumerate(ends, 1):
-            key = f'{name}쪽 인도 {i}'
+        for span in ends:
+            counts[name] += 1
+            key = f'{name}쪽 인도 {counts[name]}'
             origin = span.interpolate(.5, normalized=True).coords[0]
             if boundary_walk is not None:
                 pavement = next((p.buffer(1e-6) for p in get_parts(network.walk) if p.distance(Point(origin)) < 1e-6), None)
@@ -519,6 +582,17 @@ def trim_landing_wings(landings, corridors, links):
 
 def bake(floor, cars, reference=None):
     walk = surface(floor['floor']['walk']).buffer(1e-7)
+    settings = AREA.get('floor', {})
+    station_limit = settings.get('stationLinkMetres')
+    boundary_walk = walk
+    if station_limit:
+        from sidewalk_gaps import lane_envelopes
+        buildings = json.loads(asset(AREA, '-buildings').read_text())['buildings']
+        walk, positions, station_access = station_approaches(
+            walk, surface(floor['floor']['road']), lane_envelopes(cars['links']),
+            surface([face for row in buildings for face in row['faces']]), station_limit)
+    else:
+        positions, station_access = {}, []
     network = Network(walk)
     network.pavement()
     refitted, excluded = [], []
@@ -534,7 +608,6 @@ def bake(floor, cars, reference=None):
             excluded.append(dict(id=row['id'], reason=reason))
     # Reattach to a clean pavement graph in the same crossing order, since
     # a yielding corridor may retain different terminals than the refit.
-    boundary_walk = walk
     gap_limit = AREA.get('floor', {}).get('sidewalkGapMetres')
     sidewalk_links = []
     if gap_limit:
@@ -554,9 +627,9 @@ def bake(floor, cars, reference=None):
             raise ValueError(f'{key}: crossing terminal does not connect to pavement')
         ids.append(key)
         crossings.append(result)
-    portals, rejected = spawn_points(network, floor, box(*cars['window']),
+    portals, rejected = spawn_points(network, floor, WINDOW if AREA.get('excludeWindows') else box(*cars['window']),
                                      boundary_walk if gap_limit else None,
-                                     lane_envelopes(cars['links']) if gap_limit else None)
+                                     lane_envelopes(cars['links']) if gap_limit else None, positions)
     def widths(graph):
         derived = subprocess.run(['node', '--experimental-strip-types', str(Path(__file__).with_name('hapjeong_walk_width.mts'))],
                                  input=json.dumps(graph), text=True, capture_output=True, check=True)
@@ -570,13 +643,15 @@ def bake(floor, cars, reference=None):
         graph = widths(network.encode(crossings, graph['a']))
     if sidewalk_links and AREA.get('floor', {}).get('matchSidewalkGapWidths'):
         from sidewalk_gaps import widen_gap_bands
-        network = widen_gap_bands(network, boundary_walk, surface(floor['floor']['road']), cars['links'], sidewalk_links)
+        network = widen_gap_bands(network, boundary_walk, surface(floor['floor']['road']), cars['links'],
+                                  sidewalk_links, preserve_branches=bool(station_limit))
         graph = widths(network.encode(crossings))
     if cars.get('signalSites'):
         # Keep each selected pedestrian corridor. Remove the side portions
         # of its landing where the A2 vehicle body can otherwise pass.
         trim_landing_wings(landings, zip(ids, crossings, strict=True), cars['links'])
     return dict(**graph, **(dict(sidewalkLinks=sidewalk_links, rejectedSidewalkLinks=rejected_links) if gap_limit else {}),
+                **(dict(stationAccess=station_access) if station_limit else {}),
                 crossings=ids, landings=landings,
                 excluded=excluded, portals=portals, rejectedPortals=rejected,
                 waitDepths=crossing_wait_depths(floor, graph))

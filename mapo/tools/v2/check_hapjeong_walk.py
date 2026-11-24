@@ -26,6 +26,12 @@ def verify():
     assert asset(AREA, '-walk', root=ROOT).exists(), 'The area walk graph has not been baked'
     graph = read('walk')
     walk = faces(floor['floor']['walk']).buffer(1e-7)
+    if graph.get('stationAccess'):
+        access = faces([face for row in graph['stationAccess'] for face in row.get('faces', [])])
+        blockers = faces(floor['floor']['road']).difference(walk)
+        blockers = blockers.union(faces([face for row in read('buildings')['buildings'] for face in row['faces']]))
+        assert access.intersection(blockers).area < 1e-7, 'station approach crosses the road or a building'
+        walk = walk.union(access).buffer(1e-7)
     if graph.get('sidewalkLinks'):
         from hapjeong_crossings import vehicle_clearance
         lanes = unary_union([LineString(row['points']).buffer(vehicle_clearance(row['kind']))

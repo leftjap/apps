@@ -59,6 +59,8 @@ def measure(trace, plan, floor, walk):
     pavement = faces(floor['walk']).buffer(1e-7)
     if walk.get('sidewalkLinks'):
         pavement = union_all([pavement, *(faces(link['faces']) for link in walk['sidewalkLinks'])]).buffer(1e-7)
+    if walk.get('stationAccess'):
+        pavement = union_all([pavement, *(faces(row['faces']) for row in walk['stationAccess'] if row.get('faces'))]).buffer(1e-7)
     areas = [union_all([faces(r['faces']), faces([part for end in walk['landings'][r['id']]
                                                   for part in end['faces']])])
              for r in plan['faces']]

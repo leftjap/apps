@@ -11,13 +11,16 @@ import type { SurveyArea } from './survey-area.ts';
 import type { HapjeongCars, XZ } from './hapjeong-car-graph.ts';
 
 export type HapjeongPortal = Portal & { origin: XZ };
-export type HapjeongWalk = WalkJson & { crossings: string[]; portals: HapjeongPortal[]; waitDepths?: [number,number][] };
+export type HapjeongWalk = WalkJson & { crossings: string[]; portals: HapjeongPortal[]; waitDepths?: [number,number][];
+  rejectedPortals?: {key:string; origin:XZ}[] };
 export type HapjeongPlatform = { key: string; name: string; link: string; at: number; x: number; z: number; yaw: number };
 export type HapjeongEntrances = {
   exits: (Exit & { key: string })[];
   station?: string | null;
   lines: { id: string; color: string }[];
   trains: number[];
+  trainArrivals?: {line:string; at:number}[];
+  unlinkedExits?: (Exit & { key:string })[];
   platforms: HapjeongPlatform[];
   doors: { key: string; x: number; z: number }[];
   busService?: { links: string[]; services: { ref: string; kind: number }[]; passengersPerBus: number; boundaryPassengersPerBus: number }[];
@@ -101,6 +104,9 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
                                    offscreen = (_x: number, _z: number) => true,
                                    busHeadway?: (route: number, tod: number) => number, boundaryTrips?: SurveyArea['replay']['boundaryTrips']) {
   const { entrances } = input;
+  const mixed = boundaryTrips?.stationShare !== undefined;
+  const validExits = new Set(entrances?.exits.map(exit=>exit.key));
+  const stationRejected = new Set(entrances?.unlinkedExits?.map(exit=>exit.key));
   const exits = new Map(entrances?.exits.map(exit => [exit.key, exit]));
   const platforms = entrances?.platforms.filter(stop => cars.routes.some(route => route.stopNames.includes(stop.key))) ?? [];
   const portals = [
@@ -108,6 +114,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
       if (!entrances) return [p];
       const exit = exits.get(p.key);
       if (exit) return [{ ...p, x:exit.x, z:exit.z, mouth:[exit.x,exit.z] }];
+      if (mixed) return stationRejected.has(p.key) ? [] : [p];
       return offscreen(p.x, p.z) ? [p] : [];
     }),
     ...platforms.map((p): HapjeongPortal => ({ ...p, kind:'stop', origin:[p.x,p.z] })),
@@ -123,7 +130,8 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
   const routes = portalRoutes(graph, portals);
   const portalAudit = portals.map((p,i) => ({ ...p, destinations: routes[i].map(row => portals[row.to].key) }));
   const exitRoutes = routes.map((rows, i) => rows.filter(({to}) => portals[to].kind==='exit' &&
-    (!entrances || boundaryTrips || exits.has(portals[i].key) !== exits.has(portals[to].key)))
+    (!entrances || (mixed ? !(validExits.has(portals[i].key) && validExits.has(portals[to].key))
+      : boundaryTrips || exits.has(portals[i].key) !== exits.has(portals[to].key))))
     .slice(0, boundaryTrips ? rows.length : 6));
   const froms = exitRoutes.flatMap((row,i) => row.length && portals[i].kind==='exit' ? [i] : []);
   const rail = froms.filter(i => exits.has(portals[i].key));
@@ -138,7 +146,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
   const journeys = new Map<number, { from: string; to: string; tod: number }>();
   const busEvents: { at:number; key:string; vehicle:number; alighted:number; boarding:number }[] = [];
   const rand = rng(5);
-  let untilNext = 0, railCursor = 0, footCursor = 0, train = 0, burst = 0, enterStation = true;
+  let untilNext = 0, railCursor = 0, footCursor = 0, train = 0, burst = 0, enterStation = true, fractionalRail = 0;
   // The first replay filled the central view to 27 of the required 32.
   const cadence = 27/32;
   const dockIndices = new Map(people.docks.map((dock, i) => [dock.key, i]));
@@ -161,13 +169,14 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
     if (id >= 0) journeys.set(id, {from:stop.key, to:stop.key, tod:start});
   }
   function supplyPassengers(now: Now) {
-    if (!busHeadway || !entrances?.busService) return;
+    if (!busHeadway || (!entrances?.busService && !mixed)) return;
     for (const stop of platforms) {
       if (now.tod < (nextPassenger.get(stop.key) ?? -Infinity)) continue;
       const r = cars.routes.findIndex(route => route.stopNames.includes(stop.key));
       const interval = busHeadway(r, now.tod);
       if (!interval) continue;
-      const { passengersPerBus, boundaryPassengersPerBus } = entrances.busService[r];
+      const passengersPerBus = mixed ? boundaryTrips.passengersPerBus ?? 4 : entrances!.busService![r].passengersPerBus;
+      const boundaryPassengersPerBus = mixed ? Math.ceil(passengersPerBus/2) : entrances!.busService![r].boundaryPassengersPerBus;
       const sent = passengerCount.get(stop.key) ?? 0;
       const origins = platformOrigins.get(stop.key)!;
       const boundary = sent % passengersPerBus >= passengersPerBus - boundaryPassengersPerBus;
@@ -197,22 +206,42 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
     if (!boundaryTrips || !foot.length) return;
     untilNext -= dt;
     if (untilNext > 0) return;
-    const from = foot[footCursor++ % foot.length];
+    if (mixed && people.w.n >= (boundaryTrips.softLimit ?? Infinity)) return;
+    const fromRail = mixed && burst > 0 && !!rail.length && !enterStation;
+    const from = fromRail ? rail[railCursor++ % rail.length] : foot[footCursor++ % foot.length];
+    if (now.tod - railDeparture[from] < 1) return;
     const choices = boundaryDemand[from];
     // A weighted service order gives short trips a larger share and
     // still assigns trips to every reachable pair over time.
-    const choice = choices.reduce((a,b) => (a.sent+1)/a.weight <= (b.sent+1)/b.weight ? a : b);
+    const choice = choices.reduce((a,b) => {
+      const score = (p: typeof a) => (p.sent+1)/p.weight * (mixed && railAccess[p.route.to] ? .5 : 1);
+      return score(a) <= score(b) ? a : b;
+    });
     const to = choice.route.to;
     const id = people.trip(dock(portals[from].key),dock(portals[to].key));
     if (id >= 0) {
       choice.sent++;
       journeys.set(id,{from:portals[from].key,to:portals[to].key,tod:now.tod});
+      if (fromRail) {
+        railDeparture[from] = now.tod;
+        burst--;
+      }
+      if (mixed) enterStation = fromRail;
     }
     untilNext = boundaryTrips.intervalSeconds;
   }
 
   function advance(dt: number, now: Now, passengersOnly = false) {
     people.step(dt, now, false);
+    if (mixed && entrances?.trainArrivals && entrances.station) {
+      while (train<entrances.trainArrivals.length && entrances.trainArrivals[train].at<=now.tod) {
+        train++;
+        fractionalRail += Math.max(1, Math.min(14, Math.round(provider.alighting(now,entrances.station)/150))) * boundaryTrips.stationShare!;
+        const ready = Math.floor(fractionalRail);
+        burst += ready;
+        fractionalRail -= ready;
+      }
+    }
     supplyPassengers(now);
     supplyBoundary(dt, now);
     if (passengersOnly) return;
@@ -248,7 +277,7 @@ export function makeHapjeongPeople(input: HapjeongPeopleInput, crossings: Return
         trial.pending.splice(i--,1);
       }
     }
-    while (entrances?.station && train<entrances.trains.length && entrances.trains[train]<=now.tod) {
+    while (!mixed && entrances?.station && train<entrances.trains.length && entrances.trains[train]<=now.tod) {
       train++;
       burst += Math.max(1, Math.min(14, Math.round(provider.alighting(now, entrances.station)/150)));
     }

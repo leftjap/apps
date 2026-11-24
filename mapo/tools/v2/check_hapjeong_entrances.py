@@ -22,6 +22,8 @@ def audit(trace):
     by_kind = Counter()
     balance = {key: Counter(emerged=0, entered=0) for key in entrances}
     boundary = {p['key'] for p in (meta.get('portalAudit') or []) if p['kind']=='exit' and p['key'] not in entrances}
+    if 'unlinkedExits' in meta:
+        physical.update((p['key'],p) for p in meta.get('portalAudit', []) if p['key'] in boundary)
 
     def kind(key):
         return 'rail' if key in entrances else 'edge' if key in boundary else 'bus' if key in stops else 'other'
@@ -40,7 +42,8 @@ def audit(trace):
                 portal = info.get('from' if mode=='incoming' else 'to','?')
                 at = row[1:3]
                 if mode=='outgoing' and portal not in physical:
-                    portal = next((key for key,p in entrances.items() if math.dist(at,[p['x'],p['z']]) <= .95),portal)
+                    targets = physical if 'unlinkedExits' in meta else entrances
+                    portal = next((key for key,p in targets.items() if key not in stops and math.dist(at,[p['x'],p['z']]) <= .95),portal)
                 point = physical.get(portal)
                 matched = point and math.dist(at,[point['x'],point['z']]) <= (8 if portal in stops else .95)
                 if not t:
