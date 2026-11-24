@@ -126,6 +126,8 @@ function addInk(parent: THREE.Object3D, vertices: number[], color: string, groun
 const areaManifests = import.meta.glob<SurveyArea>('../../tools/v2/areas/*.json', { import: 'default' });
 
 async function init() {
+  // Use the replay palette before any scene colors are constructed, even without a station.
+  THREE.ColorManagement.enabled = false;
   const query = new URLSearchParams(location.search);
   const requestedArea = query.get('area');
   const loadArea = requestedArea && areaManifests[`../../tools/v2/areas/${requestedArea}.json`];
@@ -164,8 +166,8 @@ async function init() {
     : variantA ? area.views.display.filter(view => view.mode === 'photo') : area.views.display;
   const photo = new THREE.Scene();
   const model = new THREE.Scene();
-  photo.background = new THREE.Color('#46555a');
-  model.background = new THREE.Color('#3b414a');
+  photo.background = new THREE.Color('#10171a');
+  model.background = new THREE.Color('#0b0d11');
 
   const survey = new THREE.Group();
   const hd = new THREE.Group();
