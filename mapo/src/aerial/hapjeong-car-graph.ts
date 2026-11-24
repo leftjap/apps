@@ -32,6 +32,7 @@ export type HapjeongCars = {
   boundaryFaces?: XZ[][][];
   boundaryRoutes?: boolean;
   stopLines: number[];
+  lights?: { id: string; kind: string; link: string | null; at: XZ }[];
   walkSignalGroups?: string[][];
   signalSites?: { kind: SurveySignalSite['kind']; at: XZ; crossings: string[]; connectors?: number[];
     approaches: { link: string; line: string | null; at: number; edge: number; arm?: number }[] }[];

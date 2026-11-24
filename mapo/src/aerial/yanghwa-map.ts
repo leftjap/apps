@@ -73,14 +73,16 @@ async function init() {
     if (!frame) frame = requestAnimationFrame(draw);
   };
   const traffic = query.get('cars') === '1' ? await (async () => {
-    const [{carPlayback,CAR_TICK},{makeCarMeshes},{env,updateEnv},cars,demand] = await Promise.all([
+    const [{carPlayback,CAR_TICK},{makeCarMeshes},{env,updateEnv},{makeYanghwaSignals},cars,demand] = await Promise.all([
       import('./hapjeong-car-playback.ts'),import('../render/cars.ts'),import('../render/env.ts'),
+      import('./yanghwa-signals.ts'),
       read<HapjeongCars>('cars'),read<HapjeongDemand>('demand'),
     ]);
     const run = carPlayback(cars,true,undefined,true,demand,undefined,undefined,area);
     const limit = area.replay.connectedTraffic.maxTicksPerFrame;
     const mesh = makeCarMeshes(run.max,true);
-    scene.add(mesh.group);
+    const signals = makeYanghwaSignals(cars, run.graph);
+    scene.add(mesh.group, signals.group);
     let ticks = Math.round(Math.max(0,value('at',0))/CAR_TICK);
     let sim = run.at(ticks*CAR_TICK);
     const shade = document.createElement('div');
@@ -111,6 +113,8 @@ async function init() {
         requestDraw();
       }
       mesh.update(sim.cars,0,camera);
+      signals.group.visible = camera.position.distanceTo(target) * widthPerDepth() <= 500;
+      if (signals.group.visible) signals.update(run.clock(ticks * CAR_TICK).tod);
       canvas.dataset.traffic = JSON.stringify({seconds:ticks*CAR_TICK,vehicles:sim.cars.n,paused});
     };
   })() : undefined;
