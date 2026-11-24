@@ -2,7 +2,37 @@
 import argparse
 from collections import Counter, defaultdict
 import json
+import math
 from pathlib import Path
+
+from shapely.geometry import LineString
+
+from check_hapjeong_car_run import body
+
+
+def blocked_mouth(car, others, axis, seam, clearance):
+    uid, x, z, _, _, length, half_width, edge, at = car[:9]
+    reach = max(0, seam-at) + clearance
+    blockers = []
+    for other in others:
+        if other[0] == uid or other[7] == edge:
+            continue
+        if math.hypot(other[1]-x, other[2]-z) > reach + length/2 + other[5]/2 + 2:
+            continue
+        blockers.append((other[0], body(other[1], other[2], other[3], other[5], other[6])))
+    if not blockers:
+        return None
+    steps = math.ceil(reach/.5)
+    for k in range(1, steps+1):
+        s = min(axis.length, at+reach*k/steps)
+        p = axis.interpolate(s)
+        before, after = axis.interpolate(max(0,s-1.5)), axis.interpolate(min(axis.length,s+1.5))
+        yaw = math.atan2(after.y-before.y, after.x-before.x)
+        pose = body(p.x, p.y, yaw, length, half_width)
+        for other, shape in blockers:
+            if pose.intersects(shape) and pose.intersection(shape).area > 1e-6:
+                return other
+    return None
 
 
 def audit(stream, data):
@@ -12,6 +42,7 @@ def audit(stream, data):
     idx = {key:i for i,key in enumerate(keys)}
     links = [source[key] for key in keys]
     out = [[idx[data['links'][n]['id']] for n in e['next'] if data['links'][n]['id'] in idx] for e in links]
+    branch_axes = {}
     incoming = Counter(i for nex in out for i in nex)
     gate = {int(i):s for i,s in meta['gates'].items()}
     stops = {i: e['stop']['at'] for i,e in enumerate(links) if e['stop'] and e['kind']=='6'}
@@ -44,7 +75,13 @@ def audit(stream, data):
                                [n[8]-n[5]/2 for n in lane[nxt]])
                 stoppages[(uid,keys[e],keys[nxt])][why] += 1/30
                 if headroom >= clearance and not any(n[8]>s for n in lane[e]) and why not in (7, 10, 13):
-                    track((uid,'branch',e,nxt), t, history, now, results, [keys[e],keys[nxt],why,s,headroom])
+                    if (e,nxt) not in branch_axes:
+                        branch_axes[e,nxt] = LineString([*links[e]['points'], *links[nxt]['points']])
+                    blocker = blocked_mouth(c, cars, branch_axes[e,nxt], links[e]['len'], clearance)
+                    kind = 'branch' if blocker is None else 'blockedBranch'
+                    episode = track((uid,kind,e,nxt), t, history, now, results, [keys[e],keys[nxt],why,s,headroom])
+                    if episode is not None and blocker is not None:
+                        episode['blocker'] = blocker
             stop = gate.get(e, stops.get(e))
             if stop is None or stop - body_front < clearance or s < max(0, stop-30):
                 continue
@@ -59,9 +96,11 @@ def audit(stream, data):
 def track(key,t,previous,current,results,details):
     start = current[key] = previous.get(key,t)
     if t - start > 5:
-        results[(key,start)] = dict(id=key[0], type=key[1], start=start,end=t,seconds=round(t-start,3),
-                                    link=details[0],next=details[1],why=details[2],s=round(details[3],3),
-                                    room=round(details[4],3))
+        episode = dict(id=key[0], type=key[1], start=start,end=t,seconds=round(t-start,3),
+                       link=details[0],next=details[1],why=details[2],s=round(details[3],3),
+                       room=round(details[4],3))
+        results[key,start] = episode
+        return episode
 
 
 if __name__ == '__main__':
@@ -73,5 +112,5 @@ if __name__ == '__main__':
     with open(args.trace) as trace:
         result=audit(trace,json.loads(path.read_text()))
     print(json.dumps(result,ensure_ascii=False))
-    if args.verify and result['episodes']:
+    if args.verify and any(e['type'] != 'blockedBranch' for e in result['episodes']):
         parser.exit(1, 'C4 failed: ' + str(dict(result['counts'])) + '\n')

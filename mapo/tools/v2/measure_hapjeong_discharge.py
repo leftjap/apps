@@ -36,6 +36,7 @@ def discharge(path):
         gaps, samples, reasons, reason_runs = defaultdict(list), defaultdict(list), Counter(), {}
         free = defaultdict(list)
         long_conflicts = set()
+        left_admitted, left_slow = set(), {}
         for line in trace:
             t, cars, *_ = json.loads(line)
             current = {c[0]:c for c in cars}
@@ -79,6 +80,10 @@ def discharge(path):
                     if p and p[7]==e and e in gates and p[8]+p[5]/2<=gates[e]<c[8]+c[5]/2 and c[11]==0:
                         row['passed'][uid]=round(t,3)
                         row['mouth']+=1
+                        if move==1:
+                            left_admitted.add(uid)
+                if uid in left_admitted and move==1 and c[16] and c[9]<.5:
+                    left_slow.setdefault(uid, dict(t=round(t,3), edge=meta['links'][e], speed=c[9]))
                 ahead=current.get(c[19])
                 if ahead and c[10] in (1,2) and c[7]==ahead[7] and c[22]==ahead[22] and ahead[9]>.5 and c[9]>.5:
                     kmh=c[9]*3.6
@@ -99,7 +104,7 @@ def discharge(path):
         stat = lambda d:{str(k):[len(v),round(median(v),3)] for k,v in sorted(d.items()) if v}
         left = [r['mouth'] for r in histories if r['move'] == 1 and r['end'] <= meta['duration']]
         return dict(rank=stat(samples),speed_gaps=stat(gaps),free_speeds=stat(free),
-                    min_left_passed=min(left, default=None), phases=histories,
+                    min_left_passed=min(left, default=None), left_slow=left_slow, phases=histories,
                     left_conflicts_over_three=sorted(long_conflicts),
                     reasons=[(a,k,round(n*step,2)) for (a,k),n in sorted(reasons.items())])
 

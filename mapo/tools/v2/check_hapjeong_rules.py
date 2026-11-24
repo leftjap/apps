@@ -152,8 +152,9 @@ def measure(tree, folder, label):
                    **{f'gap{k}_m':v[1] for k,v in flow['speed_gaps'].items()}),
         'C3': dict(late_left=len(flow['left_conflicts_over_three']),
                    parallel_start_gap_s=maximum(pairs,'gap'), unserved_parallel=sum(r['gap'] is None for r in pairs),
-                   min_left_passed=flow['min_left_passed']),
-        'C4': dict(open_branch_stop=branch_result['counts'].get('branch',0), empty_stop_line=branch_result['counts'].get('stopLine',0)),
+                   min_left_passed=flow['min_left_passed'], slow_left_inside=len(flow['left_slow'])),
+        'C4': dict(open_branch_stop=branch_result['counts'].get('branch',0), empty_stop_line=branch_result['counts'].get('stopLine',0),
+                   blocked_branch=branch_result['counts'].get('blockedBranch',0)),
         'C5': dict(stuck=len(c['stalled']), visible_events=len(c['visible_events']), off_floor=c['off_floor_samples'],
                    off_floor_any=c.get('raw_off_floor_samples',0),
                    overlap=len(c['overlap']), a2_m=c['max_a2_deviation']),
@@ -163,7 +164,8 @@ def measure(tree, folder, label):
     }
     detail = dict(seconds=meta['duration'], views=ambient['views'], signed_cars=signed_cars, unsignalized_cars=unsignalized,
                   phases=flow['phases'], ranks=flow['rank'], speed_gaps=flow['speed_gaps'], free_speeds=flow['free_speeds'], reasons=flow['reasons'],
-                  left_pairs=pairs, turn_conflicts=flow['left_conflicts_over_three'], crowding=growth, entrances=portal,
+                  left_pairs=pairs, turn_conflicts=flow['left_conflicts_over_three'], slow_left_inside=flow['left_slow'],
+                  crowding=growth, entrances=portal,
                   branch=branch_result, movement=c['movement'], car_floor={k:v for k,v in c.items() if 'Floor' in k},
                   ordinary_crossings=ambient['course_rows'], trial_crossings=trial['course_rows'],
                   stuck=p['stuck'], green_wait=p['green_wait'], green_wait_any=p['green_wait_any'], repeat=p['repeat'],
@@ -215,7 +217,7 @@ def regressions(result, incumbent, *, view_tolerance=0, people_stage=False):
         prior = before[rule]
         for key in dict.fromkeys([*metrics, *prior]):
             value, baseline = metrics.get(key), prior.get(key)
-            if key in ('green_wait_any', 'off_floor_any', 'min_entered_emerged') or key.startswith('free_') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
+            if key in ('green_wait_any', 'off_floor_any', 'min_entered_emerged', 'slow_left_inside', 'blocked_branch') or key.startswith('free_') or (people_stage and (rule,key)==('C2','gap30_m')) or baseline is None:
                 continue
             if people_stage and (rule,key)==('C3','late_left'):
                 baseline = PEOPLE_STAGE_LEFT_LIMIT
