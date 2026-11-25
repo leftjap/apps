@@ -1,5 +1,5 @@
 // Assign the existing terrain triangles and facade meshes to static district tiles.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { Box3, Vector3 } from 'three';
@@ -11,13 +11,15 @@ const [areaPath, destination, cellArgument, overviewBytes] = process.argv.slice(
 const size = Number(cellArgument);
 const surfaceBatchSize = size / 4;
 const { output } = JSON.parse(readFileSync(areaPath));
-const read = suffix => {
-  const path = join(output.directory, `${output.stem}-${suffix}.json`);
-  return JSON.parse(output.gzip ? gunzipSync(readFileSync(path + '.gz')) : readFileSync(path));
+const read = (suffix, optional) => {
+  const path = join(output.directory, `${output.stem}-${suffix}.json`) + (output.gzip ? '.gz' : '');
+  if (optional && !existsSync(path)) return undefined;
+  return JSON.parse(output.gzip ? gunzipSync(readFileSync(path)) : readFileSync(path));
 };
 const floor = read('a');
 const area = read('buildings');
-const paint = read('road-paint');
+// Areas without the fine paint asset draw the coarse paint in the floor instead.
+const paint = read('road-paint', true);
 const cells = new Map();
 function cellAt(key) {
   if (!cells.has(key)) cells.set(key, { bounds: new Box3(), surfaces: [], buildings: [], facades: [], buffers: [] });

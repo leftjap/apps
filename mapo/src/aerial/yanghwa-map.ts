@@ -9,7 +9,7 @@ import type { HapjeongDemand } from './hapjeong-car-playback.ts';
 import type { SurveyArea } from './survey-area.ts';
 
 type MapManifest = Pick<SurveyArea,'title'|'views'|'replay'> &
-  { camera: typeof yanghwa.camera; output: typeof yanghwa.output & { gzip?: boolean } };
+  { camera: typeof yanghwa.camera; output: typeof yanghwa.output & { gzip?: boolean }; tiles?: 'default' | 'opt-in' };
 const manifests = import.meta.glob<{ default: MapManifest }>('../../tools/v2/areas/*.json');
 const canvas = document.querySelector('canvas')!;
 const main = document.querySelector('main')!;
@@ -24,8 +24,6 @@ async function init() {
   THREE.ColorManagement.enabled = false;
   const district = canvas.dataset.area;
   const query = new URLSearchParams(location.search);
-  const useTiles = district === 'hongdae-district' && query.get('tiles') === '1'
-    && query.get('cars') !== '1' && query.get('signals') !== '1';
   let frame = 0;
   const requestDraw = () => {
     if (!frame) frame = requestAnimationFrame(draw);
@@ -33,6 +31,9 @@ async function init() {
   const loadDistrict = manifests[`../../tools/v2/areas/${district}.json`];
   if (district && !loadDistrict) throw Error(`구역 설정 없음: ${district}`);
   const area: MapManifest = district ? (await loadDistrict()).default : yanghwa;
+  const tileMode = area.tiles ?? canvas.dataset.tiles;
+  const useTiles = (tileMode === 'default' || (tileMode === 'opt-in' && query.get('tiles') === '1'))
+    && query.get('cars') !== '1' && query.get('signals') !== '1';
   const { minWidth, minTilt, maxTilt, initialTilt, initialBearing, fitPadding } = area.camera;
   async function read<T>(suffix: string): Promise<T> {
     const { directory, stem, gzip: compressed } = area.output;

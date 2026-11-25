@@ -36,8 +36,8 @@
   - photoTiles 42-51
 - `src/aerial/survey-buildings.ts` (175줄)
   - groundShape 16-22 · ↳vector 17-22 · windowPatterns 23-44 · makeSurveyFacadeMaterial 45-74 · vertex 75-81 · roof 82-92 · sides 93-110 · unclose 111-115 · areaTwice 116-122 · parapetInset 123-135 · makeSurveyBuildings 136-175
-- `src/aerial/yanghwa-map.ts` (260줄)
-  - init 23-260 · ↳requestDraw 30-36 · ↳read 37-90 · ↳widthPerDepth 91-98 · ↳value 99-161 · ↳fit 162-174 · ↳draw 175-209 · ↳pose 210-224 · ↳size 225-232 · ↳overview 233-260
+- `src/aerial/yanghwa-map.ts` (261줄)
+  - init 23-261 · ↳requestDraw 28-37 · ↳read 38-91 · ↳widthPerDepth 92-99 · ↳value 100-162 · ↳fit 163-175 · ↳draw 176-210 · ↳pose 211-225 · ↳size 226-233 · ↳overview 234-261
 - `src/aerial/yanghwa-signals.ts` (166줄): Supply linear values even when the survey viewer disables Three's input
   - signalColor 13-20 · ↳toLinear 14-20 · offset 21-25 · makeYanghwaSignals 26-166 · ↳curb 67-105 · ↳instance 106-115 · ↳box 116-119 · ↳post 120-148 · ↳update 149-166
 - `src/aerial/yanghwa-terrain.ts` (139줄)
@@ -78,8 +78,8 @@
 - `tools/v2/check_camera_cars.mts` (244줄): Replay vehicles against scripted cameras and write the camera census as JSON and Markdown.
   - message 74-83 · flush 84-89 · pushFloor 90-97 · finishFloor 98-104 · measure 105-190 · viewWidth 191-202 · summary 203-244 · ↳fixed 204-244
 - `tools/v2/check_camera_cars.test.mts` (55줄): Check the camera census on small, deterministic replays.
-- `tools/v2/check_connected_map.py` (190줄): Check one connected static map with --area NAME or --area PATH.
-  - floor_layers 19-23 · floor_parity 24-39 · named_road_footprint 40-53 · coincident_faces 54-57 · sheet_parity 58-79 · inspect 80-190
+- `tools/v2/check_connected_map.py` (202줄): Check one connected static map with --area NAME or --area PATH.
+  - floor_layers 19-23 · floor_parity 24-39 · named_road_footprint 40-53 · coincident_faces 54-57 · sheet_parity 58-91 · inspect 92-202
 - `tools/v2/check_connected_routes.py` (102줄): Compare boundary-connected A2 links with the individual-area replay graphs.
   - header 13-17 · originals 18-21 · dead_ends 22-44 · inspect 45-102
 - `tools/v2/check_district_car_preflight.py` (220줄): Rebuild district reachability from usable engine paths and rendered vehicle poses.
@@ -140,6 +140,10 @@
   - entersJunction 7-9 · approaches 10-10 · key 11-52
 - `tools/v2/fetch_hapjeong_hd.mts` (60줄)
   - fetchLayer 20-60
+- `tools/v2/fetch_parks.py` (61줄): Fetch the OpenStreetMap park and green faces that cover an area's window (Overpass).
+  - bounding_box 21-27 · fetch 28-44 · main 45-61
+- `tools/v2/grow_outline.py` (113줄): Grow an area outline until its edge cuts no surveyed junction face, crossing face or stop line.
+  - area_path 22-30 · sheet_faces 31-47 · candidates 48-69 · grow 70-95 · main 96-113
 - `tools/v2/hapjeong_buildings.py` (165줄): Bake a surveyed area's building volumes and ground decoration.
   - connected_building_faces 19-77 · pavement_cutter 78-95 · bake 96-165
 - `tools/v2/hapjeong_car_footprints.mts` (10줄): Project the native vehicle geometry into the same metre frame as A2.
@@ -164,8 +168,8 @@
 - `tools/v2/hapjeong_walk_turns.py` (183줄): Find ordinary walk turns whose node cannot be reached directly from the approach.
   - area_mask 16-35 · leg 36-49 · blind_turn 50-67 · junction_nodes 68-75 · turn_risks 76-90 · unpack 91-103 · measure 104-109 · refit 110-183
 - `tools/v2/hapjeong_walk_width.mts` (9줄): Use exactly the basic-board width and junction rules on the surveyed pavement.
-- `tools/v2/import_survey_tiles.py` (40줄): Merge the six layers of cached WFS tiles in the format read by the survey bakers.
-  - import_tiles 11-40
+- `tools/v2/import_survey_tiles.py` (38줄): Merge the six layers of cached WFS tiles in the format read by the survey bakers.
+  - import_tiles 11-38
 - `tools/v2/land.py` (107줄): 지시서 1(docs/redraw-orders/1-land.md): 시제품 구역의 땅을 건물 / 도로 부지 / 그 밖으로 나눈다.
   - even_odd 21-31 · polygons 32-39 · load_gis_roads 40-48 · load_buildings 49-60 · drop_small 61-70 · ring_dm 71-75 · main 76-107
 - `tools/v2/lanes.py` (549줄): 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판) + 지시서 3b(docs/redraw-orders/3b-marks.md, 3판) 「먼저 할 일」 1~7: 2단계 찻길 면
@@ -223,7 +227,7 @@
 - `tools/v2/test_area_outline.py` (52줄)
 - `tools/v2/test_connected_car_audit.py` (32줄)
 - `tools/v2/test_connected_car_bake.py` (43줄)
-- `tools/v2/test_district_building_seams.py` (25줄)
+- `tools/v2/test_district_building_seams.py` (52줄)
 - `tools/v2/test_district_car_graph.py` (63줄)
 - `tools/v2/test_hapjeong_visible.py` (93줄): Focused tests for the optional 240-second visible gate.
 - `tools/v2/test_seogyo_trace.py` (62줄): Subpixel digitizing can be tested independently of the 3D camera.
@@ -310,7 +314,10 @@
 ## Sol 실행 도구
 - `tools/sol/codemap.py` (93줄): docs/code-map.md 를 코드에서 자동으로 만든다(손으로 고치지 않는다).
   - describe 25-40 · symbols 41-63 · main 64-93
-- `tools/sol/run.sh` (67줄)
+- `tools/sol/loop.sh` (532줄)
+- `tools/sol/resume.sh` (14줄)
+- `tools/sol/run.sh` (70줄)
+- `tools/sol/test_loop.sh` (396줄)
 - `tools/sol/usage.py` (62줄): Codex 세션 파일(~/.codex/sessions)에서 실제 토큰 내역을 뽑는다.
   - events 16-32 · main 33-62
 - `tools/sol/where.py` (76줄): Sol(Codex) 실행 기록에서 문맥으로 들어간 출력이 어디서 왔는지 센다.

@@ -27549,6 +27549,7 @@
     "clipToWindow": true,
     "bakeLandings": true
   },
+  "tiles": "default",
   "camera": {
     "minWidth": 120,
     "minTilt": 15,
