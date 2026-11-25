@@ -178,7 +178,7 @@ plan_next() { # 목록이 비면 계획 세우기 모델이 다음 일감을 쓰
   pcode=$?
   ledger plan 1 plan "$PLAN_MODEL" high "$(mins_since "$t0")" "$(json_cost "$pf.json")" "종료 $pcode"
   impl_cut "$pf.json" && finish 7 "계획 세우기가 한도나 오류로 끊겼다($pf.json). tools/sol/loop.sh --continue 로 이어 간다."
-  new=$(g status --porcelain --untracked-files=all -- "$QDIR" "$QUEUE" | sed 's/^...//')
+  new=$(g status --porcelain --untracked-files=all -- "${PREFIX}$QDIR" "$QUEUE_R" | sed 's/^...//')
   if [ -n "$new" ]; then
     printf '%s\n' "$new" | while IFS= read -r p; do g add -- "$p"; done
     g commit -q -m "chore(mapo-loop): plan next task" -m "$COAUTHOR" || finish 2 "계획한 일감을 커밋하지 못했다"
