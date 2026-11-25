@@ -40,6 +40,8 @@ elif [ "$role" = impl ]; then
   if [ -n "${FAKE_IMPL_LIMIT:-}" ]; then printf '{"type":"result","subtype":"error","is_error":true,"result":"limit reached"}\n'; exit 1; fi
   printf '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0.0123,"usage":{"input_tokens":1200,"cache_read_input_tokens":3400}}\n'
 else
+  # 진짜 claude 처럼 --disallowedTools 는 뒤 인자를 모두 도구 이름으로 먹는다: 지시문은 표준 입력으로 와야 한다
+  input=; IFS= read -r -t 2 input; [ -n "$input" ] || { echo "Error: Input must be provided either through stdin or as a prompt argument when using --print"; exit 1; }
   [ -n "${FAKE_REVIEW_TOUCH:-}" ] && echo "검수자가 고침" >> "$FAKE_REPO/work.txt"
   v=$(head -1 "$FAKE_VERDICTS"); tail -n +2 "$FAKE_VERDICTS" > "$FAKE_VERDICTS.n"; mv "$FAKE_VERDICTS.n" "$FAKE_VERDICTS"
   r=false; case "$v" in *:r) r=true; v=${v%:r};; esac

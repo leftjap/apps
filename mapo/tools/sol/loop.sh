@@ -376,7 +376,7 @@ while :; do
       icost=$(json_cost "$WORK/impl-$n.json")
     else
       # 구현 지시문에는 앞 회차 검수 의견이 붙으므로 Sol 지시문 상한을 넓혀 준다
-      SOL_MAX_BRIEF="${LOOP_SOL_IMPL_MAX_BRIEF:-24000}" "$SOL_RUN" "$STAGE-$id-i$n" "$id-impl-$n" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
+      SOL_MAX_BRIEF="${LOOP_SOL_IMPL_MAX_BRIEF:-24000}" "$SOL_RUN" "$STAGE-$id-i$n" "$id-impl-$n-$(date +%H%M%S)" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
       icode=$?
       icost="$id-impl-$n"
     fi
@@ -458,16 +458,17 @@ while :; do
     t0=$(date +%s)
     if [ "$REVIEW" != sol ]; then
       "$CLAUDE" -p --model "$REVIEW" --effort "$REVIEW_EFFORT" --output-format json \
-        --permission-mode bypassPermissions --disallowedTools Edit Write NotebookEdit "$(cat "$rf")" > "$WORK/review-$n.out" 2>"$WORK/review-$n.err"
+        --permission-mode bypassPermissions --disallowedTools Edit Write NotebookEdit < "$rf" > "$WORK/review-$n.out" 2>"$WORK/review-$n.err"
       rcode=$?
       rcost=$(json_cost "$WORK/review-$n.out")
       vfiles="$WORK/review-$n.out"
     else
-      SOL_SANDBOX=read-only "$SOL_RUN" "$STAGE-$id-r$n" "$id-review-$n" "$REVIEW_EFFORT" "$rf" > "$WORK/review-$n.log" 2>&1
+      rname="$id-review-$n-$(date +%H%M%S)"
+      SOL_SANDBOX=read-only "$SOL_RUN" "$STAGE-$id-r$n" "$rname" "$REVIEW_EFFORT" "$rf" > "$WORK/review-$n.log" 2>&1
       rcode=$?
-      rcost="$id-review-$n"
+      rcost="$rname"
       # 판정은 답 파일에서만 읽는다(기록에는 지시문의 답 본보기가 되풀이된다)
-      cat "$SOL_OUT/$id-review-$n-answer.md" > "$WORK/review-$n.out" 2>/dev/null
+      cat "$SOL_OUT/$rname-answer.md" > "$WORK/review-$n.out" 2>/dev/null
       vfiles="$WORK/review-$n.out"
     fi
     sig1=$(tree_sig)
