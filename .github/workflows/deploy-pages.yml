@@ -249,8 +249,6 @@ jobs:
           [ -d mapo/dist ] && cp -r mapo/dist _site/mapo || echo "::warning::mapo build missing — skipping"
           # 빌드 없는 정적 안내 페이지 (2026-11-20). notes/<이름>/index.html → /apps/notes/<이름>/
           cp -r notes _site/notes
-          # 빌드 없는 정적 게임 시험판 (2026-11-25). hiddenword/site → /apps/hiddenword/
-          [ -d hiddenword/site ] && cp -r hiddenword/site _site/hiddenword || echo "::warning::hiddenword site missing — skipping"
           # 정식 경로 이관 (2026-06-10): pick/dist → /apps/pick/ (vite base 도 /apps/pick/). 폴더도 taste→pick 리네임 완료.
           # 구 /apps/taste/ 는 redirect 스텁 + kill-SW — 구 SW 가 캐시된 옛 앱을 계속 서빙하는 것 차단.
           # (한 origin 을 6개 앱이 공유 → kill-SW 캐시 삭제는 /apps/taste/ 스코프 키만 한정)

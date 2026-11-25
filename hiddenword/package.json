@@ -5,6 +5,7 @@
   "engines": { "node": ">=20.12" },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "merge": "node probe/merge.mjs"
+    "merge": "node probe/merge.mjs",
+    "local": "node probe/build-local.mjs"
   }
 }
