@@ -37,6 +37,8 @@ EOF
 #!/bin/bash
 # 가짜 tools/sol/run.sh. 인자는 <단계> <실행 이름> <에포트> <지시문 파일>.
 echo "sol $2 effort=$3 sandbox=${SOL_SANDBOX:-없음}" >> "$FAKE_LOG"
+# 진짜 run.sh 처럼 실행마다 장부에 한 줄을 더한다(검수 중이어도)
+echo "$2" >> "$FAKE_REPO/docs/redraw-orders/sol-ledger.tsv"
 out="${SOL_OUT:-tmp/sol}"; mkdir -p "$out"
 case "$2" in
   *-impl-*)
@@ -71,6 +73,7 @@ setup() { # 깨끗한 임시 저장소
   printf 'tmp/\n' > "$REPO/.gitignore"
   printf '# 일감 목록\n\n' > "$REPO/docs/redraw-orders/queue.md"
   echo seed > "$REPO/seed.txt"
+  echo "날짜" > "$REPO/docs/redraw-orders/sol-ledger.tsv"
   ( cd "$REPO" && git -c init.defaultBranch=main init -q && git config user.email t@example.com && git config user.name tester ) >/dev/null 2>&1
   write_fakes
   LOOP_ARGS=""
@@ -229,12 +232,14 @@ case11() { echo "⑪ --dry-run 과 빈 목록"
 case12() { echo "⑫ 남이 둔 추적 안 된 파일"
   setup; add_task t1 "첫 일감" "$(env_task)"; commit_all
   echo "남의 메모" > "$REPO/other.txt"
+  mkdir -p "$REPO/notes"; echo "남의 폴더" > "$REPO/notes/plan.md"
   verdicts PASS
   code=$(run_loop)
   chk "⑫ 종료" 0 "$code"
   chk "⑫ 커밋 수" 2 "$(commits)"
   chk "⑫ 남의 파일은 커밋 안 됨" 0 "$(git -C "$REPO" ls-files other.txt | grep -c . | tr -d ' ')"
   chk "⑫ 남의 파일은 그대로" 1 "$(have "$REPO/other.txt")"
+  chk "⑫ 남의 폴더는 그대로" 1 "$(have "$REPO/notes/plan.md")"
 }
 
 case13() { echo "⑬ sol 검수 기록 안의 답 본보기"
@@ -291,7 +296,22 @@ case17() { echo "⑰ 구현은 끝났는데 루프가 끊김 → --continue 는 
   chk "⑰ 커밋 수" 2 "$(commits)"
 }
 
-for c in case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17; do "$c"; done
+case18() { echo "⑱ 1회차 검수 FAIL 뒤 끊김 → --continue 는 2회차 구현부터"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  mkdir -p "$REPO/tmp/loop/t1"; : > "$REPO/tmp/loop/t1/base-untracked.txt"
+  printf '{"type":"result","subtype":"success","is_error":false}\n' > "$REPO/tmp/loop/t1/impl-1.json"
+  printf '까닭\n{"verdict":"FAIL","reasons":["x"],"fixes":["y"]}\n' > "$REPO/tmp/loop/t1/review-1.out"
+  echo impl > "$REPO/work.txt"
+  verdicts PASS
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "⑱ 종료" 0 "$code"
+  chk "⑱ 2회차 구현만" 1 "$(hits 'claude impl')"
+  chk "⑱ 2회차 지시문에 의견" 1 "$(grep -c '1회차 검수 의견' "$REPO/tmp/loop/t1/brief-2.md" | tr -d ' ')"
+  chk "⑱ 커밋 수" 2 "$(commits)"
+}
+
+for c in case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18; do "$c"; done
 wipe
 printf '\n문법 검사: '; bash -n "$LOOP_SRC" && echo ok || { echo FAIL; BADN=$((BADN + 1)); }
 printf '통과 %s, 실패 %s\n' "$OKN" "$BADN"

@@ -60,7 +60,8 @@ if "$PGREP" -f 'codex exec' > /dev/null 2>&1; then
 fi
 
 # ---- 작업 트리를 읽는 도구 ----
-porcelain() { g status --porcelain -- "$SCOPE"; }
+porcelain() { g status --porcelain --untracked-files=all -- "$SCOPE"; }
+SOL_LEDGER_R="${PREFIX}${SOL_LEDGER:-docs/redraw-orders/sol-ledger.tsv}"
 impl_paths() { # 구현이 바꾼 파일(루프가 스스로 쓰는 장부·일감 목록은 뺀다). 저장소 뿌리 기준 경로
   porcelain | while IFS= read -r l; do
     p=$(printf '%s' "$l" | cut -c4-)
@@ -75,8 +76,9 @@ impl_paths() { # 구현이 바꾼 파일(루프가 스스로 쓰는 장부·일�
 }
 tree_sig() { # 검수가 작업 트리를 건드렸는지 보려고 재는 값
   {
-    porcelain
-    g diff HEAD -- "$SCOPE"
+    # 장부는 run.sh·loop.sh 가 실행마다 한 줄씩 더하므로 뺀다(검수 중에도 바뀐다)
+    porcelain | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R"
+    g diff HEAD -- "$SCOPE" ":(exclude)$SOL_LEDGER_R" ":(exclude)$LEDGER_R"
     g ls-files -o --exclude-standard -- "$SCOPE" | while IFS= read -r f; do
       [ -f "$TOP/$f" ] && shasum "$TOP/$f"
     done
@@ -253,12 +255,14 @@ while :; do
 
   # 2. 구현 전 기준점
   BASE_UNTRACKED="$WORK/base-untracked.txt"
-  skip_impl1=; resume_note=
+  skip_impl1=; resume_note=; start_n=1
   if [ -n "$cont" ] && [ -f "$BASE_UNTRACKED" ] && { [ -e "$WORK/impl-1.json" ] || [ -e "$WORK/impl-1.log" ]; }; then
     # 끊긴 일감을 이어받는다: 기준점 목록은 처음 것을 그대로 쓰고, 작업 트리의 변경은 그 일감의 것으로 본다
     base_head=$(cat "$WORK/base-head.txt" 2>/dev/null || g rev-parse HEAD)
     base_status=
-    if [ -e "$WORK/impl-1.json" ] && impl_cut "$WORK/impl-1.json"; then
+    if [ -e "$WORK/review-1.out" ] && [ ! -e "$WORK/review-2.out" ] && [ "$(read_verdict "$WORK/review-1.out")" = FAIL ]; then
+      start_n=2; log "일감 $id: 1회차 검수가 FAIL 이었다. 그 의견을 붙여 2회차 구현부터 한다"
+    elif [ -e "$WORK/impl-1.json" ] && impl_cut "$WORK/impl-1.json"; then
       resume_note=1; log "일감 $id: 1회차 구현이 끊겨 있었다. 작업 트리를 이어받아 다시 맡긴다"
     else
       skip_impl1=1; log "일감 $id: 1회차 구현은 끝나 있었다. 검사·검수부터 한다"
@@ -276,7 +280,7 @@ while :; do
   fi
 
   verdict=""; attempt=0
-  for n in 1 2; do
+  for n in $(seq "$start_n" 2); do
     attempt=$n
     # 3. 구현
     bf="$WORK/brief-$n.md"
