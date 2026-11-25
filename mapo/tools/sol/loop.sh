@@ -20,6 +20,9 @@ PGREP="${LOOP_PGREP:-pgrep}"
 PY="${LOOP_PY:-/usr/bin/python3}"
 LIMIT="${LOOP_LIMIT:-90}"
 MAX_REVIEW_BRIEF="${LOOP_MAX_REVIEW_BRIEF:-11500}"
+MAX_ATTEMPTS="${LOOP_MAX_ATTEMPTS:-4}"
+PLAN_MODEL="${LOOP_PLAN_MODEL:-opus}"
+PLANNER="${LOOP_PLANNER:-docs/redraw-orders/queue/PLANNER.md}"
 COAUTHOR='Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'
 
 once=; dry=; cont=
@@ -154,6 +157,50 @@ except Exception:
 sys.exit(0 if d.get('is_error') or d.get('subtype') != 'success' else 1)
 PYC
 }
+plan_next() { # 목록이 비면 계획 세우기 모델이 다음 일감을 쓰고, 루프가 그것을 커밋한다
+  t0=$(date +%s)
+  pf="$OUT/plan-$(date +%s).md"
+  {
+    echo "# 계획 세우기 (루프가 부름)"
+    echo "아래 안내를 따라 다음 일감 하나를 $QDIR/<id>/ 에 쓰고 $QUEUE 끝에 '- [ ] <id> 한 줄 설명' 을 더한다. 단계가 끝났으면 일감을 쓰지 말고 $OUT/stage-done.md 에 지오에게 보일 주소와 한 단락을 쓴다."
+    echo; cat "$PLANNER"
+    echo; echo "## 지금 목록"; cat "$QUEUE"
+    echo; echo "## 루프 기록 끝 40줄"; tail -40 "$OUT/loop.log" 2>/dev/null
+    echo; echo "## 최근 커밋"; g log --oneline -8 -- "$SCOPE"
+  } > "$pf"
+  sig_before=$(g status --porcelain --untracked-files=all -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R" | shasum)
+  "$CLAUDE" -p --model "$PLAN_MODEL" --effort high --output-format json \
+    --permission-mode bypassPermissions "$(cat "$pf")" > "$pf.json" 2>"$pf.err"
+  pcode=$?
+  ledger plan 1 plan "$PLAN_MODEL" high "$(mins_since "$t0")" "$(json_cost "$pf.json")" "종료 $pcode"
+  impl_cut "$pf.json" && finish 7 "계획 세우기가 한도나 오류로 끊겼다($pf.json). tools/sol/loop.sh --continue 로 이어 간다."
+  new=$(g status --porcelain --untracked-files=all -- "$QDIR" "$QUEUE" | sed 's/^...//')
+  if [ -n "$new" ]; then
+    printf '%s\n' "$new" | while IFS= read -r p; do g add -- "$p"; done
+    g commit -q -m "chore(mapo-loop): plan next task" -m "$COAUTHOR" || finish 2 "계획한 일감을 커밋하지 못했다"
+    log "계획 세우기가 일감을 더했다: $(g log -1 --format=%h)"
+  fi
+  [ "$sig_before" = "$(g status --porcelain --untracked-files=all -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R" | shasum)" ] || \
+    finish 4 "계획 세우기가 일감 목록 밖의 파일을 고쳤다. 계획 단계는 일감만 쓴다."
+}
+read_field() { # 검수 답의 마지막 JSON 줄에서 칸 하나
+  python3 - "$1" "$2" <<'PYF' 2>/dev/null
+import json, sys
+raw = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+try:
+    text = json.loads(raw).get('result', '')
+except Exception:
+    text = raw
+for line in reversed(text.strip().splitlines()):
+    line = line.strip().strip('`')
+    if line.startswith('{'):
+        try:
+            print(str(json.loads(line).get(sys.argv[2])).lower())
+        except Exception:
+            continue
+        break
+PYF
+}
 read_verdict() { # 검수 답(claude json 이면 result 칸, 아니면 글)의 마지막 JSON 줄에서 판정 하나만 읽는다
   python3 - "$1" <<'PYV' 2>/dev/null
 import json, sys
@@ -214,6 +261,11 @@ keep_and_restore() { # 두 번 실패하거나 STOP 일 때. 구현 변경을 �
 # ================= 일감 하나씩 =================
 while :; do
   qline=$(grep -n -m1 '^- \[ \] ' "$QUEUE")
+  if [ -z "$qline" ] && [ -f "$PLANNER" ] && [ -z "$dry" ]; then
+    plan_next
+    qline=$(grep -n -m1 '^- \[ \] ' "$QUEUE")
+    [ -z "$qline" ] && [ -s "$OUT/stage-done.md" ] && { m=$(cat "$OUT/stage-done.md"); mv "$OUT/stage-done.md" "$OUT/stage-done.$(date +%s).md"; finish 5 "계획 세우기가 단계가 끝났다고 판단했다. 지오 확인 필요: $m"; }
+  fi
   if [ -z "$qline" ]; then
     finish 0 "일감 목록($QUEUE)에 남은 일감이 없다. 다음 단계의 일감을 적으면 다시 돈다."
   fi
@@ -260,8 +312,9 @@ while :; do
     # 끊긴 일감을 이어받는다: 기준점 목록은 처음 것을 그대로 쓰고, 작업 트리의 변경은 그 일감의 것으로 본다
     base_head=$(cat "$WORK/base-head.txt" 2>/dev/null || g rev-parse HEAD)
     base_status=
-    if [ -e "$WORK/review-1.out" ] && [ ! -e "$WORK/review-2.out" ] && [ "$(read_verdict "$WORK/review-1.out")" = FAIL ]; then
-      start_n=2; log "일감 $id: 1회차 검수가 FAIL 이었다. 그 의견을 붙여 2회차 구현부터 한다"
+    k=0; for i in $(seq 1 "$MAX_ATTEMPTS"); do [ -e "$WORK/review-$i.out" ] && k=$i; done
+    if [ "$k" -ge 1 ] && [ "$k" -lt "$MAX_ATTEMPTS" ] && [ "$(read_verdict "$WORK/review-$k.out")" = FAIL ]; then
+      start_n=$((k + 1)); log "일감 $id: ${k}회차 검수가 FAIL 이었다. 그 의견을 붙여 ${start_n}회차 구현부터 한다"
     elif [ -e "$WORK/impl-1.json" ] && impl_cut "$WORK/impl-1.json"; then
       resume_note=1; log "일감 $id: 1회차 구현이 끊겨 있었다. 작업 트리를 이어받아 다시 맡긴다"
     else
@@ -272,7 +325,7 @@ while :; do
     echo "$base_head" > "$WORK/base-head.txt"
     # 추적 안 된 파일은 다른 세션이 둔 것일 수 있어 막지 않고 목록으로 남겨 빼고 센다. 추적하는 파일의 수정만 막는다
     g ls-files -o --exclude-standard --full-name -- "$SCOPE" > "$BASE_UNTRACKED"
-    base_status=$(g status --porcelain --untracked-files=no -- "$SCOPE")
+    base_status=$(g status --porcelain --untracked-files=no -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R")
   fi
   if [ -n "$base_status" ]; then
     printf '%s\n' "$base_status" > "$WORK/dirty.txt"
@@ -280,7 +333,7 @@ while :; do
   fi
 
   verdict=""; attempt=0
-  for n in $(seq "$start_n" 2); do
+  for n in $(seq "$start_n" "$MAX_ATTEMPTS"); do
     attempt=$n
     # 3. 구현
     bf="$WORK/brief-$n.md"
@@ -294,12 +347,13 @@ while :; do
     if [ -n "$resume_note" ] && [ "$n" = 1 ]; then
       { echo; echo "## 이어서 하는 실행"; echo "앞 실행이 한도나 중단으로 끊겼다. 작업 트리에 남은 변경과 tmp/loop/$id/ 의 파일을 먼저 보고, 이미 된 것은 다시 하지 말고 남은 것만 끝낸다."; } >> "$bf"
     fi
-    if [ "$n" = 2 ]; then
+    if [ "$n" -ge 2 ]; then
+      p=$((n - 1))
       {
-        echo; echo "## 1회차 검수 의견 (이것부터 고친다)"
-        echo '```'; tail -40 "$WORK/review-1.out" 2>/dev/null; echo '```'
-        echo "## 1회차 통과 검사 결과"
-        echo '```'; tail -20 "$WORK/check-1.txt" 2>/dev/null; echo '```'
+        echo; echo "## ${p}회차 검수 의견 (이것부터 고친다)"
+        echo '```'; tail -40 "$WORK/review-$p.out" 2>/dev/null; echo '```'
+        echo "## ${p}회차 통과 검사 결과"
+        echo '```'; tail -20 "$WORK/check-$p.txt" 2>/dev/null; echo '```'
       } >> "$bf"
     fi
     t0=$(date +%s)
@@ -372,9 +426,15 @@ while :; do
       echo "- 파일을 고치지 않는다(작업 트리가 바뀌면 루프가 STOP 으로 센다). 커밋·굽기·측정 실행을 하지 않는다."
       echo "- 일감 밖의 개선을 요구하지 않는다."
       echo
+      if [ "$n" -ge 2 ]; then
+        echo "## 앞 회차 검수 의견"
+        echo '```'; tail -15 "$WORK/review-$((n - 1)).out" 2>/dev/null; echo '```'
+        echo "FAIL 의 주된 까닭이 앞 회차와 같은 문제(고쳐지지 않았거나 같은 자리에서 다시 생김)면 repeat 를 true 로 한다. 앞 문제가 풀리고 새 문제만 남았으면 false."
+        echo
+      fi
       echo "## 답의 꼴"
       echo "열 줄 안쪽으로 까닭을 적고, 맨 마지막 줄에 JSON 한 줄만 둔다:"
-      echo '{"verdict":"PASS|FAIL|STOP","reasons":["..."],"fixes":["..."]}'
+      echo '{"verdict":"PASS|FAIL|STOP","repeat":false,"reasons":["..."],"fixes":["..."]}'
     } > "$rf"
     [ "$REVIEW" = sol ] && cap_bytes "$rf" "$MAX_REVIEW_BRIEF"
 
@@ -408,8 +468,11 @@ while :; do
     [ "$ccode" = 0 ] || { [ "$verdict" = STOP ] || verdict=FAIL; }
     [ "$verdict" = PASS ] && break
     [ "$verdict" = STOP ] && break
-    [ "$n" = 2 ] && break
-    log "일감 $id 1회차 FAIL. 검수 의견을 붙여 한 번만 다시 한다"
+    if [ "$n" -ge 2 ] && [ "$(read_field "$vfiles" repeat)" = true ]; then
+      log "일감 $id ${n}회차 FAIL 이 앞 회차와 같은 문제다. 밀고 가지 않고 선다"; break
+    fi
+    [ "$n" = "$MAX_ATTEMPTS" ] && break
+    log "일감 $id ${n}회차 FAIL(새 문제). 검수 의견을 붙여 다시 한다"
   done
 
   if [ "$verdict" != PASS ]; then
@@ -418,7 +481,7 @@ while :; do
     if [ "$verdict" = STOP ]; then
       finish 4 "일감 $id 가 STOP 판정이다(이 방향으로는 고쳐도 안 된다는 검수 의견). 밀고 가지 않고 섰다. 검수 의견 $WORK/review-$attempt.out, 보관한 변경 $WORK/failed.patch. 원인 조사나 다른 길을 지오에게 낸다."
     fi
-    finish 3 "일감 $id 가 두 번 FAIL 했다. 추측으로 더 고치지 않고 섰다. 1·2회차 검수 의견 $WORK/review-1.out·$WORK/review-2.out, 검사 출력 $WORK/check-2.txt, 보관한 변경 $WORK/failed.patch(새 파일은 $WORK/failed-untracked/). 원인을 조사한 뒤 일감을 다시 쓴다."
+    finish 3 "일감 $id 가 ${attempt}회차에서 같은 문제로 FAIL 했거나 회차 상한(${MAX_ATTEMPTS})에 닿았다. 추측으로 더 고치지 않고 섰다. 검수 의견 $WORK/review-*.out, 검사 출력 $WORK/check-$attempt.txt, 보관한 변경 $WORK/failed.patch(새 파일은 $WORK/failed-untracked/). 원인을 조사한 뒤 일감을 다시 쓴다."
   fi
 
   # PASS: 구현이 바꾼 파일만 골라 로컬 커밋(푸시는 하지 않는다)

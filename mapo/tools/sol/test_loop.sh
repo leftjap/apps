@@ -19,9 +19,20 @@ write_fakes() {
 #!/bin/bash
 # 가짜 claude CLI. --disallowedTools 가 있으면 검수 호출, 없으면 구현 호출.
 role=impl; model=; prev=
-for a in "$@"; do [ "$a" = "--disallowedTools" ] && role=review; [ "$prev" = "--model" ] && model=$a; prev=$a; done
+for a in "$@"; do [ "$a" = "--disallowedTools" ] && role=review; case "$a" in *"# 계획 세우기"*) role=plan;; esac; [ "$prev" = "--model" ] && model=$a; prev=$a; done
 echo "claude $role model=$model" >> "$FAKE_LOG"
-if [ "$role" = impl ]; then
+if [ "$role" = plan ]; then
+  n=$(cat "$FAKE_REPO/tmp/plan-count" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "$FAKE_REPO/tmp/plan-count"
+  if [ "$n" -le "${FAKE_PLAN_TASKS:-1}" ]; then
+    mkdir -p "$FAKE_REPO/docs/redraw-orders/queue/p$n"
+    printf 'STAGE=s0\nIMPL=opus\nIMPL_EFFORT=high\nREVIEW=sol\nREVIEW_EFFORT=medium\nCHECK="test -s work.txt"\n' > "$FAKE_REPO/docs/redraw-orders/queue/p$n/task.env"
+    printf '# p%s\n## 할 일\nwork.txt\n' "$n" > "$FAKE_REPO/docs/redraw-orders/queue/p$n/brief.md"
+    printf -- '- [ ] p%s 계획한 일감\n' "$n" >> "$FAKE_REPO/docs/redraw-orders/queue.md"
+  else
+    echo "단계 끝: 지오에게 보일 주소 http://x" > "$FAKE_REPO/tmp/loop/stage-done.md"
+  fi
+  printf '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0.01,"result":"계획"}\n'
+elif [ "$role" = impl ]; then
   echo "impl" >> "$FAKE_REPO/work.txt"
   echo "impl" >> "$FAKE_REPO/seed.txt"
   [ -n "${FAKE_IMPL_TOUCH_TASK:-}" ] && echo "기준 바꿈" >> "$FAKE_REPO/docs/redraw-orders/queue/t1/brief.md"
@@ -30,7 +41,8 @@ if [ "$role" = impl ]; then
 else
   [ -n "${FAKE_REVIEW_TOUCH:-}" ] && echo "검수자가 고침" >> "$FAKE_REPO/work.txt"
   v=$(head -1 "$FAKE_VERDICTS"); tail -n +2 "$FAKE_VERDICTS" > "$FAKE_VERDICTS.n"; mv "$FAKE_VERDICTS.n" "$FAKE_VERDICTS"
-  printf '{"type":"result","total_cost_usd":0.002,"usage":{"input_tokens":900},"result":"가짜 검수\\n{\\"verdict\\":\\"%s\\",\\"reasons\\":[\\"가짜 까닭\\"],\\"fixes\\":[\\"가짜 고칠 것\\"]}"}\n' "$v"
+  r=false; case "$v" in *:r) r=true; v=${v%:r};; esac
+  printf '{"type":"result","total_cost_usd":0.002,"usage":{"input_tokens":900},"result":"가짜 검수\\n{\\"verdict\\":\\"%s\\",\\"repeat\\":%s,\\"reasons\\":[\\"가짜 까닭\\"],\\"fixes\\":[\\"가짜 고칠 것\\"]}"}\n' "$v" "$r"
 fi
 EOF
   cat > "$REPO/fake/run.sh" <<'EOF'
@@ -47,7 +59,8 @@ case "$2" in
     echo "sol 구현 끝" > "$out/$2-answer.md" ;;
   *)
     v=$(head -1 "$FAKE_VERDICTS"); tail -n +2 "$FAKE_VERDICTS" > "$FAKE_VERDICTS.n"; mv "$FAKE_VERDICTS.n" "$FAKE_VERDICTS"
-    printf '가짜 검수\n{"verdict":"%s","reasons":["가짜 까닭"],"fixes":["가짜 고칠 것"]}\n' "$v" > "$out/$2-answer.md" ;;
+    r=false; case "$v" in *:r) r=true; v=${v%:r};; esac
+    printf '가짜 검수\n{"verdict":"%s","repeat":%s,"reasons":["가짜 까닭"],"fixes":["가짜 고칠 것"]}\n' "$v" "$r" > "$out/$2-answer.md" ;;
 esac
 # 진짜 codex 처럼 지시문을 기록에 되풀이한다(지시문 안의 답 본보기가 판정으로 읽히면 안 된다)
 cat "$4"
@@ -136,9 +149,9 @@ case2() { echo "② FAIL 뒤 PASS"
   chk "② t1 표시" 1 "$(qmark x t1)"
 }
 
-case3() { echo "③ FAIL 두 번"
+case3() { echo "③ 같은 문제로 다시 FAIL"
   setup; add_task t1 "첫 일감" "$(env_task)"; add_task t2 "둘째 일감" "$(env_task)"; commit_all
-  verdicts FAIL FAIL
+  verdicts FAIL FAIL:r
   code=$(run_loop)
   chk "③ 종료" 3 "$code"
   chk "③ 커밋 없음" 1 "$(commits)"
@@ -244,9 +257,9 @@ case12() { echo "⑫ 남이 둔 추적 안 된 파일"
 
 case13() { echo "⑬ sol 검수 기록 안의 답 본보기"
   setup; add_task t1 "첫 일감" "$(env_task)"; commit_all
-  verdicts FAIL FAIL
+  verdicts FAIL FAIL:r
   code=$(run_loop)
-  chk "⑬ 종료(두 번 FAIL)" 3 "$code"
+  chk "⑬ 종료(같은 문제 FAIL)" 3 "$code"
   chk "⑬ 커밋 없음" 1 "$(commits)"
 }
 
@@ -311,8 +324,36 @@ case18() { echo "⑱ 1회차 검수 FAIL 뒤 끊김 → --continue 는 2회차 �
   chk "⑱ 커밋 수" 2 "$(commits)"
 }
 
-for c in case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18; do "$c"; done
-wipe
+case19() { echo "⑲ 다른 문제로 FAIL 이 이어지면 계속, 세 번째에 PASS"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts FAIL FAIL PASS
+  code=$(run_loop)
+  chk "⑲ 종료" 0 "$code"
+  chk "⑲ 구현 세 번" 3 "$(hits 'claude impl')"
+  chk "⑲ 커밋 수" 2 "$(commits)"
+}
+
+case20() { echo "⑳ 회차 상한"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts FAIL FAIL FAIL FAIL FAIL
+  code=$(run_loop)
+  chk "⑳ 종료" 3 "$code"
+  chk "⑳ 구현 네 번" 4 "$(hits 'claude impl')"
+}
+
+case21() { echo "㉑ 목록이 비면 계획 세우기 → 일감 → 단계 끝"
+  setup; printf '# 계획 세우기 안내\n' > "$REPO/docs/redraw-orders/queue/PLANNER.md"; commit_all
+  verdicts PASS PASS
+  code=$(run_loop FAKE_PLAN_TASKS=2)
+  chk "㉑ 종료(단계 끝)" 5 "$code"
+  chk "㉑ 계획 세 번" 3 "$(hits 'claude plan')"
+  chk "㉑ p1·p2 표시" 2 "$(grep -c -- '- \[x\] p' "$REPO/docs/redraw-orders/queue.md" | tr -d ' ')"
+  chk "㉑ 커밋(처음+계획2+일감2)" 5 "$(commits)"
+  chk "㉑ 단계 끝 기록" 1 "$(grep -c 'http://x' "$REPO/tmp/loop/status.md" | tr -d ' ')"
+}
+
+for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21}; do "$c"; done
+[ -n "${LOOP_TEST_KEEP:-}" ] || wipe
 printf '\n문법 검사: '; bash -n "$LOOP_SRC" && echo ok || { echo FAIL; BADN=$((BADN + 1)); }
 printf '통과 %s, 실패 %s\n' "$OKN" "$BADN"
 [ "$BADN" = 0 ] || exit 1
