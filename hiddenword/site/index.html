@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>히든 워드</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --line: #dde1e7;
+    --text: #1c2a44;
+    --muted: #5d6a80;
+    --accent: #2f6db5;
+    --track: #e8ecf1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; }
+  header small { font-size: 13px; color: var(--muted); }
+  button, input { font: inherit; color: inherit; }
+  button {
+    min-height: 44px; padding: 0 16px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface); cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  .picker { display: flex; gap: 8px; margin-bottom: 16px; }
+  .picker button { flex: 1; padding: 0 8px; }
+  .picker button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .picker .mark { font-size: 12px; margin-left: 4px; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .clue-word { font-size: 32px; font-weight: 700; margin-right: 8px; }
+  .clue-score { color: var(--accent); font-weight: 600; }
+  .clue-q { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+  form { display: flex; gap: 8px; }
+  form input {
+    flex: 1; min-width: 0; min-height: 44px; padding: 0 12px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 17px;
+  }
+  form input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  form button { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .left { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+  .msg { min-height: 24px; margin: 8px 0 0; font-size: 14px; }
+  ol.tries { list-style: none; margin: 0; padding: 0; }
+  ol.tries li {
+    display: grid; grid-template-columns: 24px 1fr 44px; grid-template-rows: auto 6px;
+    column-gap: 8px; padding: 8px; border-radius: 8px; border: 1px solid transparent;
+  }
+  ol.tries li.latest { border-color: var(--accent); background: #f3f7fc; }
+  .n { color: var(--muted); font-size: 13px; align-self: center; }
+  .w { font-weight: 600; }
+  .s { text-align: right; font-variant-numeric: tabular-nums; }
+  .bar { grid-column: 2 / 4; background: var(--track); border-radius: 3px; overflow: hidden; }
+  .bar span { display: block; height: 100%; }
+  .end p { margin: 0 0 12px; font-size: 18px; font-weight: 600; }
+  .share-text { white-space: pre-wrap; margin: 12px 0 0; padding: 12px; background: var(--bg); border-radius: 8px; font-size: 14px; }
+  details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--muted); }
+  details p { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>히든 워드</h1><small>시험판</small></header>
+
+  <nav class="picker" id="picker" aria-label="문제 고르기"></nav>
+
+  <section class="card">
+    <div><span class="clue-word" id="clueWord"></span><span class="clue-score" id="clueScore"></span></div>
+    <p class="clue-q">이 단어와 가까운 숨은 단어는 무엇일까요?</p>
+  </section>
+
+  <section class="card">
+    <form id="form">
+      <label for="word" class="sr">추측할 단어</label>
+      <input id="word" maxlength="10" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="단어를 넣어 보세요">
+      <button type="submit" id="submit">확인</button>
+    </form>
+    <p class="left" id="left"></p>
+    <p class="msg" id="msg" aria-live="polite"></p>
+    <ol class="tries" id="tries"></ol>
+  </section>
+
+  <section class="card end" id="end" hidden>
+    <p id="endText"></p>
+    <button type="button" id="copy">결과 복사</button>
+    <div class="share-text" id="shareBox" hidden></div>
+  </section>
+
+  <details class="card">
+    <summary>점수는 어떻게 매기나요?</summary>
+    <p>AI가 두 단어가 어떤 관계인지 보고 0~100점으로 미리 매겨 둔 점수예요. 뜻이 같은 말은 93점 이상, 같은 종류에 속하면서 닮은 말은 70~92점, 함께 쓰이는 말이나 반대말은 50~69점, 관계없는 말은 10점 미만이에요. 점수는 정답일 확률이 아니에요.</p>
+  </details>
+</main>
+
+<script type="module">
+import { MAX_TRIES, createGame, guess, shareText } from './game.mjs';
+
+const $ = (id) => document.getElementById(id);
+const MESSAGES = {
+  unknown: '아직 모르는 단어예요. 도전 횟수는 줄지 않았어요.',
+  duplicate: '이미 넣은 단어예요.',
+  clue: '단서로 나온 단어예요.',
+};
+
+let games = [];
+let current = 0;
+
+function barColor(score) {
+  const pct = Math.max(15, Math.min(100, score));
+  return `color-mix(in srgb, var(--accent) ${pct}%, var(--track))`;
+}
+
+function renderPicker() {
+  $('picker').replaceChildren(...games.map((g, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(i === current));
+    b.textContent = `${g.puzzle.no}번`;
+    if (g.done) {
+      const m = document.createElement('span');
+      m.className = 'mark';
+      m.textContent = g.solved ? '맞힘' : '못 맞힘';
+      b.append(m);
+    }
+    b.addEventListener('click', () => { current = i; $('msg').textContent = ''; render(); });
+    return b;
+  }));
+}
+
+function render() {
+  const g = games[current];
+  renderPicker();
+  $('clueWord').textContent = g.puzzle.clue.word;
+  $('clueScore').textContent = `유사도 ${g.puzzle.clue.score}점`;
+  $('left').textContent = g.done ? '' : `남은 도전 ${MAX_TRIES - g.tries.length}번`;
+  $('word').disabled = g.done;
+  $('submit').disabled = g.done;
+
+  $('tries').replaceChildren(...g.tries.map((t, i) => {
+    const li = document.createElement('li');
+    if (i === g.tries.length - 1) li.className = 'latest';
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = i + 1;
+    const w = document.createElement('span'); w.className = 'w'; w.textContent = t.word;
+    const s = document.createElement('span'); s.className = 's'; s.textContent = t.score;
+    const bar = document.createElement('div'); bar.className = 'bar';
+    const fill = document.createElement('span');
+    fill.style.width = `${t.score}%`;
+    fill.style.background = barColor(t.score);
+    bar.append(fill);
+    li.append(n, w, s, bar);
+    return li;
+  }));
+
+  $('end').hidden = !g.done;
+  $('shareBox').hidden = true;
+  if (g.done) {
+    $('endText').textContent = g.solved ? `${g.tries.length}번 만에 맞혔어요!` : `정답은 ${g.puzzle.answer}였어요.`;
+  }
+}
+
+function submit() {
+  const g = games[current];
+  const r = guess(g, $('word').value);
+  if (r.kind === 'empty') return;
+  $('msg').textContent = MESSAGES[r.kind] ?? '';
+  if (r.kind === 'scored' || r.kind === 'correct') $('word').value = '';
+  render();
+  if (!g.done) $('word').focus();
+}
+
+$('form').addEventListener('submit', (e) => { e.preventDefault(); submit(); });
+$('word').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.isComposing || e.keyCode === 229)) e.preventDefault();
+});
+
+$('copy').addEventListener('click', async () => {
+  const text = shareText(games[current]);
+  try {
+    await navigator.clipboard.writeText(text);
+    $('msg').textContent = '복사했어요';
+  } catch {
+    $('shareBox').textContent = text;
+    $('shareBox').hidden = false;
+  }
+});
+
+const res = await fetch('./data/puzzles.json');
+games = (await res.json()).map(createGame);
+render();
+</script>
+</body>
+</html>

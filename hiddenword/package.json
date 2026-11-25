@@ -1,0 +1,10 @@
+{
+  "name": "hiddenword",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20.12" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "merge": "node probe/merge.mjs"
+  }
+}
