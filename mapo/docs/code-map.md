@@ -16,8 +16,8 @@
 - `src/aerial/ground-paint.ts` (3줄): The same metres as the dash shader in src/render/marks.ts.
 - `src/aerial/hapjeong-car-graph.ts` (175줄)
   - districtCarGraph 48-67 · carBoundary 68-81 · hapjeongCarGraph 82-175 · ↳boundary 88-175
-- `src/aerial/hapjeong-car-playback.ts` (321줄)
-  - carVisibility 18-39 · delta 40-44 · speedRatio 45-75 · carPlayback 76-321 · ↳boundary 89-89 · ↳terminalKey 90-112 · ↳busOutlet 113-132 · ↳follow 133-229 · ↳clock 230-234 · ↳reset 235-306 · ↳at 307-321
+- `src/aerial/hapjeong-car-playback.ts` (327줄)
+  - carVisibility 18-39 · delta 40-44 · speedRatio 45-75 · carPlayback 76-327 · ↳boundary 93-93 · ↳terminalKey 94-116 · ↳busOutlet 117-136 · ↳follow 137-233 · ↳clock 234-238 · ↳reset 239-312 · ↳at 313-327
 - `src/aerial/hapjeong-cars.ts` (132줄)
   - attachHapjeongSimulation 15-132 · ↳refresh 71-105 · ↳pause 106-110 · ↳tick 111-117 · ↳start 118-132
 - `src/aerial/hapjeong-hd.ts` (308줄)
@@ -67,8 +67,17 @@
   - measure 16-51 · measure_car_phases 52-91
 - `tools/v2/bake_aerial_ground.py` (734줄): Build a local intersection from Seoul's public A058/A055 and crossing areas.
   - mercator 32-36 · Frame 37-57 · Mark 58-66 · read 67-70 · parts 71-78 · line_parts 79-82 · polygon_parts 83-86 · square 87-90 · direction 91-95 · load_lines 96-110 · fitting_frame 111-123 · arm_at 124-128 · armpoint 129-132 · extent 133-136 · crossing_arms 137-147 · edge_candidates 148-180 · corner_arc 181-227 · make_road 228-267 · selector 268-282 · apply_fixes 283-325 · make_stops 326-371 · approach_stop_shadows 372-394 · stripe_faces 395-427 · calibrated_zebra 428-464 · cut_guide_at_zebras 465-490 · build 491-712 · main 713-734
+- `tools/v2/camera_car_floor.py` (153줄): Measure rendered footprints against local road polygons and match lanes to surveyed major roads.
+  - names 21-68 · Floor 69-133 · measure 134-153
+- `tools/v2/camera_car_metrics.mts` (369줄): Count visible lane use, stopped queues and vehicle overlaps during a replay.
+  - quantile 21-26 · distribution 27-33 · count 34-35 · distanceAlong 36-51 · LaneUse 52-162 · bumper 163-166 · Queues 167-329 · Overlaps 330-369
+- `tools/v2/camera_car_view.mts` (178줄): Project scenario cameras and record vehicle lifetimes in screen space.
+  - clamp 18-19 · CameraView 20-144 · Lifecycle 145-166 · poseAt 167-178 · ↳lerp 171-178
 - `tools/v2/check_aerial_paint.py` (111줄): Fail on intersections in the actual painted geometry of an aerial asset.
   - footprints 23-38 · conflicts 39-53 · check 54-111
+- `tools/v2/check_camera_cars.mts` (244줄): Replay vehicles against scripted cameras and write the camera census as JSON and Markdown.
+  - message 74-83 · flush 84-89 · pushFloor 90-97 · finishFloor 98-104 · measure 105-190 · viewWidth 191-202 · summary 203-244 · ↳fixed 204-244
+- `tools/v2/check_camera_cars.test.mts` (55줄): Check the camera census on small, deterministic replays.
 - `tools/v2/check_connected_map.py` (190줄): Check one connected static map with --area NAME or --area PATH.
   - floor_layers 19-23 · floor_parity 24-39 · named_road_footprint 40-53 · coincident_faces 54-57 · sheet_parity 58-79 · inspect 80-190
 - `tools/v2/check_connected_routes.py` (102줄): Compare boundary-connected A2 links with the individual-area replay graphs.
@@ -121,6 +130,8 @@
   - coord 22-25 · pitch 26-33 · ends_of 34-43 · guide_axis 44-47 · intrudes 48-51 · check 52-181
 - `tools/v2/check_split.py` (187줄): 지시서 2(docs/redraw-orders/2-split.md): split.json 구조 검사(항목마다 PASS/FAIL, 하나라도 FAIL 이면 종료 코드 1)와
   - to_polys 28-31 · even_odd 32-41 · survey 42-53 · samples 54-58 · centerline_points 59-68 · edges_of 69-76 · nearest 77-84 · stat 85-95 · main 96-187
+- `tools/v2/compare_camera_car_trace.py` (70줄): Cross-check a camera census using the original ConnectedStops counter and the same replay trace.
+  - compare 15-70
 - `tools/v2/compare_hapjeong.py` (157줄): Compare the same Hapjeong window in basic-board and surveyed replays.
   - camera_contains 12-22 · describe 23-26 · measure 27-157
 - `tools/v2/district_car_graph.py` (198줄): District A2 topology, grade separation and permitted entries and exits.
@@ -233,8 +244,8 @@
   - bodyType 13-21
 - `src/sim/buses.ts` (240줄): 버스 노선. 구운 노선(도로 조각 열)을 차 그래프의 구간 열로 바꾸고, 종류와 시간대로 배차 간격을 정한다.
   - project 40-62 · makeBusRoutes 63-161 · busHeadway 162-176 · islandAt 177-192 · leftAt 193-209 · busStopPortals 210-240
-- `src/sim/cars.ts` (2460줄): 차. 방향 그래프의 구간 위를 달리며 앞차와의 간격으로 속도를 정한다(ACC 식으로 누그러뜨린 IDM).
-  - clearRun 59-87 · ↳idm 62-87 · clearsWalkSignals 88-92 · carGridRadius 93-96 · makeCars 97-2460 · ↳followingOf 130-253 · ↳cellAt 254-262 · ↳isApproach 263-264 · ↳inner 265-266 · ↳free 267-268 · ↳carLanes 269-269 · ↳carLane 270-285 · ↳avoid 286-297 · ↳laneAt 298-302 · ↳pickPath 303-326 · ↳laneInto 327-328 · ↳pathLane 329-338 · ↳holdEnd 339-343 · ↳bigOf 344-345 · ↳pathPose 346-372 · ↳onEdge 373-430 · ↳dropPath 431-438 · ↳put 439-475 · ↳addBus 476-493 · ↳remove 494-504 · ↳pose 505-548 · ↳bent 549-553 · ↳curveOut 554-560 · ↳medAlongPath 561-572 · ↳locate 573-582 · ↳islandShift 583-599 · ↳busWant 600-636 · ↳laneGap 637-646 · ↳solid 647-649 · ↳shiftLane 650-673 · ↳behind 674-677 · ↳hit 678-691 · ↳depth 692-710 · ↳pedGrid 711-722 · ↳pedDepth 723-739 · ↳pedAhead 740-760 · ↳surveyedLeadGap 761-780 · ↳blockedAt 781-810 · ↳touches 811-819 · ↳density 820-834 · ↳allot 835-868 · ↳setFocus 869-881 · ↳nearFocus 882-882 · ↳pickEdge 883-898 · ↳spawnRange 899-907 · ↳onCrosswalk 908-912 · ↳spawnHidden 913-949 · ↳dropHidden 950-956 · ↳fillBuses 957-967 · ↳overlapsAny 968-973 · ↳fill 974-1022 · ↳gateDist 1023-1030 · ↳exitRoom 1031-1065 · ↳wrongLane 1066-1067 · ↳rankOf 1068-1069 · ↳mayGo 1070-1071 · ↳gateWhy 1072-1137 · ↳midGo 1138-1273 · ↳sweepAhead 1274-1334 · ↳restPose 1335-1351 · ↳mover 1352-1357 · ↳stopTail 1358-1365 · ↳holdTail 1366-1398 · ↳chainLead 1399-1409 · ↳xwAhead 1410-1528 · ↳bound 1529-1530 · ↳glued 1531-1532 · ↳entryDist 1533-1538 · ↳gateOpen 1539-1544 · ↳bodyAhead 1545-1577 · ↳clearOk 1578-1608 · ↳clearSim 1609-1639 · ↳step 1640-2263 · ↳driftOk 2264-2289 · ↳waitsOn 2290-2291 · ↳leads 2292-2303 · ↳straightStep 2304-2326 · ↳blockedNext 2327-2367 · ↳laterEdge 2368-2390 · ↳approaching 2391-2460
+- `src/sim/cars.ts` (2474줄): 차. 방향 그래프의 구간 위를 달리며 앞차와의 간격으로 속도를 정한다(ACC 식으로 누그러뜨린 IDM).
+  - clearRun 59-87 · ↳idm 62-87 · clearsWalkSignals 88-92 · carGridRadius 93-98 · makeCars 99-2474 · ↳followingOf 133-256 · ↳cellAt 257-265 · ↳isApproach 266-267 · ↳inner 268-269 · ↳free 270-271 · ↳carLanes 272-272 · ↳carLane 273-288 · ↳avoid 289-300 · ↳laneAt 301-305 · ↳pickPath 306-329 · ↳laneInto 330-331 · ↳pathLane 332-341 · ↳holdEnd 342-346 · ↳bigOf 347-348 · ↳pathPose 349-375 · ↳onEdge 376-433 · ↳dropPath 434-441 · ↳put 442-478 · ↳addBus 479-496 · ↳remove 497-507 · ↳pose 508-551 · ↳bent 552-556 · ↳curveOut 557-563 · ↳medAlongPath 564-575 · ↳locate 576-585 · ↳islandShift 586-602 · ↳busWant 603-639 · ↳laneGap 640-649 · ↳solid 650-652 · ↳shiftLane 653-676 · ↳behind 677-680 · ↳hit 681-694 · ↳depth 695-713 · ↳pedGrid 714-725 · ↳pedDepth 726-742 · ↳pedAhead 743-763 · ↳surveyedLeadGap 764-783 · ↳blockedAt 784-813 · ↳touches 814-822 · ↳density 823-838 · ↳allot 839-872 · ↳setFocus 873-886 · ↳nearFocus 887-887 · ↳pickEdge 888-903 · ↳spawnRange 904-912 · ↳onCrosswalk 913-917 · ↳spawnHidden 918-955 · ↳dropHidden 956-963 · ↳fillBuses 964-974 · ↳overlapsAny 975-980 · ↳fill 981-1029 · ↳gateDist 1030-1037 · ↳exitRoom 1038-1072 · ↳wrongLane 1073-1074 · ↳rankOf 1075-1076 · ↳mayGo 1077-1078 · ↳gateWhy 1079-1144 · ↳midGo 1145-1280 · ↳sweepAhead 1281-1341 · ↳restPose 1342-1358 · ↳mover 1359-1364 · ↳stopTail 1365-1372 · ↳holdTail 1373-1405 · ↳chainLead 1406-1416 · ↳xwAhead 1417-1535 · ↳bound 1536-1537 · ↳glued 1538-1539 · ↳entryDist 1540-1545 · ↳gateOpen 1546-1551 · ↳bodyAhead 1552-1584 · ↳clearOk 1585-1615 · ↳clearSim 1616-1646 · ↳step 1647-2277 · ↳driftOk 2278-2303 · ↳waitsOn 2304-2305 · ↳leads 2306-2317 · ↳straightStep 2318-2340 · ↳blockedNext 2341-2381 · ↳laterEdge 2382-2404 · ↳approaching 2405-2474
 - `src/sim/catReact.ts` (122줄): 사람에 대한 고양이의 반응. 시각으로 정한 일정(catAt) 위에 덧씌운다.
   - makeCatReactor 24-122 · ↳step 30-122
 - `src/sim/cats.ts` (315줄): 길고양이 18마리. 자리는 손으로 정한 것이고 실제 급식소 위치나 서식 통계와는 무관하다.
