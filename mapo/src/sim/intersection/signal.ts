@@ -12,7 +12,7 @@ import type { Crosswalk } from '../../data/board.ts';
 import { pointAt } from '../../poly.ts';
 import { hash01 } from '../rng.ts';
 import { headingNear, laneOff, MED, type Edge } from '../graph.ts';
-import { LEFT, nodeKey, RIGHT, STRAIGHT, UTURN, type Intersections } from './build.ts';
+import { LEFT, nodeKey, RIGHT, STRAIGHT, UTURN, type Intersections, type LanePath } from './build.ts';
 
 export const GREEN = 0;
 export const YELLOW = 1;
@@ -48,6 +48,13 @@ export interface SignalData {
   stopLines: Float32Array;
   lamps?: SignalLamps;
   surveySites?: readonly SurveySignalSite[];
+  signalKeys?: boolean;
+  fixedSignals?: { reference: SignalReference; keys: readonly string[] };
+}
+
+export interface SignalReference {
+  inter: { X: Intersections; S: SignalPlan };
+  keys: readonly string[];
 }
 
 /** 신호 진입로 */
@@ -86,6 +93,7 @@ export interface SignalSite {
   /** 무리마다 좌회전 현시가 있으면 1 이상(신호등 그림이 4구 등을 단다), 없으면 −1 */
   turn: number[];
   walkOnly: boolean;
+  surveyKey?: string;
 }
 
 const axisGap = (a: number, b: number) => {
@@ -93,12 +101,22 @@ const axisGap = (a: number, b: number) => {
   return Math.min(d, Math.PI - d);
 };
 const bits = (m: number) => [LEFT, STRAIGHT, RIGHT, UTURN].filter((b) => m & b);
+const surveyKey = (site: SurveySignalSite) => `${site.kind}:${site.at.join(',')}`;
+function surveyedOffset(key: string) {
+  let hash = 2166136261;
+  for (const c of key) hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
+  return (hash >>> 0) / 2 ** 32 * CYCLE;
+}
 
 export function makeSignalPlan(X: Intersections, data?: SignalData) {
   const edges = X.edges;
   const crosswalks = data?.crosswalks ?? [];
   const list: SignalSite[] = [];
   const surveyed = data?.surveySites;
+  const fixed = data?.fixedSignals;
+  const signalKeys = fixed || data?.signalKeys;
+  const oldEdges = new Map(fixed?.reference.keys.map((key, id) => [key, id]));
+  const oldApproach = (id: number) => fixed?.reference.inter.S.approach.get(oldEdges.get(fixed.keys[id]) ?? -1);
   const owners = new Map<number, number>();
   const approach = new Map<number, Approach>();
   const sigXw = crosswalks.map((c, i) => ({ c, i })).filter(({ c }) => c.sig);
@@ -167,7 +185,9 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     junctionSite[J.id] = c;
     for (const i of measured?.crossings ?? []) owners.set(i, c);
     const groups = into.map(e => measured?.arms?.get(e.id) ?? (axisGap(headingNear(e, e.len), axis) < Math.PI / 4 ? 0 : 1));
-    list.push({ x: J.x, z: J.z, j: J.id, axis, offset: hash01(c * 7.31 + 1) * CYCLE, steps: [], turn: [-1, -1],
+    const key = measured && surveyKey(measured);
+    list.push({ x: J.x, z: J.z, j: J.id, axis, ...(signalKeys && { surveyKey: key }),
+      offset: fixed && key ? surveyedOffset(key) : hash01(c * 7.31 + 1) * CYCLE, steps: [], turn: [-1, -1],
       walkOnly: !measured?.arms && !groups.includes(1) });
     into.forEach((e, k) => {
       const moves = (X.exits.get(e.id) ?? []).reduce((m, x) => m | x.move, 0);
@@ -183,7 +203,10 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
       else left = laneLeft ? 2 : 0;
       let uturn = 0;
       if (moves & UTURN && !(lp.bits & 4) && (lp.bits & 2 || laneU)) uturn = left === 1 || (lp.arrow && left !== 2) ? 1 : 2;
-      approach.set(e.id, { c, group: list[c].walkOnly ? 0 : groups[k], setback, left, uturn, arrow: lp.arrow, moves });
+      const previous = oldApproach(e.id);
+      if (previous) ({ left, uturn } = previous);
+      approach.set(e.id, previous ? { ...previous, c } :
+        { c, group: list[c].walkOnly ? 0 : groups[k], setback, left, uturn, arrow: lp.arrow, moves });
       X.setRules(e.id, (left ? 0 : LEFT) | (uturn ? 0 : UTURN), !!(uturn && lp.bits & 2 && !laneU));
     });
   }
@@ -197,7 +220,9 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
     if (site.kind !== 'midblock' || !site.approaches.length) continue;
     const c = list.length;
     const axis = ((headingNear(edges[site.approaches[0]], edges[site.approaches[0]].len) % Math.PI) + Math.PI) % Math.PI;
-    list.push({ x: site.at[0], z: site.at[1], j: -1, axis, offset: hash01(c * 7.31 + 1) * CYCLE,
+    const key = surveyKey(site);
+    list.push({ x: site.at[0], z: site.at[1], j: -1, axis, ...(signalKeys && { surveyKey: key }),
+      offset: fixed ? surveyedOffset(key) : hash01(c * 7.31 + 1) * CYCLE,
       steps: [], turn: [-1, -1], walkOnly: true });
     for (const i of site.crossings) owners.set(i, c);
     for (const id of site.approaches) {
@@ -487,7 +512,7 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
   };
   type Link = { up: number; ua: number; dn: number; da: number; d: number; w: number };
   const links: Link[] = [];
-  for (const [id, ap] of approach) {
+  for (const [id, ap] of fixed ? [] : approach) {
     let cur = edges[id];
     let ahead = cur.len;
     for (let k = 0; k < 20 && ahead < 600; k++) {
@@ -534,6 +559,62 @@ export function makeSignalPlan(X: Intersections, data?: SignalData) {
         queue.push(o);
       }
     }
+  }
+
+  // Keep the published phase boundaries and masks for existing approaches.
+  // Check added paths against the traffic and crossings in each green step.
+  if (fixed) {
+    const { reference, keys } = fixed;
+    const oldSites = new Map(reference.inter.S.list.map(site => [site.surveyKey, site]));
+    const currentEdges = new Map(keys.map((key, id) => [key, id]));
+    const pathKey = (p: LanePath, ids: readonly string[]) => JSON.stringify([p.lane, p.move, p.edges.map(id => ids[id])]);
+    const oldPaths = new Set(reference.inter.X.paths.map(p => pathKey(p, reference.keys)));
+    const blocked = new Set<number>();
+    const remap = (moves: ReadonlyMap<number, number>) => new Map([...moves].flatMap(([a, m]) => {
+      const id = currentEdges.get(reference.keys[a]);
+      return id === undefined ? [] : [[id, m] as const];
+    }));
+    for (const [c, site] of list.entries()) {
+      const base = oldSites.get(site.surveyKey);
+      if (!base) continue;
+      const steps = base.steps.map(step => ({ ...step, green: remap(step.green),
+        amber: remap(step.amber), yields: remap(step.yields), walk: new Set(step.walk) }));
+      Object.assign(site, { ...base, j: site.j, steps });
+      if (site.j < 0) continue;
+
+      const into = [...approach].filter(([, ap]) => ap.c === c);
+      const movements = into.flatMap(([a]) => bits((X.exits.get(a) ?? []).reduce((mask, ex) => mask | ex.move, 0))
+        .map(m => ({ a, m, paths: mvPaths(a, m) })).filter(({ paths }) => paths.length));
+      const occupied = steps.map(step => movements.flatMap(({ a, m, paths }) =>
+        ((step.green.get(a) ?? 0) & m) ? paths.filter(p => oldPaths.has(pathKey(p, keys))) : []));
+      movements.sort((p, q) => Number(Boolean(oldApproach(q.a))) - Number(Boolean(oldApproach(p.a))));
+      for (const { a, m, paths } of movements) {
+        const added = paths.filter(p => !oldPaths.has(pathKey(p, keys)));
+        if (!added.length) continue;
+        const fits = (i: number) => added.every(p => !p.xw.some(x => steps[i].walk.has(x)) &&
+          !occupied[i].some(q => X.conflict(p.id, q.id)));
+        const existing = oldApproach(a);
+        const slots = steps.flatMap((step, i) => existing
+          ? ((step.green.get(a) ?? 0) & m ? [i] : [])
+          : (base.steps[i].green.size && fits(i) ? [i] : []));
+        if (!slots.length || !slots.every(fits)) {
+          for (const p of added) blocked.add(p.id);
+          continue;
+        }
+        for (const i of slots) {
+          if (!existing) {
+            const green = steps[i].green;
+            green.set(a, (green.get(a) ?? 0) | m);
+          }
+          occupied[i].push(...added);
+        }
+      }
+    }
+    const path = X.path;
+    X.path = (a, l, k) => {
+      const candidate = path(a, l, k);
+      return candidate && !blocked.has(candidate.id) ? candidate : undefined;
+    };
   }
 
   // 신호 없는 횡단보도가 신호 횡단보도 면과 포개지면(자료에 두 번 그려짐) 그 신호를 따른다

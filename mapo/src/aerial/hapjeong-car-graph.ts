@@ -2,7 +2,7 @@ import type { Crosswalk } from '../data/board.ts';
 import { cumLen, pointAt } from '../poly.ts';
 import type { BusRoute } from '../sim/buses.ts';
 import type { Edge } from '../sim/graph.ts';
-import type { SurveySignalSite } from '../sim/intersection/signal.ts';
+import type { SignalReference, SurveySignalSite } from '../sim/intersection/signal.ts';
 import { makeIntersections } from '../sim/intersection/index.ts';
 import { hapjeongArea } from './survey-area.ts';
 import type { HapjeongPlatform } from './hapjeong-people.ts';
@@ -32,6 +32,8 @@ export type HapjeongCars = {
   window: [number, number, number, number];
   boundaryFaces?: XZ[][][];
   boundaryRoutes?: boolean;
+  /** Published signal graph: A2 lane IDs and their successors before route expansion. */
+  signalTopology?: Readonly<Record<string, readonly string[]>>;
   districtTraffic?: {
     selected: number[]; entries: TrafficPortal[]; exits: TrafficPortal[];
     excluded: { id: string; reason: string }[];
@@ -62,7 +64,22 @@ export function districtCarGraph(data: HapjeongCars, busName: string) {
       : [...new Set([...link.next, ...(bus ?? [])])];
     return { ...link, next };
   }) };
-  return hapjeongCarGraph(routed, new Set(selected), new Set(entries.map(p => p.edge)), 8, buses, data.platforms, busName);
+  let reference: SignalReference | undefined;
+  const signalTopology = data.signalTopology;
+  if (signalTopology) {
+    const ids = new Map(data.links.map((link, i) => [link.id, i]));
+    const edgeOf = (key: string) => {
+      const id = ids.get(key);
+      if (id === undefined) throw Error(`Missing reference signal link ${key}`);
+      return id;
+    };
+    const order = Object.keys(signalTopology).map(edgeOf);
+    const links = data.links.map(link => ({ ...link, next: (signalTopology[link.id] ?? []).map(edgeOf) }));
+    const baseline = hapjeongCarGraph({ ...data, links }, undefined, undefined, 8, [], undefined, busName, { order });
+    reference = { inter: baseline.inter, keys: baseline.links.map(link => link.id) };
+  }
+  return hapjeongCarGraph(routed, new Set(selected), new Set(entries.map(p => p.edge)), 8, buses, data.platforms, busName,
+    reference && { reference });
 }
 
 export function carBoundary(data: HapjeongCars, [x,z]: XZ) {
@@ -80,10 +97,11 @@ export function carBoundary(data: HapjeongCars, [x,z]: XZ) {
 }
 
 export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<number>, entries = new Set<number>(), margin = 0,
-                                busChains = [data.bus], platforms: HapjeongPlatform[] = [], busName = hapjeongArea.replay.busName) {
+                                busChains = [data.bus], platforms: HapjeongPlatform[] = [], busName = hapjeongArea.replay.busName,
+                                signal?: { reference?: SignalReference; order?: readonly number[] }) {
   const volume = new Map(data.bundles.flatMap(bundle => bundle.lanes.map(i => [i, bundle.lanes.length] as const)));
   const central = new Set(data.central);
-  const ids = data.links.map((_, i) => i).filter(i => !selected || selected.has(i));
+  const ids = signal?.order ?? data.links.map((_, i) => i).filter(i => !selected || selected.has(i));
   const index = new Map(ids.map((id, i) => [id, i]));
   const boundary = (point: XZ) => carBoundary(data, point);
   const links = ids.map(i => {
@@ -148,7 +166,8 @@ export function hapjeongCarGraph(data: HapjeongCars, selected?: ReadonlySet<numb
     arms: site.connectors && new Map(site.approaches.flatMap(({ edge, arm }) =>
       index.has(edge) && arm !== undefined ? [[index.get(edge)!,arm] as const] : [])),
   }));
-  const inter = makeIntersections(edges, { crosswalks, stopLines, surveySites }, {
+  const inter = makeIntersections(edges, { crosswalks, stopLines, surveySites, signalKeys: Boolean(signal?.order),
+    fixedSignals: signal?.reference && { reference: signal.reference, keys: links.map(link => link.id) } }, {
     links: new Set(ids.filter(i => central.has(i)).map(i => index.get(i)!)),
     connectorGroups: data.boundaryRoutes ? data.signalSites?.flatMap(site => site.connectors
       ? [site.connectors.flatMap(id => index.has(id) ? [index.get(id)!] : [])] : []) : undefined,
