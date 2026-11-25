@@ -9,7 +9,7 @@
 - 한 번에 **일감 하나**만 쓴다. 한 일감은 한 주제(자료 하나, 화면 하나, 검사 하나). 앞 일감의 결과(`tmp/loop/<id>/`, `git log`, `loop.log`)를 보고 다음 것을 고른다. 이미 된 것을 다시 시키지 않는다.
 - 폴더 `docs/redraw-orders/queue/<id>/` 에 `task.env`, `brief.md`, `check.sh` 를 쓴다. 모양은 `queue/s1-outline/` 을 본뜬다. `check.sh` 는 구현자가 고칠 수 없는 통과 기준이다: 목표 수치와 「나빠지면 안 되는 것」(다른 구역 자료·`src/sim` 그대로, s1-bake 검사)을 함께 건다. 처음 재는 칸에는 문턱을 걸지 말고 값을 적게만 한다.
 - `brief.md` 는 12,000바이트 안쪽. 지오의 원문 한두 줄, 읽을 곳(파일과 줄 범위, `docs/code-map.md`), 할 일, 문턱과 재는 명령, 「하지 않는 것」, 「답의 꼴」(줄 수 상한). `mapo/CLAUDE.md` 「낭비 없이 일하는 법」에 있는 규칙은 다시 적지 않는다.
-- 모델과 에포트(전역 `~/.claude/CLAUDE.md` 표): 판단과 예외가 많은 구현은 `IMPL=opus` + `high`, 시험이 정답을 정해 주는 구현은 `sonnet` + `medium`, 단순 수집은 `haiku` + `low`. **검수는 언제나 `REVIEW=sol`, `REVIEW_EFFORT=medium`**(지오: Codex 는 검수에만).
+- **구현은 언제나 `IMPL=sol`(에포트는 판단이 많으면 `high`, 기계적이면 `medium`), 검수는 `REVIEW=opus`, `REVIEW_EFFORT=high`**(지오 2026-11-26 07:20 「구현자를 sol로 바꿔서」).
 - `SHOTS` 에는 검수자가 직접 열어 볼 그림 경로를 적고, 그 그림은 구현이 만들게 한다(화면이면 `node tmp/connect/gpushot.mjs <폴더> <이름=주소>`, 자료면 위에서 본 400m 그림).
 - 화면을 바꾸는 일감의 문턱에는 폭 60~200m, 600~1,500m, 전체 보기, 모바일(390×844)을 모두 넣는다. 5198 은 정적 서버라 개발 화면은 Vite 개발 서버를 다른 포트(5199 등)로 띄워 본다.
 

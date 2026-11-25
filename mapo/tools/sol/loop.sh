@@ -318,7 +318,7 @@ while :; do
     base_head=$(cat "$WORK/base-head.txt" 2>/dev/null || g rev-parse HEAD)
     base_status=
     k=0; for i in $(seq 1 "$MAX_ATTEMPTS"); do [ -e "$WORK/review-$i.out" ] && k=$i; done
-    if [ "$k" -ge 1 ] && [ "$k" -lt "$MAX_ATTEMPTS" ] && [ "$(read_verdict "$WORK/review-$k.out")" = FAIL ]; then
+    if [ "$k" -ge 1 ] && [ "$k" -lt "$MAX_ATTEMPTS" ] && [ "$(read_verdict "$WORK/review-$k.out")" != PASS ] && [ "$(read_verdict "$WORK/review-$k.out")" != STOP ]; then
       start_n=$((k + 1)); log "일감 $id: ${k}회차 검수가 FAIL 이었다. 그 의견을 붙여 ${start_n}회차 구현부터 한다"
       if [ -e "$WORK/impl-$start_n.json" ] && ! impl_cut "$WORK/impl-$start_n.json"; then
         skip_n=$start_n; log "일감 $id: ${start_n}회차 구현은 이미 끝나 있었다. 검사·검수부터 한다"
@@ -375,7 +375,8 @@ while :; do
       icode=$?
       icost=$(json_cost "$WORK/impl-$n.json")
     else
-      "$SOL_RUN" "$STAGE" "$id-impl-$n" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
+      # 구현 지시문에는 앞 회차 검수 의견이 붙으므로 Sol 지시문 상한을 넓혀 준다
+      SOL_MAX_BRIEF="${LOOP_SOL_IMPL_MAX_BRIEF:-24000}" "$SOL_RUN" "$STAGE" "$id-impl-$n" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
       icode=$?
       icost="$id-impl-$n"
     fi
