@@ -39,7 +39,7 @@ if [ -s "$sfile" ] && [ -s "$cfile" ] && [ "$(cat "$cfile")" -gt "$MAX_CONTEXT" 
   fail "단계 $stage 의 세션은 문맥이 $(cat "$cfile") 토큰이다(상한 $MAX_CONTEXT). 이어 쓰지 말고 새 단계 이름으로 새 세션을 시작한다. 필요한 것은 지시문에 파일과 줄로 짚는다"
 fi
 head0=$(git rev-parse HEAD); t0=$(date +%s)
-args=(-m "$MODEL" -c "model_reasoning_effort=\"$effort\"" -c 'sandbox_mode="danger-full-access"' -o "$OUT/$run-answer.md")
+args=(-m "$MODEL" -c "model_reasoning_effort=\"$effort\"" -c "sandbox_mode=\"${SOL_SANDBOX:-danger-full-access}\"" -o "$OUT/$run-answer.md")
 if [ -s "$sfile" ]; then
   mode=resume
   "$CODEX" exec resume "$(cat "$sfile")" "${args[@]}" "$(cat "$brief")" > "$OUT/$run.log" 2>&1
