@@ -69,6 +69,7 @@ def candidates(reach):
 
 def grow(outline, groups):
     """Union in every whole feature the edge cuts, until the edge cuts nothing."""
+    outline = Polygon(outline.exterior)
     rounds = []
     while True:
         edge = outline.boundary
@@ -88,6 +89,7 @@ def grow(outline, groups):
         grown = union_all([outline, *added])
         if grown.geom_type != 'Polygon':
             raise ValueError(f'Growing broke the outline into {grown.geom_type}')
+        grown = Polygon(grown.exterior)
         rounds.append((taken, grown.area - outline.area))
         print(f'{len(rounds)}회전: {taken} → {grown.area - outline.area:,.0f}㎡ 늘어남', flush=True)
         outline = grown
@@ -100,8 +102,7 @@ def main():
     after, rounds = grow(before, groups)
     area = json.loads(path.read_text())
     area['outline'] = {'type': 'Polygon',
-                       'coordinates': [[list(point) for point in ring.coords]
-                                       for ring in (after.exterior, *after.interiors)]}
+                       'coordinates': [[list(point) for point in after.exterior.coords]]}
     area['window'] = list(after.bounds)
     path.write_text(json.dumps(area, ensure_ascii=False, indent=2) + '\n')
     print(f'{path}: {before.area:,.0f}㎡ → {after.area:,.0f}㎡ '

@@ -129,6 +129,7 @@ def inspect():
             raise ValueError(f'No survey centreline for {road_name}')
         distances = sorted((Point(p).distance(arterial), p) for p in concave)
     sheets = [(face, row['도엽코드']) for face, row in survey_faces('H0010000') if face.area > AREA_EPS]
+    outside_sheets = WINDOW.difference(unary_union([face for face, _ in sheets]))
     new_land = WINDOW.difference(old_union)
     result = {
         'area': AREA['id'],
@@ -147,7 +148,7 @@ def inspect():
         'oldBoundaryWalkFaces': coincident_faces(footways, seams),
         'shortestConcaveDistanceM': distances[0][0] if distances else None,
         'concaveDistances': distances,
-        'outsideSheetsM2': WINDOW.difference(unary_union([face for face, _ in sheets])).area,
+        'outsideSheetsM2': outside_sheets.area,
         'sheets': [key for _, key in sheets],
         'floorFaces': {key: len(rows) for key, rows in master['floor'].items()},
         'floorParity': floor_parity(paving, comparisons),
@@ -159,6 +160,7 @@ def inspect():
     if 'outline' in AREA:
         result['crossingFaces'] = sum(len(row['faces']) for row in floor['crossings'])
         extra = {name: surface(floor[name]) for name in ('land', 'water', 'parks')}
+        result['outsideSheetsWithoutWaterM2'] = outside_sheets.difference(extra['water']).area
         decks = [surface(row['faces']) for row in floor['decks']]
         extra['decks'] = unary_union(decks)
         result['outsideM2'].update({key: feature.difference(WINDOW).area for key, feature in extra.items()})
@@ -187,8 +189,9 @@ if __name__ == '__main__':
     violations = (
         any(value > AREA_EPS for value in result['outsideM2'].values())
         or any(result[key] > AREA_EPS for key in (
-            'buildingRoadOverlapM2', 'buildingWalkOverlapM2', 'outsideSheetsM2',
+            'buildingRoadOverlapM2', 'buildingWalkOverlapM2',
         ))
+        or result.get('outsideSheetsWithoutWaterM2', result['outsideSheetsM2']) > AREA_EPS
         or any(result[key] for key in ('withoutHeight', 'oldBoundaryBuildingFaces', 'oldBoundaryWalkFaces'))
         or any(result.get('sheetSeamFaces', {}).values())
         or result.get('buildingDeckOverlapM2', 0) > AREA_EPS
