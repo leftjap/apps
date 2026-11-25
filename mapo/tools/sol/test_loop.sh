@@ -362,7 +362,31 @@ case22() { echo "㉒ 구현이 배경에 남긴 작업이 끝난 뒤에 검사"
   chk "㉒ 늦게 끝난 결과가 커밋됨" 1 "$(git -C "$REPO" ls-files late.txt | grep -c . | tr -d ' ')"
 }
 
-for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22}; do "$c"; done
+case23() { echo "㉓ 다른 루프의 claude·codex 는 배경 작업으로 치지 않는다"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  bash -c 'exec -a "claude -p claude-linger" sleep 25' & lp=$!
+  verdicts PASS
+  t=$(date +%s); code=$(run_loop LOOP_BUSY_PATTERN=claude-linger LOOP_BUSY_POLL=1); t=$(( $(date +%s) - t ))
+  kill $lp 2>/dev/null
+  chk "㉓ 종료" 0 "$code"
+  chk "㉓ 기다리지 않음" 1 "$([ "$t" -lt 15 ] && echo 1 || echo 0)"
+}
+
+case24() { echo "㉔ 끊긴 뒤 이어받을 때 이미 끝난 회차 구현은 다시 부르지 않는다"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  mkdir -p "$REPO/tmp/loop/t1"; : > "$REPO/tmp/loop/t1/base-untracked.txt"
+  printf '{"type":"result","subtype":"success","is_error":false}\n' > "$REPO/tmp/loop/t1/impl-1.json"
+  printf '{"type":"result","subtype":"success","is_error":false}\n' > "$REPO/tmp/loop/t1/impl-2.json"
+  printf '까닭\n{"verdict":"FAIL","reasons":["x"],"fixes":["y"]}\n' > "$REPO/tmp/loop/t1/review-1.out"
+  echo impl > "$REPO/work.txt"
+  verdicts PASS
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "㉔ 종료" 0 "$code"
+  chk "㉔ 구현 다시 안 부름" 0 "$(hits 'claude impl')"
+}
+
+for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22 case23 case24}; do "$c"; done
 [ -n "${LOOP_TEST_KEEP:-}" ] || wipe
 printf '\n문법 검사: '; bash -n "$LOOP_SRC" && echo ok || { echo FAIL; BADN=$((BADN + 1)); }
 printf '통과 %s, 실패 %s\n' "$OKN" "$BADN"

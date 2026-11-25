@@ -148,6 +148,9 @@ ledger() { # 일감 회차 단계 모델 에포트 분 비용 결과
   [ -f "$LEDGER" ] || printf '날짜\t일감\t회차\t단계\t모델\t에포트\t분\t비용\t결과\n' > "$LEDGER"
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(date '+%Y-%m-%d %H:%M')" "$@" >> "$LEDGER"
 }
+busy_jobs() { # 구현이 남긴 긴 작업이 있으면 0. 지시문 글에 경로가 든 claude·codex 실행(다른 루프 포함)은 치지 않는다
+  ps -axo args= | grep -E -- "$BUSY_PATTERN" | grep -v -E -e '^(claude|[^ ]*/claude) ' -e 'codex' -e 'grep ' | grep -q .
+}
 task_sig() { cat "$TASKDIR"/* 2>/dev/null | shasum | cut -d' ' -f1; }
 impl_cut() { # claude -p 결과가 비었거나 오류(한도 포함)면 0
   python3 - "$1" <<'PYC' 2>/dev/null
@@ -309,7 +312,7 @@ while :; do
 
   # 2. 구현 전 기준점
   BASE_UNTRACKED="$WORK/base-untracked.txt"
-  skip_impl1=; resume_note=; start_n=1
+  skip_impl1=; skip_n=; resume_note=; start_n=1
   if [ -n "$cont" ] && [ -f "$BASE_UNTRACKED" ] && { [ -e "$WORK/impl-1.json" ] || [ -e "$WORK/impl-1.log" ]; }; then
     # 끊긴 일감을 이어받는다: 기준점 목록은 처음 것을 그대로 쓰고, 작업 트리의 변경은 그 일감의 것으로 본다
     base_head=$(cat "$WORK/base-head.txt" 2>/dev/null || g rev-parse HEAD)
@@ -317,6 +320,9 @@ while :; do
     k=0; for i in $(seq 1 "$MAX_ATTEMPTS"); do [ -e "$WORK/review-$i.out" ] && k=$i; done
     if [ "$k" -ge 1 ] && [ "$k" -lt "$MAX_ATTEMPTS" ] && [ "$(read_verdict "$WORK/review-$k.out")" = FAIL ]; then
       start_n=$((k + 1)); log "일감 $id: ${k}회차 검수가 FAIL 이었다. 그 의견을 붙여 ${start_n}회차 구현부터 한다"
+      if [ -e "$WORK/impl-$start_n.json" ] && ! impl_cut "$WORK/impl-$start_n.json"; then
+        skip_n=$start_n; log "일감 $id: ${start_n}회차 구현은 이미 끝나 있었다. 검사·검수부터 한다"
+      fi
     elif [ -e "$WORK/impl-1.json" ] && impl_cut "$WORK/impl-1.json"; then
       resume_note=1; log "일감 $id: 1회차 구현이 끊겨 있었다. 작업 트리를 이어받아 다시 맡긴다"
     else
@@ -361,7 +367,7 @@ while :; do
     fi
     t0=$(date +%s)
     task_sig0=$(task_sig)
-    if [ "$n" = 1 ] && [ -n "$skip_impl1" ]; then
+    if { [ "$n" = 1 ] && [ -n "$skip_impl1" ]; } || [ "$n" = "$skip_n" ]; then
       icode=0
     elif [ "$IMPL" != sol ]; then
       "$CLAUDE" -p --model "$IMPL" --effort "$IMPL_EFFORT" --output-format json \
@@ -373,7 +379,7 @@ while :; do
       icode=$?
       icost="$id-impl-$n"
     fi
-    if ! { [ "$n" = 1 ] && [ -n "$skip_impl1" ]; }; then
+    if ! { [ "$n" = 1 ] && [ -n "$skip_impl1" ]; } && [ "$n" != "$skip_n" ]; then
     ledger "$id" "$n" impl "$IMPL" "$IMPL_EFFORT" "$(mins_since "$t0")" "$icost" "종료 $icode"
     log "일감 $id $n회차 구현 끝($IMPL, 종료 $icode)"
     fi
@@ -387,7 +393,7 @@ while :; do
 
     # 4. 통과 검사(구현이 배경에 남긴 작업이 끝난 뒤에)
     w0=$(date +%s)
-    while pgrep -f "$BUSY_PATTERN" > /dev/null 2>&1; do
+    while busy_jobs; do
       [ $(( $(date +%s) - w0 )) -lt "$BUSY_MAX" ] || { log "배경 작업이 ${BUSY_MAX}초 넘게 끝나지 않는다. 검사를 그대로 돌린다"; break; }
       sleep "$BUSY_POLL"
     done
