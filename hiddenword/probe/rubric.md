@@ -29,3 +29,10 @@
 ## 화면 점수
 
 위 구간은 채점할 때 쓰는 기준표 점수다. 화면에는 `scale.mjs` 로 환산한 점수를 보여 준다. 아주 가까운 말(기준표 70~92)이 95~99점으로 나와야 첫 단서를 95점 이상으로 낼 수 있기 때문이다. 환산 표와 이유는 `docs/research.md` 의 「화면에 보이는 점수의 눈금」에 있다.
+
+## 사전을 쓰는 지금의 순서 (2026-11-25 밤부터)
+
+1. `node probe/build-words.mjs`: 맞춤법 사전(`data-raw/hunspell/`, 커밋하지 않음)에서 명사를 뽑아 `site/data/words.json`(받는 단어)을 만들고, 아직 채점하지 않은 명사를 `scan-batch-N.txt` 로 나눈다.
+2. 묶음마다 채점자가 `scan-instructions.md` 대로 정답과 관계가 있는 단어만 골라 `scan-N.json` 에 쓴다. 같은 묶음을 한 번 더 훑은 결과는 `rescan-N.json` 이다.
+3. `node probe/merge.mjs`: 처음 목록의 채점 결과와 사전 훑기 결과를 합친다. 기준표 10점 미만은 점수표에 넣지 않는다.
+4. `node probe/build-local.mjs`: 화면, 규칙, 점수표, 단어 목록을 `local.html` 하나로 합친다.

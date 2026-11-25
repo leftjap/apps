@@ -53,13 +53,14 @@
   .msg { min-height: 24px; margin: 8px 0 0; font-size: 14px; }
   ol.tries { list-style: none; margin: 0; padding: 0; }
   ol.tries li {
-    display: grid; grid-template-columns: 24px 1fr 44px; grid-template-rows: auto 6px;
+    display: grid; grid-template-columns: 24px 1fr 44px; grid-template-rows: auto auto 6px;
     column-gap: 8px; padding: 8px; border-radius: 8px; border: 1px solid transparent;
   }
   ol.tries li.latest { border-color: var(--accent); background: #f3f7fc; }
   .n { color: var(--muted); font-size: 13px; align-self: center; }
   .w { font-weight: 600; }
   .s { text-align: right; font-variant-numeric: tabular-nums; }
+  .r { grid-column: 2 / 4; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   .bar { grid-column: 2 / 4; background: var(--track); border-radius: 3px; overflow: hidden; }
   .bar span { display: block; height: 100%; }
   .end p { margin: 0 0 12px; font-size: 18px; font-weight: 600; }
@@ -100,7 +101,8 @@
 
   <details class="card">
     <summary>점수는 어떻게 매기나요?</summary>
-    <p>AI가 두 단어가 어떤 관계인지 보고 미리 매겨 둔 점수예요. 뜻이 같은 말은 99점, 같은 종류에 속하면서 닮은 말은 95~98점, 함께 쓰이는 말이나 반대말은 80~94점, 느슨하게 이어지는 말은 60~79점, 관계없는 말은 30점 미만이에요. 단서는 모두 95점 이상이고, 틀릴 때마다 더 가까운 단서가 열려요. 점수는 정답일 확률이 아니에요.</p>
+    <p>AI가 사전의 낱말을 정답과 하나씩 견주어 어떤 관계인지 보고 미리 매겨 둔 점수예요. 뜻이 같은 말은 99점, 같은 종류에 속하면서 닮은 말은 95~98점, 함께 쓰이는 말이나 반대말은 80~94점, 느슨하게 이어지는 말은 60~79점, 멀리 이어지는 말은 30~59점이에요. 정답과 관계없는 말은 30점 미만으로 보고 점수를 따로 매기지 않아요. 단서는 모두 95점 이상이고, 틀릴 때마다 더 가까운 단서가 열려요. 점수는 정답일 확률이 아니에요.</p>
+    <p>낱말 목록은 한국어 맞춤법 사전(hunspell-dict-ko, 국립국어원 사전 자료 포함, CC BY-SA 4.0)에서 가져왔어요.</p>
   </details>
 </main>
 
@@ -109,13 +111,23 @@ import { MAX_TRIES, createGame, guess, shareText } from './game.mjs';
 
 const $ = (id) => document.getElementById(id);
 const MESSAGES = {
-  unknown: '아직 모르는 단어예요. 도전 횟수는 줄지 않았어요.',
+  unknown: '사전에 없는 말이에요. 도전 횟수는 줄지 않았어요.',
   duplicate: '이미 넣은 단어예요.',
   clue: '단서로 나온 단어예요.',
 };
 
 let games = [];
 let current = 0;
+
+function relation(score) {
+  if (score == null) return '관계없는 말';
+  if (score >= 100) return '정답';
+  if (score >= 99) return '뜻이 같은 말';
+  if (score >= 95) return '아주 가까운 말';
+  if (score >= 80) return '가까운 말';
+  if (score >= 60) return '느슨하게 이어지는 말';
+  return '멀리 이어지는 말';
+}
 
 function barColor(score) {
   const pct = Math.max(15, Math.min(100, score));
@@ -158,13 +170,14 @@ function render() {
     if (i === g.tries.length - 1) li.className = 'latest';
     const n = document.createElement('span'); n.className = 'n'; n.textContent = i + 1;
     const w = document.createElement('span'); w.className = 'w'; w.textContent = t.word;
-    const s = document.createElement('span'); s.className = 's'; s.textContent = t.score;
+    const s = document.createElement('span'); s.className = 's'; s.textContent = t.score ?? '30↓';
+    const r = document.createElement('span'); r.className = 'r'; r.textContent = relation(t.score);
     const bar = document.createElement('div'); bar.className = 'bar';
     const fill = document.createElement('span');
-    fill.style.width = `${t.score}%`;
-    fill.style.background = barColor(t.score);
+    fill.style.width = `${t.score ?? 0}%`;
+    if (t.score != null) fill.style.background = barColor(t.score);
     bar.append(fill);
-    li.append(n, w, s, bar);
+    li.append(n, w, s, r, bar);
     return li;
   }));
 
@@ -183,8 +196,10 @@ function submit() {
   if (r.kind === 'empty') return;
   $('msg').textContent = r.kind === 'scored'
     ? (g.hints.length > opened ? `${r.score}점이에요. 더 가까운 단서가 열렸어요.` : `${r.score}점이에요.`)
-    : MESSAGES[r.kind] ?? '';
-  if (r.kind === 'scored' || r.kind === 'correct') $('word').value = '';
+    : r.kind === 'far'
+      ? (g.hints.length > opened ? '관계없는 말이에요(30점 미만). 더 가까운 단서가 열렸어요.' : '관계없는 말이에요(30점 미만).')
+      : MESSAGES[r.kind] ?? '';
+  if (r.kind === 'scored' || r.kind === 'far' || r.kind === 'correct') $('word').value = '';
   render();
   if (!g.done) $('word').focus();
 }
@@ -205,8 +220,13 @@ $('copy').addEventListener('click', async () => {
   }
 });
 
-const res = await fetch('./data/puzzles.json');
-games = (await res.json()).map(createGame);
+const [puzzleData, wordData] = await Promise.all(['./data/puzzles.json', './data/words.json'].map((u) => fetch(u).then((r) => r.json())));
+const words = new Set();
+for (const [len, joined] of Object.entries(wordData)) {
+  const n = Number(len);
+  for (let i = 0; i < joined.length; i += n) words.add(joined.slice(i, i + n));
+}
+games = puzzleData.map((p) => createGame(p, words));
 render();
 </script>
 </body>
