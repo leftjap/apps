@@ -31,7 +31,10 @@ grep -q '답의 꼴' "$brief" || fail "지시문에 「답의 꼴」 절(줄 수
 grep -Eq '문턱|통과 조건|고치지 않는다' "$brief" || fail "지시문에 문턱(통과 조건과 재는 명령)이 없다. 조사라면 「고치지 않는다」를 적는다"
 mkdir -p "$OUT"
 [ ! -e "$OUT/$run.log" ] || fail "실행 이름 $run 은 이미 썼다($OUT/$run.log). 다른 이름을 쓴다"
-if pgrep -f 'codex exec' > /dev/null; then fail "다른 Sol 실행이 돌고 있다. 한 번에 하나만 돌린다"; fi
+# 다른 Sol 실행(다른 루프의 검수 등)이 돌면 끝날 때까지 기다린다(한 번에 하나)
+w=0; while pgrep -f 'codex exec' > /dev/null; do
+  [ "$w" -lt "${SOL_WAIT_MAX:-5400}" ] || fail "다른 Sol 실행이 ${w}초 넘게 끝나지 않는다"
+  sleep 20; w=$((w + 20)); done
 
 sfile="$OUT/$stage.session"; cfile="$OUT/$stage.context"
 # 이어 쓰면 호출마다 그 세션의 문맥 전체를 다시 싣는다. 문맥이 큰 세션은 이어 쓰지 않는다.

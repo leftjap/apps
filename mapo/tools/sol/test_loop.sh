@@ -112,6 +112,7 @@ verdicts() { printf '%s\n' "$@" > "$REPO/tmp/verdicts"; }
 run_loop() { # 남은 인자는 env 에 더할 변수
   ( cd "$REPO" && env \
       LOOP_CLAUDE="$REPO/fake/claude" LOOP_SOL_RUN="$REPO/fake/run.sh" LOOP_PGREP=false \
+      LOOP_BUSY_PATTERN=no-such-busy-job-xyz \
       LOOP_OUT="$REPO/tmp/loop" SOL_OUT="$REPO/tmp/sol" LOOP_CODEX_SESSIONS="$REPO/fake/sessions" \
       FAKE_LOG="$REPO/tmp/fake.log" FAKE_VERDICTS="$REPO/tmp/verdicts" FAKE_REPO="$REPO" \
       "$@" bash tools/sol/loop.sh $LOOP_ARGS > "$REPO/tmp/run.out" 2>&1 )

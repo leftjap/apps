@@ -62,9 +62,7 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   echo "loop.sh: 다른 루프가 돌고 있다($LOCK). 끝났는데 남아 있으면 그 폴더를 지운다" >&2; exit 2
 fi
 trap 'rmdir "$LOCK" 2>/dev/null' EXIT
-if "$PGREP" -f 'codex exec' > /dev/null 2>&1; then
-  finish 2 "Sol 실행(codex exec)이 돌고 있다. 한 번에 하나만 돌린다."
-fi
+# Sol 은 run.sh 가 한 번에 하나만 돌게 기다린다(두 루프가 함께 돌 수 있다)
 
 # ---- 작업 트리를 읽는 도구 ----
 porcelain() { g status --porcelain --untracked-files=all -- "$SCOPE"; }
