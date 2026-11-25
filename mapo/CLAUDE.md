@@ -68,6 +68,7 @@
 
 ### Sol(Codex)을 돌릴 때 (Claude 세션)
 - `tools/sol/run.sh <단계> <실행 이름> <low|medium|high> <지시문 파일>` 로만 돌린다. 이 도구가 단계마다 새 세션, 한 번에 하나, 지시문 크기(12,000바이트)와 필수 절을 검사하고, 문맥이 20만 토큰을 넘은 세션은 이어 쓰기를 거절하며, 실행마다 실제 비용(호출 수, 끝 문맥, 캐시를 포함한 입력)을 `docs/redraw-orders/sol-ledger.tsv` 에 적는다. `codex exec` 를 직접 부르지 않는다.
+- 구현-검수를 이어 돌릴 때는 일감을 `docs/redraw-orders/queue.md` 와 `queue/<id>/`(task.env·brief.md·check.sh)에 쓰고 `tools/sol/loop.sh` 로 돌린다. 구현자(opus·sonnet·haiku·sol)와 다른 모델이 읽기 전용으로 검수하고, FAIL 이 앞 회차와 같은 문제일 때·회차 4번·STOP·단계 끝·신호·Codex 한도 90% 에서 선다. 목록이 비면 `queue/PLANNER.md` 를 따라 계획 모델이 다음 일감 하나를 써서 이어 간다(단계 끝은 `tmp/loop/stage-done.md`). 마스터는 `tools/sol/resume.sh` 를 run_in_background 로 띄워 멈추면 알림을 받는다. 시험 `bash tools/sol/test_loop.sh`.
 - 한 세션에는 한 주제만 맡긴다. 조사할 것이 여럿이면 세션을 나눈다. I1 조사는 일곱 주제를 한 세션에 넣어 20번째 호출에 문맥이 20만, 54번째에 31만이 됐다.
 - 지시문에는 읽을 곳을 파일과 줄 범위로 짚는다. 길 찾기는 `docs/code-map.md`(파일마다 줄 수, 설명 한 줄, 함수의 줄 범위)에 맡긴다. 이 지도는 `tools/sol/codemap.py` 가 코드에서 자동으로 만들고, `tools/sol/run.sh` 가 커밋이 생긴 실행 뒤에 다시 만든다. 새 세션이 같은 파일을 처음부터 다시 읽지 않게 하는 것이 목적이다.
 - 실행이 끝나면 `tools/sol/where.py tmp/sol/<실행>.log --top 5` 로 무엇이 문맥을 채웠는지 보고, 다음 지시문에서 그 읽기를 줄인다.
