@@ -20,12 +20,10 @@ def import_tiles(tiles, destination):
             if len(data['features']) >= 1000:
                 raise ValueError(f'The request reached its limit: {path}')
             for row in data['features']:
-                key = row['properties']['id']
-                # The WFS wrapper ID can differ between queries for the same survey record.
+                # The WFS wrapper ID can differ between queries for the same survey record,
+                # and one surveyed ID can carry several separate records of the same line.
                 item = {field: value for field, value in row.items() if field != 'id'}
-                if key in rows and rows[key] != item:
-                    raise ValueError(f'Conflicting WFS copies of {key}')
-                rows[key] = item
+                rows.setdefault(json.dumps(item, sort_keys=True), item)
         data = {'type': 'FeatureCollection', 'features': list(rows.values())}
         (destination/f'{layer}.json').write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':'))+'\n')
         print(f'{layer}: {len(paths)} requests, {len(rows)} distinct features')

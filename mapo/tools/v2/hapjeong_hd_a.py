@@ -12,7 +12,7 @@ from shapely.ops import unary_union
 
 from area import COMPARISON_SEAM_MARGIN, area_window, read_area, read_asset, write_asset
 from hapjeong_hd import AREA, MAPO, ORIGIN, WINDOW, features, parts, paths, project, offset_zebra, rings, survey_faces
-from hapjeong_crossings import expanded_walk, supplement_crossings, walking_landings
+from hapjeong_crossings import expanded_walk, supplement_crossings, vehicle_clearance, walking_landings
 from aerial_paint import footprint
 
 LINE_KINDS = {'501','503','506','504','525','530','505','515'}

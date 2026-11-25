@@ -69,7 +69,7 @@ def agreement(a, b):
 
 def expanded_walk(existing):
     known = {row['id'] for row in existing}
-    return unary_union([Polygon(outer,holes) for row in features('a4-expanded')
+    return unary_union([make_valid(Polygon(outer,holes)) for row in features('a4-expanded')
                         if row['properties']['id'] not in known and row['properties']['subtype']=='3'
                         for outer,*holes in face_rings(row)]).intersection(WINDOW)
 

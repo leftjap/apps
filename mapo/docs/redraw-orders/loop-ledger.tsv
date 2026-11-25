@@ -1,0 +1,11 @@
+날짜	일감	회차	단계	모델	에포트	분	비용	결과
+2026-11-25 21:53	s1-bake	1	check	-	-	1	-	종료 1
+2026-11-25 21:54	s1-bake	1	review	sol	medium	1	s1-bake-review-1	STOP(종료 0)
+2026-11-25 22:06	s1-bake	2	impl	opus	high	10	$6.5536285/입력 7106628	종료 1
+2026-11-25 22:36	s1-bake	2	impl	opus	high	0	$0/입력 0	종료 1
+2026-11-25 23:06	s1-bake	2	impl	opus	high	0	$0/입력 0	종료 1
+2026-11-25 23:36	s1-bake	2	impl	opus	high	0	$0/입력 0	종료 1
+2026-11-26 00:44	s1-bake	2	impl	opus	high	27	$4.963487499999999/입력 4813726	종료 1
+2026-11-26 03:36	s1-bake	2	impl	opus	high	63	$6.605783500000001/입력 7271035	종료 0
+2026-11-26 03:36	s1-bake	2	check	-	-	1	-	종료 0
+2026-11-26 03:37	s1-bake	2	review	sol	medium	1	s1-bake-review-2	FAIL(종료 0)

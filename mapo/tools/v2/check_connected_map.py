@@ -61,18 +61,30 @@ def sheet_parity(buildings, footways, sheets):
     index = STRtree(lines)
     strips = [line.buffer(.01, cap_style='flat') for line in lines]
     strip_index = STRtree(strips)
+    tiles = [face for face, _ in sheets]
+    tile_index = STRtree(tiles)
+    sides = [[tiles[i] for i in tile_index.query(line) if tiles[i].boundary.intersection(line).length > .01]
+             for line in lines]
+
+    def clipped_at(face, i):
+        """A face cut out at this seam keeps its body in one sheet, so a face
+        spread over both sheets was joined across the seam, not cut by it."""
+        body = face.difference(strips[i])
+        return sum(body.intersection(tile).area > AREA_EPS for tile in sides[i]) < 2
 
     def inspect_faces(faces):
         hits = []
         for face in faces:
             boundary = face.boundary
             exact = sum(boundary.intersection(lines[i]).length for i in index.query(boundary))
-            near = boundary.intersection(unary_union([strips[i] for i in strip_index.query(boundary)])).length
             # A very short approach can cross the strip at an angle. A metre-long
             # trace in the strip catches sheet-edge roundoff in the projected source.
+            touching = [i for i in strip_index.query(boundary) if boundary.intersects(strips[i])]
+            near = boundary.intersection(unary_union([strips[i] for i in touching if clipped_at(face, i)])).length
             if exact > .01 or near > 1:
                 hits.append({'at': list(face.representative_point().coords[0]),
-                             'lengthM': exact, 'withinCentimetreM': near})
+                             'lengthM': exact, 'withinCentimetreM': near,
+                             'strips': len(touching), 'crossedStrips': sum(not clipped_at(face, i) for i in touching)})
         return hits
     return {'building': inspect_faces(buildings), 'walk': inspect_faces(footways)}
 
