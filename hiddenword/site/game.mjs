@@ -1,15 +1,15 @@
 export const MAX_TRIES = 5;
 
 export function createGame(puzzle) {
-  return { puzzle, tries: [], done: false, solved: false };
+  return { puzzle, tries: [], hints: puzzle.hints.slice(0, 1), done: false, solved: false };
 }
 
 export function guess(game, input) {
   if (game.done) return { kind: 'over' };
   const word = String(input).replace(/\s+/g, '');
   if (!word) return { kind: 'empty' };
-  const { answer, clue, scores } = game.puzzle;
-  if (word === clue.word) return { kind: 'clue' };
+  const { answer, hints, scores } = game.puzzle;
+  if (game.hints.some((h) => h.word === word)) return { kind: 'clue' };
   if (game.tries.some((t) => t.word === word)) return { kind: 'duplicate' };
   if (word === answer) {
     game.tries.push({ word, score: 100 });
@@ -20,6 +20,8 @@ export function guess(game, input) {
   if (!(word in scores)) return { kind: 'unknown' };
   const score = scores[word];
   game.tries.push({ word, score });
+  const next = hints.find((h) => !game.hints.includes(h) && !game.tries.some((t) => t.word === h.word));
+  if (next) game.hints.push(next);
   if (game.tries.length >= MAX_TRIES) game.done = true;
   return { kind: 'scored', score };
 }

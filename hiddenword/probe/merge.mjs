@@ -1,6 +1,7 @@
 // 묶음별 채점 결과를 합쳐 문제 데이터를 만들고, 기준 단어로 묶음 사이의 점수 차이를 잰다.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { ANSWERS, ANCHORS, BATCHES } from './config.mjs';
+import { toDisplay } from './scale.mjs';
 
 const dir = new URL('.', import.meta.url);
 const all = readFileSync(new URL('words-all.txt', dir), 'utf8').split('\n').filter(Boolean);
@@ -12,8 +13,8 @@ const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
 const puzzles = [];
 const problems = [];
-for (const { no, word: answer, clue } of ANSWERS) {
-  const scores = {};
+for (const { no, word: answer, hints } of ANSWERS) {
+  const raw = {};
   const spread = [];
   for (const w of all) {
     const seen = batches.map((b) => b[answer]?.[w]).filter((s) => Number.isInteger(s) && s >= 0 && s <= 100);
@@ -22,19 +23,30 @@ for (const { no, word: answer, clue } of ANSWERS) {
       if (seen.length !== COUNT) problems.push(`${answer}: 기준 단어 ${w} 가 ${seen.length}개 묶음에만 있음`);
       spread.push({ w, min: Math.min(...seen), max: Math.max(...seen), seen });
     }
-    scores[w] = median(seen);
+    raw[w] = median(seen);
   }
-  if (!(clue in scores)) problems.push(`${answer}: 단서 ${clue} 의 점수 없음`);
-  puzzles.push({ no, answer, clue: { word: clue, score: scores[clue] }, scores });
+  // 화면에 보이는 점수는 기준표 점수를 환산한 값이다
+  const scores = Object.fromEntries(Object.entries(raw).map(([w, s]) => [w, toDisplay(s)]));
 
-  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  let prev = 94;
+  for (const h of hints) {
+    if (!(h in scores)) problems.push(`${answer}: 단서 ${h} 의 점수 없음`);
+    else if (h.includes(answer) || answer.includes(h)) problems.push(`${answer}: 단서 ${h} 에 정답이 드러남`);
+    else if (scores[h] <= prev) problems.push(`${answer}: 단서 ${h}(${scores[h]}점)가 95점 미만이거나 앞 단서보다 높지 않음`);
+    prev = scores[h] ?? prev;
+  }
+  puzzles.push({ no, answer, hints: hints.map((word) => ({ word, score: scores[word] })), scores });
+
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1] || raw[b[0]] - raw[a[0]]);
   const band = (lo, hi) => sorted.filter(([, s]) => s >= lo && s <= hi).length;
   const diffs = spread.map((x) => x.max - x.min);
   console.log(`\n== ${answer} (단어 ${sorted.length}개)`);
-  console.log(`구간: 95+ ${band(95, 100)} · 70~94 ${band(70, 94)} · 50~69 ${band(50, 69)} · 30~49 ${band(30, 49)} · 10~29 ${band(10, 29)} · 0~9 ${band(0, 9)}`);
-  console.log(`상위 30: ${sorted.slice(0, 30).map(([w, s]) => `${w} ${s}`).join(', ')}`);
-  console.log(`기준 단어 ${spread.length}개의 묶음 사이 차이: 평균 ${(diffs.reduce((a, b) => a + b, 0) / diffs.length).toFixed(1)}, 최대 ${Math.max(...diffs)}`);
-  console.log(`차이 5점 이상: ${spread.filter((x) => x.max - x.min >= 5).map((x) => `${x.w}[${x.seen.join(',')}]`).join(' ') || '없음'}`);
+  console.log(`화면 점수 구간: 99 ${band(99, 99)} · 95~98 ${band(95, 98)} · 80~94 ${band(80, 94)} · 60~79 ${band(60, 79)} · 30~59 ${band(30, 59)} · 0~29 ${band(0, 29)}`);
+  for (const level of [99, 98, 97, 96, 95]) {
+    console.log(`  ${level}점: ${sorted.filter(([, s]) => s === level).map(([w]) => w).join(', ') || '없음'}`);
+  }
+  console.log(`단서: ${hints.map((h) => `${h} ${scores[h]}`).join(' → ')}`);
+  console.log(`기준 단어 ${spread.length}개의 묶음 사이 차이(기준표 점수): 평균 ${(diffs.reduce((a, b) => a + b, 0) / diffs.length).toFixed(1)}, 최대 ${Math.max(...diffs)}`);
 }
 
 if (problems.length) {

@@ -40,6 +40,7 @@
   .clue-word { font-size: 32px; font-weight: 700; margin-right: 8px; }
   .clue-score { color: var(--accent); font-weight: 600; }
   .clue-q { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+  .prev-hints { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
   form { display: flex; gap: 8px; }
   form input {
     flex: 1; min-width: 0; min-height: 44px; padding: 0 12px;
@@ -76,7 +77,8 @@
 
   <section class="card">
     <div><span class="clue-word" id="clueWord"></span><span class="clue-score" id="clueScore"></span></div>
-    <p class="clue-q">이 단어와 가까운 숨은 단어는 무엇일까요?</p>
+    <p class="prev-hints" id="prevHints" hidden></p>
+    <p class="clue-q" id="clueQ"></p>
   </section>
 
   <section class="card">
@@ -98,7 +100,7 @@
 
   <details class="card">
     <summary>점수는 어떻게 매기나요?</summary>
-    <p>AI가 두 단어가 어떤 관계인지 보고 0~100점으로 미리 매겨 둔 점수예요. 뜻이 같은 말은 93점 이상, 같은 종류에 속하면서 닮은 말은 70~92점, 함께 쓰이는 말이나 반대말은 50~69점, 관계없는 말은 10점 미만이에요. 점수는 정답일 확률이 아니에요.</p>
+    <p>AI가 두 단어가 어떤 관계인지 보고 미리 매겨 둔 점수예요. 뜻이 같은 말은 99점, 같은 종류에 속하면서 닮은 말은 95~98점, 함께 쓰이는 말이나 반대말은 80~94점, 느슨하게 이어지는 말은 60~79점, 관계없는 말은 30점 미만이에요. 단서는 모두 95점 이상이고, 틀릴 때마다 더 가까운 단서가 열려요. 점수는 정답일 확률이 아니에요.</p>
   </details>
 </main>
 
@@ -140,8 +142,13 @@ function renderPicker() {
 function render() {
   const g = games[current];
   renderPicker();
-  $('clueWord').textContent = g.puzzle.clue.word;
-  $('clueScore').textContent = `유사도 ${g.puzzle.clue.score}점`;
+  const latest = g.hints[g.hints.length - 1];
+  const prev = g.hints.slice(0, -1);
+  $('clueWord').textContent = latest.word;
+  $('clueScore').textContent = `유사도 ${latest.score}점`;
+  $('prevHints').hidden = prev.length === 0;
+  $('prevHints').textContent = `앞선 단서: ${prev.map((h) => `${h.word} ${h.score}점`).join(' · ')}`;
+  $('clueQ').textContent = g.hints.length > 1 ? '더 가까운 단서가 열렸어요.' : '이 단어와 아주 가까운 숨은 단어는 무엇일까요? 한 번에 맞혀 보세요.';
   $('left').textContent = g.done ? '' : `남은 도전 ${MAX_TRIES - g.tries.length}번`;
   $('word').disabled = g.done;
   $('submit').disabled = g.done;
@@ -164,15 +171,19 @@ function render() {
   $('end').hidden = !g.done;
   $('shareBox').hidden = true;
   if (g.done) {
-    $('endText').textContent = g.solved ? `${g.tries.length}번 만에 맞혔어요!` : `정답은 ${g.puzzle.answer}였어요.`;
+    const solvedText = g.tries.length === 1 ? '한 번에 맞혔어요!' : `${g.tries.length}번 만에 맞혔어요!`;
+    $('endText').textContent = g.solved ? solvedText : `정답은 ${g.puzzle.answer}였어요.`;
   }
 }
 
 function submit() {
   const g = games[current];
+  const opened = g.hints.length;
   const r = guess(g, $('word').value);
   if (r.kind === 'empty') return;
-  $('msg').textContent = MESSAGES[r.kind] ?? '';
+  $('msg').textContent = r.kind === 'scored'
+    ? (g.hints.length > opened ? `${r.score}점이에요. 더 가까운 단서가 열렸어요.` : `${r.score}점이에요.`)
+    : MESSAGES[r.kind] ?? '';
   if (r.kind === 'scored' || r.kind === 'correct') $('word').value = '';
   render();
   if (!g.done) $('word').focus();
