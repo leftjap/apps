@@ -320,7 +320,7 @@ while :; do
     k=0; for i in $(seq 1 "$MAX_ATTEMPTS"); do [ -e "$WORK/review-$i.out" ] && k=$i; done
     if [ "$k" -ge 1 ] && [ "$k" -lt "$MAX_ATTEMPTS" ] && [ "$(read_verdict "$WORK/review-$k.out")" != PASS ] && [ "$(read_verdict "$WORK/review-$k.out")" != STOP ]; then
       start_n=$((k + 1)); log "일감 $id: ${k}회차 검수가 FAIL 이었다. 그 의견을 붙여 ${start_n}회차 구현부터 한다"
-      if [ -e "$WORK/impl-$start_n.json" ] && ! impl_cut "$WORK/impl-$start_n.json"; then
+      if { [ -e "$WORK/impl-$start_n.json" ] && ! impl_cut "$WORK/impl-$start_n.json"; } || grep -q '끝(.*종료 0)' "$WORK/impl-$start_n.log" 2>/dev/null; then
         skip_n=$start_n; log "일감 $id: ${start_n}회차 구현은 이미 끝나 있었다. 검사·검수부터 한다"
       fi
     elif [ -e "$WORK/impl-1.json" ] && impl_cut "$WORK/impl-1.json"; then
