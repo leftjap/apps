@@ -376,7 +376,7 @@ while :; do
       icost=$(json_cost "$WORK/impl-$n.json")
     else
       # 구현 지시문에는 앞 회차 검수 의견이 붙으므로 Sol 지시문 상한을 넓혀 준다
-      SOL_MAX_BRIEF="${LOOP_SOL_IMPL_MAX_BRIEF:-24000}" "$SOL_RUN" "$STAGE" "$id-impl-$n" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
+      SOL_MAX_BRIEF="${LOOP_SOL_IMPL_MAX_BRIEF:-24000}" "$SOL_RUN" "$STAGE-$id-i$n" "$id-impl-$n" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
       icode=$?
       icost="$id-impl-$n"
     fi
@@ -463,7 +463,7 @@ while :; do
       rcost=$(json_cost "$WORK/review-$n.out")
       vfiles="$WORK/review-$n.out"
     else
-      SOL_SANDBOX=read-only "$SOL_RUN" "$STAGE" "$id-review-$n" "$REVIEW_EFFORT" "$rf" > "$WORK/review-$n.log" 2>&1
+      SOL_SANDBOX=read-only "$SOL_RUN" "$STAGE-$id-r$n" "$id-review-$n" "$REVIEW_EFFORT" "$rf" > "$WORK/review-$n.log" 2>&1
       rcode=$?
       rcost="$id-review-$n"
       # 판정은 답 파일에서만 읽는다(기록에는 지시문의 답 본보기가 되풀이된다)
