@@ -36,3 +36,11 @@
 2. 묶음마다 채점자가 `scan-instructions.md` 대로 정답과 관계가 있는 단어만 골라 `scan-N.json` 에 쓴다. 같은 묶음을 한 번 더 훑은 결과는 `rescan-N.json` 이다.
 3. `node probe/merge.mjs`: 처음 목록의 채점 결과와 사전 훑기 결과를 합친다. 기준표 10점 미만은 점수표에 넣지 않는다.
 4. `node probe/build-local.mjs`: 화면, 규칙, 점수표, 단어 목록을 `local.html` 하나로 합친다.
+
+## 두 채점자 평균 방식 (2026-11-25 밤부터 지금 방식)
+
+1. 정답과 단서는 `config.mjs`, 외래어처럼 사전에 없는 단어는 `words-loan.txt` 에 넣는다.
+2. `node probe/split-all.mjs`: 받는 단어 전체를 `all-batch-N.txt` 로 나눈다(묶음마다 `ANCHORS_V2` 기준 단어를 넣는다).
+3. 묶음마다 두 채점자가 `scan-instructions-v2-6.md` 대로 따로 채점해 `all-Na.json`, `all-Nb.json` 을 쓴다. 채점자는 Opus, 에포트 high.
+4. `node probe/merge-v2.mjs`: 두 결과를 평균해 `site/data/puzzles.json` 을 만든다. 단서가 비어 있으면 후보를 보여 주고 멈춘다.
+5. `node probe/build-local.mjs` 로 `local.html` 을 다시 만든다.
