@@ -15,7 +15,6 @@ import numpy as np
 from PIL import ImageDraw
 import shapely as s
 from shapely.geometry import LineString,Point
-from shapely.ops import linemerge
 from shapely.strtree import STRtree
 from bake_aerial_ground import Frame
 from shp import dbf,shapes
@@ -134,7 +133,7 @@ def collect(area,frame,outline,road_names,reference,explicit_plan):
                         for piece in lines(g.intersection(outline))
                         if piece.length>=24 and piece.distance(s.union_all(network))>16]
         if not network: continue
-        merged=linemerge(s.union_all(network))
+        merged=s.line_merge(s.union_all(network))
         chains=sorted(lines(merged),key=lambda g:-g.length)
         entries=[]
         step=20 if name in DENSE_ROADS else 40
