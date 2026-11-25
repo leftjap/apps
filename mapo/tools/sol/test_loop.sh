@@ -35,6 +35,7 @@ if [ "$role" = plan ]; then
 elif [ "$role" = impl ]; then
   echo "impl" >> "$FAKE_REPO/work.txt"
   echo "impl" >> "$FAKE_REPO/seed.txt"
+  [ -n "${FAKE_IMPL_BG:-}" ] && { nohup bash -c "sleep 3; echo late > '$FAKE_REPO/late.txt'" loop-busy-marker >/dev/null 2>&1 & }
   [ -n "${FAKE_IMPL_TOUCH_TASK:-}" ] && echo "기준 바꿈" >> "$FAKE_REPO/docs/redraw-orders/queue/t1/brief.md"
   if [ -n "${FAKE_IMPL_LIMIT:-}" ]; then printf '{"type":"result","subtype":"error","is_error":true,"result":"limit reached"}\n'; exit 1; fi
   printf '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0.0123,"usage":{"input_tokens":1200,"cache_read_input_tokens":3400}}\n'
@@ -352,7 +353,15 @@ case21() { echo "㉑ 목록이 비면 계획 세우기 → 일감 → 단계 끝
   chk "㉑ 단계 끝 기록" 1 "$(grep -c 'http://x' "$REPO/tmp/loop/status.md" | tr -d ' ')"
 }
 
-for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21}; do "$c"; done
+case22() { echo "㉒ 구현이 배경에 남긴 작업이 끝난 뒤에 검사"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task | sed 's/CHECK=.*/CHECK="test -s late.txt"/')"; commit_all
+  verdicts PASS
+  code=$(run_loop FAKE_IMPL_BG=1 LOOP_BUSY_PATTERN=loop-busy-marker LOOP_BUSY_POLL=1)
+  chk "㉒ 종료" 0 "$code"
+  chk "㉒ 늦게 끝난 결과가 커밋됨" 1 "$(git -C "$REPO" ls-files late.txt | grep -c . | tr -d ' ')"
+}
+
+for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22}; do "$c"; done
 [ -n "${LOOP_TEST_KEEP:-}" ] || wipe
 printf '\n문법 검사: '; bash -n "$LOOP_SRC" && echo ok || { echo FAIL; BADN=$((BADN + 1)); }
 printf '통과 %s, 실패 %s\n' "$OKN" "$BADN"

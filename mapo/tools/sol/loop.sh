@@ -21,6 +21,10 @@ PY="${LOOP_PY:-/usr/bin/python3}"
 LIMIT="${LOOP_LIMIT:-90}"
 MAX_REVIEW_BRIEF="${LOOP_MAX_REVIEW_BRIEF:-11500}"
 MAX_ATTEMPTS="${LOOP_MAX_ATTEMPTS:-4}"
+# 구현이 배경으로 돌려 두고 먼저 답한 긴 작업(자료 만들기 등). 끝날 때까지 검사를 미룬다
+BUSY_PATTERN="${LOOP_BUSY_PATTERN:-heavy\.sh|tools/v2/|pack_district|survey_roof|tmp/loop/.*\.py}"
+BUSY_POLL="${LOOP_BUSY_POLL:-30}"
+BUSY_MAX="${LOOP_BUSY_MAX:-10800}"
 PLAN_MODEL="${LOOP_PLAN_MODEL:-opus}"
 PLANNER="${LOOP_PLANNER:-docs/redraw-orders/queue/PLANNER.md}"
 COAUTHOR='Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'
@@ -341,6 +345,7 @@ while :; do
       echo "# 루프가 붙이는 줄"
       echo "- 커밋하지 않는다. git commit·push·tag 를 쓰지 않는다. 바꾼 파일은 작업 트리에 그대로 둔다(검수가 끝나면 루프가 커밋한다)."
       echo "- 아래 지시문 밖의 파일은 건드리지 않는다."
+      echo "- 10분 넘는 명령을 배경으로 돌렸으면, 끝날 때까지 9분 이하의 기다림(while pgrep … ; do sleep 30; done)을 되풀이해 기다린 뒤 그 결과로 그림·검사를 하고 답한다. 끝나기 전에 답하지 않는다."
       echo
       cat "$TASKDIR/brief.md"
     } > "$bf"
@@ -382,7 +387,13 @@ while :; do
       finish 4 "일감 $id 의 구현자가 일감 폴더($TASKDIR)를 고쳤다. 통과 기준을 구현자가 바꿀 수 없다. 작업 트리는 그대로 두었다. 마스터가 그 변경을 보고 받아들일지 정한다."
     fi
 
-    # 4. 통과 검사
+    # 4. 통과 검사(구현이 배경에 남긴 작업이 끝난 뒤에)
+    w0=$(date +%s)
+    while pgrep -f "$BUSY_PATTERN" > /dev/null 2>&1; do
+      [ $(( $(date +%s) - w0 )) -lt "$BUSY_MAX" ] || { log "배경 작업이 ${BUSY_MAX}초 넘게 끝나지 않는다. 검사를 그대로 돌린다"; break; }
+      sleep "$BUSY_POLL"
+    done
+    [ $(( $(date +%s) - w0 )) -gt "$BUSY_POLL" ] && log "구현이 남긴 배경 작업을 $(( ($(date +%s) - w0) / 60 ))분 기다렸다"
     t0=$(date +%s)
     bash -c "$CHECK" > "$WORK/check-$n.full" 2>&1
     ccode=$?
