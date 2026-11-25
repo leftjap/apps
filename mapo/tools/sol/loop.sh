@@ -2,7 +2,8 @@
 # 검수-구현 루프. 일감 하나를 CLI 로 구현 → 통과 검사 → 다른 모델 CLI 가 읽기 전용으로 검수 → PASS 면 로컬 커밋하고 다음 일감.
 # 규칙은 mapo/CLAUDE.md 「낭비 없이 일하는 법」, 멈춤 조건은 docs/redraw-orders/README.md 「운용 방식」.
 # 일감은 docs/redraw-orders/queue/<id>/{task.env,brief.md}, 목록은 docs/redraw-orders/queue.md.
-# 쓰는 법: tools/sol/loop.sh [--once] [--dry-run]
+# 쓰는 법: tools/sol/loop.sh [--once] [--dry-run] [--continue]
+#   --continue: 한도나 중단으로 끊긴 맨 위 일감을 작업 트리 그대로 이어받는다(구현이 끝났으면 검사·검수부터)
 # 종료: 0 목록 끝, 2 사용법·환경, 3 같은 일감 두 번 실패, 4 STOP 판정, 5 단계의 끝(지오 확인), 6 단계 신호, 7 한도
 set -u
 cd "$(dirname "$0")/../.." || exit 2
@@ -21,12 +22,13 @@ LIMIT="${LOOP_LIMIT:-90}"
 MAX_REVIEW_BRIEF="${LOOP_MAX_REVIEW_BRIEF:-11500}"
 COAUTHOR='Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'
 
-once=; dry=
+once=; dry=; cont=
 for a in "$@"; do
   case "$a" in
     --once) once=1 ;;
     --dry-run) dry=1 ;;
-    *) echo "loop.sh: 쓰는 법: tools/sol/loop.sh [--once] [--dry-run]" >&2; exit 2 ;;
+    --continue) cont=1 ;;
+    *) echo "loop.sh: 쓰는 법: tools/sol/loop.sh [--once] [--dry-run] [--continue]" >&2; exit 2 ;;
   esac
 done
 
@@ -139,6 +141,17 @@ ledger() { # 일감 회차 단계 모델 에포트 분 비용 결과
   [ -f "$LEDGER" ] || printf '날짜\t일감\t회차\t단계\t모델\t에포트\t분\t비용\t결과\n' > "$LEDGER"
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(date '+%Y-%m-%d %H:%M')" "$@" >> "$LEDGER"
 }
+task_sig() { cat "$TASKDIR"/* 2>/dev/null | shasum | cut -d' ' -f1; }
+impl_cut() { # claude -p 결과가 비었거나 오류(한도 포함)면 0
+  python3 - "$1" <<'PYC' 2>/dev/null
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+sys.exit(0 if d.get('is_error') or d.get('subtype') != 'success' else 1)
+PYC
+}
 read_verdict() { # 검수 답(claude json 이면 result 칸, 아니면 글)의 마지막 JSON 줄에서 판정 하나만 읽는다
   python3 - "$1" <<'PYV' 2>/dev/null
 import json, sys
@@ -239,11 +252,24 @@ while :; do
   fi
 
   # 2. 구현 전 기준점
-  base_head=$(g rev-parse HEAD)
-  # 추적 안 된 파일은 다른 세션이 둔 것일 수 있어 막지 않고 목록으로 남겨 빼고 센다. 추적하는 파일의 수정만 막는다
   BASE_UNTRACKED="$WORK/base-untracked.txt"
-  g ls-files -o --exclude-standard --full-name -- "$SCOPE" > "$BASE_UNTRACKED"
-  base_status=$(g status --porcelain --untracked-files=no -- "$SCOPE")
+  skip_impl1=; resume_note=
+  if [ -n "$cont" ] && [ -f "$BASE_UNTRACKED" ] && { [ -e "$WORK/impl-1.json" ] || [ -e "$WORK/impl-1.log" ]; }; then
+    # 끊긴 일감을 이어받는다: 기준점 목록은 처음 것을 그대로 쓰고, 작업 트리의 변경은 그 일감의 것으로 본다
+    base_head=$(cat "$WORK/base-head.txt" 2>/dev/null || g rev-parse HEAD)
+    base_status=
+    if [ -e "$WORK/impl-1.json" ] && impl_cut "$WORK/impl-1.json"; then
+      resume_note=1; log "일감 $id: 1회차 구현이 끊겨 있었다. 작업 트리를 이어받아 다시 맡긴다"
+    else
+      skip_impl1=1; log "일감 $id: 1회차 구현은 끝나 있었다. 검사·검수부터 한다"
+    fi
+  else
+    base_head=$(g rev-parse HEAD)
+    echo "$base_head" > "$WORK/base-head.txt"
+    # 추적 안 된 파일은 다른 세션이 둔 것일 수 있어 막지 않고 목록으로 남겨 빼고 센다. 추적하는 파일의 수정만 막는다
+    g ls-files -o --exclude-standard --full-name -- "$SCOPE" > "$BASE_UNTRACKED"
+    base_status=$(g status --porcelain --untracked-files=no -- "$SCOPE")
+  fi
   if [ -n "$base_status" ]; then
     printf '%s\n' "$base_status" > "$WORK/dirty.txt"
     finish 2 "작업 트리에 이미 바뀐 파일이 있어 시작하지 않았다($WORK/dirty.txt). 누가 무엇을 바꿨는지 가린 뒤에(커밋하거나 되돌린 뒤에) 다시 돌린다."
@@ -261,6 +287,9 @@ while :; do
       echo
       cat "$TASKDIR/brief.md"
     } > "$bf"
+    if [ -n "$resume_note" ] && [ "$n" = 1 ]; then
+      { echo; echo "## 이어서 하는 실행"; echo "앞 실행이 한도나 중단으로 끊겼다. 작업 트리에 남은 변경과 tmp/loop/$id/ 의 파일을 먼저 보고, 이미 된 것은 다시 하지 말고 남은 것만 끝낸다."; } >> "$bf"
+    fi
     if [ "$n" = 2 ]; then
       {
         echo; echo "## 1회차 검수 의견 (이것부터 고친다)"
@@ -270,7 +299,10 @@ while :; do
       } >> "$bf"
     fi
     t0=$(date +%s)
-    if [ "$IMPL" != sol ]; then
+    task_sig0=$(task_sig)
+    if [ "$n" = 1 ] && [ -n "$skip_impl1" ]; then
+      icode=0
+    elif [ "$IMPL" != sol ]; then
       "$CLAUDE" -p --model "$IMPL" --effort "$IMPL_EFFORT" --output-format json \
         --permission-mode bypassPermissions "$(cat "$bf")" > "$WORK/impl-$n.json" 2>"$WORK/impl-$n.err"
       icode=$?
@@ -280,8 +312,17 @@ while :; do
       icode=$?
       icost="$id-impl-$n"
     fi
+    if ! { [ "$n" = 1 ] && [ -n "$skip_impl1" ]; }; then
     ledger "$id" "$n" impl "$IMPL" "$IMPL_EFFORT" "$(mins_since "$t0")" "$icost" "종료 $icode"
     log "일감 $id $n회차 구현 끝($IMPL, 종료 $icode)"
+    fi
+    if [ "$IMPL" != sol ] && [ -e "$WORK/impl-$n.json" ] && impl_cut "$WORK/impl-$n.json"; then
+      finish 7 "일감 $id 의 $n회차 구현이 한도나 오류로 끊겼다($WORK/impl-$n.json). 작업 트리는 그대로 두었다. 한도가 풀리면 tools/sol/loop.sh --continue 로 이어 간다."
+    fi
+    if [ "$task_sig0" != "$(task_sig)" ]; then
+      mark_queue "$lineno" '!'
+      finish 4 "일감 $id 의 구현자가 일감 폴더($TASKDIR)를 고쳤다. 통과 기준을 구현자가 바꿀 수 없다. 작업 트리는 그대로 두었다. 마스터가 그 변경을 보고 받아들일지 정한다."
+    fi
 
     # 4. 통과 검사
     t0=$(date +%s)

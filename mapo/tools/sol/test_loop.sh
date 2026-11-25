@@ -24,7 +24,9 @@ echo "claude $role model=$model" >> "$FAKE_LOG"
 if [ "$role" = impl ]; then
   echo "impl" >> "$FAKE_REPO/work.txt"
   echo "impl" >> "$FAKE_REPO/seed.txt"
-  printf '{"type":"result","total_cost_usd":0.0123,"usage":{"input_tokens":1200,"cache_read_input_tokens":3400}}\n'
+  [ -n "${FAKE_IMPL_TOUCH_TASK:-}" ] && echo "기준 바꿈" >> "$FAKE_REPO/docs/redraw-orders/queue/t1/brief.md"
+  if [ -n "${FAKE_IMPL_LIMIT:-}" ]; then printf '{"type":"result","subtype":"error","is_error":true,"result":"limit reached"}\n'; exit 1; fi
+  printf '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0.0123,"usage":{"input_tokens":1200,"cache_read_input_tokens":3400}}\n'
 else
   [ -n "${FAKE_REVIEW_TOUCH:-}" ] && echo "검수자가 고침" >> "$FAKE_REPO/work.txt"
   v=$(head -1 "$FAKE_VERDICTS"); tail -n +2 "$FAKE_VERDICTS" > "$FAKE_VERDICTS.n"; mv "$FAKE_VERDICTS.n" "$FAKE_VERDICTS"
@@ -252,7 +254,44 @@ case14() { echo "⑭ Claude 모델 고르기"
   chk "⑭ haiku 검수" 1 "$(hits 'claude review model=haiku')"
 }
 
-for c in case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14; do "$c"; done
+case15() { echo "⑮ 구현이 한도로 끊김 → --continue"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts PASS
+  code=$(run_loop FAKE_IMPL_LIMIT=1)
+  chk "⑮ 종료" 7 "$code"
+  chk "⑮ 트리 그대로(구현 변경 남음)" 1 "$(have "$REPO/work.txt")"
+  chk "⑮ 일감 그대로" 1 "$(qmark ' ' t1)"
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "⑮ 이어서 종료" 0 "$code"
+  chk "⑮ 커밋 수" 2 "$(commits)"
+  chk "⑮ 이어서 지시문" 1 "$(grep -c '이어서 하는 실행' "$REPO/tmp/loop/t1/brief-1.md" | tr -d ' ')"
+  chk "⑮ t1 표시" 1 "$(qmark x t1)"
+}
+
+case16() { echo "⑯ 구현자가 일감 폴더를 고침"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts PASS
+  code=$(run_loop FAKE_IMPL_TOUCH_TASK=1)
+  chk "⑯ 종료" 4 "$code"
+  chk "⑯ 커밋 없음" 1 "$(commits)"
+}
+
+case17() { echo "⑰ 구현은 끝났는데 루프가 끊김 → --continue 는 검사·검수부터"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  mkdir -p "$REPO/tmp/loop/t1"; : > "$REPO/tmp/loop/t1/base-untracked.txt"
+  git -C "$REPO" rev-parse HEAD > "$REPO/tmp/loop/t1/base-head.txt"
+  printf '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":1}\n' > "$REPO/tmp/loop/t1/impl-1.json"
+  echo impl > "$REPO/work.txt"; echo impl >> "$REPO/seed.txt"
+  verdicts PASS
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "⑰ 종료" 0 "$code"
+  chk "⑰ 구현 다시 안 부름" 0 "$(hits 'claude impl')"
+  chk "⑰ 커밋 수" 2 "$(commits)"
+}
+
+for c in case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17; do "$c"; done
 wipe
 printf '\n문법 검사: '; bash -n "$LOOP_SRC" && echo ok || { echo FAIL; BADN=$((BADN + 1)); }
 printf '통과 %s, 실패 %s\n' "$OKN" "$BADN"
