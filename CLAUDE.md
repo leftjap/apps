@@ -29,6 +29,7 @@
 **로컬 저장 위치 (자동 로드, 매 세션 키 재요구 금지)**:
 - `~/.config/study/.env` (chmod 600): `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`. study 로컬 자동화·sanity check 실행 시 `source ~/.config/study/.env` 또는 dotenv 로드
 - `~/.config/best/.env` (chmod 600): best 전용 Supabase 프로젝트 자격증명. best 수집 파이프라인이 사용
+- `~/.config/hiddenword/.env` (chmod 600): `OPENDICT_API_KEY` (우리말샘 오픈 API 인증키, 하루 50,000건, 사용 URL `https://leftjap.github.io/apps/hiddenword/`). hiddenword 의 문제 만들기 도구가 사용
 - repo secret (`leftjap/apps`): GitHub Actions 워크플로용. `gh secret list --repo leftjap/apps` 로 확인 (`SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
 
 ---
