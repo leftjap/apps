@@ -9,3 +9,15 @@
 2026-11-26 03:36	s1-bake	2	impl	opus	high	63	$6.605783500000001/입력 7271035	종료 0
 2026-11-26 03:36	s1-bake	2	check	-	-	1	-	종료 0
 2026-11-26 03:37	s1-bake	2	review	sol	medium	1	s1-bake-review-2	FAIL(종료 0)
+2026-11-26 04:58	s1-outline	1	impl	opus	medium	47	$7.0216735/입력 8143686	종료 0
+2026-11-26 04:59	s1-outline	1	check	-	-	1	-	종료 0
+2026-11-26 05:00	s1-outline	1	review	sol	medium	1	s1-outline-review-1	FAIL(종료 0)
+2026-11-26 05:02	s1-outline	2	impl	opus	medium	2	$2.6727980000000007/입력 2539610	종료 0
+2026-11-26 05:03	s1-outline	2	check	-	-	1	-	종료 1
+2026-11-26 05:04	s1-outline	2	review	sol	medium	0	s1-outline-review-2	FAIL(종료 0)
+2026-11-26 05:06	s1-outline	3	impl	opus	medium	2	$2.344962999999999/입력 1981993	종료 0
+2026-11-26 05:07	s1-outline	3	check	-	-	1	-	종료 1
+2026-11-26 05:07	s1-outline	3	review	sol	medium	0	s1-outline-review-3	FAIL(종료 0)
+2026-11-26 05:36	s1-outline	4	impl	opus	medium	27	$3.00492/입력 3009734	종료 0
+2026-11-26 05:37	s1-outline	4	check	-	-	1	-	종료 0
+2026-11-26 05:37	s1-outline	4	review	sol	medium	0	s1-outline-review-4	PASS(종료 0)
