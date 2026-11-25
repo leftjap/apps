@@ -76,7 +76,7 @@
 - 조사와 구현을 나누고, 기계적인 실행(굽기, 범위 넓히기)은 medium, 설계·엔진·원인 조사는 high 로 돌린다.
 - 대조는 바뀐 파일이 닿는 것만 돌린다. 화면 코드(`src/aerial/`)만 바뀌고 `src/sim/` 과 구운 자료가 그대로면 재생 기록 대조(구역마다 몇 분)는 돌리지 않고 캡처 대조만 한다(구역 넷 `tmp/connect/shots.mjs`, 두 지도 `tmp/connect/twomaps.mjs`, 비교 `/usr/bin/python3 tmp/connect/pixdiff.py`). 수정 전 화면은 `git archive <커밋>^ mapo/src mapo/tools/v2/areas mapo/*.html` 을 `tmp/before-*/` 에 풀어 같은 개발 서버로 연다. 실제 GPU 프레임은 `tmp/connect/gpuprobe.mjs`(헤드리스 크롬, Metal)로 잰다.
 - Claude 가 돌리는 대조를 Sol 에게 다시 시키지 않는다. 긴 재생을 돌리기 전에 출발 전 검사(`tools/v2/check_district_car_preflight.py`)를 거친다.
-- Claude 는 코드와 자료를 고치지 않는다(`docs/`, 이 파일, `tools/sol/` 만). Sol 의 커밋은 직접 확인한 뒤에 푸시한다.
+- 모델 역할은 고정하지 않는다(지오, 2026-11-25 17:31 KST). dot이 남은 할당량과 작업 난도·검수 비용을 보고 Claude Code 또는 Codex에 CLI로 맡긴다. Claude가 설계·검수뿐 아니라 범위를 정한 구현을 맡을 수 있다. 한 작업에 동시에 두 구현자를 두지 않는다. dot이 결과를 독립 확인하고 지오에게 보고한다. 기존 배포·승인 규칙은 그대로다.
 
 ### Sol 이 지킬 것
 - 지시문이 짚은 문서와 절만 읽는다. 큰 자료(`public/data/`, `tools/raw/`)는 통째로 읽지 않고 짧은 조회로 개수와 표본만 뽑는다.
