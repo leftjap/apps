@@ -94,6 +94,8 @@ export function carGridRadius(bounds?: readonly number[]) {
   return Math.max(BOARD_R, ...((bounds ?? []).map(value => Math.ceil(Math.abs(value)))));
 }
 
+export type CarLifecycleEvent = 'entry' | 'hidden-supply' | 'link-end' | 'hidden-reduction' | 'long-stop' | 'bus-dispatch';
+
 export function makeCars(
   edges: Edge[],
   provider: DataProvider,
@@ -106,6 +108,7 @@ export function makeCars(
   surveyedCount?: number,
   surveyedMidStopLines?: ReadonlyMap<number, number>,
   surveyedBounds?: readonly number[],
+  observeLifecycle?: (uid: number, event: CarLifecycleEvent, edge: number) => void,
 ) {
   const rand = rng(seed);
   const I = inter ?? makeIntersections(edges, xw ? { crosswalks: xw.list, stopLines: new Float32Array() } : undefined);
@@ -826,6 +829,7 @@ export function makeCars(
   const inF = new Float32Array(edges.length);
   let focus: { x: number; z: number; r: number } | null = null;
   let seen: (x: number, z: number) => boolean = () => false;
+  let entrySeen = seen;
   let nIn = 0;
   let nOut = 0;
   let ratioIn = 1;
@@ -866,9 +870,10 @@ export function makeCars(
     }
     return Math.round(nIn + nOut);
   }
-  function setFocus(x: number, z: number, r: number, visible: (x: number, z: number) => boolean) {
+  function setFocus(x: number, z: number, r: number, visible: (x: number, z: number) => boolean, entryVisible = visible) {
     focus = { x, z, r };
     seen = visible;
+    entrySeen = entryVisible;
     for (const e of edges) {
       let k = 0;
       let n = 0;
@@ -945,12 +950,14 @@ export function makeCars(
     }
     lists[id].push(i);
     fresh.push(i);
+    observeLifecycle?.(cars.uid[i], 'hidden-supply', id);
     return true;
   }
   function dropHidden(inside?: boolean): boolean {
     const i = Math.floor(rand() * cars.n);
     if (cars.route[i] >= 0 || go[i] || pp[i] >= 0 || inner(edge[i]) || seen(cars.x[i], cars.z[i])) return false;
     if (inside === undefined ? stopT[i] < 90 : nearFocus(cars.x[i], cars.z[i]) !== inside) return false;
+    observeLifecycle?.(cars.uid[i], inside === undefined ? 'long-stop' : 'hidden-reduction', edge[i]);
     remove(i);
     return true;
   }
@@ -2207,7 +2214,10 @@ export function makeCars(
       }
       if (!gone[i] && !frozen) locate(i);
     }
-    for (let i = gone.length - 1; i >= 0; i--) if (gone[i]) remove(i);
+    for (let i = gone.length - 1; i >= 0; i--) if (gone[i]) {
+      observeLifecycle?.(cars.uid[i], 'link-end', edge[i]);
+      remove(i);
+    }
     cellHead.fill(-1);
     for (let i = 0; i < cars.n; i++) {
       const k = cellAt(cars.x[i]) * GW + cellAt(cars.z[i]);
@@ -2226,7 +2236,10 @@ export function makeCars(
           wait[r] = h * (0.85 + rand() * 0.3);
           // 같은 단계에 같은 출발 구간에 놓인 다른 노선 버스와도 겹치지 않게(새로 놓은 차 목록에 넣는다)
           if (touches(cars.n - 1)) remove(cars.n - 1);
-          else fresh.push(cars.n - 1);
+          else {
+            fresh.push(cars.n - 1);
+            observeLifecycle?.(cars.uid[cars.n - 1], 'bus-dispatch', e.id);
+          }
         }
       });
     if (spawn && focus && boundaryDemand === undefined) {
@@ -2249,12 +2262,13 @@ export function makeCars(
         if (t >= 0 && s[t] < 16) continue;
         put(cars.n, e, 0.5, ln);
         locate(cars.n++);
-        if (touches(cars.n - 1) || (boundaryDemand !== undefined && seen(cars.x[cars.n - 1], cars.z[cars.n - 1]))) {
+        if (touches(cars.n - 1) || (boundaryDemand !== undefined && entrySeen(cars.x[cars.n - 1], cars.z[cars.n - 1]))) {
           cars.n--;
           continue;
         }
         tail[e.id * 8 + ln] = cars.n - 1;
         fresh.push(cars.n - 1);
+        observeLifecycle?.(cars.uid[cars.n - 1], 'entry', e.id);
       }
     }
   }

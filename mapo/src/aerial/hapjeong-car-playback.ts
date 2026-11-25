@@ -2,7 +2,7 @@ import { busHeadway } from '../sim/buses.ts';
 import { rng } from '../sim/rng.ts';
 import { Frustum, Matrix4, PerspectiveCamera, Sphere, Vector3 } from 'three';
 import { pointAt } from '../poly.ts';
-import { makeCars, VFREE } from '../sim/cars.ts';
+import { makeCars, VFREE, type CarLifecycleEvent } from '../sim/cars.ts';
 import { headingNear, type Edge } from '../sim/graph.ts';
 import { CYCLE, LEFT, RIGHT, STRAIGHT } from '../sim/intersection/index.ts';
 import { makeSimProvider } from '../sim/provider.ts';
@@ -75,7 +75,11 @@ export const CAR_TICK = 1 / 30;
 
 export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: HapjeongPeopleInput, carsEnabled = true,
                             demand?: HapjeongDemand, replayCycles?: number, entrances = pedestrians?.entrances,
-                            area: Pick<SurveyArea,'title'|'views'|'replay'> = hapjeongArea) {
+                            area: Pick<SurveyArea,'title'|'views'|'replay'> = hapjeongArea,
+                            measurement?: {
+                              visible: (x: number, z: number) => boolean;
+                              lifecycle: (uid: number, event: CarLifecycleEvent, edge: number) => void;
+                            }) {
   const connected = area.replay.connectedTraffic;
   const district = data.districtTraffic;
   const outline = connected && data.boundaryFaces;
@@ -237,10 +241,11 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
     const provider = { ...makeSimProvider(), roadSpeed: (_now: ReturnType<typeof clock>, _cls: number, key: number) => speeds.get(key)! };
     const sim = makeCars(graph.edges, provider, seed, max, graph.buses, graph.inter,
       { list: graph.crosswalks, busy }, ambient ? demand?.vehicles : undefined, paintedStops || undefined,
-      district && data.window);
+      district && data.window, measurement?.lifecycle);
     const site = graph.inter.S.list.find(site => site.j >= 0);
     if (!site) throw Error(`${area.title} 차량 신호를 연결하지 못했습니다.`);
-    sim.setFocus(site.x, site.z, 100, visible);
+    // The current declared entries still use the survey boundary guard.
+    sim.setFocus(site.x, site.z, 100, measurement?.visible ?? visible, visible);
     const seeded = new Set<number>();
     for (const move of ambient || !carsEnabled ? [] : [STRAIGHT, LEFT, RIGHT]) {
       const route = chosen.find(r => r.movement === move && !seeded.has(r.chain[0]));
@@ -282,6 +287,7 @@ export function carPlayback(data: HapjeongCars, ambient = true, pedestrians?: Ha
         }
         if (now.tod < nextBus[r] || !space || !sim.addBus(r)) continue;
         lastBus[r] = cars.uid[cars.n - 1];
+        measurement?.lifecycle(lastBus[r], 'bus-dispatch', first);
         nextBus[r] = schedule();
       }
     }

@@ -1,0 +1,30 @@
+[
+  { "id": "A", "seconds": 600, "frames": [
+    {"time":0,"screen":[1440,900],"center":[450,-600],"width":150,"bearing":0,"tilt":34}
+  ] },
+  { "id": "B", "seconds": 600, "frames": [
+    {"time":0,"screen":[1440,900],"center":[450,-600],"width":700,"bearing":0,"tilt":34}
+  ] },
+  { "id": "C", "seconds": 600, "frames": [
+    {"time":0,"screen":[1440,900],"center":[450,-600],"width":1900,"bearing":0,"tilt":34}
+  ] },
+  { "id": "D", "seconds": 600, "frames": [
+    {"time":0,"screen":[1440,900],"center":[450,-600],"width":"overview","bearing":0,"tilt":34}
+  ] },
+  { "id": "E", "seconds": 300, "frames": [
+    {"time":0,"screen":[1440,900],"center":[-495,248],"width":150,"bearing":0,"tilt":34},
+    {"time":25,"screen":[1440,900],"center":[-495,248],"width":150,"bearing":0,"tilt":34},
+    {"time":55,"screen":[1440,900],"center":[-305,80],"width":150,"bearing":0,"tilt":34},
+    {"time":90,"screen":[1440,900],"center":[-69,-135],"width":150,"bearing":0,"tilt":34},
+    {"time":122,"screen":[1440,900],"center":[171,-366],"width":150,"bearing":0,"tilt":34},
+    {"time":158,"screen":[1440,900],"center":[416,-599],"width":150,"bearing":0,"tilt":34},
+    {"time":195,"screen":[1440,900],"center":[677,-802],"width":150,"bearing":0,"tilt":34},
+    {"time":225,"screen":[1440,900],"center":[677,-802],"width":1900,"bearing":0,"tilt":34},
+    {"time":255,"screen":[1440,900],"center":[677,-802],"width":1900,"bearing":90,"tilt":34},
+    {"time":285,"screen":[1440,900],"center":[677,-802],"width":150,"bearing":90,"tilt":34},
+    {"time":300,"screen":[1440,900],"center":[677,-802],"width":150,"bearing":90,"tilt":34}
+  ] },
+  { "id": "F", "seconds": 600, "frames": [
+    {"time":0,"screen":[390,844],"center":[450,-600],"width":300,"bearing":0,"tilt":34}
+  ] }
+]
