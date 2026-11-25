@@ -14,8 +14,8 @@
 - `src/aerial/district-tiles.ts` (298줄): Load the district overview and retain detailed meshes around the camera.
   - asset 32-40 · makeOverview 41-100 · makeTile 101-156 · ↳floats 105-156 · loadDistrictTiles 157-298 · ↳fetchTile 180-198 · ↳update 199-298
 - `src/aerial/ground-paint.ts` (3줄): The same metres as the dash shader in src/render/marks.ts.
-- `src/aerial/hapjeong-car-graph.ts` (175줄)
-  - districtCarGraph 48-67 · carBoundary 68-81 · hapjeongCarGraph 82-175 · ↳boundary 88-175
+- `src/aerial/hapjeong-car-graph.ts` (194줄)
+  - districtCarGraph 50-84 · carBoundary 85-98 · hapjeongCarGraph 99-194 · ↳boundary 106-194
 - `src/aerial/hapjeong-car-playback.ts` (327줄)
   - carVisibility 18-39 · delta 40-44 · speedRatio 45-75 · carPlayback 76-327 · ↳boundary 93-93 · ↳terminalKey 94-116 · ↳busOutlet 117-136 · ↳follow 137-233 · ↳clock 234-238 · ↳reset 239-312 · ↳at 313-327
 - `src/aerial/hapjeong-cars.ts` (132줄)
@@ -262,8 +262,8 @@
   - nodeKey 31-31 · wrap 32-36 · halfWidth 37-139 · buildIntersections 140-1030 · ↳node 145-165 · ↳pass 166-167 · ↳laneSeam 168-181 · ↳find 182-182 · ↳unite 183-189 · ↳around 190-194 · ↳dist 195-196 · ↳cross 197-210 · ↳joinPass 211-230 · ↳inJ 231-264 · ↳laneW 265-359 · ↳outHeading 360-407 · ↳moveOf 408-411 · ↳rightLane 412-417 · ↳setRules 418-422 · ↳laneMoves 423-455 · ↳startClear 456-464 · ↳gate0 465-489 · ↳gate 490-547 · ↳clearOut 548-584 · ↳lp 585-590 · ↳curve 591-618 · ↳fillet 619-672 · ↳inRing 673-677 · ↳xwAt 678-686 · ↳carLanes 687-688 · ↳outLane 689-699 · ↳makePath 700-755 · ↳path 756-769 · ↳conflict 770-819 · ↳converge 820-857 · ↳holdOut 858-870 · ↳relEnd 871-883 · ↳track 884-911 · ↳obb 912-923 · ↳touch 924-966 · ↳touchAfter 967-988 · ↳turnOverlap 989-1030
 - `src/sim/intersection/index.ts` (20줄): 교차로와 신호(재작업 W20). 차(cars.ts)·사람(walkers.ts)·신호등 그림(render/signals.ts)이 이것 하나를 함께 쓴다.
   - makeIntersections 15-20
-- `src/sim/intersection/signal.ts` (661줄): 신호(재작업 W20, 설계 문서 45절). 교차로(build.ts) 하나에 신호 하나. 옛 signals.ts 를 쓰지 않는다.
-  - axisGap 91-94 · bits 95-96 · makeSignalPlan 97-661 · ↳lampsFor 109-150 · ↳midGate 151-229 · ↳allPaths 230-281 · ↳mvPaths 282-282 · ↳mvXw 283-284 · ↳conflictM 285-293 · ↳weight 294-483 · ↳startOf 484-505 · ↳wrap 506-508 · ↳findRoot 509-539 · ↳inRing 540-560 · ↳at 561-567 · ↳moveState 568-581 · ↳state 582-586 · ↳greenLeft 587-603 · ↳yields 604-610 · ↳walkState 611-621 · ↳walkLeft 622-634 · ↳walkIn 635-649 · ↳walkLen 650-655 · ↳siteOf 656-661
+- `src/sim/intersection/signal.ts` (742줄): 신호(재작업 W20, 설계 문서 45절). 교차로(build.ts) 하나에 신호 하나. 옛 signals.ts 를 쓰지 않는다.
+  - axisGap 99-102 · bits 103-103 · surveyKey 104-104 · surveyedOffset 105-110 · makeSignalPlan 111-742 · ↳oldApproach 119-126 · ↳lampsFor 127-168 · ↳midGate 169-254 · ↳allPaths 255-306 · ↳mvPaths 307-307 · ↳mvXw 308-309 · ↳conflictM 310-318 · ↳weight 319-508 · ↳startOf 509-530 · ↳wrap 531-533 · ↳findRoot 534-620 · ↳inRing 621-641 · ↳at 642-648 · ↳moveState 649-662 · ↳state 663-667 · ↳greenLeft 668-684 · ↳yields 685-691 · ↳walkState 692-702 · ↳walkLeft 703-715 · ↳walkIn 716-730 · ↳walkLen 731-736 · ↳siteOf 737-742
 - `src/sim/lanes.ts` (831줄): 차로 정하기(길 정본의 차로, 설계 문서 51절). 굽기(tools/road.ts)가 부르고, 정본 없이 차 그래프를 만들 때(시험의 만든 길)도 같은 함수로 정한다.
   - plainDir 13-20 · medOff 21-24 · resolveLanes 25-96 · ↳open 46-47 · ↳reach 48-53 · ↳between 54-96 · trimShortBumps 97-123 · exportCanon 124-154 · inheritLanes 155-244 · ↳offs 159-159 · ↳aligned 160-164 · ↳seam 165-244 · keepApart 245-332 · ↳key 248-332 · densify 333-350 · reproject 351-381 · ↳fix 353-381 · chainsOf 382-406 · ↳walk 389-406 · spread 407-415 · pushRight 416-447 · ↳after 420-447 · lanePoints 448-466 · oppositeClashes 467-542 · ↳busyEnd 475-475 · ↳nearNode 476-476 · ↳ends 477-477 · ↳meet 478-487 · ↳crossNear 488-542 · seamGaps 543-564 · centreCrossings 565-612 · ↳ck 568-612 · junctionZone 613-618 · lanePoint 619-627 · canonConstraints 628-747 · ↳log 629-629 · ↳curbLeft 630-635 · ↳curbRight 636-654 · ↳clampAll 655-674 · ↳oppInner 675-747 · stitch 748-803 · simplifyTable 804-831 · ↳rec 809-831
 - `src/sim/longitudinal.ts` (32줄): The longitudinal ACC/IDM and stop limit used by makeCars.
