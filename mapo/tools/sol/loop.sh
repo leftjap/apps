@@ -173,7 +173,7 @@ plan_next() { # 목록이 비면 계획 세우기 모델이 다음 일감을 쓰
     echo; echo "## 루프 기록 끝 40줄"; tail -40 "$OUT/loop.log" 2>/dev/null
     echo; echo "## 최근 커밋"; g log --oneline -8 -- "$SCOPE"
   } > "$pf"
-  sig_before=$(g status --porcelain --untracked-files=all -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R" | shasum)
+  sig_before=$(g status --porcelain --untracked-files=no -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R" -e "$QUEUE_R" | shasum)
   "$CLAUDE" -p --model "$PLAN_MODEL" --effort high --output-format json \
     --permission-mode bypassPermissions "$(cat "$pf")" > "$pf.json" 2>"$pf.err"
   pcode=$?
@@ -185,7 +185,7 @@ plan_next() { # 목록이 비면 계획 세우기 모델이 다음 일감을 쓰
     g commit -q -m "chore(mapo-loop): plan next task" -m "$COAUTHOR" || finish 2 "계획한 일감을 커밋하지 못했다"
     log "계획 세우기가 일감을 더했다: $(g log -1 --format=%h)"
   fi
-  [ "$sig_before" = "$(g status --porcelain --untracked-files=all -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R" | shasum)" ] || \
+  [ "$sig_before" = "$(g status --porcelain --untracked-files=no -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R" -e "$QUEUE_R" | shasum)" ] || \
     finish 4 "계획 세우기가 일감 목록 밖의 파일을 고쳤다. 계획 단계는 일감만 쓴다."
 }
 read_field() { # 검수 답의 마지막 JSON 줄에서 칸 하나

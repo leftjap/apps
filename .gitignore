@@ -81,3 +81,5 @@ tmp/
 
 # 단계 S1 승인 전까지 전역 구운 자료는 올리지 않는다(마스터가 승인 뒤 한 번에)
 mapo/public/data/v2/mapo-all*
+
+__pycache__/
