@@ -176,6 +176,21 @@ def connected_paint(lines):
             for color, polys in sorted(fills.items())]
 
 
+def inferred_paint(lines, clip_to=None):
+    fills = defaultdict(list)
+    for row in lines:
+        ink = row['ink']
+        for path in row['paths']:
+            fills[ink['color']].extend(footprint(path, ink['width'], 0, ink['dash']))
+    result = []
+    for color, polys in sorted(fills.items()):
+        painted = unary_union(polys)
+        if clip_to is not None:
+            painted = painted.intersection(clip_to)
+        result.append({'color': color, 'faces': rings(painted)})
+    return result
+
+
 def preserve_inferred_pavement(measured, inferred):
     """Use reviewed additions inside the earlier areas; infer across their joins."""
     references = [(name, COMPARISON_SEAM_MARGIN) for name in AREA.get('comparisonAreas', ())]
@@ -196,7 +211,8 @@ def bake_a(old):
     survey_walk = surface(floor['walk'] + floor['islands'])
     combined = survey_walk.union(surface([face for row in floor['a4'] for face in row['faces']]))
     measured = combined
-    common_road = surface(floor['road']).difference(survey_walk)
+    road_surface = surface(floor['road'])
+    common_road = road_surface.difference(survey_walk)
     segments = list(link_segments(features('a2-expanded')))
     wide = 'outline' in AREA
     segment_index = STRtree([line for _, line, _ in segments]) if wide else None
@@ -250,6 +266,18 @@ def bake_a(old):
         ]
         result['paint'] = connected_paint(result['lines'])
         result['bicycles'] = old['bicycles']
+    if AREA['id'] == 'mapo-all':
+        from infer_lane_lines import infer_lane_lines
+
+        inferred, excluded, _ = infer_lane_lines(AREA, result)
+        result['lines'].extend(inferred)
+        paint_by_color = {row['color']: row for row in result['paint']}
+        for row in inferred_paint(inferred, road_surface.intersection(WINDOW)):
+            if row['color'] in paint_by_color:
+                paint_by_color[row['color']]['faces'].extend(row['faces'])
+            else:
+                result['paint'].append(row)
+        print('width-rule metres:', json.dumps({key: round(value, 2) for key, value in sorted(excluded.items())}))
     if wide:
         from survey_open_ground import open_ground
         result.update(open_ground())
