@@ -123,6 +123,9 @@ def survey_continuations(audit, surveyed):
     """Recognize coincident limits of two measured halves without paving traffic space."""
     direct = [row for row in audit if all(end['status']=='joined' for end in row['approaches'])]
     for row in audit:
+        # Keep the measured kerb contact that qualified supplemental paint.
+        if row['status']=='supplemented':
+            continue
         for end, opposite in (row['approaches'], row['approaches'][::-1]):
             if end['status']=='joined':
                 continue
@@ -175,18 +178,19 @@ def supplement_crossings(b3, walk, building_faces, road):
         approaches = [approach(end,other,width,walk_parts,walk_index,forbidden,face,4*width)
                       for end,other in ((a,b),(b,a))]
         entry = {'id':id, 'axisHeading':heading, 'approaches':approaches, 'faces':rings(face)}
-        joined = all(p['status']=='joined' for p in approaches)
+        landings_joined = all(p['status']=='joined' for p in approaches)
+        reached = all(p['distance'] is not None for p in approaches)
         opposite = approaches[0]['walkComponent'] != approaches[1]['walkComponent']
-        gap = max(p['distance'] for p in approaches) if joined else math.inf
+        gap = max(p['distance'] for p in approaches) if reached else math.inf
         # Retain the measured-pavement rule when admitting paint with a wider gap.
-        if covered or score or (opposite and gap <= PAVING_KERB_GAP):
+        if covered or score or (landings_joined and opposite and gap <= PAVING_KERB_GAP):
             paving.extend(face for p in approaches for face in p['faces'])
         if covered:
             audit.append({**entry,'status':'covered-by-b3'})
             continue
         visible = face.intersection(WINDOW) if clip else face
         area = visible.area
-        if not joined:
+        if not reached:
             reason = 'unjoined-approach'
         elif not opposite:
             reason = 'same-walk-component'
