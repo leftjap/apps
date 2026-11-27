@@ -140,7 +140,7 @@ def bake_details():
     # Opposing yellow borders sometimes encode a median without a 531 code.
     # Ordinary double yellow lines are too narrow to be a painted island.
     explicit.extend((face, True, 'B2 501') for face in center if 2*face.area/face.length >= 1.15)
-    yellow_edges = union_all([*measured['501',True], *measured['531',True]])
+    yellow_border = union_all([*measured['501',True], *measured['531',True]]).buffer(.55)
     zones = []
     occupied = Polygon()
     rejected = Counter()
@@ -157,7 +157,7 @@ def bake_details():
                 continue
             if color is None:
                 # Central yellow paint is identifiable from the measured border.
-                color = piece.boundary.intersection(yellow_edges.buffer(.55)).length > piece.length*.25
+                color = piece.boundary.intersection(yellow_border).length > piece.length*.25
             for polygon in parts(safe.difference(occupied), 'Polygon'):
                 if polygon.area < 3:
                     continue
