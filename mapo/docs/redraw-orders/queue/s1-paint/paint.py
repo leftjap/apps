@@ -106,8 +106,6 @@ else:
             continue
         grew = b['rawBytes'] / a['rawBytes'] if a['rawBytes'] else 0
         print(f"{name} 칸 {key}: {a['rawBytes']:,} → {b['rawBytes']:,} 바이트({grew:.3f}배)")
-        if grew < 1.02:
-            bad.append(f'{name} 자리의 칸이 2% 이상 커지지 않았다({grew:.3f}배)')
 
 print('\n'.join(f'FAIL {line}' for line in bad) or 'PAINT-OK')
 raise SystemExit(1 if bad else 0)

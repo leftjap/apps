@@ -68,7 +68,7 @@ import re, sys
 text = sys.argv[1]
 bad = []
 for name in ('paint-1','paint-2','paint-3'):
-    line = next((l for l in text.splitlines() if l.startswith(name+':')), None)
+    line = next((l for l in text.splitlines() if l.startswith(name+'.png:')), None)
     if line is None: bad.append(f'{name} 대조 줄이 없다'); continue
     if '같음' in line: bad.append(f'{name} 이 고치기 전과 똑같다(그려지지 않았다)'); continue
     m = re.search(r'\(([\d.]+)%\)', line)
