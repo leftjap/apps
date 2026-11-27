@@ -111,17 +111,25 @@ if {row['color'] for row in asset['paint']} != set(PAINT):
     bad.append('도색 색 묶음이 전(0·1·2·3)과 다르다')
 
 # ④ 노면 세부(빗금·화살표)는 건드리지 않았다
-stats_path = WORK / 'stats.json'
+stats_path = WORK / 'stats-check.json'  # check.sh 가 직접 다시 만든 수치(구현자가 쓴 파일은 읽지 않는다)
 if not stats_path.is_file():
-    bad.append(f'없음: {stats_path.relative_to(ROOT)}(survey_road_paint.py --stats 로 만든다)')
+    bad.append(f'없음: {stats_path.relative_to(ROOT)}(check.sh 가 survey_road_paint.py --stats 로 만든다)')
 else:
     stats = json.loads(stats_path.read_text())
     print(f'노면 세부: 빗금 {stats.get("zones")}, 황색 {stats.get("yellow")}, '
           f'열린 531 {stats.get("open531")}, 열린 중앙 조각 {stats.get("openCenterPieces")}')
     if stats.get('zones') != ZONES:
         bad.append(f'빗금 면 수가 {stats.get("zones")} 다(전 {ZONES})')
-    if stats.get('symbols') != SYMBOLS:
-        bad.append('화살표 수가 전과 다르다')
+    # 마스터 11-27: 531 테두리 선이 흰 도색 분할을 바꿔 직진 화살표 2개가 도색면 밖으로 밀린다(2,854 → 2,852).
+    # 종류마다 2개까지 줄어든 것은 받아들이고(까닭은 measure.md 에 적혀 있어야 하고 검수자가 본다), 늘거나 더 줄면 실패다.
+    got = stats.get('symbols') or {}
+    for kind, before in SYMBOLS.items():
+        now = got.get(kind, 0)
+        if now != before: print(f'  화살표 {kind}: {before} → {now}')
+        if not before - 2 <= now <= before:
+            bad.append(f'화살표 {kind} 가 {before} → {now} 다(줄어든 것은 2개까지만 받아들인다)')
+    if set(got) - set(SYMBOLS):
+        bad.append(f'새 화살표 종류가 생겼다: {sorted(set(got) - set(SYMBOLS))}')
     if stats.get('yellow') != 250:
         bad.append(f'황색 빗금이 {stats.get("yellow")}개다(전 250개)')
     if (stats.get('open531'), stats.get('openCenterPieces')) != (73, 694):

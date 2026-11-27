@@ -6,7 +6,7 @@ mkdir -p "$D/shots" "$D/after"
 
 for f in public/data/v2/mapo-all.json.gz public/data/v2/mapo-all-a.json.gz \
   public/data/v2/mapo-all-road-paint.json.gz public/data/v2/mapo-all-tiles/index.json \
-  public/data/v2/mapo-all-tiles/overview.json.gz "$D/measure.md" "$D/stats.json" \
+  public/data/v2/mapo-all-tiles/overview.json.gz "$D/measure.md" \
   "$D/before/bd1.png" "$D/before/bd2.png" "$D/before/bd3.png" "$D/before/ewha-120.png" \
   "$D/before/near-200.png" "$D/before/mid-700.png" "$D/before/mid-1500.png" "$D/before/full.png" \
   "$D/shots/audit-1.jpg" "$D/shots/audit-2.jpg" \
@@ -14,6 +14,12 @@ for f in public/data/v2/mapo-all.json.gz public/data/v2/mapo-all-a.json.gz \
   [ -s "$f" ] || { echo "FAIL 없음: $f"; ok=1; }; done
 [ $ok = 0 ] || { echo '앞의 파일이 없어 검사를 멈춘다'; exit 1; }
 
+# 노면 세부 자료와 칸은 검사가 직접 다시 만든다(마스터 11-27: 1회차 구현이 앞 일감 보관본의 빗금·화살표를 섞고
+# 수치 파일에 옛 수를 적어 통과시켰다. 구현자가 쓴 수치 파일은 읽지 않는다)
+$PY -B tools/v2/survey_road_paint.py --area tools/v2/areas/mapo-all.json --stats "$D/stats-check.json" > "$D/check-paint.log" 2>&1 \
+  || { echo 'FAIL 노면 세부 자료를 다시 만들지 못했다'; tail -5 "$D/check-paint.log"; ok=1; }
+$PY -B tools/v2/pack_district_tiles.py --area tools/v2/areas/mapo-all.json > "$D/check-pack.log" 2>&1 \
+  || { echo 'FAIL 칸을 다시 포장하지 못했다'; tail -5 "$D/check-pack.log"; ok=1; }
 out=$($PY -B "$Q/border.py" 2>&1); echo "$out" | head -40
 echo "$out" | grep -q '^BORDER-OK' || { echo 'FAIL 안전지대 테두리 자료 검사'; ok=1; }
 
