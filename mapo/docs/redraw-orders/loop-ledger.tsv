@@ -59,3 +59,27 @@
 2026-11-26 10:29	s1-fill-lanes	2	impl	sol	high	13	s1-fill-lanes-impl-2	종료 0
 2026-11-26 10:33	s1-fill-lanes	2	check	-	-	4	-	종료 0
 2026-11-26 10:35	s1-fill-lanes	2	review	opus	high	2	$2.1274175/입력 1029960	PASS(종료 0)
+2026-11-26 10:44	plan	1	plan	opus	high	8	$5.823152/입력 6247247	종료 1
+2026-11-26 11:14	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 11:44	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 12:14	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 12:44	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 13:14	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 13:44	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 14:31	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 15:09	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 15:39	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 16:09	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 16:39	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 17:09	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 17:45	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 18:15	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 18:46	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 19:16	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 19:46	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 20:19	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 22:03	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 22:33	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 23:08	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-26 23:38	plan	1	plan	opus	high	0	$0/입력 0	종료 1
+2026-11-27 04:06	plan	1	plan	opus	high	1	$2.0058925/입력 651016	종료 0
