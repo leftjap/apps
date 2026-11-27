@@ -114,3 +114,7 @@
 2026-11-27 16:11	s1-safety-border	1	impl	sol	medium	22	s1-safety-border-impl-1	종료 0
 2026-11-27 16:20	s1-safety-border	1	check	-	-	10	-	종료 0
 2026-11-27 16:25	s1-safety-border	1	review	opus	high	4	$2.5811024999999996/입력 1239433	PASS(종료 0)
+2026-11-27 16:37	plan	1	plan	opus	high	12	$6.104225/입력 6113130	종료 0
+2026-11-27 17:06	s1-uturn	1	impl	sol	medium	29	s1-uturn-impl-1	종료 0
+2026-11-27 17:19	s1-uturn	1	check	-	-	13	-	종료 0
+2026-11-27 17:23	s1-uturn	1	review	opus	high	3	$2.4841554999999995/입력 1650508	PASS(종료 0)

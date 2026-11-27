@@ -15,7 +15,7 @@ from hapjeong_hd import AREA, MAPO, ORIGIN, WINDOW, features, parts, paths, proj
 from hapjeong_crossings import expanded_walk, supplement_crossings, vehicle_clearance, walking_landings
 from aerial_paint import footprint
 
-LINE_KINDS = {'501','503','506','504','525','530','505','515','531'}
+LINE_KINDS = {'501','502','503','506','504','525','530','505','515','531','599'}
 TIE_METRES = .25
 TIE_DEGREES = 15
 

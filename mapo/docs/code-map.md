@@ -153,8 +153,8 @@
   - half_metre_routes 17-22 · crossing_sources 23-43 · crossing_axis 44-60 · overlap 61-64 · agreement 65-72 · expanded_walk 73-79 · survey_heading 80-97 · approach 98-121 · survey_continuations 122-145 · vehicle_clearance 146-151 · supplement_crossings 152-227 · walking_landings 228-312
 - `tools/v2/hapjeong_entrances.mts` (130줄): Use the basic board's station models, train arrivals and stop coordinates.
   - mercator 31-32 · groundPoint 33-37 · inside 38-45 · on 46-79 · projectedPlatform 80-130
-- `tools/v2/hapjeong_hd.py` (298줄): Bake the Hapjeong HD source comparison without moving or clipping its surveyed lines.
-  - features 41-46 · project 47-50 · paths 51-56 · face_rings 57-62 · offset_zebra 63-76 · link_heading 77-90 · rings 91-95 · survey_faces 96-113 · survey_islands 114-137 · survey_floor 138-147 · marking_style 148-157 · connectivity 158-216 · floor_faces 217-222 · floor_paths 223-229 · bake 230-298
+- `tools/v2/hapjeong_hd.py` (299줄): Bake the Hapjeong HD source comparison without moving or clipping its surveyed lines.
+  - features 42-47 · project 48-51 · paths 52-57 · face_rings 58-63 · offset_zebra 64-77 · link_heading 78-91 · rings 92-96 · survey_faces 97-114 · survey_islands 115-138 · survey_floor 139-148 · marking_style 149-158 · connectivity 159-217 · floor_faces 218-223 · floor_paths 224-230 · bake 231-299
 - `tools/v2/hapjeong_hd_a.py` (327줄): Build the A view from the preserved Hapjeong HD comparison.
   - polygon 23-26 · surface 27-30 · angle_difference 31-35 · link_segments 36-46 · choose_direction 47-82 · outline_exclusions 83-94 · median_faces 95-107 · median_paving 108-128 · platform_strips 129-164 · connected_paint 165-178 · inferred_paint 179-193 · preserve_inferred_pavement 194-207 · bake_a 208-285 · clip_faces 286-289 · clip_crossing 290-293 · pedestrian_landings 294-327
 - `tools/v2/hapjeong_queue_case.mts` (44줄): Seed six cars per eligible approach to expose the fourth-to-sixth discharge.
@@ -323,7 +323,7 @@
 - `tools/sol/retry.sh` (67줄)
 - `tools/sol/run.sh` (70줄)
 - `tools/sol/stop.sh` (21줄)
-- `tools/sol/test_loop.sh` (590줄)
+- `tools/sol/test_loop.sh` (604줄)
 - `tools/sol/test_watchdog.sh` (163줄)
 - `tools/sol/usage.py` (62줄): Codex 세션 파일(~/.codex/sessions)에서 실제 토큰 내역을 뽑는다.
   - events 16-32 · main 33-62
