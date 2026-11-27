@@ -2,6 +2,10 @@
 # tools/sol/loop.sh 의 시험. 임시 git 저장소와 가짜 claude·sol 로 열 경우를 돌린다(진짜 CLI 를 부르지 않는다).
 # 쓰는 법: bash tools/sol/test_loop.sh   (모두 통과하면 종료 0)
 set -u
+# 두 로케일로 돈다: 먼저 C, 끝에서 ko_KR.UTF-8 로 자기 자신을 한 번 더 부른다.
+# macOS 의 bash 3.2 는 UTF-8 로케일에서 변수 이름 바로 뒤에 한글이 붙으면(달러 n 뒤에 곧바로 「회차」가 오는 꼴) 이름을 잘못 읽어 죽는다.
+# 2026-11-27 교통 루프가 이 때문에 죽었다. 그런 자리는 중괄호로 감싼다. 맨 끝의 정적 검사가 도구 전체에서 센다(주석도 센다).
+[ -n "${LOOP_TEST_LOCALE_PASS:-}" ] || export LC_ALL=C
 HERE="$(cd "$(dirname "$0")" && pwd)"
 LOOP_SRC="$HERE/loop.sh"
 OKN=0; BADN=0
@@ -585,5 +589,15 @@ case34() { echo "㉞ 루프가 TERM 을 받으면 배경으로 돌던 단계도 
 for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22 case23 case24 case25 case26 case27 case28 case29 case30 case31 case32 case33 case34}; do "$c"; done
 [ -n "${LOOP_TEST_KEEP:-}" ] || wipe
 printf '\n문법 검사: '; for f in "$LOOP_SRC" "$HERE/retry.sh" "$HERE/watch.sh" "$HERE/resume.sh"; do bash -n "$f" || { echo "FAIL $f"; BADN=$((BADN + 1)); }; done; echo ok
+# 변수 이름 바로 뒤에 ASCII 가 아닌 글자가 붙은 자리는 ${이름} 으로 감싸야 한다(실행 경로와 상관없이 도구 전체에서 센다)
+glued=$(cat "$HERE"/*.sh | LC_ALL=C grep -cE '\$[A-Za-z_][A-Za-z0-9_]*[^ -~]')
+[ "$glued" = 0 ] || LC_ALL=C grep -nE '\$[A-Za-z_][A-Za-z0-9_]*[^ -~]' "$HERE"/*.sh | cut -c1-140
+chk "변수 이름 바로 뒤에 한글이 붙은 자리(도구 전체)" 0 "$glued"
 printf '통과 %s, 실패 %s\n' "$OKN" "$BADN"
 [ "$BADN" = 0 ] || exit 1
+if [ -z "${LOOP_TEST_LOCALE_PASS:-}" ]; then
+  printf '\n같은 시험을 한글 로케일(LC_ALL=ko_KR.UTF-8)로 한 번 더 돌린다\n'
+  LOOP_TEST_LOCALE_PASS=1 LC_ALL=ko_KR.UTF-8 bash "$HERE/test_loop.sh" < /dev/null > "${TMPDIR:-/tmp}/test_loop.utf8.$$" 2>&1; ucode=$?
+  grep 'FAIL' "${TMPDIR:-/tmp}/test_loop.utf8.$$" | head -12; tail -1 "${TMPDIR:-/tmp}/test_loop.utf8.$$"
+  [ "$ucode" = 0 ] || { echo "한글 로케일 실행이 실패했다(전체 출력 ${TMPDIR:-/tmp}/test_loop.utf8.$$)"; exit 1; }
+fi

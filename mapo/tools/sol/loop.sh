@@ -437,13 +437,13 @@ while :; do
     fi
     if ! { [ "$n" = 1 ] && [ -n "$skip_impl1" ]; } && [ "$n" != "$skip_n" ]; then
     ledger "$id" "$n" impl "$IMPL" "$IMPL_EFFORT" "$(mins_since "$t0")" "$icost" "$(capped_note "$icode")"
-    log "일감 $id $n회차 구현 끝($IMPL, $(capped_note "$icode"))"
+    log "일감 $id ${n}회차 구현 끝($IMPL, $(capped_note "$icode"))"
     fi
     if [ -n "$CAPPED" ]; then
-      finish 8 "일감 $id 의 $n회차 구현이 시간 상한(${IMPL_CAP}분)을 넘어 그 프로세스와 자식들을 끝냈다. 작업 트리는 그대로 두었다. 걸린 까닭(멈춘 명령, 너무 큰 일감)을 본 뒤 tools/sol/loop.sh --continue 로 이어 간다(그 회차 구현부터 다시 한다). 상한은 task.env 의 IMPL_MAX_MIN."
+      finish 8 "일감 $id 의 ${n}회차 구현이 시간 상한(${IMPL_CAP}분)을 넘어 그 프로세스와 자식들을 끝냈다. 작업 트리는 그대로 두었다. 걸린 까닭(멈춘 명령, 너무 큰 일감)을 본 뒤 tools/sol/loop.sh --continue 로 이어 간다(그 회차 구현부터 다시 한다). 상한은 task.env 의 IMPL_MAX_MIN."
     fi
     if [ "$IMPL" != sol ] && [ -e "$WORK/impl-$n.json" ] && impl_cut "$WORK/impl-$n.json"; then
-      finish 7 "일감 $id 의 $n회차 구현이 한도나 오류로 끊겼다($WORK/impl-$n.json). 작업 트리는 그대로 두었다. 한도가 풀리면 tools/sol/loop.sh --continue 로 이어 간다."
+      finish 7 "일감 $id 의 ${n}회차 구현이 한도나 오류로 끊겼다($WORK/impl-$n.json). 작업 트리는 그대로 두었다. 한도가 풀리면 tools/sol/loop.sh --continue 로 이어 간다."
     fi
     if [ "$task_sig0" != "$(task_sig)" ]; then
       mark_queue "$lineno" '!'
@@ -462,9 +462,9 @@ while :; do
     ccode=$?
     tail -80 "$WORK/check-$n.full" > "$WORK/check-$n.txt"
     ledger "$id" "$n" check - - "$(mins_since "$t0")" - "$(capped_note "$ccode")"
-    log "일감 $id $n회차 검사 $(capped_note "$ccode")"
+    log "일감 $id ${n}회차 검사 $(capped_note "$ccode")"
     if [ -n "$CAPPED" ]; then
-      finish 8 "일감 $id 의 $n회차 통과 검사가 시간 상한(${CHECK_CAP}분)을 넘어 그 프로세스와 자식들을 끝냈다. 검사 출력 $WORK/check-$n.full. 작업 트리는 그대로 두었다. 검사가 걸린 까닭을 본 뒤 tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다. 상한은 task.env 의 CHECK_MAX_MIN."
+      finish 8 "일감 $id 의 ${n}회차 통과 검사가 시간 상한(${CHECK_CAP}분)을 넘어 그 프로세스와 자식들을 끝냈다. 검사 출력 $WORK/check-$n.full. 작업 트리는 그대로 두었다. 검사가 걸린 까닭을 본 뒤 tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다. 상한은 task.env 의 CHECK_MAX_MIN."
     fi
 
     # 5. 검수(다른 모델, 읽기 전용)
@@ -537,7 +537,7 @@ while :; do
       # 반쯤 쓴 답이 --continue 에서 FAIL 회차로 읽히지 않게 이름을 바꿔 둔다
       mv "$WORK/review-$n.out" "$WORK/review-$n.timeout" 2>/dev/null
       ledger "$id" "$n" review "$REVIEW" "$REVIEW_EFFORT" "$(mins_since "$t0")" "$rcost" "시간 제한"
-      finish 8 "일감 $id 의 $n회차 검수가 시간 상한(${REVIEW_MAX_MIN}분)을 넘어 그 프로세스와 자식들을 끝냈다. 작업 트리는 그대로 두었다. tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다."
+      finish 8 "일감 $id 의 ${n}회차 검수가 시간 상한(${REVIEW_MAX_MIN}분)을 넘어 그 프로세스와 자식들을 끝냈다. 작업 트리는 그대로 두었다. tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다."
     fi
     sig1=$(tree_sig)
     verdict=$(read_verdict "$vfiles")
@@ -547,7 +547,7 @@ while :; do
       log "검수 앞뒤로 작업 트리가 달라졌다($sig0 → $sig1). 읽기 전용 검수가 아니었으므로 STOP 으로 센다"
     fi
     ledger "$id" "$n" review "$REVIEW" "$REVIEW_EFFORT" "$(mins_since "$t0")" "$rcost" "$verdict(종료 $rcode)"
-    log "일감 $id $n회차 검수 $verdict"
+    log "일감 $id ${n}회차 검수 $verdict"
     rm -f "$WORK/recheck"
 
     # 6. 판정
