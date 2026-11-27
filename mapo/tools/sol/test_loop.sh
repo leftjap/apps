@@ -37,6 +37,7 @@ elif [ "$role" = impl ]; then
   echo "impl" >> "$FAKE_REPO/seed.txt"
   [ -n "${FAKE_IMPL_BG:-}" ] && { nohup bash -c "sleep 3; echo late > '$FAKE_REPO/late.txt'" loop-busy-marker >/dev/null 2>&1 & }
   [ -n "${FAKE_IMPL_TOUCH_TASK:-}" ] && echo "기준 바꿈" >> "$FAKE_REPO/docs/redraw-orders/queue/t1/brief.md"
+  [ -n "${FAKE_IMPL_SLEEP:-}" ] && sleep "$FAKE_IMPL_SLEEP"
   if [ -n "${FAKE_IMPL_LIMIT:-}" ]; then printf '{"type":"result","subtype":"error","is_error":true,"result":"limit reached"}\n'; exit 1; fi
   printf '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0.0123,"usage":{"input_tokens":1200,"cache_read_input_tokens":3400}}\n'
 else
@@ -44,8 +45,9 @@ else
   input=; IFS= read -r -t 2 input; [ -n "$input" ] || { echo "Error: Input must be provided either through stdin or as a prompt argument when using --print"; exit 1; }
   [ -n "${FAKE_REVIEW_TOUCH:-}" ] && echo "검수자가 고침" >> "$FAKE_REPO/work.txt"
   v=$(head -1 "$FAKE_VERDICTS"); tail -n +2 "$FAKE_VERDICTS" > "$FAKE_VERDICTS.n"; mv "$FAKE_VERDICTS.n" "$FAKE_VERDICTS"
-  r=false; case "$v" in *:r) r=true; v=${v%:r};; esac
-  printf '{"type":"result","total_cost_usd":0.002,"usage":{"input_tokens":900},"result":"가짜 검수\\n{\\"verdict\\":\\"%s\\",\\"repeat\\":%s,\\"reasons\\":[\\"가짜 까닭\\"],\\"fixes\\":[\\"가짜 고칠 것\\"]}"}\n' "$v" "$r"
+  # 판정 뒤의 표시: :r 같은 문제, :t 일감 탓(blame task), :i 구현 탓(blame impl)
+  r=false; b=; case "$v" in *:r*) r=true;; esac; case "$v" in *:t*) b='\"blame\":\"task\",';; *:i*) b='\"blame\":\"impl\",';; esac; v=${v%%:*}
+  printf '{"type":"result","total_cost_usd":0.002,"usage":{"input_tokens":900},"result":"가짜 검수\\n{\\"verdict\\":\\"%s\\",%s\\"repeat\\":%s,\\"reasons\\":[\\"가짜 까닭\\"],\\"fixes\\":[\\"가짜 고칠 것: 검사 줄\\"]}"}\n' "$v" "$b" "$r"
 fi
 EOF
   cat > "$REPO/fake/run.sh" <<'EOF'
@@ -61,9 +63,10 @@ case "$2" in
     echo "impl" >> "$FAKE_REPO/seed.txt"
     echo "sol 구현 끝" > "$out/$2-answer.md" ;;
   *)
+    [ -n "${FAKE_REVIEW_SLEEP:-}" ] && sleep "$FAKE_REVIEW_SLEEP"
     v=$(head -1 "$FAKE_VERDICTS"); tail -n +2 "$FAKE_VERDICTS" > "$FAKE_VERDICTS.n"; mv "$FAKE_VERDICTS.n" "$FAKE_VERDICTS"
-    r=false; case "$v" in *:r) r=true; v=${v%:r};; esac
-    printf '가짜 검수\n{"verdict":"%s","repeat":%s,"reasons":["가짜 까닭"],"fixes":["가짜 고칠 것"]}\n' "$v" "$r" > "$out/$2-answer.md" ;;
+    r=false; b=; case "$v" in *:r*) r=true;; esac; case "$v" in *:t*) b='"blame":"task",';; *:i*) b='"blame":"impl",';; esac; v=${v%%:*}
+    printf '가짜 검수\n{"verdict":"%s",%s"repeat":%s,"reasons":["가짜 까닭"],"fixes":["가짜 고칠 것: 검사 줄"]}\n' "$v" "$b" "$r" > "$out/$2-answer.md" ;;
 esac
 # 진짜 codex 처럼 지시문을 기록에 되풀이한다(지시문 안의 답 본보기가 판정으로 읽히면 안 된다)
 cat "$4"
@@ -86,6 +89,7 @@ setup() { # 깨끗한 임시 저장소
   REPO=$(mktemp -d /tmp/mapo-loop-test.XXXXXX)
   mkdir -p "$REPO/tools/sol" "$REPO/docs/redraw-orders/queue" "$REPO/fake" "$REPO/tmp"
   cp "$LOOP_SRC" "$REPO/tools/sol/loop.sh" 2>/dev/null || { echo "  (loop.sh 가 없다: $LOOP_SRC)"; }
+  for f in retry.sh watch.sh; do cp "$HERE/$f" "$REPO/tools/sol/$f" 2>/dev/null || echo "  ($f 가 없다)"; done
   printf 'tmp/\n' > "$REPO/.gitignore"
   printf '# 일감 목록\n\n' > "$REPO/docs/redraw-orders/queue.md"
   echo seed > "$REPO/seed.txt"
@@ -165,6 +169,8 @@ case3() { echo "③ 같은 문제로 다시 FAIL"
   chk "③ t1 표시" 1 "$(qmark '!' t1)"
   chk "③ 둘째 일감 그대로" 1 "$(grep -F -c -- '- [ ] t2 ' "$REPO/docs/redraw-orders/queue.md" | tr -d ' ')"
   chk "③ 멈춘 까닭 기록" 1 "$(have "$REPO/tmp/loop/status.md")"
+  chk "③ 기계가 읽는 멈춤 기록" 3 "$(awk '{print $1}' "$REPO/tmp/loop/last-exit" 2>/dev/null)"
+  chk "③ watch 가 STOPPED 3" 1 "$(bash "$REPO/tools/sol/watch.sh" --once "$REPO" | grep -c ' STOPPED 3 ' | tr -d ' ')"
 }
 
 case4() { echo "④ STOP 판정"
@@ -388,8 +394,196 @@ case24() { echo "㉔ 끊긴 뒤 이어받을 때 이미 끝난 회차 구현은 
   chk "㉔ 구현 다시 안 부름" 0 "$(hits 'claude impl')"
 }
 
-for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22 case23 case24}; do "$c"; done
+left() { c=$(pgrep -f "$1" 2>/dev/null | grep -c .); echo "${c:-0}" | tr -d ' '; } # 남은 프로세스 수
+
+case25() { echo "㉕ 배경 작업은 이 저장소 안의 것만 기다린다"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; add_task t2 "둘째" "$(IMPL_M=opus REVIEW_M=sol env_task)"
+  add_task t3 "셋째" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  other=$(mktemp -d /tmp/mapo-loop-test.XXXXXX)
+  ( cd "$other" && exec -a "python3 tools/v2/xbusy-other.py" sleep 25 ) & op=$!
+  verdicts PASS PASS PASS
+  LOOP_ARGS="--once"
+  t=$(date +%s); code=$(run_loop LOOP_BUSY_PATTERN=tools/v2/xbusy LOOP_BUSY_POLL=1); t=$(( $(date +%s) - t ))
+  chk "㉕ 다른 폴더의 것: 종료" 0 "$code"
+  chk "㉕ 다른 폴더의 것: 기다리지 않음" 1 "$([ "$t" -lt 10 ] && echo 1 || echo 0)"
+  ( cd "$REPO" && exec -a "python3 tools/v2/xbusy-in.py" sleep 5 ) & ip=$!
+  t=$(date +%s); code=$(run_loop LOOP_BUSY_PATTERN=tools/v2/xbusy LOOP_BUSY_POLL=1); t=$(( $(date +%s) - t ))
+  chk "㉕ 이 저장소 안의 것: 기다림" 1 "$([ "$t" -ge 4 ] && echo 1 || echo 0)"
+  rp=$(cd "$REPO" && pwd -P)
+  ( cd "$other" && exec -a "python3 tools/v2/xbusy-arg.py $rp/data" sleep 5 ) & ap=$!
+  t=$(date +%s); code=$(run_loop LOOP_BUSY_PATTERN=tools/v2/xbusy LOOP_BUSY_POLL=1); t=$(( $(date +%s) - t ))
+  chk "㉕ 인자에 이 저장소 경로: 기다림" 1 "$([ "$t" -ge 4 ] && echo 1 || echo 0)"
+  kill $op $ip $ap 2>/dev/null; wait $op $ip $ap 2>/dev/null; rmdir "$other" 2>/dev/null
+}
+
+case26() { echo "㉖ 검사가 시간 상한을 넘으면 종료 8, 남는 프로세스 없음"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task 'CHECK_MAX_MIN=0.04' | sed 's/^CHECK=.*/CHECK="sleep 3171 \& sleep 3172; wait"/')"; commit_all
+  verdicts PASS
+  code=$(run_loop LOOP_KILL_GRACE=2)
+  chk "㉖ 종료" 8 "$code"
+  chk "㉖ 검사 프로세스 남지 않음" 0 "$(left 'sleep 317[12]')"
+  chk "㉖ 검수 안 부름" 0 "$(hits 'review')"
+  chk "㉖ 트리 그대로" 1 "$(have "$REPO/work.txt")"
+  chk "㉖ 기계가 읽는 멈춤 기록" 8 "$(awk '{print $1}' "$REPO/tmp/loop/last-exit" 2>/dev/null)"
+}
+
+case27() { echo "㉗ 구현이 시간 상한을 넘으면 종료 8 → --continue 는 구현부터"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task 'IMPL_MAX_MIN=0.04')"; commit_all
+  verdicts PASS
+  code=$(run_loop LOOP_KILL_GRACE=2 FAKE_IMPL_SLEEP=3173)
+  chk "㉗ 종료" 8 "$code"
+  chk "㉗ 구현 프로세스 남지 않음" 0 "$(left 'sleep 3173')"
+  chk "㉗ 검수 안 부름" 0 "$(hits 'review')"
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "㉗ 이어서 종료" 0 "$code"
+  chk "㉗ 구현을 다시 부름" 2 "$(hits 'claude impl')"
+  chk "㉗ 커밋 수" 2 "$(commits)"
+}
+
+case28() { echo "㉘ 검수가 시간 상한을 넘으면 종료 8 → --continue 는 검사·검수부터"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts PASS
+  code=$(run_loop LOOP_KILL_GRACE=2 LOOP_REVIEW_MAX_MIN=0.04 FAKE_REVIEW_SLEEP=3174)
+  chk "㉘ 종료" 8 "$code"
+  chk "㉘ 검수 프로세스 남지 않음" 0 "$(left 'sleep 3174')"
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "㉘ 이어서 종료" 0 "$code"
+  chk "㉘ 구현 다시 안 부름" 1 "$(hits 'claude impl')"
+  chk "㉘ 커밋 수" 2 "$(commits)"
+}
+
+case29() { echo "㉙ 검수가 일감 탓(blame task) → 종료 9, 트리 남김 → retry.sh + --continue"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task | sed 's/^CHECK=.*/CHECK="test -s nothere.txt"/')"; add_task t2 "둘째" "$(env_task)"; commit_all
+  verdicts FAIL:t PASS
+  code=$(run_loop)
+  chk "㉙ 종료" 9 "$code"
+  chk "㉙ 구현 한 번" 1 "$(hits 'claude impl')"
+  chk "㉙ 구현 변경 남음" 1 "$(have "$REPO/work.txt")"
+  chk "㉙ 보관 패치 없음" 0 "$(have "$REPO/tmp/loop/t1/failed.patch")"
+  chk "㉙ t1 표시" 1 "$(qmark '!' t1)"
+  chk "㉙ 고칠 것을 status.md 에" 1 "$(grep -c '가짜 고칠 것: 검사 줄' "$REPO/tmp/loop/status.md" | tr -d ' ')"
+  chk "㉙ 검수 지시문에 blame 문단" 1 "$(grep -c '"blame":"task"' "$REPO/tmp/loop/t1/review-1.md" | tr -d ' ')"
+  # 마스터가 일감의 검사를 고쳐 커밋한다
+  sed -i '' 's/^CHECK=.*/CHECK="test -s work.txt"/' "$REPO/docs/redraw-orders/queue/t1/task.env"
+  git -C "$REPO" add docs/redraw-orders/queue/t1/task.env; git -C "$REPO" commit -q -m "검사 고침" >/dev/null 2>&1
+  ( cd "$REPO" && env LOOP_OUT="$REPO/tmp/loop" bash tools/sol/retry.sh t1 > "$REPO/tmp/retry.out" 2>&1 ); rc=$?
+  chk "㉙ retry 종료" 0 "$rc"
+  chk "㉙ retry 뒤 t1 표시" 1 "$(qmark ' ' t1)"
+  chk "㉙ 지난 회차 파일 옮김" 0 "$(have "$REPO/tmp/loop/t1/review-1.out")"
+  chk "㉙ 옮긴 자리" 1 "$(ls "$REPO"/tmp/loop/t1/run-*/review-1.out 2>/dev/null | grep -c . | tr -d ' ')"
+  chk "㉙ recheck 표시" 1 "$([ -e "$REPO/tmp/loop/t1/recheck" ] && echo 1 || echo 0)"
+  LOOP_ARGS="--continue --once"
+  code=$(run_loop)
+  chk "㉙ 이어서 종료" 0 "$code"
+  chk "㉙ 구현 다시 안 부름" 1 "$(hits 'claude impl')"
+  chk "㉙ 커밋(처음+고침+일감)" 3 "$(commits)"
+  chk "㉙ t1 표시 x" 1 "$(qmark x t1)"
+  chk "㉙ recheck 지움" 0 "$([ -e "$REPO/tmp/loop/t1/recheck" ] && echo 1 || echo 0)"
+}
+
+case30() { echo "㉚ 종료 3 으로 되돌려진 일감도 retry.sh 로 되살린다(충돌이면 아무것도 안 바꿈)"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts FAIL FAIL:r
+  code=$(run_loop)
+  chk "㉚ 종료" 3 "$code"
+  chk "㉚ 되돌려짐" 0 "$(have "$REPO/work.txt")"
+  echo "남의 충돌" > "$REPO/seed.txt"
+  ( cd "$REPO" && bash tools/sol/retry.sh t1 > "$REPO/tmp/retry.out" 2>&1 ); rc=$?
+  chk "㉚ 충돌이면 retry 실패" 1 "$([ "$rc" != 0 ] && echo 1 || echo 0)"
+  chk "㉚ 실패하면 파일 그대로" 1 "$(have "$REPO/tmp/loop/t1/review-1.out")"
+  chk "㉚ 실패하면 표시 그대로" 1 "$(qmark '!' t1)"
+  chk "㉚ 실패하면 새 파일 안 되살림" 0 "$(have "$REPO/work.txt")"
+  git -C "$REPO" checkout -q -- seed.txt
+  ( cd "$REPO" && bash tools/sol/retry.sh t1 > "$REPO/tmp/retry.out" 2>&1 ); rc=$?
+  chk "㉚ retry 종료" 0 "$rc"
+  chk "㉚ 새 파일 되살림" 1 "$(have "$REPO/work.txt")"
+  chk "㉚ 추적 파일 변경 되살림" 1 "$(grep -c impl "$REPO/seed.txt" | awk '{print ($1>0)}')"
+  chk "㉚ 장부는 되살리지 않음" 0 "$(git -C "$REPO" diff --name-only | grep -c 'ledger' | tr -d ' ')"
+  verdicts PASS
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "㉚ 이어서 종료" 0 "$code"
+  chk "㉚ 구현 다시 안 부름" 2 "$(hits 'claude impl')"
+  chk "㉚ 커밋 수" 2 "$(commits)"
+  chk "㉚ 되살린 변경이 커밋됨" 1 "$(git -C "$REPO" ls-files work.txt | grep -c . | tr -d ' ')"
+}
+
+case31() { echo "㉛ blame impl 은 지금 동작과 같다"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts FAIL:i PASS
+  code=$(run_loop)
+  chk "㉛ 종료" 0 "$code"
+  chk "㉛ 구현 두 번" 2 "$(hits 'claude impl')"
+}
+
+case32() { echo "㉜ 빈 impl-1.log 만 있으면 --continue 는 구현부터"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  mkdir -p "$REPO/tmp/loop/t1"; : > "$REPO/tmp/loop/t1/base-untracked.txt"; : > "$REPO/tmp/loop/t1/impl-1.log"
+  git -C "$REPO" rev-parse HEAD > "$REPO/tmp/loop/t1/base-head.txt"
+  verdicts PASS
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "㉜ 종료" 0 "$code"
+  chk "㉜ 구현을 부름" 1 "$(hits 'claude impl')"
+  # sol 구현의 정상 종료 줄이 있으면 끝난 것으로 본다
+  setup; add_task t1 "첫 일감" "$(IMPL_M=sol REVIEW_M=opus env_task)"; commit_all
+  mkdir -p "$REPO/tmp/loop/t1"; : > "$REPO/tmp/loop/t1/base-untracked.txt"
+  echo "sol/run.sh: s0/t1 끝(new, 3분, 호출 2, 끝 문맥 1, 입력 1, 커밋 0, 종료 0). 답: x" > "$REPO/tmp/loop/t1/impl-1.log"
+  echo impl > "$REPO/work.txt"
+  verdicts PASS
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "㉜ sol 정상 종료 줄: 종료" 0 "$code"
+  chk "㉜ sol 정상 종료 줄: 구현 안 부름" 0 "$(hits 'impl-1')"
+}
+
+case33() { echo "㉝ watch.sh 가 밖에서 상태를 읽는다"
+  setup; add_task t1 "첫 일감" "$(env_task)"; commit_all
+  mkdir -p "$REPO/tmp/loop/t1"; W="$REPO/tools/sol/watch.sh"
+  echo "2026-11-27 10:00 일감 t1 1회차 구현 끝(opus, 종료 0)" > "$REPO/tmp/loop/loop.log"
+  ( cd "$REPO" && exec -a "bash tools/sol/loop.sh --continue" sleep 9 ) & fp=$!
+  sleep 1
+  chk "㉝ RUNNING" 1 "$(bash "$W" --once "$REPO" | grep -c ' RUNNING .*t1' | tr -d ' ')"
+  touch -t 202601010000 "$REPO/tmp/loop/loop.log" "$REPO/tmp/loop/t1"
+  chk "㉝ STALLED" 1 "$(bash "$W" --once "$REPO" | grep -c ' STALLED ' | tr -d ' ')"
+  touch "$REPO/tmp/loop/loop.log"
+  WATCH_POLL=1 bash "$W" --until-attention "$REPO" > "$REPO/tmp/watch.out" 2>&1 & wp=$!
+  sleep 2
+  chk "㉝ 도는 동안 끝나지 않음" 1 "$(kill -0 $wp 2>/dev/null && echo 1 || echo 0)"
+  chk "㉝ 도는 동안 찍지 않음" 0 "$(grep -c . "$REPO/tmp/watch.out" | tr -d ' ')"
+  printf '# 루프가 선 자리 (x)\n\n일감 t1 이 같은 문제로 FAIL 했다. 그 뒤.\n' > "$REPO/tmp/loop/status.md"
+  echo "2026-11-27 10:05 멈춤(종료 3): 일감 t1 이 같은 문제로 FAIL 했다." >> "$REPO/tmp/loop/loop.log"
+  wait $fp 2>/dev/null
+  i=0; while kill -0 $wp 2>/dev/null && [ $i -lt 10 ]; do sleep 1; i=$((i + 1)); done
+  chk "㉝ 멈추면 끝남" 0 "$(kill -0 $wp 2>/dev/null && echo 1 || echo 0)"
+  kill $wp 2>/dev/null
+  chk "㉝ 한 줄 STOPPED 3" 1 "$(grep -c ' STOPPED 3 .*같은 문제로 FAIL 했다\.' "$REPO/tmp/watch.out" | tr -d ' ')"
+  chk "㉝ --once STOPPED 3" 1 "$(bash "$W" --once "$REPO" | grep -c ' STOPPED 3 ' | tr -d ' ')"
+  echo "2026-11-27 10:06 일감 t1 1회차 검사 종료 0" >> "$REPO/tmp/loop/loop.log"
+  chk "㉝ DEAD" 1 "$(bash "$W" --once "$REPO" | grep -c ' DEAD ' | tr -d ' ')"
+  ( cd "$REPO" && exec -a "bash tools/sol/resume.sh" sleep 4 ) & rp=$!
+  sleep 1
+  chk "㉝ RETRY_WAIT" 1 "$(bash "$W" --once "$REPO" | grep -c ' RETRY_WAIT' | tr -d ' ')"
+  kill $rp 2>/dev/null; wait $rp 2>/dev/null
+}
+
+case34() { echo "㉞ 루프가 TERM 을 받으면 배경으로 돌던 단계도 끝낸다"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts PASS
+  ( cd "$REPO" && exec env LOOP_CLAUDE="$REPO/fake/claude" LOOP_SOL_RUN="$REPO/fake/run.sh" LOOP_BUSY_PATTERN=no-such-busy-job-xyz \
+      LOOP_OUT="$REPO/tmp/loop" SOL_OUT="$REPO/tmp/sol" LOOP_CODEX_SESSIONS="$REPO/fake/sessions" LOOP_KILL_GRACE=2 \
+      FAKE_LOG="$REPO/tmp/fake.log" FAKE_VERDICTS="$REPO/tmp/verdicts" FAKE_REPO="$REPO" FAKE_IMPL_SLEEP=3175 \
+      bash tools/sol/loop.sh > "$REPO/tmp/run.out" 2>&1 ) & lp=$!
+  sleep 2; kill -TERM $lp; wait $lp; code=$?
+  chk "㉞ 종료" 143 "$code"
+  chk "㉞ 구현 프로세스 남지 않음" 0 "$(left 'sleep 3175')"
+  chk "㉞ 잠금 풀림" 0 "$([ -d "$REPO/tmp/loop/lock" ] && echo 1 || echo 0)"
+}
+
+for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22 case23 case24 case25 case26 case27 case28 case29 case30 case31 case32 case33 case34}; do "$c"; done
 [ -n "${LOOP_TEST_KEEP:-}" ] || wipe
-printf '\n문법 검사: '; bash -n "$LOOP_SRC" && echo ok || { echo FAIL; BADN=$((BADN + 1)); }
+printf '\n문법 검사: '; for f in "$LOOP_SRC" "$HERE/retry.sh" "$HERE/watch.sh" "$HERE/resume.sh"; do bash -n "$f" || { echo "FAIL $f"; BADN=$((BADN + 1)); }; done; echo ok
 printf '통과 %s, 실패 %s\n' "$OKN" "$BADN"
 [ "$BADN" = 0 ] || exit 1

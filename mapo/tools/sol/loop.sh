@@ -4,7 +4,10 @@
 # 일감은 docs/redraw-orders/queue/<id>/{task.env,brief.md}, 목록은 docs/redraw-orders/queue.md.
 # 쓰는 법: tools/sol/loop.sh [--once] [--dry-run] [--continue]
 #   --continue: 한도나 중단으로 끊긴 맨 위 일감을 작업 트리 그대로 이어받는다(구현이 끝났으면 검사·검수부터)
-# 종료: 0 목록 끝, 2 사용법·환경, 3 같은 일감 두 번 실패, 4 STOP 판정, 5 단계의 끝(지오 확인), 6 단계 신호, 7 한도
+#   retry.sh <id> 를 거친 일감(표시 파일 tmp/loop/<id>/recheck)은 --continue 가 구현 없이 검사·검수부터 한다
+# 종료: 0 목록 끝, 2 사용법·환경, 3 같은 일감 두 번 실패, 4 STOP 판정, 5 단계의 끝(지오 확인), 6 단계 신호, 7 한도,
+#   8 단계(구현·검사·검수·계획)가 시간 상한을 넘었다(작업 트리 그대로), 9 검수가 일감이 틀렸다고 판정했다(blame task, 작업 트리 그대로)
+# 멈출 때마다 tmp/loop/last-exit 에 「코드 시각(epoch) 일감」 한 줄을 쓴다(tools/sol/watch.sh 가 읽는다)
 set -u
 cd "$(dirname "$0")/../.." || exit 2
 
@@ -24,7 +27,13 @@ MAX_ATTEMPTS="${LOOP_MAX_ATTEMPTS:-4}"
 # 구현이 배경으로 돌려 두고 먼저 답한 긴 작업(자료 만들기 등). 끝날 때까지 검사를 미룬다
 BUSY_PATTERN="${LOOP_BUSY_PATTERN:-heavy\.sh|tools/v2/|pack_district|survey_roof|tmp/loop/.*\.py}"
 BUSY_POLL="${LOOP_BUSY_POLL:-30}"
-BUSY_MAX="${LOOP_BUSY_MAX:-10800}"
+BUSY_MAX="${LOOP_BUSY_MAX:-1800}"
+# 단계마다 시간 상한(분, 소수 가능). 구현·검사는 일감 task.env 의 IMPL_MAX_MIN·CHECK_MAX_MIN 이 앞선다
+IMPL_MAX_DEF="${LOOP_IMPL_MAX_MIN:-150}"
+CHECK_MAX_DEF="${LOOP_CHECK_MAX_MIN:-45}"
+REVIEW_MAX_MIN="${LOOP_REVIEW_MAX_MIN:-30}"
+PLAN_MAX_MIN="${LOOP_PLAN_MAX_MIN:-40}"
+KILL_GRACE="${LOOP_KILL_GRACE:-10}"
 PLAN_MODEL="${LOOP_PLAN_MODEL:-opus}"
 PLANNER="${LOOP_PLANNER:-docs/redraw-orders/queue/PLANNER.md}"
 COAUTHOR='Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'
@@ -52,9 +61,50 @@ log() { printf '%s\n' "$*"; printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M')" "$*" >>
 finish() { # 종료 코드, 한 단락
   c=$1; shift
   printf '# 루프가 선 자리 (%s)\n\n%s\n' "$(date '+%Y-%m-%d %H:%M')" "$*" > "$OUT/status.md"
-  log "멈춤(종료 $c): $*"
+  log "멈춤(종료 $c): $(printf '%s' "$*" | tr '\n' ' ')"
+  printf '%s %s %s\n' "$c" "$(date +%s)" "${id:--}" > "$OUT/last-exit"
   exit "$c"
 }
+
+# ---- 단계 시간 제한(bash 만으로: 배경으로 띄우고 지켜본다) ----
+CUR_PID=; CAPPED=
+alive_pid() { # 좀비가 아닌 프로세스면 0
+  st=$(ps -o stat= -p "$1" 2>/dev/null)
+  case "$st" in ''|Z*) return 1 ;; esac
+}
+tree_pids() { for tp_c in $(pgrep -P "$1" 2>/dev/null); do tree_pids "$tp_c"; done; echo "$1"; }
+kill_tree() { # PID 와 그 자손에 TERM, KILL_GRACE 초 뒤 남은 것에 KILL
+  kt_pids=$(tree_pids "$1")
+  kill -TERM $kt_pids 2>/dev/null
+  kt_i=0
+  while [ "$kt_i" -lt "$KILL_GRACE" ]; do
+    kt_alive=; for kt_p in $kt_pids; do alive_pid "$kt_p" && kt_alive=1; done
+    [ -n "$kt_alive" ] || return 0
+    sleep 1; kt_i=$((kt_i + 1))
+  done
+  kill -KILL $kt_pids $(tree_pids "$1") 2>/dev/null
+}
+run_capped() { # 상한(분) 명령… : 상한을 넘으면 명령과 그 자손을 끝내고 CAPPED=1, 124 를 돌려준다
+  rc_lim=$(awk -v m="$1" 'BEGIN{s=int(m*60+0.5); if(s<1)s=1; print s}'); shift
+  CAPPED=; rc_t0=$(date +%s)
+  "$@" <&0 &
+  CUR_PID=$!
+  while alive_pid "$CUR_PID"; do
+    if [ $(( $(date +%s) - rc_t0 )) -ge "$rc_lim" ]; then
+      kill_tree "$CUR_PID"; wait "$CUR_PID" 2>/dev/null
+      CUR_PID=; CAPPED=1; return 124
+    fi
+    # 짧게 끝나는 단계가 1초씩 기다리지 않게 처음 5초는 자주 본다
+    if [ $(( $(date +%s) - rc_t0 )) -lt 5 ]; then sleep 0.2; else sleep 1; fi
+  done
+  wait "$CUR_PID"; rc_code=$?; CUR_PID=
+  return "$rc_code"
+}
+# 배경으로 띄운 단계는 Ctrl-C 를 받지 않으므로, 루프가 신호로 끝날 때 함께 끝낸다
+on_signal() { [ -n "$CUR_PID" ] && kill_tree "$CUR_PID"; log "신호를 받아 끝냈다(종료 $1). 돌던 단계의 프로세스도 끝냈다"; exit "$1"; }
+trap 'on_signal 130' INT
+trap 'on_signal 143' TERM
+capped_note() { [ -n "$CAPPED" ] && echo "시간 제한" || echo "종료 $1"; }
 
 # ---- 한 번에 하나 ----
 LOCK="$OUT/lock"
@@ -149,7 +199,15 @@ ledger() { # 일감 회차 단계 모델 에포트 분 비용 결과
   printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$(date '+%Y-%m-%d %H:%M')" "$@" >> "$LEDGER"
 }
 busy_jobs() { # 구현이 남긴 긴 작업이 있으면 0. 지시문 글에 경로가 든 claude·codex 실행(다른 루프 포함)은 치지 않는다
-  ps -axo args= | grep -E -- "$BUSY_PATTERN" | grep -v -E -e '^(claude|[^ ]*/claude) ' -e 'codex' -e 'grep ' | grep -q .
+  # 다른 작업 사본(~/apps-traffic 등)의 같은 이름 작업은 치지 않는다: cwd 가 이 저장소 안이거나 인자에 이 저장소 경로가 든 것만 센다
+  ps -axo pid=,args= | grep -E -- "$BUSY_PATTERN" | grep -v -E -e '^ *[0-9]+ (claude|[^ ]*/claude) ' -e 'codex' -e 'grep ' | {
+    while read -r bj_pid bj_args; do
+      case "$bj_args" in *"$TOP/"*) exit 0 ;; esac
+      bj_cwd=$(lsof -a -d cwd -p "$bj_pid" -Fn 2>/dev/null | sed -n 's/^n//p' | head -1)
+      case "$bj_cwd" in "$TOP"|"$TOP"/*) exit 0 ;; esac
+    done
+    exit 1
+  }
 }
 task_sig() { cat "$TASKDIR"/* 2>/dev/null | shasum | cut -d' ' -f1; }
 impl_cut() { # claude -p 결과가 비었거나 오류(한도 포함)면 0
@@ -174,10 +232,11 @@ plan_next() { # 목록이 비면 계획 세우기 모델이 다음 일감을 쓰
     echo; echo "## 최근 커밋"; g log --oneline -8 -- "$SCOPE"
   } > "$pf"
   sig_before=$(g status --porcelain --untracked-files=no -- "$SCOPE" | grep -v -F -e "$SOL_LEDGER_R" -e "$LEDGER_R" -e "$QUEUE_R" | shasum)
-  "$CLAUDE" -p --model "$PLAN_MODEL" --effort high --output-format json \
+  run_capped "$PLAN_MAX_MIN" "$CLAUDE" -p --model "$PLAN_MODEL" --effort high --output-format json \
     --permission-mode bypassPermissions "$(cat "$pf")" > "$pf.json" 2>"$pf.err"
   pcode=$?
-  ledger plan 1 plan "$PLAN_MODEL" high "$(mins_since "$t0")" "$(json_cost "$pf.json")" "종료 $pcode"
+  ledger plan 1 plan "$PLAN_MODEL" high "$(mins_since "$t0")" "$(json_cost "$pf.json")" "$(capped_note "$pcode")"
+  [ -n "$CAPPED" ] && finish 8 "계획 세우기가 시간 상한(${PLAN_MAX_MIN}분)을 넘어 그 프로세스를 끝냈다($pf.err). 일감 목록과 $QDIR 에 반쯤 쓴 일감이 있는지 본 뒤 다시 돌린다."
   impl_cut "$pf.json" && finish 7 "계획 세우기가 한도나 오류로 끊겼다($pf.json). tools/sol/loop.sh --continue 로 이어 간다."
   new=$(g status --porcelain --untracked-files=all -- "${PREFIX}$QDIR" "$QUEUE_R" | sed 's/^...//')
   if [ -n "$new" ]; then
@@ -205,6 +264,29 @@ for line in reversed(text.strip().splitlines()):
             continue
         break
 PYF
+}
+read_fixes() { # 검수 답의 마지막 JSON 줄의 fixes 를 '- ' 줄로
+  python3 - "$1" <<'PYX' 2>/dev/null
+import json, sys
+raw = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+try:
+    text = json.loads(raw).get('result', '')
+except Exception:
+    text = raw
+for line in reversed(text.strip().splitlines()):
+    line = line.strip().strip('`')
+    if line.startswith('{'):
+        try:
+            f = json.loads(line).get('fixes') or []
+        except Exception:
+            continue
+        for x in (f if isinstance(f, list) else [f]):
+            print('- ' + str(x))
+        break
+PYX
+}
+impl_done() { # 회차 → 그 회차 구현이 정상으로 끝났다는 기록이 있으면 0(claude 는 성공 json, sol 은 run.sh 의 종료 0 줄)
+  { [ -e "$WORK/impl-$1.json" ] && ! impl_cut "$WORK/impl-$1.json"; } || grep -q '끝(.*종료 0)' "$WORK/impl-$1.log" 2>/dev/null
 }
 read_verdict() { # 검수 답(claude json 이면 result 칸, 아니면 글)의 마지막 JSON 줄에서 판정 하나만 읽는다
   python3 - "$1" <<'PYV' 2>/dev/null
@@ -284,8 +366,9 @@ while :; do
   [ -f "$TASKDIR/task.env" ] || finish 2 "일감 $id 의 $TASKDIR/task.env 가 없다"
   [ -s "$TASKDIR/brief.md" ] || finish 2 "일감 $id 의 $TASKDIR/brief.md 가 없다"
 
-  unset STAGE IMPL IMPL_EFFORT REVIEW REVIEW_EFFORT CHECK SIGNAL STAGE_END SHOTS
+  unset STAGE IMPL IMPL_EFFORT REVIEW REVIEW_EFFORT CHECK SIGNAL STAGE_END SHOTS IMPL_MAX_MIN CHECK_MAX_MIN
   . "$TASKDIR/task.env" || finish 2 "일감 $id 의 task.env 를 읽지 못했다"
+  IMPL_CAP="${IMPL_MAX_MIN:-$IMPL_MAX_DEF}"; CHECK_CAP="${CHECK_MAX_MIN:-$CHECK_MAX_DEF}"
   for v in STAGE IMPL IMPL_EFFORT REVIEW REVIEW_EFFORT CHECK; do
     eval "x=\${$v:-}"
     [ -n "$x" ] || finish 2 "일감 $id 의 task.env 에 $v 가 없다"
@@ -313,20 +396,23 @@ while :; do
   # 2. 구현 전 기준점
   BASE_UNTRACKED="$WORK/base-untracked.txt"
   skip_impl1=; skip_n=; resume_note=; start_n=1
-  if [ -n "$cont" ] && [ -f "$BASE_UNTRACKED" ] && { [ -e "$WORK/impl-1.json" ] || [ -e "$WORK/impl-1.log" ]; }; then
+  if [ -n "$cont" ] && [ -f "$BASE_UNTRACKED" ] && { [ -e "$WORK/impl-1.json" ] || [ -e "$WORK/impl-1.log" ] || [ -e "$WORK/recheck" ]; }; then
     # 끊긴 일감을 이어받는다: 기준점 목록은 처음 것을 그대로 쓰고, 작업 트리의 변경은 그 일감의 것으로 본다
     base_head=$(cat "$WORK/base-head.txt" 2>/dev/null || g rev-parse HEAD)
     base_status=
     k=0; for i in $(seq 1 "$MAX_ATTEMPTS"); do [ -e "$WORK/review-$i.out" ] && k=$i; done
     if [ "$k" -ge 1 ] && [ "$k" -lt "$MAX_ATTEMPTS" ] && [ "$(read_verdict "$WORK/review-$k.out")" != PASS ] && [ "$(read_verdict "$WORK/review-$k.out")" != STOP ]; then
       start_n=$((k + 1)); log "일감 $id: ${k}회차 검수가 FAIL 이었다. 그 의견을 붙여 ${start_n}회차 구현부터 한다"
-      if { [ -e "$WORK/impl-$start_n.json" ] && ! impl_cut "$WORK/impl-$start_n.json"; } || grep -q '끝(.*종료 0)' "$WORK/impl-$start_n.log" 2>/dev/null; then
+      if impl_done "$start_n"; then
         skip_n=$start_n; log "일감 $id: ${start_n}회차 구현은 이미 끝나 있었다. 검사·검수부터 한다"
       fi
-    elif [ -e "$WORK/impl-1.json" ] && impl_cut "$WORK/impl-1.json"; then
-      resume_note=1; log "일감 $id: 1회차 구현이 끊겨 있었다. 작업 트리를 이어받아 다시 맡긴다"
-    else
+    elif [ -e "$WORK/recheck" ]; then
+      skip_impl1=1; log "일감 $id: retry.sh 의 표시(recheck)가 있다. 구현 없이 검사·검수부터 한다"
+    elif impl_done 1; then
       skip_impl1=1; log "일감 $id: 1회차 구현은 끝나 있었다. 검사·검수부터 한다"
+    else
+      # 빈 기록이나 끊긴 기록은 끝난 것으로 보지 않는다(구현이 시작하자마자 죽은 경우)
+      resume_note=1; log "일감 $id: 1회차 구현이 끝났다는 기록이 없다(끊겼거나 빈 기록). 작업 트리를 이어받아 다시 맡긴다"
     fi
   else
     base_head=$(g rev-parse HEAD)
@@ -367,22 +453,26 @@ while :; do
     fi
     t0=$(date +%s)
     task_sig0=$(task_sig)
+    CAPPED=
     if { [ "$n" = 1 ] && [ -n "$skip_impl1" ]; } || [ "$n" = "$skip_n" ]; then
       icode=0
     elif [ "$IMPL" != sol ]; then
-      "$CLAUDE" -p --model "$IMPL" --effort "$IMPL_EFFORT" --output-format json \
+      run_capped "$IMPL_CAP" "$CLAUDE" -p --model "$IMPL" --effort "$IMPL_EFFORT" --output-format json \
         --permission-mode bypassPermissions "$(cat "$bf")" > "$WORK/impl-$n.json" 2>"$WORK/impl-$n.err"
       icode=$?
       icost=$(json_cost "$WORK/impl-$n.json")
     else
       # 구현 지시문에는 앞 회차 검수 의견이 붙으므로 Sol 지시문 상한을 넓혀 준다
-      SOL_MAX_BRIEF="${LOOP_SOL_IMPL_MAX_BRIEF:-24000}" "$SOL_RUN" "$STAGE-$id-i$n" "$id-impl-$n-$(date +%H%M%S)" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
+      run_capped "$IMPL_CAP" env SOL_MAX_BRIEF="${LOOP_SOL_IMPL_MAX_BRIEF:-24000}" "$SOL_RUN" "$STAGE-$id-i$n" "$id-impl-$n-$(date +%H%M%S)" "$IMPL_EFFORT" "$bf" > "$WORK/impl-$n.log" 2>&1
       icode=$?
       icost="$id-impl-$n"
     fi
     if ! { [ "$n" = 1 ] && [ -n "$skip_impl1" ]; } && [ "$n" != "$skip_n" ]; then
-    ledger "$id" "$n" impl "$IMPL" "$IMPL_EFFORT" "$(mins_since "$t0")" "$icost" "종료 $icode"
-    log "일감 $id $n회차 구현 끝($IMPL, 종료 $icode)"
+    ledger "$id" "$n" impl "$IMPL" "$IMPL_EFFORT" "$(mins_since "$t0")" "$icost" "$(capped_note "$icode")"
+    log "일감 $id $n회차 구현 끝($IMPL, $(capped_note "$icode"))"
+    fi
+    if [ -n "$CAPPED" ]; then
+      finish 8 "일감 $id 의 $n회차 구현이 시간 상한(${IMPL_CAP}분)을 넘어 그 프로세스와 자식들을 끝냈다. 작업 트리는 그대로 두었다. 걸린 까닭(멈춘 명령, 너무 큰 일감)을 본 뒤 tools/sol/loop.sh --continue 로 이어 간다(그 회차 구현부터 다시 한다). 상한은 task.env 의 IMPL_MAX_MIN."
     fi
     if [ "$IMPL" != sol ] && [ -e "$WORK/impl-$n.json" ] && impl_cut "$WORK/impl-$n.json"; then
       finish 7 "일감 $id 의 $n회차 구현이 한도나 오류로 끊겼다($WORK/impl-$n.json). 작업 트리는 그대로 두었다. 한도가 풀리면 tools/sol/loop.sh --continue 로 이어 간다."
@@ -400,11 +490,14 @@ while :; do
     done
     [ $(( $(date +%s) - w0 )) -gt "$BUSY_POLL" ] && log "구현이 남긴 배경 작업을 $(( ($(date +%s) - w0) / 60 ))분 기다렸다"
     t0=$(date +%s)
-    bash -c "$CHECK" > "$WORK/check-$n.full" 2>&1
+    run_capped "$CHECK_CAP" bash -c "$CHECK" > "$WORK/check-$n.full" 2>&1
     ccode=$?
     tail -80 "$WORK/check-$n.full" > "$WORK/check-$n.txt"
-    ledger "$id" "$n" check - - "$(mins_since "$t0")" - "종료 $ccode"
-    log "일감 $id $n회차 검사 종료 $ccode"
+    ledger "$id" "$n" check - - "$(mins_since "$t0")" - "$(capped_note "$ccode")"
+    log "일감 $id $n회차 검사 $(capped_note "$ccode")"
+    if [ -n "$CAPPED" ]; then
+      finish 8 "일감 $id 의 $n회차 통과 검사가 시간 상한(${CHECK_CAP}분)을 넘어 그 프로세스와 자식들을 끝냈다. 검사 출력 $WORK/check-$n.full. 작업 트리는 그대로 두었다. 검사가 걸린 까닭을 본 뒤 tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다. 상한은 task.env 의 CHECK_MAX_MIN."
+    fi
 
     # 5. 검수(다른 모델, 읽기 전용)
     rf="$WORK/review-$n.md"
@@ -437,6 +530,7 @@ while :; do
       echo "- 통과 검사가 0 이고, 일감 지시문의 문턱을 실제로 넘었고, 요청 밖으로 달라진 것이 없으면 PASS."
       echo "- 고치면 될 결함이 있으면 FAIL 이고 무엇을 어떻게 고치는지 적는다."
       echo "- 이 방향으로는 고쳐도 안 된다고 보이면 STOP 이다(망한 길을 밀고 가지 않는 것이 이 루프의 목적이다)."
+      echo '- 실패의 까닭이 구현이 아니라 일감(검사 스크립트의 오류, 지시문의 잘못된 전제, 서로 막는 문턱)에 있고, 구현자가 허용된 범위(일감 폴더는 고칠 수 없다) 안에서는 통과할 수 없다고 판단하면 "blame":"task" 로 적고, fixes 에 일감의 어느 파일 어느 줄을 어떻게 고쳐야 하는지 적는다. 결과물 자체(verdict)는 이 판정과 따로 평가한다. 그 밖에는 "blame":"impl".'
       echo
       echo "## 하지 않는 것"
       echo "- 파일을 고치지 않는다(작업 트리가 바뀌면 루프가 STOP 으로 센다). 커밋·굽기·측정 실행을 하지 않는다."
@@ -450,26 +544,32 @@ while :; do
       fi
       echo "## 답의 꼴"
       echo "열 줄 안쪽으로 까닭을 적고, 맨 마지막 줄에 JSON 한 줄만 둔다:"
-      echo '{"verdict":"PASS|FAIL|STOP","repeat":false,"reasons":["..."],"fixes":["..."]}'
+      echo '{"verdict":"PASS|FAIL|STOP","blame":"impl|task","repeat":false,"reasons":["..."],"fixes":["..."]}'
     } > "$rf"
     [ "$REVIEW" = sol ] && cap_bytes "$rf" "$MAX_REVIEW_BRIEF"
 
     sig0=$(tree_sig)
     t0=$(date +%s)
     if [ "$REVIEW" != sol ]; then
-      "$CLAUDE" -p --model "$REVIEW" --effort "$REVIEW_EFFORT" --output-format json \
+      run_capped "$REVIEW_MAX_MIN" "$CLAUDE" -p --model "$REVIEW" --effort "$REVIEW_EFFORT" --output-format json \
         --permission-mode bypassPermissions --disallowedTools Edit Write NotebookEdit < "$rf" > "$WORK/review-$n.out" 2>"$WORK/review-$n.err"
       rcode=$?
       rcost=$(json_cost "$WORK/review-$n.out")
       vfiles="$WORK/review-$n.out"
     else
       rname="$id-review-$n-$(date +%H%M%S)"
-      SOL_SANDBOX=read-only "$SOL_RUN" "$STAGE-$id-r$n" "$rname" "$REVIEW_EFFORT" "$rf" > "$WORK/review-$n.log" 2>&1
+      run_capped "$REVIEW_MAX_MIN" env SOL_SANDBOX=read-only "$SOL_RUN" "$STAGE-$id-r$n" "$rname" "$REVIEW_EFFORT" "$rf" > "$WORK/review-$n.log" 2>&1
       rcode=$?
       rcost="$rname"
       # 판정은 답 파일에서만 읽는다(기록에는 지시문의 답 본보기가 되풀이된다)
-      cat "$SOL_OUT/$rname-answer.md" > "$WORK/review-$n.out" 2>/dev/null
+      [ -n "$CAPPED" ] || cat "$SOL_OUT/$rname-answer.md" > "$WORK/review-$n.out" 2>/dev/null
       vfiles="$WORK/review-$n.out"
+    fi
+    if [ -n "$CAPPED" ]; then
+      # 반쯤 쓴 답이 --continue 에서 FAIL 회차로 읽히지 않게 이름을 바꿔 둔다
+      mv "$WORK/review-$n.out" "$WORK/review-$n.timeout" 2>/dev/null
+      ledger "$id" "$n" review "$REVIEW" "$REVIEW_EFFORT" "$(mins_since "$t0")" "$rcost" "시간 제한"
+      finish 8 "일감 $id 의 $n회차 검수가 시간 상한(${REVIEW_MAX_MIN}분)을 넘어 그 프로세스와 자식들을 끝냈다. 작업 트리는 그대로 두었다. tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다."
     fi
     sig1=$(tree_sig)
     verdict=$(read_verdict "$vfiles")
@@ -480,9 +580,18 @@ while :; do
     fi
     ledger "$id" "$n" review "$REVIEW" "$REVIEW_EFFORT" "$(mins_since "$t0")" "$rcost" "$verdict(종료 $rcode)"
     log "일감 $id $n회차 검수 $verdict"
+    rm -f "$WORK/recheck"
 
     # 6. 판정
     [ "$ccode" = 0 ] || { [ "$verdict" = STOP ] || verdict=FAIL; }
+    if [ "$verdict" != PASS ] && [ "$sig0" = "$sig1" ] && [ "$(read_field "$vfiles" blame)" = task ]; then
+      # 일감이 틀렸으면 구현을 더 돌려도 통과할 수 없다. 구현 변경은 되돌리지 않고 남긴다(retry.sh 로 검사·검수부터 다시 한다)
+      mark_queue "$lineno" '!'
+      finish 9 "일감 $id 의 ${n}회차 검수가 실패의 까닭을 구현이 아니라 일감에 두었다(blame task, 판정 $verdict). 구현을 더 돌리지 않고 섰다. 구현 변경은 되돌리지 않고 작업 트리에 그대로 두었다. 검수 의견 $WORK/review-$n.out, 검사 출력 $WORK/check-$n.txt. 마스터가 일감 폴더($TASKDIR)를 고쳐 커밋한 뒤 tools/sol/retry.sh $id 와 tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다.
+
+검수자가 적은 고칠 것:
+$(read_fixes "$vfiles")"
+    fi
     [ "$verdict" = PASS ] && break
     [ "$verdict" = STOP ] && break
     if [ "$n" -ge 2 ] && [ "$(read_field "$vfiles" repeat)" = true ]; then
