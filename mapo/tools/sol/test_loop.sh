@@ -89,7 +89,7 @@ setup() { # 깨끗한 임시 저장소
   REPO=$(mktemp -d /tmp/mapo-loop-test.XXXXXX)
   mkdir -p "$REPO/tools/sol" "$REPO/docs/redraw-orders/queue" "$REPO/fake" "$REPO/tmp"
   cp "$LOOP_SRC" "$REPO/tools/sol/loop.sh" 2>/dev/null || { echo "  (loop.sh 가 없다: $LOOP_SRC)"; }
-  for f in retry.sh watch.sh; do cp "$HERE/$f" "$REPO/tools/sol/$f" 2>/dev/null || echo "  ($f 가 없다)"; done
+  for f in retry.sh watch.sh proc.sh; do cp "$HERE/$f" "$REPO/tools/sol/$f" 2>/dev/null || echo "  ($f 가 없다)"; done
   printf 'tmp/\n' > "$REPO/.gitignore"
   printf '# 일감 목록\n\n' > "$REPO/docs/redraw-orders/queue.md"
   echo seed > "$REPO/seed.txt"

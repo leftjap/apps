@@ -66,40 +66,8 @@ finish() { # 종료 코드, 한 단락
   exit "$c"
 }
 
-# ---- 단계 시간 제한(bash 만으로: 배경으로 띄우고 지켜본다) ----
-CUR_PID=; CAPPED=
-alive_pid() { # 좀비가 아닌 프로세스면 0
-  st=$(ps -o stat= -p "$1" 2>/dev/null)
-  case "$st" in ''|Z*) return 1 ;; esac
-}
-tree_pids() { for tp_c in $(pgrep -P "$1" 2>/dev/null); do tree_pids "$tp_c"; done; echo "$1"; }
-kill_tree() { # PID 와 그 자손에 TERM, KILL_GRACE 초 뒤 남은 것에 KILL
-  kt_pids=$(tree_pids "$1")
-  kill -TERM $kt_pids 2>/dev/null
-  kt_i=0
-  while [ "$kt_i" -lt "$KILL_GRACE" ]; do
-    kt_alive=; for kt_p in $kt_pids; do alive_pid "$kt_p" && kt_alive=1; done
-    [ -n "$kt_alive" ] || return 0
-    sleep 1; kt_i=$((kt_i + 1))
-  done
-  kill -KILL $kt_pids $(tree_pids "$1") 2>/dev/null
-}
-run_capped() { # 상한(분) 명령… : 상한을 넘으면 명령과 그 자손을 끝내고 CAPPED=1, 124 를 돌려준다
-  rc_lim=$(awk -v m="$1" 'BEGIN{s=int(m*60+0.5); if(s<1)s=1; print s}'); shift
-  CAPPED=; rc_t0=$(date +%s)
-  "$@" <&0 &
-  CUR_PID=$!
-  while alive_pid "$CUR_PID"; do
-    if [ $(( $(date +%s) - rc_t0 )) -ge "$rc_lim" ]; then
-      kill_tree "$CUR_PID"; wait "$CUR_PID" 2>/dev/null
-      CUR_PID=; CAPPED=1; return 124
-    fi
-    # 짧게 끝나는 단계가 1초씩 기다리지 않게 처음 5초는 자주 본다
-    if [ $(( $(date +%s) - rc_t0 )) -lt 5 ]; then sleep 0.2; else sleep 1; fi
-  done
-  wait "$CUR_PID"; rc_code=$?; CUR_PID=
-  return "$rc_code"
-}
+# ---- 단계 시간 제한(bash 만으로: 배경으로 띄우고 지켜본다. 함수는 proc.sh) ----
+. tools/sol/proc.sh || { echo "loop.sh: tools/sol/proc.sh 를 읽지 못했다(loop.sh 와 함께 둔다)" >&2; exit 2; }
 # 배경으로 띄운 단계는 Ctrl-C 를 받지 않으므로, 루프가 신호로 끝날 때 함께 끝낸다
 on_signal() { [ -n "$CUR_PID" ] && kill_tree "$CUR_PID"; log "신호를 받아 끝냈다(종료 $1). 돌던 단계의 프로세스도 끝냈다"; exit "$1"; }
 trap 'on_signal 130' INT
