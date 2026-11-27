@@ -78,8 +78,8 @@
 - `tools/v2/check_camera_cars.mts` (244줄): Replay vehicles against scripted cameras and write the camera census as JSON and Markdown.
   - message 74-83 · flush 84-89 · pushFloor 90-97 · finishFloor 98-104 · measure 105-190 · viewWidth 191-202 · summary 203-244 · ↳fixed 204-244
 - `tools/v2/check_camera_cars.test.mts` (55줄): Check the camera census on small, deterministic replays.
-- `tools/v2/check_connected_map.py` (202줄): Check one connected static map with --area NAME or --area PATH.
-  - floor_layers 19-23 · floor_parity 24-39 · named_road_footprint 40-53 · coincident_faces 54-57 · sheet_parity 58-91 · inspect 92-202
+- `tools/v2/check_connected_map.py` (205줄): Check one connected static map with --area NAME or --area PATH.
+  - floor_layers 19-23 · floor_parity 24-39 · named_road_footprint 40-53 · coincident_faces 54-57 · sheet_parity 58-91 · inspect 92-205
 - `tools/v2/check_connected_routes.py` (102줄): Compare boundary-connected A2 links with the individual-area replay graphs.
   - header 13-17 · originals 18-21 · dead_ends 22-44 · inspect 45-102
 - `tools/v2/check_district_car_preflight.py` (220줄): Rebuild district reachability from usable engine paths and rendered vehicle poses.
@@ -142,21 +142,21 @@
   - fetchLayer 20-60
 - `tools/v2/fetch_parks.py` (61줄): Fetch the OpenStreetMap park and green faces that cover an area's window (Overpass).
   - bounding_box 21-27 · fetch 28-44 · main 45-61
-- `tools/v2/grow_outline.py` (113줄): Grow an area outline until its edge cuts no surveyed junction face, crossing face or stop line.
-  - area_path 22-30 · sheet_faces 31-47 · candidates 48-69 · grow 70-95 · main 96-113
+- `tools/v2/grow_outline.py` (114줄): Grow an area outline until its edge cuts no surveyed junction face, crossing face or stop line.
+  - area_path 22-30 · sheet_faces 31-47 · candidates 48-69 · grow 70-97 · main 98-114
 - `tools/v2/hapjeong_buildings.py` (165줄): Bake a surveyed area's building volumes and ground decoration.
   - connected_building_faces 19-77 · pavement_cutter 78-95 · bake 96-165
 - `tools/v2/hapjeong_car_footprints.mts` (10줄): Project the native vehicle geometry into the same metre frame as A2.
 - `tools/v2/hapjeong_cars.py` (388줄): Bake exact A2 lane geometry and directed topology for the Hapjeong A floor.
   - dot_forward 23-31 · short_boundary_piece 32-36 · directed_pieces 37-47 · load_links 48-85 · connect 86-143 · boundary_bus_routes 144-162 · bundles 163-201 · crosswalks 202-226 · longest_bus 227-238 · duplicates 239-259 · walk_signal_groups 260-290 · bake 291-388
-- `tools/v2/hapjeong_crossings.py` (279줄): Supplement B3 crossings from survey faces and audit access at both ends.
-  - half_metre_routes 14-19 · crossing_sources 20-40 · crossing_axis 41-57 · overlap 58-61 · agreement 62-69 · expanded_walk 70-76 · survey_heading 77-94 · approach 95-118 · survey_continuations 119-139 · vehicle_clearance 140-145 · supplement_crossings 146-194 · walking_landings 195-279
+- `tools/v2/hapjeong_crossings.py` (312줄): Supplement B3 crossings from survey faces and audit access at both ends.
+  - half_metre_routes 17-22 · crossing_sources 23-43 · crossing_axis 44-60 · overlap 61-64 · agreement 65-72 · expanded_walk 73-79 · survey_heading 80-97 · approach 98-121 · survey_continuations 122-145 · vehicle_clearance 146-151 · supplement_crossings 152-227 · walking_landings 228-312
 - `tools/v2/hapjeong_entrances.mts` (130줄): Use the basic board's station models, train arrivals and stop coordinates.
   - mercator 31-32 · groundPoint 33-37 · inside 38-45 · on 46-79 · projectedPlatform 80-130
 - `tools/v2/hapjeong_hd.py` (298줄): Bake the Hapjeong HD source comparison without moving or clipping its surveyed lines.
   - features 41-46 · project 47-50 · paths 51-56 · face_rings 57-62 · offset_zebra 63-76 · link_heading 77-90 · rings 91-95 · survey_faces 96-113 · survey_islands 114-137 · survey_floor 138-147 · marking_style 148-157 · connectivity 158-216 · floor_faces 217-222 · floor_paths 223-229 · bake 230-298
-- `tools/v2/hapjeong_hd_a.py` (300줄): Build the A view from the preserved Hapjeong HD comparison.
-  - polygon 23-26 · surface 27-30 · angle_difference 31-35 · link_segments 36-46 · choose_direction 47-82 · outline_exclusions 83-94 · median_faces 95-107 · median_paving 108-128 · platform_strips 129-164 · connected_paint 165-178 · preserve_inferred_pavement 179-192 · bake_a 193-258 · clip_faces 259-262 · clip_crossing 263-266 · pedestrian_landings 267-300
+- `tools/v2/hapjeong_hd_a.py` (327줄): Build the A view from the preserved Hapjeong HD comparison.
+  - polygon 23-26 · surface 27-30 · angle_difference 31-35 · link_segments 36-46 · choose_direction 47-82 · outline_exclusions 83-94 · median_faces 95-107 · median_paving 108-128 · platform_strips 129-164 · connected_paint 165-178 · inferred_paint 179-193 · preserve_inferred_pavement 194-207 · bake_a 208-285 · clip_faces 286-289 · clip_crossing 290-293 · pedestrian_landings 294-327
 - `tools/v2/hapjeong_queue_case.mts` (44줄): Seed six cars per eligible approach to expose the fourth-to-sixth discharge.
   - read 9-44
 - `tools/v2/hapjeong_signal_paths.mts` (57줄)
@@ -170,6 +170,8 @@
 - `tools/v2/hapjeong_walk_width.mts` (9줄): Use exactly the basic-board width and junction rules on the surveyed pavement.
 - `tools/v2/import_survey_tiles.py` (38줄): Merge the six layers of cached WFS tiles in the format read by the survey bakers.
   - import_tiles 11-38
+- `tools/v2/infer_lane_lines.py` (310줄): Infer missing road markings from surveyed carriageway sections and A002 attributes.
+  - projected_lines 39-51 · gaps 52-78 · source_axes 79-91 · survey_polygons 92-105 · carriageways 106-112 · section 113-128 · subtract_buffer 129-133 · junctions 134-155 · lane_dividers 156-159 · align_sections 160-168 · mark_paths 169-181 · clear_paint 182-202 · infer_lane_lines 203-296 · main 297-310
 - `tools/v2/land.py` (107줄): 지시서 1(docs/redraw-orders/1-land.md): 시제품 구역의 땅을 건물 / 도로 부지 / 그 밖으로 나눈다.
   - even_odd 21-31 · polygons 32-39 · load_gis_roads 40-48 · load_buildings 49-60 · drop_small 61-70 · ring_dm 71-75 · main 76-107
 - `tools/v2/lanes.py` (549줄): 지시서 3a(docs/redraw-orders/3a-lanes.md, 5판) + 지시서 3b(docs/redraw-orders/3b-marks.md, 3판) 「먼저 할 일」 1~7: 2단계 찻길 면
@@ -190,8 +192,8 @@
   - dashes 25-45 · main 46-93
 - `tools/v2/plot_split.py` (93줄): 지시서 2(docs/redraw-orders/2-split.md): split.json 을 위에서 본 그림으로(tmp/v2/), 수치지형도 도로·인도 면과 나란히 칠한 그림.
   - paint 27-34 · survey 35-44 · minus 45-48 · main 49-93
-- `tools/v2/road_audit.py` (266줄): Compare named survey roads against cached VWorld level-19 imagery.
-  - raw_features 30-33 · lines 34-37 · line_heading 38-41 · read_axes 42-59 · axis_score 60-63 · collect 64-172 · grade_crossings 173-202 · init_workers 203-209 · section 210-228 · main 229-266
+- `tools/v2/road_audit.py` (265줄): Compare named survey roads against cached VWorld level-19 imagery.
+  - raw_features 29-32 · lines 33-36 · line_heading 37-40 · read_axes 41-58 · axis_score 59-62 · collect 63-171 · grade_crossings 172-201 · init_workers 202-208 · section 209-227 · main 228-265
 - `tools/v2/road_audit_profiles.py` (360줄): Transverse and longitudinal readings. Missing or ambiguous readings stay null.
   - limits 15-18 · marks 19-34 · aux 35-56 · bracket 57-67 · a2_for 68-86 · collapse 87-93 · median_split 94-104 · readings 105-124 · shift 125-129 · smooth 130-132 · match 133-142 · photo_curb 143-166 · photo_lines 167-191 · sidewalk_frontage 192-211 · longitudinal 212-249 · configure 250-258 · inspect 259-360
 - `tools/v2/road_audit_raster.py` (175줄): Draw equal-scale VWorld, baked-model and alignment panels.
@@ -213,8 +215,8 @@
   - read_tiles 26-39 · roof_pixels 40-55 · hex_color 56-59 · wall_color 60-69 · street_tree 70-75 · street_edges 76-90 · apply_colors 91-134
 - `tools/v2/survey_bus_platforms.py` (54줄): Project surveyed median stops to the reserved routes before the walking bake.
   - bus_platforms 11-54
-- `tools/v2/survey_open_ground.py` (42줄): Surveyed river/deck faces and original public-park extents.
-  - park_face 11-25 · open_ground 26-42
+- `tools/v2/survey_open_ground.py` (67줄): Surveyed river/deck faces and original public-park extents.
+  - park_face 11-25 · fill_survey_gaps 26-49 · open_ground 50-67
 - `tools/v2/survey_road_paint.py` (250줄): Bake optional safety-zone and B3 paint for a connected survey map.
   - closed_zones 25-55 · long_axis 56-60 · hatch 61-71 · surface_arrow 72-95 · split_white_paint 96-104 · bake_details 105-232 · main 233-250
 - `tools/v2/survey_roof_tiles.mts` (52줄)
@@ -314,11 +316,19 @@
 ## Sol 실행 도구
 - `tools/sol/codemap.py` (93줄): docs/code-map.md 를 코드에서 자동으로 만든다(손으로 고치지 않는다).
   - describe 25-40 · symbols 41-63 · main 64-93
-- `tools/sol/loop.sh` (532줄)
-- `tools/sol/resume.sh` (14줄)
+- `tools/sol/loop.sh` (609줄)
+- `tools/sol/proc.sh` (44줄)
+- `tools/sol/responder.md` (45줄)
+- `tools/sol/resume.sh` (17줄)
+- `tools/sol/retry.sh` (67줄)
 - `tools/sol/run.sh` (70줄)
-- `tools/sol/test_loop.sh` (396줄)
+- `tools/sol/stop.sh` (21줄)
+- `tools/sol/test_loop.sh` (590줄)
+- `tools/sol/test_watchdog.sh` (163줄)
 - `tools/sol/usage.py` (62줄): Codex 세션 파일(~/.codex/sessions)에서 실제 토큰 내역을 뽑는다.
   - events 16-32 · main 33-62
+- `tools/sol/watch.sh` (99줄)
+- `tools/sol/watchdog-install.sh` (75줄)
+- `tools/sol/watchdog.sh` (172줄)
 - `tools/sol/where.py` (76줄): Sol(Codex) 실행 기록에서 문맥으로 들어간 출력이 어디서 왔는지 센다.
   - blocks 19-41 · kind_of 42-48 · main 49-76
