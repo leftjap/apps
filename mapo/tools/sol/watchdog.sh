@@ -1,17 +1,24 @@
 #!/bin/bash
 # 상시 감시. launchd 가 5분마다 실행한다(손으로 실행해도 된다). 감시의 주체는 이 스크립트이고, AI 는 아래 조건에서만 불려 와 일감 쪽 오류만 고친다.
 # 설정: $MAPO_LOOP_CONFIG(기본 ~/.config/mapo-loop)/dirs 에 루프 폴더(mapo 디렉터리)를 한 줄에 하나, until 에 다시 띄울 때의 마감(없으면 30시간 뒤)
-# 상태·기록: $MAPO_LOOP_STATE(기본 ~/.local/state/mapo-loop)/{watchdog.log, watchdog.lock, responder.lock, attempts/, seen/}
+# 상태·기록: $MAPO_LOOP_STATE(기본 ~/.local/state/mapo-loop)/{watchdog.log, watchdog.lock, responder.lock, attempts/, seen/, last-env.txt}
+#   last-env.txt: 돌 때마다 자기 환경의 USER·LOGNAME·HOME·PATH·LANG 을 덮어 적는다(launchd 가 띄운 환경을 확인하는 용도)
+# launchd 가 띄우면 USER·LOGNAME 이 없을 수 있다. Claude CLI 는 USER 가 없으면 「Not logged in」으로 끝나므로, 비어 있으면 id -un 으로 채워 자식(루프·응급 처치)에게 넘긴다
 # 폴더마다 tools/sol/watch.sh 로 상태를 읽고:
 #   RUNNING·RETRY_WAIT·STOPPED 0/5/7  아무것도 하지 않는다(단계 끝의 판정은 마스터와 지오의 일)
 #   DEAD     tmp/loop/keep-running 이 있고 loop.log 가 3분 넘게 그대로면 resume.sh 를 새 세션으로 띄운다(1시간에 3번까지)
 #   STALLED  그 폴더의 loop.sh 와 자손을 끝낸다(다음 실행에서 DEAD 로 보고 다시 띄운다)
 #   STOPPED 2/3/4/6/8/9  멈춘 지 20분(마스터가 알림을 받았으면 알림 뒤 45분), 멈춘 뒤 손댄 흔적 없음, 시도 2번 미만,
 #            다른 응급 처치 없음, NEEDS-MASTER.md 없음이면 응급 처치(tools/sol/responder.md 를 지시문으로 claude)를 한 번 부른다
+#   STOPPED 10  CLI 로그인 오류. 응급 처치도 같은 CLI 라 똑같이 실패하므로 부르지 않고 「마스터 몫」으로 한 번만 적는다
+#   STOPPED 그 밖(문서에 없는 종료 1·127 등)  응급 처치도 되살리기도 하지 않고 「마스터 몫」으로 한 번만 적는다(설명은 watch.sh 가 붙인 resume.out 끝 줄)
 # 한 일은 watchdog.log 에, 루프를 건드렸으면 그 폴더의 loop.log 에도 「상시 감시가 …」 한 줄. 아무 일도 없으면 적지 않는다.
 # WATCHDOG_DRY=1: 아무것도 실행하지 않고 하려던 것만 찍는다.
 # 쓰는 법: tools/sol/watchdog.sh        (내부용: watchdog.sh --respond <폴더> <코드> <멈춘 시각>)
 set -u
+[ -n "${USER:-}" ] || USER=$(id -un)
+[ -n "${LOGNAME:-}" ] || LOGNAME=$(id -un)
+export USER LOGNAME
 HERE=$(cd "$(dirname "$0")" && pwd)
 . "$HERE/proc.sh" || exit 2
 CONF="${MAPO_LOOP_CONFIG:-$HOME/.config/mapo-loop}"
@@ -25,6 +32,7 @@ DEAD_QUIET_MIN="${WATCHDOG_DEAD_QUIET_MIN:-3}"
 RESPOND_MAX_MIN="${WATCHDOG_RESPOND_MAX_MIN:-40}"
 MAX_TRIES=2; MAX_RELAUNCH_PER_HOUR=3
 mkdir -p "$STATE/attempts" "$STATE/seen" || exit 2
+printf 'USER=%s\nLOGNAME=%s\nHOME=%s\nPATH=%s\nLANG=%s\n' "${USER:-}" "${LOGNAME:-}" "${HOME:-}" "${PATH:-}" "${LANG:-}" > "$STATE/last-env.txt"
 WLOG="$STATE/watchdog.log"
 
 now() { date +%s; }
@@ -157,6 +165,10 @@ handle() { # 폴더
       wlog "$D: STALLED → loop.sh 프로세스 ${k}개를 끝냈다($detail)" ;;
     "STOPPED 2"|"STOPPED 3"|"STOPPED 4"|"STOPPED 6"|"STOPPED 8"|"STOPPED 9")
       maybe_respond "$D" "${st#STOPPED }" "$ep" "$detail" ;;
+    "STOPPED 10")
+      note_once "$D" "login-$ep" "STOPPED 10: Claude CLI 로그인 오류로 섰다. 응급 처치도 같은 CLI 라 부르지 않는다(마스터 몫): $detail" ;;
+    STOPPED*)
+      note_once "$D" "undoc-$st-$ep" "$st: 문서에 없는 종료라 응급 처치도 되살리기도 하지 않는다(마스터 몫): $detail" ;;
     *) note_once "$D" "other-$st-$ep" "$st 는 상시 감시가 다루지 않는다: $detail" ;;
   esac
 }

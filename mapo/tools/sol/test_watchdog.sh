@@ -17,6 +17,7 @@ cat > "$ROOT/fake-claude" <<'EOF'
 #!/bin/bash
 # 가짜 claude. 지시문에서 이번 실행의 시각 문자열을 읽어 .relaunch·NEEDS-MASTER 를 흉내 낸다
 echo "claude $(pwd)" >> "$FAKE_LOG"
+echo "USER=${USER:-} LOGNAME=${LOGNAME:-}" > "$FAKE_LOG.env"
 ts=$(printf '%s\n' "$@" | sed -n 's/^- 이번 실행의 시각 문자열: //p' | head -1)
 [ -n "${FAKE_RELAUNCH:-}" ] && : > "tmp/loop/responder/$ts.relaunch"
 [ -n "${FAKE_NEEDS:-}" ] && echo "진단" > tmp/loop/NEEDS-MASTER.md
@@ -29,7 +30,7 @@ fresh() { # 새 루프 폴더 D 와 새 설정·상태
   N=$((N + 1)); D="$ROOT/loop$N/mapo"; CONF="$ROOT/conf$N"; STATE="$ROOT/state$N"
   mkdir -p "$D/tools/sol" "$D/docs/redraw-orders/queue/t1" "$D/tmp/loop" "$CONF"
   cp "$HERE/watch.sh" "$HERE/proc.sh" "$HERE/stop.sh" "$D/tools/sol/"
-  printf '#!/bin/bash\ncd "$(dirname "$0")/../.."; echo "resume $*" >> tmp/resume-calls\n' > "$D/tools/sol/resume.sh"
+  printf '#!/bin/bash\ncd "$(dirname "$0")/../.."; echo "resume $*" >> tmp/resume-calls; echo "USER=${USER:-} LOGNAME=${LOGNAME:-}" > tmp/resume-env\n' > "$D/tools/sol/resume.sh"
   printf -- '- [ ] t1 일감\n' > "$D/docs/redraw-orders/queue.md"
   echo 'STAGE=s0' > "$D/docs/redraw-orders/queue/t1/task.env"
   echo 'tmp/' > "$D/.gitignore"
@@ -50,8 +51,8 @@ dead() { # 몇 분 전
   echo "2026-11-27 10:00 일감 t1 1회차 검사 종료 0" > "$D/tmp/loop/loop.log"
   touch -t "$(stamp $(( $(date +%s) - $1 * 60 )))" "$D/tmp/loop/loop.log"
 }
-wd() { # 남은 인자는 env 에 더할 변수
-  env MAPO_LOOP_CONFIG="$CONF" MAPO_LOOP_STATE="$STATE" LOOP_CLAUDE="$ROOT/fake-claude" FAKE_LOG="$FAKE_LOG" "$@" \
+wd() { # 남은 인자는 env 에 더할 변수. WD_UNSET 에 「-u 이름」을 두면 그 변수를 빼고 띄운다(launchd 흉내)
+  env ${WD_UNSET:-} MAPO_LOOP_CONFIG="$CONF" MAPO_LOOP_STATE="$STATE" LOOP_CLAUDE="$ROOT/fake-claude" FAKE_LOG="$FAKE_LOG" "$@" \
     bash "$HERE/watchdog.sh" < /dev/null > "$ROOT/wd.out" 2>&1
   # 떼어 띄운 응급 처치와 resume.sh 가 끝날 때까지 기다린다
   i=0; while pgrep -f -- "--respond $D " > /dev/null && [ $i -lt 50 ]; do sleep 0.2; i=$((i + 1)); done
@@ -155,6 +156,33 @@ chk "⑧ StartInterval" 300 "$(plutil -extract StartInterval raw "$ROOT/p.plist"
 chk "⑧ 스크립트" /Users/gio_c/apps/mapo/tools/sol/watchdog.sh "$(plutil -extract ProgramArguments.1 raw "$ROOT/p.plist" 2>/dev/null)"
 chk "⑧ PATH 에 homebrew" 1 "$(plutil -extract EnvironmentVariables.PATH raw "$ROOT/p.plist" 2>/dev/null | grep -c '^/opt/homebrew/bin:' | tr -d ' ')"
 chk "⑧ ProcessType" Background "$(plutil -extract ProcessType raw "$ROOT/p.plist" 2>/dev/null)"
+chk "⑧ USER" "$(id -un)" "$(plutil -extract EnvironmentVariables.USER raw "$ROOT/p.plist" 2>/dev/null)"
+chk "⑧ LOGNAME" "$(id -un)" "$(plutil -extract EnvironmentVariables.LOGNAME raw "$ROOT/p.plist" 2>/dev/null)"
+chk "⑧ HOME" "$HOME" "$(plutil -extract EnvironmentVariables.HOME raw "$ROOT/p.plist" 2>/dev/null)"
+
+echo "⑨ 로그인 오류(종료 10)·문서에 없는 종료·launchd 에 없는 USER"
+ME=$(id -un)
+fresh; stopped 10 60; echo x > "$D/tmp/loop/keep-running"
+wd; wd; chk "⑨ STOPPED 10: 부르지 않음" 0 "$(calls)"; chk "⑨ STOPPED 10: 띄우지 않음" 0 "$(resumes)"
+chk "⑨ STOPPED 10: 마스터 몫으로 한 번" 1 "$(grep -c 'STOPPED 10.*마스터 몫' "$STATE/watchdog.log" | tr -d ' ')"; chk "⑨ STOPPED 10: 기록 한 줄" 1 "$(wlines)"
+fresh; stopped 3 120; touch -t "$(stamp $(( $(date +%s) - 120 * 60 )))" "$D/tmp/loop/last-exit"; dead 3; echo x > "$D/tmp/loop/keep-running"
+long=$(printf 'x%.0s' $(seq 1 300))
+printf '앞 줄\ntools/sol/loop.sh: line 373: n회차: unbound variable\n%s\n2026-11-27 12:00:00 loop 종료 1\n' "$long" > "$D/tmp/loop/resume.out"
+touch -t "$(stamp $(( $(date +%s) - 120 )))" "$D/tmp/loop/resume.out"
+wd; wd; chk "⑨ 종료 1: 부르지 않음" 0 "$(calls)"; chk "⑨ 종료 1: 띄우지 않음" 0 "$(resumes)"
+chk "⑨ 종료 1: 마스터 몫으로 한 번" 1 "$(grep -c 'STOPPED 1:.*마스터 몫' "$STATE/watchdog.log" | tr -d ' ')"; chk "⑨ 종료 1: 기록 한 줄" 1 "$(wlines)"
+chk "⑨ 종료 1: resume.out 끝을 붙임" 1 "$(grep -c 'n회차: unbound variable' "$STATE/watchdog.log" | tr -d ' ')"
+chk "⑨ 종료 1: 옛 status.md 문장 안 붙임" 0 "$(grep -c '일감 t1 이 섰다' "$STATE/watchdog.log" | tr -d ' ')"
+chk "⑨ 종료 1: 줄마다 200자 안쪽(201자 없음, 200자 있음)" "0 1" "$(grep -c 'x\{201\}' "$STATE/watchdog.log" | tr -d ' ') $(grep -c 'x\{200\}' "$STATE/watchdog.log" | tr -d ' ')"
+fresh; dead 5; echo x > "$D/tmp/loop/keep-running"
+WD_UNSET="-u USER -u LOGNAME" wd
+chk "⑨ last-env: USER 를 채움" 1 "$(grep -cx "USER=$ME" "$STATE/last-env.txt" 2>/dev/null | tr -d ' ')"
+chk "⑨ last-env: LOGNAME 을 채움" 1 "$(grep -cx "LOGNAME=$ME" "$STATE/last-env.txt" 2>/dev/null | tr -d ' ')"
+chk "⑨ last-env: 다섯 값" 5 "$(grep -cE '^(USER|LOGNAME|HOME|PATH|LANG)=' "$STATE/last-env.txt" 2>/dev/null | tr -d ' ')"
+chk "⑨ 되살린 resume.sh 의 환경" "USER=$ME LOGNAME=$ME" "$(cat "$D/tmp/resume-env" 2>/dev/null)"
+fresh; stopped 9 25
+WD_UNSET="-u USER -u LOGNAME" wd
+chk "⑨ 응급 처치(claude)의 환경" "USER=$ME LOGNAME=$ME" "$(cat "$FAKE_LOG.env" 2>/dev/null)"
 
 [ -n "${WD_TEST_KEEP:-}" ] || { find "$ROOT" -mindepth 1 -delete 2>/dev/null; rmdir "$ROOT" 2>/dev/null; }
 printf '\n문법 검사: '; for f in "$HERE"/*.sh; do bash -n "$f" || { echo "FAIL $f"; BADN=$((BADN + 1)); }; done; echo ok

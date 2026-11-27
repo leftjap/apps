@@ -1,5 +1,6 @@
 #!/bin/bash
 # 한도로 선 루프를 다시 돌린다: 끝날 때까지 기다릴 프로세스가 있으면 기다린 뒤 loop.sh --continue, 종료 7(한도)이면 30분 뒤 다시. 다른 종료면 끝낸다.
+# 종료 10(CLI 로그인 오류)은 기다려도 풀리지 않으므로 다시 시도하지 않고 끝낸다(다른 종료와 같다). 오류 원문은 loop.sh 의 멈춤 줄로 resume.out 에 남는다.
 # 쓰는 법: tools/sol/resume.sh [기다릴 PID] [마감 시각 YYYY-mm-ddTHH:MM]
 # 시작할 때 tmp/loop/keep-running 에 마감 시각을 쓴다(상시 감시가 되살려도 된다는 표시)
 set -u; cd "$(dirname "$0")/../.." || exit 2; mkdir -p tmp/loop

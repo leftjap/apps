@@ -12,6 +12,9 @@
 #   알림 줄을 찍을 때 그 폴더의 tmp/loop/master-notified 에 지금 시각(epoch)을 쓴다(상시 감시 watchdog.sh 가 읽는다).
 #   --raw: 폴더마다 「상태<TAB>시각(epoch)<TAB>자세한 것」(시각은 STOPPED 면 멈춘 때, 그 밖에는 loop.log 가 바뀐 때). watchdog.sh 가 쓴다
 #   resume.out 의 끝이 신호 종료(128 이상)면 STOPPED 가 아니라 DEAD 로 본다(죽임당했다).
+#   STOPPED 의 자세한 것은 status.md 의 첫 문장이다. 다만 resume.out 의 마지막 종료가 멈춤 기록(finish)보다 뒤라
+#   status.md 가 그 전 것이면(문서에 없는 종료 1·127 등) 그 문장 대신 「문서에 없는 종료 N. status.md 는 그 전 것」과
+#   resume.out 끝 줄(3줄 안쪽, 줄마다 200자 안쪽)을 붙인다. 문서에 있는 종료는 loop.sh 맨 위 주석의 0·2~10 이다(10 은 CLI 로그인 오류).
 set -u
 mode=--once
 case "${1:-}" in --once|--until-attention|--raw) mode=$1; shift ;; esac
@@ -28,6 +31,10 @@ hm() { date -r "$1" '+%m-%d %H:%M'; }
 has_proc() { [ -n "$(pids_in "$1" "$2")" ]; } # 그 폴더를 cwd 로 하는 tools/sol/<이름> 이 있으면 0
 first_sentence() { # status.md 본문 첫 문장
   sed -n '3p' "$1" 2>/dev/null | awk '{ i = index($0, ". "); print (i ? substr($0, 1, i) : $0) }'
+}
+ro_tail() { # resume.out 의 마지막 종료 줄 앞의 줄들(3줄 안쪽, 줄마다 200자 안쪽)을 한 줄로
+  tail -4 "$1" 2>/dev/null | awk '{ l[NR] = $0 } END { n = NR; if (n && l[n] ~ / loop 종료 [0-9]+$/) n--
+    s = ""; for (i = (n > 3 ? n - 2 : 1); i <= n; i++) if (l[i] ~ /[^ \t]/) s = s (s == "" ? "" : " | ") substr(l[i], 1, 200); print s }'
 }
 
 state_of() { # 폴더 → "상태<TAB>시각<TAB>자세한 것"
@@ -57,14 +64,21 @@ state_of() { # 폴더 → "상태<TAB>시각<TAB>자세한 것"
     read -r code when _ < "$E"
   elif c=$(printf '%s' "$last" | sed -n 's/^[0-9-]* [0-9:]* 멈춤(종료 \([0-9][0-9]*\)).*/\1/p') && [ -n "$c" ]; then
     code=$c; when=$llm
-  else
-    rl=$(tail -1 "$RO" 2>/dev/null)
-    c=$(printf '%s' "$rl" | sed -n 's/.* loop 종료 \([0-9][0-9]*\)$/\1/p')
-    [ -n "$c" ] && [ "$(mt "$RO")" -ge "$llm" ] && { code=$c; when=$(mt "$RO"); }
-    [ -n "$code" ] && [ "$code" -ge 128 ] && { killed=$code; code=; }
+  fi
+  # resume.out 의 마지막 줄이 멈춤 기록보다 뒤의 종료면(finish 를 거치지 않고 끝났다) 그것이 마지막 종료다
+  c=$(tail -1 "$RO" 2>/dev/null | sed -n 's/.* loop 종료 \([0-9][0-9]*\)$/\1/p'); rt=$(mt "$RO")
+  if [ -n "$c" ] && [ "$rt" -ge "$llm" ] && { [ -z "$code" ] || [ "$rt" -gt $(( when + 5 )) ]; }; then
+    code=$c; when=$rt
+    [ "$code" -ge 128 ] && { killed=$code; code=; }
   fi
   if [ -n "$code" ]; then
-    printf 'STOPPED %s\t%s\t%s 에 멈춤(%s분 전). %s\n' "$code" "$when" "$(hm "$when")" "$(ago "$when")" "$(first_sentence "$D/tmp/loop/status.md")"
+    S="$D/tmp/loop/status.md"
+    if [ "$(mt "$S")" -ge $(( when - 5 )) ]; then why=$(first_sentence "$S")
+    else
+      case " 0 2 3 4 5 6 7 8 9 10 " in *" $code "*) why="멈춤 기록 없이 끝난 종료 $code" ;; *) why="문서에 없는 종료 $code" ;; esac
+      why="$why. status.md 는 그 전 것. resume.out 끝: $(ro_tail "$RO")"
+    fi
+    printf 'STOPPED %s\t%s\t%s 에 멈춤(%s분 전). %s\n' "$code" "$when" "$(hm "$when")" "$(ago "$when")" "$why"
   elif [ -n "$killed" ]; then
     printf 'DEAD\t%s\tresume.sh 가 신호로 끝난 루프를 적고 끝났다(종료 %s, %s분 전)\n' "$llm" "$killed" "$(ago "$(mt "$RO")")"
   elif [ -f "$L" ]; then

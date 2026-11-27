@@ -6,7 +6,9 @@
 #   --continue: 한도나 중단으로 끊긴 맨 위 일감을 작업 트리 그대로 이어받는다(구현이 끝났으면 검사·검수부터)
 #   retry.sh <id> 를 거친 일감(표시 파일 tmp/loop/<id>/recheck)은 --continue 가 구현 없이 검사·검수부터 한다
 # 종료: 0 목록 끝, 2 사용법·환경, 3 같은 일감 두 번 실패, 4 STOP 판정, 5 단계의 끝(지오 확인), 6 단계 신호, 7 한도,
-#   8 단계(구현·검사·검수·계획)가 시간 상한을 넘었다(작업 트리 그대로), 9 검수가 일감이 틀렸다고 판정했다(blame task, 작업 트리 그대로)
+#   8 단계(구현·검사·검수·계획)가 시간 상한을 넘었다(작업 트리 그대로), 9 검수가 일감이 틀렸다고 판정했다(blame task, 작업 트리 그대로),
+#   10 검수·계획의 Claude CLI 가 로그인 오류로 답했다(기다려도 풀리지 않는다. resume.sh 는 다시 시도하지 않고, 상시 감시는 응급 처치 없이 마스터 몫으로 적는다)
+#   검수·계획의 CLI 가 판정 대신 오류로 답하면 FAIL 로 세지 않는다: 로그인 오류는 10, 그 밖(한도 등)은 7. status.md 에 오류 원문을 적는다
 # 멈출 때마다 tmp/loop/last-exit 에 「코드 시각(epoch) 일감」 한 줄을 쓴다(tools/sol/watch.sh 가 읽는다)
 set -u
 cd "$(dirname "$0")/../.." || exit 2
@@ -188,6 +190,36 @@ except Exception:
 sys.exit(0 if d.get('is_error') or d.get('subtype') != 'success' else 1)
 PYC
 }
+review_cut() { # 검수 답이 claude json 이고 오류(impl_cut 과 같은 기준)면 0. claude json 이 아니면 1(판정을 읽어 본다)
+  python3 - "$1" <<'PYR' 2>/dev/null
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(1)
+if not isinstance(d, dict) or not ('is_error' in d or 'subtype' in d):
+    sys.exit(1)
+sys.exit(0 if d.get('is_error') or d.get('subtype') != 'success' else 1)
+PYR
+}
+cli_err() { # claude -p 결과 json → 「login 또는 other<TAB>오류 원문(result 앞 200자)」
+  python3 - "$1" <<'PYE' 2>/dev/null
+import json, sys
+try:
+    r = json.load(open(sys.argv[1])).get('result')
+except Exception:
+    r = None
+r = ' '.join(r.split()) if isinstance(r, str) else ''
+print(('login' if ('Not logged in' in r or '/login' in r) else 'other') + '\t' + r[:200])
+PYE
+}
+cli_stop() { # claude 답 json, 주어(…가), 덧붙일 문장, 다시 하는 법 → 로그인 오류면 종료 10(기다려도 풀리지 않는다), 그 밖(한도 등)은 종료 7. 오류 원문을 붙인다
+  ce=$(cli_err "$1"); ct=${ce#*$'\t'}
+  case "$ce" in
+    login*) finish 10 "$2 로그인 오류로 끊겼다($1). 기다려도 풀리지 않으므로 다시 시도하지 않고 섰다. ${3}마스터가 Claude CLI 의 로그인과 루프 환경의 USER·HOME 을 확인한 뒤 $4 오류 원문: $ct" ;;
+  esac
+  finish 7 "$2 한도나 오류로 끊겼다($1). ${3}한도가 풀리면 $4 오류 원문: ${ct:-(없음)}"
+}
 plan_next() { # 목록이 비면 계획 세우기 모델이 다음 일감을 쓰고, 루프가 그것을 커밋한다
   t0=$(date +%s)
   pf="$OUT/plan-$(date +%s).md"
@@ -205,7 +237,7 @@ plan_next() { # 목록이 비면 계획 세우기 모델이 다음 일감을 쓰
   pcode=$?
   ledger plan 1 plan "$PLAN_MODEL" high "$(mins_since "$t0")" "$(json_cost "$pf.json")" "$(capped_note "$pcode")"
   [ -n "$CAPPED" ] && finish 8 "계획 세우기가 시간 상한(${PLAN_MAX_MIN}분)을 넘어 그 프로세스를 끝냈다($pf.err). 일감 목록과 $QDIR 에 반쯤 쓴 일감이 있는지 본 뒤 다시 돌린다."
-  impl_cut "$pf.json" && finish 7 "계획 세우기가 한도나 오류로 끊겼다($pf.json). tools/sol/loop.sh --continue 로 이어 간다."
+  impl_cut "$pf.json" && cli_stop "$pf.json" "계획 세우기가" "" "tools/sol/loop.sh --continue 로 이어 간다."
   new=$(g status --porcelain --untracked-files=all -- "${PREFIX}$QDIR" "$QUEUE_R" | sed 's/^...//')
   if [ -n "$new" ]; then
     printf '%s\n' "$new" | while IFS= read -r p; do g add -- "$p"; done
@@ -253,8 +285,8 @@ for line in reversed(text.strip().splitlines()):
         break
 PYX
 }
-impl_done() { # 회차 → 그 회차 구현이 정상으로 끝났다는 기록이 있으면 0(claude 는 성공 json, sol 은 run.sh 의 종료 0 줄)
-  { [ -e "$WORK/impl-$1.json" ] && ! impl_cut "$WORK/impl-$1.json"; } || grep -q '끝(.*종료 0)' "$WORK/impl-$1.log" 2>/dev/null
+impl_done() { # 회차 → 그 회차 구현이 정상으로 끝났다는 기록이 있으면 0(claude 는 성공 json, sol 은 run.sh 의 종료 0 줄, 그 회차 검수가 오류로 답한 기록)
+  [ -e "$WORK/review-$1.error" ] || { [ -e "$WORK/impl-$1.json" ] && ! impl_cut "$WORK/impl-$1.json"; } || grep -q '끝(.*종료 0)' "$WORK/impl-$1.log" 2>/dev/null
 }
 read_verdict() { # 검수 답(claude json 이면 result 칸, 아니면 글)의 마지막 JSON 줄에서 판정 하나만 읽는다
   python3 - "$1" <<'PYV' 2>/dev/null
@@ -538,6 +570,12 @@ while :; do
       mv "$WORK/review-$n.out" "$WORK/review-$n.timeout" 2>/dev/null
       ledger "$id" "$n" review "$REVIEW" "$REVIEW_EFFORT" "$(mins_since "$t0")" "$rcost" "시간 제한"
       finish 8 "일감 $id 의 ${n}회차 검수가 시간 상한(${REVIEW_MAX_MIN}분)을 넘어 그 프로세스와 자식들을 끝냈다. 작업 트리는 그대로 두었다. tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다."
+    fi
+    # 판정 대신 오류(로그인·한도)로 답했으면 FAIL 로 세지 않는다. 답은 이름을 바꿔 --continue 가 FAIL 회차로 읽지 않게 하고, 다시 돌리면 검사·검수부터 한다
+    if [ "$REVIEW" != sol ] && review_cut "$WORK/review-$n.out"; then
+      mv "$WORK/review-$n.out" "$WORK/review-$n.error"
+      ledger "$id" "$n" review "$REVIEW" "$REVIEW_EFFORT" "$(mins_since "$t0")" "$rcost" "오류(종료 $rcode)"
+      cli_stop "$WORK/review-$n.error" "일감 $id 의 ${n}회차 검수가" "판정으로 세지 않았고 작업 트리는 그대로 두었다. " "tools/sol/loop.sh --continue 로 검사·검수부터 다시 한다."
     fi
     sig1=$(tree_sig)
     verdict=$(read_verdict "$vfiles")

@@ -38,6 +38,10 @@ plist() {
     <string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>HOME</key>
     <string>$HOME</string>
+    <key>USER</key>
+    <string>$(id -un)</string>
+    <key>LOGNAME</key>
+    <string>$(id -un)</string>
     <key>LANG</key>
     <string>ko_KR.UTF-8</string>
   </dict>

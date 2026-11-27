@@ -26,6 +26,10 @@ role=impl; model=; prev=
 for a in "$@"; do [ "$a" = "--disallowedTools" ] && role=review; case "$a" in *"# 계획 세우기"*) role=plan;; esac; [ "$prev" = "--model" ] && model=$a; prev=$a; done
 echo "claude $role model=$model" >> "$FAKE_LOG"
 if [ "$role" = plan ]; then
+  case "${FAKE_PLAN_ERROR:-}" in
+    login) echo '{"type":"result","subtype":"success","is_error":true,"result":"Not logged in · Please run /login"}'; exit 1 ;;
+    limit) echo '{"type":"result","subtype":"success","is_error":true,"api_error_status":429,"result":"You have hit your weekly limit · resets 12am"}'; exit 1 ;;
+  esac
   n=$(cat "$FAKE_REPO/tmp/plan-count" 2>/dev/null || echo 0); n=$((n+1)); echo $n > "$FAKE_REPO/tmp/plan-count"
   if [ "$n" -le "${FAKE_PLAN_TASKS:-1}" ]; then
     mkdir -p "$FAKE_REPO/docs/redraw-orders/queue/p$n"
@@ -47,11 +51,16 @@ elif [ "$role" = impl ]; then
 else
   # 진짜 claude 처럼 --disallowedTools 는 뒤 인자를 모두 도구 이름으로 먹는다: 지시문은 표준 입력으로 와야 한다
   input=; IFS= read -r -t 2 input; [ -n "$input" ] || { echo "Error: Input must be provided either through stdin or as a prompt argument when using --print"; exit 1; }
+  # 진짜 claude 처럼 로그인·한도 오류는 판정 대신 is_error 가 참인 json 으로 답한다
+  case "${FAKE_REVIEW_ERROR:-}" in
+    login) echo '{"type":"result","subtype":"success","is_error":true,"result":"Not logged in · Please run /login"}'; exit 1 ;;
+    limit) echo '{"type":"result","subtype":"success","is_error":true,"api_error_status":429,"result":"You have hit your weekly limit · resets 12am"}'; exit 1 ;;
+  esac
   [ -n "${FAKE_REVIEW_TOUCH:-}" ] && echo "검수자가 고침" >> "$FAKE_REPO/work.txt"
   v=$(head -1 "$FAKE_VERDICTS"); tail -n +2 "$FAKE_VERDICTS" > "$FAKE_VERDICTS.n"; mv "$FAKE_VERDICTS.n" "$FAKE_VERDICTS"
   # 판정 뒤의 표시: :r 같은 문제, :t 일감 탓(blame task), :i 구현 탓(blame impl)
   r=false; b=; case "$v" in *:r*) r=true;; esac; case "$v" in *:t*) b='\"blame\":\"task\",';; *:i*) b='\"blame\":\"impl\",';; esac; v=${v%%:*}
-  printf '{"type":"result","total_cost_usd":0.002,"usage":{"input_tokens":900},"result":"가짜 검수\\n{\\"verdict\\":\\"%s\\",%s\\"repeat\\":%s,\\"reasons\\":[\\"가짜 까닭\\"],\\"fixes\\":[\\"가짜 고칠 것: 검사 줄\\"]}"}\n' "$v" "$b" "$r"
+  printf '{"type":"result","subtype":"success","is_error":false,"total_cost_usd":0.002,"usage":{"input_tokens":900},"result":"가짜 검수\\n{\\"verdict\\":\\"%s\\",%s\\"repeat\\":%s,\\"reasons\\":[\\"가짜 까닭\\"],\\"fixes\\":[\\"가짜 고칠 것: 검사 줄\\"]}"}\n' "$v" "$b" "$r"
 fi
 EOF
   cat > "$REPO/fake/run.sh" <<'EOF'
@@ -93,7 +102,7 @@ setup() { # 깨끗한 임시 저장소
   REPO=$(mktemp -d /tmp/mapo-loop-test.XXXXXX)
   mkdir -p "$REPO/tools/sol" "$REPO/docs/redraw-orders/queue" "$REPO/fake" "$REPO/tmp"
   cp "$LOOP_SRC" "$REPO/tools/sol/loop.sh" 2>/dev/null || { echo "  (loop.sh 가 없다: $LOOP_SRC)"; }
-  for f in retry.sh watch.sh proc.sh; do cp "$HERE/$f" "$REPO/tools/sol/$f" 2>/dev/null || echo "  ($f 가 없다)"; done
+  for f in retry.sh watch.sh proc.sh resume.sh; do cp "$HERE/$f" "$REPO/tools/sol/$f" 2>/dev/null || echo "  ($f 가 없다)"; done
   printf 'tmp/\n' > "$REPO/.gitignore"
   printf '# 일감 목록\n\n' > "$REPO/docs/redraw-orders/queue.md"
   echo seed > "$REPO/seed.txt"
@@ -125,7 +134,7 @@ run_loop() { # 남은 인자는 env 에 더할 변수
       LOOP_BUSY_PATTERN=no-such-busy-job-xyz \
       LOOP_OUT="$REPO/tmp/loop" SOL_OUT="$REPO/tmp/sol" LOOP_CODEX_SESSIONS="$REPO/fake/sessions" \
       FAKE_LOG="$REPO/tmp/fake.log" FAKE_VERDICTS="$REPO/tmp/verdicts" FAKE_REPO="$REPO" \
-      "$@" bash tools/sol/loop.sh $LOOP_ARGS > "$REPO/tmp/run.out" 2>&1 )
+      "$@" bash ${RUN_SCRIPT:-tools/sol/loop.sh} $LOOP_ARGS > "$REPO/tmp/run.out" 2>&1 )
   echo $?
 }
 
@@ -586,7 +595,73 @@ case34() { echo "㉞ 루프가 TERM 을 받으면 배경으로 돌던 단계도 
   chk "㉞ 잠금 풀림" 0 "$([ -d "$REPO/tmp/loop/lock" ] && echo 1 || echo 0)"
 }
 
-for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22 case23 case24 case25 case26 case27 case28 case29 case30 case31 case32 case33 case34}; do "$c"; done
+case35() { echo "㉟ 검수 답이 한도 오류면 FAIL 로 세지 않고 종료 7 → --continue 는 검사·검수부터"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=sol REVIEW_M=opus env_task)"; commit_all
+  verdicts PASS
+  code=$(run_loop FAKE_REVIEW_ERROR=limit)
+  chk "㉟ 종료" 7 "$code"
+  chk "㉟ 구현 한 번" 1 "$(hits 'sol t1-impl')"
+  chk "㉟ FAIL 회차로 남기지 않음" 0 "$(have "$REPO/tmp/loop/t1/review-1.out")"
+  chk "㉟ 오류 답을 다른 이름으로" 1 "$(have "$REPO/tmp/loop/t1/review-1.error")"
+  chk "㉟ 트리 그대로" 1 "$(have "$REPO/work.txt")"
+  chk "㉟ 일감 그대로" 1 "$(qmark ' ' t1)"
+  chk "㉟ status.md 에 오류 원문" 1 "$(grep -c 'You have hit your weekly limit' "$REPO/tmp/loop/status.md" | tr -d ' ')"
+  chk "㉟ 출력(resume.out 으로 가는 것)에 오류 원문" 1 "$(grep -c '멈춤(종료 7).*You have hit your weekly limit' "$REPO/tmp/run.out" | tr -d ' ')"
+  LOOP_ARGS="--continue"
+  code=$(run_loop)
+  chk "㉟ 이어서 종료" 0 "$code"
+  chk "㉟ 구현 다시 안 부름" 1 "$(hits 'sol t1-impl')"
+  chk "㉟ 커밋 수" 2 "$(commits)"
+}
+
+case36() { echo "㊱ 검수 답이 로그인 오류면 종료 10, resume.sh 도 다시 시도하지 않는다"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=sol REVIEW_M=opus env_task)"; commit_all
+  verdicts PASS
+  LOOP_ARGS=""
+  code=$(RUN_SCRIPT=tools/sol/resume.sh run_loop FAKE_REVIEW_ERROR=login)
+  chk "㊱ 종료" 10 "$code"
+  chk "㊱ resume.sh 가 한 번만 돌림" 1 "$(grep -c ' loop 종료 ' "$REPO/tmp/loop/resume.out" | tr -d ' ')"
+  chk "㊱ 검수 한 번" 1 "$(hits 'claude review')"
+  chk "㊱ 구현 한 번" 1 "$(hits 'sol t1-impl')"
+  chk "㊱ FAIL 회차로 남기지 않음" 0 "$(have "$REPO/tmp/loop/t1/review-1.out")"
+  chk "㊱ 기계가 읽는 멈춤 기록" 10 "$(awk '{print $1}' "$REPO/tmp/loop/last-exit" 2>/dev/null)"
+  chk "㊱ status.md 에 오류 원문" 1 "$(grep -c 'Not logged in' "$REPO/tmp/loop/status.md" | tr -d ' ')"
+  chk "㊱ resume.out 에 오류 원문" 1 "$(grep -c '멈춤(종료 10).*Not logged in' "$REPO/tmp/loop/resume.out" | tr -d ' ')"
+  chk "㊱ watch 가 STOPPED 10" 1 "$(bash "$REPO/tools/sol/watch.sh" --once "$REPO" | grep -c ' STOPPED 10 ' | tr -d ' ')"
+}
+
+case37() { echo "㊲ 계획 세우기의 로그인 오류는 종료 10, 한도는 종료 7(둘 다 오류 원문을 남긴다)"
+  setup; printf '# 계획 세우기 안내\n' > "$REPO/docs/redraw-orders/queue/PLANNER.md"; commit_all
+  code=$(run_loop FAKE_PLAN_ERROR=login)
+  chk "㊲ 로그인: 종료" 10 "$code"
+  chk "㊲ 로그인: status.md 에 원문" 1 "$(grep -c 'Not logged in' "$REPO/tmp/loop/status.md" | tr -d ' ')"
+  setup; printf '# 계획 세우기 안내\n' > "$REPO/docs/redraw-orders/queue/PLANNER.md"; commit_all
+  code=$(run_loop FAKE_PLAN_ERROR=limit)
+  chk "㊲ 한도: 종료" 7 "$code"
+  chk "㊲ 한도: status.md 에 원문" 1 "$(grep -c 'You have hit your weekly limit' "$REPO/tmp/loop/status.md" | tr -d ' ')"
+}
+
+case38() { echo "㊳ 문서에 없는 종료로 죽은 루프: watch.sh 는 옛 status.md 대신 resume.out 끝을 붙인다"
+  setup; add_task t1 "첫 일감" "$(IMPL_M=opus REVIEW_M=sol env_task)"; commit_all
+  verdicts FAIL FAIL:r
+  code=$(run_loop)
+  chk "㊳ 앞 실행 종료" 3 "$code"
+  old=$(( $(date +%s) - 3600 ))
+  echo "3 $old t1" > "$REPO/tmp/loop/last-exit"
+  touch -t "$(date -r "$old" '+%Y%m%d%H%M.%S')" "$REPO/tmp/loop/status.md" "$REPO/tmp/loop/last-exit" "$REPO/tmp/loop/loop.log"
+  # 그 뒤 고친 loop.sh 가 기록 한 줄을 쓰고 멈춤 기록(finish) 없이 종료 1 로 죽는다
+  printf '#!/bin/bash\ncd "$(dirname "$0")/../.."\necho "$(date "+%%Y-%%m-%%d %%H:%%M") 한도 미확인" >> tmp/loop/loop.log\necho "tools/sol/loop.sh: line 373: n회차: unbound variable" >&2\nexit 1\n' > "$REPO/tools/sol/loop.sh"
+  LOOP_ARGS=""
+  code=$(RUN_SCRIPT=tools/sol/resume.sh run_loop)
+  chk "㊳ resume.sh 종료" 1 "$code"
+  w=$(bash "$REPO/tools/sol/watch.sh" --once "$REPO")
+  chk "㊳ STOPPED 1" 1 "$(printf '%s\n' "$w" | grep -c ' STOPPED 1 ' | tr -d ' ')"
+  chk "㊳ 문서에 없는 종료라고 적음" 1 "$(printf '%s\n' "$w" | grep -c '문서에 없는 종료 1\. status\.md 는 그 전 것' | tr -d ' ')"
+  chk "㊳ resume.out 끝을 붙임" 1 "$(printf '%s\n' "$w" | grep -c 'n회차: unbound variable' | tr -d ' ')"
+  chk "㊳ 옛 status.md 문장은 붙이지 않음" 0 "$(printf '%s\n' "$w" | grep -c '같은 문제로 FAIL' | tr -d ' ')"
+}
+
+for c in ${LOOP_TEST_CASES:-case1 case2 case3 case4 case5 case6 case7 case8 case9 case10 case11 case12 case13 case14 case15 case16 case17 case18 case19 case20 case21 case22 case23 case24 case25 case26 case27 case28 case29 case30 case31 case32 case33 case34 case35 case36 case37 case38}; do "$c"; done
 [ -n "${LOOP_TEST_KEEP:-}" ] || wipe
 printf '\n문법 검사: '; for f in "$LOOP_SRC" "$HERE/retry.sh" "$HERE/watch.sh" "$HERE/resume.sh"; do bash -n "$f" || { echo "FAIL $f"; BADN=$((BADN + 1)); }; done; echo ok
 # 변수 이름 바로 뒤에 ASCII 가 아닌 글자가 붙은 자리는 ${이름} 으로 감싸야 한다(실행 경로와 상관없이 도구 전체에서 센다)
