@@ -240,9 +240,8 @@ def bake_a(old):
         buildings = surface([[ [project(p) for p in ring] for ring in row['rings']]
                              for row in source_buildings if row['height'] or row['floors']])
         hidden = outline_exclusions(source_buildings, common_road)
-    recovered, crossing_audit = supplement_crossings(crossings,combined,buildings)
-    approaches = surface([face for row in crossing_audit if row['status']!='unconfirmed'
-                          for end in row['approaches'] for face in end['faces']])
+    recovered, crossing_audit, paving = supplement_crossings(crossings,combined,buildings,road_surface)
+    approaches = surface(paving)
     combined = combined.union(approaches.difference(cross_faces))
     if AREA.get('comparisonAreas'):
         combined = preserve_inferred_pavement(measured, combined.difference(measured))

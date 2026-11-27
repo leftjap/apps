@@ -10,6 +10,9 @@ from shapely.ops import unary_union
 from hapjeong_hd import (AREA, FRAME, MAPO, SHEETS, WINDOW, dbf, even_odd, face_rings, features,
                          offset_zebra, parts, paths, project, rings, shapes, tm_to_ll)
 
+CROSSING_KERB_GAP = 2.0
+PAVING_KERB_GAP = .15
+
 
 def half_metre_routes(*areas):
     # Reunite edges produced by clipping before measuring clearance in metres.
@@ -143,7 +146,7 @@ def vehicle_clearance(kind):
     return 1.1 if kind == '6' else 1.65
 
 
-def supplement_crossings(b3, walk, building_faces):
+def supplement_crossings(b3, walk, building_faces, road):
     topo,seoul = crossing_sources()
     walk_parts = sorted(parts(walk,'Polygon'),key=lambda face: face.bounds)
     walk_index = STRtree(walk_parts)
@@ -159,8 +162,11 @@ def supplement_crossings(b3, walk, building_faces):
     painted = [(row,unary_union([Polygon(outer,holes) for outer,*holes in row['faces']])) for row in b3]
     paint_index = STRtree([face for _, face in painted])
     primary = unary_union([face for _,face in painted])
+    road_index = STRtree(parts(road, 'Polygon'))
+    clip = AREA.get('coverage') or 'outline' in AREA
     rows = []
     audit = []
+    paving = []
     for id, face in topo:
         covered = face.intersection(primary).area >= face.area*.15
         score, city_id = max(((agreement(face,city), key) for key,city in seoul), default=(0,None))
@@ -169,22 +175,45 @@ def supplement_crossings(b3, walk, building_faces):
         approaches = [approach(end,other,width,walk_parts,walk_index,forbidden,face,4*width)
                       for end,other in ((a,b),(b,a))]
         entry = {'id':id, 'axisHeading':heading, 'approaches':approaches, 'faces':rings(face)}
+        joined = all(p['status']=='joined' for p in approaches)
+        opposite = approaches[0]['walkComponent'] != approaches[1]['walkComponent']
+        gap = max(p['distance'] for p in approaches) if joined else math.inf
+        # Retain the measured-pavement rule when admitting paint with a wider gap.
+        if covered or score or (opposite and gap <= PAVING_KERB_GAP):
+            paving.extend(face for p in approaches for face in p['faces'])
         if covered:
             audit.append({**entry,'status':'covered-by-b3'})
             continue
-        # Survey-only faces qualify when both ends match measured opposing kerbs within survey tolerance.
-        curb_confirmed = (all(p['status']=='joined' and p['distance'] <= .15 for p in approaches)
-                          and approaches[0]['walkComponent'] != approaches[1]['walkComponent'])
-        if not score and not curb_confirmed:
-            audit.append({**entry,'status':'unconfirmed'})
+        visible = face.intersection(WINDOW) if clip else face
+        area = visible.area
+        if not joined:
+            reason = 'unjoined-approach'
+        elif not opposite:
+            reason = 'same-walk-component'
+        elif gap > CROSSING_KERB_GAP:
+            reason = 'kerb-gap'
+        elif not 4 <= area <= 800 or not 2.5 <= math.dist(a,b) <= 70:
+            reason = 'size'
+        elif sum(visible.intersection(road_index.geometries[i]).area for i in road_index.query(visible)) < .6*area:
+            reason = 'off-road'
+        elif sum(visible.intersection(painted[i][1]).area for i in paint_index.query(visible)) > .25*area:
+            reason = 'b3-overlap'
+        else:
+            reason = None
+        if reason:
+            audit.append({**entry,'status':'unconfirmed','reason':reason})
             continue
-        stripes = [ring for stripe in offset_zebra(face,heading+math.pi/2) for ring in rings(stripe)]
+        stripes = [ring for stripe in offset_zebra(face,heading+math.pi/2)
+                   for ring in rings(stripe.intersection(WINDOW) if clip else stripe)]
+        if len(stripes) < 2:
+            audit.append({**entry,'status':'unconfirmed','reason':'too-few-stripes'})
+            continue
         rows.append({'id':id,'source':'수치지형도 A0043325','seoulId':city_id if score else None,
                      'overlap':score,'axisHeading':heading,'approaches':approaches,
                      'faces':rings(face),'stripes':stripes})
         audit.append({**entry,'status':'supplemented'})
     survey_continuations([row for row in audit if row['status']!='unconfirmed'],dict(topo))
-    return rows,audit
+    return rows,audit,paving
 
 
 LANDING_STRIP = .05
