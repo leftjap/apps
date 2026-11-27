@@ -46,26 +46,44 @@ trap cleanup EXIT
 
 base='http://localhost:5199/apps/mapo/mapo-all.html?tiles=1'
 node tmp/connect/gpushot.mjs "$D/shots" \
-  "cross-1=$base&center=224.88,-410.6&width=120" \
-  "cross-2=$base&center=2826.55,841.64&width=120" \
+  "cross-1=$base&center=175,-445.4&width=120" \
+  "cross-2=$base&center=2773.4,886.5&width=120" \
   "cross-3=$base&center=1582.32,-952&width=120" \
   "near-200=$base&center=451.92,-624.28&width=200" \
   "mid-700=$base&center=-399,-394&width=700" \
   "mid-1500=$base&center=451.92,-624.28&width=1500" \
   "full=$base&center=-1192.55,-853.53&width=12000" \
-  "mob-300=$base&center=224.88,-410.6&width=300" > "$D/shots.log" 2>&1
+  "mob-300=$base&center=175,-445.4&width=300" > "$D/shots.log" 2>&1
 cat "$D/shots.log"
 grep -q ERR "$D/shots.log" && { echo 'FAIL 캡처에 페이지 오류'; ok=1; }
 for name in cross-1 cross-2 cross-3 near-200 mid-700 mid-1500 full mob-300; do
   [ -s "$D/shots/$name.png" ] || { echo "FAIL 그림 없음: $D/shots/$name.png"; ok=1; }; done
 
-# 세 자리가 고치기 전과 실제로 달라졌는지(0.2% 이상)
+# cross-3 은 고치기 전과 실제로 달라졌는지(0.2% 이상) 픽셀로 본다.
+# cross-1·cross-2 는 새 면이 실제로 생긴 자리로 옮겼다(마스터 11-27: 처음 중심 60m 안에는 받아들일 수 있는 후보가 없어
+# 가드 2.5m 와 화면 문턱이 서로 막았다). 고치기 전 캡처가 없으므로 자료에서 화면 안(45m)에 보충된 횡단보도가 있는지를 세고, 그림은 검수자가 본다.
+$PY - <<'PY2' || ok=1
+import gzip, json, math, sys
+from shapely.geometry import Polygon
+from shapely.ops import unary_union
+rows = json.load(gzip.open('public/data/v2/mapo-all-a.json.gz'))['crossings']
+bad = 0
+for name, x, z in (('cross-1', 175, -445.4), ('cross-2', 2773.4, 886.5)):
+    n = 0
+    for row in rows:
+        if not row.get('source'): continue
+        pt = unary_union([Polygon(f[0], f[1:]) for f in row['faces']]).representative_point()
+        n += math.dist((pt.x, pt.y), (x, z)) <= 45
+    print(f'{name} 화면 안(45m)의 보충된 횡단보도 {n}개')
+    if n < 1: print(f'FAIL {name} 화면 안에 보충된 횡단보도가 없다'); bad = 1
+sys.exit(bad)
+PY2
 diff_out=$(/usr/bin/python3 tmp/connect/pixdiff.py "$D/before" "$D/shots"); echo "$diff_out"
 $PY - "$diff_out" <<'PY' || ok=1
 import re, sys
 text = sys.argv[1]
 bad = []
-for name in ('cross-1', 'cross-2', 'cross-3'):
+for name in ('cross-3',):
     line = next((l for l in text.splitlines() if l.startswith(name + '.png:')), None)
     if line is None:
         bad.append(f'{name} 대조 줄이 없다'); continue
@@ -76,18 +94,18 @@ for name in ('cross-1', 'cross-2', 'cross-3'):
         bad.append(f'{name} 대조를 읽을 수 없다: {line}'); continue
     if float(m.group(1)) < .2:
         bad.append(f'{name} 이 {m.group(1)}% 만 달라졌다(문턱 0.2%)')
-print('\n'.join(f'FAIL {l}' for l in bad) or '세 자리가 고치기 전과 충분히 달라졌다')
+print('\n'.join(f'FAIL {l}' for l in bad) or 'cross-3 이 고치기 전과 충분히 달라졌다')
 sys.exit(1 if bad else 0)
 PY
 
 # 네 보기 수치(가까이·중간·전체·모바일)
 node docs/redraw-orders/queue/s1-tiles/measure.mjs desktop \
-  "cross-1=$base&center=224.88,-410.6&width=120" \
+  "cross-1=$base&center=175,-445.4&width=120" \
   "mid-700=$base&center=-399,-394&width=700" \
   "mid-1500=$base&center=451.92,-624.28&width=1500" \
   "full=$base&center=-1192.55,-853.53&width=12000" | tee "$D/measure.tsv"
 node docs/redraw-orders/queue/s1-tiles/measure.mjs mobile \
-  "mob-300=$base&center=224.88,-410.6&width=300" | tail -n +2 >> "$D/measure.tsv"
+  "mob-300=$base&center=175,-445.4&width=300" | tail -n +2 >> "$D/measure.tsv"
 $PY - "$D/measure.tsv" <<'PY' || ok=1
 import sys
 bad = []
