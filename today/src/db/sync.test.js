@@ -22,8 +22,8 @@ const { Sync, TABLE_MAP, startSync, stopSync, pullTable, pullAll, isSyncActive }
   await import('./sync.js');
 
 describe('TABLE_MAP', () => {
-  it('entries + expenses + merchant_rules + comments + notifications + reactions + user 매핑 3종', () => {
-    expect(TABLE_MAP).toHaveLength(9);
+  it('entries + expenses + merchant_rules + comments + notifications + reactions + user 매핑 3종 + 글쓰기 시간', () => {
+    expect(TABLE_MAP).toHaveLength(10);
     expect(TABLE_MAP[0].dexie).toBe('entries');
     expect(TABLE_MAP[0].filterColumn).toBeNull();
     expect(TABLE_MAP[1].dexie).toBe('expenses');
@@ -45,6 +45,10 @@ describe('TABLE_MAP', () => {
     expect(TABLE_MAP[7].filterColumn).toBe('user_id');
     expect(TABLE_MAP[8].dexie).toBe('user_merchant_aliases');
     expect(TABLE_MAP[8].filterColumn).toBe('user_id');
+    // 글쓰기 시간 — 기기별 행, 본인 것만
+    expect(TABLE_MAP[9].dexie).toBe('writing_time');
+    expect(TABLE_MAP[9].supabase).toBe('today_writing_time');
+    expect(TABLE_MAP[9].filterColumn).toBe('user_id');
   });
 
   it('frozen — 런타임 변조 방지', () => {

@@ -2444,7 +2444,16 @@ export function charCount(html) {
 }
 
 export function sheetCount(html) {
-  return Math.round((charCount(html) / 200) * 10) / 10;
+  return charsToSheets(charCount(html));
+}
+
+// 분량(매수)에 넣는 글자수 — 나중에 AI 가 늘린 글자를 빼는 자리. 지금은 본문 글자수 그대로.
+export function countedChars(row) {
+  return charCount(row?.content);
+}
+
+export function charsToSheets(chars) {
+  return Math.round((chars / 200) * 10) / 10;
 }
 
 function makeExcerpt(html, max = 80) {

@@ -81,6 +81,8 @@ export const TABLE_MAP = Object.freeze([
   Object.freeze({ dexie: 'user_categories', supabase: 'today_user_categories', filterColumn: 'user_id' }),
   Object.freeze({ dexie: 'user_brand_categories', supabase: 'today_user_brand_categories', filterColumn: 'user_id' }),
   Object.freeze({ dexie: 'user_merchant_aliases', supabase: 'today_user_merchant_aliases', filterColumn: 'user_id' }),
+  // 글쓰기 시간 — 기기별 행. keepGreater: 로컬 seconds 가 더 크면(아직 못 올린 이 기기 행) 로컬 유지.
+  Object.freeze({ dexie: 'writing_time', supabase: 'today_writing_time', filterColumn: 'user_id', raw: true, keepGreater: true }),
 ]);
 
 let _syncActive = false;
@@ -140,12 +142,26 @@ export async function pullTable(mapping, db, userId) {
     const rows = mapping.raw
       ? collected.map((r) => ({ ...r, pending_sync: 0 }))
       : collected.map(normalizeRow);
-    await store.bulkPut(rows);
+    if (mapping.keepGreater) await putWritingTimeKeepGreater(store, rows);
+    else await store.bulkPut(rows);
     return { table: mapping.dexie, status: 'ok', count: collected.length };
   } catch (e) {
     console.error(`[sync] pullTable ${mapping.supabase} 예외:`, formatError(e));
     return { table: mapping.dexie, status: 'error', error: e };
   }
+}
+
+function writingTimeKey(r) {
+  return [r.user_id, r.day, r.device_id];
+}
+
+/** writing_time 받기 — 로컬 seconds 가 더 큰 행은 건너뛰고 나머지만 put (pull·realtime 공용). */
+async function putWritingTimeKeepGreater(store, rows) {
+  await store.db.transaction('rw', store, async () => {
+    const locals = await store.bulkGet(rows.map(writingTimeKey));
+    const fresh = rows.filter((r, i) => !(locals[i] && locals[i].seconds > r.seconds));
+    if (fresh.length) await store.bulkPut(fresh);
+  });
 }
 
 /**
@@ -192,6 +208,9 @@ export async function startSync(user) {
   flushPendingReactionsFromDexie().catch((e) =>
     console.warn('[sync] flushPendingReactionsFromDexie 실패:', formatError(e)),
   );
+  flushPendingWritingTimeFromDexie().catch((e) =>
+    console.warn('[sync] flushPendingWritingTimeFromDexie 실패:', formatError(e)),
+  );
   return result;
 }
 
@@ -211,6 +230,8 @@ export function stopSync() {
   _notifUploadTimers.clear();
   for (const t of _reactionUploadTimers.values()) clearTimeout(t);
   _reactionUploadTimers.clear();
+  for (const t of _writingTimeUploadTimers.values()) clearTimeout(t);
+  _writingTimeUploadTimers.clear();
   // Realtime 도 함께 종료 (Wave 11.5.4)
   stopRealtime();
 }
@@ -602,6 +623,64 @@ export async function flushPendingReactionsFromDexie() {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// writing_time 업로드 (글쓰기 시간) — 기기별 자기 행만 upsert. 서버 트리거가 seconds 감소를 막는다.
+// ───────────────────────────────────────────────────────────────────────────
+
+const _writingTimeUploadTimers = new Map();
+
+/** key = [user_id, day, device_id]. */
+export async function pushWritingTime(key) {
+  if (!supabase) return { key, status: 'skipped', reason: 'no_supabase' };
+  const db = globalThis.todayDB;
+  if (!db?.writing_time) return { key, status: 'skipped', reason: 'no_db' };
+  const row = await db.writing_time.get(key);
+  if (!row) return { key, status: 'skipped', reason: 'not_found' };
+  try {
+    const payload = { user_id: row.user_id, day: row.day, device_id: row.device_id, seconds: row.seconds };
+    const { error } = await supabase
+      .from('today_writing_time')
+      .upsert(payload, { onConflict: 'user_id,day,device_id' });
+    if (error) return { key, status: 'error', error };
+    // 올리는 사이 더 쌓였으면 pending 유지 — 다음 업로드가 올린다.
+    // 확인과 해제를 한 트랜잭션으로 묶어 그 사이에 addWritingSeconds 가 끼지 못하게 한다.
+    await db.transaction('rw', db.writing_time, async () => {
+      const cur = await db.writing_time.get(key);
+      if (cur && cur.seconds === row.seconds) await db.writing_time.update(key, { pending_sync: 0 });
+    });
+    return { key, status: 'ok' };
+  } catch (e) {
+    return { key, status: 'error', error: e };
+  }
+}
+
+export function queueUploadWritingTime(key) {
+  if (!key) return;
+  const id = key.join('|');
+  const existing = _writingTimeUploadTimers.get(id);
+  if (existing) clearTimeout(existing);
+  const t = setTimeout(() => {
+    _writingTimeUploadTimers.delete(id);
+    pushWritingTime(key);
+  }, UPLOAD_DEBOUNCE_MS);
+  _writingTimeUploadTimers.set(id, t);
+}
+
+export async function flushPendingWritingTimeFromDexie() {
+  if (!supabase) return { count: 0, reason: 'no_supabase', results: [] };
+  const db = globalThis.todayDB;
+  if (!db?.writing_time) return { count: 0, reason: 'no_db', results: [] };
+  let pending;
+  try {
+    pending = await db.writing_time.where('pending_sync').equals(1).toArray();
+  } catch (e) {
+    return { count: 0, reason: 'list_failed', error: e, results: [] };
+  }
+  if (!pending.length) return { count: 0, results: [] };
+  const results = await Promise.all(pending.map((p) => pushWritingTime(writingTimeKey(p))));
+  return { count: pending.length, results };
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // notifications read_at 갱신 (Wave 11.7.2)
 // 알림은 서버 INSERT (트리거) — 클라이언트는 read_at 만 update.
 // ───────────────────────────────────────────────────────────────────────────
@@ -700,6 +779,11 @@ export function startRealtime() {
       { event: '*', schema: 'public', table: 'today_user_merchant_aliases' },
       (payload) => handleUserMappingChange('user_merchant_aliases', ['user_id', 'merchant_pattern'], payload),
     )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'today_writing_time' },
+      (payload) => handleWritingTimeChange(payload),
+    )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         console.info('[sync] realtime SUBSCRIBED (entries + expenses + comments + notifications + user_mappings)');
@@ -748,6 +832,23 @@ function handleCommentChange(payload) {
     }
   } catch (e) {
     console.error('[sync] realtime comment put 실패:', formatError(e));
+  }
+  for (const fn of _realtimeListeners) {
+    try { fn(payload); } catch (e) { console.error('[sync] listener 실패:', formatError(e)); }
+  }
+}
+
+/** Realtime writing_time payload — 다른 기기 행 반영. 로컬이 더 크면 로컬 유지. */
+async function handleWritingTimeChange(payload) {
+  const db = globalThis.todayDB;
+  if (!db?.writing_time) return;
+  const newRow = payload.new;
+  if (newRow?.user_id) {
+    try {
+      await putWritingTimeKeepGreater(db.writing_time, [{ ...newRow, pending_sync: 0 }]);
+    } catch (e) {
+      console.error('[sync] realtime writing_time put 실패:', formatError(e));
+    }
   }
   for (const fn of _realtimeListeners) {
     try { fn(payload); } catch (e) { console.error('[sync] listener 실패:', formatError(e)); }
@@ -885,6 +986,10 @@ export const Sync = {
   deleteReactionRemote,
   queueUploadReaction,
   flushPendingReactionsFromDexie,
+  // writing_time (글쓰기 시간)
+  pushWritingTime,
+  queueUploadWritingTime,
+  flushPendingWritingTimeFromDexie,
   _clearUploadTimers,
   _clearExpenseUploadTimers,
   _getLastUploadResult,

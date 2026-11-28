@@ -695,6 +695,38 @@ function enqueueReactionSync(id) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// writing_time (글쓰기 시간) — 0032 마이그 / schema v9. 기기마다 자기 행만 쓴다.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** 이 기기의 그날 행에 초를 더한다. day = 'YYYY-MM-DD' (로컬 날짜). */
+export async function addWritingSeconds(userId, deviceId, day, seconds) {
+  if (!userId || !deviceId || !day || !(seconds > 0)) return null;
+  const key = [userId, day, deviceId];
+  const store = db().writing_time;
+  const row = await db().transaction('rw', store, async () => {
+    const cur = await store.get(key);
+    const next = {
+      user_id: userId,
+      day,
+      device_id: deviceId,
+      seconds: (cur?.seconds || 0) + Math.floor(seconds),
+      updated_at: nowIso(),
+      pending_sync: 1,
+    };
+    await store.put(next);
+    return next;
+  });
+  const sync = globalThis.todaySync;
+  if (sync && typeof sync.queueUploadWritingTime === 'function') sync.queueUploadWritingTime(key);
+  return row;
+}
+
+/** 사용자의 모든 기기·날짜 행. */
+export async function listWritingTime(userId) {
+  return await db().writing_time.where('user_id').equals(userId).toArray();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // notifications (Wave 11.7.1) — spec §6 line 247-259 / §11 line 401-433
 // 인박스 메시지 — DB trigger 가 INSERT 만 함. 클라이언트는 read_at 갱신·목록 조회만.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -815,6 +847,9 @@ export const Queries = {
   listReactionsByEntry,
   listReactionsForComments,
   listReactionsForEntries,
+  // writing_time (글쓰기 시간)
+  addWritingSeconds,
+  listWritingTime,
 };
 
 if (typeof window !== 'undefined') {

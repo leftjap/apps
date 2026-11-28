@@ -13,7 +13,8 @@
  * 창 상태(_offset)는 세션 내 유지, 리로드 시 현재 창으로 초기화 (§3).
  */
 import { Queries } from '../db/queries.js';
-import { CAL_KINDS, charCount, sheetCount, openEntryByRow, escapeHtml } from './entries.js';
+import { CAL_KINDS, countedChars, charsToSheets, openEntryByRow, escapeHtml } from './entries.js';
+import { formatDuration } from './writingClock.js';
 
 // §10-4 — 농도 수식 상한 기준 글자수 (실데이터 분포 확인 후 조정 가능, 상수로만)
 export const FULL_CHARS = 800;
@@ -27,6 +28,7 @@ const KIND_LABEL = Object.freeze({
 let _user = null;
 let _offset = 0; // 0 = 현재 창, -1 = 지난 4주 … (미래 창 없음 — 최대 0)
 let _agg = new Map();
+let _secs = new Map(); // dayKey → 그날 쓴 시간(초, 모든 기기 합)
 let _renderedDayKey = null; // 자정 감지 — 렌더 시점의 로컬 날짜 키
 let _installed = false;
 
@@ -81,13 +83,25 @@ export function aggregateEntriesByDay(rows, userId) {
       slot = { chars: 0, rows: [] };
       agg.set(key, slot);
     }
-    slot.chars += charCount(r.content);
+    slot.chars += countedChars(r);
     slot.rows.push(r);
   }
   for (const slot of agg.values()) {
     slot.rows.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   }
   return agg;
+}
+
+/** 글쓰기 시간 행(기기별) → Map<dayKey, 초>. day 는 'YYYY-MM-DD' (로컬 날짜). */
+export function sumSecondsByDay(rows) {
+  const m = new Map();
+  for (const r of rows || []) {
+    if (!r?.day) continue;
+    const [y, mo, d] = r.day.split('-').map(Number);
+    const key = `${y}-${mo}-${d}`;
+    m.set(key, (m.get(key) || 0) + (r.seconds || 0));
+  }
+  return m;
 }
 
 /** 범위 표기 'M.D – M.D' (§3 — 하이픈이 아니라 공백 포함 en dash). */
@@ -99,7 +113,7 @@ export function fmtRange(start, end) {
  * 셀 모델 (§5, 판정 순서 고정: ①오늘·썼음 ②오늘·안씀 ③과거·썼음 ④과거·안씀 ⑤미래).
  * @returns { label, state: 'today'|'today-off'|'on'|'off'|'future', m1, alpha?, title? }
  */
-export function buildCellModel(day, today, agg) {
+export function buildCellModel(day, today, agg, secs = new Map()) {
   const t0 = atMidnight(today);
   const key = localDayKey(day);
   const chars = agg.get(key)?.chars || 0;
@@ -118,6 +132,8 @@ export function buildCellModel(day, today, agg) {
     model.title = isToday
       ? `오늘 · ${chars}자`
       : `${day.getMonth() + 1}월 ${day.getDate()}일 · ${chars > 0 ? `${chars}자` : '기록 없음'}`;
+    const seconds = secs.get(key) || 0;
+    if (seconds > 0) model.title += ` · ${formatDuration(seconds)}`;
   }
   return model;
 }
@@ -138,7 +154,7 @@ export function computeSummary(agg, days) {
     totalChars += chars;
     writtenDays += 1;
   }
-  const sheets = Math.round((totalChars / 200) * 10) / 10;
+  const sheets = charsToSheets(totalChars);
   const totalText = Number.isInteger(sheets) ? String(sheets) : sheets.toFixed(1);
   const avg = writtenDays > 0 ? Math.round((sheets / writtenDays) * 10) / 10 : 0;
   return { totalText, avgText: avg.toFixed(1) };
@@ -165,6 +181,10 @@ async function loadAgg() {
   return aggregateEntriesByDay(lists.flat(), _user.id);
 }
 
+async function loadSecs() {
+  return sumSecondsByDay(await Queries.listWritingTime(_user.id));
+}
+
 function render(doc = (typeof document !== 'undefined' ? document : null)) {
   if (!doc) return false;
   const grid = doc.getElementById('sbCalGrid');
@@ -189,7 +209,7 @@ function render(doc = (typeof document !== 'undefined' ? document : null)) {
 
   grid.innerHTML = '';
   for (const day of days) {
-    const m = buildCellModel(day, today, _agg);
+    const m = buildCellModel(day, today, _agg, _secs);
     const el = doc.createElement('div');
     el.className = `sb__cal-cell is-${m.state}${m.m1 ? ' is-m1' : ''}`;
     el.textContent = m.label;
@@ -214,11 +234,20 @@ export async function refreshSidebarCal() {
   if (!_user?.id) return false;
   try {
     _agg = await loadAgg();
+    _secs = await loadSecs();
   } catch (e) {
     console.warn('[sidebarCal] 집계 실패:', e?.message || e);
     return false;
   }
-  return render();
+  const ok = render();
+  // 글쓰기 띠 — 같은 집계로 다시 그림 (writingTime.js, 순환 참조 회피 위해 동적 lookup)
+  globalThis.todayWritingTime?.render?.();
+  return ok;
+}
+
+/** 글쓰기 띠(writingTime.js)가 쓰는 날짜별 분량·시간 (같은 집계를 재사용). */
+export function getDayData() {
+  return { agg: _agg, secs: _secs };
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -255,34 +284,42 @@ function closeDayPopover() {
   }
 }
 
-/** 2편 이상인 날 — #expDayPopover 문법 재사용한 목록 팝오버 (§5). */
-function openDayPopover(dayKey, slot) {
+/** 일자 팝오버 껍데기 채우고 열기 — 글쓰기 띠(writingTime.js)도 재사용. */
+export function showDayPopover({ dateHtml, sumHtml, listHtml }) {
   const { popover, overlay } = popoverEls();
   if (!popover) return;
-  const [y, m, d] = dayKey.split('-').map(Number);
-  const dow = DOW_KO[new Date(y, m - 1, d).getDay()];
   const dateEl = popover.querySelector('.exp-day-detail__date');
-  if (dateEl) dateEl.innerHTML = `${m}월 ${d}일<span class="dow">${dow}요일</span>`;
+  if (dateEl) dateEl.innerHTML = dateHtml;
   const sumEl = popover.querySelector('.exp-day-detail__sum');
-  if (sumEl) sumEl.innerHTML = `<b>${slot.chars.toLocaleString('ko-KR')}자</b>`;
+  if (sumEl) sumEl.innerHTML = sumHtml;
   const list = popover.querySelector('.expense-list');
-  if (list) {
-    list.innerHTML = slot.rows.map((r) => `
-      <div class="exp-day-row" data-cal-entry-id="${escapeHtml(r.id)}">
-        <div class="exp-day-row__body">
-          <div class="exp-day-row__merchant">${escapeHtml(r.title || '제목 없음')}</div>
-          <div class="exp-day-row__meta">${escapeHtml(KIND_LABEL[r.kind] || r.kind)}</div>
-        </div>
-        <div class="exp-day-row__amt">${sheetCount(r.content)}매</div>
-      </div>
-    `).join('');
-  }
+  if (list) list.innerHTML = listHtml;
   if (overlay) {
     overlay.classList.add('is-open');
     overlay.setAttribute('aria-hidden', 'false');
   }
   popover.classList.add('is-open');
   popover.setAttribute('aria-hidden', 'false');
+}
+
+/** 2편 이상인 날 — #expDayPopover 문법 재사용한 목록 팝오버 (§5). */
+function openDayPopover(dayKey, slot) {
+  const [y, m, d] = dayKey.split('-').map(Number);
+  const dow = DOW_KO[new Date(y, m - 1, d).getDay()];
+  const seconds = _secs.get(dayKey) || 0;
+  showDayPopover({
+    dateHtml: `${m}월 ${d}일<span class="dow">${dow}요일</span>`,
+    sumHtml: `<b>${slot.chars.toLocaleString('ko-KR')}자</b>${seconds > 0 ? ` · ${formatDuration(seconds)}` : ''}`,
+    listHtml: slot.rows.map((r) => `
+      <div class="exp-day-row" data-cal-entry-id="${escapeHtml(r.id)}">
+        <div class="exp-day-row__body">
+          <div class="exp-day-row__merchant">${escapeHtml(r.title || '제목 없음')}</div>
+          <div class="exp-day-row__meta">${escapeHtml(KIND_LABEL[r.kind] || r.kind)}</div>
+        </div>
+        <div class="exp-day-row__amt">${charsToSheets(countedChars(r))}매</div>
+      </div>
+    `).join(''),
+  });
 }
 
 function handleCellClick(cell) {
@@ -366,4 +403,6 @@ export function mountSidebarCal(user) {
 export const SidebarCal = {
   mountSidebarCal,
   refresh: refreshSidebarCal,
+  getDayData,
+  showDayPopover,
 };

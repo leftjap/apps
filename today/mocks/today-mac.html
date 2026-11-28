@@ -2058,6 +2058,23 @@
   }
   body.is-admin .main__body { display: none; }
 
+  /* 글쓰기 띠 — 오늘 매수·시간·작가 눈금 한 줄 + 0~25매 진행 막대. 표현은 달력 합계 줄(.sb__cal-sum)을 따름.
+     내용·표시(글 화면에서만)·클릭 팝오버는 src/features/writingTime.js */
+  .write-strip {
+    display: block; width: 100%; flex-shrink: 0;
+    margin: 0; padding: 8px 2px 6px; border: 0; background: transparent;
+    font: inherit; font-size: 11.5px; color: var(--ink-3); text-align: left; cursor: pointer;
+  }
+  .write-strip[hidden] { display: none; }
+  .write-strip__text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .write-strip__text b { font-family: var(--font-mono); font-weight: 600; color: var(--ink-2); }
+  .write-strip__bar { position: relative; display: block; height: 2px; margin-top: 6px; background: var(--line); }
+  .write-strip__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--crail-base); }
+  .write-strip__tick { position: absolute; top: -2px; width: 1px; height: 6px; margin-left: -1px; background: var(--ink-4); }
+  @media (max-width: 768px) {
+    .write-strip { font-size: 13px; }
+  }
+
   /* 대화 패널 — 348px 고정, 흰 카드 R18 + float 그림자, 메인과 분리되어 떠 있음 (§4.1) */
   .convo {
     width: 348px;
@@ -5244,6 +5261,23 @@
         </button>
       </div>
     </div>
+
+    <!-- 글쓰기 띠 — 「오늘 6.2매 · 42분 · 헤밍웨이 · 성석제까지 1.8매」 + 0~25매 막대 (눈금: 작가 여덟 명의 매수).
+         #mainView 밖에 둔다 (#mainView 는 글을 열 때마다 통째로 바뀜). 누르면 최근 7일 팝오버 -->
+    <button type="button" class="write-strip" id="writeStrip" aria-label="오늘 쓴 분량과 시간" hidden>
+      <span class="write-strip__text" id="writeStripText"></span>
+      <span class="write-strip__bar" aria-hidden="true">
+        <span class="write-strip__fill" id="writeStripFill"></span>
+        <span class="write-strip__tick" style="left:12%" title="김중혁 3매"></span>
+        <span class="write-strip__tick" style="left:20%" title="김연수 5매"></span>
+        <span class="write-strip__tick" style="left:24%" title="헤밍웨이 6매"></span>
+        <span class="write-strip__tick" style="left:32%" title="성석제 8매"></span>
+        <span class="write-strip__tick" style="left:40%" title="이기호 10매"></span>
+        <span class="write-strip__tick" style="left:60%" title="장강명 15매"></span>
+        <span class="write-strip__tick" style="left:80%" title="무라카미 하루키 20매"></span>
+        <span class="write-strip__tick" style="left:100%" title="스티븐 킹 25매"></span>
+      </span>
+    </button>
 
     <!-- 본문 + 대화 패널 2칼럼 (시안 01 — 본문 600px 중앙 + 우측 348px 대화 카드) -->
     <div class="main__body">

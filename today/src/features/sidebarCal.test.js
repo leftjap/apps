@@ -20,7 +20,9 @@ import {
   buildCellModel,
   computeSummary,
   buildPagingModel,
+  sumSecondsByDay,
 } from './sidebarCal.js';
+import { charCount, sheetCount, countedChars, charsToSheets } from './entries.js';
 
 // 시안 v4 픽스처 — 오늘 = 2026-04-23(목), 창 3.30 ~ 4.26 (작업지시서 동봉 시안 스크립트와 동일)
 const SIAN_TODAY = new Date(2026, 3, 23, 14, 30);
@@ -213,6 +215,42 @@ describe('buildCellModel — 셀 상태 판정 (§5, 순서 고정)', () => {
     expect(m.state).toBe('today');
     expect(m.label).toBe('5/1');
     expect(m.m1).toBe(true);
+  });
+
+  it('그날 쓴 시간이 있으면 툴팁 끝에 덧붙인다', () => {
+    const secs = new Map([
+      [localDayKey(new Date(2026, 3, 23)), 42 * 60],
+      [localDayKey(new Date(2026, 3, 18)), 65 * 60],
+    ]);
+    expect(buildCellModel(new Date(2026, 3, 23), SIAN_TODAY, agg, secs).title).toBe('오늘 · 340자 · 42분');
+    expect(buildCellModel(new Date(2026, 3, 18), SIAN_TODAY, agg, secs).title).toBe('4월 18일 · 기록 없음 · 1시간 5분');
+    expect(buildCellModel(new Date(2026, 3, 16), SIAN_TODAY, agg, secs).title).toBe('4월 16일 · 520자');
+  });
+});
+
+describe('매수 계산 한 곳 — countedChars · charsToSheets', () => {
+  it('1240자는 6.2매', () => {
+    expect(charsToSheets(1240)).toBe(6.2);
+  });
+
+  it('countedChars 는 지금은 본문 글자수와 같다 (기존 달력 결과 유지)', () => {
+    const row = { content: '<p>가나다 라마</p><b>바사</b>' };
+    expect(countedChars(row)).toBe(charCount(row.content));
+    expect(countedChars(row)).toBe(7);
+    expect(charsToSheets(countedChars(row))).toBe(sheetCount(row.content));
+  });
+});
+
+describe('sumSecondsByDay — 그날의 모든 기기 시간 합', () => {
+  it('ISO 날짜를 달력 날짜 키로 바꾸고 기기별 행을 더한다', () => {
+    const rows = [
+      { user_id: 'u', day: '2026-04-16', device_id: 'mac', seconds: 600 },
+      { user_id: 'u', day: '2026-04-16', device_id: 'phone', seconds: 120 },
+      { user_id: 'u', day: '2026-04-17', device_id: 'mac', seconds: 60 },
+    ];
+    const m = sumSecondsByDay(rows);
+    expect(m.get('2026-4-16')).toBe(720);
+    expect(m.get('2026-4-17')).toBe(60);
   });
 });
 

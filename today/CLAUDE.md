@@ -31,6 +31,12 @@
 - 검증: `pnpm test scripts/navi-realtime-daemon.test.js scripts/navi-pending.test.js scripts/navi-verify.test.js`. 게시 없는 실제 시험: `node scripts/navi-realtime-daemon.mjs --once <entry_id> --dry-run` (수동 단발만 1시간 대기 생략).
 - 자격증명은 기존 `today/.env.local`, `~/.config/navi-daemon/oauth-token`, Codex 로그인 사용. Sol 프로세스에 DB 키·Claude 토큰을 전달하지 않음.
 
+## 글쓰기 시간·작가 눈금
+
+- 시간 규칙은 `src/features/writingClock.js`(순수 모듈, 시각을 인자로 받음): 글 화면이 열려 있고 창이 앞에 있는 동안 세고, 5분 안에 돌아오면 나가 있던 시간 포함, 무입력 10분이면 멈춤, 자정에 날짜를 나눔. DOM·저장·띠·팝오버 연결은 `writingTime.js`, 작가 눈금은 `writerScale.js`.
+- 저장은 표 `today_writing_time`(0032, 기본 키 user_id+day+device_id). 기기마다 자기 행만 쓰고 화면에서 더한다. seconds 는 트리거가 줄지 않게 막는다.
+- 그날 매수는 `entries.js` 의 `countedChars`·`charsToSheets` 한 곳에서 구한다(달력과 띠가 함께 씀). AI 가 늘린 글자를 뺄 때 여기를 고친다.
+
 ## SMS 카드 결제 ingest
 
 `specs/sms-ingest-pipeline.md` 참조: 단축어 spec, iOS 한계, launchd backfill, Edge Function API, 디버깅 절차 모두 거기.

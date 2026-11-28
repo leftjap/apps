@@ -94,6 +94,10 @@ export function createTodayDB(name = 'today') {
     reactions:
       '&id, entry_id, comment_id, author_id, emoji, [entry_id+author_id], [comment_id+author_id], pending_sync',
   });
+  // v9 — 글쓰기 시간. 0032 마이그: 기기마다 하루 한 행 (user_id, day, device_id), seconds 누적.
+  db.version(9).stores({
+    writing_time: '&[user_id+day+device_id], user_id, day, pending_sync',
+  });
   return db;
 }
 

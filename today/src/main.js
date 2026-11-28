@@ -19,6 +19,7 @@ import { markLogin } from './services/auth-diag.js';
 import { Profile } from './services/profile.js';
 import { Entries } from './features/entries.js';
 import { SidebarCal } from './features/sidebarCal.js';
+import { WritingTime } from './features/writingTime.js';
 import { Editor } from './features/editor.js';
 // 가계부 분류 자산 (Keep GAS 포팅) — window.todayClassifier 노출 (mocks IIFE 접근용)
 import Classifier from './services/expense-classifier.js';
@@ -36,6 +37,8 @@ import { showAuthenticated, showLogin, setRouterUser } from './app.js';
 
 // signOut 시 sync 정리 (Wave 11.5.3.1) — stopSync 가 Realtime 도 종료 (Wave 11.5.4)
 Auth.registerOnSignOut(() => Sync.stopSync());
+// 글쓰기 시간 — DB 가 닫히기 전에 저장하고 시계를 멈춤 (다음 계정 DB 에 섞이지 않게)
+Auth.registerOnSignOut(() => WritingTime.stopWritingTime());
 
 // 페이지 unload 시 pending upload flush (Wave 11.5.3.2)
 if (typeof window !== 'undefined') {
@@ -47,6 +50,9 @@ if (typeof window !== 'undefined') {
     Sync.flushPendingFromDexie().catch((e) => console.warn('[main] online flush entries 실패', e));
     Sync.flushPendingExpensesFromDexie().catch((e) =>
       console.warn('[main] online flush expenses 실패', e),
+    );
+    Sync.flushPendingWritingTimeFromDexie().catch((e) =>
+      console.warn('[main] online flush writing_time 실패', e),
     );
   });
   // 새 빌드 적용은 SW 'prompt' 모드가 담당 — 새 SW 는 대기했다가 다음 콜드스타트에 활성화
@@ -113,6 +119,8 @@ async function handleSession(session) {
     Entries.mountEntriesView(user);
     // 사이드바 "최근 4주" 캘린더 (작업지시서 §7 — 앱 시작 렌더)
     SidebarCal.mountSidebarCal(user);
+    // 글쓰기 시간 측정 + 작가 눈금 띠 (캘린더 집계 재사용)
+    WritingTime.mountWritingTime(user);
     Editor.mountEditorTools();
     // 가계부 카테고리 사용자별 분리 — Keep USER_CONFIG 그대로 (leftjap 11 / soyoun 12)
     Classifier.setCurrentEmail(user.email);
@@ -187,6 +195,12 @@ async function handleSession(session) {
       Expenses.rebuildExpModalCatGrid?.();
       Admin.refreshActive?.()?.catch?.((e) =>
         console.warn('[main] realtime Admin.refreshActive 실패', e?.message || e),
+      );
+    }
+    // 다른 기기의 글쓰기 시간 — 캘린더 재집계 (띠도 함께 다시 그림)
+    if (t === 'today_writing_time') {
+      SidebarCal.refresh?.()?.catch?.((e) =>
+        console.warn('[main] realtime SidebarCal.refresh 실패', e?.message || e),
       );
     }
   });
