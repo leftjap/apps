@@ -229,7 +229,7 @@ describe('rowToTrashHtml', () => {
     });
     expect(html).toContain('data-trash-id="abc-1"');
     expect(html).toContain('여름의 잔상');
-    expect(html).toContain('단편 · 4월 18일 삭제');
+    expect(html).toContain('팬케이크 · 4월 18일 삭제');
     expect(html).toContain('class="acc-trash-row__action"');
     expect(html).toContain('복구</button>');
   });

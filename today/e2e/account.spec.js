@@ -36,7 +36,7 @@ test.describe('Wave 11.5.9 account', () => {
     expect(exposed.missing).toEqual([]);
   });
 
-  test('rowToTrashHtml — fiction → "단편 · 4월 18일 삭제"', async ({ page }) => {
+  test('rowToTrashHtml — fiction → "팬케이크 · 4월 18일 삭제"', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');
     const html = await page.evaluate(() => {
@@ -49,7 +49,7 @@ test.describe('Wave 11.5.9 account', () => {
     });
     expect(html).toContain('data-trash-id="abc-1"');
     expect(html).toContain('여름의 잔상');
-    expect(html).toContain('단편 · 4월 18일 삭제');
+    expect(html).toContain('팬케이크 · 4월 18일 삭제');
   });
 
   test('rowToTrashHtml — XSS escape', async ({ page }) => {

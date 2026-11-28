@@ -21,7 +21,7 @@ export const FULL_CHARS = 800;
 const WINDOW_DAYS = 28;
 const DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
 const KIND_LABEL = Object.freeze({
-  navi: '오늘의 네비', fiction: '단편', blog: '블로그', memo: '메모',
+  navi: '오늘의 네비', fiction: '팬케이크', blog: '블로그', memo: '메모',
 });
 
 let _user = null;

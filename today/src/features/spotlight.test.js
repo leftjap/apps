@@ -69,7 +69,7 @@ describe('entryToSpotlightDoc — Dexie entry → mocks doc', () => {
   });
 
   it('fiction / blog / memo 매핑', () => {
-    expect(entryToSpotlightDoc({ kind: 'fiction', id: 'f' }).categoryLabel).toBe('단편');
+    expect(entryToSpotlightDoc({ kind: 'fiction', id: 'f' }).categoryLabel).toBe('팬케이크');
     expect(entryToSpotlightDoc({ kind: 'blog', id: 'b' }).categoryLabel).toBe('블로그');
     expect(entryToSpotlightDoc({ kind: 'memo', id: 'm' }).categoryLabel).toBe('메모');
   });

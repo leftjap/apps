@@ -25,7 +25,7 @@ let _openModalPatched = false;
 const KIND_LABELS = Object.freeze({
   navi: '네비',
   soyoun_navi: '네비',
-  fiction: '단편',
+  fiction: '팬케이크',
   blog: '블로그',
   memo: '메모',
 });

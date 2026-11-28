@@ -56,7 +56,7 @@ test.describe('Wave 11.5.7 spotlight', () => {
     });
     expect(result.soyoun.categoryKey).toBe('navi');
     expect(result.soyoun.categoryLabel).toBe('오늘의 네비');
-    expect(result.fiction.categoryLabel).toBe('단편');
+    expect(result.fiction.categoryLabel).toBe('팬케이크');
     expect(result.memo.categoryLabel).toBe('메모');
   });
 

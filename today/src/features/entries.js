@@ -623,7 +623,7 @@ export function clearMainViewEmpty(label, doc = (typeof document !== 'undefined'
 const KIND_LABEL_KO = Object.freeze({
   navi: '오늘의 네비',
   soyoun_navi: '오늘의 네비',
-  fiction: '단편',
+  fiction: '팬케이크',
   blog: '블로그',
   memo: '메모',
 });
